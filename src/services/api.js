@@ -101,17 +101,17 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
-  // PATCH request
-  patch: (endpoint, data, config = {}) => {
-    const queryParams = config.params 
-      ? '?' + new URLSearchParams(config.params).toString() 
-      : '';
-    
-    return fetchWithAuth(`${endpoint}${queryParams}`, {
-      method: 'PATCH',
-      body: data ? JSON.stringify(data) : null,
-    });
-  },
+ // PATCH request
+patch: (endpoint, data = null, config = {}) => {
+  const queryParams = config.params 
+    ? '?' + new URLSearchParams(config.params).toString() 
+    : '';
+  
+  return fetchWithAuth(`${endpoint}${queryParams}`, {
+    method: 'PATCH',
+    body: data ? JSON.stringify(data) : undefined,
+  });
+},
 
   // PUT request
   put: (endpoint, data) => {

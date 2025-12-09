@@ -373,12 +373,29 @@ const InventoryRecordsManagement = () => {
     return;
   }
 
+  // ✅ Log the data being sent
+  console.log('=== SUBMITTING INVENTORY ===');
+  console.log('Form Data:', formData);
+  console.log('Inventory Type:', formData.inventoryType);
+  console.log('From Warehouse ID:', formData.fromWarehouseId);
+  console.log('To Warehouse ID:', formData.toWarehouseId);
+  console.log('From Branch ID:', formData.fromBranchId);
+  console.log('To Branch ID:', formData.toBranchId);
+  console.log('Items:', formData.items);
+
   try {
     if (modalMode === 'create') {
-      await api.post('/inventories', {
+      const payload = {
         ...formData,
         status: 'PENDING'
-      });
+      };
+      
+      console.log('Payload being sent:', payload);
+      
+      const response = await api.post('/inventories', payload);
+      
+      console.log('Response received:', response);
+      
       alert('Inventory record created successfully as PENDING!');
     } else {
       await api.put(`/inventories/${selectedInventory.id}`, formData);
@@ -389,46 +406,61 @@ const InventoryRecordsManagement = () => {
     loadData();
     setCurrentPage(1);
   } catch (error) {
+    console.error('=== ERROR SUBMITTING ===');
+    console.error('Error:', error);
+    console.error('Error response:', error.response);
     alert('Failed to save inventory: ' + error.message);
   }
 };
 
 
 const handleConfirmInventory = async (inventory) => {
-  if (!window.confirm(`Are you sure you want to confirm this ${inventory.inventoryType} record? This will update stock levels and cannot be undone.`)) return;
+  // Build detailed confirmation message
+  let locationInfo = '';
+  if (inventory.inventoryType === 'STOCK_IN') {
+    locationInfo = `\n📦 Adding stock to: ${inventory.toWarehouse?.warehouseName || inventory.toBranch?.branchName}`;
+  } else if (inventory.inventoryType === 'TRANSFER') {
+    const from = inventory.fromWarehouse?.warehouseName || inventory.fromBranch?.branchName;
+    const to = inventory.toWarehouse?.warehouseName || inventory.toBranch?.branchName;
+    locationInfo = `\n📦 Transfer from: ${from}\n📍 Transfer to: ${to}`;
+  } else if (inventory.inventoryType === 'RETURN') {
+    const from = inventory.fromBranch?.branchName;
+    const to = inventory.toWarehouse?.warehouseName;
+    locationInfo = `\n📦 Return from: ${from}\n📍 Return to: ${to}`;
+  } else if (inventory.inventoryType === 'DAMAGE') {
+    locationInfo = `\n📦 Mark damaged at: ${inventory.toWarehouse?.warehouseName || inventory.toBranch?.branchName}`;
+  }
+  
+  const itemCount = inventory.items?.length || 0;
+  const totalQty = inventory.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
+  
+  const confirmMessage = `Are you sure you want to confirm this ${inventory.inventoryType} record?${locationInfo}\n\n📊 Items: ${itemCount}\n📦 Total Quantity: ${totalQty}\n\n⚠️ This will update stock levels and cannot be undone.`;
+  
+  if (!window.confirm(confirmMessage)) {
+    return;
+  }
   
   try {
-    // Get the full inventory first to make sure we have the latest data
-    const fullInventory = await api.get(`/inventories/${inventory.id}`);
+    // Show loading state
+    const loadingToast = document.createElement('div');
+    loadingToast.className = 'fixed top-4 right-4 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+    loadingToast.textContent = '⏳ Confirming inventory...';
+    document.body.appendChild(loadingToast);
     
-    if (fullInventory.status === 'CONFIRMED') {
-      alert('This inventory is already confirmed.');
-      return;
-    }
+    await api.patch(`/inventories/${inventory.id}/confirm`);
     
-    // Update the inventory status to CONFIRMED
-    const updatedData = {
-      ...fullInventory,
-      status: 'CONFIRMED',
-      verifiedBy: localStorage.getItem('fullName') || localStorage.getItem('username') || 'System'
-    };
+    // Remove loading toast
+    document.body.removeChild(loadingToast);
     
-    // Try to update the inventory
-    await api.put(`/inventories/${inventory.id}`, updatedData);
+    // Show success message
+    alert(`✅ Inventory confirmed successfully!\n\n${inventory.inventoryType} record has been processed and stock levels have been updated.`);
     
-    // Then trigger the confirmation/stock update
-    try {
-      await api.post(`/inventories/${inventory.id}/confirm`);
-    } catch (confirmError) {
-      console.warn('Separate confirm endpoint not available, stock may not be updated');
-    }
-    
-    alert('Inventory record confirmed successfully!');
-    await loadData(); // Refresh the data
+    await loadData();
     
   } catch (error) {
     console.error('Failed to confirm inventory:', error);
-    alert(`Failed to confirm inventory: ${error.response?.data?.message || error.message || 'Unknown error'}`);
+    const errorMsg = error.response?.data?.error || error.message || 'Unknown error';
+    alert(`❌ Failed to confirm inventory:\n\n${errorMsg}\n\nPlease check stock availability and try again.`);
   }
 };
 
@@ -511,15 +543,32 @@ const handleConfirmInventory = async (inventory) => {
     return opts;
   };
 
-  const handleLocationChange = (type, val) => {
+ const handleLocationChange = (type, val) => {
+    console.log('=== LOCATION CHANGE ===');
+    console.log('Type:', type);
+    console.log('Value:', val);
+    
     const [locationType, locationId] = val ? val.split('|') : [null, null];
     
-    setFormData({
+    console.log('Parsed Location Type:', locationType);
+    console.log('Parsed Location ID:', locationId);
+    
+    // ✅ FIX: Convert string to number or null
+    const warehouseId = locationType === 'warehouse' ? (locationId ? parseInt(locationId, 10) : null) : null;
+    const branchId = locationType === 'branch' ? (locationId ? parseInt(locationId, 10) : null) : null;
+    
+    const newFormData = {
       ...formData,
-      [`${type}WarehouseId`]: locationType === 'warehouse' ? locationId : '',
-      [`${type}BranchId`]: locationType === 'branch' ? locationId : ''
-    });
-  };
+      [`${type}WarehouseId`]: warehouseId,
+      [`${type}BranchId`]: branchId
+    };
+    
+    console.log('New Form Data:', newFormData);
+    console.log('Warehouse ID type:', typeof warehouseId, 'value:', warehouseId);
+    console.log('Branch ID type:', typeof branchId, 'value:', branchId);
+    
+    setFormData(newFormData);
+};
 
   const getStatusColor = (status) => {
     const colors = {
@@ -650,18 +699,59 @@ const handleConfirmInventory = async (inventory) => {
                 ) : (
                   currentInventories.map((inventory) => (
                     <tr key={inventory.id} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-3 py-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTypeColor(inventory.inventoryType)}`}>
-                          {inventory.inventoryType?.replace('_', ' ')}
-                        </span>
-                      </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-3 py-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(inventory.status)}`}>
+                              {inventory.status || 'PENDING'}
+                            </span>
+                            {inventory.status === 'CONFIRMED' && (
+                              <Check size={16} className="text-green-600" />
+                            )}
+                          </div>
+                        </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {inventory.inventoryType === 'STOCK_IN' ?
-                          `Stock In → ${inventory.toWarehouse?.warehouseName || inventory.toBranch?.branchName || '-'}` :
-                        inventory.inventoryType === 'DAMAGE' ?
-                          `${inventory.toWarehouse?.warehouseName || inventory.toBranch?.branchName || '-'} (Damage)` :
-                          `${(inventory.fromWarehouse?.warehouseName || inventory.fromBranch?.branchName || '-')} → ${(inventory.toWarehouse?.warehouseName || inventory.toBranch?.branchName || '-')}`
-                        }
+                        <div className="flex items-center gap-2">
+                          {/* FROM Location */}
+                          {(inventory.fromWarehouse || inventory.fromBranch) && (
+                            <>
+                              {inventory.fromWarehouse && (
+                                <div className="flex items-center gap-1">
+                                  <Warehouse size={14} className="text-blue-600" />
+                                  <span className="font-medium">{inventory.fromWarehouse.warehouseName}</span>
+                                </div>
+                              )}
+                              {inventory.fromBranch && (
+                                <div className="flex items-center gap-1">
+                                  <Store size={14} className="text-green-600" />
+                                  <span className="font-medium">{inventory.fromBranch.branchName}</span>
+                                </div>
+                              )}
+                              <span className="text-gray-400">→</span>
+                            </>
+                          )}
+                          
+                          {/* TO Location */}
+                          {inventory.toWarehouse && (
+                            <div className="flex items-center gap-1">
+                              <Warehouse size={14} className="text-blue-600" />
+                              <span className="font-medium">{inventory.toWarehouse.warehouseName}</span>
+                            </div>
+                          )}
+                          {inventory.toBranch && (
+                            <div className="flex items-center gap-1">
+                              <Store size={14} className="text-green-600" />
+                              <span className="font-medium">{inventory.toBranch.branchName}</span>
+                            </div>
+                          )}
+                          
+                          {/* Special labels */}
+                          {inventory.inventoryType === 'STOCK_IN' && (
+                            <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">Stock In</span>
+                          )}
+                          {inventory.inventoryType === 'DAMAGE' && (
+                            <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded">Damaged</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {new Date(inventory.verificationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
@@ -701,14 +791,18 @@ const handleConfirmInventory = async (inventory) => {
                             
                             {/* ✅ CONFIRM BUTTON - Only show for PENDING records */}
                             {inventory.status === 'PENDING' && (
-                            <button 
+                              <button 
                                 onClick={() => handleConfirmInventory(inventory)}
-                                className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition shadow-sm"
-                                title="Confirm Inventory"
-                            >
+                                className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition shadow-sm group"
+                                title="Confirm & Update Stock"
+                              >
                                 <Check size={18} />
-                                <span className="text-sm">Confirm</span>
-                            </button>
+                                <span className="text-sm font-medium">Confirm</span>
+                                {/* Tooltip on hover */}
+                                <div className="hidden group-hover:block absolute bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded whitespace-nowrap z-50">
+                                  This will update warehouse/branch stock levels
+                                </div>
+                              </button>
                             )}
                             
                             {/* DELETE BUTTON - Only show for PENDING records */}
@@ -1049,6 +1143,34 @@ const handleConfirmInventory = async (inventory) => {
                       {selectedInventory.status || 'PENDING'}
                     </span>
                   </div>
+
+                  {selectedInventory.status === 'CONFIRMED' && (
+            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+              <h3 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
+                <Check size={18} />
+                Stock Update Applied
+              </h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-green-700 font-medium">Total Items Updated:</p>
+                  <p className="text-green-900 text-lg font-bold">
+                    {selectedInventory.items?.length || 0} products
+                  </p>
+                </div>
+                <div>
+                  <p className="text-green-700 font-medium">Total Quantity:</p>
+                  <p className="text-green-900 text-lg font-bold">
+                    {selectedInventory.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0} units
+                  </p>
+                </div>
+              </div>
+              {selectedInventory.confirmedAt && (
+                <p className="text-xs text-green-600 mt-2">
+                  Confirmed on: {new Date(selectedInventory.confirmedAt).toLocaleString()}
+                </p>
+              )}
+            </div>
+          )}
                 </div>
 
                 {selectedInventory.remarks && (

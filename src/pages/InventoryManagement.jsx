@@ -211,7 +211,7 @@
     return { type, typeLabel, typeColor };
   };
 
-  const ProductTransactionsModal = ({ product, transactions, isOpen, onClose, showStockDetails = true }) => {
+const ProductTransactionsModal = ({ product, transactions, isOpen, onClose, showStockDetails = true, warehouseStocks = [], branchStocks = [] }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('ALL');
   const [startDate, setStartDate] = useState('');
@@ -2999,13 +2999,15 @@
         )}
        
 
-      <ProductTransactionsModal
-        product={selectedProduct}
-        transactions={productTransactions}
-        isOpen={showTransactionsModal}
-        onClose={() => setShowTransactionsModal(false)}
-        showStockDetails={showStockDetails}
-      />
+        <ProductTransactionsModal
+          product={selectedProduct}
+          transactions={productTransactions}
+          isOpen={showTransactionsModal}
+          onClose={() => setShowTransactionsModal(false)}
+          showStockDetails={showStockDetails}
+          warehouseStocks={warehouseStocks}
+          branchStocks={branchStocks}
+        />
       </div>
     );
   };
