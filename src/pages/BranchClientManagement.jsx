@@ -114,6 +114,10 @@ const BranchClientManagement = () => {
     
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [editingClient, setEditingClient] = useState(null);
+  const [showClientEditModal, setShowClientEditModal] = useState(false);
+  const [showBranchViewModal, setShowBranchViewModal] = useState(false);
+  const [viewingBranch, setViewingBranch] = useState(null);
 
   const [formData, setFormData] = useState({
     // Branch fields
@@ -174,7 +178,7 @@ const handleClientModeChange = (mode) => {
       clientCity: '',
       clientProvince: '',
     }));
-  } else {
+  } else if (mode === 'new') {
     setFormData(prev => ({
       ...prev,
       existingClientId: '',
@@ -184,8 +188,109 @@ const handleClientModeChange = (mode) => {
 
 
 const handleViewClient = (client) => {
-  setViewingClient(client);
-  setShowClientViewModal(true);
+  if (client.branches && client.branches.length > 0) {
+    const enrichedBranches = client.branches.map(branch => {
+      const fullBranch = branches.find(b => b.id === branch.id);
+      return fullBranch || branch;
+    });
+    
+    const clientWithFullBranches = {
+      ...client,
+      branches: enrichedBranches
+    };
+    
+    setViewingClient(clientWithFullBranches);
+    setShowClientViewModal(true);
+  } else {
+    setViewingClient(client);
+    setShowClientViewModal(true);
+  }
+};
+
+
+const handleEditClient = (client) => {
+  setShowClientViewModal(false);
+  setEditingClient(client);
+  
+  if (client.branches && client.branches.length > 0) {
+    const firstBranch = client.branches[0];
+    setEditingBranch(firstBranch);
+    
+    setFormData({
+      branchCode: firstBranch.branchCode || '',
+      branchName: firstBranch.branchName || '',
+      branchAddress: firstBranch.address || '',
+      branchCity: firstBranch.city || '',
+      branchProvince: firstBranch.province || '',
+      area: firstBranch.area || '',
+      region: firstBranch.region || '',
+      clientName: client.clientName || '',
+      tin: client.tin || '',
+      clientAddress: client.address || '',
+      clientCity: client.city || '',
+      clientProvince: client.province || '',
+      existingClientId: client.id || '',
+    });
+    
+    setClientMode('edit-client-only');
+  } else {
+    setEditingBranch({ 
+      id: 'client-only-edit',
+      branchCode: 'CLIENT-ONLY',
+      branchName: 'Client Only'
+    });
+    
+    setFormData({
+      branchCode: '',
+      branchName: '',
+      branchAddress: '',
+      branchCity: '',
+      branchProvince: '',
+      area: '',
+      region: '',
+      clientName: client.clientName || '',
+      tin: client.tin || '',
+      clientAddress: client.address || '',
+      clientCity: client.city || '',
+      clientProvince: client.province || '',
+      existingClientId: client.id || '',
+    });
+    
+    setClientMode('edit-client-only');
+  }
+  
+  setShowModal(true);
+};
+
+
+const handleViewBranch = async (branch) => {
+  try {
+    // Try to get client data directly from branch first
+    let clientData = null;
+    
+    if (branch.client) {
+      // If client data is already in branch object
+      clientData = branch.client;
+    } else {
+      // If not, fetch it from API
+      const response = await api.get(`/clients/by-branch-id/${branch.id}`);
+      if (response.success) {
+        clientData = response.data;
+      }
+    }
+    
+    setViewingBranch({
+      ...branch,
+      address: branch.address || branch.branchAddress,
+      city: branch.city || branch.branchCity,
+      province: branch.province || branch.branchProvince,
+      client: clientData
+    });
+    setShowBranchViewModal(true);
+  } catch (error) {
+    toast.error('Failed to load branch details');
+    console.error(error);
+  }
 };
 
 
@@ -226,19 +331,68 @@ const availableClients = Array.isArray(allClients) ? allClients.map(c => {
 const handleSubmit = async (e) => {
   e.preventDefault();
   
-
-  if (!formData.branchCode || !formData.branchName || !formData.branchAddress || 
-      !formData.branchCity || !formData.branchProvince || !formData.area || 
-      !formData.region) {
-    toast.error('Please fill in all branch fields');
-    return;
-  }
-
-
-  if (clientMode === 'new') {
+  // Add debugging
+  console.log('=== FORM SUBMISSION DEBUG ===');
+  console.log('Full formData:', formData);
+  console.log('branchAddress value:', formData.branchAddress);
+  console.log('clientMode:', clientMode);
+  
+  // Client-only edit validation
+  if (clientMode === 'edit-client-only') {
     if (!formData.clientName || !formData.tin || !formData.clientAddress || 
         !formData.clientCity || !formData.clientProvince) {
       toast.error('Please fill in all client fields');
+      return;
+    }
+    
+    try {
+      const result = await api.put(`/clients/${formData.existingClientId}`, {
+        clientName: formData.clientName,
+        tin: formData.tin,
+        address: formData.clientAddress,
+        city: formData.clientCity,
+        province: formData.clientProvince,
+      });
+      
+      if (result.success) {
+        toast.success('Client updated successfully');
+        setShowModal(false);
+        resetForm();
+        loadData();
+      }
+    } catch (error) {
+      toast.error(error.message || 'Failed to update client');
+    }
+    return;
+  }
+  
+  // Branch-related operations validation - ENHANCED
+  const missingFields = [];
+  if (!formData.branchCode?.trim()) missingFields.push('Branch Code');
+  if (!formData.branchName?.trim()) missingFields.push('Branch Name');
+  if (!formData.branchAddress?.trim()) missingFields.push('Branch Address');
+  if (!formData.branchCity?.trim()) missingFields.push('City');
+  if (!formData.branchProvince?.trim()) missingFields.push('Province');
+  if (!formData.area?.trim()) missingFields.push('Area');
+  if (!formData.region?.trim()) missingFields.push('Region');
+  
+  if (missingFields.length > 0) {
+    toast.error(`Please fill in: ${missingFields.join(', ')}`);
+    console.error('Missing fields:', missingFields);
+    return;
+  }
+
+  if (clientMode === 'new') {
+    const missingClientFields = [];
+    if (!formData.clientName?.trim()) missingClientFields.push('Client Name');
+    if (!formData.tin?.trim()) missingClientFields.push('TIN');
+    if (!formData.clientAddress?.trim()) missingClientFields.push('Client Address');
+    if (!formData.clientCity?.trim()) missingClientFields.push('Client City');
+    if (!formData.clientProvince?.trim()) missingClientFields.push('Client Province');
+    
+    if (missingClientFields.length > 0) {
+      toast.error(`Please fill in: ${missingClientFields.join(', ')}`);
+      console.error('Missing client fields:', missingClientFields);
       return;
     }
   } else if (clientMode === 'existing') {
@@ -250,84 +404,146 @@ const handleSubmit = async (e) => {
 
   try {
     const payload = {
-      branchCode: formData.branchCode,
-      branchName: formData.branchName,
-      branchAddress: formData.branchAddress,
-      branchCity: formData.branchCity,
-      branchProvince: formData.branchProvince,
-      area: formData.area,
-      region: formData.region,
+      branchCode: formData.branchCode.trim(),
+      branchName: formData.branchName.trim(),
+      address: formData.branchAddress.trim(), // Ensure it's trimmed and not empty
+      city: formData.branchCity.trim(),
+      province: formData.branchProvince.trim(),
+      area: formData.area.trim(),
+      region: formData.region.trim(),
     };
-
-    if (clientMode === 'existing') {
-      payload.useExistingClient = true;
-      payload.existingClientId = formData.existingClientId;
-    } else {
-      payload.useExistingClient = false;
-      payload.clientName = formData.clientName;
-      payload.tin = formData.tin;
-      payload.clientAddress = formData.clientAddress;
-      payload.clientCity = formData.clientCity;
-      payload.clientProvince = formData.clientProvince;
-    }
-
-    console.log('Submitting payload:', payload);
+    
+    console.log('=== PAYLOAD TO SEND ===');
+    console.log('Payload:', payload);
+    console.log('Address in payload:', payload.address);
 
     let result;
-if (editingBranch) {
-  result = await api.put(`/branches/${editingBranch.id}/with-client`, payload);
-} else {
-  result = await api.post('/branches/with-client', payload);
-}
 
-if (result.success) {
-  // Only show success toast and close modal if the operation succeeded
-  if (editingBranch) {
-    toast.success('Branch and Client updated successfully');
-  } else {
-    toast.success('Branch and Client created successfully');
-  }
-  
-  setShowModal(false);
-  resetForm();
-  loadData();
-  setCurrentPage(1);
-}
+    if (editingBranch && editingBranch.id !== 'client-only-edit') {
+      // Editing existing branch
+      if (clientMode === 'view') {
+        // Update branch only (from branches tab)
+        result = await api.put(`/branches/${editingBranch.id}`, payload);
+      } else if (clientMode === 'edit') {
+        // Update both branch and client (from clients tab)
+        payload.useExistingClient = false;
+        payload.clientName = formData.clientName.trim();
+        payload.tin = formData.tin.trim();
+        payload.clientAddress = formData.clientAddress.trim();
+        payload.clientCity = formData.clientCity.trim();
+        payload.clientProvince = formData.clientProvince.trim();
+        result = await api.put(`/branches/${editingBranch.id}/with-client`, payload);
+      }
+    } else {
+      // Creating new branch
+      if (clientMode === 'existing') {
+        payload.useExistingClient = true;
+        payload.existingClientId = formData.existingClientId;
+      } else {
+        payload.useExistingClient = false;
+        payload.clientName = formData.clientName.trim();
+        payload.tin = formData.tin.trim();
+        payload.clientAddress = formData.clientAddress.trim();
+        payload.clientCity = formData.clientCity.trim();
+        payload.clientProvince = formData.clientProvince.trim();
+      }
+      
+      console.log('=== FINAL PAYLOAD BEFORE API CALL ===');
+      console.log(JSON.stringify(payload, null, 2));
+      
+      result = await api.post('/branches/with-client', payload);
+    }
+
+    if (result.success) {
+      toast.success(
+        editingBranch 
+          ? (clientMode === 'edit' ? 'Branch and Client updated' : 'Branch updated')
+          : 'Branch and Client created'
+      );
+      setShowModal(false);
+      resetForm();
+      loadData();
+    }
   } catch (error) {
+    console.error('=== SUBMISSION ERROR ===', error);
     toast.error(error.message || 'Failed to save');
+  }
+};
+
+
+const handleEdit = async (branch) => {
+  setEditingBranch(branch);
+  
+  try {
+    // Get client data
+    let clientData = null;
+    
+    if (branch.client) {
+      clientData = branch.client;
+    } else {
+      const response = await api.get(`/clients/by-branch-id/${branch.id}`);
+      if (response.success) {
+        clientData = response.data;
+      }
+    }
+    
+    setFormData({
+      branchCode: branch.branchCode || '',
+      branchName: branch.branchName || '',
+      branchAddress: branch.address || branch.branchAddress || '',
+      branchCity: branch.city || branch.branchCity || '',
+      branchProvince: branch.province || branch.branchProvince || '',
+      area: branch.area || '',
+      region: branch.region || '',
+      clientName: clientData?.clientName || '',
+      tin: clientData?.tin || '',
+      clientAddress: clientData?.address || '',
+      clientCity: clientData?.city || '',
+      clientProvince: clientData?.province || '',
+      existingClientId: clientData?.id || '',
+    });
+    
+    // Set proper mode based on where we're editing from
+    if (activeTab === 'branches') {
+      setClientMode('view'); // Read-only for branches tab
+    } else {
+      setClientMode('edit'); // Editable for clients tab
+    }
+    
+    setEditingClient(clientData);
+    setShowModal(true);
+  } catch (error) {
+    toast.error('Failed to load branch and client data');
     console.error(error);
   }
 };
 
 
 
-  const handleEdit = async (branch) => {
-    setEditingBranch(branch);
-    
-    // Fetch client data for this branch
-    try {
-      const clientData = await api.get(`/clients/by-branch-id/${branch.id}`);
-      
-      setFormData({
-        branchCode: branch.branchCode || '',
-        branchName: branch.branchName || '',
-        branchAddress: branch.address || '',
-        branchCity: branch.city || '',
-        branchProvince: branch.province || '',
-        area: branch.area || '',
-        region: branch.region || '',
-        clientName: clientData.clientName || '',
-        tin: clientData.tin || '',
-        clientAddress: clientData.address || '',
-        clientCity: clientData.city || '',
-        clientProvince: clientData.province || '',
-      });
-      setShowModal(true);
-    } catch (error) {
-      toast.error('Failed to load client data');
-      console.error(error);
-    }
-  };
+const handleEditClientFromView = (client, branch) => {
+  setEditingBranch(branch);
+  setEditingClient(client);
+  
+  setFormData({
+    branchCode: branch.branchCode || '',
+    branchName: branch.branchName || '',
+    branchAddress: branch.address || '',
+    branchCity: branch.city || '',
+    branchProvince: branch.province || '',
+    area: branch.area || '',
+    region: branch.region || '',
+    clientName: client.clientName || '',
+    tin: client.tin || '',
+    clientAddress: client.address || '',
+    clientCity: client.city || '',
+    clientProvince: client.province || '',
+    existingClientId: client.id || '',
+  });
+  
+  setClientMode('edit');
+  setShowClientViewModal(false);
+  setShowModal(true);
+};
 
   const handleDelete = async (id) => {
   if (!window.confirm('Are you sure you want to delete this branch and its associated client?')) return;
@@ -360,6 +576,46 @@ if (result.success) {
   }
 };
 
+
+
+const handleDeleteClient = async (clientId) => {
+  const client = clients.find(c => c.id === clientId);
+  const branchCount = client?.branches?.length || 0;
+  
+  if (branchCount > 0) {
+    toast.error(`Cannot delete client: This client has ${branchCount} associated branch(es). Please delete or reassign the branches first.`, {
+      duration: 5000
+    });
+    return;
+  }
+  
+  if (!window.confirm('Are you sure you want to delete this client?')) return;
+  
+  try {
+    const result = await api.delete(`/clients/${clientId}`);
+    
+    if (result.success) {
+      toast.success('Client deleted successfully');
+      loadData();
+      if (currentItems.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      }
+    } else {
+      toast.error(result.message || 'Cannot delete client');
+    }
+  } catch (error) {
+    console.error('Delete error:', error);
+    if (error.message.includes('associated branch')) {
+      toast.error(error.message, { duration: 5000 });
+    } else {
+      toast.error(error.message || 'Failed to delete client');
+    }
+  }
+};
+
+
+
+
   const resetForm = () => {
   setFormData({
     branchCode: '',
@@ -369,7 +625,7 @@ if (result.success) {
     branchProvince: '',
     area: '',
     region: '',
-    existingClientId: '', // ADD THIS
+    existingClientId: '',
     clientName: '',
     tin: '',
     clientAddress: '',
@@ -377,7 +633,8 @@ if (result.success) {
     clientProvince: '',
   });
   setEditingBranch(null);
-  setClientMode('new'); // ADD THIS
+  setEditingClient(null);
+  setClientMode('new');
 };
 
 
@@ -433,8 +690,6 @@ if (result.success) {
     
     return pageNumbers;
   };
-
-  // Reset to page 1 when switching tabs
   useEffect(() => {
     setCurrentPage(1);
   }, [activeTab]);
@@ -561,17 +816,26 @@ if (result.success) {
                             </div>
                           ) : '-'}
                         </td>
-                      <td className="px-6 py-4 text-right">
+                     <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleViewBranch(branch)}
+                            className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition"
+                            title="View details"
+                          >
+                            <Eye size={18} />
+                          </button>
                           <button
                             onClick={() => handleEdit(branch)}
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                            title="Edit branch"
                           >
                             <Edit2 size={18} />
                           </button>
                           <button
                             onClick={() => handleDelete(branch.id)}
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                            title="Delete branch"
                           >
                             <Trash2 size={18} />
                           </button>
@@ -583,18 +847,12 @@ if (result.success) {
               </tbody>
             </table>
           </div>
-
-          {/* Pagination for Branches */}
           {filteredBranches.length > 0 && (
             <div className="px-6 py-4 border-t border-gray-200 bg-white flex flex-col sm:flex-row items-center justify-between gap-4">
-              {/* Results count */}
               <div className="text-sm text-gray-700">
                 Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredBranches.length)} of {filteredBranches.length} results
               </div>
-
-              {/* Pagination controls */}
               <div className="flex items-center gap-2">
-                {/* Previous button */}
                 <button
                   onClick={prevPage}
                   disabled={currentPage === 1}
@@ -606,8 +864,6 @@ if (result.success) {
                 >
                   <ChevronLeft size={16} />
                 </button>
-
-                {/* Page numbers */}
                 <div className="flex items-center gap-1">
                   {getPageNumbers().map((number) => (
                     <button
@@ -690,7 +946,7 @@ if (result.success) {
                             <span className="text-gray-400 italic">No branches</span>
                           )}
                         </td>
-                      <td className="px-6 py-4 text-right">
+                        <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => handleViewClient(client)}
@@ -700,17 +956,16 @@ if (result.success) {
                             <Eye size={18} />
                           </button>
                           <button
-                            onClick={() => {
-                              if (window.confirm(`Delete client "${client.clientName}" and all ${client.branches?.length || 0} associated branches?`)) {
-                                api.delete(`/clients/${client.id}`)
-                                  .then(() => {
-                                    toast.success('Client deleted successfully');
-                                    loadData();
-                                  })
-                                  .catch(() => toast.error('Failed to delete client'));
-                              }
-                            }}
+                            onClick={() => handleEditClient(client)}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
+                            title="Edit client"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClient(client.id)}
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                            title="Delete client"
                           >
                             <Trash2 size={18} />
                           </button>
@@ -781,6 +1036,127 @@ if (result.success) {
         </div>
       )}
 
+      {/* Branch View Modal */}
+{/* Branch View Modal */}
+{showBranchViewModal && viewingBranch && (
+  <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <h2 className="text-xl font-bold text-gray-900">
+          Branch Details
+        </h2>
+        <button
+          onClick={() => {
+            setShowBranchViewModal(false);
+            setViewingBranch(null);
+          }}
+          className="p-2 hover:bg-gray-100 rounded-lg transition"
+        >
+          <X size={20} />
+        </button>
+      </div>
+
+      <div className="p-6 space-y-6">
+        {/* Branch Information */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Building2 size={20} />
+            Branch Information
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">Branch Code</label>
+              <p className="text-gray-900 font-medium">{viewingBranch.branchCode}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">Branch Name</label>
+              <p className="text-gray-900 font-medium">{viewingBranch.branchName}</p>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-500 mb-1">Address</label>
+              <p className="text-gray-900">{viewingBranch.address || 'No address provided'}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">City</label>
+              <p className="text-gray-900">{viewingBranch.city || 'N/A'}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">Province</label>
+              <p className="text-gray-900">{viewingBranch.province || 'N/A'}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">Area</label>
+              <p className="text-gray-900">{viewingBranch.area || 'N/A'}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">Region</label>
+              <p className="text-gray-900">{viewingBranch.region || 'N/A'}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Client Information */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Users size={20} />
+            Client Information
+          </h3>
+          {viewingBranch.client ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-1">Client Name</label>
+                <p className="text-gray-900 font-medium">{viewingBranch.client.clientName || 'N/A'}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-1">TIN</label>
+                <p className="text-gray-900">{viewingBranch.client.tin || 'N/A'}</p>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-500 mb-1">Address</label>
+                <p className="text-gray-900">{viewingBranch.client.address || 'No address provided'}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-1">City</label>
+                <p className="text-gray-900">{viewingBranch.client.city || 'N/A'}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-1">Province</label>
+                <p className="text-gray-900">{viewingBranch.client.province || 'N/A'}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+              No client associated with this branch
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex gap-3">
+        <button
+          onClick={() => {
+            setShowBranchViewModal(false);
+            handleEdit(viewingBranch);
+          }}
+          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
+        >
+          <Edit2 size={16} />
+          Edit Branch
+        </button>
+        <button
+          onClick={() => {
+            setShowBranchViewModal(false);
+            setViewingBranch(null);
+          }}
+          className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
       {showClientViewModal && viewingClient && (
   <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
     <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -799,9 +1175,7 @@ if (result.success) {
           <X size={20} />
         </button>
       </div>
-
       <div className="p-6 space-y-6">
-        {/* Client Information */}
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <Users size={20} />
@@ -857,7 +1231,7 @@ if (result.success) {
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Branch Code</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Branch Name</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -877,23 +1251,25 @@ if (result.success) {
                           </div>
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900">{branch.branchName}</td>
-                        <td className="px-4 py-3 text-right">
-                          <button
-                            onClick={async () => {
-                              try {
-                                const fullBranch = await api.get(`/branches/${branch.id}`);
-                                handleEdit(fullBranch);
-                                setShowClientViewModal(false);
-                              } catch (error) {
-                                toast.error('Failed to load branch details');
-                              }
-                            }}
-                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                            title="Edit branch"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                        </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        <div className="max-w-md">
+                          {(() => {
+                            const addressParts = [
+                              branch.address || branch.branchAddress,
+                              branch.city,
+                              branch.province,
+                              branch.area,
+                              branch.region
+                            ].filter(part => part && part.toString().trim() !== '');
+                            
+                            if (addressParts.length > 0) {
+                              return <div>{addressParts.join(', ')}</div>;
+                            } else {
+                              return <div className="text-gray-400 italic">No address provided</div>;
+                            }
+                          })()}
+                        </div>
+                      </td>
                       </tr>
                     ))}
                 </tbody>
@@ -906,6 +1282,7 @@ if (result.success) {
           )}
         </div>
       </div>
+
 
       <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4">
         <button
@@ -923,318 +1300,342 @@ if (result.success) {
   </div>
 )}
 
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">
-                {editingBranch ? 'Edit Branch & Client' : 'Add New Branch & Client'}
-              </h2>
-              <button
-                onClick={() => {
-                  setShowModal(false);
-                  resetForm();
-                }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
-              >
-                <X size={20} />
-              </button>
-            </div>
+{/* Modal */}
+{showModal && (
+  <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <h2 className="text-xl font-bold text-gray-900">
+          {clientMode === 'edit-client-only' ? 'Edit Client' : editingBranch ? 'Edit Branch & Client' : 'Add New Branch & Client'}
+        </h2>
+        <button
+          onClick={() => {
+            setShowModal(false);
+            resetForm();
+          }}
+          className="p-2 hover:bg-gray-100 rounded-lg transition"
+        >
+          <X size={20} />
+        </button>
+      </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              {/* Branch Information */}
+      <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Branch Information - Only show when NOT editing client-only */}
+        {clientMode !== 'edit-client-only' && (
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Building2 size={20} />
+              Branch Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Building2 size={20} />
-                  Branch Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Branch Code <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="branchCode"
-                      value={formData.branchCode}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter branch code"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Branch Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="branchName"
-                      value={formData.branchName}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter branch name"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Address <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="branchAddress"
-                      value={formData.branchAddress}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter street address"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      City <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="branchCity"
-                      value={formData.branchCity}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter city"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Province <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="branchProvince"
-                      value={formData.branchProvince}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter province"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Area <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="area"
-                      value={formData.area}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter area"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Region <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="region"
-                      value={formData.region}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter region"
-                    />
-                  </div>
-                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Branch Code <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="branchCode"
+                  value={formData.branchCode}
+                  onChange={handleInputChange}
+                  required={clientMode !== 'edit-client-only'}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter branch code"
+                />
               </div>
 
-              {/* Client Information */}
-              {/* Client Selection Mode - ADD THIS SECTION */}
-<div>
-  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-    <Users size={20} />
-    Client Information
-  </h3>
-  
-  {/* Toggle between new/existing client */}
-  <div className="mb-4 flex gap-4">
-    <label className="flex items-center gap-2 cursor-pointer">
-      <input
-        type="radio"
-        name="clientMode"
-        value="new"
-        checked={clientMode === 'new'}
-        onChange={() => handleClientModeChange('new')}
-        className="w-4 h-4 text-blue-600"
-      />
-      <span className="text-sm font-medium text-gray-700">Create New Client</span>
-    </label>
-    <label className="flex items-center gap-2 cursor-pointer">
-      <input
-        type="radio"
-        name="clientMode"
-        value="existing"
-        checked={clientMode === 'existing'}
-        onChange={() => handleClientModeChange('existing')}
-        className="w-4 h-4 text-blue-600"
-      />
-      <span className="text-sm font-medium text-gray-700">Use Existing Client</span>
-    </label>
-  </div>
-
-  {/* Existing Client Dropdown - SHOW ONLY IF clientMode === 'existing' */}
-  {clientMode === 'existing' && (
-    <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        Select Existing Client <span className="text-red-500">*</span>
-      </label>
-      <SearchableDropdown
-        options={availableClients}
-        value={formData.existingClientId}
-        onChange={handleExistingClientChange}
-        placeholder="Select an unassigned client"
-        displayKey="displayName"
-        valueKey="id"
-        required={clientMode === 'existing'}
-      />
-      {formData.existingClientId && (
-        <div className="mt-2 flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">
-            ℹ️ This client currently has {availableClients.find(c => c.id === formData.existingClientId)?.branchCount || 0} branch(es). This new branch will be added to the same client.
-          </p>
-        </div>
-      )}
-    </div>
-  )}
-
-  {/* Client form fields - SHOW ONLY IF clientMode === 'new' OR preview for existing */}
-            {(clientMode === 'new' || formData.existingClientId) && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Client Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="clientName"
-                    value={formData.clientName}
-                    onChange={handleInputChange}
-                    required={clientMode === 'new'}
-                    disabled={clientMode === 'existing'}
-                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      clientMode === 'existing' ? 'bg-gray-100' : ''
-                    }`}
-                    placeholder="Enter client name"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    TIN <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="tin"
-                    value={formData.tin}
-                    onChange={handleInputChange}
-                    required={clientMode === 'new'}
-                    disabled={clientMode === 'existing'}
-                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      clientMode === 'existing' ? 'bg-gray-100' : ''
-                    }`}
-                    placeholder="Enter Tax Identification Number"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Address <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="clientAddress"
-                    value={formData.clientAddress}
-                    onChange={handleInputChange}
-                    required={clientMode === 'new'}
-                    disabled={clientMode === 'existing'}
-                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      clientMode === 'existing' ? 'bg-gray-100' : ''
-                    }`}
-                    placeholder="Enter client address"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    City <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="clientCity"
-                    value={formData.clientCity}
-                    onChange={handleInputChange}
-                    required={clientMode === 'new'}
-                    disabled={clientMode === 'existing'}
-                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      clientMode === 'existing' ? 'bg-gray-100' : ''
-                    }`}
-                    placeholder="Enter city"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Province <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="clientProvince"
-                    value={formData.clientProvince}
-                    onChange={handleInputChange}
-                    required={clientMode === 'new'}
-                    disabled={clientMode === 'existing'}
-                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      clientMode === 'existing' ? 'bg-gray-100' : ''
-                    }`}
-                    placeholder="Enter province"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Branch Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="branchName"
+                  value={formData.branchName}
+                  onChange={handleInputChange}
+                  required={clientMode !== 'edit-client-only'}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter branch name"
+                />
               </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Address <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="branchAddress"
+                  value={formData.branchAddress}
+                  onChange={handleInputChange}
+                  required={clientMode !== 'edit-client-only'}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter street address"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  City <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="branchCity"
+                  value={formData.branchCity}
+                  onChange={handleInputChange}
+                  required={clientMode !== 'edit-client-only'}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter city"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Province <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="branchProvince"
+                  value={formData.branchProvince}
+                  onChange={handleInputChange}
+                  required={clientMode !== 'edit-client-only'}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter province"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Area <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="area"
+                  value={formData.area}
+                  onChange={handleInputChange}
+                  required={clientMode !== 'edit-client-only'}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter area"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Region <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="region"
+                  value={formData.region}
+                  onChange={handleInputChange}
+                  required={clientMode !== 'edit-client-only'}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter region"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Client Information */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Users size={20} />
+            Client Information
+            {clientMode === 'view' && (
+              <span className="text-sm font-normal text-blue-600">(Read-Only)</span>
             )}
-          </div>
+          </h3>
+          
+          {/* Show radio buttons only when creating new branch (not editing) */}
+          {!editingBranch && clientMode !== 'edit-client-only' && (
+            <div className="mb-4 flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="clientMode"
+                  value="new"
+                  checked={clientMode === 'new'}
+                  onChange={() => handleClientModeChange('new')}
+                  className="w-4 h-4 text-blue-600"
+                />
+                <span className="text-sm font-medium text-gray-700">Create New Client</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="clientMode"
+                  value="existing"
+                  checked={clientMode === 'existing'}
+                  onChange={() => handleClientModeChange('existing')}
+                  className="w-4 h-4 text-blue-600"
+                />
+                <span className="text-sm font-medium text-gray-700">Use Existing Client</span>
+              </label>
+            </div>
+          )}
 
-              {/* Submit Buttons */}
-              <div className="flex gap-3 pt-4 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    resetForm();
-                  }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                >
-                  {editingBranch ? 'Update Branch & Client' : 'Create Branch & Client'}
-                </button>
+          {/* Info messages */}
+          {clientMode === 'view' && editingBranch && editingClient && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                ℹ️ Editing branch only. Client information is displayed below (read-only). 
+                To edit client details, go to the Clients tab.
+              </p>
+            </div>
+          )}
+
+          {clientMode === 'edit-client-only' && editingClient && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm text-green-800">
+                ✏️ You are editing client <strong>{editingClient.clientName}</strong>.
+                Only client information can be updated.
+              </p>
+            </div>
+          )}
+
+          {/* Existing Client Dropdown */}
+          {clientMode === 'existing' && !editingBranch && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Select Existing Client <span className="text-red-500">*</span>
+              </label>
+              <SearchableDropdown
+                options={availableClients}
+                value={formData.existingClientId}
+                onChange={handleExistingClientChange}
+                placeholder="Select a client"
+                displayKey="displayName"
+                valueKey="id"
+                required={clientMode === 'existing'}
+              />
+            </div>
+          )}
+
+          {/* Show client fields when needed */}
+          {(clientMode === 'new' || clientMode === 'edit' || clientMode === 'edit-client-only' || 
+            (clientMode === 'existing' && formData.existingClientId) || 
+            (clientMode === 'view' && formData.clientName)) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Client Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="clientName"
+                  value={formData.clientName}
+                  onChange={handleInputChange}
+                  required={clientMode !== 'view'}
+                  disabled={clientMode === 'view'}
+                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    clientMode === 'view' ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                  placeholder="Enter client name"
+                />
               </div>
-            </form>
-          </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  TIN <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="tin"
+                  value={formData.tin}
+                  onChange={handleInputChange}
+                  required={clientMode !== 'view'}
+                  disabled={clientMode === 'view'}
+                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    clientMode === 'view' ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                  placeholder="Enter Tax Identification Number"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Address <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="clientAddress"
+                  value={formData.clientAddress}
+                  onChange={handleInputChange}
+                  required={clientMode !== 'view'}
+                  disabled={clientMode === 'view'}
+                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    clientMode === 'view' ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                  placeholder="Enter client address"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  City <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="clientCity"
+                  value={formData.clientCity}
+                  onChange={handleInputChange}
+                  required={clientMode !== 'view'}
+                  disabled={clientMode === 'view'}
+                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    clientMode === 'view' ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                  placeholder="Enter city"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Province <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="clientProvince"
+                  value={formData.clientProvince}
+                  onChange={handleInputChange}
+                  required={clientMode !== 'view'}
+                  disabled={clientMode === 'view'}
+                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    clientMode === 'view' ? 'bg-gray-100 cursor-not-allowed' : ''
+                  }`}
+                  placeholder="Enter province"
+                />
+              </div>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Submit Buttons */}
+        <div className="flex gap-3 pt-4 border-t border-gray-200">
+          <button
+            type="button"
+            onClick={() => {
+              setShowModal(false);
+              resetForm();
+            }}
+            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            {clientMode === 'edit-client-only' 
+              ? 'Update Client' 
+              : editingBranch 
+                ? (clientMode === 'edit' ? 'Update Branch & Client' : 'Update Branch')
+                : 'Create Branch & Client'}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
     </div>
   );
 };

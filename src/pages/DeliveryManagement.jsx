@@ -1563,8 +1563,7 @@ const DeliveryManagement = () => {
   <table className="w-full border-collapse" style={{ minHeight: '175mm' }}>
     <thead>
       <tr className="border-b border-gray-900">
-        <th className="text-left px-3 py-1.5 font-bold text-gray-900 text-xs uppercase tracking-wider" style={{ width: '10%' }}>
-          Quantity
+        <th className="text-left px-3 py-1.5 font-bold text-gray-900 text-xs uppercase tracking-wider" style={{ width: '12%' }}>          Quantity
         </th>
         <th className="text-left px-2 py-1.5 font-bold text-gray-900 text-xs uppercase tracking-wider" style={{ width: '9%' }}>
           Unit
@@ -1596,7 +1595,7 @@ const DeliveryManagement = () => {
       {receiptData.items?.length > 0 ? (
         receiptData.items.map((item, i) => (
           <tr key={i} className="align-top">
-            <td className="px-10 py-1 text-xs font-medium text-gray-900">
+            <td className="px-6 py-1 text-xs font-medium text-gray-900">
               <input 
                 type="text" 
                 readOnly 

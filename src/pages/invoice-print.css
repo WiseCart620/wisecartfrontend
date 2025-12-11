@@ -30,6 +30,14 @@
     page-break-after: avoid;
   }
 
+  /* MAKE TABLE BODY DATA VISIBLE - Keep headers hidden */
+  #invoice-report tbody tr,
+  #invoice-report tbody td,
+  #invoice-report tbody td * {
+    visibility: visible !important;
+    color: black !important;
+  }
+  
   #invoice-report th:nth-child(3) {
     visibility: hidden !important;
     color: transparent !important;
@@ -170,6 +178,3 @@
   }
   
 }
-
-
-
