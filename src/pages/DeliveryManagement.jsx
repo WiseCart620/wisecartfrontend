@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, Trash2, Eye, Check, Filter, X, ChevronDown, ChevronLeft, ChevronRight, Truck, Package, Printer, Warehouse } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Eye, Check, X, ChevronDown, ChevronLeft, ChevronRight, Truck, Package, Printer } from 'lucide-react';
 import { api } from '../services/api';
 import './deliveryReceipt.css';
+
 
 // Searchable Dropdown Component
 const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey, valueKey, required = false }) => {
@@ -104,7 +105,6 @@ const DeliveryManagement = () => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [showFilterModal, setShowFilterModal] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedDelivery, setSelectedDelivery] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -138,39 +138,6 @@ const DeliveryManagement = () => {
     startDate: '',
     endDate: ''
   });
-
-  const handleGenerateReceipt = (delivery) => {
-    try {
-      const receipt = {
-        id: delivery.id,
-        deliveryReceiptNumber: delivery.deliveryReceiptNumber,
-        date: new Date(delivery.date).toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
-        }),
-        branchName: delivery.branchName,
-        clientName: delivery.clientName,
-        clientTin: delivery.client?.tin || 'N/A',
-        branchAddress: `${delivery.branch?.address || ''}, ${delivery.branch?.city || ''}, ${delivery.branch?.province || ''}`.trim(),
-        preparedBy: delivery.preparedBy || 'N/A',
-        purchaseOrderNumber: delivery.purchaseOrderNumber || '',
-        remarks: delivery.remarks || '',
-        items: delivery.items || [],
-        generatedDate: new Date().toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        }),
-      };
-      
-      setReceiptData(receipt);
-      setShowReceiptModal(true);
-    } catch (error) {
-      console.error('Error generating receipt:', error);
-      alert('Failed to generate receipt: ' + error.message);
-    }
-  };
 
   const handleGenerateReceiptFull = async (delivery) => {
     try {
@@ -217,13 +184,6 @@ const DeliveryManagement = () => {
     }
   };
 
-  const formatCurrency = (amount) => {
-    if (amount === null || amount === undefined) return '0.00';
-    return Number(amount).toLocaleString('en-PH', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  };
 
   const loadWarehouseStock = async (warehouseId, productId, itemIndex) => {
     try {
@@ -506,18 +466,34 @@ const DeliveryManagement = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this delivery?')) return;
-    try {
-      await api.delete(`/deliveries/${id}`);
-      alert('Delivery deleted successfully');
-      loadData();
-      if (filteredDeliveries.length % itemsPerPage === 1 && currentPage > 1) {
-        setCurrentPage(currentPage - 1);
-      }
-    } catch (error) {
-      alert('Failed to delete: ' + error.message);
+  if (!window.confirm('Are you sure you want to delete this delivery?')) return;
+  
+  try {
+    const response = await api.delete(`/deliveries/${id}`);
+    
+    // ✅ Check if the response indicates an error
+    if (!response.success) {
+      alert(response.error || 'Failed to delete delivery');
+      return;
     }
-  };
+    
+    alert('Delivery deleted successfully');
+    loadData();
+    if (filteredDeliveries.length % itemsPerPage === 1 && currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  } catch (error) {
+
+    const errorMessage = error.response?.data?.error || 
+                        error.response?.data?.message || 
+                        error.message || 
+                        'Failed to delete delivery';
+
+    alert(errorMessage);
+    
+    console.error('Delete error:', error);
+  }
+};
 
   const handleResetFilter = () => {
     setFilterData({
@@ -654,7 +630,6 @@ const DeliveryManagement = () => {
   };
 
   const branchOptions = branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
-  const clientOptions = clients.map(c => ({ id: c.id, name: c.clientName }));
   const productOptions = products.map(p => ({ id: p.id, name: `${p.productName} (${p.sku || p.upc})` }));
   const warehouseOptions = warehouses.map(w => ({ id: w.id, name: `${w.warehouseName} (${w.warehouseCode})` }));
 
@@ -1454,108 +1429,117 @@ const DeliveryManagement = () => {
           </div>
         </div>
         <div className="grid grid-cols-2 gap-8 mb-4 -mt-4">
-          <div>
-            <div className="mb-3">
-              <div className="flex items-center mb-7">
-                <span className="font-bold text-gray-900 text-sm w-32">DELIVERED TO:</span>
-                <input 
-                  type="text" 
-                  readOnly 
-                  value={`${receiptData.branchName} - ${receiptData.clientName}`}
-                  className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent"
-                />
-              </div>
-            </div>
-            <div className="mb-2">
-              <div className="flex items-center mb-7">
-                <span className="font-bold text-gray-900 text-sm w-32">ADDRESS:</span>
-                <input 
-                  type="text" 
-                  readOnly 
-                  value={receiptData.branchAddress}
-                  className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent"
-                />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center mb-3">
-                <span className="font-bold text-gray-900 text-sm w-32">BUSINESS STYLE:</span>
-                <input 
-                  type="text" 
-                  value={receiptData.businessStyle || ''}
-                  onChange={(e) => setReceiptData({
-                    ...receiptData,
-                    businessStyle: e.target.value
-                  })}
-                  className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 focus:outline-none focus:border-blue-500 bg-transparent print:border-0 print:p-0 print-hidden"
-                />
-                <span className="print-only">{receiptData.businessStyle || ''}</span>
-              </div>
-            </div>
-          </div>
-          
-          <div>
-            <div className="mb-2">
-              <div className="flex items-center mb-7">
-                <span className="font-bold text-gray-900 text-sm w-32">DATE:</span>
-                <input 
-                  type="text" 
-                  readOnly 
-                  value={receiptData.date}
-                  className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent"
-                />
-              </div>
-            </div>
-            <div className="mb-2">
-              <div className="flex items-center mb-7">
-                <span className="font-bold text-gray-900 text-sm w-32">TIN:</span>
-                <input 
-                  type="text" 
-                  readOnly 
-                  value={receiptData.clientTin}
-                  className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent"
-                />
-              </div>
-            </div>
-              <div className="flex items-center gap-4 mb-3">
-                <div className="flex items-center flex-1 min-w-0">
-                  <span className="font-bold text-gray-900 text-sm whitespace-nowrap mr-2">
-                    TERMS OF PAYMENT:
-                  </span>
-                  <input
-                    type="text"
-                    value={receiptData.termsOfPayment || ''}
-                    onChange={(e) => setReceiptData({
-                      ...receiptData,
-                      termsOfPayment: e.target.value
-                    })}
-                    className="flex-1 min-w-0 border-b border-gray-300 text-sm text-gray-900 px-2 focus:outline-none focus:border-blue-500 bg-transparent print:border-0 print:p-0 print-hidden"
-                  />
-                  <span className="print-only flex-1 min-w-0 text-sm text-gray-900 px-2">
-                    {receiptData.termsOfPayment || ''}
-                  </span>
-                </div>
-
-                <div className="flex items-center flex-shrink-0">
-                  <span className="font-bold text-gray-900 text-sm whitespace-nowrap mr-2">
-                    P.O. NUMBER:
-                  </span>
-                  <input 
-                    type="text"
-                    value={receiptData.purchaseOrderNumber || ''}
-                    onChange={(e) => setReceiptData({
-                      ...receiptData,
-                      purchaseOrderNumber: e.target.value
-                    })}
-                    className="w-32 border-b border-gray-300 text-sm text-gray-900 px-2 focus:outline-none focus:border-blue-500 bg-transparent print:border-0 print:p-0 print-hidden"
-                  />
-                  <span className="print-only w-32 text-sm text-gray-900 px-2">
-                    {receiptData.purchaseOrderNumber || ''}
-                  </span>
-                </div>
-              </div>
-          </div>
+  <div>
+    <div className="mb-3">
+      <div className="flex items-start mb-7">
+        <span className="font-bold text-gray-900 text-sm w-32 flex-shrink-0">DELIVERED TO:</span>
+        <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
+          {`${receiptData.branchName} - ${receiptData.clientName}`}
         </div>
+      </div>
+    </div>
+    <div className="mb-2">
+      <div className="flex items-start mb-7">
+        <span className="font-bold text-gray-900 text-sm w-32 flex-shrink-0">ADDRESS:</span>
+        <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
+          {receiptData.branchAddress}
+        </div>
+      </div>
+    </div>
+    <div>
+      <div className="flex items-start mb-3">
+        <span className="font-bold text-gray-900 text-sm w-32 flex-shrink-0">BUSINESS STYLE:</span>
+        <div className="flex-1">
+          <textarea
+            value={receiptData.businessStyle || ''}
+            onChange={(e) => setReceiptData({
+              ...receiptData,
+              businessStyle: e.target.value
+            })}
+            rows={1}
+            className="text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-blue-500 bg-transparent print:hidden break-words resize-none overflow-hidden"
+            style={{ minHeight: '1.5rem' }}
+            onInput={(e) => {
+              e.target.style.height = 'auto';
+              e.target.style.height = e.target.scrollHeight + 'px';
+            }}
+          />
+          <div className="hidden print:block text-black-900 text-sm break-words px-2">{receiptData.businessStyle || ''}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+          
+  <div>
+    <div className="mb-2">
+      <div className="flex items-start mb-7">
+        <span className="font-bold text-gray-900 text-sm w-32 flex-shrink-0">DATE:</span>
+        <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
+          {receiptData.date}
+        </div>
+      </div>
+    </div>
+    <div className="mb-2">
+      <div className="flex items-start mb-7">
+        <span className="font-bold text-gray-900 text-sm w-32 flex-shrink-0">TIN:</span>
+        <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
+          {receiptData.clientTin}
+        </div>
+      </div>
+    </div>
+    <div className="flex items-start gap-4 mb-3">
+  <div className="flex items-start flex-1 min-w-0">
+    <span className="font-bold text-gray-900 text-sm whitespace-nowrap mr-2 flex-shrink-0">
+      TERMS OF PAYMENT:
+    </span>
+    <div className="flex-1" style={{ minWidth: '100px' }}>
+      <textarea
+        value={receiptData.termsOfPayment || ''}
+        onChange={(e) => setReceiptData({
+          ...receiptData,
+          termsOfPayment: e.target.value
+        })}
+        rows={1}
+        className="text-black-900 w-full border-b border-gray-300 text-sm px-2 focus:outline-none focus:border-blue-500 bg-transparent print:hidden resize-none overflow-hidden break-words"
+        style={{ minHeight: '1.5rem', minWidth: '100px' }}
+        onInput={(e) => {
+          e.target.style.height = 'auto';
+          e.target.style.height = e.target.scrollHeight + 'px';
+        }}
+      />
+      <div className="hidden print:block text-black-900 text-sm break-words px-2">
+        {receiptData.termsOfPayment || ''}
+      </div>
+    </div>
+  </div>
+
+  <div className="flex items-start flex-shrink-0">
+    <span className="font-bold text-gray-900 text-sm whitespace-nowrap mr-2">
+      P.O. NUMBER:
+    </span>
+    <div className="w-32">
+      <textarea
+        value={receiptData.purchaseOrderNumber || ''}
+        onChange={(e) => setReceiptData({
+          ...receiptData,
+          purchaseOrderNumber: e.target.value
+        })}
+        rows={1}
+        className="text-black-900 w-full border-b border-gray-300 text-sm px-2 focus:outline-none focus:border-blue-500 bg-transparent print:hidden resize-none overflow-hidden break-words"
+        style={{ minHeight: '1.5rem' }}
+        onInput={(e) => {
+          e.target.style.height = 'auto';
+          e.target.style.height = e.target.scrollHeight + 'px';
+        }}
+      />
+      <div className="hidden print:block text-black-900 text-sm break-words px-2">
+        {receiptData.purchaseOrderNumber || ''}
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</div>
 
 
 {/* Items Table */}

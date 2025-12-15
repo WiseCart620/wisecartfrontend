@@ -2582,7 +2582,7 @@ const handleViewTransaction = async (transaction) => {
                 <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">
                     <div className="flex items-center justify-center gap-1">
                       <ShoppingCart size={14} />
-                      Sales (Confirmed)
+                      Sales
                     </div>
                   </th>
                 <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">
@@ -2611,7 +2611,6 @@ const handleViewTransaction = async (transaction) => {
     </tr>
   ) : (
     currentBranchStocks.map((stock) => {
-      // Calculate total sales (confirmed + invoiced)
       const confirmedSales = stock.confirmedSales || 0;
       const invoicedSales = stock.invoicedSales || 0;
       const totalSales = confirmedSales + invoicedSales;

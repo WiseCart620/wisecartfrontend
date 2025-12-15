@@ -269,17 +269,11 @@
 
   const loadAlerts = async () => {
     try {
-      // Try to get all alerts first
       const alertsRes = await api.get('/alerts');
       
       if (alertsRes.success && alertsRes.data) {
         const allAlerts = alertsRes.data || [];
         
-        console.log('Loaded alerts from /alerts:', {
-          total: allAlerts.length,
-          active: allAlerts.filter(a => !a.isResolved).length,
-          resolved: allAlerts.filter(a => a.isResolved).length
-        });
         
         setAlerts(allAlerts);
         return;
@@ -300,11 +294,6 @@
       
       const allAlerts = [...activeAlerts, ...resolvedAlerts];
       
-      console.log('Loaded alerts from separate endpoints:', {
-        total: allAlerts.length,
-        active: activeAlerts.length,
-        resolved: resolvedAlerts.length
-      });
       
       setAlerts(allAlerts);
     } catch (separateErr) {
@@ -635,10 +624,6 @@
         const clientsData = clientsRes.success ? clientsRes.data || [] : [];
         const branchesData = branchesRes.success ? branchesRes.data || [] : [];
 
-        console.log('📊 Dashboard Data Loaded:');
-        console.log('Total Sales:', salesData.length);
-        console.log('Sales Data Sample:', salesData.slice(0, 3));
-
         setSales(salesData);
         setClients(clientsData);
         setBranches(branchesData);
@@ -758,8 +743,6 @@
         
         return yearMatch && statusMatch && clientMatch && branchMatch;
       });
-
-      console.log(`Filtered Sales for ${selectedYear}:`, filteredSales.length);
 
       filteredSales.forEach(sale => {
         const saleDate = new Date(sale.createdAt || sale.date);
@@ -1914,8 +1897,6 @@ const chartOptions = {
         <div className="flex gap-2">
           <button 
             onClick={() => {
-              // Filter to show only pending sales
-              console.log('Show pending sales');
             }}
             className="flex-1 px-3 py-2 text-xs bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors font-medium"
           >
@@ -1923,8 +1904,6 @@ const chartOptions = {
           </button>
           <button 
             onClick={() => {
-              // Show active sales
-              console.log('Show active sales');
             }}
             className="flex-1 px-3 py-2 text-xs bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors font-medium"
           >
@@ -2123,15 +2102,6 @@ const chartOptions = {
             const tabAlerts = activeTab === 'active' 
               ? alerts.filter(alert => !alert.isResolved)
               : alerts.filter(alert => alert.isResolved);
-            
-            console.log(`Tab ${activeTab}:`, {
-              totalAlerts: alerts.length,
-              tabAlertsCount: tabAlerts.length,
-              activeCount: alerts.filter(a => !a.isResolved).length,
-              resolvedCount: alerts.filter(a => a.isResolved).length,
-              tabAlerts: tabAlerts.slice(0, 3)
-            });
-            
             if (tabAlerts.length === 0) {
               return (
                 <div className="h-full flex flex-col items-center justify-center p-8">
@@ -2441,11 +2411,11 @@ const chartOptions = {
                         const response = await api.delete('/alerts/resolved');
                         if (response.success) {
                           await loadAlerts();
-                          alert(`Deleted ${response.data || 0} resolved alerts`);
+                          toast(`Deleted resolved alerts`);
                         }
                       } catch (err) {
                         console.error('Failed to delete resolved alerts', err);
-                        alert('Failed to delete resolved alerts: ' + err.message);
+                        toast('Failed to delete resolved alerts: ' + err.message);
                       }
                     }
                   }}

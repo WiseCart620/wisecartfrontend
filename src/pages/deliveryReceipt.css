@@ -35,18 +35,16 @@
     page-break-inside: avoid !important;
   }
   
-
   .print-hidden {
     display: none !important;
   }
   
-
   .print-only {
     display: inline !important;
     color: black !important;
   }
   
-
+  /* Make all text transparent by default */
   #delivery-receipt * {
     color: transparent !important;
     border-color: transparent !important;
@@ -54,16 +52,27 @@
     background-color: transparent !important;
   }
   
-
+  /* Make data divs visible (the content areas) */
+  #delivery-receipt div.text-black-900 {
+    color: black !important;
+  }
+  
+  /* Make readonly inputs visible */
   #delivery-receipt input[readonly] {
     color: black !important;
   }
   
-
+  /* Make editable inputs in table cells visible */
   #delivery-receipt td input:not([readonly]) {
     color: black !important;
   }
   
+  /* Make print-only spans visible */
+  #delivery-receipt .print-only {
+    color: black !important;
+  }
+  
+  /* Keep table headers transparent */
   #delivery-receipt thead th {
     color: transparent !important;
   }
@@ -143,13 +152,6 @@
   #delivery-receipt .mt-12 {
     margin-top: 20px !important;
   }
-  #delivery-receipt .print-only {
-    color: black !important;
-  }
-
-
-
-  
 }
 
 @media screen {

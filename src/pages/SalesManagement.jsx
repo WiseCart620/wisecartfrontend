@@ -1413,10 +1413,12 @@ const handleGenerateInvoice = async () => {
                       <div className="flex gap-6">
                         <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                           <input type="checkbox" className="w-6 h-6 border-2 border-gray-900" />
+                          {' '}
                           CASH SALES
                         </label>
                         <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                           <input type="checkbox" className="w-6 h-6 border-2 border-gray-900" />
+                          {' '}
                           CHARGE SALES
                         </label>
                       </div>
@@ -1428,7 +1430,6 @@ const handleGenerateInvoice = async () => {
                       </div>
                     </div>
 
-                {/* Sold To Section - UPDATED WITH REAL DATA */}
                 <div className="border-1 border-gray-900 p-3 mb-1.5" style={{height: '165px'}}>
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center mb-1.5">

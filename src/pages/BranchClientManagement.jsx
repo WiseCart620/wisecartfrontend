@@ -331,11 +331,7 @@ const availableClients = Array.isArray(allClients) ? allClients.map(c => {
 const handleSubmit = async (e) => {
   e.preventDefault();
   
-  // Add debugging
-  console.log('=== FORM SUBMISSION DEBUG ===');
-  console.log('Full formData:', formData);
-  console.log('branchAddress value:', formData.branchAddress);
-  console.log('clientMode:', clientMode);
+
   
   // Client-only edit validation
   if (clientMode === 'edit-client-only') {
@@ -413,9 +409,6 @@ const handleSubmit = async (e) => {
       region: formData.region.trim(),
     };
     
-    console.log('=== PAYLOAD TO SEND ===');
-    console.log('Payload:', payload);
-    console.log('Address in payload:', payload.address);
 
     let result;
 
@@ -448,8 +441,6 @@ const handleSubmit = async (e) => {
         payload.clientProvince = formData.clientProvince.trim();
       }
       
-      console.log('=== FINAL PAYLOAD BEFORE API CALL ===');
-      console.log(JSON.stringify(payload, null, 2));
       
       result = await api.post('/branches/with-client', payload);
     }
