@@ -124,6 +124,7 @@ const ProductManagement = () => {
     materials: '',
     brand: '',
     shelfLife: '',
+    unitCost: '',
     variations: []
   });
 
@@ -387,42 +388,44 @@ const checkSKUAvailability = (sku) => {
 };
 
   const handleEdit = (product) => {
-    setEditingProduct(product);
+  setEditingProduct(product);
 
-    const clientPrice = product.clientPrices?.find(cp => cp.client?.id === product.client?.id)?.price || '';
+  const clientPrice = product.clientPrices?.find(cp => cp.client?.id === product.client?.id)?.price || '';
 
-    setFormData({
-      productName: product.productName || '',
-      upc: product.upc || '',
-      sku: product.sku || '',
-      supplier: product.supplier || '',
-      countryOfOrigin: product.countryOfOrigin || '',
-      clientPrice: clientPrice,
-      clientId: product.client?.id || '',
-      dimensions: product.dimensions || '',
-      weight: product.weight || '',
-      materials: product.materials || '',
-      brand: product.brand || '',
-      shelfLife: product.shelfLife || '',
-      variations: product.variations?.map(v => {
-        const isCustomType = !variationTypes.includes(v.variationType);
+  setFormData({
+    productName: product.productName || '',
+    upc: product.upc || '',
+    sku: product.sku || '',
+    supplier: product.supplier || '',
+    countryOfOrigin: product.countryOfOrigin || '',
+    clientPrice: clientPrice,
+    clientId: product.client?.id || '',
+    dimensions: product.dimensions || '',
+    weight: product.weight || '',
+    materials: product.materials || '',
+    brand: product.brand || '',
+    shelfLife: product.shelfLife || '',
+    unitCost: product.unitCost || '', // Add this
+    variations: product.variations?.map(v => {
+      const isCustomType = !variationTypes.includes(v.variationType);
 
-        const isSizeOrColorCustom = 
-          (v.variationType === 'SIZE' || v.variationType === 'COLOR') &&
-          !['XXS','XS','S','M','L','XL','XXL','XXXL','SMALL','MEDIUM','LARGE',
-            'RED','BLUE','GREEN','YELLOW','BLACK','WHITE','GRAY','BROWN','ORANGE','PURPLE','PINK','BEIGE','NAVY']
-            .includes(v.variationValue.toUpperCase());
+      const isSizeOrColorCustom = 
+        (v.variationType === 'SIZE' || v.variationType === 'COLOR') &&
+        !['XXS','XS','S','M','L','XL','XXL','XXXL','SMALL','MEDIUM','LARGE',
+          'RED','BLUE','GREEN','YELLOW','BLACK','WHITE','GRAY','BROWN','ORANGE','PURPLE','PINK','BEIGE','NAVY']
+          .includes(v.variationValue.toUpperCase());
 
-        return {
-          variationType: isCustomType ? 'OTHER' : v.variationType,
-          variationValue: isCustomType || isSizeOrColorCustom ? 'CUSTOM' : v.variationValue,
-          customType: isCustomType ? v.variationType : '',
-          customValue: isSizeOrColorCustom ? v.variationValue : ''
-        };
-      }) || []
-    });
-    setShowModal(true);
-  };
+      return {
+        variationType: isCustomType ? 'OTHER' : v.variationType,
+        variationValue: isCustomType || isSizeOrColorCustom ? 'CUSTOM' : v.variationValue,
+        customType: isCustomType ? v.variationType : '',
+        customValue: isSizeOrColorCustom ? v.variationValue : ''
+      };
+    }) || []
+  });
+  setShowModal(true);
+};
+
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
@@ -454,6 +457,7 @@ const checkSKUAvailability = (sku) => {
       weight: '',
       materials: '',
       brand: '',
+      unitCost: '',
       shelfLife: '',
       variations: []
     });
@@ -544,16 +548,17 @@ const checkSKUAvailability = (sku) => {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">UPC</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client Price</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">UPC</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Cost</th> {/* Add this */}
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client Price</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                </tr>
+              </thead>
             <tbody className="divide-y divide-gray-200">
               {currentProducts.length === 0 ? (
                 <tr>
@@ -585,6 +590,11 @@ const checkSKUAvailability = (sku) => {
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">{product.sku}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{product.upc || '-'}</td>
+                      <td className="px-6 py-4 text-sm font-medium text-green-600"> {/* Add this cell */}
+                          {product.unitCost != null 
+                            ? `₱${Number(product.unitCost).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+                            : '-'}
+                        </td>
                       <td className="px-6 py-4 text-sm font-medium text-blue-600">
                         {clientPrice != null ? `₱${Number(clientPrice).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
                       </td>
@@ -970,7 +980,7 @@ const checkSKUAvailability = (sku) => {
                     </label>
                     <input
                       type="number"
-                      value={formData.price || ''}
+                      value={formData.unitCost || ''}
                       disabled
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
                       placeholder="Calculated from supplier orders"
