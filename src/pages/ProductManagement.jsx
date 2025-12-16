@@ -2,14 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Plus, Edit2, Trash2, Search, X, Package, DollarSign, Tag, Globe, User, Box, 
   Weight, Ruler, Palette, ChevronDown, ChevronLeft, ChevronRight, 
-  Check, AlertCircle  // Add these
+  Check, AlertCircle
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
-
-// Import your actual API from services
 import { api } from '../services/api';
 
-// Searchable Dropdown Component (same as SalesManagement)
+
 const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey, valueKey, required = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -119,7 +117,6 @@ const ProductManagement = () => {
     sku: '',
     supplier: '',
     countryOfOrigin: '',
-    price: '',
     clientPrice: '',
     clientId: '',
     dimensions: '',
@@ -130,7 +127,7 @@ const ProductManagement = () => {
     variations: []
   });
 
-  // Pagination state
+
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
@@ -215,25 +212,18 @@ const ProductManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validation
-    if (!formData.productName || !formData.sku || !formData.price) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
 
-    if (formData.price <= 0) {
-      toast.error('Price must be greater than 0');
-      return;
-    }
+  if (!formData.productName || !formData.sku) {
+    toast.error('Please fill in all required fields');
+    return;
+  }
 
-    // Validate client price if provided
     if (formData.clientPrice && formData.clientPrice <= 0) {
       toast.error('Client price must be greater than 0');
       return;
     }
 
-    // Validate that client is selected if client price is provided
+
     if (formData.clientPrice && !formData.clientId) {
       toast.error('Please select a client when setting a client price');
       return;
@@ -266,7 +256,6 @@ const ProductManagement = () => {
     }
 
     try {
-      // Inside handleSubmit → before payload
       const normalizedVariations = formData.variations
         .map(v => {
           if (!v.variationValue?.trim()) return null;
@@ -274,13 +263,13 @@ const ProductManagement = () => {
           let finalType = v.variationType;
           let finalValue = v.variationValue.trim();
 
-          // SIZE or COLOR with CUSTOM → use customValue
+
           if ((v.variationType === 'SIZE' || v.variationType === 'COLOR') && v.variationValue === 'CUSTOM') {
             if (!v.customValue?.trim()) return null;
             finalValue = v.customValue.trim();
           }
 
-          // OTHER → use the actual typed name (customType)
+
           if (v.variationType === 'OTHER' && v.customType?.trim()) {
             finalType = v.customType.trim();
           }
@@ -298,7 +287,6 @@ const ProductManagement = () => {
         sku: formData.sku,
         supplier: formData.supplier || null,
         countryOfOrigin: formData.countryOfOrigin || null,
-        price: parseFloat(formData.price), // This is the base/own price
         weight: formData.weight ? parseFloat(formData.weight) : null,
         clientId: formData.clientId || null,
         dimensions: formData.dimensions || null,
@@ -308,8 +296,11 @@ const ProductManagement = () => {
         variations: normalizedVariations
       };
 
-      // Add client-specific price only if both client and clientPrice are provided
-      // This will be stored in ClientProductPrice table
+      if (formData.clientId && formData.clientPrice) {
+        payload.clientPrice = parseFloat(formData.clientPrice);
+      }
+
+
       if (formData.clientId && formData.clientPrice) {
         payload.clientPrice = parseFloat(formData.clientPrice);
       }
@@ -321,12 +312,12 @@ const ProductManagement = () => {
         response = await api.post('/products', payload);
       }
 
-      // Check if the API call was successful
+
       if (!response.success) {
-        // Handle specific error messages from backend
+
         const errorMessage = response.error || 'Failed to save product';
         
-        // Check for UPC duplicate error
+
         if (errorMessage.toLowerCase().includes('upc') || 
             errorMessage.toLowerCase().includes('duplicate') ||
             errorMessage.toLowerCase().includes('already exists')) {
@@ -337,18 +328,17 @@ const ProductManagement = () => {
         return;
       }
 
-      // Only show success if no error
+
       toast.success(editingProduct ? 'Product updated successfully' : 'Product created successfully');
       
       setShowModal(false);
       resetForm();
       loadData();
-      setCurrentPage(1); // Reset to first page after adding/editing
+      setCurrentPage(1);
     } catch (error) {
-      // Handle network errors or unexpected errors
+
       console.error('Error saving product:', error);
       
-      // Check for specific error patterns
       const errorMessage = error.message || 'Failed to save product';
       
       if (errorMessage.toLowerCase().includes('upc') || 
@@ -407,7 +397,6 @@ const checkSKUAvailability = (sku) => {
       sku: product.sku || '',
       supplier: product.supplier || '',
       countryOfOrigin: product.countryOfOrigin || '',
-      price: product.price || '',
       clientPrice: clientPrice,
       clientId: product.client?.id || '',
       dimensions: product.dimensions || '',
@@ -416,10 +405,8 @@ const checkSKUAvailability = (sku) => {
       brand: product.brand || '',
       shelfLife: product.shelfLife || '',
       variations: product.variations?.map(v => {
-        // CASE 1: Custom type (Pattern, Scent, etc.)
         const isCustomType = !variationTypes.includes(v.variationType);
 
-        // CASE 2: SIZE or COLOR with custom value (not in predefined list)
         const isSizeOrColorCustom = 
           (v.variationType === 'SIZE' || v.variationType === 'COLOR') &&
           !['XXS','XS','S','M','L','XL','XXL','XXXL','SMALL','MEDIUM','LARGE',
@@ -461,7 +448,6 @@ const checkSKUAvailability = (sku) => {
       sku: '',
       supplier: '',
       countryOfOrigin: '',
-      price: '',
       clientPrice: '',
       clientId: '',
       dimensions: '',
@@ -469,7 +455,7 @@ const checkSKUAvailability = (sku) => {
       materials: '',
       brand: '',
       shelfLife: '',
-      variations: []  // ← empty array of the correct shape
+      variations: []
     });
     setEditingProduct(null);
   };
@@ -562,7 +548,6 @@ const checkSKUAvailability = (sku) => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">UPC</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client Price</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
@@ -578,7 +563,13 @@ const checkSKUAvailability = (sku) => {
                 </tr>
               ) : (
                 currentProducts.map((product) => {
-                  const clientPrice = product.clientPrices?.find(cp => cp.client?.id === product.client?.id)?.price;
+                  // Calculate client price with better null checking
+                  let clientPrice = null;
+                  if (product.client?.id && Array.isArray(product.clientPrices) && product.clientPrices.length > 0) {
+                    const priceEntry = product.clientPrices.find(cp => cp.client?.id === product.client.id);
+                    clientPrice = priceEntry?.price;
+                  }
+                  
                   return (
                     <tr key={product.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
@@ -594,11 +585,8 @@ const checkSKUAvailability = (sku) => {
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">{product.sku}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{product.upc || '-'}</td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                        ₱{product.price?.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                      </td>
                       <td className="px-6 py-4 text-sm font-medium text-blue-600">
-                        {clientPrice ? `₱${clientPrice.toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '-'}
+                        {clientPrice != null ? `₱${Number(clientPrice).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">{product.supplier || '-'}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{product.client?.clientName || '-'}</td>
@@ -825,24 +813,6 @@ const checkSKUAvailability = (sku) => {
                     </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Price (₱) <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleInputChange}
-                      required
-                      min="0.01"
-                      step="0.01"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="0.00"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Own/Base price for this product</p>
-                  </div>
-
-                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
                     <input
                       type="text"
@@ -992,6 +962,20 @@ const checkSKUAvailability = (sku) => {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Enter materials"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Unit Cost (₱)
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.price || ''}
+                      disabled
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+                      placeholder="Calculated from supplier orders"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Automatically calculated when supplier order status is OK</p>
                   </div>
                 </div>
               </div>

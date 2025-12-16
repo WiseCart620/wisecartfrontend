@@ -115,12 +115,23 @@ const handleResponse = async (response) => {
     };
   }
   
+  // Try to parse 201 as JSON first
   if (response.status === 201) {
-    return {
-      success: true,
-      data: null,
-      status: 201
-    };
+    try {
+      const data = await response.json();
+      return {
+        success: true,
+        data: data,
+        status: 201
+      };
+    } catch (e) {
+      // If response body is empty
+      return {
+        success: true,
+        data: null,
+        status: 201
+      };
+    }
   }
   
   const textData = await response.text();

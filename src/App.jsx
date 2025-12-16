@@ -10,6 +10,7 @@ import SalesManagement from './pages/SalesManagement';
 import ProductManagement from './pages/ProductManagement';
 import BranchClientManagement from './pages/BranchClientManagement';
 import WarehouseInventory from './pages/InventoryRecord';
+import Supplier from './pages/SupplierInventoryManagement';
 import NotFound from './pages/NotFound';
 import Layout from './components/layout/Layout';
 import { AuthProvider, AuthLoading, ProtectedRoute, AdminRoute } from './context/AuthContext';
@@ -31,6 +32,16 @@ function App() {
                 </Layout>
               </ProtectedRoute>
             } />
+
+
+            <Route path="/supplier" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Supplier />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            
 
             <Route path="/deliveries" element={
               <ProtectedRoute>

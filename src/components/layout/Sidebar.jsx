@@ -10,6 +10,7 @@ const mainMenuItems = [
   { to: '/deliveries', label: 'Deliveries', icon: Truck },
   { to: '/warehouseinventory', label: 'Warehouse Inventory', icon: PackageOpen },
   { to: '/inventory', label: 'Inventory', icon: PackageSearch },
+  { to: '/supplier', label: 'Supplier', icon: PackageSearch },
 ];
 
 const dataEntryItems = [
