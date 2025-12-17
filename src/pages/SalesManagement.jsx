@@ -3,6 +3,7 @@ import './invoice-print.css';
 import { api } from '../services/api';
 import toast, { Toaster } from 'react-hot-toast';
 import { Search, Plus, Edit2, Trash2, Eye, FileText, Check, Filter, X, Printer, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import './sales-memo-print.css';
 
 const formatCurrency = (amount) => {
   if (amount === null || amount === undefined) return '0.00';
@@ -10,6 +11,38 @@ const formatCurrency = (amount) => {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+};
+
+
+const formatDate = (dateString) => {
+  if (!dateString) return new Date().toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+  
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+    }
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return new Date().toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  }
 };
 
 // Searchable Dropdown Component
@@ -128,6 +161,8 @@ const SalesManagement = () => {
   const [productSummaries, setProductSummaries] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [showSalesMemoModal, setShowSalesMemoModal] = useState(false);
+  const [salesMemo, setSalesMemo] = useState(null);
 
   const [formData, setFormData] = useState({
     branchId: '',
@@ -329,171 +364,268 @@ const SalesManagement = () => {
     setFormData({ ...formData, items: newItems });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.branchId || formData.items.length === 0) {
-      alert('Please select a branch and add items');
-      return;
-    }
-    try {
-      if (modalMode === 'create') {
-        await api.post('/sales', formData);
-        alert('Sale created successfully!');
-      } else {
-        await api.put(`/sales/${selectedSale.id}`, formData);
-        alert('Sale updated successfully!');
-      }
-      handleCloseModal();
-      loadData();
-      setCurrentPage(1);
-    } catch (error) {
-      alert('Failed to save sale: ' + error.message);
-    }
-  };
 
-  const handleDelete = async (id) => {
-    const sale = sales.find(s => s.id === id);
-    
-    if (!sale) {
-      alert('Sale not found');
-      return;
-    }
 
-    let confirmMessage = 'Are you sure you want to delete this sale?';
-    if (sale.status === 'CONFIRMED') {
-      confirmMessage = 'This sale is CONFIRMED. Deleting it will return the stock to the branch. Are you sure?';
-    } else if (sale.status === 'INVOICED') {
-      confirmMessage = 'This sale is INVOICED. Deleting it will return the stock to the branch. Are you sure?';
-    } else if (sale.status === 'PENDING') {
-      confirmMessage = 'This sale is PENDING. Deleting it will release the reserved stock. Are you sure?';
-    }
-
-    if (!window.confirm(confirmMessage)) return;
-    
-    try {
-      await api.delete(`/sales/${id}`);
-      alert('Sale deleted successfully. Inventory has been adjusted.');
-      loadData();
-      if (filteredSales.length % itemsPerPage === 1 && currentPage > 1) {
-        setCurrentPage(currentPage - 1);
-      }
-    } catch (error) {
-      alert('Failed to delete: ' + error.message);
-    }
-  };
-
-  const handleUpdateStatus = async (id, status) => {
-    try {
-      const generatedBy = localStorage.getItem('fullName') || 'System';
-      const url = `/sales/${id}/status?status=${status}&generatedBy=${encodeURIComponent(generatedBy)}`;
-
-      await api.put(url, null);
-      await loadData();
-      
-      if (status === 'CONFIRMED') {
-        alert('Sale confirmed! Stock has been deducted from branch inventory.');
-      } else if (status === 'INVOICED') {
-        alert('Sale marked as INVOICED! Ready for invoice generation.');
-      } else {
-        alert(`Sale status updated to ${status}!`);
-      }
-    } catch (err) {
-      alert('Error updating status: ' + (err.message || 'Unknown error'));
-      console.error('Status update error:', err);
-    }
-  };
-
-  const getStatusColor = (status) => {
-    if (status === 'INVOICED') return 'bg-green-100 text-green-800';
-    if (status === 'CONFIRMED') return 'bg-blue-100 text-blue-800';
-    return 'bg-yellow-100 text-yellow-800';
-  };
-
-  const handleFilterSales = async () => {
-    try {
-      const filtered = await api.post('/sales/filter', filterData);
-      if (filtered.success) {
-        setSales(filtered.data || []);
-        setShowFilterModal(false);
-        setCurrentPage(1);
-        alert(`Found ${filtered.data?.length || 0} sales`);
-      }
-    } catch (error) {
-      alert('Filter failed: ' + error.message);
-    }
-  };
-
-  // Replace your handleGenerateInvoice function with this:
-
-const handleGenerateInvoice = async () => {
+  const handleGenerateSalesMemo = async () => {
   if (!filterData.clientId) {
-    toast.error('Please select a client first');
+    toast.error('Please select a client first', { duration: 4000 });
     return;
   }
-  
+
+  toast.loading('Generating Sales Memo...', { id: 'sales-memo-loading' });
+
   try {
-    const generatedBy = localStorage.getItem('fullName') || 'System';
     
-    const response = await api.post('/sales/invoice/generate', {
-      ...filterData,
-      generatedBy: generatedBy
-    });
+    const response = await api.post('/sales/sales-memo/generate', filterData);
+      
+    toast.dismiss('sales-memo-loading');
     
     if (response.success) {
-      response.data.adjustments = response.data.adjustments || [];
-      setInvoiceReport(response.data);
-      setShowInvoiceModal(false);
+      const memoData = response.data?.data || response.data;
       
-      let successMessage = `✅ Invoice generated successfully!\n\n`;
-      successMessage += `Generated by: ${generatedBy}\n`;
-      successMessage += `Total Sales in Report: ${response.data.totalSalesCount || 0}\n`;
-      
-      if (response.data.newlyInvoicedCount > 0) {
-        successMessage += `Newly Marked as INVOICED: ${response.data.newlyInvoicedCount}\n`;
+      if (!memoData.products || memoData.products.length === 0) {
+        toast.error(
+          'No sales data found for the selected criteria.\n\n' +
+          'Please ensure:\n' +
+          '• Sales exist for the selected client\n' +
+          '• Sales are CONFIRMED or INVOICED\n' +
+          '• Date range includes sales data',
+          { duration: 6000 }
+        );
+        return;
       }
+
+      memoData.adjustments = memoData.adjustments || [];
       
-      successMessage += `Total Amount: ₱${formatCurrency(response.data.totalSalesVatInclusive || 0)}\n\n`;
-      successMessage += `Note: Only CONFIRMED and INVOICED sales are included in invoice generation.`;
+      setSalesMemo(memoData);
+      setShowSalesMemoModal(false);
       
-      toast.success(successMessage, { duration: 5000 });
-      await loadData();
+      toast.success(
+        `Sales Memo generated successfully!\n\n` +
+        `Products: ${memoData.products.length}\n` +
+        `Date: ${formatDate(memoData.generatedAt)}`,
+        { duration: 4000 }
+      );
+      
+      console.log('Sales memo set successfully:', memoData);
     } else {
-      // Handle unsuccessful response
-      toast.error(response.message || 'Failed to generate invoice', { duration: 5000 });
+      toast.error(response.message || 'Failed to generate sales memo', { duration: 5000 });
     }
   } catch (error) {
-    console.error('Invoice generation error:', error);
+    toast.dismiss('sales-memo-loading');
     
-    // Extract the actual error message from the response
-    let errorMessage = 'Failed to generate invoice';
+    console.error('Sales memo generation error:', error);
+    
+    let errorMessage = 'Failed to generate sales memo';
     
     if (error.response && error.response.data) {
-      // If backend sent a string message
       if (typeof error.response.data === 'string') {
         errorMessage = error.response.data;
-      }
-      // If backend sent an object with message property
-      else if (error.response.data.message) {
+      } else if (error.response.data.message) {
         errorMessage = error.response.data.message;
       }
     } else if (error.message) {
       errorMessage = error.message;
     }
     
-    // Show appropriate error message
-    if (errorMessage.includes('No sales found')) {
-      toast.error(
-        'Cannot generate invoice:\n\n' + 
-        'No CONFIRMED or INVOICED sales found for the selected criteria.\n' +
-        'Please confirm sales first before generating invoices.',
-        { duration: 6000 }
-      );
-    } else {
-      toast.error(errorMessage, { duration: 5000 });
-    }
+    toast.error(errorMessage, { duration: 5000 });
   }
 };
 
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!formData.branchId) {
+    toast.error('Please select a branch');
+    return;
+  }
+  
+  if (!formData.items || formData.items.length === 0) {
+    toast.error('Please add at least one item');
+    return;
+  }
+  
+  // Validate all items have products and quantities
+  for (const item of formData.items) {
+    if (!item.productId || !item.quantity || item.quantity <= 0) {
+      toast.error('All items must have a product and quantity greater than 0');
+      return;
+    }
+  }
+  
+  try {
+    if (modalMode === 'create') {
+      const response = await api.post('/sales', formData);
+      if (response.success) {
+        toast.success('Sale created successfully!');
+        handleCloseModal();
+        loadData();
+      } else {
+        toast.error(response.message || 'Failed to create sale');
+      }
+    } else if (modalMode === 'edit') {
+      const response = await api.put(`/sales/${selectedSale.id}`, formData);
+      if (response.success) {
+        toast.success('Sale updated successfully!');
+        handleCloseModal();
+        loadData();
+      } else {
+        toast.error(response.message || 'Failed to update sale');
+      }
+    }
+  } catch (error) {
+    console.error('Error saving sale:', error);
+    const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to save sale';
+    toast.error(errorMessage);
+  }
+};
+
+const handleFilterSales = async () => {
+  try {
+    const response = await api.post('/sales/filter', filterData);
+    if (response.success) {
+      setSales(response.data || []);
+      setShowFilterModal(false);
+      toast.success(`Found ${response.data.length} sales`);
+      setCurrentPage(1);
+    } else {
+      toast.error('Failed to filter sales');
+    }
+  } catch (error) {
+    console.error('Error filtering sales:', error);
+    toast.error('Failed to filter sales');
+  }
+};
+
+const handleGenerateInvoice = async () => {
+  if (!filterData.clientId) {
+    toast.error('Please select a client first', { duration: 4000 });
+    return;
+  }
+
+  toast.loading('Generating Invoice...', { id: 'invoice-loading' });
+
+  try {
+    const response = await api.post('/sales/invoice/generate', filterData);
+    
+    toast.dismiss('invoice-loading');
+    
+    if (response.success || response.data) {
+      const invoiceData = response.data || response;
+      
+      if (!invoiceData.products || invoiceData.products.length === 0) {
+        toast.error(
+          'No sales data found for invoice generation.\n\n' +
+          'Please ensure:\n' +
+          '• Sales exist for the selected client\n' +
+          '• Sales are CONFIRMED or INVOICED\n' +
+          '• Date range includes sales data',
+          { duration: 6000 }
+        );
+        return;
+      }
+
+      // Initialize adjustments array if not present
+      invoiceData.adjustments = invoiceData.adjustments || [];
+      
+      setInvoiceReport(invoiceData);
+      setShowInvoiceModal(false);
+      
+      toast.success(
+        `Invoice generated successfully!\n\n` +
+        `Products: ${invoiceData.products.length}\n` +
+        `Total: ₱${formatCurrency(invoiceData.totalSalesVatInclusive)}\n` +
+        `Date: ${formatDate(invoiceData.generatedAt)}`,
+        { duration: 4000 }
+      );
+      
+      // Reload sales data to reflect any status changes
+      loadData();
+    } else {
+      toast.error('Failed to generate invoice', { duration: 5000 });
+    }
+  } catch (error) {
+    toast.dismiss('invoice-loading');
+    console.error('Invoice generation error:', error);
+    
+    const errorMessage = error.response?.data?.message || 
+                        error.response?.data || 
+                        error.message || 
+                        'Failed to generate invoice';
+    
+    toast.error(errorMessage, { duration: 5000 });
+  }
+};
+
+const handleUpdateStatus = async (saleId, newStatus) => {
+  const statusLabels = {
+    'CONFIRMED': 'confirm',
+    'INVOICED': 'invoice'
+  };
+  
+  const action = statusLabels[newStatus] || newStatus.toLowerCase();
+  
+  if (!window.confirm(`Are you sure you want to ${action} this sale?`)) {
+    return;
+  }
+  
+  try {
+    const response = await api.put(`/sales/${saleId}/status?status=${newStatus}`);
+    
+    if (response.success || response.data) {
+      toast.success(`Sale ${action}ed successfully!`);
+      loadData();
+    } else {
+      toast.error(`Failed to ${action} sale`);
+    }
+  } catch (error) {
+    console.error(`Error updating sale status:`, error);
+    const errorMessage = error.response?.data?.error || 
+                        error.response?.data?.message || 
+                        error.response?.data || 
+                        error.message || 
+                        `Failed to ${action} sale`;
+    toast.error(errorMessage);
+  }
+};
+
+
+
+const handleDelete = async (saleId) => {
+  if (!window.confirm('Are you sure you want to delete this sale? This action cannot be undone.')) {
+    return;
+  }
+  
+  try {
+    const response = await api.delete(`/sales/${saleId}`);
+    
+    if (response.success || response.data?.message) {
+      toast.success('Sale deleted successfully!');
+
+      loadData();
+
+      try {
+        const branchStocksRes = await api.get('/stocks/branches');
+        if (branchStocksRes.success) {
+          setBranchStocks(branchStocksRes.data || []);
+        }
+      } catch (refreshErr) {
+        console.warn('Could not refresh branch stocks:', refreshErr);
+      }
+    } else {
+      toast.error('Failed to delete sale');
+    }
+  } catch (error) {
+    console.error('Error deleting sale:', error);
+    const errorMessage = error.response?.data?.error || 
+                        error.response?.data?.message || 
+                        error.response?.data || 
+                        error.message || 
+                        'Failed to delete sale';
+    toast.error(errorMessage);
+  }
+};
 
 
   const handleResetFilter = () => {
@@ -623,6 +755,14 @@ const handleGenerateInvoice = async () => {
                 >
                   <FileText size={20} /> 
                   <span>Generate Invoice</span>
+                </button>
+
+                <button 
+                  onClick={() => setShowSalesMemoModal(true)} 
+                  className="flex items-center gap-3 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-md"
+                >
+                  <FileText size={20} /> 
+                  <span>Generate Sales Memo</span>
                 </button>
               </div>
 
@@ -1425,7 +1565,7 @@ const handleGenerateInvoice = async () => {
                       <div className="text-right">
                         <div className="text-black-900">
                           <span className="print-hidden">DATE: </span>
-                          <span className="print-visible">{new Date(invoiceReport.generatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                          <span className="print-visible">{formatDate(invoiceReport.generatedAt)}</span>
                         </div>
                       </div>
                     </div>
@@ -1741,7 +1881,312 @@ const handleGenerateInvoice = async () => {
                 </div>
               </div>
             )}
+
+
+
+            {/* Sales Memo Modal */}
+            {salesMemo && (
+              <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+                <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
+                  <div className="p-8 border-b border-gray-200 flex justify-between items-center print:hidden">
+                    <h2 className="text-2xl font-bold text-gray-900">Sales Memo</h2>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => {
+                          const newAdj = [...(salesMemo.adjustments || []), { description: '', quantity: 1, unitCost: 0, amount: 0 }];
+                          setSalesMemo({ ...salesMemo, adjustments: newAdj });
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                      >
+                        <Plus size={18} />
+                        Add Adjustment
+                      </button>
+                      <button 
+                        onClick={() => window.print()} 
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                      >
+                        <Printer size={18} />
+                        Print
+                      </button>
+                      <button 
+                        onClick={() => setSalesMemo(null)} 
+                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                      >
+                        <X size={24} />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div id="sales-memo" className="p-8">
+                    {/* Header */}
+                    <div className="text-center mb-6">
+                      <h1 className="text-3xl font-bold">SALES MEMO</h1>
+                      <p className="text-sm text-gray-600">
+                        {formatDate(salesMemo.generatedAt)}
+                      </p>
+                    </div>
+
+                    {/* Customer Info */}
+                    <div className="mb-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="font-bold">Customer:</label>
+                          <p>{salesMemo.soldTo}</p>
+                        </div>
+                        <div>
+                          <label className="font-bold">Address:</label>
+                          <p>{salesMemo.businessAddress}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Products Table */}
+                    <table className="w-full border-collapse border border-gray-300 mb-6">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="border border-gray-300 px-4 py-2 text-left">Description</th>
+                          <th className="border border-gray-300 px-4 py-2 text-right">Qty</th>
+                          <th className="border border-gray-300 px-4 py-2 text-right">Price</th>
+                          <th className="border border-gray-300 px-4 py-2 text-right">Unit Cost</th>
+                          <th className="border border-gray-300 px-4 py-2 text-right">Cost of Sales</th>
+                          <th className="border border-gray-300 px-4 py-2 text-right">Sales</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {salesMemo.products.map((product, i) => (
+                          <tr key={i}>
+                            <td className="border border-gray-300 px-4 py-2">{product.description}</td>
+                            <td className="border border-gray-300 px-4 py-2 text-right">{product.quantity}</td>
+                            <td className="border border-gray-300 px-4 py-2 text-right">₱{formatCurrency(product.price)}</td>
+                            <td className="border border-gray-300 px-4 py-2 text-right">₱{formatCurrency(product.unitCost)}</td>
+                            <td className="border border-gray-300 px-4 py-2 text-right">₱{formatCurrency(product.costOfSales)}</td>
+                            <td className="border border-gray-300 px-4 py-2 text-right">₱{formatCurrency(product.sales)}</td>
+                          </tr>
+                        ))}
+                        
+                        {/* Adjustments */}
+                        {salesMemo.adjustments && salesMemo.adjustments.map((adj, i) => (
+                          <tr key={`adj-${i}`}>
+                            <td className="border border-gray-300 px-4 py-2">
+                              <input
+                                type="text"
+                                value={adj.description}
+                                onChange={(e) => {
+                                  const newAdj = [...salesMemo.adjustments];
+                                  newAdj[i].description = e.target.value;
+                                  setSalesMemo({ ...salesMemo, adjustments: newAdj });
+                                }}
+                                className="w-full print:border-0"
+                                placeholder="Adjustment..."
+                              />
+                            </td>
+                            <td className="border border-gray-300 px-4 py-2">
+                              <input
+                                type="number"
+                                value={adj.quantity}
+                                onChange={(e) => {
+                                  const newAdj = [...salesMemo.adjustments];
+                                  newAdj[i].quantity = parseFloat(e.target.value) || 0;
+                                  newAdj[i].costOfSales = newAdj[i].quantity * newAdj[i].unitCost;
+                                  newAdj[i].sales = newAdj[i].quantity * newAdj[i].price;
+                                  setSalesMemo({ ...salesMemo, adjustments: newAdj });
+                                }}
+                                className="w-full text-right print:border-0"
+                              />
+                            </td>
+                            <td className="border border-gray-300 px-4 py-2">
+                              <input
+                                type="number"
+                                value={adj.price || 0}
+                                onChange={(e) => {
+                                  const newAdj = [...salesMemo.adjustments];
+                                  newAdj[i].price = parseFloat(e.target.value) || 0;
+                                  newAdj[i].sales = newAdj[i].quantity * newAdj[i].price;
+                                  setSalesMemo({ ...salesMemo, adjustments: newAdj });
+                                }}
+                                className="w-full text-right print:border-0"
+                              />
+                            </td>
+                            <td className="border border-gray-300 px-4 py-2">
+                              <input
+                                type="number"
+                                value={adj.unitCost || 0}
+                                onChange={(e) => {
+                                  const newAdj = [...salesMemo.adjustments];
+                                  newAdj[i].unitCost = parseFloat(e.target.value) || 0;
+                                  newAdj[i].costOfSales = newAdj[i].quantity * newAdj[i].unitCost;
+                                  setSalesMemo({ ...salesMemo, adjustments: newAdj });
+                                }}
+                                className="w-full text-right print:border-0"
+                              />
+                            </td>
+                            <td className="border border-gray-300 px-4 py-2 text-right">
+                              ₱{formatCurrency(adj.costOfSales || 0)}
+                            </td>
+                            <td className="border border-gray-300 px-4 py-2 text-right">
+                              ₱{formatCurrency(adj.sales || 0)}
+                              <button
+                                onClick={() => {
+                                  const newAdj = salesMemo.adjustments.filter((_, idx) => idx !== i);
+                                  setSalesMemo({ ...salesMemo, adjustments: newAdj });
+                                }}
+                                className="print:hidden ml-2 text-red-600"
+                              >
+                                <X size={16} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot className="bg-gray-50 font-bold">
+                        <tr>
+                          <td colSpan="4" className="border border-gray-300 px-4 py-2 text-right">SUBTOTAL:</td>
+                          <td className="border border-gray-300 px-4 py-2 text-right">
+                            ₱{formatCurrency(
+                              salesMemo.products.reduce((sum, p) => sum + p.costOfSales, 0) +
+                              (salesMemo.adjustments || []).reduce((sum, a) => sum + (a.costOfSales || 0), 0)
+                            )}
+                          </td>
+                          <td className="border border-gray-300 px-4 py-2 text-right">
+                            ₱{formatCurrency(
+                              salesMemo.products.reduce((sum, p) => sum + p.sales, 0) +
+                              (salesMemo.adjustments || []).reduce((sum, a) => sum + (a.sales || 0), 0)
+                            )}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+
+                    {/* Tax Calculations */}
+                    <div className="grid grid-cols-2 gap-8">
+                      <div></div>
+                      <div className="space-y-2">
+                        {(() => {
+                          const subtotal = salesMemo.products.reduce((sum, p) => sum + p.sales, 0) +
+                                          (salesMemo.adjustments || []).reduce((sum, a) => sum + (a.sales || 0), 0);
+                          const vatableSales = subtotal / 1.12;
+                          const vat = vatableSales * 0.12;
+                          const withholdingTax = vatableSales * 0.01;
+                          const total = subtotal - withholdingTax;
+                          
+                          return (
+                            <>
+                              <div className="flex justify-between">
+                                <span>Vatable Sales:</span>
+                                <span>₱{formatCurrency(vatableSales)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Value Added Tax:</span>
+                                <span>₱{formatCurrency(vat)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Creditable Withholding Tax:</span>
+                                <span>₱{formatCurrency(withholdingTax)}</span>
+                              </div>
+                              <div className="flex justify-between font-bold text-lg border-t-2 pt-2">
+                                <span>TOTAL:</span>
+                                <span>₱{formatCurrency(total)}</span>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
+          {showSalesMemoModal && (
+            <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6">
+              <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl">
+                <div className="p-8 border-b border-gray-200 flex justify-between items-center">
+                  <h2 className="text-2xl font-bold text-gray-900">Generate Sales Memo</h2>
+                  <button 
+                    onClick={() => setShowSalesMemoModal(false)} 
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+                <div className="p-8 space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">Client *</label>
+                    <select
+                      value={filterData.clientId}
+                      onChange={(e) => setFilterData({ ...filterData, clientId: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+                    >
+                      <option value="">Select Client</option>
+                      {clients.map(c => (
+                        <option key={c.id} value={c.id}>{c.clientName}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">Start Month</label>
+                      <select
+                        value={filterData.startMonth}
+                        onChange={(e) => setFilterData({ ...filterData, startMonth: parseInt(e.target.value) })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+                      >
+                        {monthsFull.map((m, i) => (
+                          <option key={i} value={i + 1}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">End Month</label>
+                      <select
+                        value={filterData.endMonth}
+                        onChange={(e) => setFilterData({ ...filterData, endMonth: parseInt(e.target.value) })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+                      >
+                        {monthsFull.map((m, i) => (
+                          <option key={i} value={i + 1}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">Start Year</label>
+                      <input
+                        type="number"
+                        value={filterData.startYear}
+                        onChange={(e) => setFilterData({ ...filterData, startYear: parseInt(e.target.value) })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">End Year</label>
+                      <input
+                        type="number"
+                        value={filterData.endYear}
+                        onChange={(e) => setFilterData({ ...filterData, endYear: parseInt(e.target.value) })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="p-8 border-t border-gray-200 flex justify-end gap-4">
+                  <button 
+                    onClick={() => setShowSalesMemoModal(false)} 
+                    className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleGenerateSalesMemo} 
+                    className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium shadow-md"
+                  >
+                    Generate Sales Memo
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
     };

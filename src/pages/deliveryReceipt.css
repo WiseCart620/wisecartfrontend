@@ -35,6 +35,7 @@
     page-break-inside: avoid !important;
   }
   
+  
   .print-hidden {
     display: none !important;
   }
@@ -43,6 +44,47 @@
     display: inline !important;
     color: black !important;
   }
+
+
+  /* Add these rules inside the @media print section, after the existing rules */
+
+/* Hide the "Receive the above goods..." text */
+#delivery-receipt .text-right.font-bold.leading-tight {
+  color: transparent !important;
+}
+
+/* Hide the "Prepared by:" label */
+#delivery-receipt .font-bold.text-gray-900.text-sm.w-25 {
+  color: transparent !important;
+}
+
+/* Hide the "Received by:" label */
+#delivery-receipt .font-bold.text-gray-900.text-sm.w-40 {
+  color: transparent !important;
+}
+
+/* Hide the "Customer Signature over Printed Name" text */
+#delivery-receipt .text-xs.text-black-900.mt-0.ml-32.font-bold {
+  color: transparent !important;
+}
+
+/* Hide the "Date Received:" label */
+#delivery-receipt .font-bold.text-gray-900.text-sm.w-40 {
+  color: transparent !important;
+}
+
+/* Hide the "Prepared by:" label and its input data */
+#delivery-receipt .font-bold.text-gray-900.text-sm.w-25 {
+  color: transparent !important;
+}
+
+#delivery-receipt .font-bold.text-gray-900.text-sm.w-25 + div {
+  color: transparent !important;
+}
+
+#delivery-receipt .font-bold.text-gray-900.text-sm.w-25 + div * {
+  color: transparent !important;
+}
   
   /* Make all text transparent by default */
   #delivery-receipt * {

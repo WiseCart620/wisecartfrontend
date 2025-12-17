@@ -112,21 +112,22 @@ const ProductManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
-    productName: '',
-    upc: '',
-    sku: '',
-    supplier: '',
-    countryOfOrigin: '',
-    clientPrice: '',
-    clientId: '',
-    dimensions: '',
-    weight: '',
-    materials: '',
-    brand: '',
-    shelfLife: '',
-    unitCost: '',
-    variations: []
-  });
+  productName: '',
+  upc: '',
+  sku: '',
+  supplier: '',
+  countryOfOrigin: '',
+  selectedClientId: 'all',
+  clientPrice: '',
+  dimensions: '',
+  weight: '',
+  materials: '',
+  brand: '',
+  shelfLife: '',
+  unitCost: '',
+  variations: []
+});
+
 
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -212,23 +213,18 @@ const ProductManagement = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
   if (!formData.productName || !formData.sku) {
     toast.error('Please fill in all required fields');
     return;
   }
 
-    if (formData.clientPrice && formData.clientPrice <= 0) {
-      toast.error('Client price must be greater than 0');
-      return;
-    }
+  if (formData.clientPrice && parseFloat(formData.clientPrice) <= 0) {
+    toast.error('Price must be greater than 0');
+    return;
+  }
 
-
-    if (formData.clientPrice && !formData.clientId) {
-      toast.error('Please select a client when setting a client price');
-      return;
-    }
 
     const skuValidation = checkSKUAvailability(formData.sku);
     if (!skuValidation.available) {
@@ -282,29 +278,30 @@ const ProductManagement = () => {
         })
         .filter(Boolean);
           
-      const payload = {
-        productName: formData.productName,
-        upc: formData.upc || null,
-        sku: formData.sku,
-        supplier: formData.supplier || null,
-        countryOfOrigin: formData.countryOfOrigin || null,
-        weight: formData.weight ? parseFloat(formData.weight) : null,
-        clientId: formData.clientId || null,
-        dimensions: formData.dimensions || null,
-        materials: formData.materials || null,
-        brand: formData.brand || null,
-        shelfLife: formData.shelfLife || null,
-        variations: normalizedVariations
-      };
-
-      if (formData.clientId && formData.clientPrice) {
-        payload.clientPrice = parseFloat(formData.clientPrice);
-      }
-
-
-      if (formData.clientId && formData.clientPrice) {
-        payload.clientPrice = parseFloat(formData.clientPrice);
-      }
+  const payload = {
+  productName: formData.productName,
+  upc: formData.upc || null,
+  sku: formData.sku,
+  supplier: formData.supplier || null,
+  countryOfOrigin: formData.countryOfOrigin || null,
+  weight: formData.weight ? parseFloat(formData.weight) : null,
+  dimensions: formData.dimensions || null,
+  materials: formData.materials || null,
+  brand: formData.brand || null,
+  shelfLife: formData.shelfLife || null,
+  variations: normalizedVariations,
+  clientPrices: formData.clientPrice && formData.selectedClientId
+    ? (formData.selectedClientId === 'all'
+        ? clients.map(client => ({
+            clientId: client.id,
+            price: parseFloat(formData.clientPrice)
+          }))
+        : [{
+            clientId: parseInt(formData.selectedClientId),
+            price: parseFloat(formData.clientPrice)
+          }])
+    : []
+};
 
       let response;
       if (editingProduct) {
@@ -390,7 +387,28 @@ const checkSKUAvailability = (sku) => {
   const handleEdit = (product) => {
   setEditingProduct(product);
 
-  const clientPrice = product.clientPrices?.find(cp => cp.client?.id === product.client?.id)?.price || '';
+  // Determine if all clients have the same price
+  let selectedClient = 'all';
+  let price = '';
+  
+  if (product.clientPrices && product.clientPrices.length > 0) {
+    const firstPrice = product.clientPrices[0].price;
+    const allSamePrice = product.clientPrices.every(cp => cp.price === firstPrice);
+    
+    if (allSamePrice && product.clientPrices.length === clients.length) {
+      // All clients have the same price
+      selectedClient = 'all';
+      price = firstPrice;
+    } else if (product.clientPrices.length === 1) {
+      // Single client
+      selectedClient = product.clientPrices[0].client?.id || '';
+      price = product.clientPrices[0].price;
+    } else {
+      // Multiple clients with different prices - default to 'all'
+      selectedClient = 'all';
+      price = firstPrice;
+    }
+  }
 
   setFormData({
     productName: product.productName || '',
@@ -398,17 +416,16 @@ const checkSKUAvailability = (sku) => {
     sku: product.sku || '',
     supplier: product.supplier || '',
     countryOfOrigin: product.countryOfOrigin || '',
-    clientPrice: clientPrice,
-    clientId: product.client?.id || '',
+    selectedClientId: selectedClient,
+    clientPrice: price,
     dimensions: product.dimensions || '',
     weight: product.weight || '',
     materials: product.materials || '',
     brand: product.brand || '',
     shelfLife: product.shelfLife || '',
-    unitCost: product.unitCost || '', // Add this
+    unitCost: product.unitCost || '',
     variations: product.variations?.map(v => {
       const isCustomType = !variationTypes.includes(v.variationType);
-
       const isSizeOrColorCustom = 
         (v.variationType === 'SIZE' || v.variationType === 'COLOR') &&
         !['XXS','XS','S','M','L','XL','XXL','XXXL','SMALL','MEDIUM','LARGE',
@@ -427,6 +444,7 @@ const checkSKUAvailability = (sku) => {
 };
 
 
+
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
     
@@ -434,7 +452,6 @@ const checkSKUAvailability = (sku) => {
       await api.delete(`/products/${id}`);
       toast.success('Product deleted successfully');
       loadData();
-      // If the last item on the current page is deleted, go to previous page
       if (filteredProducts.length % itemsPerPage === 1 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
       }
@@ -445,24 +462,25 @@ const checkSKUAvailability = (sku) => {
   };
 
   const resetForm = () => {
-    setFormData({
-      productName: '',
-      upc: '',
-      sku: '',
-      supplier: '',
-      countryOfOrigin: '',
-      clientPrice: '',
-      clientId: '',
-      dimensions: '',
-      weight: '',
-      materials: '',
-      brand: '',
-      unitCost: '',
-      shelfLife: '',
-      variations: []
-    });
-    setEditingProduct(null);
-  };
+  setFormData({
+    productName: '',
+    upc: '',
+    sku: '',
+    supplier: '',
+    countryOfOrigin: '',
+    selectedClientId: 'all',
+    clientPrice: '',
+    dimensions: '',
+    weight: '',
+    materials: '',
+    brand: '',
+    unitCost: '',
+    shelfLife: '',
+    variations: []
+  });
+  setEditingProduct(null);
+};
+
 
   const filteredProducts = products.filter(product =>
     product.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -470,18 +488,15 @@ const checkSKUAvailability = (sku) => {
     product.upc?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Pagination calculations
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentProducts = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
-  // Pagination controls
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
   const nextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
   const prevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
 
-  // Generate page numbers to display
   const getPageNumbers = () => {
     const pageNumbers = [];
     const maxVisiblePages = 5;
@@ -502,7 +517,6 @@ const checkSKUAvailability = (sku) => {
     return pageNumbers;
   };
 
-  // Prepare dropdown data
   const clientOptions = clients.map(c => ({ id: c.id, name: c.clientName }));
 
   if (loading) {
@@ -513,13 +527,11 @@ const checkSKUAvailability = (sku) => {
     <div className="p-6 max-w-7xl mx-auto">
       <Toaster position="top-right" />
 
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Product Management</h1>
         <p className="text-gray-600 mt-1">Manage your product catalog</p>
       </div>
 
-      {/* Actions Bar */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -543,7 +555,6 @@ const checkSKUAvailability = (sku) => {
         </button>
       </div>
 
-      {/* Products Table */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -555,7 +566,6 @@ const checkSKUAvailability = (sku) => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Cost</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client Price</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
@@ -568,14 +578,7 @@ const checkSKUAvailability = (sku) => {
                 </tr>
               ) : (
                 currentProducts.map((product) => {
-                  // Calculate client price with better null checking
-                  let clientPrice = null;
-                  if (product.client?.id && Array.isArray(product.clientPrices) && product.clientPrices.length > 0) {
-                    const priceEntry = product.clientPrices.find(cp => cp.client?.id === product.client.id);
-                    clientPrice = priceEntry?.price;
-                  }
-                  
-                  return (
+                return (
                     <tr key={product.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -595,11 +598,26 @@ const checkSKUAvailability = (sku) => {
                           ? `₱${Number(product.unitCost).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
                           : '-'}
                       </td>
-                      <td className="px-6 py-4 text-sm font-medium text-blue-600">
-                        {clientPrice != null ? `₱${Number(clientPrice).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
+                      <td className="px-6 py-4 text-sm">
+                        {product.clientPrices && product.clientPrices.length > 0 ? (
+                          <div className="space-y-1">
+                            {product.clientPrices.slice(0, 2).map((cp, idx) => (
+                              <div key={idx} className="text-xs">
+                                <span className="font-medium text-blue-600">
+                                  ₱{Number(cp.price).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                </span>
+                                <span className="text-gray-500 ml-1">({cp.client?.clientName})</span>
+                              </div>
+                            ))}
+                            {product.clientPrices.length > 2 && (
+                              <div className="text-xs text-gray-500">+{product.clientPrices.length - 2} more</div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">{product.supplier || '-'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{product.client?.clientName || '-'}</td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
@@ -624,17 +642,13 @@ const checkSKUAvailability = (sku) => {
           </table>
         </div>
 
-        {/* Pagination */}
         {filteredProducts.length > 0 && (
           <div className="px-6 py-4 border-t border-gray-200 bg-white flex flex-col sm:flex-row items-center justify-between gap-4">
-            {/* Results count */}
             <div className="text-sm text-gray-700">
               Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredProducts.length)} of {filteredProducts.length} results
             </div>
 
-            {/* Pagination controls */}
             <div className="flex items-center gap-2">
-              {/* Previous button */}
               <button
                 onClick={prevPage}
                 disabled={currentPage === 1}
@@ -836,26 +850,34 @@ const checkSKUAvailability = (sku) => {
                 </div>
               </div>
 
-              {/* Client & Pricing */}
+              {/* Client Pricing */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <User size={20} />
-                  Client & Pricing
+                  Client Pricing
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Client</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Assign Price To
+                    </label>
                     <SearchableDropdown
-                      options={clientOptions}
-                      value={formData.clientId}
-                      onChange={(value) => {
-                        setFormData({ ...formData, clientId: value, clientPrice: value ? formData.clientPrice : '' });
-                      }}
-                      placeholder="Select client (optional)"
+                      options={[
+                        { id: 'all', name: '🌐 All Clients' },
+                        ...clients.map(c => ({ id: c.id, name: c.clientName }))
+                      ]}
+                      value={formData.selectedClientId}
+                      onChange={(value) => setFormData({ ...formData, selectedClientId: value })}
+                      placeholder="Select client(s)"
                       displayKey="name"
                       valueKey="id"
+                      required={false}
                     />
-                    <p className="text-xs text-gray-500 mt-1">Assign this product to a specific client</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {formData.selectedClientId === 'all' 
+                        ? `Price will be assigned to all ${clients.length} clients`
+                        : 'Price will be assigned to selected client only'}
+                    </p>
                   </div>
 
                   <div>
@@ -869,16 +891,11 @@ const checkSKUAvailability = (sku) => {
                       onChange={handleInputChange}
                       min="0.01"
                       step="0.01"
-                      disabled={!formData.clientId}
-                      className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                        !formData.clientId ? 'bg-gray-100 cursor-not-allowed' : ''
-                      }`}
-                      placeholder={formData.clientId ? "0.00" : "Select client first"}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="0.00"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      {formData.clientId 
-                        ? 'Special price for the selected client' 
-                        : 'Select a client to set client-specific price'}
+                      Enter the selling price for client(s)
                     </p>
                   </div>
                 </div>
@@ -991,7 +1008,6 @@ const checkSKUAvailability = (sku) => {
               </div>
 
               {/* Variations */}
-                {/* Enhanced Product Variations */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">

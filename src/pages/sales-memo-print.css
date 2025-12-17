@@ -1,0 +1,146 @@
+/* Sales Memo Print Styles */
+@media print {
+  /* Page setup */
+  @page {
+    size: A4;
+    margin: 0.5cm;
+  }
+
+  /* Hide everything by default */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Show only sales memo content */
+  #sales-memo,
+  #sales-memo * {
+    visibility: visible !important;
+  }
+
+  /* Position sales memo */
+  #sales-memo {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+  }
+
+  /* Hide print button and other controls */
+  #sales-memo .print\:hidden,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Remove borders from inputs in print */
+  #sales-memo input {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Ensure table borders are visible */
+  #sales-memo table,
+  #sales-memo th,
+  #sales-memo td {
+    border: 1px solid #000 !important;
+    border-collapse: collapse !important;
+  }
+
+  /* Table styling */
+  #sales-memo table {
+    width: 100% !important;
+    page-break-inside: avoid !important;
+  }
+
+  #sales-memo thead {
+    background-color: #f3f4f6 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #sales-memo tfoot {
+    background-color: #f9fafb !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Text alignment */
+  #sales-memo .text-right {
+    text-align: right !important;
+  }
+
+  #sales-memo .text-left {
+    text-align: left !important;
+  }
+
+  #sales-memo .text-center {
+    text-align: center !important;
+  }
+
+  /* Font sizes */
+  #sales-memo h1 {
+    font-size: 24pt !important;
+    margin-bottom: 12pt !important;
+  }
+
+  #sales-memo p,
+  #sales-memo td,
+  #sales-memo th {
+    font-size: 10pt !important;
+  }
+
+  /* Padding */
+  #sales-memo th,
+  #sales-memo td {
+    padding: 8px !important;
+  }
+
+  /* Avoid page breaks inside elements */
+  #sales-memo tr,
+  #sales-memo .grid {
+    page-break-inside: avoid !important;
+  }
+
+  /* Margins and spacing */
+  #sales-memo .mb-6 {
+    margin-bottom: 16pt !important;
+  }
+
+  #sales-memo .space-y-2 > * + * {
+    margin-top: 8pt !important;
+  }
+
+  /* Bold text */
+  #sales-memo .font-bold,
+  #sales-memo label {
+    font-weight: bold !important;
+  }
+
+  /* Remove button styling in print */
+  #sales-memo button {
+    display: none !important;
+  }
+}
+
+/* Screen styles for better viewing */
+@media screen {
+  #sales-memo {
+    max-width: 210mm;
+    margin: 0 auto;
+  }
+
+  #sales-memo input[type="text"],
+  #sales-memo input[type="number"] {
+    border-bottom: 1px solid #d1d5db;
+    padding: 2px 4px;
+  }
+
+  #sales-memo input:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+}

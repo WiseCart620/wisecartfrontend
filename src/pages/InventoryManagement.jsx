@@ -8,7 +8,31 @@
   import toast, { Toaster } from 'react-hot-toast';
   import { api } from '../services/api';
 
-  // ────────────────────── Grouped Dropdown (Locations) ──────────────────────
+const parseDate = (dateValue) => {
+  if (!dateValue) return null;
+  
+  try {
+    if (Array.isArray(dateValue)) {
+      const [year, month, day, hour, minute, second] = dateValue;
+      return new Date(year, month - 1, day, hour || 0, minute || 0, second || 0);
+    }
+    
+    const isoTimestamp = String(dateValue).replace(' ', 'T');
+    const date = new Date(isoTimestamp);
+    
+    if (isNaN(date.getTime())) {
+      console.error('Invalid date:', dateValue);
+      return null;
+    }
+    
+    return date;
+  } catch (error) {
+    console.error('Date parsing error:', error, dateValue);
+    return null;
+  }
+};
+
+
   const GroupedSearchableDropdown = ({ options, value, onChange, placeholder }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -340,6 +364,24 @@ const ProductTransactionsModal = ({ product, transactions, isOpen, onClose, show
     return null;
   };
 
+
+
+const getCorrectTransactionDate = (transaction) => {
+  let timestamp = null;
+  
+  if (transaction.inventoryType === 'SALE' || transaction.transactionType === 'SALE') {
+    timestamp = transaction.invoicedAt || transaction.createdAt || transaction.transactionDate;
+  } else if (transaction.inventoryType === 'DELIVERY' || transaction.transactionType === 'DELIVERY') {
+    timestamp = transaction.deliveredAt || transaction.date || transaction.transactionDate || transaction.createdAt;
+  } else {
+    timestamp = transaction.verificationDateTime || transaction.transactionDate || transaction.createdAt;
+  }
+  
+  return parseDate(timestamp);
+};
+
+
+
   const filteredTransactions = transactions.filter(transaction => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = !searchTerm || 
@@ -365,7 +407,8 @@ const ProductTransactionsModal = ({ product, transactions, isOpen, onClose, show
         return transactionType === filterType;
       })();
 
-    const transactionDate = new Date(transaction.transactionDate);
+    const transactionDate = getCorrectTransactionDate(transaction);
+    if (!transactionDate) return matchesSearch && matchesType;
     const matchesStartDate = !startDate || transactionDate >= new Date(startDate);
     const matchesEndDate = !endDate || transactionDate <= new Date(endDate + 'T23:59:59');
 
@@ -598,13 +641,17 @@ const ProductTransactionsModal = ({ product, transactions, isOpen, onClose, show
                           {isInvoiced ? 'INVOICED' : 'CONFIRMED'}
                         </span>
                         <span className="text-xs text-gray-500">
-                          {new Date(tx.transactionDate).toLocaleString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
+                          {(() => {
+                            const date = parseDate(tx.transactionDate);
+                            if (!date) return 'Invalid date';
+                            return date.toLocaleString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            });
+                          })()}
                         </span>
                       </div>
                       
@@ -714,13 +761,17 @@ const ProductTransactionsModal = ({ product, transactions, isOpen, onClose, show
                                   {isSubtract ? 'REMOVED FROM WAREHOUSE' : 'ADDED TO BRANCH'}
                                 </span>
                                 <span className="text-xs text-gray-500">
-                                  {new Date(tx.transactionDate).toLocaleString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  })}
+                                  {(() => {
+                                    const date = parseDate(tx.transactionDate);
+                                    if (!date) return 'Invalid date';
+                                    return date.toLocaleString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    });
+                                  })()}
                                 </span>
                               </div>
                               
@@ -880,21 +931,36 @@ const ProductTransactionsModal = ({ product, transactions, isOpen, onClose, show
                       return (
                         <tr key={`transaction-${idx}-${transaction.id}`} className="hover:bg-gray-50">
                           <td className="px-4 py-3 text-sm">
-                            <div className="font-medium">
-                              {transactionDate.toLocaleDateString('en-US', {
-                                month: '2-digit',
-                                day: '2-digit',
-                                year: 'numeric'
-                              })}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {transactionDate.toLocaleTimeString('en-US', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                hour12: true
-                              })}
-                            </div>
-                          </td>
+                              {(() => {
+                                const date = getCorrectTransactionDate(transaction);
+                                if (!date) {
+                                  return (
+                                    <>
+                                      <div className="text-red-600">Invalid Date</div>
+                                      <div className="text-xs text-gray-500">--:--</div>
+                                    </>
+                                  );
+                                }
+                                return (
+                                  <>
+                                    <div className="font-medium">
+                                      {date.toLocaleDateString('en-US', {
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        year: 'numeric'
+                                      })}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {date.toLocaleTimeString('en-US', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        hour12: true
+                                      })}
+                                    </div>
+                                  </>
+                                );
+                              })()}
+                            </td>
                           <td className="px-4 py-3">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(transaction)}`}>
                               {getTransferDirection(transaction).replace('_', ' ')}
@@ -1732,23 +1798,40 @@ const handleViewTransaction = async (transaction) => {
     };
 
 
-    const handleDelete = async (id) => {
-      if (!window.confirm('Are you sure you want to delete this record? This cannot be undone.')) return;
+    // Find this function in your code and replace it with this:
 
+const handleDelete = async (id) => {
+  if (!window.confirm('Are you sure you want to delete this record? This cannot be undone.')) return;
+
+  try {
+    const transactionToDelete = inventories.find(inv => inv.id === id);
+    const isSale = transactionToDelete?.inventoryType === 'SALE';
+    
+    await api.delete(`/inventories/${id}`);
+    toast.success('Deleted successfully');
+    
+    setInventories(prev => prev.filter(inv => inv.id !== id));
+    
+    // If it's a sale, refresh branch stocks to update sale counts
+    if (isSale) {
       try {
-        await api.delete(`/inventories/${id}`);
-        toast.success('Deleted successfully');
-        
-        setInventories(prev => prev.filter(inv => inv.id !== id));
-        
-        if (filteredInventories.length % itemsPerPage === 1 && currentPage > 1) {
-          setCurrentPage(currentPage - 1);
+        const branchStocksRes = await api.get('/stocks/branches');
+        if (branchStocksRes.success) {
+          setBranchStocks(branchStocksRes.data || []);
         }
-      } catch (err) {
-        toast.error('Delete failed');
-        console.error('Delete error:', err);
-        }
-      };
+      } catch (refreshErr) {
+        console.warn('Could not refresh branch stocks:', refreshErr);
+      }
+    }
+    
+    if (filteredInventories.length % itemsPerPage === 1 && currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  } catch (err) {
+    toast.error('Delete failed');
+    console.error('Delete error:', err);
+  }
+};
 
 
     // ────────────────────── Searchable Warehouse Dropdown ──────────────────────
@@ -2387,9 +2470,17 @@ const handleViewTransaction = async (transaction) => {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500">
-                      {new Date(stock.lastUpdated).toLocaleDateString()}<br/>
-                      <span className="text-gray-400">{new Date(stock.lastUpdated).toLocaleTimeString()}</span>
-                    </td>
+                        {(() => {
+                          const date = parseDate(stock.lastUpdated);
+                          if (!date) return 'N/A';
+                          return (
+                            <>
+                              {date.toLocaleDateString()}<br/>
+                              <span className="text-gray-400">{date.toLocaleTimeString()}</span>
+                            </>
+                          );
+                        })()}
+                      </td>
                     <td className="px-4 py-3 text-center">
                       <button
                         onClick={() => handleViewStockTransactions(stock, 'warehouse')}
@@ -2582,7 +2673,7 @@ const handleViewTransaction = async (transaction) => {
                 <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">
                     <div className="flex items-center justify-center gap-1">
                       <ShoppingCart size={14} />
-                      Sales
+                      Total Sales
                     </div>
                   </th>
                 <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">
@@ -2684,8 +2775,16 @@ const handleViewTransaction = async (transaction) => {
           </td>
 
           <td className="px-4 py-3 text-xs text-gray-500">
-            {new Date(stock.lastUpdated).toLocaleDateString()}<br/>
-            <span className="text-gray-400">{new Date(stock.lastUpdated).toLocaleTimeString()}</span>
+            {(() => {
+              const date = parseDate(stock.lastUpdated);
+              if (!date) return 'N/A';
+              return (
+                <>
+                  {date.toLocaleDateString()}<br/>
+                  <span className="text-gray-400">{date.toLocaleTimeString()}</span>
+                </>
+              );
+            })()}
           </td>
 
           <td className="px-4 py-3 text-center">
@@ -2907,18 +3006,20 @@ const handleViewTransaction = async (transaction) => {
         const displayInfo = getTransactionDisplayInfo(transaction);
         const isTransferOrReturn = transaction.inventoryType === 'TRANSFER' || transaction.inventoryType === 'RETURN';
         const isDelivery = transaction.inventoryType === 'DELIVERY';
-        
-        // Get actual timestamp - use the appropriate field based on transaction type
         const getTransactionTimestamp = (trans) => {
-          if (trans.inventoryType === 'SALE') {
-            return trans.invoicedAt || trans.createdAt;
-          } else if (trans.inventoryType === 'DELIVERY') {
-            return trans.deliveredAt || trans.createdAt;
+          let timestamp = null;
+          
+          if (trans.inventoryType === 'SALE' || trans.transactionType === 'SALE') {
+            timestamp = trans.invoicedAt || trans.createdAt || trans.transactionDate || trans.verificationDateTime;
+          } else if (trans.inventoryType === 'DELIVERY' || trans.transactionType === 'DELIVERY') {
+            timestamp = trans.deliveredAt || trans.date || trans.transactionDate || trans.createdAt || trans.verificationDateTime;
           } else {
-            return trans.verificationDateTime || trans.createdAt;
+            timestamp = trans.verificationDateTime || trans.transactionDate || trans.createdAt || 
+                        (trans.verificationDate ? new Date(trans.verificationDate).toISOString() : null);
           }
+          return timestamp || null;
         };
-        
+
         const transactionTimestamp = getTransactionTimestamp(transaction);
         
         return (
@@ -2949,20 +3050,70 @@ const handleViewTransaction = async (transaction) => {
               {calculateTotalQuantity(transaction.items).toLocaleString()}
             </td>
             <td className="px-4 py-3 text-sm">
-              <div>
-                {new Date(transactionTimestamp).toLocaleDateString('en-US', {
-                  month: '2-digit',
-                  day: '2-digit',
-                  year: 'numeric'
-                })}
-              </div>
-              <div className="text-xs text-gray-500">
-                {new Date(transactionTimestamp).toLocaleTimeString('en-US', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: true
-                })}
-              </div>
+              {(() => {
+                if (!transactionTimestamp) {
+                  return (
+                    <>
+                      <div>N/A</div>
+                      <div className="text-xs text-gray-500">--:--</div>
+                    </>
+                  );
+                }
+                
+                try {
+                  let date;
+                  
+                  // Check if it's an array (Jackson timestamp array format)
+                  if (Array.isArray(transactionTimestamp)) {
+                    // Array format: [year, month, day, hour, minute, second, nanosecond]
+                    const [year, month, day, hour, minute, second] = transactionTimestamp;
+                    // Month in JavaScript Date is 0-indexed, so subtract 1
+                    date = new Date(year, month - 1, day, hour || 0, minute || 0, second || 0);
+                  } else {
+                    // String format: convert SQL timestamp to ISO
+                    const isoTimestamp = String(transactionTimestamp).replace(' ', 'T');
+                    date = new Date(isoTimestamp);
+                  }
+                  
+                  // Validate the date
+                  if (isNaN(date.getTime())) {
+                    console.error('Invalid date:', transactionTimestamp);
+                    return (
+                      <>
+                        <div className="text-red-600">Invalid Date</div>
+                        <div className="text-xs text-gray-500">Check format</div>
+                      </>
+                    );
+                  }
+                  
+                  return (
+                    <>
+                      <div>
+                        {date.toLocaleDateString('en-US', {
+                          month: '2-digit',
+                          day: '2-digit',
+                          year: 'numeric'
+                        })}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {date.toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: true
+                        })}
+                      </div>
+                    </>
+                  );
+                } catch (error) {
+                  console.error('Date parsing error:', error, transactionTimestamp);
+                  return (
+                    <>
+                      <div className="text-red-600">Error</div>
+                      <div className="text-xs text-gray-500">Parse failed</div>
+                    </>
+                  );
+                }
+              })()}
             </td>
             <td className="px-4 py-3 text-sm">{transaction.verifiedBy || transaction.preparedBy || transaction.generatedBy || 'N/A'}</td>
             <td className="px-4 py-3 text-center">

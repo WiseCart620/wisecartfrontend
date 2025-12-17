@@ -1,14 +1,25 @@
-import React, { useState, useEffect } from 'react';
 import { 
   Plus, Edit2, Trash2, Search, X, Package, DollarSign, Truck, 
-  Calendar, FileText, CheckCircle, Clock, ChevronDown
+  Calendar, FileText, CheckCircle, Clock, ChevronDown, XCircle
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { api } from '../services/api';
+import React, { useState, useEffect, useRef } from 'react';
 
-const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey, valueKey, required = false }) => {
+const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey, valueKey, required = false, disabled = false, formData, index }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const filteredOptions = options.filter(option =>
     option[displayKey]?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -17,11 +28,14 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
   const selectedOption = options.find(opt => opt[valueKey] === value);
 
   return (
-    <div className="relative">
+    <div ref={dropdownRef} className="relative">
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-left flex items-center justify-between bg-white"
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
+        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-left flex items-center justify-between ${
+          disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+        }`}
       >
         <span className={selectedOption ? 'text-gray-900' : 'text-gray-500'}>
           {selectedOption ? selectedOption[displayKey] : placeholder}
@@ -29,17 +43,20 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
         <ChevronDown size={20} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {isOpen && (
+      {isOpen && !disabled && (
         <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-hidden">
           <div className="p-3 border-b border-gray-200">
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              autoFocus
-            />
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                autoFocus
+              />
+            </div>
           </div>
           <div className="overflow-y-auto max-h-60">
             {!required && (
@@ -48,27 +65,50 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
                 onClick={() => {
                   onChange('');
                   setIsOpen(false);
+                  setSearchTerm('');
                 }}
                 className="w-full px-4 py-2 text-left hover:bg-gray-50 transition text-gray-500 italic"
               >
                 -- None --
               </button>
             )}
-            {filteredOptions.map((option) => (
-              <button
-                key={option[valueKey]}
-                type="button"
-                onClick={() => {
-                  onChange(option[valueKey]);
-                  setIsOpen(false);
-                }}
-                className={`w-full px-4 py-2 text-left hover:bg-blue-50 transition ${
-                  value === option[valueKey] ? 'bg-blue-50 text-blue-700 font-medium' : ''
-                }`}
-              >
-                {option[displayKey]}
-              </button>
-            ))}
+            {filteredOptions.length === 0 ? (
+              <div className="px-4 py-6 text-center text-gray-500 text-sm">No results found</div>
+            ) : (
+              filteredOptions.map((option) => {
+                const isDisabled = option.disabled || false;
+                const isAlreadySelected = formData?.orderItems?.some(
+                  (item, idx) => item.productId === option.id && idx !== index
+                ) || false;
+                
+                return (
+                  <button
+                    key={option[valueKey]}
+                    type="button"
+                    onClick={() => {
+                      if (!isDisabled && !isAlreadySelected) {
+                        onChange(option[valueKey]);
+                        setIsOpen(false);
+                        setSearchTerm('');
+                      }
+                    }}
+                    disabled={isDisabled || isAlreadySelected}
+                    className={`w-full px-4 py-2 text-left transition ${
+                      isDisabled || isAlreadySelected
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : value === option[valueKey]
+                        ? 'bg-blue-50 text-blue-700 font-medium hover:bg-blue-100'
+                        : 'hover:bg-blue-50'
+                    }`}
+                  >
+                    {option[displayKey]}
+                    {(isDisabled || isAlreadySelected) && (
+                      <span className="ml-2 text-xs">(Already selected)</span>
+                    )}
+                  </button>
+                );
+              })
+            )}
           </div>
         </div>
       )}
@@ -116,10 +156,8 @@ const SupplierInventoryManagement = () => {
     }
   };
 
-  // Get unique suppliers from products
   const suppliers = [...new Set(products.map(p => p.supplier).filter(Boolean))];
 
-  // Filter products by selected supplier
   const supplierProducts = formData.supplierName 
     ? products.filter(p => p.supplier === formData.supplierName)
     : [];
@@ -130,6 +168,34 @@ const SupplierInventoryManagement = () => {
       orderItems: [...prev.orderItems, { productId: '', quantity: 1 }]
     }));
   };
+
+
+
+
+
+const formatDateForInput = (date) => {
+  if (!date) return '';
+  
+
+  if (Array.isArray(date)) {
+    const [year, month, day] = date;
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+  
+
+  if (typeof date === 'string' && date.includes('-')) {
+    return date;
+  }
+  
+
+  if (date instanceof Date) {
+    return date.toISOString().split('T')[0];
+  }
+  
+  return '';
+};
+
+
 
   const removeOrderItem = (index) => {
     setFormData(prev => ({
@@ -326,38 +392,40 @@ const SupplierInventoryManagement = () => {
   };
 
   const handleEdit = (order) => {
-    setEditingOrder(order);
-    setFormData({
-      supplierName: order.supplierName || '',
-      orderNumber: order.orderNumber || '',
-      modeOfPayment: order.modeOfPayment || '',
-      orderDate: order.orderDate || new Date().toISOString().split('T')[0],
-      overallStatus: order.overallStatus || 'PENDING',
-      orderItems: order.orderItems?.map(item => ({
-        productId: item.product.id,
-        quantity: item.quantity
-      })) || [],
-      paymentInstructions: order.paymentInstructions?.map(pi => ({
-        instruction: pi.instruction,
-        amount: pi.amount,
-        paymentDate: pi.paymentDate
-      })) || [],
-      deliveries: order.deliveries?.map(d => ({
-        deliveryStatus: d.deliveryStatus,
-        deliveryName: d.deliveryName,
-        estimatedDeliveryDate: d.estimatedDeliveryDate || '',
-        actualDeliveryDate: d.actualDeliveryDate || '',
-        shippingDuration: d.shippingDuration || '',
-        modeOfPayment: d.modeOfPayment,
-        paymentInstructions: d.paymentInstructions?.map(dpi => ({
-          instruction: dpi.instruction,
-          amount: dpi.amount,
-          deliveryDate: dpi.deliveryDate
-        })) || []
+  setEditingOrder(order);
+  setFormData({
+    supplierName: order.supplierName || '',
+    orderNumber: order.orderNumber || '',
+    modeOfPayment: order.modeOfPayment || '',
+    orderDate: formatDateForInput(order.orderDate) || new Date().toISOString().split('T')[0],
+    overallStatus: order.overallStatus || 'PENDING',
+    orderItems: order.orderItems?.map(item => ({
+      productId: item.product.id,
+      quantity: item.quantity
+    })) || [],
+    paymentInstructions: order.paymentInstructions?.map(pi => ({
+      instruction: pi.instruction,
+      amount: pi.amount,
+      paymentDate: formatDateForInput(pi.paymentDate) || new Date().toISOString().split('T')[0]
+    })) || [],
+    deliveries: order.deliveries?.map(d => ({
+      deliveryStatus: d.deliveryStatus,
+      deliveryName: d.deliveryName,
+      estimatedDeliveryDate: formatDateForInput(d.estimatedDeliveryDate) || '',
+      actualDeliveryDate: formatDateForInput(d.actualDeliveryDate) || '',
+      shippingDuration: d.shippingDuration || '',
+      modeOfPayment: d.modeOfPayment,
+      paymentInstructions: d.paymentInstructions?.map(dpi => ({
+        instruction: dpi.instruction,
+        amount: dpi.amount,
+        deliveryDate: formatDateForInput(dpi.deliveryDate) || new Date().toISOString().split('T')[0]
       })) || []
-    });
-    setShowModal(true);
-  };
+    })) || []
+  });
+  setShowModal(true);
+};
+
+
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this order?')) return;
@@ -468,9 +536,13 @@ const SupplierInventoryManagement = () => {
                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                           order.overallStatus === 'OK' 
                             ? 'bg-green-100 text-green-800' 
+                            : order.overallStatus === 'DONE'
+                            ? 'bg-blue-100 text-blue-800'
                             : 'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {order.overallStatus === 'OK' ? <CheckCircle size={14} /> : <Clock size={14} />}
+                          {order.overallStatus === 'OK' ? <CheckCircle size={14} /> : 
+                          order.overallStatus === 'DONE' ? <XCircle size={14} /> : 
+                          <Clock size={14} />}
                           {order.overallStatus}
                         </span>
                       </td>
@@ -524,15 +596,15 @@ const SupplierInventoryManagement = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Supplier Name <span className="text-red-500">*</span>
                     </label>
-                    <select
+                    <SearchableDropdown
+                      options={suppliers.map(s => ({ name: s, value: s }))}  // ✅ CORRECT
                       value={formData.supplierName}
-                      onChange={(e) => setFormData({ ...formData, supplierName: e.target.value, orderItems: [] })}
-                      required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select supplier</option>
-                      {suppliers.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                      onChange={(value) => setFormData({ ...formData, supplierName: value, orderItems: [] })}
+                      placeholder="Select supplier"
+                      displayKey="name"
+                      valueKey="value"
+                      required={true}
+                    />
                   </div>
 
                   <div>
@@ -581,14 +653,15 @@ const SupplierInventoryManagement = () => {
                       Overall Status <span className="text-red-500">*</span>
                     </label>
                     <select
-                      value={formData.overallStatus}
-                      onChange={(e) => setFormData({ ...formData, overallStatus: e.target.value })}
-                      required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="PENDING">PENDING</option>
-                      <option value="OK">OK</option>
-                    </select>
+                        value={formData.overallStatus}
+                        onChange={(e) => setFormData({ ...formData, overallStatus: e.target.value })}
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="PENDING">PENDING</option>
+                        <option value="OK">OK</option>
+                        <option value="DONE">DONE</option>
+                      </select>
                     <p className="text-xs text-gray-500 mt-1">Set to OK to update product unit costs</p>
                   </div>
                 </div>
@@ -620,19 +693,22 @@ const SupplierInventoryManagement = () => {
                       <div key={index} className="p-4 bg-gray-50 rounded-lg border">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Product</label>
-                            <select
-                              value={item.productId}
-                              onChange={(e) => updateOrderItem(index, 'productId', e.target.value)}
-                              required
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                            >
-                              <option value="">Select product</option>
-                              {supplierProducts.map(p => (
-                                <option key={p.id} value={p.id}>{p.productName} ({p.sku})</option>
-                              ))}
-                            </select>
-                          </div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Product</label>
+                              <SearchableDropdown
+                                  options={supplierProducts.map(p => ({
+                                    id: p.id,
+                                    name: `${p.productName} (${p.sku})`
+                                  }))}
+                                  value={item.productId}
+                                  onChange={(value) => updateOrderItem(index, 'productId', value)}
+                                  placeholder="Select product"
+                                  displayKey="name"
+                                  valueKey="id"
+                                  required={true}
+                                  formData={formData}
+                                  index={index}
+                                />
+                            </div>
 
                           <div className="flex gap-2">
                             <div className="flex-1">
