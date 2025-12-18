@@ -212,7 +212,9 @@ const ProductManagement = () => {
     }));
   };
 
-  const handleSubmit = async (e) => {
+  
+
+const handleSubmit = async (e) => {
   e.preventDefault();
 
   if (!formData.productName || !formData.sku) {
@@ -225,135 +227,145 @@ const ProductManagement = () => {
     return;
   }
 
+  const skuValidation = checkSKUAvailability(formData.sku);
+  if (!skuValidation.available) {
+    toast.error(skuValidation.message);
+    return;
+  }
 
-    const skuValidation = checkSKUAvailability(formData.sku);
-    if (!skuValidation.available) {
-      toast.error(skuValidation.message);
-      return;
-    }
-
-    if (formData.upc && formData.upc.trim() !== '') {
+  if (formData.upc && formData.upc.trim() !== '') {
     const upcValidation = checkUPCAvailability(formData.upc);
     if (!upcValidation.available) {
       toast.error(upcValidation.message);
       return;
     }
-   }
+  }
 
-    if (formData.upc && formData.upc.trim() !== '') {
-      const existingProduct = products.find(p => 
-        p.upc && p.upc.toLowerCase() === formData.upc.toLowerCase() &&
-        (!editingProduct || p.id !== editingProduct.id)
-      );
+  try {
+    const normalizedVariations = formData.variations
+      .map(v => {
+        if (!v.variationValue?.trim()) return null;
+
+        let finalType = v.variationType;
+        let finalValue = v.variationValue.trim();
+
+        if ((v.variationType === 'SIZE' || v.variationType === 'COLOR') && v.variationValue === 'CUSTOM') {
+          if (!v.customValue?.trim()) return null;
+          finalValue = v.customValue.trim();
+        }
+
+        if (v.variationType === 'OTHER' && v.customType?.trim()) {
+          finalType = v.customType.trim();
+        }
+
+        return {
+          variationType: finalType,
+          variationValue: finalValue
+        };
+      })
+      .filter(Boolean);
       
-      if (existingProduct) {
-        toast.error(`Product with UPC "${formData.upc}" already exists`);
-        return;
-      }
+    const payload = {
+      productName: formData.productName,
+      upc: formData.upc || null,
+      sku: formData.sku,
+      supplier: formData.supplier || null,
+      countryOfOrigin: formData.countryOfOrigin || null,
+      weight: formData.weight ? parseFloat(formData.weight) : null,
+      dimensions: formData.dimensions || null,
+      materials: formData.materials || null,
+      brand: formData.brand || null,
+      shelfLife: formData.shelfLife || null,
+      variations: normalizedVariations,
+      // Don't send clientPrices in the product payload
+      clientPrices: []
+    };
+
+    let response;
+    if (editingProduct) {
+      response = await api.put(`/products/${editingProduct.id}`, payload);
+    } else {
+      response = await api.post('/products', payload);
     }
 
-    try {
-      const normalizedVariations = formData.variations
-        .map(v => {
-          if (!v.variationValue?.trim()) return null;
-
-          let finalType = v.variationType;
-          let finalValue = v.variationValue.trim();
-
-
-          if ((v.variationType === 'SIZE' || v.variationType === 'COLOR') && v.variationValue === 'CUSTOM') {
-            if (!v.customValue?.trim()) return null;
-            finalValue = v.customValue.trim();
-          }
-
-
-          if (v.variationType === 'OTHER' && v.customType?.trim()) {
-            finalType = v.customType.trim();
-          }
-
-          return {
-            variationType: finalType,
-            variationValue: finalValue
-          };
-        })
-        .filter(Boolean);
-          
-  const payload = {
-  productName: formData.productName,
-  upc: formData.upc || null,
-  sku: formData.sku,
-  supplier: formData.supplier || null,
-  countryOfOrigin: formData.countryOfOrigin || null,
-  weight: formData.weight ? parseFloat(formData.weight) : null,
-  dimensions: formData.dimensions || null,
-  materials: formData.materials || null,
-  brand: formData.brand || null,
-  shelfLife: formData.shelfLife || null,
-  variations: normalizedVariations,
-  clientPrices: formData.clientPrice && formData.selectedClientId
-    ? (formData.selectedClientId === 'all'
-        ? clients.map(client => ({
-            clientId: client.id,
-            price: parseFloat(formData.clientPrice)
-          }))
-        : [{
-            clientId: parseInt(formData.selectedClientId),
-            price: parseFloat(formData.clientPrice)
-          }])
-    : []
-};
-
-      let response;
-      if (editingProduct) {
-        response = await api.put(`/products/${editingProduct.id}`, payload);
-      } else {
-        response = await api.post('/products', payload);
-      }
-
-
-      if (!response.success) {
-
-        const errorMessage = response.error || 'Failed to save product';
-        
-
-        if (errorMessage.toLowerCase().includes('upc') || 
-            errorMessage.toLowerCase().includes('duplicate') ||
-            errorMessage.toLowerCase().includes('already exists')) {
-          toast.error(`Product with UPC "${formData.upc}" already exists`);
-        } else {
-          toast.error(errorMessage);
-        }
-        return;
-      }
-
-
-      toast.success(editingProduct ? 'Product updated successfully' : 'Product created successfully');
-      
-      setShowModal(false);
-      resetForm();
-      loadData();
-      setCurrentPage(1);
-    } catch (error) {
-
-      console.error('Error saving product:', error);
-      
-      const errorMessage = error.message || 'Failed to save product';
+    if (!response.success) {
+      const errorMessage = response.error || 'Failed to save product';
       
       if (errorMessage.toLowerCase().includes('upc') || 
           errorMessage.toLowerCase().includes('duplicate') ||
           errorMessage.toLowerCase().includes('already exists')) {
         toast.error(`Product with UPC "${formData.upc}" already exists`);
-      } else if (errorMessage.includes('400') || errorMessage.includes('Bad Request')) {
-        toast.error('Invalid data. Please check all fields and try again.');
-      } else if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
-        toast.error('Session expired. Please login again.');
-      } else if (errorMessage.includes('500') || errorMessage.includes('Server Error')) {
-        toast.error('Server error. Please try again later.');
       } else {
         toast.error(errorMessage);
       }
+      return;
     }
-  };
+
+    const savedProduct = response.data;
+    
+    // ✅ NOW handle client prices separately using the BULK endpoint
+    if (formData.clientPrice && formData.selectedClientId) {
+      try {
+        let clientPriceRequests = [];
+        
+        if (formData.selectedClientId === 'all') {
+          // Create price requests for ALL clients
+          clientPriceRequests = clients.map(client => ({
+            productId: savedProduct.id,
+            clientId: client.id,
+            price: parseFloat(formData.clientPrice)
+          }));
+        } else {
+          // Create price request for selected client only
+          clientPriceRequests = [{
+            productId: savedProduct.id,
+            clientId: parseInt(formData.selectedClientId),
+            price: parseFloat(formData.clientPrice)
+          }];
+        }
+
+        // ✅ Use the BULK endpoint with UPSERT logic
+        const priceResponse = await api.post('/client-product-prices/bulk', clientPriceRequests);
+        
+        if (!priceResponse.success) {
+          console.warn('Failed to save client prices:', priceResponse.error);
+          toast.warning('Product saved but client prices may need updating');
+        } else {
+          console.log('✅ Client prices saved/updated successfully');
+        }
+      } catch (priceError) {
+        console.error('Error saving client prices:', priceError);
+        toast.warning('Product saved but client prices may need updating');
+      }
+    }
+
+    toast.success(editingProduct ? 'Product updated successfully' : 'Product created successfully');
+    
+    setShowModal(false);
+    resetForm();
+    await loadData(); // Reload to show updated prices
+    setCurrentPage(1);
+    
+  } catch (error) {
+    console.error('Error saving product:', error);
+    
+    const errorMessage = error.message || 'Failed to save product';
+    
+    if (errorMessage.toLowerCase().includes('upc') || 
+        errorMessage.toLowerCase().includes('duplicate') ||
+        errorMessage.toLowerCase().includes('already exists')) {
+      toast.error(`Product with UPC "${formData.upc}" already exists`);
+    } else if (errorMessage.includes('400') || errorMessage.includes('Bad Request')) {
+      toast.error('Invalid data. Please check all fields and try again.');
+    } else if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
+      toast.error('Session expired. Please login again.');
+    } else if (errorMessage.includes('500') || errorMessage.includes('Server Error')) {
+      toast.error('Server error. Please try again later.');
+    } else {
+      toast.error(errorMessage);
+    }
+  }
+};
 
 
   const checkUPCAvailability = (upc) => {
