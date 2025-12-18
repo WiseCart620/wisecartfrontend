@@ -639,34 +639,31 @@
         setProducts(productsData);
         setDeliveries(deliveriesData);
 
-        // Get recent sales (last 10)
+
         const sortedSales = [...salesData]
           .sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0))
           .slice(0, 10);
         setRecentSales(sortedSales);
 
-        // Calculate metrics - Treat CONFIRMED and INVOICED as ACTIVE
         const activeSales = salesData.filter(s => 
           s.status === 'CONFIRMED' || s.status === 'INVOICED'
         );
         const pendingDeliveries = deliveriesData.filter(d => d.status === 'PENDING').length;
         const deliveredOrders = deliveriesData.filter(d => d.status === 'DELIVERED').length;
-        
-        // Calculate active revenue
+
         const activeRevenue = activeSales.reduce((sum, s) => sum + (s.totalAmount || 0), 0);
-        
-        // Calculate average order value
+
         const averageOrderValue = activeSales.length > 0 
           ? activeRevenue / activeSales.length 
           : 0;
 
-        // Calculate conversion rate
+
         const totalLeads = clientsData.length * 2;
         const conversionRate = salesData.length > 0 
           ? (activeSales.length / totalLeads * 100) 
           : 0;
 
-        // Calculate revenue growth (this month vs last month)
+
         const currentMonth = new Date().getMonth();
         const thisMonthSales = salesData.filter(s => {
           const saleDate = new Date(s.createdAt || s.date);
@@ -1958,39 +1955,63 @@ const chartOptions = {
                 </div>
                 <div className="space-y-3 max-h-80 overflow-y-auto">
                   {recentSales.length > 0 ? (
-                    recentSales.map((sale, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors border border-gray-100">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="font-medium text-gray-900 truncate">
-                              {sale.client?.clientName || 'Unknown Client'}
-                            </p>
-                            <StatusBadge 
-                              status={
-                                (sale.status === 'CONFIRMED' || sale.status === 'INVOICED') 
-                                  ? 'ACTIVE' 
-                                  : sale.status || 'PENDING'
-                              } 
-                            />
-                          </div>
-                          <p className="text-xs text-gray-500">
-                            {sale.createdAt ? new Date(sale.createdAt).toLocaleDateString('en-PH', {
+                    recentSales.map((sale, index) => {
+                      // Safe date parsing with fallback
+                      let dateStr = 'No date';
+                      try {
+                        if (sale.createdAt) {
+                          const parsedDate = new Date(sale.createdAt);
+                          if (!isNaN(parsedDate.getTime())) {
+                            dateStr = parsedDate.toLocaleDateString('en-PH', {
                               month: 'short',
                               day: 'numeric',
                               hour: '2-digit',
                               minute: '2-digit'
-                            }) : 'No date'}
-                            {sale.branch?.branchName && ` • ${sale.branch.branchName}`}
-                          </p>
+                            });
+                          }
+                        } else if (sale.month && sale.year) {
+                          // Fallback to month/year if createdAt is not available
+                          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                          dateStr = `${monthNames[sale.month - 1]} ${sale.year}`;
+                        }
+                      } catch (e) {
+                        console.error('Error parsing date for sale:', sale.id, e);
+                        // Final fallback to month/year
+                        if (sale.month && sale.year) {
+                          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                          dateStr = `${monthNames[sale.month - 1]} ${sale.year}`;
+                        }
+                      }
+
+                      return (
+                        <div key={index} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors border border-gray-100">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-medium text-gray-900 truncate">
+                                {sale.client?.clientName || 'Unknown Client'}
+                              </p>
+                              <StatusBadge 
+                                status={
+                                  (sale.status === 'CONFIRMED' || sale.status === 'INVOICED') 
+                                    ? 'ACTIVE' 
+                                    : sale.status || 'PENDING'
+                                } 
+                              />
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              {dateStr}
+                              {sale.branch?.branchName && ` • ${sale.branch.branchName}`}
+                            </p>
+                          </div>
+                          <div className="text-right ml-4">
+                            <p className="font-semibold text-gray-900">{formatCurrency(sale.totalAmount || 0)}</p>
+                            <p className="text-xs text-gray-500">
+                              {sale.items?.length || 0} item{(sale.items?.length || 0) !== 1 ? 's' : ''}
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-right ml-4">
-                          <p className="font-semibold text-gray-900">{formatCurrency(sale.totalAmount || 0)}</p>
-                          <p className="text-xs text-gray-500">
-                            {sale.items?.length || 0} item{(sale.items?.length || 0) !== 1 ? 's' : ''}
-                          </p>
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="text-center py-8 text-gray-400">
                       <ShoppingCart size={32} className="mx-auto mb-3 opacity-50" />
@@ -2225,9 +2246,29 @@ const chartOptions = {
                     }
                     
                     const Icon = alertConfig.icon;
-                    const alertDate = alert.createdAt ? new Date(alert.createdAt) : new Date();
-                    const resolvedDate = alert.resolvedAt ? new Date(alert.resolvedAt) : null;
-                    
+                    const alertDate = (() => {
+                      try {
+                        if (alert.createdAt) {
+                          const date = new Date(alert.createdAt);
+                          return !isNaN(date.getTime()) ? date : new Date();
+                        }
+                      } catch (e) {
+                        console.error('Error parsing alert date:', e);
+                      }
+                      return new Date();
+                    })();
+
+                    const resolvedDate = (() => {
+                      try {
+                        if (alert.resolvedAt) {
+                          const date = new Date(alert.resolvedAt);
+                          return !isNaN(date.getTime()) ? date : null;
+                        }
+                      } catch (e) {
+                        console.error('Error parsing resolved date:', e);
+                      }
+                      return null;
+                    })(); 
                     return (
                       <div 
                         key={alert.id || index} 

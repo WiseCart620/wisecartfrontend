@@ -213,7 +213,6 @@ const parseDate = (dateValue) => {
         typeLabel = 'Transfer Out';
         typeColor = 'bg-orange-100 text-orange-700';
       } else if (hasFromLocation && hasToLocation) {
-        // This is a complete transfer showing both sides
         type = 'TRANSFER_COMPLETE';
         typeLabel = 'Transfer';
         typeColor = 'bg-blue-100 text-blue-700';
@@ -927,9 +926,10 @@ const getCorrectTransactionDate = (transaction) => {
                       
                       const isDeliverySubtract = transactionType === 'DELIVERY' && transaction.action === 'SUBTRACT';
                       const isDeliveryAdd = transactionType === 'DELIVERY' && transaction.action === 'ADD';
+                      const isDeleted = transaction.isDeleted === true;
                       
                       return (
-                        <tr key={`transaction-${idx}-${transaction.id}`} className="hover:bg-gray-50">
+                        <tr key={`transaction-${idx}-${transaction.id}`} className={`hover:bg-gray-50 ${isDeleted ? 'bg-red-50 opacity-60' : ''}`}>
                           <td className="px-4 py-3 text-sm">
                               {(() => {
                                 const date = getCorrectTransactionDate(transaction);
@@ -965,34 +965,39 @@ const getCorrectTransactionDate = (transaction) => {
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(transaction)}`}>
                               {getTransferDirection(transaction).replace('_', ' ')}
                             </span>
+                            {isDeleted && (
+                              <span className="ml-2 px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-300">
+                                🗑️ DELETED
+                              </span>
+                            )}
                           </td>
-                          <td className="px-4 py-3 text-sm">
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2">
-            <span className="text-gray-600 text-xs">From:</span>
-            <span className="text-sm font-medium">
-              {isDeliverySubtract ? (
-                // ✅ For DELIVERY SUBTRACT, show the warehouse
-                transaction.fromWarehouse?.warehouseName || 'Warehouse'
-              ) : (
-                fromLocation || 
-                (warehouseSource ? `Warehouse: ${warehouseSource}` : 
-                  (transactionType === 'SALE' ? transaction.fromBranch?.branchName || 'Branch' : '-'))
-              )}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-gray-600 text-xs">To:</span>
-            <span className="text-sm font-medium">
-              {isDeliverySubtract ? (
-                // ✅ For DELIVERY SUBTRACT, show the branch destination
-                transaction.toBranch?.branchName || 'Branch'
-              ) : (
-                toLocation || 
-                (transactionType === 'SALE' ? 'Sale' : '-')
-              )}
-            </span>
-          </div>
+                        <td className="px-4 py-3 text-sm">
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-600 text-xs">From:</span>
+                              <span className="text-sm font-medium">
+                                {isDeliverySubtract ? (
+                                  // ✅ For DELIVERY SUBTRACT, show the warehouse
+                                  transaction.fromWarehouse?.warehouseName || 'Warehouse'
+                                ) : (
+                                  fromLocation || 
+                                  (warehouseSource ? `Warehouse: ${warehouseSource}` : 
+                                    (transactionType === 'SALE' ? transaction.fromBranch?.branchName || 'Branch' : '-'))
+                                )}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-gray-600 text-xs">To:</span>
+                              <span className="text-sm font-medium">
+                                {isDeliverySubtract ? (
+                                  // ✅ For DELIVERY SUBTRACT, show the branch destination
+                                  transaction.toBranch?.branchName || 'Branch'
+                                ) : (
+                                  toLocation || 
+                                  (transactionType === 'SALE' ? 'Sale' : '-')
+                                )}
+                              </span>
+                            </div>
                               {transactionType === 'TRANSFER' && fromLocation && toLocation && (
                                 <div className="text-xs text-blue-600 mt-1 italic">
                                   ↕️ Complete Transfer: {fromLocation} → {toLocation}
@@ -1068,14 +1073,32 @@ const getCorrectTransactionDate = (transaction) => {
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-600">
                             <div className="break-words whitespace-normal">
-                              {transaction.remarks || 'No remarks'}
+                              {isDeleted ? (
+                                <div>
+                                  <div className="font-semibold text-red-600 mb-1">
+                                    ⚠️ This transaction has been deleted
+                                  </div>
+                                  <div className="text-xs text-gray-500 line-through">
+                                    {transaction.remarks || 'No remarks'}
+                                  </div>
+                                  {transaction.deletedAt && (
+                                    <div className="text-xs text-red-500 mt-1">
+                                      Deleted on: {new Date(transaction.deletedAt).toLocaleString()}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <>
+                                  {transaction.remarks || 'No remarks'}
+                                </>
+                              )}
                             </div>
-                            {transaction.deliveryStatus && (
+                            {!isDeleted && transaction.deliveryStatus && (
                               <div className="text-xs text-gray-500 mt-1">
                                 Status: {transaction.deliveryStatus}
                               </div>
                             )}
-                            {transaction.saleStatus && (
+                            {!isDeleted && transaction.saleStatus && (
                               <div className="text-xs text-gray-500 mt-1">
                                 Sale Status: {transaction.saleStatus}
                               </div>
@@ -1798,7 +1821,7 @@ const handleViewTransaction = async (transaction) => {
     };
 
 
-    // Find this function in your code and replace it with this:
+
 
 const handleDelete = async (id) => {
   if (!window.confirm('Are you sure you want to delete this record? This cannot be undone.')) return;
@@ -1806,13 +1829,54 @@ const handleDelete = async (id) => {
   try {
     const transactionToDelete = inventories.find(inv => inv.id === id);
     const isSale = transactionToDelete?.inventoryType === 'SALE';
+    const isDelivery = transactionToDelete?.inventoryType === 'DELIVERY';
     
     await api.delete(`/inventories/${id}`);
     toast.success('Deleted successfully');
     
+    // Remove from inventories list
     setInventories(prev => prev.filter(inv => inv.id !== id));
     
-    // If it's a sale, refresh branch stocks to update sale counts
+    // If transaction history modal is open, mark ALL related transactions as deleted
+    if (showTransactionsModal && selectedProduct) {
+      setProductTransactions(prev => prev.map(t => {
+        // Match by reference number or reference ID
+        let matchesDeletedTransaction = false;
+        
+        if (transactionToDelete.inventoryType === 'SALE') {
+          const saleId = id > 2000000 ? id - 2000000 : id;
+          matchesDeletedTransaction = 
+            t.referenceNumber === `SALE-${saleId}` ||
+            t.referenceId === saleId ||
+            (t.remarks && t.remarks.includes(`SALE-${saleId}`));
+        } else if (transactionToDelete.inventoryType === 'DELIVERY') {
+          const deliveryId = id > 1000000 ? id - 1000000 : id;
+          matchesDeletedTransaction = 
+            t.referenceNumber === transactionToDelete.remarks?.match(/Delivery: ([^\s]+)/)?.[1] ||
+            t.referenceId === deliveryId ||
+            (t.remarks && t.remarks.includes(transactionToDelete.remarks?.match(/Delivery: ([^\s]+)/)?.[1]));
+        } else {
+          // For regular inventory transactions (STOCK_IN, TRANSFER, RETURN, DAMAGE)
+          matchesDeletedTransaction = 
+            t.referenceId === id ||
+            t.referenceNumber === `INV-${id}` ||
+            (t.remarks && t.remarks.includes(`INV-${id}`));
+        }
+        
+        if (matchesDeletedTransaction) {
+          return {
+            ...t,
+            isDeleted: true,
+            deletedAt: new Date().toISOString(),
+            originalRemarks: t.remarks
+          };
+        }
+        return t;
+      }));
+      toast.info('Transaction marked as deleted in history');
+    }
+    
+    // If it's a sale or delivery, refresh stock data
     if (isSale) {
       try {
         const branchStocksRes = await api.get('/stocks/branches');
@@ -1821,6 +1885,23 @@ const handleDelete = async (id) => {
         }
       } catch (refreshErr) {
         console.warn('Could not refresh branch stocks:', refreshErr);
+      }
+    }
+    
+    if (isDelivery) {
+      try {
+        const [warehouseStocksRes, branchStocksRes] = await Promise.all([
+          api.get('/stocks/warehouses'),
+          api.get('/stocks/branches')
+        ]);
+        if (warehouseStocksRes.success) {
+          setWarehouseStocks(warehouseStocksRes.data || []);
+        }
+        if (branchStocksRes.success) {
+          setBranchStocks(branchStocksRes.data || []);
+        }
+      } catch (refreshErr) {
+        console.warn('Could not refresh stocks:', refreshErr);
       }
     }
     
@@ -1834,7 +1915,7 @@ const handleDelete = async (id) => {
 };
 
 
-    // ────────────────────── Searchable Warehouse Dropdown ──────────────────────
+
   const SearchableWarehouseDropdown = ({ warehouses, value, onChange, placeholder }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
