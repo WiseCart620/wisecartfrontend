@@ -12,6 +12,7 @@
   import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler } from 'chart.js';
   import { Line, Bar } from 'react-chartjs-2';
   ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler);
+  import { LoadingOverlay } from './LoadingOverlay';
 
   const formatCurrency = (amount) => {
     if (amount === null || amount === undefined) return '₱0.00';
@@ -189,7 +190,6 @@
       topProduct: null,
       salesVelocity: 0,
     });
-    const [loading, setLoading] = useState(true);
     const [sales, setSales] = useState([]);
     const [clients, setClients] = useState([]);
     const [branches, setBranches] = useState([]);
@@ -216,6 +216,8 @@
     const [searchQuery, setSearchQuery] = useState('');
     const [filterSeverity, setFilterSeverity] = useState('all');
     const [filterType, setFilterType] = useState('all');
+    const [actionLoading, setActionLoading] = useState(false);
+    const [loadingMessage, setLoadingMessage] = useState('');
 
 
     useEffect(() => {
@@ -267,22 +269,23 @@
   }, [selectedClient, branches, sales]);
 
 
-  const loadAlerts = async () => {
+      const loadAlerts = async () => {
     try {
+      setActionLoading(true);
+      setLoadingMessage('Loading alerts...');
       const alertsRes = await api.get('/alerts');
       
       if (alertsRes.success && alertsRes.data) {
         const allAlerts = alertsRes.data || [];
-        
-        
         setAlerts(allAlerts);
+        setActionLoading(false);
+        setLoadingMessage('');
         return;
       }
     } catch (err) {
       console.error('Failed to load from /alerts, trying separate endpoints...', err);
     }
     
-    // Fallback to separate endpoints
     try {
       const [activeRes, resolvedRes] = await Promise.all([
         api.get('/alerts').catch(() => ({ success: false, data: [] })),
@@ -299,6 +302,9 @@
     } catch (separateErr) {
       console.error('Failed to load alerts from all endpoints', separateErr);
       setAlerts([]);
+    } finally {
+      setActionLoading(false);
+      setLoadingMessage('');
     }
   };
 
@@ -307,15 +313,12 @@
 
   const getFilteredAlerts = useMemo(() => {
     let filtered = [...alerts];
-    
-    // Filter by active/resolved tab
     if (activeTab === 'active') {
       filtered = filtered.filter(alert => !alert.isResolved);
     } else if (activeTab === 'resolved') {
       filtered = filtered.filter(alert => alert.isResolved);
     }
-    
-    // Apply search filter
+  
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(alert => 
@@ -498,7 +501,6 @@
       let quantityData = [];
       
       if (chartType === 'monthly') {
-        // Sort months chronologically
         const sortedMonths = Object.keys(product.byMonth).sort((a, b) => {
           const [monthA, yearA] = a.split(' ');
           const [monthB, yearB] = b.split(' ');
@@ -519,7 +521,7 @@
       } else if (chartType === 'client') {
         labels = Object.keys(product.byClient).sort((a, b) => 
           product.byClient[b].revenue - product.byClient[a].revenue
-        ).reverse().slice(0, 10); // Top 10 clients
+        ).reverse().slice(0, 10);
         revenueData = labels.map(client => product.byClient[client].revenue);
         quantityData = labels.map(client => product.byClient[client].quantity);
       }
@@ -550,8 +552,6 @@
     const generateInsights = () => {
       const insights = [];
       const now = new Date();
-      
-      // 1. Sales velocity insight
       const last7DaysSales = sales.filter(sale => {
         const saleDate = new Date(sale.createdAt || sale.date);
         const daysDiff = (now - saleDate) / (1000 * 60 * 60 * 24);
@@ -568,7 +568,7 @@
         });
       }
 
-      // 2. Top product insight
+
       const topProduct = performanceData.topProducts[0];
       if (topProduct && topProduct.revenue > 10000) {
         insights.push({
@@ -579,7 +579,7 @@
         });
       }
 
-      // 3. Branch performance insight
+
       if (performanceData.topBranches.length > 0) {
         const bestBranch = performanceData.topBranches[0];
         const worstBranch = performanceData.topBranches[performanceData.topBranches.length - 1];
@@ -594,7 +594,6 @@
         }
       }
 
-      // 4. Time-based insight (morning/afternoon sales)
       const morningSales = sales.filter(sale => {
         const saleDate = new Date(sale.createdAt || sale.date);
         return saleDate.getHours() < 12;
@@ -619,6 +618,8 @@
 
     const loadStats = async () => {
       try {
+        setActionLoading(true)
+        setLoadingMessage('loading stats');
         const [salesRes, deliveriesRes, productsRes, clientsRes, branchesRes] = await Promise.all([
           api.get('/sales'),
           api.get('/deliveries'),
@@ -681,7 +682,6 @@
           ? ((thisMonthRevenue - prevMonthRevenue) / prevMonthRevenue * 100) 
           : thisMonthRevenue > 0 ? 100 : 0;
 
-        // Calculate sales velocity (sales per day in last 30 days)
         const last30Days = salesData.filter(s => {
           const saleDate = new Date(s.createdAt || s.date);
           const daysDiff = (new Date() - saleDate) / (1000 * 60 * 60 * 24);
@@ -689,7 +689,6 @@
         });
         const salesVelocity = last30Days.length / 30;
 
-        // Find top product
         const productAnalysis = getProductSalesAnalysis();
         setProductSalesData(productAnalysis);
         
@@ -721,7 +720,8 @@
         console.error('Failed to load dashboard data', err);
         alert('Failed to load dashboard data: ' + err.message);
       } finally {
-        setLoading(false);
+        setActionLoading(false);
+        setLoadingMessage('');
       }
     };
 
@@ -899,14 +899,6 @@ const chartData = useMemo(() => {
 
 const monthlySalesData = getMonthlySalesData();
 
-if (loading) {
-  return (
-    <div className="flex items-center justify-center h-screen bg-gray-50">
-      <div className="text-xl text-gray-600">Loading Dashboard...</div>
-    </div>
-  );
-}
-
 
 const chartOptions = {
   responsive: true,
@@ -984,9 +976,9 @@ const chartOptions = {
           label: 'Sales Count',
           data: Object.keys(salesByStatus.counts).map(status => salesByStatus.counts[status]),
           backgroundColor: [
-            'rgba(16, 185, 129, 0.8)',  // ACTIVE - green
-            'rgba(245, 158, 11, 0.8)',  // PENDING - yellow
-            'rgba(239, 68, 68, 0.8)',   // CANCELLED - red
+            'rgba(16, 185, 129, 0.8)',
+            'rgba(245, 158, 11, 0.8)',
+            'rgba(239, 68, 68, 0.8)',
           ],
           borderColor: [
             '#10B981',
@@ -999,7 +991,13 @@ const chartOptions = {
     };
 
 
+    
+
+
+
     return (
+      <>
+      <LoadingOverlay show={actionLoading} message={loadingMessage || 'Loading...'} />
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}
@@ -2495,8 +2493,8 @@ const chartOptions = {
       </div>
     </>
   )}
-      </div>
-
+  </div>
+    </>
     );
   };
 

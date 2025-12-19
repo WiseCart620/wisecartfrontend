@@ -2,12 +2,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Edit2, Trash2, Eye, Check, X, ChevronDown, ChevronLeft, ChevronRight, Package, Calendar, User, MessageSquare, Warehouse, Store, AlertCircle } from 'lucide-react';
 import { api } from '../services/api';
+import { LoadingOverlay } from './LoadingOverlay';
 
 // Searchable Dropdown Component
 const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey, valueKey, required = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
+  
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -190,10 +192,10 @@ const InventoryRecordsManagement = () => {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [warehouseStocks, setWarehouseStocks] = useState({});
   const [branchStocks, setBranchStocks] = useState({});
-  
-
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
 
   const [formData, setFormData] = useState({
     inventoryType: 'STOCK_IN',
@@ -222,6 +224,7 @@ const InventoryRecordsManagement = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      setLoadingMessage('Loading inventory records...');
       const [inventoriesRes, productsRes, warehousesRes, branchesRes] = await Promise.all([
         api.get('/inventories'),
         api.get('/products'),
@@ -248,6 +251,7 @@ const InventoryRecordsManagement = () => {
       alert('Failed to load data: ' + error.message);
     } finally {
       setLoading(false);
+      setLoadingMessage('');
     }
   };
 
@@ -472,7 +476,7 @@ const InventoryRecordsManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.verifiedBy) {
       alert('Please enter verified by name');
       return;
@@ -484,6 +488,8 @@ const InventoryRecordsManagement = () => {
     }
 
     try {
+      setActionLoading(true);
+      setLoadingMessage(modalMode === 'create' ? 'Creating inventory record...' : 'Updating inventory record...');
       const payload = {
         ...formData,
         status: 'PENDING'
@@ -506,8 +512,13 @@ const InventoryRecordsManagement = () => {
       console.error('Error:', error);
       console.error('Error response:', error.response);
       alert('Failed to save inventory: ' + error.message);
+    }finally{
+      setActionLoading(false);
+      setLoadingMessage('');
     }
   };
+
+
 
   const handleConfirmInventory = async (inventory) => {
     let locationInfo = '';
@@ -535,6 +546,8 @@ const InventoryRecordsManagement = () => {
     }
     
     try {
+      setActionLoading(true);
+      setLoadingMessage('Confirming inventory...');
       const loadingToast = document.createElement('div');
       loadingToast.className = 'fixed top-4 right-4 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
       loadingToast.textContent = '⏳ Confirming inventory...';
@@ -555,13 +568,18 @@ const InventoryRecordsManagement = () => {
       console.error('Failed to confirm inventory:', error);
       const errorMsg = error.response?.data?.error || error.message || 'Unknown error';
       alert(`❌ Failed to confirm inventory:\n\n${errorMsg}\n\nPlease check stock availability and try again.`);
+    }finally{
+      setActionLoading(false);
+      setLoadingMessage('');
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this inventory record?')) return;
-    
+
     try {
+      setActionLoading(true);
+      setLoadingMessage('Deleting inventory record...');
       const response = await api.delete(`/inventories/${id}`);
       if (response.success) {
         alert('Inventory deleted successfully');
@@ -574,6 +592,9 @@ const InventoryRecordsManagement = () => {
       }
     } catch (error) {
       alert('Failed to delete: ' + error.message);
+    }finally{
+      setActionLoading(false);
+      setLoadingMessage('');
     }
   };
 
@@ -731,15 +752,10 @@ const InventoryRecordsManagement = () => {
 
   const needsFromLocation = ['TRANSFER', 'RETURN'].includes(formData.inventoryType);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="text-xl text-gray-600">Loading Inventory Records...</div>
-      </div>
-    );
-  }
 
   return (
+    <>
+    <LoadingOverlay show={loading || actionLoading} message={loadingMessage || ''} />
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
@@ -1396,6 +1412,7 @@ const InventoryRecordsManagement = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

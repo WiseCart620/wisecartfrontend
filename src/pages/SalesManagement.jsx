@@ -4,6 +4,8 @@ import { api } from '../services/api';
 import toast, { Toaster } from 'react-hot-toast';
 import { Search, Plus, Edit2, Trash2, Eye, FileText, Check, Filter, X, Printer, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import './sales-memo-print.css';
+import { LoadingOverlay } from './LoadingOverlay';
+
 
 const formatCurrency = (amount) => {
   if (amount === null || amount === undefined) return '0.00';
@@ -163,6 +165,8 @@ const SalesManagement = () => {
   const [itemsPerPage] = useState(10);
   const [showSalesMemoModal, setShowSalesMemoModal] = useState(false);
   const [salesMemo, setSalesMemo] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
 
   const [formData, setFormData] = useState({
     branchId: '',
@@ -186,53 +190,55 @@ const SalesManagement = () => {
   }, [statusFilter]);
 
   const loadData = async () => {
-    setLoading(true);
+  setLoading(true);
+  setLoadingMessage('Loading sales data...');
+  try {
+    const [
+      invRes,
+      prodRes,
+      warehousesRes,
+      branchesRes,
+      warehouseStocksRes,
+      branchStocksRes,
+      salesRes,
+      clientsRes
+    ] = await Promise.all([
+      api.get('/inventories'),
+      api.get('/products'),
+      api.get('/warehouse'),
+      api.get('/branches'),
+      api.get('/stocks/warehouses'),
+      api.get('/stocks/branches'),
+      api.get('/sales'),
+      api.get('/clients')
+    ]);
+
+    if (invRes.success) setInventories(invRes.data || []);
+    if (prodRes.success) setProducts(prodRes.data || []);
+    if (warehousesRes.success) setWarehouses(warehousesRes.data || []);
+    if (branchesRes.success) setBranches(branchesRes.data || []);
+    if (warehouseStocksRes.success) setWarehouseStocks(warehouseStocksRes.data || []);
+    if (branchStocksRes.success) setBranchStocks(branchStocksRes.data || []);
+    if (salesRes.success) setSales(salesRes.data || []);
+    if (clientsRes.success) setClients(clientsRes.data || []);
+
     try {
-      const [
-        invRes,
-        prodRes,
-        warehousesRes,
-        branchesRes,
-        warehouseStocksRes,
-        branchStocksRes,
-        salesRes,
-        clientsRes
-      ] = await Promise.all([
-        api.get('/inventories'),
-        api.get('/products'),
-        api.get('/warehouse'),
-        api.get('/branches'),
-        api.get('/stocks/warehouses'),
-        api.get('/stocks/branches'),
-        api.get('/sales'),
-        api.get('/clients')
-      ]);
-
-      if (invRes.success) setInventories(invRes.data || []);
-      if (prodRes.success) setProducts(prodRes.data || []);
-      if (warehousesRes.success) setWarehouses(warehousesRes.data || []);
-      if (branchesRes.success) setBranches(branchesRes.data || []);
-      if (warehouseStocksRes.success) setWarehouseStocks(warehouseStocksRes.data || []);
-      if (branchStocksRes.success) setBranchStocks(branchStocksRes.data || []);
-      if (salesRes.success) setSales(salesRes.data || []);
-      if (clientsRes.success) setClients(clientsRes.data || []);
-
-      try {
-        const summaryRes = await api.get('/inventories/products/summary');
-        if (summaryRes.success) {
-          setProductSummaries(summaryRes.data || []);
-        }
-      } catch (summaryErr) {
-        console.warn('Could not load product summaries:', summaryErr);
-        setProductSummaries([]);
+      const summaryRes = await api.get('/inventories/products/summary');
+      if (summaryRes.success) {
+        setProductSummaries(summaryRes.data || []);
       }
-    } catch (err) {
-      console.error('Failed to load data:', err);
-      alert('Failed to load data');
-    } finally {
-      setLoading(false);
+    } catch (summaryErr) {
+      console.warn('Could not load product summaries:', summaryErr);
+      setProductSummaries([]);
     }
-  };
+  } catch (err) {
+    console.error('Failed to load data:', err);
+    alert('Failed to load data');
+  } finally {
+    setLoading(false);
+    setLoadingMessage('');
+  }
+};
 
   const getProductPriceForClient = async (productId, clientId) => {
     try {
@@ -446,7 +452,6 @@ const handleSubmit = async (e) => {
     return;
   }
   
-  // Validate all items have products and quantities
   for (const item of formData.items) {
     if (!item.productId || !item.quantity || item.quantity <= 0) {
       toast.error('All items must have a product and quantity greater than 0');
@@ -454,6 +459,9 @@ const handleSubmit = async (e) => {
     }
   }
   
+  setActionLoading(true);
+  setLoadingMessage(modalMode === 'create' ? 'Creating sale...' : 'Updating sale...');
+
   try {
     if (modalMode === 'create') {
       const response = await api.post('/sales', formData);
@@ -478,6 +486,9 @@ const handleSubmit = async (e) => {
     console.error('Error saving sale:', error);
     const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to save sale';
     toast.error(errorMessage);
+  } finally {
+    setActionLoading(false);
+    setLoadingMessage('');
   }
 };
 
@@ -570,6 +581,9 @@ const handleUpdateStatus = async (saleId, newStatus) => {
     return;
   }
   
+  setActionLoading(true);
+  setLoadingMessage(`${action.charAt(0).toUpperCase() + action.slice(1)}ing sale...`);
+
   try {
     const response = await api.put(`/sales/${saleId}/status?status=${newStatus}`);
     
@@ -587,6 +601,9 @@ const handleUpdateStatus = async (saleId, newStatus) => {
                         error.message || 
                         `Failed to ${action} sale`;
     toast.error(errorMessage);
+  } finally {
+    setActionLoading(false);
+    setLoadingMessage('');
   }
 };
 
@@ -597,12 +614,14 @@ const handleDelete = async (saleId) => {
     return;
   }
   
+  setActionLoading(true);
+  setLoadingMessage('Deleting sale...');
+
   try {
     const response = await api.delete(`/sales/${saleId}`);
     
     if (response.success || response.data?.message) {
       toast.success('Sale deleted successfully!');
-
       loadData();
 
       try {
@@ -624,6 +643,9 @@ const handleDelete = async (saleId) => {
                         error.message || 
                         'Failed to delete sale';
     toast.error(errorMessage);
+  } finally {
+    setActionLoading(false);
+    setLoadingMessage('');
   }
 };
 
@@ -715,16 +737,17 @@ const handleDelete = async (saleId) => {
     };
   });
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="text-xl text-gray-600">Loading Sales...</div>
-      </div>
-    );
-  }
+      if (loading) {
+      return (
+        <div className="flex items-center justify-center h-screen bg-gray-50">
+          <LoadingOverlay show={true} message="Loading sales data..." />
+        </div>
+      );
+    }
 
     return (
       <div className="min-h-screen bg-gray-50 p-6">
+        <LoadingOverlay show={actionLoading} message={loadingMessage} />
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Sales Management</h1>

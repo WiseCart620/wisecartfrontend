@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Edit2, Trash2, Eye, Check, X, ChevronDown, ChevronLeft, ChevronRight, Truck, Package, Printer } from 'lucide-react';
 import { api } from '../services/api';
 import './deliveryReceipt.css';
+import { LoadingOverlay } from './LoadingOverlay';
 
 
-// Searchable Dropdown Component
 const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey, valueKey, required = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -103,7 +103,6 @@ const DeliveryManagement = () => {
   const [products, setProducts] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedDelivery, setSelectedDelivery] = useState(null);
@@ -113,8 +112,8 @@ const DeliveryManagement = () => {
   const [warehouseStocks, setWarehouseStocks] = useState({});
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
-
-  // Pagination state
+  const [actionLoading, setActionLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
@@ -258,7 +257,7 @@ const DeliveryManagement = () => {
 
   const loadData = async () => {
     try {
-      setLoading(true);
+      setActionLoading(true);
       const [deliveriesRes, branchesRes, productsRes, warehousesRes, clientsRes] = await Promise.all([
         api.get('/deliveries/list'),
         api.get('/branches'),
@@ -276,7 +275,7 @@ const DeliveryManagement = () => {
       console.error('Failed to load data', error);
       alert('Failed to load data: ' + error.message);
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   };
 
@@ -368,6 +367,8 @@ const DeliveryManagement = () => {
 
   const handleUpdateStatus = async (id, status) => {
     try {
+      setActionLoading(true);
+      setLoadingMessage(`Updating status to ${status}...`);
       const response = await api.patch(`/deliveries/${id}/status`, null, {
         params: { status: status }
       });
@@ -388,6 +389,9 @@ const DeliveryManagement = () => {
     } catch (error) {
       console.error('Failed to update status:', error);
       alert('Failed to update status: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setActionLoading(false);
+      setLoadingMessage('');
     }
   };
 
@@ -437,6 +441,8 @@ const DeliveryManagement = () => {
     }
 
     try {
+      setActionLoading(true);
+      setLoadingMessage(modalMode === 'create' ? 'Creating delivery...' : 'Updating delivery...');
       for (const item of formData.items) {
         const stockResponse = await api.get(`/stocks/warehouses/${item.warehouseId}/products/${item.productId}`);
         
@@ -462,6 +468,9 @@ const DeliveryManagement = () => {
       setCurrentPage(1);
     } catch (error) {
       alert('Failed to save delivery: ' + error.message);
+    }finally{
+      setActionLoading(false);
+      setLoadingMessage('');
     }
   };
 
@@ -469,9 +478,9 @@ const DeliveryManagement = () => {
   if (!window.confirm('Are you sure you want to delete this delivery?')) return;
   
   try {
+    setActionLoading(true);
+    setLoadingMessage('Deleting delivery...');
     const response = await api.delete(`/deliveries/${id}`);
-    
-    // ✅ Check if the response indicates an error
     if (!response.success) {
       alert(response.error || 'Failed to delete delivery');
       return;
@@ -492,6 +501,9 @@ const DeliveryManagement = () => {
     alert(errorMessage);
     
     console.error('Delete error:', error);
+  }finally{
+    setActionLoading(false);
+    setLoadingMessage('');
   }
 };
 
@@ -633,15 +645,11 @@ const DeliveryManagement = () => {
   const productOptions = products.map(p => ({ id: p.id, name: `${p.productName} (${p.sku || p.upc})` }));
   const warehouseOptions = warehouses.map(w => ({ id: w.id, name: `${w.warehouseName} (${w.warehouseCode})` }));
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="text-xl text-gray-600">Loading Deliveries...</div>
-      </div>
-    );
-  }
+
 
   return (
+    <>
+    <LoadingOverlay show={actionLoading} message={loadingMessage || 'Loading...'} />
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
@@ -1642,68 +1650,68 @@ const DeliveryManagement = () => {
       )}
 
 
-      {Array.from({ length: Math.max(0, 16 - (receiptData.items?.length || 0)) }).map((_, i) => (
-        <tr key={`empty-${i}`} className="border-b-0">
-          <td className="px-3 py-0.5 text-xs">&nbsp;</td>
-          <td className="px-2 py-0.5 text-xs">&nbsp;</td>
-          <td className="px-3 py-0.5 text-xs">&nbsp;</td>
-          <td className="px-3 py-0.5 text-xs">&nbsp;</td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
+            {Array.from({ length: Math.max(0, 16 - (receiptData.items?.length || 0)) }).map((_, i) => (
+              <tr key={`empty-${i}`} className="border-b-0">
+                <td className="px-3 py-0.5 text-xs">&nbsp;</td>
+                <td className="px-2 py-0.5 text-xs">&nbsp;</td>
+                <td className="px-3 py-0.5 text-xs">&nbsp;</td>
+                <td className="px-3 py-0.5 text-xs">&nbsp;</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-<div className="text-xs text-black-900 text-[11px] mr-29 text-right mt-0 font-bold leading-tight">
-  Receive the above goods in good order and condition
-</div>
+      <div className="text-xs text-black-900 text-[11px] mr-29 text-right mt-0 font-bold leading-tight">
+        Receive the above goods in good order and condition
+      </div>
 
 
-<div className="grid grid-cols-2 gap-8 mt-4">
-  <div>
-    <div className="mb-3">
-      <div className="flex items-center mb-0">
-        <span className="font-bold text-gray-900 text-sm w-25 print:text-xs">Prepared by:</span>
-        <div className="relative">
-          <input 
-            type="text" 
-            value={receiptData.preparedBy || ''}
-            onChange={(e) => setReceiptData({
-              ...receiptData,
-              preparedBy: e.target.value
-            })}
-            className="text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
-          />
-          <div className="hidden print:block text-black-900 text-sm w-full px-2">
-            {receiptData.preparedBy || ''}
+      <div className="grid grid-cols-2 gap-8 mt-4">
+        <div>
+          <div className="mb-3">
+            <div className="flex items-center mb-0">
+              <span className="font-bold text-gray-900 text-sm w-25 print:text-xs">Prepared by:</span>
+              <div className="relative">
+                <input 
+                  type="text" 
+                  value={receiptData.preparedBy || ''}
+                  onChange={(e) => setReceiptData({
+                    ...receiptData,
+                    preparedBy: e.target.value
+                  })}
+                  className="text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
+                />
+                <div className="hidden print:block text-black-900 text-sm w-full px-2">
+                  {receiptData.preparedBy || ''}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <div className="mb-2">
+            <div className="flex items-center mb-0">
+              <span className="font-bold text-gray-900 text-sm w-40 print:text-xs">Received by:</span>
+              <div className="text-black-900 text-sm w-full border-b border-gray-300 print:border-b print:border-black h-5">
+                &nbsp;
+              </div>
+            </div>
+            <div className="text-xs text-black-900 mt-0 ml-32 font-bold print:text-xs print:ml-24 leading-tight">
+              Customer Signature over Printed Name
+            </div>
+          </div>
+          <div className="mt-2">
+            <div className="flex items-center mb-0">
+              <span className="font-bold text-gray-900 text-sm w-40 print:text-xs">Date Received:</span>
+              <div className="text-black-900 text-sm w-full border-b border-gray-300 print:border-b print:border-black h-5">
+                &nbsp;
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-  
-  <div>
-    <div className="mb-2">
-      <div className="flex items-center mb-0">
-        <span className="font-bold text-gray-900 text-sm w-40 print:text-xs">Received by:</span>
-        <div className="text-black-900 text-sm w-full border-b border-gray-300 print:border-b print:border-black h-5">
-          &nbsp;
-        </div>
-      </div>
-      <div className="text-xs text-black-900 mt-0 ml-32 font-bold print:text-xs print:ml-24 leading-tight">
-        Customer Signature over Printed Name
-      </div>
-    </div>
-    <div className="mt-2">
-      <div className="flex items-center mb-0">
-        <span className="font-bold text-gray-900 text-sm w-40 print:text-xs">Date Received:</span>
-        <div className="text-black-900 text-sm w-full border-b border-gray-300 print:border-b print:border-black h-5">
-          &nbsp;
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
 
         <div className="mt-12 pt-4 text-center">
@@ -1738,6 +1746,7 @@ const DeliveryManagement = () => {
 )}
       </div>
     </div>
+    </>
   );
 };
 

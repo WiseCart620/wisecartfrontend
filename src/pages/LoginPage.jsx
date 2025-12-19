@@ -1,13 +1,17 @@
-// src/pages/LoginPage.jsx
+
 import React, { useState } from 'react';
 import { Mail, Lock, LogIn, AlertCircle, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import { LoadingOverlay } from './LoadingOverlay';
 
 const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
+  const [actionLoading, setActionLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
+  
 
   const [formData, setFormData] = useState({
     username: '',
@@ -20,48 +24,54 @@ const LoginPage = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+  e.preventDefault();
+  setLoading(true);
+  setError('');
+  setActionLoading(true);
+  setLoadingMessage('Signing in...');
 
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    });
 
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.error || 'Invalid username or password');
-      }
-
-      const data = await response.json();
-
-      login(data.token, {
-        username: data.username,
-        fullName: data.fullName,
-        role: data.role
-      });
-
-      toast.success(`Welcome back, ${data.fullName || data.username}!`);
-      window.location.href = '/dashboard';
-    } catch (err) {
-      setError(err.message);
-      toast.error(err.message);
-    } finally {
-      setLoading(false);
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Invalid username or password');
     }
-  };
+
+    const data = await response.json();
+
+    login(data.token, {
+      username: data.username,
+      fullName: data.fullName,
+      role: data.role
+    });
+
+    toast.success(`Welcome back, ${data.fullName || data.username}!`);
+    window.location.href = '/dashboard';
+  } catch (err) {
+    setError(err.message);
+    toast.error(err.message);
+  } finally {
+    setLoading(false);
+    setActionLoading(false);
+    setLoadingMessage('');
+  }
+};
+
+
 
   return (
+    <>
+    <LoadingOverlay show={actionLoading} message={loadingMessage} />
     <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
-      {/* Background Pattern */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-800 to-indigo-900 opacity-90" />
       <div className="absolute inset-0 bg-grid-white/5 bg-grid" />
 
       <div className="relative w-full max-w-md">
-        {/* Main Card */}
         <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-8 text-white text-center">
             <div className="w-16 h-16 bg-white/20 rounded-2xl mx-auto flex items-center justify-center backdrop-blur-sm">
@@ -158,6 +168,7 @@ const LoginPage = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

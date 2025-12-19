@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Search, X, Warehouse, MapPin, Building, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
-
-// Import your actual API from services
+import { LoadingOverlay } from './LoadingOverlay';
 import { api } from '../services/api';
 
 const WarehouseManagement = () => {
@@ -14,7 +13,9 @@ const WarehouseManagement = () => {
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(9); // 9 items for 3x3 grid
+  const [itemsPerPage] = useState(9);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
 
   const [formData, setFormData] = useState({
     warehouseCode: '',
@@ -33,9 +34,9 @@ const WarehouseManagement = () => {
 
   const loadWarehouses = async () => {
   setLoading(true);
+  setLoadingMessage('Loading warehouses...');
   try {
     const response = await api.get('/warehouse');
-    // Check if response is successful and has data
     if (response.success) {
       setWarehouses(response.data || []);
     } else {
@@ -48,8 +49,11 @@ const WarehouseManagement = () => {
     setWarehouses([]);
   } finally {
     setLoading(false);
+    setLoadingMessage('');
   }
 };
+
+
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -59,45 +63,50 @@ const WarehouseManagement = () => {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Validation
-    if (!formData.warehouseCode || !formData.warehouseName || !formData.address || 
-        !formData.city || !formData.province) {
-      toast.error('Please fill in all required fields');
-      return;
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!formData.warehouseCode || !formData.warehouseName || !formData.address || 
+      !formData.city || !formData.province) {
+    toast.error('Please fill in all required fields');
+    return;
+  }
+
+  setActionLoading(true);
+  setLoadingMessage(editingWarehouse ? 'Updating warehouse...' : 'Creating warehouse...');
+
+  try {
+    const payload = {
+      warehouseCode: formData.warehouseCode,
+      warehouseName: formData.warehouseName,
+      address: formData.address,
+      city: formData.city,
+      province: formData.province,
+      area: formData.area || null,
+      region: formData.region || null,
+      isDefault: formData.isDefault
+    };
+
+    if (editingWarehouse) {
+      await api.put(`/warehouse/${editingWarehouse.id}`, payload);
+      toast.success('Warehouse updated successfully');
+    } else {
+      await api.post('/warehouse', payload);
+      toast.success('Warehouse created successfully');
     }
 
-    try {
-      const payload = {
-        warehouseCode: formData.warehouseCode,
-        warehouseName: formData.warehouseName,
-        address: formData.address,
-        city: formData.city,
-        province: formData.province,
-        area: formData.area || null,
-        region: formData.region || null,
-        isDefault: formData.isDefault
-      };
-
-      if (editingWarehouse) {
-        await api.put(`/warehouse/${editingWarehouse.id}`, payload);
-        toast.success('Warehouse updated successfully');
-      } else {
-        await api.post('/warehouse', payload);
-        toast.success('Warehouse created successfully');
-      }
-
-      setShowModal(false);
-      resetForm();
-      loadWarehouses();
-      setCurrentPage(1); // Reset to first page after adding/editing
-    } catch (error) {
-      toast.error(error.message || 'Failed to save warehouse');
-      console.error(error);
-    }
-  };
+    setShowModal(false);
+    resetForm();
+    loadWarehouses();
+    setCurrentPage(1);
+  } catch (error) {
+    toast.error(error.message || 'Failed to save warehouse');
+    console.error(error);
+  } finally {
+    setActionLoading(false);
+    setLoadingMessage('');
+  }
+};
 
   const handleEdit = (warehouse) => {
     setEditingWarehouse(warehouse);
@@ -115,21 +124,26 @@ const WarehouseManagement = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this warehouse?')) return;
-    
-    try {
-      await api.delete(`/warehouse/${id}`);
-      toast.success('Warehouse deleted successfully');
-      loadWarehouses();
-      // If the last item on the current page is deleted, go to previous page
-      if (currentWarehouses.length % itemsPerPage === 1 && currentPage > 1) {
-        setCurrentPage(currentPage - 1);
-      }
-    } catch (error) {
-      toast.error('Failed to delete warehouse');
-      console.error(error);
+  if (!window.confirm('Are you sure you want to delete this warehouse?')) return;
+  
+  setActionLoading(true);
+  setLoadingMessage('Deleting warehouse...');
+
+  try {
+    await api.delete(`/warehouse/${id}`);
+    toast.success('Warehouse deleted successfully');
+    loadWarehouses();
+    if (currentWarehouses.length % itemsPerPage === 1 && currentPage > 1) {
+      setCurrentPage(currentPage - 1);
     }
-  };
+  } catch (error) {
+    toast.error('Failed to delete warehouse');
+    console.error(error);
+  } finally {
+    setActionLoading(false);
+    setLoadingMessage('');
+  }
+};
 
   const resetForm = () => {
     setFormData({
@@ -183,15 +197,20 @@ const WarehouseManagement = () => {
     return pageNumbers;
   };
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
-  }
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center h-screen">
+          <LoadingOverlay show={true} message="Loading warehouses..." />
+        </div>
+      );
+    }
+
+
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      <LoadingOverlay show={actionLoading} message={loadingMessage} />
       <Toaster position="top-right" />
-
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Warehouse Management</h1>
         <p className="text-gray-600 mt-1">Manage your warehouse locations and facilities</p>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Plus, Edit2, Trash2, Search, X, Package, DollarSign, Tag, Globe, User, Box, 
   Weight, Ruler, Palette, ChevronDown, ChevronLeft, ChevronRight, 
@@ -6,12 +6,16 @@ import {
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { api } from '../services/api';
+import { LoadingOverlay } from './LoadingOverlay';
+
 
 
 const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey, valueKey, required = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -104,6 +108,283 @@ const variationTypes = [
   'SIZE', 'COLOR', 'PACK', 'FLAVOR', 'MATERIAL', 'STYLE', 'VOLUME', 'OTHER'
 ];
 
+
+
+const productCategories = [
+  'Electronics',
+  'Clothing',
+  'Food & Beverages',
+  'Home & Garden',
+  'Health & Beauty',
+  'Sports & Outdoors',
+  'Toys & Games',
+  'Books & Media',
+  'Office Supplies',
+  'Automotive',
+  'Pet Supplies',
+  'Other'
+];
+
+
+
+const CategoryInput = ({ value, onChange, categories }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [inputValue, setInputValue] = useState(value || '');
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    setInputValue(value || '');
+  }, [value]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filteredCategories = categories.filter(cat =>
+    cat.toLowerCase().includes(inputValue.toLowerCase())
+  );
+
+  const handleInputChange = (e) => {
+    const newValue = e.target.value;
+    setInputValue(newValue);
+    onChange(newValue);
+    setIsOpen(true);
+  };
+
+  const handleSelectCategory = (category) => {
+    setInputValue(category);
+    onChange(category);
+    setIsOpen(false);
+  };
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      <input
+        type="text"
+        value={inputValue}
+        onChange={handleInputChange}
+        onFocus={() => setIsOpen(true)}
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        placeholder="Enter or select category"
+      />
+      
+      {isOpen && filteredCategories.length > 0 && (
+        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          {filteredCategories.map((category) => (
+            <button
+              key={category}
+              type="button"
+              onClick={() => handleSelectCategory(category)}
+              className={`w-full px-4 py-2 text-left hover:bg-blue-50 transition text-sm ${
+                value === category ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+      )}
+      
+      {inputValue && !categories.includes(inputValue) && (
+        <p className="mt-1 text-xs text-blue-600">
+          ✓ Custom category: "{inputValue}"
+        </p>
+      )}
+    </div>
+  );
+};
+
+
+
+
+
+const MultiClientPriceSelector = ({ clients, selectedPrices, onChange, assignToRemaining, remainingPrice }) => {
+  const [showAllClients, setShowAllClients] = useState(false);
+
+  const handleClientSelect = (clientId) => {
+    const newPrices = { ...selectedPrices };
+    if (newPrices[clientId]) {
+      delete newPrices[clientId];
+    } else {
+      newPrices[clientId] = '';
+    }
+    onChange(newPrices, assignToRemaining, remainingPrice);
+  };
+
+  const handlePriceChange = (clientId, price) => {
+    const newPrices = { ...selectedPrices, [clientId]: price };
+    onChange(newPrices, assignToRemaining, remainingPrice);
+  };
+
+  const handleSelectAll = () => {
+    const allSelected = clients.every(c => selectedPrices[c.id] !== undefined);
+    if (allSelected) {
+      onChange({}, assignToRemaining, remainingPrice);
+    } else {
+      const newPrices = {};
+      clients.forEach(c => {
+        newPrices[c.id] = selectedPrices[c.id] || '';
+      });
+      onChange(newPrices, assignToRemaining, remainingPrice);
+    }
+  };
+
+  const handleRemainingToggle = (checked) => {
+    onChange(selectedPrices, checked, remainingPrice);
+  };
+
+  const handleRemainingPriceChange = (price) => {
+    onChange(selectedPrices, assignToRemaining, price);
+  };
+
+  const selectedCount = Object.keys(selectedPrices).length;
+  const allSelected = selectedCount === clients.length;
+  const unassignedCount = clients.length - selectedCount;
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h4 className="text-sm font-medium text-gray-900">Client Prices</h4>
+          <p className="text-xs text-gray-500 mt-1">
+            {selectedCount === 0 
+              ? 'No clients selected' 
+              : `${selectedCount} client${selectedCount > 1 ? 's' : ''} selected`}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleSelectAll}
+            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+          >
+            {allSelected ? 'Deselect All' : 'Select All'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowAllClients(!showAllClients)}
+            className="text-sm text-gray-600 hover:text-gray-700"
+          >
+            {showAllClients ? 'Show Less' : 'Show All'}
+          </button>
+        </div>
+      </div>
+
+      {/* Client Selection */}
+      <div className={`space-y-2 ${!showAllClients ? 'max-h-60 overflow-y-auto' : ''}`}>
+        {clients.map((client) => {
+          const isSelected = selectedPrices[client.id] !== undefined;
+          return (
+            <div
+              key={client.id}
+              className={`p-3 border rounded-lg transition ${
+                isSelected ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => handleClientSelect(client.id)}
+                  className="mt-1 h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <label 
+                      onClick={() => handleClientSelect(client.id)}
+                      className="text-sm font-medium text-gray-900 cursor-pointer"
+                    >
+                      {client.clientName}
+                    </label>
+                    {isSelected && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">₱</span>
+                        <input
+                          type="number"
+                          value={selectedPrices[client.id] || ''}
+                          onChange={(e) => handlePriceChange(client.id, e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          placeholder="0.00"
+                          min="0.01"
+                          step="0.01"
+                          className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Assign to Remaining Clients */}
+      {unassignedCount > 0 && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="assign-remaining"
+              checked={assignToRemaining}
+              onChange={(e) => handleRemainingToggle(e.target.checked)}
+              className="mt-1 h-4 w-4 text-amber-600 rounded border-amber-300 focus:ring-amber-500 cursor-pointer"
+            />
+            <div className="flex-1">
+              <label 
+                htmlFor="assign-remaining"
+                className="text-sm font-medium text-amber-900 cursor-pointer"
+              >
+                Set default price for {unassignedCount} unassigned client{unassignedCount > 1 ? 's' : ''}
+              </label>
+              <p className="text-xs text-amber-700 mt-1">
+                All clients without specific prices will receive this default price
+              </p>
+              {assignToRemaining && (
+                <div className="flex items-center gap-2 mt-3">
+                  <span className="text-sm text-amber-700">Default Price (₱):</span>
+                  <input
+                    type="number"
+                    value={remainingPrice}
+                    onChange={(e) => handleRemainingPriceChange(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    placeholder="0.00"
+                    min="0.01"
+                    step="0.01"
+                    className="w-32 px-3 py-1.5 text-sm border border-amber-300 rounded focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Summary */}
+      {(selectedCount > 0 || (assignToRemaining && remainingPrice)) && (
+        <div className="p-3 bg-gray-50 rounded-lg">
+          <div className="text-xs text-gray-600 space-y-1">
+            {selectedCount > 0 && (
+              <div>✓ {selectedCount} client{selectedCount > 1 ? 's' : ''} with specific prices</div>
+            )}
+            {assignToRemaining && remainingPrice && (
+              <div>✓ {unassignedCount} client{unassignedCount > 1 ? 's' : ''} with default price of ₱{remainingPrice}</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
 const ProductManagement = () => {
   const [products, setProducts] = useState([]);
   const [clients, setClients] = useState([]);
@@ -112,21 +393,25 @@ const ProductManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
-  productName: '',
-  upc: '',
-  sku: '',
-  supplier: '',
-  countryOfOrigin: '',
-  selectedClientId: 'all',
-  clientPrice: '',
-  dimensions: '',
-  weight: '',
-  materials: '',
-  brand: '',
-  shelfLife: '',
-  unitCost: '',
-  variations: []
-});
+    productName: '',
+    category: '',
+    upc: '',
+    sku: '',
+    supplier: '',
+    countryOfOrigin: '',
+    clientPrices: {},
+    assignToRemaining: false,
+    remainingClientsPrice: '',
+    dimensions: '',
+    weight: '',
+    materials: '',
+    brand: '',
+    shelfLife: '',
+    unitCost: '',
+    variations: []
+  });
+  const [actionLoading, setActionLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
 
 
 
@@ -139,6 +424,7 @@ const ProductManagement = () => {
 
   const loadData = async () => {
   setLoading(true);
+  setLoadingMessage('Loading products...');
   try {
     const productsResponse = await api.get('/products');
     const clientsResponse = await api.get('/clients');
@@ -163,6 +449,7 @@ const ProductManagement = () => {
     setClients([]);
   } finally {
     setLoading(false);
+    setLoadingMessage('');
   }
 };
 
@@ -170,6 +457,19 @@ const ProductManagement = () => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
+
+
+
+  const handleClientPricesChange = useCallback((prices, assignRemaining, remainingPrice) => {
+    setFormData(prev => ({
+      ...prev,
+      clientPrices: prices,
+      assignToRemaining: assignRemaining,
+      remainingClientsPrice: remainingPrice
+    }));
+  }, []);
+
+
 
   const addVariation = () => {
     setFormData(prev => ({
@@ -222,8 +522,17 @@ const handleSubmit = async (e) => {
     return;
   }
 
-  if (formData.clientPrice && parseFloat(formData.clientPrice) <= 0) {
-    toast.error('Price must be greater than 0');
+  const selectedClientIds = Object.keys(formData.clientPrices);
+  for (const clientId of selectedClientIds) {
+    const price = formData.clientPrices[clientId];
+    if (!price || parseFloat(price) <= 0) {
+      toast.error('All selected client prices must be greater than 0');
+      return;
+    }
+  }
+
+  if (formData.assignToRemaining && (!formData.remainingClientsPrice || parseFloat(formData.remainingClientsPrice) <= 0)) {
+    toast.error('Default price for remaining clients must be greater than 0');
     return;
   }
 
@@ -240,6 +549,9 @@ const handleSubmit = async (e) => {
       return;
     }
   }
+
+  setActionLoading(true);
+  setLoadingMessage(editingProduct ? 'Updating product...' : 'Creating product...');
 
   try {
     const normalizedVariations = formData.variations
@@ -265,8 +577,33 @@ const handleSubmit = async (e) => {
       })
       .filter(Boolean);
       
+    const clientPricesArray = [];
+
+    Object.keys(formData.clientPrices).forEach(clientId => {
+      const price = parseFloat(formData.clientPrices[clientId]);
+      if (price > 0) {
+        clientPricesArray.push({
+          clientId: parseInt(clientId),
+          price: price
+        });
+      }
+    });
+
+    if (formData.assignToRemaining && formData.remainingClientsPrice) {
+      const assignedClientIds = new Set(Object.keys(formData.clientPrices).map(id => parseInt(id)));
+      clients.forEach(client => {
+        if (!assignedClientIds.has(client.id)) {
+          clientPricesArray.push({
+            clientId: client.id,
+            price: parseFloat(formData.remainingClientsPrice)
+          });
+        }
+      });
+    }
+
     const payload = {
       productName: formData.productName,
+      category: formData.category || null,
       upc: formData.upc || null,
       sku: formData.sku,
       supplier: formData.supplier || null,
@@ -277,8 +614,7 @@ const handleSubmit = async (e) => {
       brand: formData.brand || null,
       shelfLife: formData.shelfLife || null,
       variations: normalizedVariations,
-      // Don't send clientPrices in the product payload
-      clientPrices: []
+      clientPrices: clientPricesArray
     };
 
     let response;
@@ -301,49 +637,11 @@ const handleSubmit = async (e) => {
       return;
     }
 
-    const savedProduct = response.data;
-    
-    // ✅ NOW handle client prices separately using the BULK endpoint
-    if (formData.clientPrice && formData.selectedClientId) {
-      try {
-        let clientPriceRequests = [];
-        
-        if (formData.selectedClientId === 'all') {
-          // Create price requests for ALL clients
-          clientPriceRequests = clients.map(client => ({
-            productId: savedProduct.id,
-            clientId: client.id,
-            price: parseFloat(formData.clientPrice)
-          }));
-        } else {
-          // Create price request for selected client only
-          clientPriceRequests = [{
-            productId: savedProduct.id,
-            clientId: parseInt(formData.selectedClientId),
-            price: parseFloat(formData.clientPrice)
-          }];
-        }
-
-        // ✅ Use the BULK endpoint with UPSERT logic
-        const priceResponse = await api.post('/client-product-prices/bulk', clientPriceRequests);
-        
-        if (!priceResponse.success) {
-          console.warn('Failed to save client prices:', priceResponse.error);
-          toast.warning('Product saved but client prices may need updating');
-        } else {
-          console.log('✅ Client prices saved/updated successfully');
-        }
-      } catch (priceError) {
-        console.error('Error saving client prices:', priceError);
-        toast.warning('Product saved but client prices may need updating');
-      }
-    }
-
     toast.success(editingProduct ? 'Product updated successfully' : 'Product created successfully');
     
     setShowModal(false);
     resetForm();
-    await loadData(); // Reload to show updated prices
+    await loadData();
     setCurrentPage(1);
     
   } catch (error) {
@@ -364,6 +662,9 @@ const handleSubmit = async (e) => {
     } else {
       toast.error(errorMessage);
     }
+  } finally {
+    setActionLoading(false);
+    setLoadingMessage('');
   }
 };
 
@@ -398,38 +699,26 @@ const checkSKUAvailability = (sku) => {
 
   const handleEdit = (product) => {
   setEditingProduct(product);
-
-  // Determine if all clients have the same price
-  let selectedClient = 'all';
-  let price = '';
   
-  if (product.clientPrices && product.clientPrices.length > 0) {
-    const firstPrice = product.clientPrices[0].price;
-    const allSamePrice = product.clientPrices.every(cp => cp.price === firstPrice);
-    
-    if (allSamePrice && product.clientPrices.length === clients.length) {
-      // All clients have the same price
-      selectedClient = 'all';
-      price = firstPrice;
-    } else if (product.clientPrices.length === 1) {
-      // Single client
-      selectedClient = product.clientPrices[0].client?.id || '';
-      price = product.clientPrices[0].price;
-    } else {
-      // Multiple clients with different prices - default to 'all'
-      selectedClient = 'all';
-      price = firstPrice;
-    }
+  const clientPricesObj = {};
+  if (product.clientPrices) {
+    product.clientPrices.forEach(cp => {
+      if (cp.client?.id) {
+        clientPricesObj[cp.client.id] = cp.price;
+      }
+    });
   }
 
   setFormData({
     productName: product.productName || '',
+    category: product.category || '',
     upc: product.upc || '',
     sku: product.sku || '',
     supplier: product.supplier || '',
     countryOfOrigin: product.countryOfOrigin || '',
-    selectedClientId: selectedClient,
-    clientPrice: price,
+    clientPrices: clientPricesObj,
+    assignToRemaining: false,
+    remainingClientsPrice: '',
     dimensions: product.dimensions || '',
     weight: product.weight || '',
     materials: product.materials || '',
@@ -458,30 +747,38 @@ const checkSKUAvailability = (sku) => {
 
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) return;
-    
-    try {
-      await api.delete(`/products/${id}`);
-      toast.success('Product deleted successfully');
-      loadData();
-      if (filteredProducts.length % itemsPerPage === 1 && currentPage > 1) {
-        setCurrentPage(currentPage - 1);
-      }
-    } catch (error) {
-      toast.error('Failed to delete product');
-      console.error(error);
+  if (!window.confirm('Are you sure you want to delete this product?')) return;
+  
+  setActionLoading(true);
+  setLoadingMessage('Deleting product...');
+
+  try {
+    await api.delete(`/products/${id}`);
+    toast.success('Product deleted successfully');
+    loadData();
+    if (filteredProducts.length % itemsPerPage === 1 && currentPage > 1) {
+      setCurrentPage(currentPage - 1);
     }
-  };
+  } catch (error) {
+    toast.error('Failed to delete product');
+    console.error(error);
+  } finally {
+    setActionLoading(false);
+    setLoadingMessage('');
+  }
+};
 
   const resetForm = () => {
   setFormData({
     productName: '',
+    category: '',
     upc: '',
     sku: '',
     supplier: '',
     countryOfOrigin: '',
-    selectedClientId: 'all',
-    clientPrice: '',
+    clientPrices: {},
+    assignToRemaining: false,
+    remainingClientsPrice: '',
     dimensions: '',
     weight: '',
     materials: '',
@@ -492,6 +789,8 @@ const checkSKUAvailability = (sku) => {
   });
   setEditingProduct(null);
 };
+
+
 
 
   const filteredProducts = products.filter(product =>
@@ -531,12 +830,17 @@ const checkSKUAvailability = (sku) => {
 
   const clientOptions = clients.map(c => ({ id: c.id, name: c.clientName }));
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <LoadingOverlay show={true} message="Loading products..." />
+      </div>
+    );
   }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      <LoadingOverlay show={actionLoading} message={loadingMessage} />
       <Toaster position="top-right" />
 
       <div className="mb-6">
@@ -751,8 +1055,19 @@ const checkSKUAvailability = (sku) => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      SKU <span className="text-red-500">*</span>
+                      Category
                     </label>
+                    <CategoryInput
+                      value={formData.category}
+                      onChange={(value) => setFormData({ ...formData, category: value })}
+                      categories={productCategories}
+                    />
+                  </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        SKU <span className="text-red-500">*</span>
+                      </label>
                     <div className="relative">
                       <input
                         type="text"
@@ -868,49 +1183,13 @@ const checkSKUAvailability = (sku) => {
                   <User size={20} />
                   Client Pricing
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Assign Price To
-                    </label>
-                    <SearchableDropdown
-                      options={[
-                        { id: 'all', name: '🌐 All Clients' },
-                        ...clients.map(c => ({ id: c.id, name: c.clientName }))
-                      ]}
-                      value={formData.selectedClientId}
-                      onChange={(value) => setFormData({ ...formData, selectedClientId: value })}
-                      placeholder="Select client(s)"
-                      displayKey="name"
-                      valueKey="id"
-                      required={false}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      {formData.selectedClientId === 'all' 
-                        ? `Price will be assigned to all ${clients.length} clients`
-                        : 'Price will be assigned to selected client only'}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Client Price (₱)
-                    </label>
-                    <input
-                      type="number"
-                      name="clientPrice"
-                      value={formData.clientPrice}
-                      onChange={handleInputChange}
-                      min="0.01"
-                      step="0.01"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="0.00"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Enter the selling price for client(s)
-                    </p>
-                  </div>
-                </div>
+                <MultiClientPriceSelector
+                  clients={clients}
+                  selectedPrices={formData.clientPrices}
+                  assignToRemaining={formData.assignToRemaining}
+                  remainingPrice={formData.remainingClientsPrice}
+                  onChange={handleClientPricesChange}
+                />
               </div>
 
               {/* Supplier & Origin */}

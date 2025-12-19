@@ -125,7 +125,6 @@ const handleResponse = async (response) => {
         status: 201
       };
     } catch (e) {
-      // If response body is empty
       return {
         success: true,
         data: null,

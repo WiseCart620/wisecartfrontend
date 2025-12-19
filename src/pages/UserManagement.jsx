@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Search, X, User, Shield, UserCheck, UserX, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { api } from '../services/api';
+import { LoadingOverlay } from './LoadingOverlay';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -13,6 +14,8 @@ const UserManagement = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [resettingUser, setResettingUser] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -38,6 +41,7 @@ const UserManagement = () => {
 
   const loadUsers = async () => {
   setLoading(true);
+  setLoadingMessage('Loading users...');
   try {
     const response = await api.get('/users');
     if (response.success) {
@@ -52,6 +56,7 @@ const UserManagement = () => {
     setUsers([]);
   } finally {
     setLoading(false);
+    setLoadingMessage('');
   }
 };
 
@@ -69,87 +74,96 @@ const UserManagement = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Validation
-    if (!formData.username || !formData.email || !formData.fullName || !formData.role) {
-      toast.error('Please fill in all required fields');
-      return;
+  e.preventDefault();
+  
+  if (!formData.username || !formData.email || !formData.fullName || !formData.role) {
+    toast.error('Please fill in all required fields');
+    return;
+  }
+
+  if (!editingUser && !formData.password) {
+    toast.error('Password is required for new users');
+    return;
+  }
+
+  if (!editingUser && formData.password.length < 6) {
+    toast.error('Password must be at least 6 characters');
+    return;
+  }
+
+  setActionLoading(true);
+  setLoadingMessage(editingUser ? 'Updating user...' : 'Creating user...');
+
+  try {
+    const payload = {
+      username: formData.username,
+      email: formData.email,
+      fullName: formData.fullName,
+      role: formData.role,
+      enabled: formData.enabled
+    };
+
+    if (!editingUser) {
+      payload.password = formData.password;
     }
 
-    // For new users, require password
-    if (!editingUser && !formData.password) {
-      toast.error('Password is required for new users');
-      return;
+    if (editingUser) {
+      await api.put(`/users/${editingUser.id}`, payload);
+      toast.success('User updated successfully');
+    } else {
+      await api.post('/auth/register', payload);
+      toast.success('User created successfully');
     }
 
-    if (!editingUser && formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
-
-    try {
-      const payload = {
-        username: formData.username,
-        email: formData.email,
-        fullName: formData.fullName,
-        role: formData.role,
-        enabled: formData.enabled
-      };
-
-      // Only include password for new users
-      if (!editingUser) {
-        payload.password = formData.password;
-      }
-
-      if (editingUser) {
-        await api.put(`/users/${editingUser.id}`, payload);
-        toast.success('User updated successfully');
-      } else {
-        await api.post('/auth/register', payload);
-        toast.success('User created successfully');
-      }
-
-      setShowModal(false);
-      resetForm();
-      loadUsers();
-      setCurrentPage(1);
-    } catch (error) {
-      toast.error(error.message || 'Failed to save user');
-      console.error(error);
-    }
-  };
+    setShowModal(false);
+    resetForm();
+    loadUsers();
+    setCurrentPage(1);
+  } catch (error) {
+    toast.error(error.message || 'Failed to save user');
+    console.error(error);
+  } finally {
+    setActionLoading(false);
+    setLoadingMessage('');
+  }
+};
 
   const handleResetPassword = async (e) => {
-    e.preventDefault();
-    
-    if (!passwordData.newPassword) {
-      toast.error('Please enter a new password');
-      return;
-    }
+  e.preventDefault();
+  
+  if (!passwordData.newPassword) {
+    toast.error('Please enter a new password');
+    return;
+  }
 
-    if (passwordData.newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
+  if (passwordData.newPassword.length < 6) {
+    toast.error('Password must be at least 6 characters');
+    return;
+  }
 
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
+  if (passwordData.newPassword !== passwordData.confirmPassword) {
+    toast.error('Passwords do not match');
+    return;
+  }
 
-    try {
-      await api.put(`/users/${resettingUser.id}/reset-password`, {
-        newPassword: passwordData.newPassword
-      });
-      toast.success('Password reset successfully');
-      setShowPasswordModal(false);
-      resetPasswordForm();
-    } catch (error) {
-      toast.error(error.message || 'Failed to reset password');
-      console.error(error);
-    }
-  };
+  setActionLoading(true);
+  setLoadingMessage('Resetting password...');
+
+  try {
+    await api.put(`/users/${resettingUser.id}/reset-password`, {
+      newPassword: passwordData.newPassword
+    });
+    toast.success('Password reset successfully');
+    setShowPasswordModal(false);
+    resetPasswordForm();
+  } catch (error) {
+    toast.error(error.message || 'Failed to reset password');
+    console.error(error);
+  } finally {
+    setActionLoading(false);
+    setLoadingMessage('');
+  }
+};
 
   const handleEdit = (user) => {
     setEditingUser(user);
@@ -157,7 +171,7 @@ const UserManagement = () => {
       username: user.username || '',
       email: user.email || '',
       fullName: user.fullName || '',
-      password: '', // Don't pre-fill password for security
+      password: '',
       role: user.role || 'USER',
       enabled: user.enabled
     });
@@ -170,34 +184,45 @@ const UserManagement = () => {
   };
 
   const handleToggleStatus = async (user) => {
-    if (!window.confirm(`Are you sure you want to ${user.enabled ? 'disable' : 'enable'} this user?`)) return;
-    
-    try {
-      await api.put(`/users/${user.id}/toggle-status`);
-      toast.success(`User ${user.enabled ? 'disabled' : 'enabled'} successfully`);
-      loadUsers();
-    } catch (error) {
-      toast.error('Failed to update user status');
-      console.error(error);
-    }
-  };
+  if (!window.confirm(`Are you sure you want to ${user.enabled ? 'disable' : 'enable'} this user?`)) return;
+  
+  setActionLoading(true);
+  setLoadingMessage(`${user.enabled ? 'Disabling' : 'Enabling'} user...`);
+
+  try {
+    await api.put(`/users/${user.id}/toggle-status`);
+    toast.success(`User ${user.enabled ? 'disabled' : 'enabled'} successfully`);
+    loadUsers();
+  } catch (error) {
+    toast.error('Failed to update user status');
+    console.error(error);
+  } finally {
+    setActionLoading(false);
+    setLoadingMessage('');
+  }
+};
 
   const handleDelete = async (user) => {
-    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
-    
-    try {
-      await api.delete(`/users/${user.id}`);
-      toast.success('User deleted successfully');
-      loadUsers();
-      // If the last item on the current page is deleted, go to previous page
-      if (currentUsers.length % itemsPerPage === 1 && currentPage > 1) {
-        setCurrentPage(currentPage - 1);
-      }
-    } catch (error) {
-      toast.error(error.message || 'Failed to delete user');
-      console.error(error);
+  if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+  
+  setActionLoading(true);
+  setLoadingMessage('Deleting user...');
+
+  try {
+    await api.delete(`/users/${user.id}`);
+    toast.success('User deleted successfully');
+    loadUsers();
+    if (currentUsers.length % itemsPerPage === 1 && currentPage > 1) {
+      setCurrentPage(currentPage - 1);
     }
-  };
+  } catch (error) {
+    toast.error(error.message || 'Failed to delete user');
+    console.error(error);
+  } finally {
+    setActionLoading(false);
+    setLoadingMessage('');
+  }
+};
 
   const resetForm = () => {
     setFormData({
@@ -287,21 +312,22 @@ const UserManagement = () => {
     );
   };
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading users...</div>;
+    if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <LoadingOverlay show={true} message="Loading users..." />
+      </div>
+    );
   }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      <LoadingOverlay show={actionLoading} message={loadingMessage} />
       <Toaster position="top-right" />
-
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
         <p className="text-gray-600 mt-1">Manage system users and permissions</p>
       </div>
-
-      {/* Actions Bar */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />

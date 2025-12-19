@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Edit2, Trash2, Search, X, Building2, Users, ChevronDown, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+import { LoadingOverlay } from './LoadingOverlay';
 
 
 import { api } from '../services/api';
 
-// Searchable Dropdown Component
 const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey, valueKey, required = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -101,17 +101,17 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
 const BranchClientManagement = () => {
   const [branches, setBranches] = useState([]);
   const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingBranch, setEditingBranch] = useState(null);
-  const [activeTab, setActiveTab] = useState('branches'); // 'branches' or 'clients'
-  const [clientMode, setClientMode] = useState('new'); // 'new' or 'existing'
+  const [activeTab, setActiveTab] = useState('branches');
+  const [clientMode, setClientMode] = useState('new');
   const [allClients, setAllClients] = useState([]);
   const [showClientViewModal, setShowClientViewModal] = useState(false);
   const [viewingClient, setViewingClient] = useState(null);
   const [clientBranchSearch, setClientBranchSearch] = useState('');
-    
+  const [actionLoading, setActionLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');   
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [editingClient, setEditingClient] = useState(null);
@@ -141,30 +141,35 @@ const BranchClientManagement = () => {
   }, []);
 
   const loadData = async () => {
-  setLoading(true);
+  setActionLoading(true);
+  setLoadingMessage('Loading data...');
   
-  const [branchesResult, clientsResult] = await Promise.all([
-    api.get('/branches'),
-    api.get('/clients'),
-  ]);
-  
-  if (branchesResult.success) {
-    setBranches(branchesResult.data);
-  } else {
-    setBranches([]);
+  try {
+    const [branchesResult, clientsResult] = await Promise.all([
+      api.get('/branches'),
+      api.get('/clients'),
+    ]);
+    
+    if (branchesResult.success) {
+      setBranches(branchesResult.data);
+    } else {
+      setBranches([]);
+    }
+    
+    if (clientsResult.success) {
+      setClients(clientsResult.data);
+      setAllClients(clientsResult.data);
+    } else {
+      setClients([]);
+      setAllClients([]);
+    }
+  } catch (error) {
+    toast.error('Failed to load data');
+    console.error(error);
+  } finally {
+    setActionLoading(false);
   }
-  
-  if (clientsResult.success) {
-    setClients(clientsResult.data);
-    setAllClients(clientsResult.data);
-  } else {
-    setClients([]);
-    setAllClients([]);
-  }
-  
-  setLoading(false);
 };
-
 
 
 const handleClientModeChange = (mode) => {
@@ -209,8 +214,11 @@ const handleViewClient = (client) => {
 
 
 const handleEditClient = (client) => {
-  setShowClientViewModal(false);
-  setEditingClient(client);
+  setActionLoading(true);
+  setLoadingMessage('Loading client details...');
+    try {
+    setShowClientViewModal(false);
+    setEditingClient(client);
   
   if (client.branches && client.branches.length > 0) {
     const firstBranch = client.branches[0];
@@ -255,24 +263,27 @@ const handleEditClient = (client) => {
       clientProvince: client.province || '',
       existingClientId: client.id || '',
     });
-    
     setClientMode('edit-client-only');
   }
-  
   setShowModal(true);
+} catch (error) {
+    toast.error('Failed to load client details');
+    console.error(error);
+  } finally {
+    setActionLoading(false);
+  }
 };
 
 
 const handleViewBranch = async (branch) => {
+  setActionLoading(true);
+  setLoadingMessage('Loading branch details...');
   try {
-    // Try to get client data directly from branch first
     let clientData = null;
     
     if (branch.client) {
-      // If client data is already in branch object
       clientData = branch.client;
     } else {
-      // If not, fetch it from API
       const response = await api.get(`/clients/by-branch-id/${branch.id}`);
       if (response.success) {
         clientData = response.data;
@@ -290,6 +301,8 @@ const handleViewBranch = async (branch) => {
   } catch (error) {
     toast.error('Failed to load branch details');
     console.error(error);
+  } finally {
+    setActionLoading(false);
   }
 };
 
@@ -330,10 +343,13 @@ const availableClients = Array.isArray(allClients) ? allClients.map(c => {
 
 const handleSubmit = async (e) => {
   e.preventDefault();
+  setActionLoading(true);
+  setLoadingMessage(clientMode === 'edit-client-only' 
+    ? 'Updating client...' 
+    : editingBranch 
+      ? 'Updating...' 
+      : 'Creating...');
   
-
-  
-  // Client-only edit validation
   if (clientMode === 'edit-client-only') {
     if (!formData.clientName || !formData.tin || !formData.clientAddress || 
         !formData.clientCity || !formData.clientProvince) {
@@ -342,6 +358,7 @@ const handleSubmit = async (e) => {
     }
     
     try {
+      setLoadingMessage('Updating client...');
       const result = await api.put(`/clients/${formData.existingClientId}`, {
         clientName: formData.clientName,
         tin: formData.tin,
@@ -354,15 +371,17 @@ const handleSubmit = async (e) => {
         toast.success('Client updated successfully');
         setShowModal(false);
         resetForm();
-        loadData();
+        await loadData();
       }
     } catch (error) {
       toast.error(error.message || 'Failed to update client');
+    } finally {
+      setActionLoading(false);
     }
     return;
   }
   
-  // Branch-related operations validation - ENHANCED
+
   const missingFields = [];
   if (!formData.branchCode?.trim()) missingFields.push('Branch Code');
   if (!formData.branchName?.trim()) missingFields.push('Branch Name');
@@ -399,10 +418,11 @@ const handleSubmit = async (e) => {
   }
 
   try {
+    setLoadingMessage(editingBranch ? 'Updating...' : 'Creating...');
     const payload = {
       branchCode: formData.branchCode.trim(),
       branchName: formData.branchName.trim(),
-      address: formData.branchAddress.trim(), // Ensure it's trimmed and not empty
+      address: formData.branchAddress.trim(),
       city: formData.branchCity.trim(),
       province: formData.branchProvince.trim(),
       area: formData.area.trim(),
@@ -413,12 +433,9 @@ const handleSubmit = async (e) => {
     let result;
 
     if (editingBranch && editingBranch.id !== 'client-only-edit') {
-      // Editing existing branch
       if (clientMode === 'view') {
-        // Update branch only (from branches tab)
         result = await api.put(`/branches/${editingBranch.id}`, payload);
       } else if (clientMode === 'edit') {
-        // Update both branch and client (from clients tab)
         payload.useExistingClient = false;
         payload.clientName = formData.clientName.trim();
         payload.tin = formData.tin.trim();
@@ -453,20 +470,24 @@ const handleSubmit = async (e) => {
       );
       setShowModal(false);
       resetForm();
-      loadData();
+      await loadData();
     }
   } catch (error) {
     console.error('=== SUBMISSION ERROR ===', error);
     toast.error(error.message || 'Failed to save');
+  } finally {
+    setActionLoading(false);
   }
 };
 
 
 const handleEdit = async (branch) => {
   setEditingBranch(branch);
+  setActionLoading(true);
+  setLoadingMessage('Loading branch details...');
   
   try {
-    // Get client data
+
     let clientData = null;
     
     if (branch.client) {
@@ -494,11 +515,11 @@ const handleEdit = async (branch) => {
       existingClientId: clientData?.id || '',
     });
     
-    // Set proper mode based on where we're editing from
+
     if (activeTab === 'branches') {
-      setClientMode('view'); // Read-only for branches tab
+      setClientMode('view');
     } else {
-      setClientMode('edit'); // Editable for clients tab
+      setClientMode('edit');
     }
     
     setEditingClient(clientData);
@@ -506,14 +527,19 @@ const handleEdit = async (branch) => {
   } catch (error) {
     toast.error('Failed to load branch and client data');
     console.error(error);
+  } finally {
+    setActionLoading(false);
   }
 };
 
 
 
 const handleEditClientFromView = (client, branch) => {
-  setEditingBranch(branch);
-  setEditingClient(client);
+  setActionLoading(true);
+  setLoadingMessage('Loading details...');
+  try {
+    setEditingBranch(branch);
+    setEditingClient(client);
   
   setFormData({
     branchCode: branch.branchCode || '',
@@ -534,29 +560,35 @@ const handleEditClientFromView = (client, branch) => {
   setClientMode('edit');
   setShowClientViewModal(false);
   setShowModal(true);
+} catch (error) {
+    toast.error('Failed to load details');
+    console.error(error);
+  } finally {
+    setActionLoading(false);
+  }
 };
 
   const handleDelete = async (id) => {
   if (!window.confirm('Are you sure you want to delete this branch and its associated client?')) return;
+  
+  setActionLoading(true);
+  setLoadingMessage('Deleting branch...');
   
   try {
     const result = await api.delete(`/branches/${id}`);
     
     if (result.success) {
       toast.success('Branch and Client deleted successfully');
-      loadData();
-      // If the last item on the current page is deleted, go to previous page
+      await loadData();
       if (currentItems.length === 1 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
       }
     } else {
-      // Handle specific error message from backend
       toast.error(result.message || 'Cannot delete branch. It may have associated sales records.');
     }
   } catch (error) {
     console.error('Delete error:', error);
     
-    // Show appropriate error message
     if (error.message.includes('has associated sales')) {
       toast.error('Cannot delete branch: It has associated sales records');
     } else if (error.message.includes('constraint')) {
@@ -564,6 +596,8 @@ const handleEditClientFromView = (client, branch) => {
     } else {
       toast.error(error.message || 'Failed to delete branch');
     }
+  } finally {
+    setActionLoading(false);
   }
 };
 
@@ -582,12 +616,15 @@ const handleDeleteClient = async (clientId) => {
   
   if (!window.confirm('Are you sure you want to delete this client?')) return;
   
+  setActionLoading(true);
+  setLoadingMessage('Deleting client...');
+  
   try {
     const result = await api.delete(`/clients/${clientId}`);
     
     if (result.success) {
       toast.success('Client deleted successfully');
-      loadData();
+      await loadData();
       if (currentItems.length === 1 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
       }
@@ -601,6 +638,8 @@ const handleDeleteClient = async (clientId) => {
     } else {
       toast.error(error.message || 'Failed to delete client');
     }
+  } finally {
+    setActionLoading(false);
   }
 };
 
@@ -642,7 +681,7 @@ const handleDeleteClient = async (clientId) => {
     client.branch?.branchName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Pagination calculations
+
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   
@@ -656,12 +695,10 @@ const handleDeleteClient = async (clientId) => {
   const currentItems = activeTab === 'branches' ? currentBranches : currentClients;
   const totalItems = activeTab === 'branches' ? filteredBranches.length : filteredClients.length;
 
-  // Pagination controls
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
   const nextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
   const prevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
 
-  // Generate page numbers to display
   const getPageNumbers = () => {
     const pageNumbers = [];
     const maxVisiblePages = 5;
@@ -685,21 +722,18 @@ const handleDeleteClient = async (clientId) => {
     setCurrentPage(1);
   }, [activeTab]);
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
-  }
+
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <Toaster position="top-right" />
+      <LoadingOverlay show={actionLoading} message={loadingMessage} />
 
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Branch & Client Management</h1>
         <p className="text-gray-600 mt-1">Manage branches and their associated clients</p>
       </div>
 
-      {/* Tabs */}
       <div className="mb-6 border-b border-gray-200">
         <nav className="flex gap-8">
           <button

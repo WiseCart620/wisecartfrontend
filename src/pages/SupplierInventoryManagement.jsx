@@ -5,6 +5,7 @@ import {
 import toast, { Toaster } from 'react-hot-toast';
 import { api } from '../services/api';
 import React, { useState, useEffect, useRef } from 'react';
+import { LoadingOverlay } from './LoadingOverlay';
 
 const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey, valueKey, required = false, disabled = false, formData, index }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -123,7 +124,8 @@ const SupplierInventoryManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null);
-  
+  const [actionLoading, setActionLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
   const [formData, setFormData] = useState({
     supplierName: '',
     orderNumber: '',
@@ -140,21 +142,23 @@ const SupplierInventoryManagement = () => {
   }, []);
 
   const loadData = async () => {
-    setLoading(true);
-    try {
-      const [ordersRes, productsRes] = await Promise.all([
-        api.get('/supplier-orders'),
-        api.get('/products')
-      ]);
-      
-      if (ordersRes.success) setOrders(ordersRes.data || []);
-      if (productsRes.success) setProducts(productsRes.data || []);
-    } catch (error) {
-      toast.error('Failed to load data');
-    } finally {
-      setLoading(false);
-    }
-  };
+  setLoading(true);
+  setLoadingMessage('Loading supplier orders...'); // Add this line
+  try {
+    const [ordersRes, productsRes] = await Promise.all([
+      api.get('/supplier-orders'),
+      api.get('/products')
+    ]);
+    
+    if (ordersRes.success) setOrders(ordersRes.data || []);
+    if (productsRes.success) setProducts(productsRes.data || []);
+  } catch (error) {
+    toast.error('Failed to load data');
+  } finally {
+    setLoading(false);
+    setLoadingMessage('');
+  }
+};
 
   const suppliers = [...new Set(products.map(p => p.supplier).filter(Boolean))];
 
@@ -335,109 +339,132 @@ const formatDateForInput = (date) => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!formData.supplierName || !formData.orderNumber) {
-      toast.error('Please fill in supplier name and order number');
-      return;
-    }
+  if (!formData.supplierName || !formData.orderNumber) {
+    toast.error('Please fill in supplier name and order number');
+    return;
+  }
 
-    if (formData.orderItems.length === 0) {
-      toast.error('Please add at least one product');
-      return;
-    }
+  if (formData.orderItems.length === 0) {
+    toast.error('Please add at least one product');
+    return;
+  }
 
-    if (formData.paymentInstructions.length === 0) {
-      toast.error('Please add at least one payment instruction');
-      return;
-    }
+  if (formData.paymentInstructions.length === 0) {
+    toast.error('Please add at least one payment instruction');
+    return;
+  }
 
-    try {
-      const payload = {
-        ...formData,
-        orderItems: formData.orderItems.map(item => ({
-          productId: parseInt(item.productId),
-          quantity: parseInt(item.quantity)
-        })),
-        paymentInstructions: formData.paymentInstructions.map(pi => ({
-          ...pi,
-          amount: parseFloat(pi.amount)
-        })),
-        deliveries: formData.deliveries.map(d => ({
-          ...d,
-          shippingDuration: d.shippingDuration ? parseInt(d.shippingDuration) : null,
-          paymentInstructions: d.paymentInstructions.map(dpi => ({
-            ...dpi,
-            amount: parseFloat(dpi.amount)
-          }))
+  setActionLoading(true);
+  setLoadingMessage(editingOrder ? 'Updating order...' : 'Creating order...');
+
+  try {
+    const payload = {
+      ...formData,
+      orderItems: formData.orderItems.map(item => ({
+        productId: parseInt(item.productId),
+        quantity: parseInt(item.quantity)
+      })),
+      paymentInstructions: formData.paymentInstructions.map(pi => ({
+        ...pi,
+        amount: parseFloat(pi.amount)
+      })),
+      deliveries: formData.deliveries.map(d => ({
+        ...d,
+        shippingDuration: d.shippingDuration ? parseInt(d.shippingDuration) : null,
+        paymentInstructions: d.paymentInstructions.map(dpi => ({
+          ...dpi,
+          amount: parseFloat(dpi.amount)
         }))
-      };
+      }))
+    };
 
-      let response;
-      if (editingOrder) {
-        response = await api.put(`/supplier-orders/${editingOrder.id}`, payload);
-      } else {
-        response = await api.post('/supplier-orders', payload);
-      }
-
-      if (response.success) {
-        toast.success(editingOrder ? 'Order updated successfully' : 'Order created successfully');
-        setShowModal(false);
-        resetForm();
-        loadData();
-      }
-    } catch (error) {
-      toast.error('Failed to save order');
+    let response;
+    if (editingOrder) {
+      response = await api.put(`/supplier-orders/${editingOrder.id}`, payload);
+    } else {
+      response = await api.post('/supplier-orders', payload);
     }
-  };
 
-  const handleEdit = (order) => {
-  setEditingOrder(order);
-  setFormData({
-    supplierName: order.supplierName || '',
-    orderNumber: order.orderNumber || '',
-    modeOfPayment: order.modeOfPayment || '',
-    orderDate: formatDateForInput(order.orderDate) || new Date().toISOString().split('T')[0],
-    overallStatus: order.overallStatus || 'PENDING',
-    orderItems: order.orderItems?.map(item => ({
-      productId: item.product.id,
-      quantity: item.quantity
-    })) || [],
-    paymentInstructions: order.paymentInstructions?.map(pi => ({
-      instruction: pi.instruction,
-      amount: pi.amount,
-      paymentDate: formatDateForInput(pi.paymentDate) || new Date().toISOString().split('T')[0]
-    })) || [],
-    deliveries: order.deliveries?.map(d => ({
-      deliveryStatus: d.deliveryStatus,
-      deliveryName: d.deliveryName,
-      estimatedDeliveryDate: formatDateForInput(d.estimatedDeliveryDate) || '',
-      actualDeliveryDate: formatDateForInput(d.actualDeliveryDate) || '',
-      shippingDuration: d.shippingDuration || '',
-      modeOfPayment: d.modeOfPayment,
-      paymentInstructions: d.paymentInstructions?.map(dpi => ({
-        instruction: dpi.instruction,
-        amount: dpi.amount,
-        deliveryDate: formatDateForInput(dpi.deliveryDate) || new Date().toISOString().split('T')[0]
+    if (response.success) {
+      toast.success(editingOrder ? 'Order updated successfully' : 'Order created successfully');
+      setShowModal(false);
+      resetForm();
+      loadData();
+    }
+  } catch (error) {
+    toast.error('Failed to save order');
+  } finally {
+    setActionLoading(false);
+    setLoadingMessage('');
+  }
+};
+
+  const handleEdit = async (order) => {
+  setActionLoading(true);
+  setLoadingMessage('Loading order details...');
+  
+  try {
+    setEditingOrder(order);
+    setFormData({
+      supplierName: order.supplierName || '',
+      orderNumber: order.orderNumber || '',
+      modeOfPayment: order.modeOfPayment || '',
+      orderDate: formatDateForInput(order.orderDate) || new Date().toISOString().split('T')[0],
+      overallStatus: order.overallStatus || 'PENDING',
+      orderItems: order.orderItems?.map(item => ({
+        productId: item.product.id,
+        quantity: item.quantity
+      })) || [],
+      paymentInstructions: order.paymentInstructions?.map(pi => ({
+        instruction: pi.instruction,
+        amount: pi.amount,
+        paymentDate: formatDateForInput(pi.paymentDate) || new Date().toISOString().split('T')[0]
+      })) || [],
+      deliveries: order.deliveries?.map(d => ({
+        deliveryStatus: d.deliveryStatus,
+        deliveryName: d.deliveryName,
+        estimatedDeliveryDate: formatDateForInput(d.estimatedDeliveryDate) || '',
+        actualDeliveryDate: formatDateForInput(d.actualDeliveryDate) || '',
+        shippingDuration: d.shippingDuration || '',
+        modeOfPayment: d.modeOfPayment,
+        paymentInstructions: d.paymentInstructions?.map(dpi => ({
+          instruction: dpi.instruction,
+          amount: dpi.amount,
+          deliveryDate: formatDateForInput(dpi.deliveryDate) || new Date().toISOString().split('T')[0]
+        })) || []
       })) || []
-    })) || []
-  });
+    });
+  } catch (error) {
+    toast.error('Failed to load order details');
+  } finally {
+    setActionLoading(false);
+    setLoadingMessage('');
+  }
+  
   setShowModal(true);
 };
 
 
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this order?')) return;
-    
-    try {
-      await api.delete(`/supplier-orders/${id}`);
-      toast.success('Order deleted successfully');
-      loadData();
-    } catch (error) {
-      toast.error('Failed to delete order');
-    }
-  };
+  if (!window.confirm('Are you sure you want to delete this order?')) return;
+  
+  setActionLoading(true);
+  setLoadingMessage('Deleting order...');
+
+  try {
+    await api.delete(`/supplier-orders/${id}`);
+    toast.success('Order deleted successfully');
+    loadData();
+  } catch (error) {
+    toast.error('Failed to delete order');
+  } finally {
+    setActionLoading(false);
+    setLoadingMessage('');
+  }
+};
 
   const resetForm = () => {
     setFormData({
@@ -460,12 +487,11 @@ const formatDateForInput = (date) => {
 
   const { paymentTotal, deliveryTotal, overallTotal, unitCost, totalQuantity } = calculateTotals();
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
-  }
+
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      <LoadingOverlay show={actionLoading || loading} message={loadingMessage} />
       <Toaster position="top-right" />
 
       <div className="mb-6">
