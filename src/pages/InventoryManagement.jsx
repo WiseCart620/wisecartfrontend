@@ -233,7 +233,7 @@
       return { type, typeLabel, typeColor };
     };
 
-  const ProductTransactionsModal = ({ product, transactions, isOpen, onClose, showStockDetails = true, warehouseStocks = [], branchStocks = [] }) => {
+    const ProductTransactionsModal = ({ product, transactions, isOpen, onClose, showStockDetails = true, warehouseStocks = [], branchStocks = [] }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState('ALL');
     const [startDate, setStartDate] = useState('');
@@ -241,6 +241,8 @@
     const [showSaleTimeline, setShowSaleTimeline] = useState(false);
     const [showDeliveryTimeline, setShowDeliveryTimeline] = useState(false);
     const [showDeletedFilter, setShowDeletedFilter] = useState('ALL');
+    const [deletingTransactionId, setDeletingTransactionId] = useState(null);
+    const [deletingAll, setDeletingAll] = useState(false);
 
     if (!isOpen) return null;
 
@@ -418,6 +420,115 @@
 
   return matchesSearch && matchesType && matchesDeletedFilter && matchesStartDate && matchesEndDate;
 });
+
+  // ✅ Sort: Deleted transactions go to the END
+  const sortedFilteredTransactions = filteredTransactions.sort((a, b) => {
+    const aDeleted = a.isDeleted === true || a.action === 'DELETED';
+    const bDeleted = b.isDeleted === true || b.action === 'DELETED';
+    
+    // If one is deleted and the other isn't, deleted goes last
+    if (aDeleted && !bDeleted) return 1;
+    if (!aDeleted && bDeleted) return -1;
+    
+    // If both have same deleted status, sort by date (newest first)
+    const dateA = getCorrectTransactionDate(a);
+    const dateB = getCorrectTransactionDate(b);
+    return dateB - dateA;
+  });
+
+  // ✅ Count deleted transactions
+  const deletedTransactionsCount = filteredTransactions.filter(t => 
+    t.isDeleted === true || t.action === 'DELETED'
+  ).length;
+
+  // ✅ Handle delete single transaction
+  const handleDeleteTransaction = async (transactionId) => {
+    if (!window.confirm('Are you sure you want to permanently delete this transaction? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setDeletingTransactionId(transactionId);
+      
+      // Call API to delete transaction
+      const response = await api.delete(`/transactions/${transactionId}`);
+      
+      if (response.success) {
+        toast.success('Transaction deleted successfully');
+        
+        // Reload data to refresh everything
+        if (window.loadData) {
+          await window.loadData();
+        }
+        
+        onClose();
+      } else {
+        toast.error('Failed to delete transaction');
+      }
+    } catch (err) {
+      console.error('Failed to delete transaction:', err);
+      toast.error('Failed to delete transaction: ' + (err.message || 'Unknown error'));
+    } finally {
+      setDeletingTransactionId(null);
+    }
+  };
+
+  // ✅ Handle delete all deleted transactions
+  const handleDeleteAllDeleted = async () => {
+    const deletedTransactions = filteredTransactions.filter(t => 
+      t.isDeleted === true || t.action === 'DELETED'
+    );
+
+    if (deletedTransactions.length === 0) {
+      toast.error('No deleted transactions to remove');
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to permanently delete ${deletedTransactions.length} deleted transaction(s)? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setDeletingAll(true);
+      let successCount = 0;
+      let failCount = 0;
+
+      // Delete each transaction
+      for (const transaction of deletedTransactions) {
+        try {
+          const response = await api.delete(`/transactions/${transaction.id}`);
+          if (response.success) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        } catch (err) {
+          console.error('Failed to delete transaction:', transaction.id, err);
+          failCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`Successfully deleted ${successCount} transaction(s)`);
+      }
+      
+      if (failCount > 0) {
+        toast.error(`Failed to delete ${failCount} transaction(s)`);
+      }
+
+      // Reload data
+      if (window.loadData) {
+        await window.loadData();
+      }
+      
+      onClose();
+    } catch (err) {
+      console.error('Failed to delete transactions:', err);
+      toast.error('Failed to delete transactions: ' + (err.message || 'Unknown error'));
+    } finally {
+      setDeletingAll(false);
+    }
+  };
 
     return (
       <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -884,18 +995,45 @@
               </div>
               
               {(searchTerm || filterType !== 'ALL' || showDeletedFilter !== 'ALL' || startDate || endDate) && (
-                <button
-                  onClick={() => {
-                    setSearchTerm('');
-                    setFilterType('ALL');
-                    setShowDeletedFilter('ALL'); // ✅ Also reset this
-                    setStartDate('');
-                    setEndDate('');
-                  }}
-                  className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  Clear All Filters
-                </button>
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setFilterType('ALL');
+                      setShowDeletedFilter('ALL');
+                      setStartDate('');
+                      setEndDate('');
+                    }}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Clear All Filters
+                  </button>
+                  
+                  {/* ✅ Delete All Deleted Transactions Button */}
+                  {deletedTransactionsCount > 0 && (
+                    <button
+                      onClick={handleDeleteAllDeleted}
+                      disabled={deletingAll}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+                        deletingAll
+                          ? 'bg-gray-300 text-gray-500 cursor-wait'
+                          : 'bg-red-600 text-white hover:bg-red-700'
+                      }`}
+                    >
+                      {deletingAll ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Deleting...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 size={16} />
+                          Delete All Deleted ({deletedTransactionsCount})
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
               )}
             </div>
 
@@ -915,14 +1053,14 @@
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {filteredTransactions.length === 0 ? (
+                    {sortedFilteredTransactions.length === 0 ? (
                       <tr>
                         <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
                           {transactions.length === 0 ? 'No transactions found for this product' : 'No transactions match your filters'}
                         </td>
                       </tr>
                     ) : (
-                      filteredTransactions.map((transaction, idx) => {
+                      sortedFilteredTransactions.map((transaction, idx) => {
                         const quantityInfo = getQuantityDisplay(transaction);
                         const transactionDate = new Date(transaction.transactionDate || transaction.createdAt);
                         const warehouseSource = getWarehouseSource(transaction);
@@ -1063,17 +1201,38 @@
                               `INV-${transaction.referenceId || transaction.id}`}
                             </td>
                             <td className="px-4 py-3 text-sm">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                                  isDeleted ? 'bg-red-100 text-red-800 border-2 border-red-300' :
-                                  transaction.action === 'ADD' ? 'bg-green-100 text-green-700' :
-                                  transaction.action === 'SUBTRACT' ? 'bg-red-100 text-red-700' :
-                                  transaction.action === 'RESERVE' ? 'bg-orange-100 text-orange-700' :
-                                  transaction.action === 'RELEASE' ? 'bg-blue-100 text-blue-700' :
-                                  transaction.action === 'INVOICED' ? 'bg-pink-100 text-pink-700' :
-                                  'bg-gray-100 text-gray-700'
-                                }`}>
-                                  {isDeleted ? '🗑️ DEL' : (transaction.action || 'PROCESS')}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                                    isDeleted ? 'bg-red-100 text-red-800 border-2 border-red-300' :
+                                    transaction.action === 'ADD' ? 'bg-green-100 text-green-700' :
+                                    transaction.action === 'SUBTRACT' ? 'bg-red-100 text-red-700' :
+                                    transaction.action === 'RESERVE' ? 'bg-orange-100 text-orange-700' :
+                                    transaction.action === 'RELEASE' ? 'bg-blue-100 text-blue-700' :
+                                    transaction.action === 'INVOICED' ? 'bg-pink-100 text-pink-700' :
+                                    'bg-gray-100 text-gray-700'
+                                  }`}>
+                                    {isDeleted ? '🗑️ DEL' : (transaction.action || 'PROCESS')}
+                                  </span>
+                                  
+                                  {isDeleted && (
+                                    <button
+                                      onClick={() => handleDeleteTransaction(transaction.id)}
+                                      disabled={deletingTransactionId === transaction.id || deletingAll}
+                                      className={`p-1 rounded transition ${
+                                        deletingTransactionId === transaction.id || deletingAll
+                                          ? 'bg-gray-300 text-gray-500 cursor-wait'
+                                          : 'text-red-600 hover:bg-red-50'
+                                      }`}
+                                      title="Permanently delete this transaction"
+                                    >
+                                      {deletingTransactionId === transaction.id ? (
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                                      ) : (
+                                        <Trash2 size={14} />
+                                      )}
+                                    </button>
+                                  )}
+                                </div>
                               </td>
                             <td className="px-4 py-3 text-sm text-gray-600">
                               <div className="break-words whitespace-normal">
@@ -1126,7 +1285,12 @@
             </div>
 
             <div className="mt-4 text-sm text-gray-600 text-center">
-              Showing {filteredTransactions.length} of {transactions.length} transactions
+              Showing {sortedFilteredTransactions.length} of {transactions.length} transactions
+              {deletedTransactionsCount > 0 && (
+                <span className="ml-2 text-red-600 font-medium">
+                  ({deletedTransactionsCount} deleted)
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -1280,6 +1444,11 @@
 
       useEffect(() => {
         loadData();
+        window.loadData = loadData;
+        
+        return () => {
+          delete window.loadData;
+        };
       }, []);
 
 

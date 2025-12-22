@@ -341,6 +341,9 @@ const availableClients = Array.isArray(allClients) ? allClients.map(c => {
   };
 
 
+// COMPLETE FIXED handleSubmit function for BranchClientManagement.jsx
+// Replace your entire handleSubmit function with this:
+
 const handleSubmit = async (e) => {
   e.preventDefault();
   setActionLoading(true);
@@ -350,30 +353,57 @@ const handleSubmit = async (e) => {
       ? 'Updating...' 
       : 'Creating...');
   
+  // ============================================
+  // CLIENT-ONLY UPDATE MODE
+  // ============================================
   if (clientMode === 'edit-client-only') {
-    if (!formData.clientName || !formData.tin || !formData.clientAddress || 
-        !formData.clientCity || !formData.clientProvince) {
-      toast.error('Please fill in all client fields');
+    // Validate required client fields
+    const missingFields = [];
+    if (!formData.clientName?.trim()) missingFields.push('Client Name');
+    if (!formData.tin?.trim()) missingFields.push('TIN');
+    if (!formData.clientAddress?.trim()) missingFields.push('Client Address');
+    if (!formData.clientCity?.trim()) missingFields.push('Client City');
+    if (!formData.clientProvince?.trim()) missingFields.push('Client Province');
+    
+    if (missingFields.length > 0) {
+      toast.error(`Please fill in: ${missingFields.join(', ')}`);
+      setActionLoading(false);
+      return;
+    }
+    
+    if (!formData.existingClientId) {
+      toast.error('Client ID is missing. Please try again.');
+      setActionLoading(false);
       return;
     }
     
     try {
       setLoadingMessage('Updating client...');
-      const result = await api.put(`/clients/${formData.existingClientId}`, {
-        clientName: formData.clientName,
-        tin: formData.tin,
-        address: formData.clientAddress,
-        city: formData.clientCity,
-        province: formData.clientProvince,
-      });
+      
+      // Create the client update payload matching backend Client entity fields
+      const clientPayload = {
+        clientName: formData.clientName.trim(),
+        tin: formData.tin.trim(),
+        address: formData.clientAddress.trim(),
+        city: formData.clientCity.trim(),
+        province: formData.clientProvince.trim()
+      };
+      
+      console.log('Updating client ID:', formData.existingClientId);
+      console.log('Client payload:', clientPayload);
+      
+      const result = await api.put(`/clients/${formData.existingClientId}`, clientPayload);
       
       if (result.success) {
         toast.success('Client updated successfully');
         setShowModal(false);
         resetForm();
         await loadData();
+      } else {
+        toast.error(result.error || 'Failed to update client');
       }
     } catch (error) {
+      console.error('Client update error:', error);
       toast.error(error.message || 'Failed to update client');
     } finally {
       setActionLoading(false);
@@ -381,22 +411,25 @@ const handleSubmit = async (e) => {
     return;
   }
   
-
-  const missingFields = [];
-  if (!formData.branchCode?.trim()) missingFields.push('Branch Code');
-  if (!formData.branchName?.trim()) missingFields.push('Branch Name');
-  if (!formData.branchAddress?.trim()) missingFields.push('Branch Address');
-  if (!formData.branchCity?.trim()) missingFields.push('City');
-  if (!formData.branchProvince?.trim()) missingFields.push('Province');
-  if (!formData.area?.trim()) missingFields.push('Area');
-  if (!formData.region?.trim()) missingFields.push('Region');
+  // ============================================
+  // BRANCH VALIDATION (for all other modes)
+  // ============================================
+  const missingBranchFields = [];
+  if (!formData.branchCode?.trim()) missingBranchFields.push('Branch Code');
+  if (!formData.branchName?.trim()) missingBranchFields.push('Branch Name');
+  if (!formData.branchAddress?.trim()) missingBranchFields.push('Branch Address');
+  if (!formData.branchCity?.trim()) missingBranchFields.push('City');
+  if (!formData.branchProvince?.trim()) missingBranchFields.push('Province');
+  if (!formData.area?.trim()) missingBranchFields.push('Area');
+  if (!formData.region?.trim()) missingBranchFields.push('Region');
   
-  if (missingFields.length > 0) {
-    toast.error(`Please fill in: ${missingFields.join(', ')}`);
-    console.error('Missing fields:', missingFields);
+  if (missingBranchFields.length > 0) {
+    toast.error(`Please fill in: ${missingBranchFields.join(', ')}`);
+    setActionLoading(false);
     return;
   }
 
+  // CLIENT VALIDATION
   if (clientMode === 'new') {
     const missingClientFields = [];
     if (!formData.clientName?.trim()) missingClientFields.push('Client Name');
@@ -407,18 +440,24 @@ const handleSubmit = async (e) => {
     
     if (missingClientFields.length > 0) {
       toast.error(`Please fill in: ${missingClientFields.join(', ')}`);
-      console.error('Missing client fields:', missingClientFields);
+      setActionLoading(false);
       return;
     }
   } else if (clientMode === 'existing') {
     if (!formData.existingClientId) {
       toast.error('Please select an existing client');
+      setActionLoading(false);
       return;
     }
   }
 
+  // ============================================
+  // BRANCH CREATE/UPDATE
+  // ============================================
   try {
     setLoadingMessage(editingBranch ? 'Updating...' : 'Creating...');
+    
+    // Base branch payload
     const payload = {
       branchCode: formData.branchCode.trim(),
       branchName: formData.branchName.trim(),
@@ -429,13 +468,15 @@ const handleSubmit = async (e) => {
       region: formData.region.trim(),
     };
     
-
     let result;
 
+    // UPDATING EXISTING BRANCH
     if (editingBranch && editingBranch.id !== 'client-only-edit') {
       if (clientMode === 'view') {
+        // Update branch only (no client changes)
         result = await api.put(`/branches/${editingBranch.id}`, payload);
       } else if (clientMode === 'edit') {
+        // Update both branch and client
         payload.useExistingClient = false;
         payload.clientName = formData.clientName.trim();
         payload.tin = formData.tin.trim();
@@ -444,12 +485,15 @@ const handleSubmit = async (e) => {
         payload.clientProvince = formData.clientProvince.trim();
         result = await api.put(`/branches/${editingBranch.id}/with-client`, payload);
       }
-    } else {
-      // Creating new branch
+    } 
+    // CREATING NEW BRANCH
+    else {
       if (clientMode === 'existing') {
+        // Create branch with existing client
         payload.useExistingClient = true;
         payload.existingClientId = formData.existingClientId;
       } else {
+        // Create branch with new client
         payload.useExistingClient = false;
         payload.clientName = formData.clientName.trim();
         payload.tin = formData.tin.trim();
@@ -457,7 +501,6 @@ const handleSubmit = async (e) => {
         payload.clientCity = formData.clientCity.trim();
         payload.clientProvince = formData.clientProvince.trim();
       }
-      
       
       result = await api.post('/branches/with-client', payload);
     }
@@ -471,14 +514,18 @@ const handleSubmit = async (e) => {
       setShowModal(false);
       resetForm();
       await loadData();
+    } else {
+      toast.error(result.error || 'Failed to save');
     }
   } catch (error) {
-    console.error('=== SUBMISSION ERROR ===', error);
+    console.error('Submission error:', error);
     toast.error(error.message || 'Failed to save');
   } finally {
     setActionLoading(false);
   }
 };
+
+
 
 
 const handleEdit = async (branch) => {

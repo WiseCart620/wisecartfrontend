@@ -116,7 +116,8 @@ const DeliveryManagement = () => {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-
+  const [loadingStocks, setLoadingStocks] = useState({});
+  const [stockErrors, setStockErrors] = useState({});
   const [formData, setFormData] = useState({
     branchId: '',
     date: new Date().toISOString().split('T')[0],
@@ -185,21 +186,38 @@ const DeliveryManagement = () => {
 
 
   const loadWarehouseStock = async (warehouseId, productId, itemIndex) => {
-    try {
-      if (warehouseId && productId) {
-        const stock = await api.get(`/stocks/warehouses/${warehouseId}/products/${productId}`);
-        
-        if (stock.success) {
-          setWarehouseStocks(prev => ({
-            ...prev,
-            [`${itemIndex}_${productId}_${warehouseId}`]: stock.data
-          }));
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load stock information:', error);
+  if (!warehouseId || !productId) return;
+  
+  const stockKey = `${itemIndex}_${productId}_${warehouseId}`;
+  
+  setLoadingStocks(prev => ({ ...prev, [stockKey]: true }));
+  setStockErrors(prev => ({ ...prev, [stockKey]: null }));
+  
+  try {
+    const stock = await api.get(`/stocks/warehouses/${warehouseId}/products/${productId}`);
+    
+    if (stock.success) {
+      setWarehouseStocks(prev => ({
+        ...prev,
+        [stockKey]: stock.data
+      }));
     }
-  };
+  } catch (error) {
+    console.error('Failed to load stock information:', error);
+    setWarehouseStocks(prev => ({
+      ...prev,
+      [stockKey]: { quantity: 0, availableQuantity: 0 }
+    }));
+    setStockErrors(prev => ({
+      ...prev,
+      [stockKey]: 'Failed to load stock'
+    }));
+  } finally {
+    setLoadingStocks(prev => ({ ...prev, [stockKey]: false }));
+  }
+};
+
+
 
   const validateDeliveryForm = () => {
     if (!formData.branchId) {
@@ -239,17 +257,26 @@ const DeliveryManagement = () => {
   };
 
   const handleItemChange = async (index, field, value) => {
-    const newItems = [...formData.items];
-    newItems[index][field] = field === 'quantity' ? parseInt(value) || 1 : value;
-    setFormData({ ...formData, items: newItems });
+  const newItems = [...formData.items];
+  const oldWarehouseId = newItems[index].warehouseId;
+  const oldProductId = newItems[index].productId;
+  
+  newItems[index][field] = field === 'quantity' ? parseInt(value) || 1 : value;
+  setFormData({ ...formData, items: newItems });
 
-    if (field === 'warehouseId' || field === 'productId') {
-      const item = newItems[index];
-      if (item.warehouseId && item.productId) {
+  if (field === 'warehouseId' || field === 'productId') {
+    const item = newItems[index];
+    
+    if (item.warehouseId && item.productId) {
+      const warehouseChanged = field === 'warehouseId' && value !== oldWarehouseId;
+      const productChanged = field === 'productId' && value !== oldProductId;
+      
+      if (warehouseChanged || productChanged) {
         await loadWarehouseStock(item.warehouseId, item.productId, index);
       }
     }
-  };
+  }
+};
 
   useEffect(() => {
     loadData();
@@ -279,91 +306,104 @@ const DeliveryManagement = () => {
     }
   };
 
-  const handleOpenModal = async (mode, delivery = null) => {
-    setModalMode(mode);
+const handleOpenModal = async (mode, delivery = null) => {
+  setModalMode(mode);
+  setLoadingStocks({});
+  setStockErrors({});
+  
+  if (mode === 'create') {
+    setSelectedDelivery(null);
+    setFormData({
+      branchId: '',
+      date: new Date().toISOString().split('T')[0],
+      deliveryReceiptNumber: '',
+      purchaseOrderNumber: '',
+      transmittal: '',
+      preparedBy: localStorage.getItem('fullName') || localStorage.getItem('username') || '',
+      status: 'PENDING',
+      customStatus: '',
+      remarks: '',
+      items: []
+    });
+    setBranchInfo(null);
+    setWarehouseStocks({});
+  } else if (mode === 'edit' && delivery) {
+    if (delivery.status === 'DELIVERED') {
+      alert('Cannot edit a delivery that has already been DELIVERED.');
+      return;
+    }
     
-    if (mode === 'create') {
-      setSelectedDelivery(null);
-      setFormData({
-        branchId: '',
-        date: new Date().toISOString().split('T')[0],
-        deliveryReceiptNumber: '',
-        purchaseOrderNumber: '',
-        transmittal: '',
-        preparedBy: localStorage.getItem('fullName') || localStorage.getItem('username') || '',
-        status: 'PENDING',
-        customStatus: '',
-        remarks: '',
-        items: []
-      });
-      setBranchInfo(null);
-      setWarehouseStocks({});
-    } else if (mode === 'edit' && delivery) {
-      if (delivery.status === 'DELIVERED') {
+    try {
+      setActionLoading(true);
+      setLoadingMessage('Loading delivery details and stock information...');
+      
+      const fullDeliveryRes = await api.get(`/deliveries/${delivery.id}`);
+      
+      if (!fullDeliveryRes.success) {
+        throw new Error(fullDeliveryRes.error || 'Failed to load delivery');
+      }
+      
+      const fullDelivery = fullDeliveryRes.data;
+      
+      if (fullDelivery.status === 'DELIVERED') {
         alert('Cannot edit a delivery that has already been DELIVERED.');
         return;
       }
       
-      try {
-        const fullDeliveryRes = await api.get(`/deliveries/${delivery.id}`);
-        
-        if (!fullDeliveryRes.success) {
-          throw new Error(fullDeliveryRes.error || 'Failed to load delivery');
+      setSelectedDelivery(fullDelivery);
+      setFormData({
+        branchId: fullDelivery.branch.id,
+        date: fullDelivery.date,
+        deliveryReceiptNumber: fullDelivery.deliveryReceiptNumber,
+        purchaseOrderNumber: fullDelivery.purchaseOrderNumber || '',
+        transmittal: fullDelivery.transmittal || '',
+        preparedBy: fullDelivery.preparedBy,
+        status: fullDelivery.status,
+        customStatus: fullDelivery.customStatus || '',
+        remarks: fullDelivery.remarks || '',
+        items: fullDelivery.items.map(item => ({
+          productId: item.product.id,
+          quantity: item.quantity,
+          unit: item.unit || '',
+          warehouseId: item.warehouse?.id || ''
+        }))
+      });
+      setBranchInfo({
+        clientName: fullDelivery.client.clientName,
+        tin: fullDelivery.client.tin,
+        fullAddress: `${fullDelivery.client.address || ''}, ${fullDelivery.client.city || ''}, ${fullDelivery.client.province || ''}`.trim()
+      });
+      
+      // Load stock for all items
+      const stockLoadPromises = fullDelivery.items.map((item, index) => {
+        if (item.warehouse?.id && item.product?.id) {
+          return loadWarehouseStock(item.warehouse.id, item.product.id, index);
         }
-        
-        const fullDelivery = fullDeliveryRes.data;
-        
-        if (fullDelivery.status === 'DELIVERED') {
-          alert('Cannot edit a delivery that has already been DELIVERED.');
-          return;
-        }
-        
-        setSelectedDelivery(fullDelivery);
-        setFormData({
-          branchId: fullDelivery.branch.id,
-          date: fullDelivery.date,
-          deliveryReceiptNumber: fullDelivery.deliveryReceiptNumber,
-          purchaseOrderNumber: fullDelivery.purchaseOrderNumber || '',
-          transmittal: fullDelivery.transmittal || '',
-          preparedBy: fullDelivery.preparedBy,
-          status: fullDelivery.status,
-          customStatus: fullDelivery.customStatus || '',
-          remarks: fullDelivery.remarks || '',
-          items: fullDelivery.items.map(item => ({
-            productId: item.product.id,
-            quantity: item.quantity,
-            unit: item.unit || '',
-            warehouseId: item.warehouse?.id || ''
-          }))
-        });
-        setBranchInfo({
-          clientName: fullDelivery.client.clientName,
-          tin: fullDelivery.client.tin,
-          fullAddress: `${fullDelivery.client.address || ''}, ${fullDelivery.client.city || ''}, ${fullDelivery.client.province || ''}`.trim()
-        });
-        
-        fullDelivery.items.forEach(async (item, index) => {
-          if (item.warehouse?.id && item.product?.id) {
-            await loadWarehouseStock(item.warehouse.id, item.product.id, index);
-          }
-        });
-      } catch (error) {
-        console.error('Failed to load delivery details');
-        alert('Failed to load delivery details: ' + error.message);
-      }
-    } else if (mode === 'view' && delivery) {
-      try {
-        const fullDeliveryRes = await api.get(`/deliveries/${delivery.id}`);
-        if (fullDeliveryRes.success) {
-          setSelectedDelivery(fullDeliveryRes.data);
-        }
-      } catch (error) {
-        console.error('Failed to load delivery details:', error);
-      }
+        return Promise.resolve();
+      });
+      
+      await Promise.all(stockLoadPromises);
+      
+    } catch (error) {
+      console.error('Failed to load delivery details');
+      alert('Failed to load delivery details: ' + error.message);
+    } finally {
+      setActionLoading(false);
+      setLoadingMessage('');
     }
-    
-    setShowModal(true);
-  };
+  } else if (mode === 'view' && delivery) {
+    try {
+      const fullDeliveryRes = await api.get(`/deliveries/${delivery.id}`);
+      if (fullDeliveryRes.success) {
+        setSelectedDelivery(fullDeliveryRes.data);
+      }
+    } catch (error) {
+      console.error('Failed to load delivery details:', error);
+    }
+  }
+  
+  setShowModal(true);
+};
 
   const handleUpdateStatus = async (id, status) => {
     try {
@@ -1017,7 +1057,10 @@ const DeliveryManagement = () => {
                     {formData.items.map((item, i) => {
                       const stockKey = `${i}_${item.productId}_${item.warehouseId}`;
                       const stockInfo = warehouseStocks[stockKey];
-      
+                      const isLoadingStock = loadingStocks[stockKey];
+                      const stockError = stockErrors[stockKey];
+                      const hasInsufficientStock = stockInfo && item.quantity > (stockInfo.availableQuantity || 0);
+
                       return (
                         <div key={i} className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50">
                           <div className="grid grid-cols-2 gap-4 mb-3">
@@ -1050,15 +1093,42 @@ const DeliveryManagement = () => {
                               {!item.warehouseId && (
                                 <p className="text-red-500 text-xs mt-1">Warehouse selection is required</p>
                               )}
-                              {stockInfo && item.warehouseId && (
+                              
+                              {/* Loading State */}
+                              {isLoadingStock && (
                                 <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
-                                  <div className="text-xs text-blue-700">
+                                  <div className="flex items-center gap-2 text-blue-600 text-xs">
+                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                    <span>Loading stock information...</span>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Error State */}
+                              {!isLoadingStock && stockError && (
+                                <div className="mt-2 p-2 bg-orange-50 rounded border border-orange-200">
+                                  <div className="text-xs text-orange-700">
+                                    <div className="font-medium">⚠️ {stockError}</div>
+                                    <div className="text-xs mt-1">Stock data unavailable. Please verify before submitting.</div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Stock Info */}
+                              {!isLoadingStock && !stockError && stockInfo && item.warehouseId && (
+                                <div className={`mt-2 p-2 rounded border ${
+                                  hasInsufficientStock ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'
+                                }`}>
+                                  <div className={`text-xs ${hasInsufficientStock ? 'text-red-700' : 'text-blue-700'}`}>
                                     <div><strong>Available Stock:</strong> {stockInfo.availableQuantity || 0}</div>
                                     <div><strong>Total Stock:</strong> {stockInfo.quantity || 0}</div>
                                     <div><strong>Reserved:</strong> {stockInfo.reservedQuantity || 0}</div>
                                   </div>
-                                  {item.quantity > (stockInfo.availableQuantity || 0) && (
-                                    <div className="text-red-500 text-xs mt-1 font-medium">
+                                  {hasInsufficientStock && (
+                                    <div className="text-red-600 text-xs mt-1 font-medium">
                                       ⚠️ Quantity exceeds available stock!
                                     </div>
                                   )}
@@ -1066,42 +1136,45 @@ const DeliveryManagement = () => {
                               )}
                             </div>
                           </div>
-                        <div className="grid grid-cols-2 gap-3 mb-3">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-2">Quantity *</label>
-                            <input
-                              type="number"
-                              value={item.quantity}
-                              onChange={(e) => handleItemChange(i, 'quantity', e.target.value)}
-                              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm ${
-                                stockInfo && item.quantity > (stockInfo.availableQuantity || 0) 
-                                  ? 'border-red-300 bg-red-50' 
-                                  : 'border-gray-300'
-                              }`}
-                              min="1"
-                              required
-                            />
-                            {stockInfo && item.quantity > (stockInfo.availableQuantity || 0) && (
-                              <p className="text-red-500 text-xs mt-1">
-                                Max: {stockInfo.availableQuantity || 0}
-                              </p>
-                            )}
+                          <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-2">Quantity *</label>
+                              <input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => handleItemChange(i, 'quantity', e.target.value)}
+                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm ${
+                                  hasInsufficientStock && !isLoadingStock
+                                    ? 'border-red-300 bg-red-50' 
+                                    : 'border-gray-300'
+                                }`}
+                                min="1"
+                                required
+                                disabled={isLoadingStock}
+                              />
+                              {hasInsufficientStock && !isLoadingStock && stockInfo && (
+                                <p className="text-red-500 text-xs mt-1">
+                                  Max available: {stockInfo.availableQuantity || 0}
+                                </p>
+                              )}
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-2">Unit</label>
+                              <input
+                                type="text"
+                                value={item.unit}
+                                onChange={(e) => handleItemChange(i, 'unit', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
+                                placeholder="pcs, box, etc."
+                                disabled={isLoadingStock}
+                              />
+                            </div>
                           </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-2">Unit</label>
-                            <input
-                              type="text"
-                              value={item.unit}
-                              onChange={(e) => handleItemChange(i, 'unit', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
-                              placeholder="pcs, box, etc."
-                            />
-                          </div>
-                        </div>
                           <button
                             type="button"
                             onClick={() => handleRemoveItem(i)}
                             className="w-full flex items-center justify-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition text-sm font-medium"
+                            disabled={isLoadingStock}
                           >
                             <Trash2 size={16} />
                             Remove Item
@@ -1132,10 +1205,6 @@ const DeliveryManagement = () => {
           </div>
         )}
 
-
-
-
-{/* View Modal */}
 {/* View Modal */}
 {showModal && modalMode === 'view' && selectedDelivery && (
   <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6">

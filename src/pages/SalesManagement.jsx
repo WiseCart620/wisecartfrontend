@@ -167,6 +167,8 @@ const SalesManagement = () => {
   const [salesMemo, setSalesMemo] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
+  const [loadingStocks, setLoadingStocks] = useState({});
+  const [stockErrors, setStockErrors] = useState({});
 
   const [formData, setFormData] = useState({
     branchId: '',
@@ -273,49 +275,77 @@ const SalesManagement = () => {
     setProductPrices(priceMap);
   };
 
-  const handleOpenModal = async (mode, sale = null) => {
-    setModalMode(mode);
+const handleOpenModal = async (mode, sale = null) => {
+  setModalMode(mode);
+  setLoadingStocks({});
+  setStockErrors({});
 
-    if (mode === 'edit' && sale && sale.status === 'INVOICED') {
-      alert('Cannot edit sale that has already been INVOICED. Please revert status first.');
-      return;
-    }
+  if (mode === 'edit' && sale && sale.status === 'INVOICED') {
+    alert('Cannot edit sale that has already been INVOICED. Please revert status first.');
+    return;
+  }
+  
+  if (mode === 'create') {
+    setSelectedSale(null);
+    setFormData({ branchId: '', month: new Date().getMonth() + 1, year: new Date().getFullYear(), items: [] });
+    setBranchInfo(null);
+    setBranchStocks({});
+  } else if (mode === 'edit' && sale) {
+    setSelectedSale(sale);
+    setFormData({
+      branchId: sale.branch.id,
+      month: sale.month,
+      year: sale.year,
+      items: sale.items.map(item => ({ productId: item.product.id, quantity: item.quantity || 1 }))
+    });
     
-    if (mode === 'create') {
-      setSelectedSale(null);
-      setFormData({ branchId: '', month: new Date().getMonth() + 1, year: new Date().getFullYear(), items: [] });
-      setBranchInfo(null);
-    } else if (mode === 'edit' && sale) {
+    // Show loading toast for edit mode
+    const loadingToast = toast.loading('Loading sale data and stock information...');
+    
+    try {
+      const info = await api.get(`/sales/branch-info/${sale.branch.id}`);
+      if (info.success) {
+        setBranchInfo(info.data);
+        await loadProductPricesForClient(info.data?.clientId);
+        
+        // Load stock for all products in the sale
+        const stockMap = {};
+        const errors = {};
+        
+        for (const item of sale.items) {
+          try {
+            const stock = await api.get(`/stocks/branches/${sale.branch.id}/products/${item.product.id}`);
+            if (stock.success) {
+              stockMap[item.product.id] = stock.data;
+            }
+          } catch (error) {
+            stockMap[item.product.id] = { quantity: 0, availableQuantity: 0 };
+            errors[item.product.id] = 'Failed to load stock';
+          }
+        }
+        
+        setBranchStocks(stockMap);
+        setStockErrors(errors);
+        toast.success('Sale data loaded successfully!', { id: loadingToast });
+      }
+    } catch (error) {
+      console.error('Failed to load branch info');
+      toast.error('Failed to load sale data', { id: loadingToast });
+    }
+  } else if (mode === 'view' && sale) {
+    try {
+      const freshSale = await api.get(`/sales/${sale.id}`);
+      if (freshSale.success) {
+        setSelectedSale(freshSale.data);
+      }
+    } catch (error) {
+      console.error('Failed to load fresh sale data:', error);
       setSelectedSale(sale);
-      setFormData({
-        branchId: sale.branch.id,
-        month: sale.month,
-        year: sale.year,
-        items: sale.items.map(item => ({ productId: item.product.id, quantity: item.quantity || 1 }))
-      });
-      try {
-        const info = await api.get(`/sales/branch-info/${sale.branch.id}`);
-        if (info.success) {
-          setBranchInfo(info.data);
-          await loadProductPricesForClient(info.data?.clientId);
-        }
-      } catch (error) {
-        console.error('Failed to load branch info');
-      }
-    } else if (mode === 'view' && sale) {
-      try {
-        const freshSale = await api.get(`/sales/${sale.id}`);
-        if (freshSale.success) {
-          setSelectedSale(freshSale.data);
-        }
-      } catch (error) {
-        console.error('Failed to load fresh sale data:', error);
-        setSelectedSale(sale);
-      }
     }
-    
-    setShowModal(true);
-  };
+  }
+  
+  setShowModal(true);
+};
 
   const handleCloseModal = () => {
     setShowModal(false);
@@ -323,38 +353,79 @@ const SalesManagement = () => {
     setBranchInfo(null);
   };
 
-  // FIXED: Removed extra closing brace
   const handleBranchChange = async (branchId) => {
-    setFormData({ ...formData, branchId });
-    if (branchId) {
-      try {
-        const info = await api.get(`/sales/branch-info/${branchId}`);
-        if (info.success) {
-          setBranchInfo(info.data);
-          await loadProductPricesForClient(info.data?.clientId);
-          
-          // Load branch stock information for all products
-          const stockMap = {};
-          for (const product of products) {
-            try {
-              const stock = await api.get(`/stocks/branches/${branchId}/products/${product.id}`);
-              if (stock.success) {
-                stockMap[product.id] = stock.data;
-              }
-            } catch (error) {
-              stockMap[product.id] = { quantity: 0, availableQuantity: 0 };
+  setFormData({ ...formData, branchId });
+  if (branchId) {
+    // Show loading toast
+    const loadingToast = toast.loading('Loading branch information and stock data...');
+    
+    try {
+      const info = await api.get(`/sales/branch-info/${branchId}`);
+      if (info.success) {
+        setBranchInfo(info.data);
+        await loadProductPricesForClient(info.data?.clientId);
+        
+        // Load branch stock information for all products
+        const stockMap = {};
+        const errors = {};
+        
+        for (const product of products) {
+          try {
+            const stock = await api.get(`/stocks/branches/${branchId}/products/${product.id}`);
+            if (stock.success) {
+              stockMap[product.id] = stock.data;
             }
+          } catch (error) {
+            stockMap[product.id] = { quantity: 0, availableQuantity: 0 };
+            errors[product.id] = 'Failed to load stock';
           }
-          setBranchStocks(stockMap);
         }
-      } catch (error) {
-        console.error('Failed to load branch info');
-        setBranchInfo(null);
-        setProductPrices({});
-        setBranchStocks({});
+        setBranchStocks(stockMap);
+        setStockErrors(errors);
+        
+        toast.success('Branch information loaded successfully!', { id: loadingToast });
       }
+    } catch (error) {
+      console.error('Failed to load branch info');
+      setBranchInfo(null);
+      setProductPrices({});
+      setBranchStocks({});
+      toast.error('Failed to load branch information', { id: loadingToast });
     }
-  };
+  }
+};
+
+const loadProductStock = async (productId, branchId) => {
+  if (!branchId) return;
+  
+  setLoadingStocks(prev => ({ ...prev, [productId]: true }));
+  setStockErrors(prev => ({ ...prev, [productId]: null }));
+  
+  try {
+    const stock = await api.get(`/stocks/branches/${branchId}/products/${productId}`);
+    if (stock.success) {
+      setBranchStocks(prev => ({
+        ...prev,
+        [productId]: stock.data
+      }));
+    }
+  } catch (error) {
+    console.error('Failed to load stock for product:', productId);
+    setBranchStocks(prev => ({
+      ...prev,
+      [productId]: { quantity: 0, availableQuantity: 0 }
+    }));
+    setStockErrors(prev => ({
+      ...prev,
+      [productId]: 'Failed to load stock'
+    }));
+  } finally {
+    setLoadingStocks(prev => ({ ...prev, [productId]: false }));
+  }
+};
+
+
+
 
   const handleAddItem = () => {
     setFormData({ ...formData, items: [...formData.items, { productId: '', quantity: 1 }] });
@@ -364,11 +435,18 @@ const SalesManagement = () => {
     setFormData({ ...formData, items: formData.items.filter((_, i) => i !== index) });
   };
 
-  const handleItemChange = (index, field, value) => {
-    const newItems = [...formData.items];
-    newItems[index][field] = field === 'quantity' ? parseInt(value) || 1 : value;
-    setFormData({ ...formData, items: newItems });
-  };
+  const handleItemChange = async (index, field, value) => {
+  const newItems = [...formData.items];
+  const oldProductId = newItems[index].productId;
+  
+  newItems[index][field] = field === 'quantity' ? parseInt(value) || 1 : value;
+  setFormData({ ...formData, items: newItems });
+  
+  // If product changed and we have a branch selected, load its stock
+  if (field === 'productId' && value && value !== oldProductId && formData.branchId) {
+    await loadProductStock(value, formData.branchId);
+  }
+};
 
 
 
@@ -1089,58 +1167,78 @@ const handleDelete = async (saleId) => {
                           </p>
                         )}
                         {formData.items.map((item, i) => {
-    const stockInfo = branchStocks[item.productId];
-    const availableStock = stockInfo ? stockInfo.availableQuantity : 0;
-    const hasEnoughStock = availableStock >= item.quantity;
-    
-    return (
-      <div key={i} className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50">
-        <div className="flex gap-3 mb-3 items-center">
-          <div className="flex-1">
-            <SearchableDropdown
-              options={productOptions}
-              value={item.productId}
-              onChange={(value) => handleItemChange(i, 'productId', value)}
-              placeholder="Select Product"
-              displayKey="name"
-              valueKey="id"
-              required
-            />
-          </div>
-          <div className="w-32">
-            <input
-              type="number"
-              value={item.quantity}
-              onChange={(e) => handleItemChange(i, 'quantity', e.target.value)}
-              placeholder="Quantity"
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${
-                !hasEnoughStock ? 'border-red-300 bg-red-50' : 'border-gray-300'
-              }`}
-              min="1"
-              required
-            />
-            {stockInfo && (
-              <div className="text-xs mt-1">
-                <span className={hasEnoughStock ? 'text-green-600' : 'text-red-600'}>
-                  Available: {availableStock}
-                </span>
-                {!hasEnoughStock && (
-                  <span className="text-red-500 ml-2">Insufficient stock!</span>
-                )}
-              </div>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => handleRemoveItem(i)}
-            className="p-3 text-red-600 hover:bg-red-50 rounded-lg transition"
-          >
-            <Trash2 size={20} />
-          </button>
-        </div>
-      </div>
-    );
-  })}
+                          const stockInfo = branchStocks[item.productId];
+                          const availableStock = stockInfo ? stockInfo.availableQuantity : 0;
+                          const hasEnoughStock = availableStock >= item.quantity;
+                          const isLoadingStock = loadingStocks[item.productId];
+                          const stockError = stockErrors[item.productId];
+                          
+                          return (
+                            <div key={i} className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50">
+                              <div className="flex gap-3 mb-3 items-center">
+                                <div className="flex-1">
+                                  <SearchableDropdown
+                                    options={productOptions}
+                                    value={item.productId}
+                                    onChange={(value) => handleItemChange(i, 'productId', value)}
+                                    placeholder="Select Product"
+                                    displayKey="name"
+                                    valueKey="id"
+                                    required
+                                  />
+                                </div>
+                                <div className="w-32">
+                                  <input
+                                    type="number"
+                                    value={item.quantity}
+                                    onChange={(e) => handleItemChange(i, 'quantity', e.target.value)}
+                                    placeholder="Quantity"
+                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${
+                                      !hasEnoughStock && !isLoadingStock ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                                    }`}
+                                    min="1"
+                                    required
+                                    disabled={isLoadingStock}
+                                  />
+                                  {item.productId && (
+                                    <div className="text-xs mt-1">
+                                      {isLoadingStock ? (
+                                        <span className="text-blue-600 flex items-center gap-1">
+                                          <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                          </svg>
+                                          Loading...
+                                        </span>
+                                      ) : stockError ? (
+                                        <span className="text-orange-600">{stockError}</span>
+                                      ) : stockInfo ? (
+                                        <>
+                                          <span className={hasEnoughStock ? 'text-green-600' : 'text-red-600'}>
+                                            Available: {availableStock}
+                                          </span>
+                                          {!hasEnoughStock && (
+                                            <span className="text-red-500 ml-2">Insufficient stock!</span>
+                                          )}
+                                        </>
+                                      ) : (
+                                        <span className="text-gray-500">No stock info</span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveItem(i)}
+                                  className="p-3 text-red-600 hover:bg-red-50 rounded-lg transition"
+                                  disabled={isLoadingStock}
+                                >
+                                  <Trash2 size={20} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
 

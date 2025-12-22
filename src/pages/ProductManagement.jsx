@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Plus, Edit2, Trash2, Search, X, Package, DollarSign, Tag, Globe, User, Box, 
-  Weight, Ruler, Palette, ChevronDown, ChevronLeft, ChevronRight, 
+  Weight, Ruler, Palette, ChevronDown, ChevronLeft, ChevronRight, Calendar,
   Check, AlertCircle
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
@@ -127,9 +127,13 @@ const productCategories = [
 
 
 
-const CategoryInput = ({ value, onChange, categories }) => {
+// COMPLETE UPDATED ProductManagement.jsx
+// Replace the entire CategoryInput component with this:
+
+const CategoryInput = ({ value, onChange, categories, existingCategories = [] }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState(value || '');
+  const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -140,65 +144,114 @@ const CategoryInput = ({ value, onChange, categories }) => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
+        setSearchTerm('');
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredCategories = categories.filter(cat =>
-    cat.toLowerCase().includes(inputValue.toLowerCase())
-  );
+  // Combine predefined categories with existing categories from products
+  const allCategories = [...new Set([...categories, ...existingCategories])].sort();
 
-  const handleInputChange = (e) => {
-    const newValue = e.target.value;
-    setInputValue(newValue);
-    onChange(newValue);
-    setIsOpen(true);
-  };
+  // Filter categories based on search term
+  const filteredCategories = allCategories.filter(cat =>
+    cat.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleSelectCategory = (category) => {
     setInputValue(category);
     onChange(category);
     setIsOpen(false);
+    setSearchTerm('');
+  };
+
+  const handleInputFocus = () => {
+    setIsOpen(true);
+    setSearchTerm(inputValue);
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setInputValue(e.target.value);
+    onChange(e.target.value);
   };
 
   return (
     <div ref={dropdownRef} className="relative">
       <input
         type="text"
-        value={inputValue}
-        onChange={handleInputChange}
-        onFocus={() => setIsOpen(true)}
+        value={isOpen ? searchTerm : inputValue}
+        onChange={handleSearchChange}
+        onFocus={handleInputFocus}
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        placeholder="Enter or select category"
+        placeholder="Search or enter category"
       />
       
-      {isOpen && filteredCategories.length > 0 && (
-        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-          {filteredCategories.map((category) => (
-            <button
-              key={category}
-              type="button"
-              onClick={() => handleSelectCategory(category)}
-              className={`w-full px-4 py-2 text-left hover:bg-blue-50 transition text-sm ${
-                value === category ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'
-              }`}
-            >
-              {category}
-            </button>
-          ))}
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
+          <div className="p-3 border-b border-gray-200">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                type="text"
+                placeholder="Search categories..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                autoFocus
+              />
+            </div>
+          </div>
+          
+          {filteredCategories.length === 0 ? (
+            <div className="px-4 py-6 text-center">
+              <p className="text-sm text-gray-500">No matching categories</p>
+              {searchTerm && (
+                <p className="text-xs text-blue-600 mt-2">
+                  Press Enter or click outside to use "{searchTerm}"
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="overflow-y-auto max-h-48">
+              {filteredCategories.map((category, index) => {
+                const isPredefined = categories.includes(category);
+                const isExisting = existingCategories.includes(category);
+                
+                return (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => handleSelectCategory(category)}
+                    className={`w-full px-4 py-2.5 text-left hover:bg-blue-50 transition text-sm flex items-center justify-between ${
+                      value === category ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'
+                    }`}
+                  >
+                    <span>{category}</span>
+                    {!isPredefined && isExisting && (
+                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                        used in products
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
       
-      {inputValue && !categories.includes(inputValue) && (
-        <p className="mt-1 text-xs text-blue-600">
-          ✓ Custom category: "{inputValue}"
+      {inputValue && !allCategories.includes(inputValue) && !isOpen && (
+        <p className="mt-1 text-xs text-blue-600 flex items-center gap-1">
+          <Check size={12} />
+          New category: "{inputValue}"
         </p>
       )}
     </div>
   );
 };
+
 
 
 
@@ -385,13 +438,92 @@ const MultiClientPriceSelector = ({ clients, selectedPrices, onChange, assignToR
 };
 
 
+
+const SupplierInput = ({ value, onChange, suppliers }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [inputValue, setInputValue] = useState(value || '');
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    setInputValue(value || '');
+  }, [value]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filteredSuppliers = suppliers.filter(sup =>
+    sup.toLowerCase().includes(inputValue.toLowerCase())
+  );
+
+
+  const handleInputChange = (e) => {
+    const newValue = e.target.value;
+    setInputValue(newValue);
+    onChange(newValue);
+    setIsOpen(true);
+  };
+
+  const handleSelectSupplier = (supplier) => {
+    setInputValue(supplier);
+    onChange(supplier);
+    setIsOpen(false);
+  };
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      <input
+        type="text"
+        value={inputValue}
+        onChange={handleInputChange}
+        onFocus={() => setIsOpen(true)}
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        placeholder="Enter or select supplier"
+      />
+      
+      {isOpen && filteredSuppliers.length > 0 && (
+        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          {filteredSuppliers.map((supplier, index) => (
+            <button
+              key={index}
+              type="button"
+              onClick={() => handleSelectSupplier(supplier)}
+              className={`w-full px-4 py-2 text-left hover:bg-blue-50 transition text-sm ${
+                value === supplier ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'
+              }`}
+            >
+              {supplier}
+            </button>
+          ))}
+        </div>
+      )}
+      
+      {inputValue && !suppliers.includes(inputValue) && (
+        <p className="mt-1 text-xs text-blue-600">
+          ✓ New supplier: "{inputValue}"
+        </p>
+      )}
+    </div>
+  );
+};
+
+
+
 const ProductManagement = () => {
   const [products, setProducts] = useState([]);
   const [clients, setClients] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [formData, setFormData] = useState({
     productName: '',
     category: '',
@@ -412,11 +544,42 @@ const ProductManagement = () => {
   });
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
-
-
-
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+
+
+
+
+  const handleSort = (key) => {
+  let direction = 'asc';
+  if (sortConfig.key === key && sortConfig.direction === 'asc') {
+    direction = 'desc';
+  }
+  setSortConfig({ key, direction });
+};
+
+const getSortedProducts = (products) => {
+  if (!sortConfig.key) return products;
+
+  return [...products].sort((a, b) => {
+    let aValue = a[sortConfig.key];
+    let bValue = b[sortConfig.key];
+
+    // Handle date sorting
+    if (sortConfig.key === 'createdAt') {
+      aValue = aValue ? new Date(aValue).getTime() : 0;
+      bValue = bValue ? new Date(bValue).getTime() : 0;
+    }
+
+    if (aValue < bValue) {
+      return sortConfig.direction === 'asc' ? -1 : 1;
+    }
+    if (aValue > bValue) {
+      return sortConfig.direction === 'asc' ? 1 : -1;
+    }
+    return 0;
+  });
+};
 
   useEffect(() => {
     loadData();
@@ -428,6 +591,7 @@ const ProductManagement = () => {
   try {
     const productsResponse = await api.get('/products');
     const clientsResponse = await api.get('/clients');
+    const suppliersResponse = await api.get('/products/suppliers'); // Add this
     
     if (productsResponse.success) {
       setProducts(productsResponse.data || []);
@@ -442,16 +606,25 @@ const ProductManagement = () => {
       toast.error(clientsResponse.error || 'Failed to load clients');
       setClients([]);
     }
+    
+    // Add this
+    if (suppliersResponse.success) {
+      setSuppliers(suppliersResponse.data || []);
+    } else {
+      setSuppliers([]);
+    }
   } catch (error) {
     toast.error('Failed to load data');
     console.error(error);
     setProducts([]);
     setClients([]);
+    setSuppliers([]);
   } finally {
     setLoading(false);
     setLoadingMessage('');
   }
 };
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -746,27 +919,35 @@ const checkSKUAvailability = (sku) => {
 
 
 
-  const handleDelete = async (id) => {
-  if (!window.confirm('Are you sure you want to delete this product?')) return;
+const handleDelete = async (id) => {
+  if (!window.confirm('Are you sure you want to delete this product? This will also delete any associated alerts.')) return;
   
   setActionLoading(true);
   setLoadingMessage('Deleting product...');
 
   try {
-    await api.delete(`/products/${id}`);
-    toast.success('Product deleted successfully');
-    loadData();
+    const response = await api.delete(`/products/${id}`);
+    
+    if (!response.success) {
+      return;
+    }
+    
+    toast.success('Product and associated alerts deleted successfully');
+    await loadData();
+    
     if (filteredProducts.length % itemsPerPage === 1 && currentPage > 1) {
       setCurrentPage(currentPage - 1);
     }
   } catch (error) {
-    toast.error('Failed to delete product');
-    console.error(error);
+    console.error('Delete error:', error);
   } finally {
     setActionLoading(false);
     setLoadingMessage('');
   }
 };
+
+
+
 
   const resetForm = () => {
   setFormData({
@@ -793,11 +974,22 @@ const checkSKUAvailability = (sku) => {
 
 
 
-  const filteredProducts = products.filter(product =>
+  const filteredProducts = getSortedProducts(
+  products.filter(product =>
     product.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.upc?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  )
+);
+
+
+const existingCategories = React.useMemo(() => {
+  return [...new Set(
+    products
+      .map(p => p.category)
+      .filter(cat => cat && cat.trim() !== '')
+  )].sort();
+}, [products]);
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -875,16 +1067,27 @@ const checkSKUAvailability = (sku) => {
         <div className="overflow-x-auto">
           <table className="w-full">
            <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">UPC</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Cost</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client Price</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-                </tr>
-              </thead>
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">UPC</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Cost</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client Price</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
+              <th 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 transition"
+                onClick={() => handleSort('createdAt')}
+              >
+                <div className="flex items-center gap-2">
+                  Created Date
+                  {sortConfig.key === 'createdAt' && (
+                    <span className="text-blue-600">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </div>
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+            </tr>
+          </thead>
             <tbody className="divide-y divide-gray-200">
               {currentProducts.length === 0 ? (
                 <tr>
@@ -894,7 +1097,30 @@ const checkSKUAvailability = (sku) => {
                 </tr>
               ) : (
                 currentProducts.map((product) => {
-                return (
+                  // Helper function to format date
+                  const formatDate = (dateString) => {
+                    if (!dateString) return '-';
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    });
+                  };
+
+                  // Helper function to calculate days since creation
+                  const getDaysSinceCreation = (dateString) => {
+                    if (!dateString) return null;
+                    const created = new Date(dateString);
+                    const now = new Date();
+                    const diffTime = Math.abs(now - created);
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                    return diffDays;
+                  };
+
+                  const daysSinceCreation = getDaysSinceCreation(product.createdAt);
+
+                  return (
                     <tr key={product.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -934,6 +1160,68 @@ const checkSKUAvailability = (sku) => {
                         )}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">{product.supplier || '-'}</td>
+                      
+                      {/* NEW CREATION DATE COLUMN */}
+                      <td className="px-6 py-4">
+                        {product.createdAt ? (
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2 text-sm text-gray-900">
+                              <Calendar size={14} className="text-gray-400" />
+                              <span>{formatDate(product.createdAt)}</span>
+                            </div>
+                            {daysSinceCreation !== null && (
+                              <span className="text-xs text-gray-500 mt-1">
+                                {daysSinceCreation === 0 
+                                  ? 'Today' 
+                                  : daysSinceCreation === 1 
+                                  ? '1 day ago' 
+                                  : `${daysSinceCreation} days ago`}
+                              </span>
+                            )}
+                            {/* Optional: Show shelf life expiry warning */}
+                            {product.shelfLife && product.createdAt && (
+                              (() => {
+                                const shelfLife = product.shelfLife.toLowerCase().trim();
+                                const parts = shelfLife.split(/\s+/);
+                                if (parts.length >= 2) {
+                                  const amount = parseInt(parts[0]);
+                                  const unit = parts[1];
+                                  
+                                  let expiryDate = new Date(product.createdAt);
+                                  if (unit.startsWith('month')) {
+                                    expiryDate.setMonth(expiryDate.getMonth() + amount);
+                                  } else if (unit.startsWith('year')) {
+                                    expiryDate.setFullYear(expiryDate.getFullYear() + amount);
+                                  } else if (unit.startsWith('day')) {
+                                    expiryDate.setDate(expiryDate.getDate() + amount);
+                                  }
+                                  
+                                  const now = new Date();
+                                  const daysUntilExpiry = Math.floor((expiryDate - now) / (1000 * 60 * 60 * 24));
+                                  
+                                  if (daysUntilExpiry < 0) {
+                                    return (
+                                      <span className="text-xs text-red-600 font-medium mt-1">
+                                        ⚠️ Expired
+                                      </span>
+                                    );
+                                  } else if (daysUntilExpiry <= 30) {
+                                    return (
+                                      <span className="text-xs text-amber-600 font-medium mt-1">
+                                        ⚠️ Expires in {daysUntilExpiry} days
+                                      </span>
+                                    );
+                                  }
+                                }
+                                return null;
+                              })()
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-400">-</span>
+                        )}
+                      </td>
+                      
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
@@ -1061,6 +1349,7 @@ const checkSKUAvailability = (sku) => {
                       value={formData.category}
                       onChange={(value) => setFormData({ ...formData, category: value })}
                       categories={productCategories}
+                      existingCategories={existingCategories}
                     />
                   </div>
 
@@ -1201,13 +1490,10 @@ const checkSKUAvailability = (sku) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
-                    <input
-                      type="text"
-                      name="supplier"
+                    <SupplierInput
                       value={formData.supplier}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter supplier name"
+                      onChange={(value) => setFormData({ ...formData, supplier: value })}
+                      suppliers={suppliers}
                     />
                   </div>
 
@@ -1224,15 +1510,35 @@ const checkSKUAvailability = (sku) => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Shelf Life</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Shelf Life
+                      <span className="text-xs text-gray-500 ml-2">(e.g., "12 months", "2 years")</span>
+                    </label>
                     <input
                       type="text"
                       name="shelfLife"
                       value={formData.shelfLife}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="e.g., 12 months"
+                      placeholder="e.g., 12 months, 2 years"
                     />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Creation Date
+                    </label>
+                    <input
+                      type="text"
+                      value={editingProduct?.createdAt ? new Date(editingProduct.createdAt).toLocaleDateString() : 'Auto-generated on save'}
+                      disabled
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed text-gray-600"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {editingProduct?.createdAt 
+                        ? 'Product created on this date' 
+                        : 'Will be set automatically when product is created'}
+                    </p>
                   </div>
                 </div>
               </div>
