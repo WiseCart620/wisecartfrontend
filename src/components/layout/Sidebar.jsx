@@ -1,6 +1,6 @@
 // components/layout/Sidebar.jsx
 import React, { useState } from 'react';
-import { Package, Truck, Warehouse, ShoppingCart, Users, Home, UserPlus, PackageSearch, PackageOpen, ChevronDown, ChevronRight, ChevronLeft, Database, BoxIcon } from 'lucide-react';
+import { Package, Truck, Warehouse, ShoppingCart, Users, Home, UserPlus, PackageSearch, PackageOpen, ChevronDown, ChevronRight, ChevronLeft, Database, BoxIcon, BarChart3 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 

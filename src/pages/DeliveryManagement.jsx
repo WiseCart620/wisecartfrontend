@@ -278,8 +278,8 @@ const DeliveryManagement = () => {
   };
 
   useEffect(() => {
-  loadData();
-}, [filterData.status])
+    loadData();
+  }, [filterData.status])
 
   const loadData = async () => {
     try {
@@ -434,6 +434,18 @@ const DeliveryManagement = () => {
     }
   };
 
+
+
+  const handleClientFilterChange = (value) => {
+  setFilterData({ 
+    ...filterData, 
+    clientId: value,
+    branchId: ''
+  });
+};
+
+
+
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedDelivery(null);
@@ -546,18 +558,18 @@ const DeliveryManagement = () => {
     }
   };
 
- const handleResetFilter = () => {
-  setFilterData({
-    clientId: '',
-    branchId: '',
-    status: '',
-    startDate: '',
-    endDate: '',
-    receiptNumber: ''
-  });
-  setSearchTerm('');
-  setCurrentPage(1);
-};
+  const handleResetFilter = () => {
+    setFilterData({
+      clientId: '',
+      branchId: '',
+      status: '',
+      startDate: '',
+      endDate: '',
+      receiptNumber: ''
+    });
+    setSearchTerm('');
+    setCurrentPage(1);
+  };
 
   const sortByStatus = (deliveries) => {
     const statusOrder = {
@@ -587,65 +599,65 @@ const DeliveryManagement = () => {
   };
 
   const filteredDeliveries = sortByStatus(deliveries.filter(delivery => {
-  // Receipt Number Search
-  if (filterData.receiptNumber && 
+    // Receipt Number Search
+    if (filterData.receiptNumber &&
       !delivery.deliveryReceiptNumber?.toLowerCase().includes(filterData.receiptNumber.toLowerCase())) {
-    return false;
-  }
-
-  // Client Filter
-  if (filterData.clientId && delivery.client?.id !== filterData.clientId) {
-    // If we don't have client info directly, try to match by name
-    const client = clients.find(c => c.id === filterData.clientId);
-    if (!client || delivery.clientName !== client.clientName) {
       return false;
     }
-  }
 
-  // Branch Filter
-  if (filterData.branchId && delivery.branch?.id !== filterData.branchId) {
-    // If we don't have branch info directly, try to match by name
-    const branch = branches.find(b => b.id === filterData.branchId);
-    if (!branch || delivery.branchName !== branch.branchName) {
-      return false;
-    }
-  }
-
-  // Status Filter
-  if (filterData.status && delivery.status !== filterData.status) {
-    return false;
-  }
-
-  // Date Range Filter
-  if (filterData.startDate || filterData.endDate) {
-    const deliveryDate = new Date(delivery.date);
-    
-    if (filterData.startDate) {
-      const startDate = new Date(filterData.startDate);
-      startDate.setHours(0, 0, 0, 0);
-      if (deliveryDate < startDate) {
+    // Client Filter
+    if (filterData.clientId && delivery.client?.id !== filterData.clientId) {
+      // If we don't have client info directly, try to match by name
+      const client = clients.find(c => c.id === filterData.clientId);
+      if (!client || delivery.clientName !== client.clientName) {
         return false;
       }
     }
-    
-    if (filterData.endDate) {
-      const endDate = new Date(filterData.endDate);
-      endDate.setHours(23, 59, 59, 999);
-      if (deliveryDate > endDate) {
+
+    // Branch Filter
+    if (filterData.branchId && delivery.branch?.id !== filterData.branchId) {
+      // If we don't have branch info directly, try to match by name
+      const branch = branches.find(b => b.id === filterData.branchId);
+      if (!branch || delivery.branchName !== branch.branchName) {
         return false;
       }
     }
-  }
 
-  // Legacy search term (keep for backwards compatibility)
-  const searchLower = searchTerm.toLowerCase();
-  const matchesSearch = !searchTerm || 
-    delivery.branchName?.toLowerCase().includes(searchLower) ||
-    delivery.clientName?.toLowerCase().includes(searchLower) ||
-    delivery.deliveryReceiptNumber?.toLowerCase().includes(searchLower);
+    // Status Filter
+    if (filterData.status && delivery.status !== filterData.status) {
+      return false;
+    }
 
-  return matchesSearch;
-}));
+    // Date Range Filter
+    if (filterData.startDate || filterData.endDate) {
+      const deliveryDate = new Date(delivery.date);
+
+      if (filterData.startDate) {
+        const startDate = new Date(filterData.startDate);
+        startDate.setHours(0, 0, 0, 0);
+        if (deliveryDate < startDate) {
+          return false;
+        }
+      }
+
+      if (filterData.endDate) {
+        const endDate = new Date(filterData.endDate);
+        endDate.setHours(23, 59, 59, 999);
+        if (deliveryDate > endDate) {
+          return false;
+        }
+      }
+    }
+
+    // Legacy search term (keep for backwards compatibility)
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = !searchTerm ||
+      delivery.branchName?.toLowerCase().includes(searchLower) ||
+      delivery.clientName?.toLowerCase().includes(searchLower) ||
+      delivery.deliveryReceiptNumber?.toLowerCase().includes(searchLower);
+
+    return matchesSearch;
+  }));
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -739,6 +751,11 @@ const DeliveryManagement = () => {
   };
 
   const branchOptions = branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
+  const filteredBranchOptions = filterData.clientId
+    ? branches
+      .filter(b => b.client?.id === filterData.clientId)
+      .map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }))
+    : branchOptions;
   const productOptions = products.map(p => ({ id: p.id, name: `${p.productName} (${p.sku || p.upc})` }));
   const warehouseOptions = warehouses.map(w => ({ id: w.id, name: `${w.warehouseName} (${w.warehouseCode})` }));
 
@@ -787,7 +804,7 @@ const DeliveryManagement = () => {
                   <SearchableDropdown
                     options={clients.map(c => ({ id: c.id, name: c.clientName }))}
                     value={filterData.clientId}
-                    onChange={(value) => setFilterData({ ...filterData, clientId: value })}
+                    onChange={handleClientFilterChange}
                     placeholder="All Clients"
                     displayKey="name"
                     valueKey="id"
@@ -797,13 +814,17 @@ const DeliveryManagement = () => {
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Branch</label>
                   <SearchableDropdown
-                    options={branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }))}
+                    options={filteredBranchOptions}
                     value={filterData.branchId}
                     onChange={(value) => setFilterData({ ...filterData, branchId: value })}
-                    placeholder="All Branches"
+                    placeholder={filterData.clientId ? "Select Branch" : "Select Client First"}
                     displayKey="name"
                     valueKey="id"
+                    disabled={!filterData.clientId}
                   />
+                  {filterData.clientId && filteredBranchOptions.length === 0 && (
+                    <p className="text-xs text-orange-600 mt-1">No branches available for this client</p>
+                  )}
                 </div>
 
                 <div>
@@ -964,8 +985,8 @@ const DeliveryManagement = () => {
                     onClick={prevPage}
                     disabled={currentPage === 1}
                     className={`p-2 rounded-lg border ${currentPage === 1
-                        ? 'text-gray-400 cursor-not-allowed border-gray-200'
-                        : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                      ? 'text-gray-400 cursor-not-allowed border-gray-200'
+                      : 'text-gray-700 hover:bg-gray-50 border-gray-300'
                       }`}
                   >
                     <ChevronLeft size={16} />
@@ -977,8 +998,8 @@ const DeliveryManagement = () => {
                         key={number}
                         onClick={() => paginate(number)}
                         className={`min-w-[40px] px-3 py-2 text-sm rounded-lg border ${currentPage === number
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'text-gray-700 hover:bg-gray-50 border-gray-300'
                           }`}
                       >
                         {number}
@@ -990,8 +1011,8 @@ const DeliveryManagement = () => {
                     onClick={nextPage}
                     disabled={currentPage === totalPages}
                     className={`p-2 rounded-lg border ${currentPage === totalPages
-                        ? 'text-gray-400 cursor-not-allowed border-gray-200'
-                        : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                      ? 'text-gray-400 cursor-not-allowed border-gray-200'
+                      : 'text-gray-700 hover:bg-gray-50 border-gray-300'
                       }`}
                   >
                     <ChevronRight size={16} />
@@ -1262,8 +1283,8 @@ const DeliveryManagement = () => {
                                   value={item.quantity}
                                   onChange={(e) => handleItemChange(i, 'quantity', e.target.value)}
                                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm ${hasInsufficientStock && !isLoadingStock
-                                      ? 'border-red-300 bg-red-50'
-                                      : 'border-gray-300'
+                                    ? 'border-red-300 bg-red-50'
+                                    : 'border-gray-300'
                                     }`}
                                   min="1"
                                   required
@@ -1491,8 +1512,8 @@ const DeliveryManagement = () => {
                               onClick={() => handleUpdateStatus(selectedDelivery.id, status)}
                               disabled={selectedDelivery.status === status}
                               className={`px-4 py-2 rounded-lg font-medium transition ${selectedDelivery.status === status
-                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                  : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
                                 }`}
                             >
                               {status}

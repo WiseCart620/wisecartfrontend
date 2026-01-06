@@ -21,10 +21,8 @@ function App() {
       <AuthProvider>
         <AuthLoading>
           <Routes>
-            {/* Public Route */}
             <Route path="/login" element={<LoginPage />} />
 
-            {/* Protected Routes with Layout */}
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Layout>
@@ -41,6 +39,8 @@ function App() {
                 </Layout>
               </ProtectedRoute>
             } />
+
+
             
 
             <Route path="/deliveries" element={

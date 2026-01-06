@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import {
   Package, Truck, ShoppingCart, Users, AlertCircle, TrendingUp, Calendar,
@@ -23,9 +24,6 @@ const formatNumber = (num) => {
   if (num === null || num === undefined) return '0';
   return Number(num).toLocaleString('en-PH');
 };
-
-
-
 const SearchableSelect = ({ value, onChange, options, placeholder, disabled }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -188,6 +186,8 @@ const Dashboard = () => {
     topProduct: null,
     salesVelocity: 0,
   });
+
+  const navigate = useNavigate();
   const [sales, setSales] = useState([]);
   const [clients, setClients] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -207,7 +207,6 @@ const Dashboard = () => {
   const [showInsights, setShowInsights] = useState(false);
   const [businessInsights, setBusinessInsights] = useState([]);
   const [productSalesData, setProductSalesData] = useState([]);
-  const [productChartType, setProductChartType] = useState('monthly');
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [availableBranches, setAvailableBranches] = useState([]);
   const [activeTab, setActiveTab] = useState('active');
@@ -217,11 +216,15 @@ const Dashboard = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [selectedClientForBranches, setSelectedClientForBranches] = useState(null);
+  const [selectedClientForTopBranches, setSelectedClientForTopBranches] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [productCategories, setProductCategories] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState('all');
+  const [performanceYear, setPerformanceYear] = useState(new Date().getFullYear());
+  const [performanceView, setPerformanceView] = useState('year');
+  const [performanceMonth, setPerformanceMonth] = useState(new Date().getMonth() + 1);
 
-  
+
 
   useEffect(() => {
     loadStats();
@@ -239,7 +242,8 @@ const Dashboard = () => {
         setSelectedProductId(productAnalysis[0].id);
       }
     }
-  }, [sales, selectedYear, selectedClient, selectedBranch]);
+  }, [sales, selectedYear, selectedClient, selectedBranch, performanceYear, performanceView, performanceMonth, selectedProductId]);
+
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -363,16 +367,36 @@ const Dashboard = () => {
 
   const getClientBranchBreakdown = (clientName) => {
     const product = productSalesData.find(p => p.id === selectedProductId);
-    if (!product || !product.byClient[clientName]) return [];
+    if (!product) return [];
 
-    // Get all sales for this product and client
-    const clientSales = sales.filter(sale =>
-      sale.client?.clientName === clientName &&
-      (sale.status === 'CONFIRMED' || sale.status === 'INVOICED')
-    );
+    // Get all sales for this product and client, filtered by performance view
+    const clientSales = sales.filter(sale => {
+      const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED';
+      const clientMatch = sale.client?.clientName === clientName;
+
+      // Check if this sale contains the selected product
+      const hasProduct = sale.items?.some(item => item.product?.id === selectedProductId);
+      if (!hasProduct) return false;
+
+      // If "Overall" view, no date filtering
+      if (performanceView === 'overall') {
+        return statusMatch && clientMatch;
+      }
+
+      // Filter by year and optionally month
+      const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
+      const saleMonth = sale.month || (new Date(sale.createdAt || sale.date).getMonth() + 1);
+
+      const yearMatch = saleYear === performanceYear;
+      const monthMatch = performanceView === 'month' ? saleMonth === performanceMonth : true;
+
+      return statusMatch && clientMatch && yearMatch && monthMatch;
+    });
 
     // Aggregate by branch
     const branchData = {};
+    const salesByBranch = {}; // Track unique sales per branch
+
     clientSales.forEach(sale => {
       const branchName = sale.branch?.branchName || 'Unknown Branch';
 
@@ -386,12 +410,18 @@ const Dashboard = () => {
               quantity: 0,
               salesCount: 0
             };
+            salesByBranch[branchName] = new Set();
           }
           branchData[branchName].sales += item.amount || 0;
           branchData[branchName].quantity += item.quantity || 0;
-          branchData[branchName].salesCount += 1;
+          salesByBranch[branchName].add(sale.id);
         }
       });
+    });
+
+    // Update salesCount with unique transaction count
+    Object.keys(branchData).forEach(branchName => {
+      branchData[branchName].salesCount = salesByBranch[branchName].size;
     });
 
     // Sort by sales (highest to lowest)
@@ -400,194 +430,358 @@ const Dashboard = () => {
 
 
   const loadPerformance = () => {
-  try {
-    // Calculate top products (only ACTIVE sales) - RANKED BY QUANTITY
-    const productPerformance = {};
-    sales.forEach(sale => {
-      if (sale.status === 'CONFIRMED' || sale.status === 'INVOICED') {
-        sale.items?.forEach(item => {
-          const key = item.product?.id;
-          if (!productPerformance[key]) {
-            const fullProduct = products.find(p => p.id === key);
-            productPerformance[key] = {
-              id: key,
-              name: item.product?.productName || 'Unknown Product',
-              category: fullProduct?.category || item.product?.category || 'Uncategorized',
-              revenue: 0,
-              quantity: 0,
-              margin: item.product?.margin || 0,
-            };
-          }
-          productPerformance[key].revenue += item.amount || 0;
-          productPerformance[key].quantity += item.quantity || 0;
-        });
-      }
-    });
+    try {
 
+      const filteredSales = sales.filter(sale => {
+        const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED';
+
+        if (performanceView === 'overall') {
+          return statusMatch;
+        }
+
+        const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
+        const saleMonth = sale.month || (new Date(sale.createdAt || sale.date).getMonth() + 1);
+
+        const yearMatch = saleYear === performanceYear;
+        const monthMatch = performanceView === 'month' ? saleMonth === performanceMonth : true;
+
+        return yearMatch && monthMatch && statusMatch;
+      });
+
+      // Calculate product performance
+      const productPerformance = {};
+      filteredSales.forEach(sale => {
+        if (sale.status === 'CONFIRMED' || sale.status === 'INVOICED') {
+          sale.items?.forEach(item => {
+            const key = item.product?.id;
+            if (!productPerformance[key]) {
+              const fullProduct = products.find(p => p.id === key);
+              productPerformance[key] = {
+                id: key,
+                name: item.product?.productName || 'Unknown Product',
+                category: fullProduct?.category || item.product?.category || 'Uncategorized',
+                revenue: 0,
+                quantity: 0,
+                margin: item.product?.margin || 0,
+              };
+            }
+            productPerformance[key].revenue += item.amount || 0;
+            productPerformance[key].quantity += item.quantity || 0;
+          });
+        }
+      });
 
       const topProducts = Object.values(productPerformance)
-      .sort((a, b) => b.quantity - a.quantity)
-      .slice(0, 10);
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, 10);
 
-      // Calculate branch performance (only ACTIVE sales)
+      // Calculate branch performance - FILTER BY SELECTED PRODUCT
       const branchPerformance = {};
-    sales.forEach(sale => {
-      if (sale.status === 'CONFIRMED' || sale.status === 'INVOICED') {
-        const key = sale.branch?.id;
-        if (!branchPerformance[key]) {
-          branchPerformance[key] = {
-            id: key,
-            name: sale.branch?.branchName || 'Unknown Branch',
-            revenue: 0,
-            salesCount: 0,
-            averageOrderValue: 0,
-          };
+      filteredSales.forEach(sale => {
+        if (sale.status === 'CONFIRMED' || sale.status === 'INVOICED') {
+          // If a product is selected, only include sales that contain that product
+          const hasSelectedProduct = !selectedProductId ||
+            sale.items?.some(item => item.product?.id === selectedProductId);
+
+          if (!hasSelectedProduct) return;
+
+          const key = sale.branch?.id;
+          if (!branchPerformance[key]) {
+            branchPerformance[key] = {
+              id: key,
+              name: sale.branch?.branchName || 'Unknown Branch',
+              code: sale.branch?.branchCode || 'N/A',
+              revenue: 0,
+              salesCount: 0,
+              quantity: 0,
+              averageOrderValue: 0,
+            };
+          }
+
+          // If product is selected, only count revenue/quantity for that product
+          if (selectedProductId) {
+            sale.items?.forEach(item => {
+              if (item.product?.id === selectedProductId) {
+                branchPerformance[key].revenue += item.amount || 0;
+                branchPerformance[key].quantity += item.quantity || 0;
+              }
+            });
+            branchPerformance[key].salesCount += 1;
+          } else {
+            branchPerformance[key].revenue += sale.totalAmount || 0;
+            branchPerformance[key].salesCount += 1;
+            sale.items?.forEach(item => {
+              branchPerformance[key].quantity += item.quantity || 0;
+            });
+          }
+
+          branchPerformance[key].averageOrderValue =
+            branchPerformance[key].revenue / branchPerformance[key].salesCount;
         }
-        branchPerformance[key].revenue += sale.totalAmount || 0;
-        branchPerformance[key].salesCount += 1;
-        branchPerformance[key].averageOrderValue =
-          branchPerformance[key].revenue / branchPerformance[key].salesCount;
-      }
-    });
+      });
 
-    const topBranches = Object.values(branchPerformance)
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 5);
+      const topBranches = Object.values(branchPerformance)
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10);
 
-     setPerformanceData({ topProducts, topBranches });
-  } catch (err) {
-    console.error('Failed to load performance data', err);
-  }
-};
+      // Calculate top clients - FILTER BY SELECTED PRODUCT
+      const clientPerformance = {};
+      filteredSales.forEach(sale => {
+        if (sale.status === 'CONFIRMED' || sale.status === 'INVOICED') {
+          // If a product is selected, only include sales that contain that product
+          const hasSelectedProduct = !selectedProductId ||
+            sale.items?.some(item => item.product?.id === selectedProductId);
+
+          if (!hasSelectedProduct) return;
+
+          const key = sale.client?.id;
+          if (!clientPerformance[key]) {
+            clientPerformance[key] = {
+              id: key,
+              name: sale.client?.clientName || 'Unknown Client',
+              revenue: 0,
+              salesCount: 0,
+              averageOrderValue: 0,
+            };
+          }
+
+          // If product is selected, only count revenue for that product
+          if (selectedProductId) {
+            sale.items?.forEach(item => {
+              if (item.product?.id === selectedProductId) {
+                clientPerformance[key].revenue += item.amount || 0;
+              }
+            });
+            clientPerformance[key].salesCount += 1;
+          } else {
+            clientPerformance[key].revenue += sale.totalAmount || 0;
+            clientPerformance[key].salesCount += 1;
+          }
+
+          clientPerformance[key].averageOrderValue =
+            clientPerformance[key].revenue / clientPerformance[key].salesCount;
+        }
+      });
+
+      const topClients = Object.values(clientPerformance)
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10);
+
+      setPerformanceData({ topProducts, topBranches, topClients });
+    } catch (err) {
+      console.error('Failed to load performance data', err);
+    }
+  };
 
   const getProductSalesAnalysis = () => {
     const productAnalysis = {};
 
-    sales.forEach(sale => {
-      if (sale.status === 'CONFIRMED' || sale.status === 'INVOICED') {
-        sale.items?.forEach(item => {
-          const productId = item.product?.id;
-          const productName = item.product?.productName || 'Unknown Product';
-          const branchName = sale.branch?.branchName || 'Unknown Branch';
-          const clientName = sale.client?.clientName || 'Unknown Client';
+    // Filter sales based on performance view
+    const filteredSales = sales.filter(sale => {
+      const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED';
 
-          // FIX: Use sale.month and sale.year if available, otherwise parse from date
-          let month, year;
-          if (sale.month && sale.year) {
-            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            month = monthNames[sale.month - 1];
-            year = sale.year;
-          } else {
-            const saleDate = new Date(sale.createdAt || sale.date);
-            month = saleDate.toLocaleString('default', { month: 'short' });
-            year = saleDate.getFullYear();
-          }
-          const monthYear = `${month} ${year}`;
-
-          if (!productAnalysis[productId]) {
-            productAnalysis[productId] = {
-              id: productId,
-              name: productName,
-              totalRevenue: 0,
-              totalQuantity: 0,
-              byMonth: {},
-              byBranch: {},
-              byClient: {},
-              salesCount: 0
-            };
-          }
-
-          const product = productAnalysis[productId];
-          product.totalRevenue += item.amount || 0;
-          product.totalQuantity += item.quantity || 0;
-          product.salesCount += 1;
-
-          // Monthly analysis
-          if (!product.byMonth[monthYear]) {
-            product.byMonth[monthYear] = {
-              revenue: 0,
-              quantity: 0,
-              count: 0
-            };
-          }
-          product.byMonth[monthYear].revenue += item.amount || 0;
-          product.byMonth[monthYear].quantity += item.quantity || 0;
-          product.byMonth[monthYear].count += 1;
-
-          // Branch analysis
-          if (!product.byBranch[branchName]) {
-            product.byBranch[branchName] = {
-              revenue: 0,
-              quantity: 0,
-              count: 0
-            };
-          }
-          product.byBranch[branchName].revenue += item.amount || 0;
-          product.byBranch[branchName].quantity += item.quantity || 0;
-          product.byBranch[branchName].count += 1;
-
-          // Client analysis
-          if (!product.byClient[clientName]) {
-            product.byClient[clientName] = {
-              revenue: 0,
-              quantity: 0,
-              count: 0
-            };
-          }
-          product.byClient[clientName].revenue += item.amount || 0;
-          product.byClient[clientName].quantity += item.quantity || 0;
-          product.byClient[clientName].count += 1;
-        });
+      // If "Overall" view, include all sales
+      if (performanceView === 'overall') {
+        return statusMatch;
       }
+
+      // Filter by year and optionally month
+      const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
+      const saleMonth = sale.month || (new Date(sale.createdAt || sale.date).getMonth() + 1);
+
+      const yearMatch = saleYear === performanceYear;
+      const monthMatch = performanceView === 'month' ? saleMonth === performanceMonth : true;
+
+      return statusMatch && yearMatch && monthMatch;
+    });
+
+    filteredSales.forEach(sale => {
+      sale.items?.forEach(item => {
+        const productId = item.product?.id;
+        const productName = item.product?.productName || 'Unknown Product';
+        const branchName = sale.branch?.branchName || 'Unknown Branch';
+        const clientName = sale.client?.clientName || 'Unknown Client';
+
+        // FIX: Use sale.month and sale.year if available, otherwise parse from date
+        let month, year;
+        if (sale.month && sale.year) {
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          month = monthNames[sale.month - 1];
+          year = sale.year;
+        } else {
+          const saleDate = new Date(sale.createdAt || sale.date);
+          month = saleDate.toLocaleString('default', { month: 'short' });
+          year = saleDate.getFullYear();
+        }
+        const monthYear = `${month} ${year}`;
+
+        if (!productAnalysis[productId]) {
+          productAnalysis[productId] = {
+            id: productId,
+            name: productName,
+            totalRevenue: 0,
+            totalQuantity: 0,
+            byMonth: {},
+            byBranch: {},
+            byClient: {},
+            salesCount: 0
+          };
+        }
+
+        const product = productAnalysis[productId];
+        product.totalRevenue += item.amount || 0;
+        product.totalQuantity += item.quantity || 0;
+        product.salesCount += 1;
+
+        // Monthly analysis
+        if (!product.byMonth[monthYear]) {
+          product.byMonth[monthYear] = {
+            revenue: 0,
+            quantity: 0,
+            count: 0
+          };
+        }
+        product.byMonth[monthYear].revenue += item.amount || 0;
+        product.byMonth[monthYear].quantity += item.quantity || 0;
+        product.byMonth[monthYear].count += 1;
+
+        // Branch analysis
+        if (!product.byBranch[branchName]) {
+          product.byBranch[branchName] = {
+            revenue: 0,
+            quantity: 0,
+            count: 0
+          };
+        }
+        product.byBranch[branchName].revenue += item.amount || 0;
+        product.byBranch[branchName].quantity += item.quantity || 0;
+        product.byBranch[branchName].count += 1;
+
+        // Client analysis
+        if (!product.byClient[clientName]) {
+          product.byClient[clientName] = {
+            revenue: 0,
+            quantity: 0,
+            count: 0
+          };
+        }
+        product.byClient[clientName].revenue += item.amount || 0;
+        product.byClient[clientName].quantity += item.quantity || 0;
+        product.byClient[clientName].count += 1;
+      });
     });
 
     return Object.values(productAnalysis)
       .sort((a, b) => b.totalRevenue - a.totalRevenue);
+
   };
 
-  const getProductChartData = (productId, chartType) => {
-    const product = productSalesData.find(p => p.id === productId);
+
+
+const getSelectedProductStats = () => {
+    if (!selectedProductId) return null;
+
+    const product = productSalesData.find(p => p.id === selectedProductId);
     if (!product) return null;
 
-    let labels = [];
-    let salesData = [];
-    let quantityData = [];
+    // Filter sales based on performance view (year/month)
+    const filteredSales = sales.filter(sale => {
+      const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED';
 
-    if (chartType === 'monthly') {
-      const sortedMonths = Object.keys(product.byMonth).sort((a, b) => {
-        const [monthA, yearA] = a.split(' ');
-        const [monthB, yearB] = b.split(' ');
-        const dateA = new Date(`${monthA} 1, ${yearA}`);
-        const dateB = new Date(`${monthB} 1, ${yearB}`);
-        return dateA - dateB;
-      });
+      if (performanceView === 'overall') {
+        return statusMatch;
+      }
 
-      labels = sortedMonths;
-      salesData = sortedMonths.map(month => product.byMonth[month].revenue);
-      quantityData = sortedMonths.map(month => product.byMonth[month].quantity);
-    } else if (chartType === 'client') {
-      labels = Object.keys(product.byClient).sort((a, b) =>
-        product.byClient[b].revenue - product.byClient[a].revenue
-      ).reverse();
-      // Show ALL clients (no limit)
-      salesData = labels.map(client => product.byClient[client].revenue);
-      quantityData = labels.map(client => product.byClient[client].quantity);
-    } else if (chartType === 'year') {
-      // Extract years from monthly data
-      const yearData = {};
-      Object.keys(product.byMonth).forEach(monthYear => {
-        const [month, year] = monthYear.split(' ');
-        if (!yearData[year]) {
-          yearData[year] = { revenue: 0, quantity: 0 };
+      const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
+      const saleMonth = sale.month || (new Date(sale.createdAt || sale.date).getMonth() + 1);
+
+      const yearMatch = saleYear === performanceYear;
+      const monthMatch = performanceView === 'month' ? saleMonth === performanceMonth : true;
+
+      return statusMatch && yearMatch && monthMatch;
+    });
+
+    // Count unique transactions that contain this product (from filtered sales)
+    const transactionsWithProduct = new Set();
+    let totalRevenue = 0;
+    let totalQuantity = 0;
+
+    // Calculate revenue/quantity and count transactions from filtered period
+    filteredSales.forEach(sale => {
+      const hasProduct = sale.items?.some(item => item.product?.id === selectedProductId);
+      
+      if (hasProduct) {
+        transactionsWithProduct.add(sale.id);
+        
+        sale.items?.forEach(item => {
+          if (item.product?.id === selectedProductId) {
+            totalRevenue += item.amount || 0;
+            totalQuantity += item.quantity || 0;
+          }
+        });
+      }
+    });
+
+    return {
+      totalRevenue,
+      totalQuantity,
+      transactions: transactionsWithProduct.size,
+      avgPerUnit: totalQuantity > 0 ? totalRevenue / totalQuantity : 0
+    };
+  };
+
+
+
+  const getProductChartData = (productId) => {
+    if (!productId) return null;
+
+    // Filter sales based on performance view
+    const filteredSales = sales.filter(sale => {
+      const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED';
+
+      if (performanceView === 'overall') {
+        return statusMatch;
+      }
+
+      const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
+      const saleMonth = sale.month || (new Date(sale.createdAt || sale.date).getMonth() + 1);
+
+      const yearMatch = saleYear === performanceYear;
+      const monthMatch = performanceView === 'month' ? saleMonth === performanceMonth : true;
+
+      return statusMatch && yearMatch && monthMatch;
+    });
+
+    // Calculate client data from filtered sales
+    const clientData = {};
+
+    filteredSales.forEach(sale => {
+      const clientName = sale.client?.clientName || 'Unknown Client';
+
+      sale.items?.forEach(item => {
+        if (item.product?.id === productId) {
+          if (!clientData[clientName]) {
+            clientData[clientName] = {
+              revenue: 0,
+              quantity: 0
+            };
+          }
+          clientData[clientName].revenue += item.amount || 0;
+          clientData[clientName].quantity += item.quantity || 0;
         }
-        yearData[year].revenue += product.byMonth[monthYear].revenue;
-        yearData[year].quantity += product.byMonth[monthYear].quantity;
       });
+    });
 
-      labels = Object.keys(yearData).sort();
-      salesData = labels.map(year => yearData[year].revenue);
-      quantityData = labels.map(year => yearData[year].quantity);
-    }
+    // Sort clients by revenue
+    const clients = Object.keys(clientData).sort((a, b) =>
+      clientData[b].revenue - clientData[a].revenue
+    );
+
+    if (clients.length === 0) return null;
+
+    const labels = clients;
+    const salesData = clients.map(client => clientData[client].revenue);
+    const quantityData = clients.map(client => clientData[client].quantity);
 
     return {
       labels,
@@ -611,7 +805,6 @@ const Dashboard = () => {
       ]
     };
   };
-
 
 
   const generateInsights = () => {
@@ -783,7 +976,7 @@ const Dashboard = () => {
       });
     } catch (err) {
       console.error('Failed to load dashboard data', err);
-      alert('Failed to load dashboard data: ' + err.message);
+      toast('Failed to load dashboard data: ' + err.message);
     } finally {
       setActionLoading(false);
       setLoadingMessage('');
@@ -833,6 +1026,8 @@ const Dashboard = () => {
   const getProductMonthlySales = () => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const productMonthlyData = {};
+    const productQuantityData = {};
+    const productSalesCount = {};
 
     const filteredSales = sales.filter(sale => {
       const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
@@ -851,12 +1046,29 @@ const Dashboard = () => {
         const productName = item.product?.productName || 'Unknown';
         if (!productMonthlyData[productName]) {
           productMonthlyData[productName] = months.map(() => 0);
+          productQuantityData[productName] = 0;
+          productSalesCount[productName] = 0;
         }
         productMonthlyData[productName][monthIndex] += item.amount || 0;
+        productQuantityData[productName] += item.quantity || 0;
       });
     });
 
-    return { months, products: productMonthlyData };
+    // Count unique transactions per product
+    filteredSales.forEach(sale => {
+      const productsInSale = new Set();
+      sale.items?.forEach(item => {
+        const productName = item.product?.productName || 'Unknown';
+        productsInSale.add(productName);
+      });
+      productsInSale.forEach(productName => {
+        if (productSalesCount[productName] !== undefined) {
+          productSalesCount[productName] += 1;
+        }
+      });
+    });
+
+    return { months, products: productMonthlyData, quantities: productQuantityData, salesCounts: productSalesCount };
   };
 
 
@@ -967,24 +1179,24 @@ const Dashboard = () => {
 
 
   const filteredTopProducts = useMemo(() => {
-  let products = performanceData.topProducts || [];
+    let products = performanceData.topProducts || [];
 
-  // Filter by category
-  if (selectedCategory !== 'all') {
-    products = products.filter(product =>
-      product.category === selectedCategory
-    );
-  }
+    // Filter by category
+    if (selectedCategory !== 'all') {
+      products = products.filter(product =>
+        product.category === selectedCategory
+      );
+    }
 
-  // Filter by product search
-  if (selectedProduct !== 'all') {
-    products = products.filter(product =>
-      product.id === selectedProduct
-    );
-  }
+    // Filter by product search
+    if (selectedProduct !== 'all') {
+      products = products.filter(product =>
+        product.id === selectedProduct
+      );
+    }
 
-  return products;
-}, [performanceData.topProducts, selectedCategory, selectedProduct]);
+    return products;
+  }, [performanceData.topProducts, selectedCategory, selectedProduct]);
 
   const chartOptions = {
     responsive: true,
@@ -1085,33 +1297,10 @@ const Dashboard = () => {
     <>
       <LoadingOverlay show={actionLoading} message={loadingMessage || 'Loading...'} />
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            </div>
-            <div className="flex flex-wrap items-center gap-4">
-              <button
-                onClick={() => setShowInsights(!showInsights)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:opacity-90 transition-all"
-              >
-                <Info size={18} />
-                Business Insights
-                {businessInsights.length > 0 && (
-                  <span className="bg-white text-purple-700 text-xs rounded-full px-2 py-1">
-                    {businessInsights.length}
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => loadStats()}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <RefreshCw size={18} />
-                Refresh Data
-              </button>
-            </div>
+        <div className="max-w-[1920px] mx-auto space-y-6">
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600 mt-1">Overview of your business performance</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
@@ -1250,67 +1439,126 @@ const Dashboard = () => {
                 })}
               </div>
             </div>
-          )} 
+          )}
 
           <div className="grid grid-cols-1 gap-4">
             {/* Combined Product Analysis Box */}
             <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
               <div className="grid grid-cols-12 gap-4">
                 {/* Top Performing Products - Takes 4 columns */}
+
                 <div className="col-span-4">
-  <div className="flex items-center justify-between mb-3">
-    <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-      <Target className="text-green-600" size={18} />
-      Top Performing Products
-    </h3>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                      <Target className="text-green-600" size={18} />
+                      Top Performing Products
+                    </h3>
 
-    <div className="flex items-center gap-2">
-      {/* Product Search Filter */}
-      <div className="relative" style={{ minWidth: '180px' }}>
-        <SearchableSelect
-          value={selectedProduct}
-          onChange={(value) => {
-            setSelectedProduct(value);
-            if (value !== 'all') {
-              setSelectedProductId(value);
-              setSelectedCategory('all'); // Reset category when selecting specific product
-            }
-          }}
-          options={[
-            { value: 'all', label: 'All Products' },
-            ...performanceData.topProducts.map((product) => ({
-              value: product.id,
-              label: product.name
-            }))
-          ]}
-          placeholder="Search Product"
-        />
-      </div>
+                    <div className="flex items-center gap-2">
+                      {/* Year/Month View Toggle */}
+                      {/* Overall/Year/Month View Toggle */}
+                      <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                        <button
+                          onClick={() => setPerformanceView('overall')}
+                          className={`px-3 py-1 text-xs rounded ${performanceView === 'overall'
+                            ? 'bg-white text-blue-600 font-semibold shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                            }`}
+                        >
+                          Overall
+                        </button>
+                        <button
+                          onClick={() => setPerformanceView('year')}
+                          className={`px-3 py-1 text-xs rounded ${performanceView === 'year'
+                            ? 'bg-white text-blue-600 font-semibold shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                            }`}
+                        >
+                          Year
+                        </button>
+                        <button
+                          onClick={() => setPerformanceView('month')}
+                          className={`px-3 py-1 text-xs rounded ${performanceView === 'month'
+                            ? 'bg-white text-blue-600 font-semibold shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                            }`}
+                        >
+                          Month
+                        </button>
+                      </div>
 
-      {/* Category Filter Dropdown */}
-      {productCategories.length > 0 && (
-        <div className="relative">
-          <select
-            value={selectedCategory}
-            onChange={(e) => {
-              setSelectedCategory(e.target.value);
-              setSelectedProductId(null);
-              setSelectedProduct('all'); // Reset product search when changing category
-            }}
-            className="px-2 py-1 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-6"
-          >
-            <option value="all">All Categories</option>
-            {productCategories.map((category, idx) => (
-              <option key={idx} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-          <ChevronDown size={12} className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
-        </div>
-      )}
-    </div>
-  </div>
+                      {/* Year Selector - Only show when not in Overall view */}
+                      {performanceView !== 'overall' && (
+                        <select
+                          value={performanceYear}
+                          onChange={(e) => setPerformanceYear(parseInt(e.target.value))}
+                          className="px-2 py-1 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          {availableYears.length > 0 ? (
+                            availableYears.map(year => (
+                              <option key={year} value={year}>{year}</option>
+                            ))
+                          ) : (
+                            <option value={new Date().getFullYear()}>{new Date().getFullYear()}</option>
+                          )}
+                        </select>
+                      )}
+
+                      {/* Month Selector - Only show when view is 'month' */}
+                      {performanceView === 'month' && (
+                        <select
+                          value={performanceMonth}
+                          onChange={(e) => setPerformanceMonth(parseInt(e.target.value))}
+                          className="px-2 py-1 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, idx) => (
+                            <option key={idx} value={idx + 1}>{month}</option>
+                          ))}
+                        </select>
+                      )}
+
+                      {/* Category Filter Dropdown */}
+                      {productCategories.length > 0 && (
+                        <div className="relative">
+                          <select
+                            value={selectedCategory}
+                            onChange={(e) => {
+                              setSelectedCategory(e.target.value);
+                              setSelectedProductId(null);
+                              setSelectedProduct('all'); // Reset product search when changing category
+                            }}
+                            className="px-2 py-1 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-6"
+                          >
+                            <option value="all">All Categories</option>
+                            {productCategories.map((category, idx) => (
+                              <option key={idx} value={category}>
+                                {category}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown size={12} className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+
+                  {/* Period Indicator */}
+                  <div className="mb-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-blue-700">
+                        {performanceView === 'overall'
+                          ? 'Showing all-time data'
+                          : performanceView === 'year'
+                            ? `Showing data for ${performanceYear}`
+                            : `Showing data for ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][performanceMonth - 1]} ${performanceYear}`
+                        }
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {filteredTopProducts.length} product{filteredTopProducts.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  </div>
 
                   <div className="space-y-2 max-h-[700px] overflow-y-auto">
                     {/* Category Summary */}
@@ -1342,30 +1590,28 @@ const Dashboard = () => {
                           }}
                         >
                           <div className="flex items-center gap-2 mb-2">
-                          <span className={`text-xl font-bold flex-shrink-0 ${
-                            idx === 0 ? 'text-yellow-600' :
-                            idx === 1 ? 'text-gray-400' :
-                            idx === 2 ? 'text-amber-800' : 'text-gray-400'
-                          }`}>
-                            #{idx + 1}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-medium ${
-                              selectedProductId === product.id ? 'text-blue-700' : 'text-gray-900'
-                            }`}>
-                              {product.name}
-                            </p>
-                            {/* Show category badge */}
-                            {product.category && product.category !== 'Uncategorized' && (
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600 mt-1">
-                                {product.category}
-                              </span>
-                            )}
-                            <p className="text-xs text-gray-500 mt-1">
-                              Ranked by quantity sold
-                            </p>
+                            <span className={`text-xl font-bold flex-shrink-0 ${idx === 0 ? 'text-yellow-600' :
+                              idx === 1 ? 'text-gray-400' :
+                                idx === 2 ? 'text-amber-800' : 'text-gray-400'
+                              }`}>
+                              #{idx + 1}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm font-medium ${selectedProductId === product.id ? 'text-blue-700' : 'text-gray-900'
+                                }`}>
+                                {product.name}
+                              </p>
+                              {/* Show category badge */}
+                              {product.category && product.category !== 'Uncategorized' && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600 mt-1">
+                                  {product.category}
+                                </span>
+                              )}
+                              <p className="text-xs text-gray-500 mt-1">
+                                Ranked by quantity sold
+                              </p>
+                            </div>
                           </div>
-                        </div>
 
                           {/* Clean metrics display */}
                           <div className="grid grid-cols-2 gap-3 mt-3">
@@ -1483,62 +1729,74 @@ const Dashboard = () => {
                         <BarChart2 className="text-blue-600" size={18} />
                         Product Analysis
                         {selectedProductId && (
-                          <span className="text-xs text-gray-500">
-                            - {productSalesData.find(p => p.id === selectedProductId)?.name}
-                          </span>
+                          <>
+                            <span className="text-xs text-gray-500">
+                              - {productSalesData.find(p => p.id === selectedProductId)?.name}
+                            </span>
+                            <span className="text-xs text-blue-600">
+                              ({performanceView === 'overall'
+                                ? 'All Time'
+                                : performanceView === 'year'
+                                  ? performanceYear
+                                  : `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][performanceMonth - 1]} ${performanceYear}`
+                              })
+                            </span>
+                          </>
                         )}
                       </h3>
                     </div>
-                    {selectedProductId && (
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={productChartType}
-                          onChange={(e) => {
-                            setProductChartType(e.target.value);
-                            setSelectedClientForBranches(null);
-                          }}
-                          className="px-2 py-1 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
-                          <option value="monthly">By Month</option>
-                          <option value="client">By Client</option>
-                          <option value="year">By Year</option>
-                        </select>
-                      </div>
-                    )}
                   </div>
 
                   {selectedProductId ? (
                     <>
+
                       {/* Product Summary - Compact */}
                       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 mb-3 border border-blue-200">
+                        <div className="text-xs font-semibold text-blue-700 mb-2 text-center">
+                          {performanceView === 'overall'
+                            ? 'All-Time Performance'
+                            : performanceView === 'year'
+                              ? `${performanceYear} Performance`
+                              : `${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][performanceMonth - 1]} ${performanceYear} Performance`
+                          }
+                        </div>
+
                         <div className="grid grid-cols-4 gap-2">
-                          <div className="text-center">
-                            <p className="text-xs text-gray-600">Total Sales</p>
-                            <p className="text-sm font-bold text-blue-700">
-                              {formatCurrency(productSalesData.find(p => p.id === selectedProductId)?.totalRevenue || 0)}
-                            </p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-xs text-gray-600">Total Quantity</p>
-                            <p className="text-sm font-bold text-green-700">
-                              {formatNumber(productSalesData.find(p => p.id === selectedProductId)?.totalQuantity || 0)}
-                            </p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-xs text-gray-600">Transactions</p>
-                            <p className="text-sm font-bold text-purple-700">
-                              {formatNumber(productSalesData.find(p => p.id === selectedProductId)?.salesCount || 0)}
-                            </p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-xs text-gray-600">Avg/Order</p>
-                            <p className="text-sm font-bold text-amber-700">
-                              {formatCurrency(
-                                (productSalesData.find(p => p.id === selectedProductId)?.totalRevenue || 0) /
-                                (productSalesData.find(p => p.id === selectedProductId)?.salesCount || 1)
-                              )}
-                            </p>
-                          </div>
+                          {(() => {
+                            const stats = getSelectedProductStats();
+                            return stats ? (
+                              <>
+                                <div className="text-center">
+                                  <p className="text-xs text-gray-600">Total Sales</p>
+                                  <p className="text-sm font-bold text-blue-700">
+                                    {formatCurrency(stats.totalRevenue)}
+                                  </p>
+                                </div>
+                                <div className="text-center">
+                                  <p className="text-xs text-gray-600">Total Quantity</p>
+                                  <p className="text-sm font-bold text-green-700">
+                                    {formatNumber(stats.totalQuantity)}
+                                  </p>
+                                </div>
+                                <div className="text-center">
+                                  <p className="text-xs text-gray-600">Transactions</p>
+                                  <p className="text-sm font-bold text-purple-700">
+                                    {formatNumber(stats.transactions)}
+                                  </p>
+                                </div>
+                                <div className="text-center">
+                                  <p className="text-xs text-gray-600">Avg/Unit</p>
+                                  <p className="text-sm font-bold text-amber-700">
+                                    {formatCurrency(stats.avgPerUnit)}
+                                  </p>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="col-span-4 text-center text-gray-400">
+                                <p className="text-xs">No data available</p>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
 
@@ -1546,7 +1804,7 @@ const Dashboard = () => {
                       {!selectedClientForBranches ? (
                         <div style={{ height: '250px' }}>
                           {(() => {
-                            const chartData = getProductChartData(selectedProductId, productChartType);
+                            const chartData = getProductChartData(selectedProductId);
                             return chartData ? (
                               <Bar
                                 data={chartData}
@@ -1719,67 +1977,6 @@ const Dashboard = () => {
                           </div>
                         </div>
                       )}
-
-                      {/* Top Clients Section - Only when not viewing branch breakdown */}
-                      {!selectedClientForBranches && (
-                        <div className="mt-3">
-                          <h4 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                            <Users size={14} /> Top Clients
-                          </h4>
-                          <div className="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto">
-                            {(() => {
-                              const product = productSalesData.find(p => p.id === selectedProductId);
-                              if (!product?.byClient) return <p className="text-xs text-gray-500 col-span-2">No client data</p>;
-
-                              const topClients = Object.entries(product.byClient)
-                                .sort((a, b) => b[1].revenue - a[1].revenue);
-
-                              const maxSales = Math.max(...topClients.map(([_, data]) => data.revenue));
-
-                              return topClients.map(([clientName, data], idx) => {
-                                const salesBarWidth = maxSales > 0 ? (data.revenue / maxSales * 100) : 0;
-
-                                return (
-                                  <div
-                                    key={idx}
-                                    className="p-2 bg-gray-50 rounded border border-gray-200 hover:border-blue-300 transition-all cursor-pointer"
-                                    onClick={() => setSelectedClientForBranches(clientName)}
-                                  >
-                                    <div className="flex justify-between items-center mb-2">
-                                      <span className="text-xs text-gray-600 font-medium truncate">{clientName}</span>
-                                      <div className="flex items-center gap-1">
-                                        <span className="text-xs text-gray-500">{data.count} sales</span>
-                                        <ChevronRight size={12} className="text-gray-400" />
-                                      </div>
-                                    </div>
-
-                                    {/* Sales Bar */}
-                                    <div className="flex items-center gap-2">
-                                      <div className="flex-1 bg-gray-200 rounded-full h-2">
-                                        <div
-                                          className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-500"
-                                          style={{ width: `${salesBarWidth}%` }}
-                                        ></div>
-                                      </div>
-                                      <span className="text-xs font-bold text-green-600">{formatCurrency(data.revenue)}</span>
-                                    </div>
-
-                                    <div className="flex justify-between items-center mt-1">
-                                      <span className="text-xs text-gray-500">{data.quantity} units</span>
-                                      <span className="text-xs text-gray-400">
-                                        {((data.revenue / product.totalRevenue) * 100).toFixed(1)}%
-                                      </span>
-                                    </div>
-                                  </div>
-                                );
-                              });
-                            })()}
-                          </div>
-                          <div className="mt-2 text-xs text-gray-500 text-center">
-                            💡 Click on a client to see branch breakdown
-                          </div>
-                        </div>
-                      )}
                     </>
                   ) : (
                     <div className="h-64 flex flex-col items-center justify-center text-gray-400">
@@ -1788,6 +1985,240 @@ const Dashboard = () => {
                       <p className="text-xs mt-1">Click on any product from the list</p>
                     </div>
                   )}
+                  {/* Top Clients & Branches Section */}
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Top Clients */}
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                          <Users size={16} className="text-blue-600" />
+                          Top Clients ({performanceView === 'overall'
+                            ? 'All Time'
+                            : performanceView === 'year'
+                              ? performanceYear
+                              : `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][performanceMonth - 1]} ${performanceYear}`
+                          })
+                        </h4>
+                        <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                          {performanceData.topClients && performanceData.topClients.length > 0 ? (
+                            performanceData.topClients.map((client, idx) => {
+                              const maxRevenue = performanceData.topClients[0]?.revenue || 1;
+                              const barWidth = (client.revenue / maxRevenue) * 100;
+
+                              return (
+                                <div
+                                  key={client.id || idx}
+                                  className={`p-3 rounded-lg border transition-all cursor-pointer ${selectedClientForTopBranches === client.name
+                                    ? 'bg-blue-50 border-blue-500 shadow-md'
+                                    : 'bg-gray-50 border-gray-200 hover:border-blue-300'
+                                    }`}
+                                  onClick={() => setSelectedClientForTopBranches(
+                                    selectedClientForTopBranches === client.name ? null : client.name
+                                  )}
+                                >
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className={`text-lg font-bold ${idx === 0 ? 'text-yellow-600' :
+                                      idx === 1 ? 'text-gray-400' :
+                                        idx === 2 ? 'text-amber-800' : 'text-gray-400'
+                                      }`}>
+                                      #{idx + 1}
+                                    </span>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-semibold text-gray-900 truncate">{client.name}</p>
+                                    </div>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <div className="flex justify-between items-center text-xs">
+                                      <span className="text-gray-600">Sales</span>
+                                      <span className="font-bold text-green-600">{formatCurrency(client.revenue)}</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                      <div
+                                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500"
+                                        style={{ width: `${barWidth}%` }}
+                                      ></div>
+                                    </div>
+                                    <div className="flex justify-between items-center text-xs text-gray-500">
+                                      <span>{client.salesCount} sales</span>
+                                      <span>Avg/Sale: {formatCurrency(client.averageOrderValue)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="text-center py-6 text-gray-400">
+                              <Users size={24} className="mx-auto mb-2 opacity-50" />
+                              <p className="text-sm">No client data for this period</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Top Branches */}
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                          <Building size={16} className="text-purple-600" />
+                          Top Branches ({performanceView === 'overall'
+                            ? 'All Time'
+                            : performanceView === 'year'
+                              ? performanceYear
+                              : `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][performanceMonth - 1]} ${performanceYear}`
+                          })
+                          {selectedClientForTopBranches && (
+                            <span className="text-xs font-normal text-blue-600">
+                              - {selectedClientForTopBranches}
+                            </span>
+                          )}
+                        </h4>
+                        <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                          {(() => {
+                            let branchesToShow = performanceData.topBranches || [];
+
+                            if (selectedClientForTopBranches) {
+                              const clientSales = sales.filter(sale => {
+                                const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED';
+                                const clientMatch = sale.client?.clientName === selectedClientForTopBranches;
+
+                                // If product is selected, only include sales that have this product
+                                if (selectedProductId) {
+                                  const hasProduct = sale.items?.some(item => item.product?.id === selectedProductId);
+                                  if (!hasProduct) return false;
+                                }
+
+                                if (performanceView === 'overall') {
+                                  return statusMatch && clientMatch;
+                                }
+
+                                const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
+                                const saleMonth = sale.month || (new Date(sale.createdAt || sale.date).getMonth() + 1);
+
+                                const yearMatch = saleYear === performanceYear;
+                                const monthMatch = performanceView === 'month' ? saleMonth === performanceMonth : true;
+
+                                return statusMatch && clientMatch && yearMatch && monthMatch;
+                              });
+
+                              const branchRevenue = {};
+                              const salesByBranch = {}; // Track unique sales per branch
+
+                              clientSales.forEach(sale => {
+                                const branchId = sale.branch?.id;
+                                const branchName = sale.branch?.branchName || 'Unknown Branch';
+                                const branchCode = sale.branch?.branchCode || 'N/A';
+
+                                if (!branchRevenue[branchId]) {
+                                  branchRevenue[branchId] = {
+                                    id: branchId,
+                                    name: branchName,
+                                    code: branchCode,
+                                    revenue: 0,
+                                    salesCount: 0,
+                                    quantity: 0,
+                                    averageOrderValue: 0
+                                  };
+                                  salesByBranch[branchId] = new Set();
+                                }
+
+                                // If product is selected, only count revenue for that product
+                                if (selectedProductId) {
+                                  sale.items?.forEach(item => {
+                                    if (item.product?.id === selectedProductId) {
+                                      branchRevenue[branchId].revenue += item.amount || 0;
+                                      branchRevenue[branchId].quantity += item.quantity || 0;
+                                    }
+                                  });
+                                  salesByBranch[branchId].add(sale.id); // Track unique sale
+                                } else {
+                                  branchRevenue[branchId].revenue += sale.totalAmount || 0;
+                                  sale.items?.forEach(item => {
+                                    branchRevenue[branchId].quantity += item.quantity || 0;
+                                  });
+                                  salesByBranch[branchId].add(sale.id); // Track unique sale
+                                }
+                              });
+
+                              // Update salesCount with unique transaction count
+                              Object.keys(branchRevenue).forEach(branchId => {
+                                branchRevenue[branchId].salesCount = salesByBranch[branchId].size;
+                                branchRevenue[branchId].averageOrderValue =
+                                  branchRevenue[branchId].salesCount > 0
+                                    ? branchRevenue[branchId].revenue / branchRevenue[branchId].salesCount
+                                    : 0;
+                              });
+
+                              branchesToShow = Object.values(branchRevenue)
+                                .sort((a, b) => b.revenue - a.revenue);
+                            }
+
+                            return branchesToShow.length > 0 ? (
+                              branchesToShow.map((branch, idx) => {
+                                // Calculate max revenue from the current filtered branches
+                                const maxRevenue = branchesToShow.length > 0 ? branchesToShow[0]?.revenue || 1 : 1;
+                                const barWidth = (branch.revenue / maxRevenue) * 100;
+
+                                return (
+                                  <div key={branch.id || idx} className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-purple-300 transition-all">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className={`text-lg font-bold ${idx === 0 ? 'text-yellow-600' :
+                                        idx === 1 ? 'text-gray-400' :
+                                          idx === 2 ? 'text-amber-800' : 'text-gray-400'
+                                        }`}>
+                                        #{idx + 1}
+                                      </span>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-semibold text-gray-900 truncate">{branch.name}</p>
+                                        <p className="text-xs text-gray-500">{branch.code} • {branch.salesCount} sales</p>
+                                      </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                      {/* Sales Bar */}
+                                      <div>
+                                        <div className="flex justify-between items-center text-xs mb-1">
+                                          <span className="text-gray-600">Sales</span>
+                                          <span className="font-bold text-green-600">{formatCurrency(branch.revenue)}</span>
+                                        </div>
+                                        <div className="w-full bg-gray-200 rounded-full h-2">
+                                          <div
+                                            className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-500"
+                                            style={{ width: `${barWidth}%` }}
+                                          ></div>
+                                        </div>
+                                      </div>
+
+                                      {/* Quantity Bar */}
+                                      <div>
+                                        <div className="flex justify-between items-center text-xs mb-1">
+                                          <span className="text-gray-600">Quantity</span>
+                                          <span className="font-bold text-purple-600">{formatNumber(branch.quantity || 0)} units</span>
+                                        </div>
+                                        <div className="w-full bg-gray-200 rounded-full h-2">
+                                          <div
+                                            className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full transition-all duration-500"
+                                            style={{
+                                              width: `${(() => {
+                                                const maxQuantity = Math.max(...branchesToShow.map(b => b.quantity || 0));
+                                                return maxQuantity > 0 ? ((branch.quantity || 0) / maxQuantity * 100) : 0;
+                                              })()}%`
+                                            }}
+                                          ></div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <div className="text-center py-6 text-gray-400">
+                                <Building size={24} className="mx-auto mb-2 opacity-50" />
+                                <p className="text-sm">No branch data for this period</p>
+                              </div>
+                            )
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2131,38 +2562,252 @@ const Dashboard = () => {
                   }))
                 };
 
+
+                const productStats = Object.entries(productData.products)
+                  .map(([name, monthlyData]) => {
+                    const totalSales = monthlyData.reduce((sum, val) => sum + val, 0);
+                    const quantity = productData.quantities[name] || 0;
+                    const salesCount = productData.salesCounts[name] || 0;
+
+                    const productInfo = productSalesData.find(p => p.name === name);
+                    const category = productInfo ? products.find(p => p.id === productInfo.id)?.category || 'Uncategorized' : 'Uncategorized';
+
+                    return {
+                      name,
+                      totalSales,
+                      quantity,
+                      salesCount,
+                      category
+                    };
+                  })
+                  .filter(product => {
+                    // Filter by selected category
+                    if (selectedCategory === 'all') return true;
+                    return product.category === selectedCategory;
+                  })
+                  .sort((a, b) => b.totalSales - a.totalSales);
+
                 return (
-                  <div style={{ height: '350px' }}>
-                    <Line data={productChartData} options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          display: true,
-                          position: 'top',
+                  <>
+                    <div style={{ height: '350px' }}>
+                      <Line data={productChartData} options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            display: true,
+                            position: 'top',
+                          },
+                          tooltip: {
+                            callbacks: {
+                              label: function (context) {
+                                return `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`;
+                              }
+                            }
+                          }
                         },
-                        tooltip: {
-                          callbacks: {
-                            label: function (context) {
-                              return `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`;
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                            ticks: {
+                              callback: function (value) {
+                                if (value >= 1000000) return '₱' + (value / 1000000).toFixed(1) + 'M';
+                                if (value >= 1000) return '₱' + (value / 1000).toFixed(0) + 'K';
+                                return '₱' + value;
+                              }
                             }
                           }
                         }
-                      },
-                      scales: {
-                        y: {
-                          beginAtZero: true,
-                          ticks: {
-                            callback: function (value) {
-                              if (value >= 1000000) return '₱' + (value / 1000000).toFixed(1) + 'M';
-                              if (value >= 1000) return '₱' + (value / 1000).toFixed(0) + 'K';
-                              return '₱' + value;
-                            }
-                          }
-                        }
-                      }
-                    }} />
-                  </div>
+                      }} />
+                    </div>
+
+                    {/* Product List Below Chart */}
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                          <Target size={16} className="text-purple-600" />
+                          Top Products (Ranked by Sales)
+                        </h4>
+
+                        {/* Category Filter for Top Products */}
+                        {productCategories.length > 0 && (
+                          <div className="relative">
+                            <select
+                              value={selectedCategory}
+                              onChange={(e) => {
+                                setSelectedCategory(e.target.value);
+                              }}
+                              className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 appearance-none pr-8"
+                            >
+                              <option value="all">All Categories</option>
+                              {productCategories.map((category, idx) => (
+                                <option key={idx} value={category}>
+                                  {category}
+                                </option>
+                              ))}
+                            </select>
+                            <ChevronDown size={12} className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                        {productStats.slice(0, 3).map((product, idx) => {
+                          const percentage = productStats[0].totalSales > 0
+                            ? (product.totalSales / productStats[0].totalSales * 100)
+                            : 0;
+
+                          return (
+                            <div
+                              key={idx}
+                              className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all"
+                            >
+                              {/* Rank Badge */}
+                              <div className="flex-shrink-0">
+                                <span className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${idx === 0 ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-400' :
+                                  idx === 1 ? 'bg-gray-200 text-gray-600 border-2 border-gray-400' :
+                                    idx === 2 ? 'bg-orange-100 text-orange-700 border-2 border-orange-400' :
+                                      'bg-gray-100 text-gray-500'
+                                  }`}>
+                                  #{idx + 1}
+                                </span>
+                              </div>
+
+                              {/* Product Info */}
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-gray-900 truncate">{product.name}</p>
+                                <p className="text-xs text-gray-500">{product.salesCount} transactions</p>
+                              </div>
+
+                              {/* Stats */}
+                              <div className="flex items-center gap-6">
+                                {/* Sales */}
+                                <div className="text-right">
+                                  <p className="text-xs text-gray-500">Sales</p>
+                                  <p className="font-bold text-green-600">{formatCurrency(product.totalSales)}</p>
+                                </div>
+
+                                {/* Quantity */}
+                                <div className="text-right">
+                                  <p className="text-xs text-gray-500">Quantity</p>
+                                  <p className="font-bold text-purple-600">{formatNumber(product.quantity)} units</p>
+                                </div>
+
+                                {/* Percentage Bar */}
+                                <div className="w-24">
+                                  <div className="flex items-center justify-end gap-2 mb-1">
+                                    <span className="text-xs font-medium text-gray-600">{percentage.toFixed(0)}%</span>
+                                  </div>
+                                  <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div
+                                      className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full transition-all duration-500"
+                                      style={{ width: `${percentage}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {/* Show scrollable list if more than 3 products */}
+                        {productStats.length > 3 && (
+                          <>
+                            <div className="my-3 border-t border-gray-200 pt-3">
+                              <p className="text-xs text-gray-500 text-center mb-2">
+                                +{productStats.length - 3} more products (scroll to view)
+                              </p>
+                            </div>
+                            {productStats.slice(3).map((product, idx) => {
+                              const actualIdx = idx + 3;
+                              const percentage = productStats[0].totalSales > 0
+                                ? (product.totalSales / productStats[0].totalSales * 100)
+                                : 0;
+
+                              return (
+                                <div
+                                  key={actualIdx}
+                                  className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all"
+                                >
+                                  {/* Rank Badge */}
+                                  <div className="flex-shrink-0">
+                                    <span className="flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm bg-gray-100 text-gray-500">
+                                      #{actualIdx + 1}
+                                    </span>
+                                  </div>
+
+                                  {/* Product Info */}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-gray-900 truncate">{product.name}</p>
+                                    <p className="text-xs text-gray-500">{product.salesCount} transactions</p>
+                                  </div>
+
+                                  {/* Stats */}
+                                  <div className="flex items-center gap-6">
+                                    {/* Sales */}
+                                    <div className="text-right">
+                                      <p className="text-xs text-gray-500">Sales</p>
+                                      <p className="font-bold text-green-600">{formatCurrency(product.totalSales)}</p>
+                                    </div>
+
+                                    {/* Quantity */}
+                                    <div className="text-right">
+                                      <p className="text-xs text-gray-500">Quantity</p>
+                                      <p className="font-bold text-purple-600">{formatNumber(product.quantity)} units</p>
+                                    </div>
+
+                                    {/* Percentage Bar */}
+                                    <div className="w-24">
+                                      <div className="flex items-center justify-end gap-2 mb-1">
+                                        <span className="text-xs font-medium text-gray-600">{percentage.toFixed(0)}%</span>
+                                      </div>
+                                      <div className="w-full bg-gray-200 rounded-full h-2">
+                                        <div
+                                          className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full transition-all duration-500"
+                                          style={{ width: `${percentage}%` }}
+                                        ></div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </>
+                        )}
+                      </div>
+
+
+                      {/* Summary */}
+                      {productStats.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-gray-200 bg-purple-50 rounded-lg p-4">
+                          {selectedCategory !== 'all' && (
+                            <div className="mb-2 text-center">
+                              <span className="text-xs font-semibold text-purple-700">
+                                Showing: {selectedCategory}
+                              </span>
+                            </div>
+                          )}
+                          <div className="grid grid-cols-3 gap-4 text-center">
+                            <div>
+                              <p className="text-xs text-gray-600">Total Products</p>
+                              <p className="text-lg font-bold text-purple-700">{productStats.length}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-600">Total Sales</p>
+                              <p className="text-lg font-bold text-green-700">
+                                {formatCurrency(productStats.reduce((sum, p) => sum + p.totalSales, 0))}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-600">Total Units Sold</p>
+                              <p className="text-lg font-bold text-blue-700">
+                                {formatNumber(productStats.reduce((sum, p) => sum + p.quantity, 0))}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </>
                 );
               })()}
             </div>
@@ -2276,6 +2921,7 @@ const Dashboard = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => {
+                            navigate('/sales?status=PENDING');
                           }}
                           className="flex-1 px-3 py-2 text-xs bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors font-medium"
                         >
@@ -2283,6 +2929,7 @@ const Dashboard = () => {
                         </button>
                         <button
                           onClick={() => {
+                            navigate('/sales?status=ACTIVE');
                           }}
                           className="flex-1 px-3 py-2 text-xs bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors font-medium"
                         >
