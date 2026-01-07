@@ -9,7 +9,7 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
-  
+
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -81,9 +81,8 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
                     setIsOpen(false);
                     setSearchTerm('');
                   }}
-                  className={`w-full px-4 py-2 text-left hover:bg-blue-50 transition text-sm ${
-                    value === option[valueKey] ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'
-                  }`}
+                  className={`w-full px-4 py-2 text-left hover:bg-blue-50 transition text-sm ${value === option[valueKey] ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'
+                    }`}
                 >
                   {option[displayKey]}
                 </button>
@@ -160,13 +159,12 @@ const GroupedLocationDropdown = ({ locations, value, onChange, placeholder }) =>
                     }
                   }}
                   disabled={opt.isGroup}
-                  className={`w-full px-4 py-2.5 text-left text-sm transition ${
-                    opt.isGroup
-                      ? 'font-bold text-gray-700 bg-gray-100 cursor-default'
-                      : value === opt.value
+                  className={`w-full px-4 py-2.5 text-left text-sm transition ${opt.isGroup
+                    ? 'font-bold text-gray-700 bg-gray-100 cursor-default'
+                    : value === opt.value
                       ? 'bg-blue-50 text-blue-700 font-medium'
                       : 'hover:bg-gray-50 text-gray-900'
-                  }`}
+                    }`}
                 >
                   {opt.label}
                 </button>
@@ -196,6 +194,7 @@ const InventoryRecordsManagement = () => {
   const [itemsPerPage] = useState(10);
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
+  const [canModifyStatus, setCanModifyStatus] = useState({});
 
   const [formData, setFormData] = useState({
     inventoryType: 'STOCK_IN',
@@ -231,17 +230,17 @@ const InventoryRecordsManagement = () => {
         api.get('/warehouse'),
         api.get('/branches')
       ]);
-      
+
       const inventoriesData = inventoriesRes.success ? inventoriesRes.data || [] : [];
       const productsData = productsRes.success ? productsRes.data || [] : [];
       const warehousesData = warehousesRes.success ? warehousesRes.data || [] : [];
       const branchesData = branchesRes.success ? branchesRes.data || [] : [];
-      
-      const actualInventories = inventoriesData.filter(inv => 
-        inv.inventoryType && 
+
+      const actualInventories = inventoriesData.filter(inv =>
+        inv.inventoryType &&
         ['STOCK_IN', 'TRANSFER', 'RETURN', 'DAMAGE'].includes(inv.inventoryType)
       );
-      
+
       setInventories(actualInventories);
       setProducts(productsData);
       setWarehouses(warehousesData);
@@ -259,7 +258,7 @@ const InventoryRecordsManagement = () => {
     try {
       let locationId = null;
       let locationType = null;
-      
+
       if (formData.fromWarehouseId) {
         locationId = formData.fromWarehouseId;
         locationType = 'warehouse';
@@ -273,10 +272,10 @@ const InventoryRecordsManagement = () => {
         locationId = formData.toBranchId;
         locationType = 'branch';
       }
-      
+
       if (locationId && productId && locationType) {
         let stockRes = null;
-        
+
         if (locationType === 'warehouse') {
           stockRes = await api.get(`/stocks/warehouses/${locationId}/products/${productId}`);
           if (stockRes.success) {
@@ -295,7 +294,6 @@ const InventoryRecordsManagement = () => {
               }));
             }
           } catch (error) {
-            console.log('Branch stock endpoint not available, using default');
             const defaultStock = { availableQuantity: 0, quantity: 0, reservedQuantity: 0 };
             setBranchStocks(prev => ({
               ...prev,
@@ -303,7 +301,7 @@ const InventoryRecordsManagement = () => {
             }));
           }
         }
-        
+
         return stockRes?.success ? stockRes.data : { availableQuantity: 0, quantity: 0, reservedQuantity: 0 };
       }
     } catch (error) {
@@ -315,7 +313,7 @@ const InventoryRecordsManagement = () => {
 
   const getItemStockInfo = (itemIndex, productId) => {
     let locationId = null;
-    
+
     if (formData.fromWarehouseId) {
       locationId = formData.fromWarehouseId;
       const warehouseKey = `${itemIndex}_${productId}_${locationId}`;
@@ -333,14 +331,39 @@ const InventoryRecordsManagement = () => {
       const branchKey = `${itemIndex}_${productId}_${locationId}`;
       return branchStocks[branchKey];
     }
-    
+
     return null;
   };
 
-  // FIXED: Added missing closing brace and setShowModal(true)
+
+  const checkCanModify = async (inventoryId) => {
+    try {
+      const response = await api.get(`/inventories/${inventoryId}/can-modify`);
+
+      const responseData = response.data?.data || response.data;
+
+
+      if (response.success && responseData) {
+        const canModify = responseData.canModify ?? false;
+        const hasBeenUsed = responseData.hasBeenUsed ?? true;
+
+        setCanModifyStatus(prev => ({
+          ...prev,
+          [inventoryId]: canModify
+        }));
+        return canModify;
+      }
+      return false;
+    } catch (error) {
+      console.error('Failed to check if inventory can be modified:', error);
+      return false;
+    }
+  };
+
+
   const handleOpenModal = async (mode, inventory = null) => {
     setModalMode(mode);
-    
+
     if (mode === 'create') {
       setSelectedInventory(null);
       setFormData({
@@ -358,25 +381,39 @@ const InventoryRecordsManagement = () => {
       setWarehouseStocks({});
       setBranchStocks({});
     } else if (mode === 'edit' && inventory) {
+      // ✅ CHECK IF CONFIRMED INVENTORY CAN BE MODIFIED
       if (inventory.status === 'CONFIRMED') {
-        alert('Cannot edit a confirmed inventory record.');
-        return;
+        const canModify = await checkCanModify(inventory.id);
+        if (!canModify) {
+          alert('❌ Cannot edit this inventory record\n\nThe stock from this inventory has already been used in deliveries or sales.\n\nTo modify this record, you would need to:\n1. Revert any deliveries/sales that used this stock\n2. Then edit the inventory record\n\nContact your administrator for assistance.');
+          return;
+        }
+
+        // Show warning that editing will revert stock
+        const confirmEdit = window.confirm(
+          '⚠️ Warning: Editing CONFIRMED Inventory\n\n' +
+          'This inventory has been confirmed but the stock hasn\'t been used yet.\n\n' +
+          'Editing will:\n' +
+          '• Revert this inventory to PENDING status\n' +
+          '• Reverse the stock changes that were applied\n' +
+          '• Require re-confirmation after editing\n\n' +
+          'Do you want to continue?'
+        );
+
+        if (!confirmEdit) {
+          return;
+        }
       }
-      
+
       try {
         const fullInventoryRes = await api.get(`/inventories/${inventory.id}`);
-        
+
         if (!fullInventoryRes.success) {
           throw new Error(fullInventoryRes.error || 'Failed to load inventory');
         }
-        
+
         const fullInventory = fullInventoryRes.data;
-        
-        if (fullInventory.status === 'CONFIRMED') {
-          alert('Cannot edit a confirmed inventory record.');
-          return;
-        }
-        
+
         setSelectedInventory(fullInventory);
         setFormData({
           inventoryType: fullInventory.inventoryType,
@@ -387,24 +424,19 @@ const InventoryRecordsManagement = () => {
           verificationDate: fullInventory.verificationDate,
           verifiedBy: fullInventory.verifiedBy,
           remarks: fullInventory.remarks || '',
-          status: fullInventory.status || 'PENDING',
+          status: 'PENDING', // ✅ Always reset to PENDING when editing
           items: fullInventory.items.map(item => ({
             productId: item.product.id,
             quantity: item.quantity
           }))
         });
-        
+
         setWarehouseStocks({});
         setBranchStocks({});
-        
+
         for (let i = 0; i < fullInventory.items.length; i++) {
           const item = fullInventory.items[i];
-          const warehouseId = fullInventory.fromWarehouse?.id || fullInventory.toWarehouse?.id;
-          const branchId = fullInventory.fromBranch?.id || fullInventory.toBranch?.id;
-          
-          if (warehouseId && item.product?.id) {
-            await loadLocationStock(item.product.id, i);
-          } else if (branchId && item.product?.id) {
+          if (item.product?.id) {
             await loadLocationStock(item.product.id, i);
           }
         }
@@ -422,8 +454,7 @@ const InventoryRecordsManagement = () => {
         console.error('Failed to load inventory details:', error);
       }
     }
-    
-    // CRITICAL: This was missing!
+
     setShowModal(true);
   };
 
@@ -454,22 +485,22 @@ const InventoryRecordsManagement = () => {
   const handleRemoveItem = (index) => {
     const newItems = formData.items.filter((_, i) => i !== index);
     setFormData({ ...formData, items: newItems });
-    
+
     const newWarehouseStocks = { ...warehouseStocks };
     const newBranchStocks = { ...branchStocks };
-    
+
     Object.keys(warehouseStocks).forEach(key => {
       if (key.startsWith(`${index}_`)) {
         delete newWarehouseStocks[key];
       }
     });
-    
+
     Object.keys(branchStocks).forEach(key => {
       if (key.startsWith(`${index}_`)) {
         delete newBranchStocks[key];
       }
     });
-    
+
     setWarehouseStocks(newWarehouseStocks);
     setBranchStocks(newBranchStocks);
   };
@@ -481,7 +512,7 @@ const InventoryRecordsManagement = () => {
       alert('Please enter verified by name');
       return;
     }
-    
+
     if (formData.items.length === 0) {
       alert('Please add at least one item');
       return;
@@ -494,16 +525,15 @@ const InventoryRecordsManagement = () => {
         ...formData,
         status: 'PENDING'
       };
-      
+
       if (modalMode === 'create') {
         const response = await api.post('/inventories', payload);
-        console.log('Response received:', response);
         alert('Inventory record created successfully as PENDING!');
       } else {
         await api.put(`/inventories/${selectedInventory.id}`, payload);
         alert('Inventory record updated successfully!');
       }
-      
+
       handleCloseModal();
       loadData();
       setCurrentPage(1);
@@ -512,7 +542,7 @@ const InventoryRecordsManagement = () => {
       console.error('Error:', error);
       console.error('Error response:', error.response);
       alert('Failed to save inventory: ' + error.message);
-    }finally{
+    } finally {
       setActionLoading(false);
       setLoadingMessage('');
     }
@@ -535,16 +565,16 @@ const InventoryRecordsManagement = () => {
     } else if (inventory.inventoryType === 'DAMAGE') {
       locationInfo = `\n📦 Mark damaged at: ${inventory.toWarehouse?.warehouseName || inventory.toBranch?.branchName}`;
     }
-    
+
     const itemCount = inventory.items?.length || 0;
     const totalQty = inventory.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
-    
+
     const confirmMessage = `Are you sure you want to confirm this ${inventory.inventoryType} record?${locationInfo}\n\n📊 Items: ${itemCount}\n📦 Total Quantity: ${totalQty}\n\n⚠️ This will update stock levels and cannot be undone.`;
-    
+
     if (!window.confirm(confirmMessage)) {
       return;
     }
-    
+
     try {
       setActionLoading(true);
       setLoadingMessage('Confirming inventory...');
@@ -552,37 +582,68 @@ const InventoryRecordsManagement = () => {
       loadingToast.className = 'fixed top-4 right-4 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
       loadingToast.textContent = '⏳ Confirming inventory...';
       document.body.appendChild(loadingToast);
-      
+
       const response = await api.patch(`/inventories/${inventory.id}/confirm`);
-      
+
       document.body.removeChild(loadingToast);
-      
+
       if (response.success) {
         alert(`✅ Inventory confirmed successfully!\n\n${inventory.inventoryType} record has been processed and stock levels have been updated.`);
         await loadData();
       } else {
         alert(response.error || 'Failed to confirm inventory');
       }
-      
+
     } catch (error) {
       console.error('Failed to confirm inventory:', error);
       const errorMsg = error.response?.data?.error || error.message || 'Unknown error';
       alert(`❌ Failed to confirm inventory:\n\n${errorMsg}\n\nPlease check stock availability and try again.`);
-    }finally{
+    } finally {
       setActionLoading(false);
       setLoadingMessage('');
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this inventory record?')) return;
+    const inventory = inventories.find(inv => inv.id === id);
+
+    if (inventory && inventory.status === 'CONFIRMED') {
+
+      const canModify = await checkCanModify(id);
+
+      if (!canModify) {
+        alert('❌ Cannot delete this inventory record\n\nThe stock from this inventory has already been used in deliveries or sales.\n\nDeleting this would create stock inconsistencies.\n\nContact your administrator if you need to adjust this record.');
+        return;
+      }
+
+      // Show warning about deleting confirmed inventory
+      const confirmDelete = window.confirm(
+        '⚠️ Warning: Deleting CONFIRMED Inventory\n\n' +
+        'This inventory has been confirmed but the stock hasn\'t been used yet.\n\n' +
+        'Deleting will:\n' +
+        '• Permanently remove this inventory record\n' +
+        '• Reverse all stock changes that were applied\n' +
+        '• Cannot be undone\n\n' +
+        'Are you absolutely sure you want to delete this record?'
+      );
+
+      if (!confirmDelete) {
+        return;
+      }
+    } else {
+      if (!window.confirm('Are you sure you want to delete this inventory record?')) {
+        return;
+      }
+    }
 
     try {
       setActionLoading(true);
       setLoadingMessage('Deleting inventory record...');
+
       const response = await api.delete(`/inventories/${id}`);
+
       if (response.success) {
-        alert('Inventory deleted successfully');
+        alert('✅ Inventory deleted successfully');
         loadData();
         if (filteredInventories.length % itemsPerPage === 1 && currentPage > 1) {
           setCurrentPage(currentPage - 1);
@@ -591,8 +652,9 @@ const InventoryRecordsManagement = () => {
         alert(response.error || 'Failed to delete inventory');
       }
     } catch (error) {
-      alert('Failed to delete: ' + error.message);
-    }finally{
+      console.error('❌ Delete error:', error);
+      alert('❌ Failed to delete: ' + error.message);
+    } finally {
       setActionLoading(false);
       setLoadingMessage('');
     }
@@ -600,7 +662,7 @@ const InventoryRecordsManagement = () => {
 
   const getLocationOptions = (inventoryType, locationType = 'to') => {
     const opts = [];
-    
+
     if (inventoryType === 'STOCK_IN' && locationType === 'to') {
       opts.push({ value: '', label: 'WAREHOUSES', isGroup: true });
       warehouses.forEach(wh => {
@@ -608,7 +670,7 @@ const InventoryRecordsManagement = () => {
       });
       return opts;
     }
-    
+
     if (inventoryType === 'RETURN') {
       if (locationType === 'from') {
         opts.push({ value: '', label: 'BRANCHES', isGroup: true });
@@ -628,7 +690,7 @@ const InventoryRecordsManagement = () => {
         return opts;
       }
     }
-    
+
     if (inventoryType === 'DAMAGE' && locationType === 'to') {
       opts.push({ value: '', label: 'WAREHOUSES', isGroup: true });
       warehouses.forEach(wh => {
@@ -636,7 +698,7 @@ const InventoryRecordsManagement = () => {
       });
       return opts;
     }
-    
+
     if (inventoryType === 'TRANSFER') {
       if (locationType === 'from') {
         opts.push({ value: '', label: 'WAREHOUSES', isGroup: true });
@@ -656,7 +718,7 @@ const InventoryRecordsManagement = () => {
         return opts;
       }
     }
-    
+
     return opts;
   };
 
@@ -664,18 +726,18 @@ const InventoryRecordsManagement = () => {
     const [locationType, locationId] = val ? val.split('|') : [null, null];
     const warehouseId = locationType === 'warehouse' ? (locationId ? parseInt(locationId, 10) : null) : null;
     const branchId = locationType === 'branch' ? (locationId ? parseInt(locationId, 10) : null) : null;
-    
+
     const newFormData = {
       ...formData,
       [`${type}WarehouseId`]: warehouseId,
       [`${type}BranchId`]: branchId
     };
-    
+
     setFormData(newFormData);
-    
+
     setWarehouseStocks({});
     setBranchStocks({});
-    
+
     if (newFormData.items.length > 0) {
       for (let i = 0; i < newFormData.items.length; i++) {
         const item = newFormData.items[i];
@@ -720,23 +782,23 @@ const InventoryRecordsManagement = () => {
     return [...inventories].sort((a, b) => {
       const isAConfirmed = a.status === 'CONFIRMED' ? 1 : 0;
       const isBConfirmed = b.status === 'CONFIRMED' ? 1 : 0;
-      
+
       if (isAConfirmed !== isBConfirmed) {
         return isAConfirmed - isBConfirmed;
       }
-      
+
       return 0;
     });
   };
 
   const filteredInventories = sortByStatus(inventories.filter(inventory => {
     const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = 
+    const matchesSearch =
       inventory.verifiedBy?.toLowerCase().includes(searchLower) ||
       inventory.remarks?.toLowerCase().includes(searchLower);
-    
+
     const matchesStatus = statusFilter === 'ALL' || inventory.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   }));
 
@@ -745,9 +807,9 @@ const InventoryRecordsManagement = () => {
   const currentInventories = filteredInventories.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredInventories.length / itemsPerPage);
 
-  const productOptions = products.map(p => ({ 
-    id: p.id, 
-    name: `${p.productName} (${p.sku || p.upc})` 
+  const productOptions = products.map(p => ({
+    id: p.id,
+    name: `${p.productName} (${p.sku || p.upc})`
   }));
 
   const needsFromLocation = ['TRANSFER', 'RETURN'].includes(formData.inventoryType);
@@ -755,663 +817,650 @@ const InventoryRecordsManagement = () => {
 
   return (
     <>
-    <LoadingOverlay show={loading || actionLoading} message={loadingMessage || ''} />
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Inventory Records Management</h1>
-          <p className="text-gray-600">Track and manage inventory movements</p>
-        </div>
+      <LoadingOverlay show={loading || actionLoading} message={loadingMessage || ''} />
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Inventory Records Management</h1>
+            <p className="text-gray-600">Track and manage inventory movements</p>
+          </div>
 
-        {/* Action Bar */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <div className="flex flex-wrap gap-4 items-center justify-between">
-            <button 
-              onClick={() => handleOpenModal('create')} 
-              className="flex items-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
-            >
-              <Plus size={20} />
-              <span>New Inventory Record</span>
-            </button>
-
-            <div className="flex gap-3 items-center">
-              <select 
-                value={statusFilter} 
-                onChange={(e) => setStatusFilter(e.target.value)} 
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          {/* Action Bar */}
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <div className="flex flex-wrap gap-4 items-center justify-between">
+              <button
+                onClick={() => handleOpenModal('create')}
+                className="flex items-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
               >
-                <option value="ALL">All Status</option>
-                <option value="PENDING">Pending</option>
-                <option value="CONFIRMED">Confirmed</option>
-              </select>
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                <input
-                  type="text"
-                  placeholder="Search inventory..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 pr-4 py-3 border border-gray-300 rounded-lg w-80 focus:ring-2 focus:ring-blue-500"
-                />
+                <Plus size={20} />
+                <span>New Inventory Record</span>
+              </button>
+
+              <div className="flex gap-3 items-center">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="ALL">All Status</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="CONFIRMED">Confirmed</option>
+                </select>
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                  <input
+                    type="text"
+                    placeholder="Search inventory..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-12 pr-4 py-3 border border-gray-300 rounded-lg w-80 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Inventories Table */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">From → To</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {currentInventories.length === 0 ? (
+          {/* Inventories Table */}
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
-                      {filteredInventories.length === 0 ? 'No inventory records found' : 'No records on this page'}
-                    </td>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">From → To</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
-                ) : (
-                  currentInventories.map((inventory) => (
-                    <tr key={inventory.id} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-3 py-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTypeColor(inventory.inventoryType)}`}>
-                          {inventory.inventoryType?.replace('_', ' ') || 'UNKNOWN'}
-                        </span>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {currentInventories.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                        {filteredInventories.length === 0 ? 'No inventory records found' : 'No records on this page'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div className="flex items-center gap-2">
-                          {(inventory.fromWarehouse || inventory.fromBranch) && (
-                            <>
-                              {inventory.fromWarehouse && (
-                                <div className="flex items-center gap-1">
-                                  <Warehouse size={14} className="text-blue-600" />
-                                  <span className="font-medium">{inventory.fromWarehouse.warehouseName}</span>
-                                </div>
-                              )}
-                              {inventory.fromBranch && (
-                                <div className="flex items-center gap-1">
-                                  <Store size={14} className="text-green-600" />
-                                  <span className="font-medium">{inventory.fromBranch.branchName}</span>
-                                </div>
-                              )}
-                              <span className="text-gray-400">→</span>
-                            </>
-                          )}
-                          
-                          {inventory.toWarehouse && (
-                            <div className="flex items-center gap-1">
-                              <Warehouse size={14} className="text-blue-600" />
-                              <span className="font-medium">{inventory.toWarehouse.warehouseName}</span>
-                            </div>
-                          )}
-                          {inventory.toBranch && (
-                            <div className="flex items-center gap-1">
-                              <Store size={14} className="text-green-600" />
-                              <span className="font-medium">{inventory.toBranch.branchName}</span>
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(inventory.verificationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <Package size={16} className="text-gray-400" />
-                          <span className="text-sm font-semibold text-gray-900">{inventory.items?.length || 0}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <span className={`px-3 py-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(inventory.status)}`}>
-                            {inventory.status || 'PENDING'}
+                    </tr>
+                  ) : (
+                    currentInventories.map((inventory) => (
+                      <tr key={inventory.id} className="hover:bg-gray-50 transition">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-3 py-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTypeColor(inventory.inventoryType)}`}>
+                            {inventory.inventoryType?.replace('_', ' ') || 'UNKNOWN'}
                           </span>
-                          {inventory.status === 'CONFIRMED' && (
-                            <Check size={16} className="text-green-600" />
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center gap-3">
-                          <button 
-                            onClick={() => handleOpenModal('view', inventory)} 
-                            className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition"
-                            title="View"
-                          >
-                            <Eye size={18} />
-                          </button>
-                          <button 
-                            onClick={() => handleOpenModal('edit', inventory)} 
-                            disabled={inventory.status === 'CONFIRMED'}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition ${
-                              inventory.status === 'CONFIRMED'
-                              ? 'text-gray-400 cursor-not-allowed bg-gray-100'
-                              : 'text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50'
-                            }`}
-                            title={inventory.status === 'CONFIRMED' ? 'Cannot edit confirmed records' : 'Edit'}
-                          >
-                            <Edit2 size={18} />
-                          </button>
-                          
-                          {inventory.status === 'PENDING' && (
-                            <button 
-                              onClick={() => handleConfirmInventory(inventory)}
-                              className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition shadow-sm group relative"
-                              title="Confirm & Update Stock"
-                            >
-                              <Check size={18} />
-                              <span className="text-sm font-medium">Confirm</span>
-                              <div className="hidden group-hover:block absolute bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded whitespace-nowrap z-50">
-                                This will update warehouse/branch stock levels
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <div className="flex items-center gap-2">
+                            {(inventory.fromWarehouse || inventory.fromBranch) && (
+                              <>
+                                {inventory.fromWarehouse && (
+                                  <div className="flex items-center gap-1">
+                                    <Warehouse size={14} className="text-blue-600" />
+                                    <span className="font-medium">{inventory.fromWarehouse.warehouseName}</span>
+                                  </div>
+                                )}
+                                {inventory.fromBranch && (
+                                  <div className="flex items-center gap-1">
+                                    <Store size={14} className="text-green-600" />
+                                    <span className="font-medium">{inventory.fromBranch.branchName}</span>
+                                  </div>
+                                )}
+                                <span className="text-gray-400">→</span>
+                              </>
+                            )}
+
+                            {inventory.toWarehouse && (
+                              <div className="flex items-center gap-1">
+                                <Warehouse size={14} className="text-blue-600" />
+                                <span className="font-medium">{inventory.toWarehouse.warehouseName}</span>
                               </div>
+                            )}
+                            {inventory.toBranch && (
+                              <div className="flex items-center gap-1">
+                                <Store size={14} className="text-green-600" />
+                                <span className="font-medium">{inventory.toBranch.branchName}</span>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(inventory.verificationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <Package size={16} className="text-gray-400" />
+                            <span className="text-sm font-semibold text-gray-900">{inventory.items?.length || 0}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-3 py-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(inventory.status)}`}>
+                              {inventory.status || 'PENDING'}
+                            </span>
+                            {inventory.status === 'CONFIRMED' && (
+                              <Check size={16} className="text-green-600" />
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => handleOpenModal('view', inventory)}
+                              className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition"
+                              title="View"
+                            >
+                              <Eye size={18} />
                             </button>
-                          )}
-                          
-                          {inventory.status === 'PENDING' && (
-                            <button 
-                              onClick={() => handleDelete(inventory.id)} 
+                            <button
+                              onClick={() => handleOpenModal('edit', inventory)}
+                              className="flex items-center gap-2 px-3 py-2 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-lg transition"
+                              title={inventory.status === 'CONFIRMED' ? 'Edit (will check if modifiable)' : 'Edit'}
+                            >
+                              <Edit2 size={18} />
+                            </button>
+
+                            {inventory.status === 'PENDING' && (
+                              <button
+                                onClick={() => handleConfirmInventory(inventory)}
+                                className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition shadow-sm group relative"
+                                title="Confirm & Update Stock"
+                              >
+                                <Check size={18} />
+                                <span className="text-sm font-medium">Confirm</span>
+                                <div className="hidden group-hover:block absolute bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded whitespace-nowrap z-50">
+                                  This will update warehouse/branch stock levels
+                                </div>
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => handleDelete(inventory.id)}
                               className="flex items-center gap-2 px-3 py-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition"
-                              title="Delete"
+                              title={inventory.status === 'CONFIRMED' ? 'Delete (will check if modifiable)' : 'Delete'}
                             >
                               <Trash2 size={18} />
                             </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-          {/* Pagination */}
-          {filteredInventories.length > 0 && (
-            <div className="px-6 py-4 border-t border-gray-200 bg-white flex items-center justify-between">
-              <div className="text-sm text-gray-700">
-                Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredInventories.length)} of {filteredInventories.length} results
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  className={`p-2 rounded-lg border ${
-                    currentPage === 1 
-                      ? 'text-gray-400 cursor-not-allowed border-gray-200' 
-                      : 'text-gray-700 hover:bg-gray-50 border-gray-300'
-                  }`}
-                >
-                  <ChevronLeft size={16} />
-                </button>
-
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
-                    <button
-                      key={number}
-                      onClick={() => setCurrentPage(number)}
-                      className={`min-w-[40px] px-3 py-2 text-sm rounded-lg border ${
-                        currentPage === number
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'text-gray-700 hover:bg-gray-50 border-gray-300'
-                      }`}
-                    >
-                      {number}
-                    </button>
-                  ))}
+            {/* Pagination */}
+            {filteredInventories.length > 0 && (
+              <div className="px-6 py-4 border-t border-gray-200 bg-white flex items-center justify-between">
+                <div className="text-sm text-gray-700">
+                  Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredInventories.length)} of {filteredInventories.length} results
                 </div>
 
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  className={`p-2 rounded-lg border ${
-                    currentPage === totalPages
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className={`p-2 rounded-lg border ${currentPage === 1
                       ? 'text-gray-400 cursor-not-allowed border-gray-200'
                       : 'text-gray-700 hover:bg-gray-50 border-gray-300'
-                  }`}
-                >
-                  <ChevronRight size={16} />
-                </button>
+                      }`}
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
+                      <button
+                        key={number}
+                        onClick={() => setCurrentPage(number)}
+                        className={`min-w-[40px] px-3 py-2 text-sm rounded-lg border ${currentPage === number
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                          }`}
+                      >
+                        {number}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className={`p-2 rounded-lg border ${currentPage === totalPages
+                      ? 'text-gray-400 cursor-not-allowed border-gray-200'
+                      : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                      }`}
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Create/Edit Modal */}
+          {showModal && (modalMode === 'create' || modalMode === 'edit') && (
+            <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6">
+              <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
+                <div className="p-8 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {modalMode === 'create' ? 'Create New Inventory Record' : 'Edit Inventory Record'}
+                  </h2>
+                  <button
+                    onClick={handleCloseModal}
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-8">
+                  <div className="space-y-6">
+                    {/* Inventory Type */}
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4">Inventory Type</h3>
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        {inventoryTypes.map(t => (
+                          <button
+                            type="button"
+                            key={t.value}
+                            onClick={() => handleInventoryTypeChange(t.value)}
+                            className={`p-4 rounded-lg border-2 text-left transition ${formData.inventoryType === t.value
+                              ? `border-${t.color}-500 bg-${t.color}-50 text-${t.color}-700`
+                              : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                          >
+                            <div className="font-semibold">{t.label}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Locations */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {needsFromLocation && (
+                        <div className="p-5 bg-red-50 rounded-lg border border-red-200">
+                          <label className="block font-medium mb-2 text-red-800">From Location *</label>
+                          <GroupedLocationDropdown
+                            locations={getLocationOptions(formData.inventoryType, 'from')}
+                            value={formData.fromWarehouseId ? `warehouse|${formData.fromWarehouseId}` : formData.fromBranchId ? `branch|${formData.fromBranchId}` : ''}
+                            onChange={val => handleLocationChange('from', val)}
+                            placeholder="Select source location..."
+                          />
+                        </div>
+                      )}
+                      <div className={`p-5 rounded-lg border ${needsFromLocation ? 'bg-blue-50 border-blue-200' : 'bg-blue-50 border-blue-200 col-span-2'
+                        }`}>
+                        <label className="block font-medium mb-2 text-blue-800">To Location *</label>
+                        <GroupedLocationDropdown
+                          locations={getLocationOptions(formData.inventoryType, 'to')}
+                          value={formData.toWarehouseId ? `warehouse|${formData.toWarehouseId}` : formData.toBranchId ? `branch|${formData.toBranchId}` : ''}
+                          onChange={val => handleLocationChange('to', val)}
+                          placeholder="Select destination..."
+                        />
+                      </div>
+                    </div>
+
+                    {/* Details */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block font-medium mb-2">
+                          <Calendar className="inline mr-2" size={18} />
+                          Verification Date *
+                        </label>
+                        <input
+                          type="date"
+                          value={formData.verificationDate}
+                          onChange={e => setFormData(prev => ({ ...prev, verificationDate: e.target.value }))}
+                          required
+                          className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-medium mb-2">
+                          <User className="inline mr-2" size={18} />
+                          Verified By *
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.verifiedBy}
+                          onChange={e => setFormData(prev => ({ ...prev, verifiedBy: e.target.value }))}
+                          required
+                          placeholder="Name"
+                          className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block font-medium mb-2">
+                          <MessageSquare className="inline mr-2" size={18} />
+                          Remarks
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={formData.remarks}
+                          onChange={e => setFormData(prev => ({ ...prev, remarks: e.target.value }))}
+                          className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Items */}
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <label className="block text-lg font-semibold">
+                          <Package className="inline mr-2" size={20} />
+                          Items *
+                          {(formData.toWarehouseId || formData.toBranchId || formData.fromWarehouseId || formData.fromBranchId) && (
+                            <span className="ml-2 text-sm font-normal text-blue-600">
+                              (
+                              {formData.fromWarehouseId && `From: ${warehouses.find(w => w.id === formData.fromWarehouseId)?.warehouseName}`}
+                              {formData.fromBranchId && `From: ${branches.find(b => b.id === formData.fromBranchId)?.branchName}`}
+                              {formData.toWarehouseId && `To: ${warehouses.find(w => w.id === formData.toWarehouseId)?.warehouseName}`}
+                              {formData.toBranchId && `To: ${branches.find(b => b.id === formData.toBranchId)?.branchName}`}
+                              )
+                            </span>
+                          )}
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleAddItem}
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        >
+                          <Plus size={16} /> Add Item
+                        </button>
+                      </div>
+
+                      {/* Location Required Warning */}
+                      {!formData.toWarehouseId && !formData.toBranchId && !(formData.fromWarehouseId || formData.fromBranchId) && (
+                        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="text-yellow-600 mt-0.5" size={18} />
+                            <div>
+                              <p className="text-sm text-yellow-800 font-medium">Select a location first</p>
+                              <p className="text-xs text-yellow-700">Please select a source or destination location to see available stock levels</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {formData.items.length === 0 ? (
+                        <div className="text-center py-10 bg-gray-50 rounded-lg text-gray-500">
+                          No items yet. Click "Add Item" to start.
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {formData.items.map((item, i) => {
+                            const stockInfo = getItemStockInfo(i, item.productId);
+                            const selectedLocation = formData.fromWarehouseId || formData.fromBranchId || formData.toWarehouseId || formData.toBranchId;
+
+                            return (
+                              <div key={i} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                                  <div className="md:col-span-8">
+                                    <label className="block text-xs font-medium text-gray-700 mb-2">Product *</label>
+                                    <SearchableDropdown
+                                      options={productOptions}
+                                      value={item.productId}
+                                      onChange={(value) => handleItemChange(i, 'productId', value)}
+                                      placeholder="Select Product"
+                                      displayKey="name"
+                                      valueKey="id"
+                                      required
+                                    />
+
+                                    {/* Stock Information Display */}
+                                    {selectedLocation && item.productId && stockInfo && (
+                                      <div className="mt-2 p-2 bg-white rounded border border-blue-100">
+                                        <div className="text-xs text-gray-700">
+                                          <div className="flex items-center justify-between mb-1">
+                                            <span className="font-medium">Available Stock:</span>
+                                            <span className={`font-bold ${item.quantity > stockInfo.availableQuantity ? 'text-red-600' : 'text-green-600'}`}>
+                                              {stockInfo.availableQuantity || 0} units
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center justify-between text-xs text-gray-500">
+                                            <span>Total:</span>
+                                            <span>{stockInfo.quantity || 0}</span>
+                                          </div>
+                                          {stockInfo.reservedQuantity > 0 && (
+                                            <div className="flex items-center justify-between text-xs text-gray-500">
+                                              <span>Reserved:</span>
+                                              <span>{stockInfo.reservedQuantity || 0}</span>
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        {/* Warning if quantity exceeds available */}
+                                        {item.quantity > stockInfo.availableQuantity && formData.inventoryType !== 'STOCK_IN' && (
+                                          <div className="mt-1 flex items-center gap-1 text-red-600 text-xs font-medium">
+                                            <AlertCircle size={12} />
+                                            Quantity exceeds available stock!
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {/* Stock not loaded yet */}
+                                    {selectedLocation && item.productId && !stockInfo && (
+                                      <div className="mt-2">
+                                        <div className="text-xs text-gray-500 italic">Loading stock information...</div>
+                                      </div>
+                                    )}
+
+                                    {/* No location selected */}
+                                    {!selectedLocation && item.productId && (
+                                      <div className="mt-2">
+                                        <div className="text-xs text-yellow-600 italic">
+                                          Select a location to see stock availability
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="md:col-span-3">
+                                    <label className="block text-xs font-medium text-gray-700 mb-2">Quantity *</label>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      value={item.quantity || ''}
+                                      onChange={e => handleItemChange(i, 'quantity', e.target.value)}
+                                      required
+                                      className={`w-full px-4 py-3 border rounded-lg ${stockInfo && item.quantity > stockInfo.availableQuantity && formData.inventoryType !== 'STOCK_IN'
+                                        ? 'border-red-300 bg-red-50'
+                                        : ''
+                                        }`}
+                                    />
+                                    {stockInfo && item.quantity > stockInfo.availableQuantity && formData.inventoryType !== 'STOCK_IN' && (
+                                      <div className="text-xs text-red-500 mt-1">
+                                        Max available: {stockInfo.availableQuantity}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="md:col-span-1 flex items-end">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveItem(i)}
+                                      className="p-3 text-red-600 hover:bg-red-50 rounded-lg"
+                                    >
+                                      <Trash2 size={18} />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-8 flex justify-end gap-4 pt-6 border-t border-gray-200">
+                    <button
+                      type="button"
+                      onClick={handleCloseModal}
+                      className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
+                    >
+                      {modalMode === 'create' ? 'Create Record' : 'Update Record'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* View Modal */}
+          {showModal && modalMode === 'view' && selectedInventory && (
+            <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6">
+              <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
+                <div className="p-8 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl">
+                  <h2 className="text-2xl font-bold text-gray-900">Inventory Record Details</h2>
+                  <button
+                    onClick={handleCloseModal}
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+
+                <div className="p-8">
+                  <div className="grid grid-cols-2 gap-8 mb-8">
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h3 className="font-semibold text-gray-700 mb-2">Record Information</h3>
+                      <p className="text-sm text-gray-600 mb-1">
+                        <strong>Type:</strong>
+                        <span className={`ml-2 px-2 py-1 rounded text-xs ${getTypeColor(selectedInventory.inventoryType)}`}>
+                          {selectedInventory.inventoryType?.replace('_', ' ')}
+                        </span>
+                      </p>
+                      <p className="text-sm text-gray-600 mb-1">
+                        <strong>Date:</strong> {new Date(selectedInventory.verificationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </p>
+                      <p className="text-sm text-gray-600 mb-1">
+                        <strong>Verified By:</strong> {selectedInventory.verifiedBy}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h3 className="font-semibold text-gray-700 mb-2">Locations</h3>
+                      {selectedInventory.fromWarehouse && (
+                        <p className="text-sm text-gray-600 mb-1">
+                          <strong>From Warehouse:</strong> {selectedInventory.fromWarehouse.warehouseName}
+                        </p>
+                      )}
+                      {selectedInventory.fromBranch && (
+                        <p className="text-sm text-gray-600 mb-1">
+                          <strong>From Branch:</strong> {selectedInventory.fromBranch.branchName}
+                        </p>
+                      )}
+                      {selectedInventory.toWarehouse && (
+                        <p className="text-sm text-gray-600 mb-1">
+                          <strong>To Warehouse:</strong> {selectedInventory.toWarehouse.warehouseName}
+                        </p>
+                      )}
+                      {selectedInventory.toBranch && (
+                        <p className="text-sm text-gray-600 mb-1">
+                          <strong>To Branch:</strong> {selectedInventory.toBranch.branchName}
+                        </p>
+                      )}
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h3 className="font-semibold text-gray-700 mb-2">Status</h3>
+                      <span className={`px-4 py-2 inline-flex text-sm leading-5 font-semibold rounded-full ${getStatusColor(selectedInventory.status)}`}>
+                        {selectedInventory.status || 'PENDING'}
+                      </span>
+                    </div>
+
+                    {selectedInventory.status === 'CONFIRMED' && (
+                      <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                        <h3 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
+                          <Check size={18} />
+                          Stock Update Applied
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <p className="text-green-700 font-medium">Total Items Updated:</p>
+                            <p className="text-green-900 text-lg font-bold">
+                              {selectedInventory.items?.length || 0} products
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-green-700 font-medium">Total Quantity:</p>
+                            <p className="text-green-900 text-lg font-bold">
+                              {selectedInventory.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0} units
+                            </p>
+                          </div>
+                        </div>
+                        {selectedInventory.confirmedAt && (
+                          <p className="text-xs text-green-600 mt-2">
+                            Confirmed on: {new Date(selectedInventory.confirmedAt).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedInventory.remarks && (
+                    <div className="mb-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <h3 className="font-semibold text-gray-700 mb-2">Remarks</h3>
+                      <p className="text-sm text-gray-600">{selectedInventory.remarks}</p>
+                    </div>
+                  )}
+
+                  <div>
+                    <h3 className="font-semibold text-gray-700 mb-4 text-lg">Items</h3>
+                    <div className="overflow-x-auto rounded-lg border border-gray-200">
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Product</th>
+                            <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Quantity</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {selectedInventory.items && selectedInventory.items.length > 0 ? (
+                            selectedInventory.items.map((item, i) => (
+                              <tr key={i} className="hover:bg-gray-50 transition">
+                                <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                                  <div>{item.product.productName}</div>
+                                  <div className="text-xs text-gray-500">{item.product.sku || item.product.upc}</div>
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-900">
+                                  {item.quantity.toLocaleString()}
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan="2" className="px-6 py-12 text-center text-gray-500 italic">
+                                No items in this record
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-8 border-t border-gray-200 flex justify-end">
+                  <button
+                    onClick={handleCloseModal}
+                    className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           )}
         </div>
-
-        {/* Create/Edit Modal */}
-        {showModal && (modalMode === 'create' || modalMode === 'edit') && (
-          <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6">
-            <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
-              <div className="p-8 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {modalMode === 'create' ? 'Create New Inventory Record' : 'Edit Inventory Record'}
-                </h2>
-                <button 
-                  onClick={handleCloseModal} 
-                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-              
-              <form onSubmit={handleSubmit} className="p-8">
-                <div className="space-y-6">
-                  {/* Inventory Type */}
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4">Inventory Type</h3>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                      {inventoryTypes.map(t => (
-                        <button 
-                          type="button" 
-                          key={t.value}
-                          onClick={() => handleInventoryTypeChange(t.value)}
-                          className={`p-4 rounded-lg border-2 text-left transition ${
-                            formData.inventoryType === t.value 
-                              ? `border-${t.color}-500 bg-${t.color}-50 text-${t.color}-700` 
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                        >
-                          <div className="font-semibold">{t.label}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Locations */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {needsFromLocation && (
-                      <div className="p-5 bg-red-50 rounded-lg border border-red-200">
-                        <label className="block font-medium mb-2 text-red-800">From Location *</label>
-                        <GroupedLocationDropdown 
-                          locations={getLocationOptions(formData.inventoryType, 'from')}
-                          value={formData.fromWarehouseId ? `warehouse|${formData.fromWarehouseId}` : formData.fromBranchId ? `branch|${formData.fromBranchId}` : ''} 
-                          onChange={val => handleLocationChange('from', val)} 
-                          placeholder="Select source location..." 
-                        />
-                      </div>
-                    )}
-                    <div className={`p-5 rounded-lg border ${
-                      needsFromLocation ? 'bg-blue-50 border-blue-200' : 'bg-blue-50 border-blue-200 col-span-2'
-                    }`}>
-                      <label className="block font-medium mb-2 text-blue-800">To Location *</label>
-                      <GroupedLocationDropdown 
-                        locations={getLocationOptions(formData.inventoryType, 'to')}
-                        value={formData.toWarehouseId ? `warehouse|${formData.toWarehouseId}` : formData.toBranchId ? `branch|${formData.toBranchId}` : ''} 
-                        onChange={val => handleLocationChange('to', val)} 
-                        placeholder="Select destination..." 
-                      />
-                    </div>
-                  </div>
-
-                  {/* Details */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block font-medium mb-2">
-                        <Calendar className="inline mr-2" size={18}/>
-                        Verification Date *
-                      </label>
-                      <input 
-                        type="date" 
-                        value={formData.verificationDate} 
-                        onChange={e => setFormData(prev => ({...prev, verificationDate: e.target.value}))} 
-                        required 
-                        className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-medium mb-2">
-                        <User className="inline mr-2" size={18}/>
-                        Verified By *
-                      </label>
-                      <input 
-                        type="text" 
-                        value={formData.verifiedBy} 
-                        onChange={e => setFormData(prev => ({...prev, verifiedBy: e.target.value}))} 
-                        required 
-                        placeholder="Name" 
-                        className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block font-medium mb-2">
-                        <MessageSquare className="inline mr-2" size={18}/>
-                        Remarks
-                      </label>
-                      <textarea 
-                        rows={3} 
-                        value={formData.remarks} 
-                        onChange={e => setFormData(prev => ({...prev, remarks: e.target.value}))} 
-                        className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Items */}
-                  <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <label className="block text-lg font-semibold">
-                        <Package className="inline mr-2" size={20}/>
-                        Items *
-                        {(formData.toWarehouseId || formData.toBranchId || formData.fromWarehouseId || formData.fromBranchId) && (
-                          <span className="ml-2 text-sm font-normal text-blue-600">
-                            (
-                            {formData.fromWarehouseId && `From: ${warehouses.find(w => w.id === formData.fromWarehouseId)?.warehouseName}`}
-                            {formData.fromBranchId && `From: ${branches.find(b => b.id === formData.fromBranchId)?.branchName}`}
-                            {formData.toWarehouseId && `To: ${warehouses.find(w => w.id === formData.toWarehouseId)?.warehouseName}`}
-                            {formData.toBranchId && `To: ${branches.find(b => b.id === formData.toBranchId)?.branchName}`}
-                            )
-                          </span>
-                        )}
-                      </label>
-                      <button 
-                        type="button" 
-                        onClick={handleAddItem} 
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                      >
-                        <Plus size={16}/> Add Item
-                      </button>
-                    </div>
-                    
-                    {/* Location Required Warning */}
-                    {!formData.toWarehouseId && !formData.toBranchId && !(formData.fromWarehouseId || formData.fromBranchId) && (
-                      <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <div className="flex items-start gap-2">
-                          <AlertCircle className="text-yellow-600 mt-0.5" size={18} />
-                          <div>
-                            <p className="text-sm text-yellow-800 font-medium">Select a location first</p>
-                            <p className="text-xs text-yellow-700">Please select a source or destination location to see available stock levels</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {formData.items.length === 0 ? (
-                      <div className="text-center py-10 bg-gray-50 rounded-lg text-gray-500">
-                        No items yet. Click "Add Item" to start.
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {formData.items.map((item, i) => {
-                          const stockInfo = getItemStockInfo(i, item.productId);
-                          const selectedLocation = formData.fromWarehouseId || formData.fromBranchId || formData.toWarehouseId || formData.toBranchId;
-                          
-                          return (
-                            <div key={i} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                                <div className="md:col-span-8">
-                                  <label className="block text-xs font-medium text-gray-700 mb-2">Product *</label>
-                                  <SearchableDropdown
-                                    options={productOptions}
-                                    value={item.productId}
-                                    onChange={(value) => handleItemChange(i, 'productId', value)}
-                                    placeholder="Select Product"
-                                    displayKey="name"
-                                    valueKey="id"
-                                    required
-                                  />
-                                  
-                                  {/* Stock Information Display */}
-                                  {selectedLocation && item.productId && stockInfo && (
-                                    <div className="mt-2 p-2 bg-white rounded border border-blue-100">
-                                      <div className="text-xs text-gray-700">
-                                        <div className="flex items-center justify-between mb-1">
-                                          <span className="font-medium">Available Stock:</span>
-                                          <span className={`font-bold ${item.quantity > stockInfo.availableQuantity ? 'text-red-600' : 'text-green-600'}`}>
-                                            {stockInfo.availableQuantity || 0} units
-                                          </span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-xs text-gray-500">
-                                          <span>Total:</span>
-                                          <span>{stockInfo.quantity || 0}</span>
-                                        </div>
-                                        {stockInfo.reservedQuantity > 0 && (
-                                          <div className="flex items-center justify-between text-xs text-gray-500">
-                                            <span>Reserved:</span>
-                                            <span>{stockInfo.reservedQuantity || 0}</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                      
-                                      {/* Warning if quantity exceeds available */}
-                                      {item.quantity > stockInfo.availableQuantity && formData.inventoryType !== 'STOCK_IN' && (
-                                        <div className="mt-1 flex items-center gap-1 text-red-600 text-xs font-medium">
-                                          <AlertCircle size={12} />
-                                          Quantity exceeds available stock!
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                  
-                                  {/* Stock not loaded yet */}
-                                  {selectedLocation && item.productId && !stockInfo && (
-                                    <div className="mt-2">
-                                      <div className="text-xs text-gray-500 italic">Loading stock information...</div>
-                                    </div>
-                                  )}
-                                  
-                                  {/* No location selected */}
-                                  {!selectedLocation && item.productId && (
-                                    <div className="mt-2">
-                                      <div className="text-xs text-yellow-600 italic">
-                                        Select a location to see stock availability
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                                
-                                <div className="md:col-span-3">
-                                  <label className="block text-xs font-medium text-gray-700 mb-2">Quantity *</label>
-                                  <input 
-                                    type="number" 
-                                    min="1" 
-                                    value={item.quantity || ''} 
-                                    onChange={e => handleItemChange(i, 'quantity', e.target.value)} 
-                                    required 
-                                    className={`w-full px-4 py-3 border rounded-lg ${
-                                      stockInfo && item.quantity > stockInfo.availableQuantity && formData.inventoryType !== 'STOCK_IN'
-                                        ? 'border-red-300 bg-red-50'
-                                        : ''
-                                    }`}
-                                  />
-                                  {stockInfo && item.quantity > stockInfo.availableQuantity && formData.inventoryType !== 'STOCK_IN' && (
-                                    <div className="text-xs text-red-500 mt-1">
-                                      Max available: {stockInfo.availableQuantity}
-                                    </div>
-                                  )}
-                                </div>
-                                
-                                <div className="md:col-span-1 flex items-end">
-                                  <button 
-                                    type="button" 
-                                    onClick={() => handleRemoveItem(i)} 
-                                    className="p-3 text-red-600 hover:bg-red-50 rounded-lg"
-                                  >
-                                    <Trash2 size={18}/>
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-8 flex justify-end gap-4 pt-6 border-t border-gray-200">
-                  <button 
-                    type="button" 
-                    onClick={handleCloseModal} 
-                    className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit" 
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
-                  >
-                    {modalMode === 'create' ? 'Create Record' : 'Update Record'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* View Modal */}
-        {showModal && modalMode === 'view' && selectedInventory && (
-          <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6">
-            <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
-              <div className="p-8 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl">
-                <h2 className="text-2xl font-bold text-gray-900">Inventory Record Details</h2>
-                <button 
-                  onClick={handleCloseModal} 
-                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-              
-              <div className="p-8">
-                <div className="grid grid-cols-2 gap-8 mb-8">
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <h3 className="font-semibold text-gray-700 mb-2">Record Information</h3>
-                    <p className="text-sm text-gray-600 mb-1">
-                      <strong>Type:</strong> 
-                      <span className={`ml-2 px-2 py-1 rounded text-xs ${getTypeColor(selectedInventory.inventoryType)}`}>
-                        {selectedInventory.inventoryType?.replace('_', ' ')}
-                      </span>
-                    </p>
-                    <p className="text-sm text-gray-600 mb-1">
-                      <strong>Date:</strong> {new Date(selectedInventory.verificationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </p>
-                    <p className="text-sm text-gray-600 mb-1">
-                      <strong>Verified By:</strong> {selectedInventory.verifiedBy}
-                    </p>
-                  </div>
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <h3 className="font-semibold text-gray-700 mb-2">Locations</h3>
-                    {selectedInventory.fromWarehouse && (
-                      <p className="text-sm text-gray-600 mb-1">
-                        <strong>From Warehouse:</strong> {selectedInventory.fromWarehouse.warehouseName}
-                      </p>
-                    )}
-                    {selectedInventory.fromBranch && (
-                      <p className="text-sm text-gray-600 mb-1">
-                        <strong>From Branch:</strong> {selectedInventory.fromBranch.branchName}
-                      </p>
-                    )}
-                    {selectedInventory.toWarehouse && (
-                      <p className="text-sm text-gray-600 mb-1">
-                        <strong>To Warehouse:</strong> {selectedInventory.toWarehouse.warehouseName}
-                      </p>
-                    )}
-                    {selectedInventory.toBranch && (
-                      <p className="text-sm text-gray-600 mb-1">
-                        <strong>To Branch:</strong> {selectedInventory.toBranch.branchName}
-                      </p>
-                    )}
-                  </div>
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <h3 className="font-semibold text-gray-700 mb-2">Status</h3>
-                    <span className={`px-4 py-2 inline-flex text-sm leading-5 font-semibold rounded-full ${getStatusColor(selectedInventory.status)}`}>
-                      {selectedInventory.status || 'PENDING'}
-                    </span>
-                  </div>
-
-                  {selectedInventory.status === 'CONFIRMED' && (
-                    <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                      <h3 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
-                        <Check size={18} />
-                        Stock Update Applied
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-green-700 font-medium">Total Items Updated:</p>
-                          <p className="text-green-900 text-lg font-bold">
-                            {selectedInventory.items?.length || 0} products
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-green-700 font-medium">Total Quantity:</p>
-                          <p className="text-green-900 text-lg font-bold">
-                            {selectedInventory.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0} units
-                          </p>
-                        </div>
-                      </div>
-                      {selectedInventory.confirmedAt && (
-                        <p className="text-xs text-green-600 mt-2">
-                          Confirmed on: {new Date(selectedInventory.confirmedAt).toLocaleString()}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {selectedInventory.remarks && (
-                  <div className="mb-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                    <h3 className="font-semibold text-gray-700 mb-2">Remarks</h3>
-                    <p className="text-sm text-gray-600">{selectedInventory.remarks}</p>
-                  </div>
-                )}
-
-                <div>
-                  <h3 className="font-semibold text-gray-700 mb-4 text-lg">Items</h3>
-                  <div className="overflow-x-auto rounded-lg border border-gray-200">
-                    <table className="w-full">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Product</th>
-                          <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Quantity</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {selectedInventory.items && selectedInventory.items.length > 0 ? (
-                          selectedInventory.items.map((item, i) => (
-                            <tr key={i} className="hover:bg-gray-50 transition">
-                              <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                                <div>{item.product.productName}</div>
-                                <div className="text-xs text-gray-500">{item.product.sku || item.product.upc}</div>
-                              </td>
-                              <td className="px-6 py-4 text-sm text-gray-900">
-                                {item.quantity.toLocaleString()}
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan="2" className="px-6 py-12 text-center text-gray-500 italic">
-                              No items in this record
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-8 border-t border-gray-200 flex justify-end">
-                <button 
-                  onClick={handleCloseModal} 
-                  className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
-    </div>
     </>
   );
 };
