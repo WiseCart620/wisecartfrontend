@@ -98,10 +98,10 @@ const GroupedSearchableDropdown = ({ options, value, onChange, placeholder }) =>
                   }}
                   disabled={opt.isGroup}
                   className={`w-full px-4 py-2.5 text-left text-sm transition ${opt.isGroup
-                      ? 'font-bold text-gray-700 bg-gray-100 cursor-default'
-                      : value === opt.value
-                        ? 'bg-blue-50 text-blue-700 font-medium'
-                        : 'hover:bg-gray-50 text-gray-900'
+                    ? 'font-bold text-gray-700 bg-gray-100 cursor-default'
+                    : value === opt.value
+                      ? 'bg-blue-50 text-blue-700 font-medium'
+                      : 'hover:bg-gray-50 text-gray-900'
                     }`}
                 >
                   {opt.label}
@@ -239,10 +239,58 @@ const ProductTransactionsModal = ({ product, transactions, isOpen, onClose, show
   const [showSaleTimeline, setShowSaleTimeline] = useState(false);
   const [showDeliveryTimeline, setShowDeliveryTimeline] = useState(false);
   const [showDeletedFilter, setShowDeletedFilter] = useState('ALL');
+  const [expandedRows, setExpandedRows] = useState({});
   const [deletingTransactionId, setDeletingTransactionId] = useState(null);
   const [deletingAll, setDeletingAll] = useState(false);
 
   if (!isOpen) return null;
+
+  // Function to group transactions by their reference number
+  const groupTransactionsByReference = (transactions) => {
+    const grouped = {};
+
+    transactions.forEach(transaction => {
+      const refKey = transaction.referenceNumber || `REF-${transaction.referenceId || transaction.id}`;
+
+      if (!grouped[refKey]) {
+        grouped[refKey] = [];
+      }
+      grouped[refKey].push(transaction);
+    });
+
+    // Sort each group by date (newest first)
+    Object.keys(grouped).forEach(refKey => {
+      grouped[refKey].sort((a, b) => {
+        const dateA = getCorrectTransactionDate(a);
+        const dateB = getCorrectTransactionDate(b);
+        return dateB - dateA;
+      });
+
+      // Mark versions
+      if (grouped[refKey].length > 1) {
+        grouped[refKey][0].isLatestVersion = true;
+        grouped[refKey][0].hasHistory = true;
+        grouped[refKey][0].versionCount = grouped[refKey].length;
+
+        for (let i = 1; i < grouped[refKey].length - 1; i++) {
+          grouped[refKey][i].isPreviousVersion = true;
+        }
+
+        grouped[refKey][grouped[refKey].length - 1].isOriginal = true;
+      }
+    });
+
+    return grouped;
+  };
+
+  // Function to get only latest version of each transaction
+  const getLatestTransactions = () => {
+    const latest = [];
+    Object.values(groupedTransactions).forEach(group => {
+      latest.push(group[0]);
+    });
+    return latest;
+  };
 
   const getTransactionType = (transaction) => {
     if (transaction.inventoryType) {
@@ -380,8 +428,11 @@ const ProductTransactionsModal = ({ product, transactions, isOpen, onClose, show
   };
 
 
+  const groupedTransactions = groupTransactionsByReference(transactions);
+  const latestTransactions = getLatestTransactions();
 
-  const filteredTransactions = transactions.filter(transaction => {
+
+  const filteredTransactions = latestTransactions.filter(transaction => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = !searchTerm ||
       transaction.productName?.toLowerCase().includes(searchLower) ||
@@ -438,6 +489,15 @@ const ProductTransactionsModal = ({ product, transactions, isOpen, onClose, show
   const deletedTransactionsCount = filteredTransactions.filter(t =>
     t.isDeleted === true || t.action === 'DELETED'
   ).length;
+
+
+  const toggleRowExpansion = (transactionId) => {
+    setExpandedRows(prev => ({
+      ...prev,
+      [transactionId]: !prev[transactionId]
+    }));
+  };
+
 
   // ✅ Handle delete single transaction
   const handleDeleteTransaction = async (transactionId) => {
@@ -689,8 +749,8 @@ const ProductTransactionsModal = ({ product, transactions, isOpen, onClose, show
                       <Clock size={16} />
                       Complete Sale Timeline
                       <span className={`px-2 py-1 rounded-full text-xs font-bold ${product.saleStatus === 'INVOICED'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-blue-100 text-blue-800'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-blue-100 text-blue-800'
                         }`}>
                         {product.saleStatus}
                       </span>
@@ -735,8 +795,8 @@ const ProductTransactionsModal = ({ product, transactions, isOpen, onClose, show
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2">
                                     <span className={`px-2 py-1 rounded text-xs font-semibold ${isInvoiced
-                                        ? 'bg-green-100 text-green-800'
-                                        : 'bg-blue-100 text-blue-800'
+                                      ? 'bg-green-100 text-green-800'
+                                      : 'bg-blue-100 text-blue-800'
                                       }`}>
                                       {isInvoiced ? 'INVOICED' : 'CONFIRMED'}
                                     </span>
@@ -801,8 +861,8 @@ const ProductTransactionsModal = ({ product, transactions, isOpen, onClose, show
                   <div className="mt-3 pt-3 border-t border-blue-200">
                     <span className="text-xs text-gray-600">Current Status: </span>
                     <span className={`px-2 py-1 rounded-full text-xs font-bold ${product.saleStatus === 'INVOICED'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-blue-100 text-blue-800'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-blue-100 text-blue-800'
                       }`}>
                       {product.saleStatus}
                     </span>
@@ -852,8 +912,8 @@ const ProductTransactionsModal = ({ product, transactions, isOpen, onClose, show
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <span className={`px-2 py-1 rounded text-xs font-semibold ${isSubtract
-                                    ? 'bg-orange-100 text-orange-800'
-                                    : 'bg-green-100 text-green-800'
+                                  ? 'bg-orange-100 text-orange-800'
+                                  : 'bg-green-100 text-green-800'
                                   }`}>
                                   {isSubtract ? 'REMOVED FROM WAREHOUSE' : 'ADDED TO BRANCH'}
                                 </span>
@@ -1007,8 +1067,8 @@ const ProductTransactionsModal = ({ product, transactions, isOpen, onClose, show
                     onClick={handleDeleteAllDeleted}
                     disabled={deletingAll}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${deletingAll
-                        ? 'bg-gray-300 text-gray-500 cursor-wait'
-                        : 'bg-red-600 text-white hover:bg-red-700'
+                      ? 'bg-gray-300 text-gray-500 cursor-wait'
+                      : 'bg-red-600 text-white hover:bg-red-700'
                       }`}
                   >
                     {deletingAll ? (
@@ -1065,206 +1125,302 @@ const ProductTransactionsModal = ({ product, transactions, isOpen, onClose, show
                       const isDeliveryAdd = transactionType === 'DELIVERY' && transaction.action === 'ADD';
                       const isDeleted = transaction.isDeleted === true || transaction.action === 'DELETED';
 
+                      const refKey = transaction.referenceNumber || `REF-${transaction.referenceId || transaction.id}`;
+                      const transactionHistory = groupedTransactions[refKey] || [];
+                      const hasHistory = transactionHistory.length > 1;
+                      const isExpanded = expandedRows[transaction.id];
+
                       return (
-                        <tr key={`transaction-${idx}-${transaction.id}`} className={`hover:bg-gray-50 ${transaction.isDeleted ? 'bg-red-50 opacity-60' : ''}`}>
-                          <td className="px-4 py-3 text-sm">
-                            {(() => {
-                              const date = getCorrectTransactionDate(transaction);
-                              if (!date) {
+                        <React.Fragment key={`transaction-${idx}-${transaction.id}`}>
+                          <tr className={`hover:bg-gray-50 ${transaction.isDeleted ? 'bg-red-50 opacity-60' : ''}`}>
+                            <td className="px-4 py-3 text-sm">
+                              {(() => {
+                                const date = getCorrectTransactionDate(transaction);
+                                if (!date) {
+                                  return (
+                                    <>
+                                      <div className="text-red-600">Invalid Date</div>
+                                      <div className="text-xs text-gray-500">--:--</div>
+                                    </>
+                                  );
+                                }
                                 return (
                                   <>
-                                    <div className="text-red-600">Invalid Date</div>
-                                    <div className="text-xs text-gray-500">--:--</div>
+                                    <div className="font-medium">
+                                      {date.toLocaleDateString('en-US', {
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        year: 'numeric'
+                                      })}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {date.toLocaleTimeString('en-US', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        hour12: true
+                                      })}
+                                    </div>
+                                    {/* ✅ THIS IS NEW - Shows if transaction has been edited */}
+                                    {hasHistory && (
+                                      <div className="text-xs text-blue-600 font-semibold mt-1">
+                                        ✏️ Edited ({transactionHistory.length} versions)
+                                      </div>
+                                    )}
                                   </>
                                 );
-                              }
-                              return (
-                                <>
-                                  <div className="font-medium">
-                                    {date.toLocaleDateString('en-US', {
-                                      month: '2-digit',
-                                      day: '2-digit',
-                                      year: 'numeric'
-                                    })}
-                                  </div>
-                                  <div className="text-xs text-gray-500">
-                                    {date.toLocaleTimeString('en-US', {
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                      hour12: true
-                                    })}
-                                  </div>
-                                </>
-                              );
-                            })()}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(transaction)}`}>
-                              {getTransferDirection(transaction).replace('_', ' ')}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            <div className="flex flex-col">
-                              <div className="flex items-center gap-2">
-                                <span className="text-gray-600 text-xs">From:</span>
-                                <span className="text-sm font-medium">
-                                  {isDeliverySubtract ? (
-                                    // ✅ For DELIVERY SUBTRACT, show the warehouse
-                                    transaction.fromWarehouse?.warehouseName || 'Warehouse'
-                                  ) : (
-                                    fromLocation ||
-                                    (warehouseSource ? `Warehouse: ${warehouseSource}` :
-                                      (transactionType === 'SALE' ? transaction.fromBranch?.branchName || 'Branch' : '-'))
-                                  )}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-gray-600 text-xs">To:</span>
-                                <span className="text-sm font-medium">
-                                  {isDeliverySubtract ? (
-                                    // ✅ For DELIVERY SUBTRACT, show the branch destination
-                                    transaction.toBranch?.branchName || 'Branch'
-                                  ) : (
-                                    toLocation ||
-                                    (transactionType === 'SALE' ? 'Sale' : '-')
-                                  )}
-                                </span>
-                              </div>
-                              {transactionType === 'TRANSFER' && fromLocation && toLocation && (
-                                <div className="text-xs text-blue-600 mt-1 italic">
-                                  ↕️ Complete Transfer: {fromLocation} → {toLocation}
+                              })()}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(transaction)}`}>
+                                {getTransferDirection(transaction).replace('_', ' ')}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <div className="flex flex-col">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-600 text-xs">From:</span>
+                                  <span className="text-sm font-medium">
+                                    {isDeliverySubtract ? (
+                                      // ✅ For DELIVERY SUBTRACT, show the warehouse
+                                      transaction.fromWarehouse?.warehouseName || 'Warehouse'
+                                    ) : (
+                                      fromLocation ||
+                                      (warehouseSource ? `Warehouse: ${warehouseSource}` :
+                                        (transactionType === 'SALE' ? transaction.fromBranch?.branchName || 'Branch' : '-'))
+                                    )}
+                                  </span>
                                 </div>
-                              )}
-
-                              {transactionType === 'RETURN' && fromLocation && toLocation && (
-                                <div className="text-xs text-yellow-600 mt-1 italic">
-                                  ↕️ Complete Return: {fromLocation} → {toLocation}
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-gray-600 text-xs">To:</span>
+                                  <span className="text-sm font-medium">
+                                    {isDeliverySubtract ? (
+                                      // ✅ For DELIVERY SUBTRACT, show the branch destination
+                                      transaction.toBranch?.branchName || 'Branch'
+                                    ) : (
+                                      toLocation ||
+                                      (transactionType === 'SALE' ? 'Sale' : '-')
+                                    )}
+                                  </span>
                                 </div>
-                              )}
-
-                              {transactionType === 'TRANSFER' && (
-                                <div className="text-xs mt-1">
-                                  {transaction.action === 'ADD' && toLocation && (
-                                    <span className="text-teal-600 italic">⇩ Receiving at: {toLocation}</span>
-                                  )}
-                                  {transaction.action === 'SUBTRACT' && fromLocation && (
-                                    <span className="text-orange-600 italic">⇧ Sending from: {fromLocation}</span>
-                                  )}
-                                </div>
-                              )}
-
-                              {transactionType === 'RETURN' && (
-                                <div className="text-xs mt-1">
-                                  {transaction.action === 'ADD' && toLocation && (
-                                    <span className="text-teal-600 italic">⇩ Receiving Return at: {toLocation}</span>
-                                  )}
-                                  {transaction.action === 'SUBTRACT' && fromLocation && (
-                                    <span className="text-orange-600 italic">⇧ Sending Return from: {fromLocation}</span>
-                                  )}
-                                </div>
-                              )}
-
-                              {transactionType === 'DELIVERY' &&
-                                transaction.action === 'ADD' &&
-                                toLocation &&
-                                warehouseSource && (
+                                {transactionType === 'TRANSFER' && fromLocation && toLocation && (
                                   <div className="text-xs text-blue-600 mt-1 italic">
-                                    📦 Source: {warehouseSource}
+                                    ↕️ Complete Transfer: {fromLocation} → {toLocation}
                                   </div>
                                 )}
 
-                              {transactionType === 'SALE' &&
-                                fromLocation && (
-                                  <div className="text-xs text-pink-600 mt-1 italic">
-                                    🛒 Sold from: {fromLocation}
+                                {transactionType === 'RETURN' && fromLocation && toLocation && (
+                                  <div className="text-xs text-yellow-600 mt-1 italic">
+                                    ↕️ Complete Return: {fromLocation} → {toLocation}
                                   </div>
                                 )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-sm font-medium">
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold ${quantityInfo.colorClass}`}>
-                              {quantityInfo.sign}{quantityInfo.quantity}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            {transaction.referenceNumber ||
-                              saleReference ||
-                              `INV-${transaction.referenceId || transaction.id}`}
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            <div className="flex items-center gap-2">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${isDeleted ? 'bg-red-100 text-red-800 border-2 border-red-300' :
+
+                                {transactionType === 'TRANSFER' && (
+                                  <div className="text-xs mt-1">
+                                    {transaction.action === 'ADD' && toLocation && (
+                                      <span className="text-teal-600 italic">⇩ Receiving at: {toLocation}</span>
+                                    )}
+                                    {transaction.action === 'SUBTRACT' && fromLocation && (
+                                      <span className="text-orange-600 italic">⇧ Sending from: {fromLocation}</span>
+                                    )}
+                                  </div>
+                                )}
+
+                                {transactionType === 'RETURN' && (
+                                  <div className="text-xs mt-1">
+                                    {transaction.action === 'ADD' && toLocation && (
+                                      <span className="text-teal-600 italic">⇩ Receiving Return at: {toLocation}</span>
+                                    )}
+                                    {transaction.action === 'SUBTRACT' && fromLocation && (
+                                      <span className="text-orange-600 italic">⇧ Sending Return from: {fromLocation}</span>
+                                    )}
+                                  </div>
+                                )}
+
+                                {transactionType === 'DELIVERY' &&
+                                  transaction.action === 'ADD' &&
+                                  toLocation &&
+                                  warehouseSource && (
+                                    <div className="text-xs text-blue-600 mt-1 italic">
+                                      📦 Source: {warehouseSource}
+                                    </div>
+                                  )}
+
+                                {transactionType === 'SALE' &&
+                                  fromLocation && (
+                                    <div className="text-xs text-pink-600 mt-1 italic">
+                                      🛒 Sold from: {fromLocation}
+                                    </div>
+                                  )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium">
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold ${quantityInfo.colorClass}`}>
+                                {quantityInfo.sign}{quantityInfo.quantity}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              {transaction.referenceNumber ||
+                                saleReference ||
+                                `INV-${transaction.referenceId || transaction.id}`}
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <div className="flex items-center gap-2">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${isDeleted ? 'bg-red-100 text-red-800 border-2 border-red-300' :
                                   transaction.action === 'ADD' ? 'bg-green-100 text-green-700' :
                                     transaction.action === 'SUBTRACT' ? 'bg-red-100 text-red-700' :
                                       transaction.action === 'RESERVE' ? 'bg-orange-100 text-orange-700' :
                                         transaction.action === 'RELEASE' ? 'bg-blue-100 text-blue-700' :
                                           transaction.action === 'INVOICED' ? 'bg-pink-100 text-pink-700' :
                                             'bg-gray-100 text-gray-700'
-                                }`}>
-                                {isDeleted ? '🗑️ DEL' : (transaction.action || 'PROCESS')}
-                              </span>
+                                  }`}>
+                                  {isDeleted ? '🗑️ DEL' : (transaction.action || 'PROCESS')}
+                                </span>
 
-                              {isDeleted && (
-                                <button
-                                  onClick={() => handleDeleteTransaction(transaction.id)}
-                                  disabled={deletingTransactionId === transaction.id || deletingAll}
-                                  className={`p-1 rounded transition ${deletingTransactionId === transaction.id || deletingAll
+                                {/* ✅ THIS IS NEW - Button to show/hide edit history */}
+                                {hasHistory && (
+                                  <button
+                                    onClick={() => toggleRowExpansion(transaction.id)}
+                                    className="p-1 hover:bg-blue-100 rounded transition text-blue-600"
+                                    title="View edit history"
+                                  >
+                                    <ChevronDown size={16} className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                  </button>
+                                )}
+
+                                {isDeleted && (
+                                  <button
+                                    onClick={() => handleDeleteTransaction(transaction.id)}
+                                    disabled={deletingTransactionId === transaction.id || deletingAll}
+                                    className={`p-1 rounded transition ${deletingTransactionId === transaction.id || deletingAll
                                       ? 'bg-gray-300 text-gray-500 cursor-wait'
                                       : 'text-red-600 hover:bg-red-50'
-                                    }`}
-                                  title="Permanently delete this transaction"
-                                >
-                                  {deletingTransactionId === transaction.id ? (
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                                  ) : (
-                                    <Trash2 size={14} />
-                                  )}
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">
-                            <div className="break-words whitespace-normal">
-                              {isDeleted ? (
-                                <div>
-                                  <div className="text-xs text-gray-500 line-through">
-                                    {transaction.remarks || 'No remarks'}
-                                  </div>
-                                  {transaction.deletedAt && (
-                                    <div className="text-xs text-red-600 mt-1 font-semibold">
-                                      ⚠️ Deleted: {(() => {
-                                        const date = parseDate(transaction.deletedAt);
-                                        if (!date) return 'Unknown date';
-                                        return date.toLocaleString('en-US', {
-                                          month: 'short',
-                                          day: 'numeric',
-                                          year: 'numeric',
-                                          hour: '2-digit',
-                                          minute: '2-digit'
-                                        });
-                                      })()}
+                                      }`}
+                                    title="Permanently delete this transaction"
+                                  >
+                                    {deletingTransactionId === transaction.id ? (
+                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                                    ) : (
+                                      <Trash2 size={14} />
+                                    )}
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              <div className="break-words whitespace-normal">
+                                {isDeleted ? (
+                                  <div>
+                                    <div className="text-xs text-gray-500 line-through">
+                                      {transaction.remarks || 'No remarks'}
                                     </div>
-                                  )}
+                                    {transaction.deletedAt && (
+                                      <div className="text-xs text-red-600 mt-1 font-semibold">
+                                        ⚠️ Deleted: {(() => {
+                                          const date = parseDate(transaction.deletedAt);
+                                          if (!date) return 'Unknown date';
+                                          return date.toLocaleString('en-US', {
+                                            month: 'short',
+                                            day: 'numeric',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                          });
+                                        })()}
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <>
+                                    {transaction.remarks || 'No remarks'}
+                                  </>
+                                )}
+                              </div>
+                              {!isDeleted && transaction.deliveryStatus && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  Status: {transaction.deliveryStatus}
                                 </div>
-                              ) : (
-                                <>
-                                  {transaction.remarks || 'No remarks'}
-                                </>
                               )}
-                            </div>
-                            {!isDeleted && transaction.deliveryStatus && (
-                              <div className="text-xs text-gray-500 mt-1">
-                                Status: {transaction.deliveryStatus}
-                              </div>
-                            )}
-                            {!isDeleted && transaction.saleStatus && (
-                              <div className="text-xs text-gray-500 mt-1">
-                                Sale Status: {transaction.saleStatus}
-                              </div>
-                            )}
-                          </td>
+                              {!isDeleted && transaction.saleStatus && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  Sale Status: {transaction.saleStatus}
+                                </div>
+                              )}
+                            </td>
 
-                        </tr>
+                          </tr>
+                          {isExpanded && hasHistory && (
+                            <tr className="bg-blue-50 border-l-4 border-blue-500">
+                              <td colSpan="7" className="px-4 py-4">
+                                <div className="space-y-3">
+                                  <h4 className="font-semibold text-sm text-gray-700 flex items-center gap-2">
+                                    <Clock size={16} />
+                                    Edit History for {transaction.referenceNumber}
+                                  </h4>
+
+                                  {transactionHistory.slice(1).map((historyItem, histIdx) => {
+                                    const histDate = getCorrectTransactionDate(historyItem);
+                                    const histQuantityInfo = getQuantityDisplay(historyItem);
+                                    const isOriginal = historyItem.isOriginal;
+
+                                    return (
+                                      <div key={`history-${histIdx}`} className="bg-white rounded-lg p-3 border border-gray-200">
+                                        <div className="flex items-start justify-between">
+                                          <div className="flex-1 space-y-2">
+                                            <div className="flex items-center gap-2">
+                                              <span className={`px-2 py-0.5 rounded text-xs font-semibold ${isOriginal ? 'bg-gray-100 text-gray-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                {isOriginal ? '📄 Original' : '✏️ Previous Edit'}
+                                              </span>
+                                              <span className="text-xs text-gray-500">
+                                                {histDate ? histDate.toLocaleString('en-US', {
+                                                  month: 'short',
+                                                  day: 'numeric',
+                                                  year: 'numeric',
+                                                  hour: '2-digit',
+                                                  minute: '2-digit'
+                                                }) : 'N/A'}
+                                              </span>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                                              <div>
+                                                <span className="text-gray-500">Type:</span>
+                                                <span className={`ml-1 px-1.5 py-0.5 rounded text-xs ${getTypeColor(historyItem)}`}>
+                                                  {getTransferDirection(historyItem).replace('_', ' ')}
+                                                </span>
+                                              </div>
+                                              <div>
+                                                <span className="text-gray-500">Quantity:</span>
+                                                <span className={`ml-1 px-1.5 py-0.5 rounded font-medium ${histQuantityInfo.colorClass}`}>
+                                                  {histQuantityInfo.sign}{histQuantityInfo.quantity}
+                                                </span>
+                                              </div>
+                                              <div>
+                                                <span className="text-gray-500">Action:</span>
+                                                <span className="ml-1 font-medium">{historyItem.action || 'N/A'}</span>
+                                              </div>
+                                              <div>
+                                                <span className="text-gray-500">From:</span>
+                                                <span className="ml-1 font-medium">
+                                                  {historyItem.fromWarehouse?.warehouseName || historyItem.fromBranch?.branchName || '-'}
+                                                </span>
+                                              </div>
+                                            </div>
+
+                                            {historyItem.remarks && (
+                                              <div className="text-xs text-gray-600 italic">
+                                                <span className="font-medium">Remarks:</span> {historyItem.remarks}
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
                       );
                     })
                   )}
@@ -2367,8 +2523,8 @@ const EnhancedInventoryManagement = () => {
               <button
                 onClick={() => setActiveTab('products')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'products'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
               >
                 <BarChart3 className="inline w-4 h-4 mr-2" />
@@ -2377,8 +2533,8 @@ const EnhancedInventoryManagement = () => {
               <button
                 onClick={() => setActiveTab('warehouse-stocks')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'warehouse-stocks'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
               >
                 <Building className="inline w-4 h-4 mr-2" />
@@ -2387,8 +2543,8 @@ const EnhancedInventoryManagement = () => {
               <button
                 onClick={() => setActiveTab('branch-stocks')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'branch-stocks'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
               >
                 <Store className="inline w-4 h-4 mr-2" />
@@ -2397,8 +2553,8 @@ const EnhancedInventoryManagement = () => {
               <button
                 onClick={() => setActiveTab('transactions')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'transactions'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
               >
                 <Package className="inline w-4 h-4 mr-2" />
@@ -2563,8 +2719,8 @@ const EnhancedInventoryManagement = () => {
                       onClick={() => setProductCurrentPage(prev => Math.max(prev - 1, 1))}
                       disabled={productCurrentPage === 1}
                       className={`p-2 rounded-lg border ${productCurrentPage === 1
-                          ? 'text-gray-400 cursor-not-allowed border-gray-200'
-                          : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                        ? 'text-gray-400 cursor-not-allowed border-gray-200'
+                        : 'text-gray-700 hover:bg-gray-50 border-gray-300'
                         }`}
                     >
                       <ChevronLeft size={16} />
@@ -2583,8 +2739,8 @@ const EnhancedInventoryManagement = () => {
                               <button
                                 onClick={() => setProductCurrentPage(number)}
                                 className={`min-w-[36px] px-2 py-1 text-sm rounded-lg border ${productCurrentPage === number
-                                    ? 'bg-blue-600 text-white border-blue-600'
-                                    : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                                  ? 'bg-blue-600 text-white border-blue-600'
+                                  : 'text-gray-700 hover:bg-gray-50 border-gray-300'
                                   }`}
                               >
                                 {number}
@@ -2600,8 +2756,8 @@ const EnhancedInventoryManagement = () => {
                       onClick={() => setProductCurrentPage(prev => Math.min(prev + 1, productTotalPages))}
                       disabled={productCurrentPage === productTotalPages}
                       className={`p-2 rounded-lg border ${productCurrentPage === productTotalPages
-                          ? 'text-gray-400 cursor-not-allowed border-gray-200'
-                          : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                        ? 'text-gray-400 cursor-not-allowed border-gray-200'
+                        : 'text-gray-700 hover:bg-gray-50 border-gray-300'
                         }`}
                     >
                       <ChevronRight size={16} />
@@ -2768,8 +2924,8 @@ const EnhancedInventoryManagement = () => {
                             </td>
                             <td className="px-3 py-3 text-center">
                               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${stock.quantity > 0
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-red-100 text-red-800'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
                                 }`}>
                                 {stock.quantity || 0}
                               </span>
@@ -2835,8 +2991,8 @@ const EnhancedInventoryManagement = () => {
                       onClick={() => setStockCurrentPage(prev => Math.max(prev - 1, 1))}
                       disabled={stockCurrentPage === 1}
                       className={`p-2 rounded-lg border ${stockCurrentPage === 1
-                          ? 'text-gray-400 cursor-not-allowed border-gray-200'
-                          : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                        ? 'text-gray-400 cursor-not-allowed border-gray-200'
+                        : 'text-gray-700 hover:bg-gray-50 border-gray-300'
                         }`}
                     >
                       <ChevronLeft size={16} />
@@ -2855,8 +3011,8 @@ const EnhancedInventoryManagement = () => {
                               <button
                                 onClick={() => setStockCurrentPage(number)}
                                 className={`min-w-[36px] px-2 py-1 text-sm rounded-lg border ${stockCurrentPage === number
-                                    ? 'bg-blue-600 text-white border-blue-600'
-                                    : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                                  ? 'bg-blue-600 text-white border-blue-600'
+                                  : 'text-gray-700 hover:bg-gray-50 border-gray-300'
                                   }`}
                               >
                                 {number}
@@ -2872,8 +3028,8 @@ const EnhancedInventoryManagement = () => {
                       onClick={() => setStockCurrentPage(prev => Math.min(prev + 1, warehouseStockTotalPages))}
                       disabled={stockCurrentPage === warehouseStockTotalPages}
                       className={`p-2 rounded-lg border ${stockCurrentPage === warehouseStockTotalPages
-                          ? 'text-gray-400 cursor-not-allowed border-gray-200'
-                          : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                        ? 'text-gray-400 cursor-not-allowed border-gray-200'
+                        : 'text-gray-700 hover:bg-gray-50 border-gray-300'
                         }`}
                     >
                       <ChevronRight size={16} />
@@ -3055,8 +3211,8 @@ const EnhancedInventoryManagement = () => {
                             </td>
                             <td className="px-3 py-3 text-center">
                               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${stock.quantity > 0
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-red-100 text-red-800'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
                                 }`}>
                                 {stock.quantity || 0}
                               </span>
@@ -3137,8 +3293,8 @@ const EnhancedInventoryManagement = () => {
                       onClick={() => setStockCurrentPage(prev => Math.max(prev - 1, 1))}
                       disabled={stockCurrentPage === 1}
                       className={`p-2 rounded-lg border ${stockCurrentPage === 1
-                          ? 'text-gray-400 cursor-not-allowed border-gray-200'
-                          : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                        ? 'text-gray-400 cursor-not-allowed border-gray-200'
+                        : 'text-gray-700 hover:bg-gray-50 border-gray-300'
                         }`}
                     >
                       <ChevronLeft size={16} />
@@ -3157,8 +3313,8 @@ const EnhancedInventoryManagement = () => {
                               <button
                                 onClick={() => setStockCurrentPage(number)}
                                 className={`min-w-[36px] px-2 py-1 text-sm rounded-lg border ${stockCurrentPage === number
-                                    ? 'bg-blue-600 text-white border-blue-600'
-                                    : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                                  ? 'bg-blue-600 text-white border-blue-600'
+                                  : 'text-gray-700 hover:bg-gray-50 border-gray-300'
                                   }`}
                               >
                                 {number}
@@ -3174,8 +3330,8 @@ const EnhancedInventoryManagement = () => {
                       onClick={() => setStockCurrentPage(prev => Math.min(prev + 1, branchStockTotalPages))}
                       disabled={stockCurrentPage === branchStockTotalPages}
                       className={`p-2 rounded-lg border ${stockCurrentPage === branchStockTotalPages
-                          ? 'text-gray-400 cursor-not-allowed border-gray-200'
-                          : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                        ? 'text-gray-400 cursor-not-allowed border-gray-200'
+                        : 'text-gray-700 hover:bg-gray-50 border-gray-300'
                         }`}
                     >
                       <ChevronRight size={16} />
@@ -3446,8 +3602,8 @@ const EnhancedInventoryManagement = () => {
                                 onClick={() => handleViewTransaction(transaction)}
                                 disabled={viewingId === transaction.id || deletingId === transaction.id}
                                 className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-medium rounded transition ${viewingId === transaction.id || deletingId === transaction.id
-                                    ? 'bg-gray-300 text-gray-500 cursor-wait'
-                                    : 'text-blue-600 hover:bg-blue-50'
+                                  ? 'bg-gray-300 text-gray-500 cursor-wait'
+                                  : 'text-blue-600 hover:bg-blue-50'
                                   }`}
                               >
                                 {viewingId === transaction.id ? (
@@ -3482,8 +3638,8 @@ const EnhancedInventoryManagement = () => {
                       onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                       disabled={currentPage === 1}
                       className={`p-2 rounded-lg border ${currentPage === 1
-                          ? 'text-gray-400 cursor-not-allowed border-gray-200'
-                          : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                        ? 'text-gray-400 cursor-not-allowed border-gray-200'
+                        : 'text-gray-700 hover:bg-gray-50 border-gray-300'
                         }`}
                     >
                       <ChevronLeft size={16} />
@@ -3502,8 +3658,8 @@ const EnhancedInventoryManagement = () => {
                               <button
                                 onClick={() => setCurrentPage(number)}
                                 className={`min-w-[36px] px-2 py-1 text-sm rounded-lg border ${currentPage === number
-                                    ? 'bg-blue-600 text-white border-blue-600'
-                                    : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                                  ? 'bg-blue-600 text-white border-blue-600'
+                                  : 'text-gray-700 hover:bg-gray-50 border-gray-300'
                                   }`}
                               >
                                 {number}
@@ -3519,8 +3675,8 @@ const EnhancedInventoryManagement = () => {
                       onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                       disabled={currentPage === totalPages}
                       className={`p-2 rounded-lg border ${currentPage === totalPages
-                          ? 'text-gray-400 cursor-not-allowed border-gray-200'
-                          : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                        ? 'text-gray-400 cursor-not-allowed border-gray-200'
+                        : 'text-gray-700 hover:bg-gray-50 border-gray-300'
                         }`}
                     >
                       <ChevronRight size={16} />

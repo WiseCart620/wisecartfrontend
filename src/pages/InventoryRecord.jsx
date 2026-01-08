@@ -4,7 +4,6 @@ import { Search, Plus, Edit2, Trash2, Eye, Check, X, ChevronDown, ChevronLeft, C
 import { api } from '../services/api';
 import { LoadingOverlay } from './LoadingOverlay';
 
-// Searchable Dropdown Component
 const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey, valueKey, required = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -95,7 +94,7 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
   );
 };
 
-// Grouped Location Dropdown
+
 const GroupedLocationDropdown = ({ locations, value, onChange, placeholder }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
