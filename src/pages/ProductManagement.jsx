@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  Plus, Edit2, Trash2, Search, X, Package, DollarSign, Tag, Globe, User, Box, 
+import {
+  Plus, Edit2, Trash2, Search, X, Package, DollarSign, Tag, Globe, User, Box,
   Weight, Ruler, Palette, ChevronDown, ChevronLeft, ChevronRight, Calendar,
   Check, AlertCircle
 } from 'lucide-react';
@@ -89,9 +89,8 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
                     setIsOpen(false);
                     setSearchTerm('');
                   }}
-                  className={`w-full px-4 py-2 text-left hover:bg-blue-50 transition text-sm ${
-                    value === option[valueKey] ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'
-                  }`}
+                  className={`w-full px-4 py-2 text-left hover:bg-blue-50 transition text-sm ${value === option[valueKey] ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'
+                    }`}
                 >
                   {option[displayKey]}
                 </button>
@@ -103,10 +102,6 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
     </div>
   );
 };
-
-const variationTypes = [
-  'SIZE', 'COLOR', 'PACK', 'FLAVOR', 'MATERIAL', 'STYLE', 'VOLUME', 'OTHER'
-];
 
 
 
@@ -187,7 +182,7 @@ const CategoryInput = ({ value, onChange, categories, existingCategories = [] })
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         placeholder="Search or enter category"
       />
-      
+
       {isOpen && (
         <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
           <div className="p-3 border-b border-gray-200">
@@ -203,7 +198,7 @@ const CategoryInput = ({ value, onChange, categories, existingCategories = [] })
               />
             </div>
           </div>
-          
+
           {filteredCategories.length === 0 ? (
             <div className="px-4 py-6 text-center">
               <p className="text-sm text-gray-500">No matching categories</p>
@@ -218,15 +213,14 @@ const CategoryInput = ({ value, onChange, categories, existingCategories = [] })
               {filteredCategories.map((category, index) => {
                 const isPredefined = categories.includes(category);
                 const isExisting = existingCategories.includes(category);
-                
+
                 return (
                   <button
                     key={index}
                     type="button"
                     onClick={() => handleSelectCategory(category)}
-                    className={`w-full px-4 py-2.5 text-left hover:bg-blue-50 transition text-sm flex items-center justify-between ${
-                      value === category ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'
-                    }`}
+                    className={`w-full px-4 py-2.5 text-left hover:bg-blue-50 transition text-sm flex items-center justify-between ${value === category ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'
+                      }`}
                   >
                     <span>{category}</span>
                     {!isPredefined && isExisting && (
@@ -241,7 +235,7 @@ const CategoryInput = ({ value, onChange, categories, existingCategories = [] })
           )}
         </div>
       )}
-      
+
       {inputValue && !allCategories.includes(inputValue) && !isOpen && (
         <p className="mt-1 text-xs text-blue-600 flex items-center gap-1">
           <Check size={12} />
@@ -307,8 +301,8 @@ const MultiClientPriceSelector = ({ clients, selectedPrices, onChange, assignToR
         <div>
           <h4 className="text-sm font-medium text-gray-900">Client Prices</h4>
           <p className="text-xs text-gray-500 mt-1">
-            {selectedCount === 0 
-              ? 'No clients selected' 
+            {selectedCount === 0
+              ? 'No clients selected'
               : `${selectedCount} client${selectedCount > 1 ? 's' : ''} selected`}
           </p>
         </div>
@@ -337,9 +331,8 @@ const MultiClientPriceSelector = ({ clients, selectedPrices, onChange, assignToR
           return (
             <div
               key={client.id}
-              className={`p-3 border rounded-lg transition ${
-                isSelected ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white'
-              }`}
+              className={`p-3 border rounded-lg transition ${isSelected ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white'
+                }`}
             >
               <div className="flex items-start gap-3">
                 <input
@@ -350,7 +343,7 @@ const MultiClientPriceSelector = ({ clients, selectedPrices, onChange, assignToR
                 />
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <label 
+                    <label
                       onClick={() => handleClientSelect(client.id)}
                       className="text-sm font-medium text-gray-900 cursor-pointer"
                     >
@@ -391,7 +384,7 @@ const MultiClientPriceSelector = ({ clients, selectedPrices, onChange, assignToR
               className="mt-1 h-4 w-4 text-amber-600 rounded border-amber-300 focus:ring-amber-500 cursor-pointer"
             />
             <div className="flex-1">
-              <label 
+              <label
                 htmlFor="assign-remaining"
                 className="text-sm font-medium text-amber-900 cursor-pointer"
               >
@@ -486,7 +479,7 @@ const SupplierInput = ({ value, onChange, suppliers }) => {
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         placeholder="Enter or select supplier"
       />
-      
+
       {isOpen && filteredSuppliers.length > 0 && (
         <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {filteredSuppliers.map((supplier, index) => (
@@ -494,16 +487,15 @@ const SupplierInput = ({ value, onChange, suppliers }) => {
               key={index}
               type="button"
               onClick={() => handleSelectSupplier(supplier)}
-              className={`w-full px-4 py-2 text-left hover:bg-blue-50 transition text-sm ${
-                value === supplier ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'
-              }`}
+              className={`w-full px-4 py-2 text-left hover:bg-blue-50 transition text-sm ${value === supplier ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'
+                }`}
             >
               {supplier}
             </button>
           ))}
         </div>
       )}
-      
+
       {inputValue && !suppliers.includes(inputValue) && (
         <p className="mt-1 text-xs text-blue-600">
           ✓ New supplier: "{inputValue}"
@@ -532,6 +524,9 @@ const ProductManagement = () => {
     supplier: '',
     countryOfOrigin: '',
     clientPrices: {},
+    clientBasePrices: {},
+    assignToRemainingBase: false,
+    remainingBasePriceValue: '',
     assignToRemaining: false,
     remainingClientsPrice: '',
     dimensions: '',
@@ -546,84 +541,99 @@ const ProductManagement = () => {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [variationTypes, setVariationTypes] = useState([]);
+  const [variationCombinations, setVariationCombinations] = useState([]);
+  const variationInputRefs = useRef({});
 
 
 
 
   const handleSort = (key) => {
-  let direction = 'asc';
-  if (sortConfig.key === key && sortConfig.direction === 'asc') {
-    direction = 'desc';
-  }
-  setSortConfig({ key, direction });
-};
-
-const getSortedProducts = (products) => {
-  if (!sortConfig.key) return products;
-
-  return [...products].sort((a, b) => {
-    let aValue = a[sortConfig.key];
-    let bValue = b[sortConfig.key];
-
-    // Handle date sorting
-    if (sortConfig.key === 'createdAt') {
-      aValue = aValue ? new Date(aValue).getTime() : 0;
-      bValue = bValue ? new Date(bValue).getTime() : 0;
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
     }
+    setSortConfig({ key, direction });
+  };
 
-    if (aValue < bValue) {
-      return sortConfig.direction === 'asc' ? -1 : 1;
-    }
-    if (aValue > bValue) {
-      return sortConfig.direction === 'asc' ? 1 : -1;
-    }
-    return 0;
-  });
-};
+  const getSortedProducts = (products) => {
+    if (!sortConfig.key) return products;
+
+    return [...products].sort((a, b) => {
+      let aValue = a[sortConfig.key];
+      let bValue = b[sortConfig.key];
+
+      // Handle date sorting
+      if (sortConfig.key === 'createdAt') {
+        aValue = aValue ? new Date(aValue).getTime() : 0;
+        bValue = bValue ? new Date(bValue).getTime() : 0;
+      }
+
+      if (aValue < bValue) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  };
 
   useEffect(() => {
     loadData();
   }, []);
 
+
+
+  useEffect(() => {
+    if (variationTypes.length > 0 && variationTypes.every(vt => vt.values.length > 0)) {
+      generateVariationCombinations();
+    } else {
+      setVariationCombinations([]);
+    }
+  }, [variationTypes]);
+
+
+
   const loadData = async () => {
-  setLoading(true);
-  setLoadingMessage('Loading products...');
-  try {
-    const productsResponse = await api.get('/products');
-    const clientsResponse = await api.get('/clients');
-    const suppliersResponse = await api.get('/products/suppliers'); // Add this
-    
-    if (productsResponse.success) {
-      setProducts(productsResponse.data || []);
-    } else {
-      toast.error(productsResponse.error || 'Failed to load products');
+    setLoading(true);
+    setLoadingMessage('Loading products...');
+    try {
+      const productsResponse = await api.get('/products');
+      const clientsResponse = await api.get('/clients');
+      const suppliersResponse = await api.get('/products/suppliers'); // Add this
+
+      if (productsResponse.success) {
+        setProducts(productsResponse.data || []);
+      } else {
+        toast.error(productsResponse.error || 'Failed to load products');
+        setProducts([]);
+      }
+
+      if (clientsResponse.success) {
+        setClients(clientsResponse.data || []);
+      } else {
+        toast.error(clientsResponse.error || 'Failed to load clients');
+        setClients([]);
+      }
+
+      // Add this
+      if (suppliersResponse.success) {
+        setSuppliers(suppliersResponse.data || []);
+      } else {
+        setSuppliers([]);
+      }
+    } catch (error) {
+      toast.error('Failed to load data');
+      console.error(error);
       setProducts([]);
-    }
-    
-    if (clientsResponse.success) {
-      setClients(clientsResponse.data || []);
-    } else {
-      toast.error(clientsResponse.error || 'Failed to load clients');
       setClients([]);
-    }
-    
-    // Add this
-    if (suppliersResponse.success) {
-      setSuppliers(suppliersResponse.data || []);
-    } else {
       setSuppliers([]);
+    } finally {
+      setLoading(false);
+      setLoadingMessage('');
     }
-  } catch (error) {
-    toast.error('Failed to load data');
-    console.error(error);
-    setProducts([]);
-    setClients([]);
-    setSuppliers([]);
-  } finally {
-    setLoading(false);
-    setLoadingMessage('');
-  }
-};
+  };
 
 
   const handleInputChange = (e) => {
@@ -644,352 +654,472 @@ const getSortedProducts = (products) => {
 
 
 
-  const addVariation = () => {
-    setFormData(prev => ({
-      ...prev,
-      variations: [
-        ...prev.variations,
-        {
-          variationType: 'SIZE',
-          variationValue: '',
-          customType: '',
-          customValue: ''
-        }
-      ]
-    }));
-  };
-
-  const removeVariation = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      variations: prev.variations.filter((_, i) => i !== index)
-    }));
-  };
-
-  const updateVariation = (index, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      variations: prev.variations.map((v, i) => {
-        if (i !== index) return v;
-
-        const updated = { ...v, [field]: value };
-
-        if (field === 'variationType') {
-          updated.variationValue = '';
-          updated.customValue = '';
-          updated.customType = '';
-        }
-
-        return updated;
-      })
-    }));
-  };
-
-  
-
-const handleSubmit = async (e) => {
-  e.preventDefault();
-
-  if (!formData.productName || !formData.sku) {
-    toast.error('Please fill in all required fields');
-    return;
-  }
-
-  const selectedClientIds = Object.keys(formData.clientPrices);
-  for (const clientId of selectedClientIds) {
-    const price = formData.clientPrices[clientId];
-    if (!price || parseFloat(price) <= 0) {
-      toast.error('All selected client prices must be greater than 0');
+  const generateVariationCombinations = useCallback(() => {
+    if (variationTypes.length === 0 || !variationTypes.every(vt => vt.values.length > 0)) {
+      setVariationCombinations([]);
       return;
     }
-  }
 
-  if (formData.assignToRemaining && (!formData.remainingClientsPrice || parseFloat(formData.remainingClientsPrice) <= 0)) {
-    toast.error('Default price for remaining clients must be greater than 0');
-    return;
-  }
+    const generateCombos = (types, index = 0, current = {}) => {
+      if (index === types.length) {
+        const comboKey = Object.values(current).join('-');
+        // Don't reference variationCombinations here to avoid dependency
 
-  const skuValidation = checkSKUAvailability(formData.sku);
-  if (!skuValidation.available) {
-    toast.error(skuValidation.message);
-    return;
-  }
+        return [{
+          combination: comboKey,
+          attributes: { ...current },
+          sku: '',
+          upc: '',
+          weight: '',
+          length: '',
+          width: '',
+          height: '',
+          clientPrices: {}
+        }];
+      }
 
-  if (formData.upc && formData.upc.trim() !== '') {
-    const upcValidation = checkUPCAvailability(formData.upc);
-    if (!upcValidation.available) {
-      toast.error(upcValidation.message);
+      const results = [];
+      const currentType = types[index];
+      const typeKey = currentType.type === 'OTHER' ? currentType.customType : currentType.type;
+
+      for (const value of currentType.values) {
+        results.push(...generateCombos(types, index + 1, { ...current, [typeKey]: value }));
+      }
+
+      return results;
+    };
+
+    setVariationCombinations(prevCombos => {
+      const newCombinations = generateCombos(variationTypes);
+
+      return newCombinations.map(newCombo => {
+        const existing = prevCombos.find(c => c.combination === newCombo.combination);
+        return existing ? { ...newCombo, ...existing } : newCombo;
+      });
+    });
+  }, [variationTypes]);
+
+  const updateVariationCombination = (index, field, value) => {
+    const newCombinations = [...variationCombinations];
+    newCombinations[index][field] = value;
+    setVariationCombinations(newCombinations);
+  };
+
+  const updateVariationClientPrice = (comboIndex, clientId, price) => {
+    const newCombinations = [...variationCombinations];
+    newCombinations[comboIndex].clientPrices[clientId] = price;
+    setVariationCombinations(newCombinations);
+  };
+
+
+
+
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!formData.productName) {
+      toast.error('Please fill in product name');
       return;
     }
-  }
 
-  setActionLoading(true);
-  setLoadingMessage(editingProduct ? 'Updating product...' : 'Creating product...');
 
-  try {
-    const normalizedVariations = formData.variations
-      .map(v => {
-        if (!v.variationValue?.trim()) return null;
 
-        let finalType = v.variationType;
-        let finalValue = v.variationValue.trim();
+    setActionLoading(true);
+    setLoadingMessage(editingProduct ? 'Updating product...' : 'Creating product...');
 
-        if ((v.variationType === 'SIZE' || v.variationType === 'COLOR') && v.variationValue === 'CUSTOM') {
-          if (!v.customValue?.trim()) return null;
-          finalValue = v.customValue.trim();
-        }
+    try {
+      const normalizedVariations = [];
 
-        if (v.variationType === 'OTHER' && v.customType?.trim()) {
-          finalType = v.customType.trim();
-        }
+      if (variationCombinations.length > 0) {
+        variationCombinations.forEach(combo => {
+          const variationData = {
+            attributes: combo.attributes,
+            sku: combo.sku || null,
+            upc: combo.upc || null,
+            weight: combo.weight ? parseFloat(combo.weight) : null,
+            dimensions: null,
+            clientPrices: []
+          };
 
-        return {
-          variationType: finalType,
-          variationValue: finalValue
-        };
-      })
-      .filter(Boolean);
-      
-    const clientPricesArray = [];
+          // Build dimensions string
+          if (combo.length || combo.width || combo.height) {
+            const l = combo.length || '0';
+            const w = combo.width || '0';
+            const h = combo.height || '0';
+            variationData.dimensions = `${l}×${w}×${h}`;
+          }
 
-    Object.keys(formData.clientPrices).forEach(clientId => {
-      const price = parseFloat(formData.clientPrices[clientId]);
-      if (price > 0) {
-        clientPricesArray.push({
-          clientId: parseInt(clientId),
-          price: price
+          // Build client prices for this variation
+          Object.entries(combo.clientPrices).forEach(([clientId, price]) => {
+            if (price && parseFloat(price) > 0) {
+              variationData.clientPrices.push({
+                clientId: parseInt(clientId),
+                price: parseFloat(price)
+              });
+            }
+          });
+
+          normalizedVariations.push(variationData);
         });
       }
-    });
 
-    if (formData.assignToRemaining && formData.remainingClientsPrice) {
-      const assignedClientIds = new Set(Object.keys(formData.clientPrices).map(id => parseInt(id)));
-      clients.forEach(client => {
-        if (!assignedClientIds.has(client.id)) {
+
+      const clientPricesArray = [];
+
+      Object.keys(formData.clientPrices).forEach(clientId => {
+        const price = parseFloat(formData.clientPrices[clientId]);
+        if (price > 0) {
           clientPricesArray.push({
-            clientId: client.id,
-            price: parseFloat(formData.remainingClientsPrice)
+            clientId: parseInt(clientId),
+            price: price
           });
+        }
+      });
+
+      if (formData.assignToRemaining && formData.remainingClientsPrice) {
+        const assignedClientIds = new Set(Object.keys(formData.clientPrices).map(id => parseInt(id)));
+        clients.forEach(client => {
+          if (!assignedClientIds.has(client.id)) {
+            clientPricesArray.push({
+              clientId: client.id,
+              price: parseFloat(formData.remainingClientsPrice)
+            });
+          }
+        });
+      }
+
+
+      const clientBasePricesArray = [];
+
+      if (variationCombinations.length === 0) {
+        Object.keys(formData.clientBasePrices).forEach(clientId => {
+          const basePrice = parseFloat(formData.clientBasePrices[clientId]);
+          if (basePrice > 0) {
+            clientBasePricesArray.push({
+              clientId: parseInt(clientId),
+              basePrice: basePrice
+            });
+          }
+        });
+
+
+        if (formData.assignToRemainingBase && formData.remainingBasePriceValue) {
+          const assignedClientIds = new Set(Object.keys(formData.clientBasePrices).map(id => parseInt(id)));
+          clients.forEach(client => {
+            if (!assignedClientIds.has(client.id)) {
+              clientBasePricesArray.push({
+                clientId: client.id,
+                basePrice: parseFloat(formData.remainingBasePriceValue)
+              });
+            }
+          });
+        }
+      }
+
+      const payload = {
+        productName: formData.productName,
+        category: formData.category || null,
+        upc: formData.upc || null,
+        sku: formData.sku,
+        supplier: formData.supplier || null,
+        countryOfOrigin: formData.countryOfOrigin || null,
+        weight: formData.weight ? parseFloat(formData.weight) : null,
+        dimensions: formData.dimensions || null,
+        materials: formData.materials || null,
+        brand: formData.brand || null,
+        shelfLife: formData.shelfLife || null,
+        variations: normalizedVariations,
+        clientPrices: clientPricesArray,
+        clientBasePrices: clientBasePricesArray
+      };
+
+      let response;
+      if (editingProduct) {
+        response = await api.put(`/products/${editingProduct.id}`, payload);
+      } else {
+        response = await api.post('/products', payload);
+      }
+
+      if (!response.success) {
+        const errorMessage = response.error || 'Failed to save product';
+
+        if (errorMessage.toLowerCase().includes('upc') ||
+          errorMessage.toLowerCase().includes('duplicate') ||
+          errorMessage.toLowerCase().includes('already exists')) {
+          toast.error(`Product with UPC "${formData.upc}" already exists`);
+        } else {
+          toast.error(errorMessage);
+        }
+        return;
+      }
+
+      toast.success(editingProduct ? 'Product updated successfully' : 'Product created successfully');
+
+      setShowModal(false);
+      resetForm();
+      await loadData();
+      setCurrentPage(1);
+
+    } catch (error) {
+      console.error('Error saving product:', error);
+
+      const errorMessage = error.message || 'Failed to save product';
+
+      if (errorMessage.toLowerCase().includes('upc') ||
+        errorMessage.toLowerCase().includes('duplicate') ||
+        errorMessage.toLowerCase().includes('already exists')) {
+        toast.error(`Product with UPC "${formData.upc}" already exists`);
+      } else if (errorMessage.includes('400') || errorMessage.includes('Bad Request')) {
+        toast.error('Invalid data. Please check all fields and try again.');
+      } else if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
+        toast.error('Session expired. Please login again.');
+      } else if (errorMessage.includes('500') || errorMessage.includes('Server Error')) {
+        toast.error('Server error. Please try again later.');
+      } else {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setActionLoading(false);
+      setLoadingMessage('');
+    }
+  };
+
+
+  const checkUPCAvailability = (upc) => {
+    if (!upc || upc.trim() === '') return { available: true, message: '' };
+
+    const existingProduct = products.find(p =>
+      p.upc && p.upc.toLowerCase() === upc.toLowerCase() &&
+      (!editingProduct || p.id !== editingProduct.id)
+    );
+
+    return {
+      available: !existingProduct,
+      message: existingProduct ? `UPC "${upc}" already exists` : ''
+    };
+  };
+
+  const checkSKUAvailability = (sku) => {
+    if (!sku || sku.trim() === '') return { available: true, message: '' };
+
+    const existingProduct = products.find(p =>
+      p.sku && p.sku.toLowerCase() === sku.toLowerCase() &&
+      (!editingProduct || p.id !== editingProduct.id)
+    );
+
+    return {
+      available: !existingProduct,
+      message: existingProduct ? `SKU "${sku}" already exists` : ''
+    };
+  };
+
+  const handleEdit = (product) => {
+    setEditingProduct(product);
+
+    const clientPricesObj = {};
+    if (product.clientPrices) {
+      product.clientPrices.forEach(cp => {
+        if (cp.client?.id) {
+          clientPricesObj[cp.client.id] = cp.price;
         }
       });
     }
 
-    const payload = {
-      productName: formData.productName,
-      category: formData.category || null,
-      upc: formData.upc || null,
-      sku: formData.sku,
-      supplier: formData.supplier || null,
-      countryOfOrigin: formData.countryOfOrigin || null,
-      weight: formData.weight ? parseFloat(formData.weight) : null,
-      dimensions: formData.dimensions || null,
-      materials: formData.materials || null,
-      brand: formData.brand || null,
-      shelfLife: formData.shelfLife || null,
-      variations: normalizedVariations,
-      clientPrices: clientPricesArray
-    };
-
-    let response;
-    if (editingProduct) {
-      response = await api.put(`/products/${editingProduct.id}`, payload);
-    } else {
-      response = await api.post('/products', payload);
+    // ✅ ADD THIS: Load client base prices
+    const clientBasePricesObj = {};
+    if (product.clientBasePrices) {
+      product.clientBasePrices.forEach(cbp => {
+        if (cbp.client?.id) {
+          clientBasePricesObj[cbp.client.id] = cbp.basePrice;
+        }
+      });
     }
 
-    if (!response.success) {
-      const errorMessage = response.error || 'Failed to save product';
-      
-      if (errorMessage.toLowerCase().includes('upc') || 
-          errorMessage.toLowerCase().includes('duplicate') ||
-          errorMessage.toLowerCase().includes('already exists')) {
-        toast.error(`Product with UPC "${formData.upc}" already exists`);
-      } else {
-        toast.error(errorMessage);
-      }
-      return;
-    }
-
-    toast.success(editingProduct ? 'Product updated successfully' : 'Product created successfully');
-    
-    setShowModal(false);
-    resetForm();
-    await loadData();
-    setCurrentPage(1);
-    
-  } catch (error) {
-    console.error('Error saving product:', error);
-    
-    const errorMessage = error.message || 'Failed to save product';
-    
-    if (errorMessage.toLowerCase().includes('upc') || 
-        errorMessage.toLowerCase().includes('duplicate') ||
-        errorMessage.toLowerCase().includes('already exists')) {
-      toast.error(`Product with UPC "${formData.upc}" already exists`);
-    } else if (errorMessage.includes('400') || errorMessage.includes('Bad Request')) {
-      toast.error('Invalid data. Please check all fields and try again.');
-    } else if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
-      toast.error('Session expired. Please login again.');
-    } else if (errorMessage.includes('500') || errorMessage.includes('Server Error')) {
-      toast.error('Server error. Please try again later.');
-    } else {
-      toast.error(errorMessage);
-    }
-  } finally {
-    setActionLoading(false);
-    setLoadingMessage('');
-  }
-};
-
-
-  const checkUPCAvailability = (upc) => {
-  if (!upc || upc.trim() === '') return { available: true, message: '' };
-  
-  const existingProduct = products.find(p => 
-    p.upc && p.upc.toLowerCase() === upc.toLowerCase() &&
-    (!editingProduct || p.id !== editingProduct.id)
-  );
-  
-  return {
-    available: !existingProduct,
-    message: existingProduct ? `UPC "${upc}" already exists` : ''
-  };
-};
-
-const checkSKUAvailability = (sku) => {
-  if (!sku || sku.trim() === '') return { available: true, message: '' };
-  
-  const existingProduct = products.find(p => 
-    p.sku && p.sku.toLowerCase() === sku.toLowerCase() &&
-    (!editingProduct || p.id !== editingProduct.id)
-  );
-  
-  return {
-    available: !existingProduct,
-    message: existingProduct ? `SKU "${sku}" already exists` : ''
-  };
-};
-
-  const handleEdit = (product) => {
-  setEditingProduct(product);
-  
-  const clientPricesObj = {};
-  if (product.clientPrices) {
-    product.clientPrices.forEach(cp => {
-      if (cp.client?.id) {
-        clientPricesObj[cp.client.id] = cp.price;
-      }
+    setFormData({
+      productName: product.productName || '',
+      category: product.category || '',
+      upc: product.upc || '',
+      sku: product.sku || '',
+      supplier: product.supplier || '',
+      countryOfOrigin: product.countryOfOrigin || '',
+      clientPrices: clientPricesObj,
+      clientBasePrices: clientBasePricesObj,
+      assignToRemainingBase: false,
+      remainingBasePriceValue: '',
+      assignToRemaining: false,
+      remainingClientsPrice: '',
+      dimensions: product.dimensions || '',
+      weight: product.weight || '',
+      materials: product.materials || '',
+      brand: product.brand || '',
+      shelfLife: product.shelfLife || '',
+      unitCost: product.unitCost || '',
+      variations: []
     });
-  }
 
-  setFormData({
-    productName: product.productName || '',
-    category: product.category || '',
-    upc: product.upc || '',
-    sku: product.sku || '',
-    supplier: product.supplier || '',
-    countryOfOrigin: product.countryOfOrigin || '',
-    clientPrices: clientPricesObj,
-    assignToRemaining: false,
-    remainingClientsPrice: '',
-    dimensions: product.dimensions || '',
-    weight: product.weight || '',
-    materials: product.materials || '',
-    brand: product.brand || '',
-    shelfLife: product.shelfLife || '',
-    unitCost: product.unitCost || '',
-    variations: product.variations?.map(v => {
-      const isCustomType = !variationTypes.includes(v.variationType);
-      const isSizeOrColorCustom = 
-        (v.variationType === 'SIZE' || v.variationType === 'COLOR') &&
-        !['XXS','XS','S','M','L','XL','XXL','XXXL','SMALL','MEDIUM','LARGE',
-          'RED','BLUE','GREEN','YELLOW','BLACK','WHITE','GRAY','BROWN','ORANGE','PURPLE','PINK','BEIGE','NAVY']
-          .includes(v.variationValue.toUpperCase());
+    setShowModal(true);
+    if (product.variations && product.variations.length > 0) {
+      const typeMap = new Map();
 
-      return {
-        variationType: isCustomType ? 'OTHER' : v.variationType,
-        variationValue: isCustomType || isSizeOrColorCustom ? 'CUSTOM' : v.variationValue,
-        customType: isCustomType ? v.variationType : '',
-        customValue: isSizeOrColorCustom ? v.variationValue : ''
-      };
-    }) || []
-  });
-  setShowModal(true);
-};
+      product.variations.forEach(v => {
+        let attrs = {};
+        if (v.attributesJson) {
+          try {
+            attrs = JSON.parse(v.attributesJson);
+          } catch (e) {
+            // Fallback to old structure
+            attrs = { [v.variationType]: v.variationValue };
+          }
+        } else {
+          attrs = { [v.variationType]: v.variationValue };
+        }
 
+        // Build type map
+        Object.entries(attrs).forEach(([type, value]) => {
+          if (!typeMap.has(type)) {
+            const isCustomType = !variationTypes.includes(type);
+            typeMap.set(type, {
+              type: isCustomType ? 'OTHER' : type,
+              values: [],
+              customType: isCustomType ? type : ''
+            });
+          }
 
+          if (!typeMap.get(type).values.includes(value)) {
+            typeMap.get(type).values.push(value);
+          }
+        });
+      });
 
-const handleDelete = async (id) => {
-  if (!window.confirm('Are you sure you want to delete this product? This will also delete any associated alerts.')) return;
-  
-  setActionLoading(true);
-  setLoadingMessage('Deleting product...');
+      const types = Array.from(typeMap.values());
+      setVariationTypes(types);
 
-  try {
-    const response = await api.delete(`/products/${id}`);
-    
-    if (!response.success) {
-      return;
+      // Build combinations with data after types are set
+      setTimeout(() => {
+        const combos = product.variations.map(v => {
+          let attrs = {};
+          if (v.attributesJson) {
+            try {
+              attrs = JSON.parse(v.attributesJson);
+            } catch (e) {
+              attrs = { [v.variationType]: v.variationValue };
+            }
+          } else {
+            attrs = { [v.variationType]: v.variationValue };
+          }
+
+          const comboKey = Object.values(attrs).join('-');
+
+          // Parse dimensions
+          const dims = v.dimensions ? v.dimensions.split('×') : ['', '', ''];
+
+          // Build client prices map
+          const clientPricesMap = {};
+          if (v.clientPrices) {
+            v.clientPrices.forEach(cp => {
+              if (cp.client?.id) {
+                clientPricesMap[cp.client.id] = cp.price;
+              }
+            });
+          }
+
+          return {
+            combination: comboKey,
+            attributes: attrs,
+            sku: v.sku || '',
+            upc: v.upc || '',
+            weight: v.weight || '',
+            length: dims[0] || '',
+            width: dims[1] || '',
+            height: dims[2] || '',
+            clientPrices: clientPricesMap
+          };
+        });
+
+        setVariationCombinations(combos);
+      }, 100);
     }
-    
-    toast.success('Product and associated alerts deleted successfully');
-    await loadData();
-    
-    if (filteredProducts.length % itemsPerPage === 1 && currentPage > 1) {
-      setCurrentPage(currentPage - 1);
+  };
+
+
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this product? This will also delete any associated alerts.')) return;
+
+    setActionLoading(true);
+    setLoadingMessage('Deleting product...');
+
+    try {
+      const response = await api.delete(`/products/${id}`);
+
+      if (!response.success) {
+        return;
+      }
+
+      toast.success('Product and associated alerts deleted successfully');
+      await loadData();
+
+      if (filteredProducts.length % itemsPerPage === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+    } finally {
+      setActionLoading(false);
+      setLoadingMessage('');
     }
-  } catch (error) {
-    console.error('Delete error:', error);
-  } finally {
-    setActionLoading(false);
-    setLoadingMessage('');
-  }
-};
+  };
 
 
 
 
   const resetForm = () => {
-  setFormData({
-    productName: '',
-    category: '',
-    upc: '',
-    sku: '',
-    supplier: '',
-    countryOfOrigin: '',
-    clientPrices: {},
-    assignToRemaining: false,
-    remainingClientsPrice: '',
-    dimensions: '',
-    weight: '',
-    materials: '',
-    brand: '',
-    unitCost: '',
-    shelfLife: '',
-    variations: []
-  });
-  setEditingProduct(null);
-};
+    setFormData({
+      productName: '',
+      category: '',
+      upc: '',
+      sku: '',
+      supplier: '',
+      countryOfOrigin: '',
+      clientPrices: {},
+      clientBasePrices: {},
+      assignToRemainingBase: false,
+      remainingBasePriceValue: '',
+      assignToRemaining: false,
+      remainingClientsPrice: '',
+      dimensions: '',
+      weight: '',
+      materials: '',
+      brand: '',
+      unitCost: '',
+      shelfLife: '',
+      variations: []
+    });
+    setEditingProduct(null);
+    setVariationTypes([]);
+    setVariationCombinations([]);
+  };
 
 
 
 
   const filteredProducts = getSortedProducts(
-  products.filter(product =>
-    product.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.upc?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-);
+    products.filter(product =>
+      product.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.upc?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  );
 
 
-const existingCategories = React.useMemo(() => {
-  return [...new Set(
-    products
-      .map(p => p.category)
-      .filter(cat => cat && cat.trim() !== '')
-  )].sort();
-}, [products]);
+  const existingCategories = React.useMemo(() => {
+    return [...new Set(
+      products
+        .map(p => p.category)
+        .filter(cat => cat && cat.trim() !== '')
+    )].sort();
+  }, [products]);
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -1003,7 +1133,7 @@ const existingCategories = React.useMemo(() => {
   const getPageNumbers = () => {
     const pageNumbers = [];
     const maxVisiblePages = 5;
-    
+
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) {
         pageNumbers.push(i);
@@ -1011,18 +1141,18 @@ const existingCategories = React.useMemo(() => {
     } else {
       const startPage = Math.max(1, currentPage - 2);
       const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-      
+
       for (let i = startPage; i <= endPage; i++) {
         pageNumbers.push(i);
       }
     }
-    
+
     return pageNumbers;
   };
 
   const clientOptions = clients.map(c => ({ id: c.id, name: c.clientName }));
 
-    if (loading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <LoadingOverlay show={true} message="Loading products..." />
@@ -1066,28 +1196,28 @@ const existingCategories = React.useMemo(() => {
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-           <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">UPC</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Cost</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client Price</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
-              <th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 transition"
-                onClick={() => handleSort('createdAt')}
-              >
-                <div className="flex items-center gap-2">
-                  Created Date
-                  {sortConfig.key === 'createdAt' && (
-                    <span className="text-blue-600">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
-                  )}
-                </div>
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">UPC</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Cost</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client Price</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
+                <th
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 transition"
+                  onClick={() => handleSort('createdAt')}
+                >
+                  <div className="flex items-center gap-2">
+                    Created Date
+                    {sortConfig.key === 'createdAt' && (
+                      <span className="text-blue-600">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                    )}
+                  </div>
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
             <tbody className="divide-y divide-gray-200">
               {currentProducts.length === 0 ? (
                 <tr>
@@ -1101,14 +1231,14 @@ const existingCategories = React.useMemo(() => {
                   const formatDate = (dateString) => {
                     if (!dateString) return '-';
                     const date = new Date(dateString);
-                    return date.toLocaleDateString('en-US', { 
-                      year: 'numeric', 
-                      month: 'short', 
-                      day: 'numeric' 
+                    return date.toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
                     });
                   };
 
-                  // Helper function to calculate days since creation
+
                   const getDaysSinceCreation = (dateString) => {
                     if (!dateString) return null;
                     const created = new Date(dateString);
@@ -1133,26 +1263,54 @@ const existingCategories = React.useMemo(() => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">{product.sku}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{product.upc || '-'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {product.variations && product.variations.length > 0 ? (
+                          <div className="space-y-1">
+                            {product.variations.slice(0, 2).map((v, idx) => (
+                              <div key={idx} className="text-xs text-gray-600">{v.sku || '-'}</div>
+                            ))}
+                            {product.variations.length > 2 && (
+                              <div className="text-xs text-gray-500">+{product.variations.length - 2} more</div>
+                            )}
+                          </div>
+                        ) : '-'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {product.variations && product.variations.length > 0 ? (
+                          <div className="space-y-1">
+                            {product.variations.slice(0, 2).map((v, idx) => (
+                              <div key={idx} className="text-xs text-gray-600">{v.upc || '-'}</div>
+                            ))}
+                            {product.variations.length > 2 && (
+                              <div className="text-xs text-gray-500">+{product.variations.length - 2} more</div>
+                            )}
+                          </div>
+                        ) : '-'}
+                      </td>
                       <td className="px-6 py-4 text-sm font-medium text-green-600">
-                        {product.unitCost != null 
-                          ? `₱${Number(product.unitCost).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+                        {product.unitCost != null
+                          ? `₱${Number(product.unitCost).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                           : '-'}
                       </td>
                       <td className="px-6 py-4 text-sm">
-                        {product.clientPrices && product.clientPrices.length > 0 ? (
+                        {product.variations && product.variations.length > 0 ? (
                           <div className="space-y-1">
-                            {product.clientPrices.slice(0, 2).map((cp, idx) => (
-                              <div key={idx} className="text-xs">
-                                <span className="font-medium text-blue-600">
-                                  ₱{Number(cp.price).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                </span>
-                                <span className="text-gray-500 ml-1">({cp.client?.clientName})</span>
-                              </div>
-                            ))}
-                            {product.clientPrices.length > 2 && (
-                              <div className="text-xs text-gray-500">+{product.clientPrices.length - 2} more</div>
+                            {product.variations[0].clientPrices && product.variations[0].clientPrices.length > 0 ? (
+                              <>
+                                {product.variations[0].clientPrices.slice(0, 2).map((cp, idx) => (
+                                  <div key={idx} className="text-xs">
+                                    <span className="font-medium text-blue-600">
+                                      ₱{Number(cp.price).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                    </span>
+                                    <span className="text-gray-500 ml-1">({cp.client?.clientName})</span>
+                                  </div>
+                                ))}
+                                {product.variations[0].clientPrices.length > 2 && (
+                                  <div className="text-xs text-gray-500">+{product.variations[0].clientPrices.length - 2} more</div>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-gray-400">-</span>
                             )}
                           </div>
                         ) : (
@@ -1160,7 +1318,7 @@ const existingCategories = React.useMemo(() => {
                         )}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">{product.supplier || '-'}</td>
-                      
+
                       {/* NEW CREATION DATE COLUMN */}
                       <td className="px-6 py-4">
                         {product.createdAt ? (
@@ -1171,11 +1329,11 @@ const existingCategories = React.useMemo(() => {
                             </div>
                             {daysSinceCreation !== null && (
                               <span className="text-xs text-gray-500 mt-1">
-                                {daysSinceCreation === 0 
-                                  ? 'Today' 
-                                  : daysSinceCreation === 1 
-                                  ? '1 day ago' 
-                                  : `${daysSinceCreation} days ago`}
+                                {daysSinceCreation === 0
+                                  ? 'Today'
+                                  : daysSinceCreation === 1
+                                    ? '1 day ago'
+                                    : `${daysSinceCreation} days ago`}
                               </span>
                             )}
                             {/* Optional: Show shelf life expiry warning */}
@@ -1186,7 +1344,7 @@ const existingCategories = React.useMemo(() => {
                                 if (parts.length >= 2) {
                                   const amount = parseInt(parts[0]);
                                   const unit = parts[1];
-                                  
+
                                   let expiryDate = new Date(product.createdAt);
                                   if (unit.startsWith('month')) {
                                     expiryDate.setMonth(expiryDate.getMonth() + amount);
@@ -1195,10 +1353,10 @@ const existingCategories = React.useMemo(() => {
                                   } else if (unit.startsWith('day')) {
                                     expiryDate.setDate(expiryDate.getDate() + amount);
                                   }
-                                  
+
                                   const now = new Date();
                                   const daysUntilExpiry = Math.floor((expiryDate - now) / (1000 * 60 * 60 * 24));
-                                  
+
                                   if (daysUntilExpiry < 0) {
                                     return (
                                       <span className="text-xs text-red-600 font-medium mt-1">
@@ -1221,7 +1379,7 @@ const existingCategories = React.useMemo(() => {
                           <span className="text-sm text-gray-400">-</span>
                         )}
                       </td>
-                      
+
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
@@ -1256,11 +1414,10 @@ const existingCategories = React.useMemo(() => {
               <button
                 onClick={prevPage}
                 disabled={currentPage === 1}
-                className={`p-2 rounded-lg border ${
-                  currentPage === 1 
-                    ? 'text-gray-400 cursor-not-allowed border-gray-200' 
-                    : 'text-gray-700 hover:bg-gray-50 border-gray-300'
-                }`}
+                className={`p-2 rounded-lg border ${currentPage === 1
+                  ? 'text-gray-400 cursor-not-allowed border-gray-200'
+                  : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                  }`}
               >
                 <ChevronLeft size={16} />
               </button>
@@ -1271,11 +1428,10 @@ const existingCategories = React.useMemo(() => {
                   <button
                     key={number}
                     onClick={() => paginate(number)}
-                    className={`min-w-[40px] px-3 py-2 text-sm rounded-lg border ${
-                      currentPage === number
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'text-gray-700 hover:bg-gray-50 border-gray-300'
-                    }`}
+                    className={`min-w-[40px] px-3 py-2 text-sm rounded-lg border ${currentPage === number
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                      }`}
                   >
                     {number}
                   </button>
@@ -1286,11 +1442,10 @@ const existingCategories = React.useMemo(() => {
               <button
                 onClick={nextPage}
                 disabled={currentPage === totalPages}
-                className={`p-2 rounded-lg border ${
-                  currentPage === totalPages
-                    ? 'text-gray-400 cursor-not-allowed border-gray-200'
-                    : 'text-gray-700 hover:bg-gray-50 border-gray-300'
-                }`}
+                className={`p-2 rounded-lg border ${currentPage === totalPages
+                  ? 'text-gray-400 cursor-not-allowed border-gray-200'
+                  : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                  }`}
               >
                 <ChevronRight size={16} />
               </button>
@@ -1353,105 +1508,6 @@ const existingCategories = React.useMemo(() => {
                     />
                   </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        SKU <span className="text-red-500">*</span>
-                      </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        name="sku"
-                        value={formData.sku}
-                        onChange={(e) => {
-                          handleInputChange(e);
-                          // Real-time validation
-                          if (e.target.value.trim() !== '') {
-                            const skuValidation = checkSKUAvailability(e.target.value);
-                            // Visual feedback is handled by the styling below
-                          }
-                        }}
-                        required
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                          formData.sku && formData.sku.trim() !== '' && !checkSKUAvailability(formData.sku).available
-                            ? 'border-red-300 bg-red-50' 
-                            : formData.sku && formData.sku.trim() !== '' && checkSKUAvailability(formData.sku).available
-                            ? 'border-green-300 bg-green-50'
-                            : 'border-gray-300'
-                        }`}
-                        placeholder="Enter SKU"
-                      />
-                      {formData.sku && formData.sku.trim() !== '' && (
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                          {!checkSKUAvailability(formData.sku).available ? (
-                            <X className="h-5 w-5 text-red-500" />
-                          ) : (
-                            <Check className="h-5 w-5 text-green-500" />
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    {formData.sku && formData.sku.trim() !== '' && !checkSKUAvailability(formData.sku).available && (
-                      <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                        <AlertCircle size={14} />
-                        {checkSKUAvailability(formData.sku).message}
-                      </p>
-                    )}
-                    {formData.sku && formData.sku.trim() !== '' && checkSKUAvailability(formData.sku).available && (
-                      <p className="mt-1 text-sm text-green-600 flex items-center gap-1">
-                        <Check size={14} />
-                        SKU is available
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">UPC</label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          name="upc"
-                          value={formData.upc}
-                          onChange={(e) => {
-                            handleInputChange(e);
-                            // Real-time validation
-                            if (e.target.value.trim() !== '') {
-                              const upcValidation = checkUPCAvailability(e.target.value);
-                              // Visual feedback is handled by styling
-                            }
-                          }}
-                          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                            formData.upc && formData.upc.trim() !== '' && !checkUPCAvailability(formData.upc).available
-                              ? 'border-red-300 bg-red-50' 
-                              : formData.upc && formData.upc.trim() !== '' && checkUPCAvailability(formData.upc).available
-                              ? 'border-green-300 bg-green-50'
-                              : 'border-gray-300'
-                          }`}
-                          placeholder="Enter UPC"
-                        />
-                        {formData.upc && formData.upc.trim() !== '' && (
-                          <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                            {!checkUPCAvailability(formData.upc).available ? (
-                              <X className="h-5 w-5 text-red-500" />
-                            ) : (
-                              <Check className="h-5 w-5 text-green-500" />
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      {formData.upc && formData.upc.trim() !== '' && !checkUPCAvailability(formData.upc).available && (
-                        <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                          <AlertCircle size={14} />
-                          {checkUPCAvailability(formData.upc).message}
-                        </p>
-                      )}
-                      {formData.upc && formData.upc.trim() !== '' && checkUPCAvailability(formData.upc).available && (
-                        <p className="mt-1 text-sm text-green-600 flex items-center gap-1">
-                          <Check size={14} />
-                          UPC is available
-                        </p>
-                      )}
-                    </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
                     <input
@@ -1466,20 +1522,6 @@ const existingCategories = React.useMemo(() => {
                 </div>
               </div>
 
-              {/* Client Pricing */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <User size={20} />
-                  Client Pricing
-                </h3>
-                <MultiClientPriceSelector
-                  clients={clients}
-                  selectedPrices={formData.clientPrices}
-                  assignToRemaining={formData.assignToRemaining}
-                  remainingPrice={formData.remainingClientsPrice}
-                  onChange={handleClientPricesChange}
-                />
-              </div>
 
               {/* Supplier & Origin */}
               <div>
@@ -1523,7 +1565,7 @@ const existingCategories = React.useMemo(() => {
                       placeholder="e.g., 12 months, 2 years"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Creation Date
@@ -1535,8 +1577,8 @@ const existingCategories = React.useMemo(() => {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed text-gray-600"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      {editingProduct?.createdAt 
-                        ? 'Product created on this date' 
+                      {editingProduct?.createdAt
+                        ? 'Product created on this date'
                         : 'Will be set automatically when product is created'}
                     </p>
                   </div>
@@ -1549,33 +1591,7 @@ const existingCategories = React.useMemo(() => {
                   <Box size={20} />
                   Physical Details
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Dimensions</label>
-                    <input
-                      type="text"
-                      name="dimensions"
-                      value={formData.dimensions}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="e.g., 20x15x10 cm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
-                    <input
-                      type="number"
-                      name="weight"
-                      value={formData.weight}
-                      onChange={handleInputChange}
-                      step="0.01"
-                      min="0"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="0.00"
-                    />
-                  </div>
-
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Materials</label>
                     <input
@@ -1604,170 +1620,443 @@ const existingCategories = React.useMemo(() => {
                 </div>
               </div>
 
-              {/* Variations */}
+              {variationCombinations.length === 0 && (
                 <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      <Tag size={20} />
-                      Product Variations
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={addVariation}
-                      className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                    >
-                      <Plus size={16} />
-                      Add Variation
-                    </button>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <span style={{ fontSize: '20px' }}>₱</span>
+                    Client Base Prices
+                    <span className="text-xs font-normal text-gray-500 ml-2">
+                      (For products without variations)
+                    </span>
+                  </h3>
+                  <MultiClientPriceSelector
+                    clients={clients}
+                    selectedPrices={formData.clientBasePrices}
+                    onChange={(prices, assignRemaining, remainingPrice) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        clientBasePrices: prices,
+                        assignToRemainingBase: assignRemaining,
+                        remainingBasePriceValue: remainingPrice
+                      }));
+                    }}
+                    assignToRemaining={formData.assignToRemainingBase || false}
+                    remainingPrice={formData.remainingBasePriceValue || ''}
+                  />
+                  <p className="text-xs text-amber-600 mt-3 flex items-center gap-1">
+                    <AlertCircle size={14} />
+                    Note: Client base prices are only available for products without variations.
+                    If you add variations below, variation-specific pricing will be used instead.
+                  </p>
+                </div>
+              )}
+
+              {/* Show disabled message when variations exist */}
+              {variationCombinations.length > 0 && (
+                <div className="p-4 bg-gray-100 border border-gray-300 rounded-lg">
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <AlertCircle size={18} />
+                    <div>
+                      <p className="text-sm font-medium">Client Base Prices Disabled</p>
+                      <p className="text-xs mt-1">
+                        This product has variations. Please set client prices for each variation in the table below.
+                      </p>
+                    </div>
                   </div>
+                </div>
+              )}
 
-                  {formData.variations.length === 0 ? (
-                    <p className="text-sm text-gray-500 italic">No variations added yet. Click "Add Variation" to begin.</p>
-                  ) : (
-                    <div className="space-y-4">
-                      {formData.variations.map((variation, index) => {
-                        const isCustomSizeOrColor = variation.variationValue === 'CUSTOM' && 
-                          (variation.variationType === 'SIZE' || variation.variationType === 'COLOR');
 
-                        const finalValue = isCustomSizeOrColor && variation.customValue 
-                          ? variation.customValue 
-                          : variation.variationValue;
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <Tag size={20} />
+                    Product Variations
+                  </h3>
+                </div>
 
-                        return (
-                          <div key={index} className="p-5 bg-gray-50 rounded-xl border border-gray-200">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {/* Variation Type */}
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Variation Type
-                                </label>
-                                <select
-                                  value={variation.variationType}
-                                  onChange={(e) => {
-                                    const newType = e.target.value;
-                                    updateVariation(index, 'variationType', newType);
-                                    // Reset values when type changes
-                                    updateVariation(index, 'variationValue', '');
-                                    updateVariation(index, 'customValue', '');
-                                    updateVariation(index, 'customType', '');
+                {/* Variation Type Manager */}
+                <div className="space-y-4">
+                  {variationTypes.map((varType, typeIndex) => (
+                    <div key={typeIndex} className="p-5 bg-gray-50 rounded-xl border border-gray-200">
+                      {/* Variation Type Header */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <select
+                            value={varType.type}
+                            onChange={(e) => {
+                              const newTypes = [...variationTypes];
+                              newTypes[typeIndex].type = e.target.value;
+                              newTypes[typeIndex].customType = '';
+                              setVariationTypes(newTypes);
+                            }}
+                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-medium"
+                          >
+                            {['SIZE', 'COLOR', 'PACK', 'FLAVOR', 'MATERIAL', 'STYLE', 'VOLUME', 'OTHER'].map(type => (
+                              <option key={type} value={type}>
+                                {type.charAt(0) + type.slice(1).toLowerCase()}
+                              </option>
+                            ))}
+                          </select>
+
+                          {varType.type === 'OTHER' && (
+                            <input
+                              type="text"
+                              placeholder="Custom type name (e.g., Pattern, Scent)"
+                              value={varType.customType || ''}
+                              onChange={(e) => {
+                                const newTypes = [...variationTypes];
+                                newTypes[typeIndex].customType = e.target.value;
+                                setVariationTypes(newTypes);
+                              }}
+                              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          )}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setVariationTypes(variationTypes.filter((_, i) => i !== typeIndex));
+                          }}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+
+                      {/* Add Value Input */}
+                      <div className="mb-4">
+                        {varType.type === 'SIZE' ? (
+                          <div className="flex gap-2">
+                            <select
+                              onChange={(e) => {
+                                if (e.target.value && e.target.value !== 'CUSTOM') {
+                                  const newTypes = [...variationTypes];
+                                  if (!newTypes[typeIndex].values.includes(e.target.value)) {
+                                    newTypes[typeIndex].values.push(e.target.value);
+                                    setVariationTypes(newTypes);
+                                  }
+                                  e.target.value = '';
+                                }
+                              }}
+                              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Quick add size...</option>
+                              {['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'SMALL', 'MEDIUM', 'LARGE'].map(s => (
+                                <option key={s} value={s}>{s}</option>
+                              ))}
+                            </select>
+                            <input
+                              ref={(el) => variationInputRefs.current[`size-input-${typeIndex}`] = el}
+                              type="text"
+                              placeholder="Or type custom size"
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  const value = e.target.value.trim();
+                                  if (value && !variationTypes[typeIndex].values.includes(value)) {
+                                    const newTypes = [...variationTypes];
+                                    newTypes[typeIndex].values.push(value);
+                                    setVariationTypes(newTypes);
+                                    e.target.value = '';
+                                  }
+                                }
+                              }}
+                              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        ) : varType.type === 'COLOR' ? (
+                          <div className="flex gap-2">
+                            <select
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  const newTypes = [...variationTypes];
+                                  if (!newTypes[typeIndex].values.includes(e.target.value)) {
+                                    newTypes[typeIndex].values.push(e.target.value);
+                                    setVariationTypes(newTypes);
+                                  }
+                                  e.target.value = '';
+                                }
+                              }}
+                              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Quick add color...</option>
+                              {['RED', 'BLUE', 'GREEN', 'YELLOW', 'BLACK', 'WHITE', 'GRAY', 'BROWN', 'ORANGE', 'PURPLE', 'PINK', 'BEIGE', 'NAVY'].map(c => (
+                                <option key={c} value={c}>{c}</option>
+                              ))}
+                            </select>
+                            <input
+                              ref={(el) => variationInputRefs.current[`color-input-${typeIndex}`] = el}
+                              type="text"
+                              placeholder="Or type custom color"
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  const value = e.target.value.trim();
+                                  if (value && !variationTypes[typeIndex].values.includes(value)) {
+                                    const newTypes = [...variationTypes];
+                                    newTypes[typeIndex].values.push(value);
+                                    setVariationTypes(newTypes);
+                                    e.target.value = '';
+                                  }
+                                }
+                              }}
+                              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <input
+                              ref={(el) => variationInputRefs.current[`input-${typeIndex}`] = el}
+                              type="text"
+                              placeholder={`Add ${varType.type === 'OTHER' ? (varType.customType || 'variation') : varType.type.toLowerCase()} value`}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  const value = e.target.value.trim();
+                                  if (value && !variationTypes[typeIndex].values.includes(value)) {
+                                    const newTypes = [...variationTypes];
+                                    newTypes[typeIndex].values.push(value);
+                                    setVariationTypes(newTypes);
+                                    e.target.value = '';
+                                  }
+                                }
+                              }}
+                              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const input = variationInputRefs.current[`input-${typeIndex}`];
+                                if (input && input.value) {
+                                  const value = input.value.trim();
+                                  if (value && !variationTypes[typeIndex].values.includes(value)) {
+                                    const newTypes = [...variationTypes];
+                                    newTypes[typeIndex].values.push(value);
+                                    setVariationTypes(newTypes);
+                                    input.value = '';
+                                  }
+                                }
+                              }}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                            >
+                              <Plus size={18} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Values List */}
+                      {varType.values.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium text-gray-700">
+                            {varType.values.length} value{varType.values.length > 1 ? 's' : ''}:
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {varType.values.map((value, valueIndex) => (
+                              <div
+                                key={valueIndex}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm"
+                              >
+                                <span>{value}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newTypes = [...variationTypes];
+                                    newTypes[typeIndex].values = newTypes[typeIndex].values.filter((_, i) => i !== valueIndex);
+                                    setVariationTypes(newTypes);
                                   }}
-                                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                  className="hover:bg-blue-200 rounded p-0.5 transition"
                                 >
-                                  {variationTypes.map(type => (
-                                    <option key={type} value={type}>
-                                      {type.charAt(0) + type.slice(1).toLowerCase()}
-                                    </option>
-                                  ))}
-                                </select>
+                                  <X size={14} />
+                                </button>
                               </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
 
-                              {/* Variation Value - Smart Input */}
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Variation Value
-                                </label>
+                  {/* Add Variation Type Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setVariationTypes([...variationTypes, { type: 'SIZE', values: [], customType: '' }]);
+                    }}
+                    className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition flex items-center justify-center gap-2"
+                  >
+                    <Plus size={18} />
+                    Add Variation Type
+                  </button>
 
-                                {/* SIZE with predefined + Custom */}
-                                {variation.variationType === 'SIZE' && (
-                                  <>
-                                    <select
-                                      value={variation.variationValue}
-                                      onChange={(e) => updateVariation(index, 'variationValue', e.target.value)}
-                                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    >
-                                      <option value="">Choose size...</option>
-                                      {['XXS','XS','S','M','L','XL','XXL','XXXL','SMALL','MEDIUM','LARGE'].map(s => (
-                                        <option key={s} value={s}>{s}</option>
-                                      ))}
-                                      <option value="CUSTOM">Custom Size</option>
-                                    </select>
-                                    {variation.variationValue === 'CUSTOM' && (
-                                      <input
-                                        type="text"
-                                        placeholder="e.g. 28W x 32L, Free Size"
-                                        value={variation.customValue || ''}
-                                        onChange={(e) => updateVariation(index, 'customValue', e.target.value)}
-                                        className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                      />
-                                    )}
-                                  </>
-                                )}
 
-                                {/* COLOR with predefined + Custom */}
-                                {variation.variationType === 'COLOR' && (
-                                  <>
-                                    <select
-                                      value={variation.variationValue}
-                                      onChange={(e) => updateVariation(index, 'variationValue', e.target.value)}
-                                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    >
-                                      <option value="">Choose color...</option>
-                                      {['RED','BLUE','GREEN','YELLOW','BLACK','WHITE','GRAY','BROWN','ORANGE','PURPLE','PINK','BEIGE','NAVY'].map(c => (
-                                        <option key={c} value={c}>{c}</option>
-                                      ))}
-                                      <option value="CUSTOM">Custom Color</option>
-                                    </select>
-                                    {variation.variationValue === 'CUSTOM' && (
-                                      <input
-                                        type="text"
-                                        placeholder="e.g. Rose Gold, Mint Green"
-                                        value={variation.customValue || ''}
-                                        onChange={(e) => updateVariation(index, 'customValue', e.target.value)}
-                                        className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                      />
-                                    )}
-                                  </>
-                                )}
+                  {/* Variation Combinations Table */}
+                  {variationTypes.length > 0 && variationTypes.every(vt => vt.values.length > 0) && variationCombinations.length > 0 && (
+                    <div className="mt-6 border border-gray-300 rounded-lg overflow-hidden">
+                      <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3">
+                        <h4 className="text-white font-semibold flex items-center gap-2">
+                          <Package size={18} />
+                          Variation Combinations ({variationCombinations.length})
+                        </h4>
+                      </div>
 
-                                {/* OTHER → Custom Type + Value */}
-                                {variation.variationType === 'OTHER' && (
-                                  <div className="space-y-3">
-                                    <input
-                                      type="text"
-                                      placeholder="Variation name (e.g. Pattern, Edition, Scent)"
-                                      value={variation.customType || ''}
-                                      onChange={(e) => updateVariation(index, 'customType', e.target.value)}
-                                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    />
-                                    <input
-                                      type="text"
-                                      placeholder="Value (e.g. Striped, Limited Edition)"
-                                      value={variation.variationValue}
-                                      onChange={(e) => updateVariation(index, 'variationValue', e.target.value)}
-                                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    />
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-48">Variation</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-40">SKU</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-40">UPC</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-32">Weight (kg)</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-64">Dimensions (L×W×H cm)</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase min-w-[400px]">Client Prices</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            {variationCombinations.map((combo, comboIndex) => (
+                              <tr key={comboIndex} className="hover:bg-gray-50">
+                                {/* Variation Name */}
+                                <td className="px-4 py-3 w-48">
+                                  <div className="flex flex-wrap gap-1">
+                                    {Object.entries(combo.attributes).map(([type, value]) => (
+                                      <span key={type} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium whitespace-nowrap">
+                                        {type}: {value}
+                                      </span>
+                                    ))}
                                   </div>
-                                )}
+                                </td>
 
-                                {/* Default: Simple text input */}
-                                {![ 'SIZE', 'COLOR', 'OTHER' ].includes(variation.variationType) && (
+                                {/* SKU - WIDER */}
+                                <td className="px-4 py-3 w-40">
                                   <input
                                     type="text"
-                                    placeholder={`Enter ${variation.variationType.toLowerCase()} (e.g. 500g, Vanilla)`}
-                                    value={variation.variationValue}
-                                    onChange={(e) => updateVariation(index, 'variationValue', e.target.value)}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    value={combo.sku}
+                                    onChange={(e) => updateVariationCombination(comboIndex, 'sku', e.target.value)}
+                                    placeholder="Enter SKU"
+                                    className="w-full min-w-[150px] px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                   />
-                                )}
-                              </div>
-                            </div>
+                                </td>
 
-                            {/* Delete Button */}
-                            <div className="mt-4 flex justify-end">
-                              <button
-                                type="button"
-                                onClick={() => removeVariation(index)}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                              >
-                                <Trash2 size={18} />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
+                                {/* UPC - WIDER */}
+                                <td className="px-4 py-3 w-40">
+                                  <input
+                                    type="text"
+                                    value={combo.upc}
+                                    onChange={(e) => updateVariationCombination(comboIndex, 'upc', e.target.value)}
+                                    placeholder="Enter UPC"
+                                    className="w-full min-w-[150px] px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  />
+                                </td>
+
+                                {/* Weight - WIDER */}
+                                <td className="px-4 py-3 w-32">
+                                  <input
+                                    type="number"
+                                    value={combo.weight || ''}
+                                    onChange={(e) => updateVariationCombination(comboIndex, 'weight', e.target.value)}
+                                    placeholder="0.00"
+                                    step="0.01"
+                                    min="0"
+                                    className="w-full min-w-[100px] px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  />
+                                </td>
+
+                                {/* Dimensions - WIDER */}
+                                <td className="px-4 py-3 w-64">
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="number"
+                                      value={combo.length}
+                                      onChange={(e) => updateVariationCombination(comboIndex, 'length', e.target.value)}
+                                      placeholder="Length"
+                                      step="0.01"
+                                      className="w-20 px-2 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                    <X size={12} className="text-gray-400 flex-shrink-0" />
+                                    <input
+                                      type="number"
+                                      value={combo.width}
+                                      onChange={(e) => updateVariationCombination(comboIndex, 'width', e.target.value)}
+                                      placeholder="Width"
+                                      step="0.01"
+                                      className="w-20 px-2 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                    <X size={12} className="text-gray-400 flex-shrink-0" />
+                                    <input
+                                      type="number"
+                                      value={combo.height}
+                                      onChange={(e) => updateVariationCombination(comboIndex, 'height', e.target.value)}
+                                      placeholder="Height"
+                                      step="0.01"
+                                      className="w-20 px-2 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                  </div>
+                                </td>
+
+                                {/* Client Prices - WIDER */}
+                                <td className="px-4 py-3 min-w-[400px]">
+                                  <div className="space-y-2">
+                                    {clients.map((client) => (
+                                      <div key={client.id} className="flex items-center gap-3">
+                                        <label className="text-xs text-gray-700 font-medium min-w-[140px] truncate" title={client.clientName}>
+                                          {client.clientName}
+                                        </label>
+                                        <div className="flex items-center gap-2 flex-1">
+                                          <span className="text-sm text-gray-500">₱</span>
+                                          <input
+                                            type="number"
+                                            value={combo.clientPrices[client.id] || ''}
+                                            onChange={(e) => updateVariationClientPrice(comboIndex, client.id, e.target.value)}
+                                            placeholder="0.00"
+                                            step="0.01"
+                                            min="0"
+                                            className="flex-1 min-w-[120px] px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                          />
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Bulk Actions */}
+                      <div className="bg-gray-50 px-4 py-3 border-t border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-gray-600">
+                            💡 Tip: Fill in SKU, UPC, dimensions, and prices for each variation
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm('Clear all variation data?')) {
+                                setVariationCombinations(variationCombinations.map(combo => ({
+                                  ...combo,
+                                  sku: '',
+                                  upc: '',
+                                  weight: '',
+                                  length: '',
+                                  width: '',
+                                  height: '',
+                                  clientPrices: {}
+                                })));
+                              }
+                            }}
+                            className="text-sm text-red-600 hover:text-red-700 font-medium"
+                          >
+                            Clear All Data
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
+              </div>
 
               {/* Submit Buttons */}
               <div className="flex gap-3 pt-4 border-t border-gray-200">

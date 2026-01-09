@@ -139,6 +139,169 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
   );
 };
 
+
+
+const VariationSearchableDropdown = ({ options, value, onChange, placeholder, required = false, formData, index }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filteredOptions = options.filter(option =>
+    option.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    option.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    option.upc?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    option.sku?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const selectedOption = options.find(opt => opt.id === value);
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-left flex items-center justify-between bg-white"
+      >
+        <div className="flex-1 min-w-0">
+          {selectedOption ? (
+            <div>
+              <div className="text-gray-900 font-medium truncate">{selectedOption.name}</div>
+            </div>
+          ) : (
+            <span className="text-gray-500">{placeholder}</span>
+          )}
+        </div>
+        <ChevronDown size={20} className={`text-gray-400 transition-transform ml-2 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-hidden">
+          <div className="p-3 border-b border-gray-200">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                type="text"
+                placeholder="Search by UPC, product name, or SKU..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                autoFocus
+              />
+            </div>
+          </div>
+          <div className="overflow-y-auto max-h-80">
+            {filteredOptions.length === 0 ? (
+              <div className="px-4 py-6 text-center text-gray-500 text-sm">No products found</div>
+            ) : (
+              filteredOptions.map((option) => {
+                const isAlreadySelected = formData?.items?.some(
+                  (item, idx) => item.productId === option.id && idx !== index
+                );
+
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => {
+                      if (!isAlreadySelected) {
+                        onChange(option.id);
+                        setIsOpen(false);
+                        setSearchTerm('');
+                      }
+                    }}
+                    disabled={isAlreadySelected}
+                    className={`w-full px-4 py-3 text-left border-b border-gray-100 transition ${isAlreadySelected
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : value === option.id
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'hover:bg-blue-50'
+                      }`}
+                  >
+                    <div className="font-medium text-sm">{option.name}</div>
+                    {isAlreadySelected && (
+                      <span className="text-xs text-red-500 mt-1 block">Already selected</span>
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {selectedOption && (
+        <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="text-xs space-y-2">
+            {/* Main Product Info */}
+            <div className="text-gray-700 space-y-2">
+              <div>
+                <span className="text-gray-500 font-medium">Product Name:</span>
+                <span className="ml-2 font-medium text-gray-900">{selectedOption.fullName}</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="text-gray-500 font-medium">UPC:</span>
+                  <span className="ml-2 font-medium text-gray-900">{selectedOption.upc || 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 font-medium">SKU:</span>
+                  <span className="ml-2 font-medium text-gray-900">{selectedOption.sku || 'N/A'}</span>
+                </div>
+              </div>
+
+              {/* Variation Info - Only show if has variations */}
+              {selectedOption.isVariation && selectedOption.hasVariations && (
+                <div>
+                  <span className="text-gray-500 font-medium">Variations:</span>
+                  <span className="ml-2 font-medium text-blue-600">
+                    {selectedOption.variationLabel || 'Has variations'}
+                  </span>
+                </div>
+              )}
+
+              {/* Price Info */}
+              <div>
+                <span className="text-gray-500 font-medium">Price:</span>
+                <span className="ml-2">
+                  {selectedOption.price && selectedOption.price > 0 ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      ₱{selectedOption.price.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                    </span>
+                  ) : (
+                    <span className="text-gray-500">Not set</span>
+                  )}
+                </span>
+              </div>
+            </div>
+
+            {/* Variation Badge - Only show if product has variations */}
+            {selectedOption.hasVariations && (
+              <div className="pt-2 border-t border-gray-300">
+                <span className={`inline-flex px-2 py-1 text-xs rounded-full ${selectedOption.isVariation ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
+                  {selectedOption.isVariation ? 'Product with Variations' : 'Main Product'}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+
 const SalesManagement = () => {
   const [sales, setSales] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -238,18 +401,41 @@ const SalesManagement = () => {
     }
   };
 
-  const getProductPriceForClient = async (productId, clientId) => {
+  const getProductPriceForClient = async (productId, clientId, variationId = 0) => {
     try {
-      const response = await api.get(`/sales/product-price?productId=${productId}&clientId=${clientId}`);
+      // Check if product has variations
+      const product = products.find(p => p.id === productId);
+      const hasVariations = product?.variations && product.variations.length > 0;
+
+      // If product has variations but no variationId is provided, throw error
+      if (hasVariations && !variationId) {
+        throw new Error('This product requires selecting a variation');
+      }
+
+      // If product doesn't have variations, pass 0 as variationId
+      const effectiveVariationId = hasVariations ? variationId : 0;
+
+      const response = await api.get(
+        `/sales/product-price?productId=${productId}&clientId=${clientId}&variationId=${effectiveVariationId}`
+      );
+
       if (response.success) {
         return response.data?.price || 0;
       }
-      const product = products.find(p => p.id === productId);
-      return product?.price || 0;
+
+      // Fallback to product base price
+      return product?.basePrice || 0;
     } catch (error) {
       console.error('Failed to get price:', error);
+
+      if (error.message.includes('requires selecting a variation')) {
+        toast.error('This product requires selecting a variation. Please choose a variation from the dropdown.');
+      } else if (error.response?.data?.includes('Variation ID is required')) {
+        toast.error('This product has variations. Please select a specific variation.');
+      }
+
       const product = products.find(p => p.id === productId);
-      return product?.price || 0;
+      return product?.basePrice || 0;
     }
   };
 
@@ -262,10 +448,26 @@ const SalesManagement = () => {
     const priceMap = {};
     for (const product of products) {
       try {
-        const price = await getProductPriceForClient(product.id, clientId);
-        priceMap[product.id] = price;
+        // For products with variations, we need to check each variation
+        if (product.variations && product.variations.length > 0) {
+          for (const variation of product.variations) {
+            const price = await getProductPriceForClient(product.id, clientId, variation.id);
+            priceMap[variation.id] = price;
+          }
+        } else {
+          // For products without variations, use productId with variationId=0
+          const price = await getProductPriceForClient(product.id, clientId, 0);
+          priceMap[product.id] = price;
+        }
       } catch (error) {
-        priceMap[product.id] = product.price;
+        // Set default prices
+        if (product.variations && product.variations.length > 0) {
+          for (const variation of product.variations) {
+            priceMap[variation.id] = variation.price || product.price;
+          }
+        } else {
+          priceMap[product.id] = product.price;
+        }
       }
     }
     setProductPrices(priceMap);
@@ -741,46 +943,46 @@ const SalesManagement = () => {
 
 
   const handleResetFilter = () => {
-  setFilterData({
-    clientId: '',
-    branchId: '',
-    status: '',
-    startDate: '',
-    endDate: ''
-  });
-  setStatusFilter('ALL');
-  setSearchTerm('');
-  loadData();
-  setCurrentPage(1);
-};
-
-// ADD THIS MISSING FUNCTION
-const handleClientFilterChange = (value) => {
-  setFilterData({ ...filterData, clientId: value });
-  
-  // If client changes and we have a branch selected that doesn't belong to this client,
-  // clear the branch selection
-  if (value && filterData.branchId) {
-    const selectedBranch = branches.find(b => b.id === filterData.branchId);
-    if (selectedBranch && selectedBranch.client?.id !== value) {
-      setFilterData(prev => ({ ...prev, branchId: '' }));
-    }
-  }
-};
-
-const sortByStatus = (sales) => {
-  const statusOrder = {
-    'PENDING': 1,
-    'CONFIRMED': 2,
-    'INVOICED': 3
+    setFilterData({
+      clientId: '',
+      branchId: '',
+      status: '',
+      startDate: '',
+      endDate: ''
+    });
+    setStatusFilter('ALL');
+    setSearchTerm('');
+    loadData();
+    setCurrentPage(1);
   };
 
-  return [...sales].sort((a, b) => {
-    const orderA = statusOrder[a.status] || 999;
-    const orderB = statusOrder[b.status] || 999;
-    return orderA - orderB;
-  });
-};
+  // ADD THIS MISSING FUNCTION
+  const handleClientFilterChange = (value) => {
+    setFilterData({ ...filterData, clientId: value });
+
+    // If client changes and we have a branch selected that doesn't belong to this client,
+    // clear the branch selection
+    if (value && filterData.branchId) {
+      const selectedBranch = branches.find(b => b.id === filterData.branchId);
+      if (selectedBranch && selectedBranch.client?.id !== value) {
+        setFilterData(prev => ({ ...prev, branchId: '' }));
+      }
+    }
+  };
+
+  const sortByStatus = (sales) => {
+    const statusOrder = {
+      'PENDING': 1,
+      'CONFIRMED': 2,
+      'INVOICED': 3
+    };
+
+    return [...sales].sort((a, b) => {
+      const orderA = statusOrder[a.status] || 999;
+      const orderB = statusOrder[b.status] || 999;
+      return orderA - orderB;
+    });
+  };
 
   const filteredSales = sortByStatus(sales.filter(sale => {
 
@@ -858,27 +1060,69 @@ const sortByStatus = (sales) => {
   const monthsFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   const branchOptions = branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
-const clientOptions = clients.map(c => ({
-  id: c.id,
-  name: c.clientName || c.companyName || c.name
-}));
+  const clientOptions = clients.map(c => ({
+    id: c.id,
+    name: c.clientName || c.companyName || c.name
+  }));
 
-const filteredBranchOptions = filterData.clientId
-  ? branches
-    .filter(b => b.client?.id === filterData.clientId)
-    .map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }))
-  : branchOptions;
+  const filteredBranchOptions = filterData.clientId
+    ? branches
+      .filter(b => b.client?.id === filterData.clientId)
+      .map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }))
+    : branchOptions;
 
-const productOptions = products.map(p => {
-  const clientPrice = productPrices[p.id];
-  const displayPrice = clientPrice !== undefined ? clientPrice : p.price;
-  const stockInfo = branchStocks[p.id];
-  const availableStock = stockInfo ? stockInfo.availableQuantity : 0;
-  return {
-    id: p.id,
-    name: `${p.productName} - ${formatCurrency(displayPrice)} (Stock: ${availableStock})`
-  };
-});
+  const productOptions = products.flatMap(p => {
+    const hasVariations = p.variations && p.variations.length > 0;
+
+    if (hasVariations) {
+      // Products WITH variations
+      return p.variations.map(v => {
+        const clientPrice = v.clientPrices?.find(cp => cp.client?.id === branchInfo?.clientId)?.price || 0;
+
+        const truncatedName = p.productName.length > 12
+          ? p.productName.substring(0, 12) + '...'
+          : p.productName;
+
+        const variationLabel = v.combinationDisplay ||
+          (v.variationType && v.variationValue ? `${v.variationType}: ${v.variationValue}` : 'Variation');
+
+        return {
+          id: v.id,
+          parentProductId: p.id,
+          name: `${v.upc || 'N/A'} - ${truncatedName} - ${v.sku || 'N/A'}`,
+          fullName: p.productName,
+          upc: v.upc,
+          sku: v.sku,
+          price: clientPrice,
+          variationLabel: variationLabel,
+          isVariation: true,
+          hasVariations: true
+        };
+      });
+    } else {
+      // Products WITHOUT variations - use client base price
+      const clientBasePrice = p.clientBasePrices?.find(
+        cbp => cbp.client?.id === branchInfo?.clientId
+      )?.basePrice || productPrices[p.id] || 0;
+
+      const truncatedName = p.productName.length > 12
+        ? p.productName.substring(0, 12) + '...'
+        : p.productName;
+
+      return [{
+        id: p.id,
+        parentProductId: p.id,
+        name: `${p.upc || 'N/A'} - ${truncatedName} - ${p.sku || 'N/A'}`,
+        fullName: p.productName,
+        upc: p.upc,
+        sku: p.sku,
+        price: clientBasePrice,
+        isVariation: false,
+        hasVariations: false
+      }];
+    }
+  });
+
 
   if (loading) {
     return (
@@ -1298,14 +1542,14 @@ const productOptions = products.map(p => {
                         <div key={i} className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50">
                           <div className="flex gap-3 mb-3 items-center">
                             <div className="flex-1">
-                              <SearchableDropdown
+                              <VariationSearchableDropdown
                                 options={productOptions}
                                 value={item.productId}
                                 onChange={(value) => handleItemChange(i, 'productId', value)}
-                                placeholder="Select Product"
-                                displayKey="name"
-                                valueKey="id"
+                                placeholder="Select Product Variation"
                                 required
+                                formData={formData}
+                                index={i}
                               />
                             </div>
                             <div className="w-32">
@@ -1333,14 +1577,14 @@ const productOptions = products.map(p => {
                                   ) : stockError ? (
                                     <span className="text-orange-600">{stockError}</span>
                                   ) : stockInfo ? (
-                                    <>
-                                      <span className={hasEnoughStock ? 'text-green-600' : 'text-red-600'}>
-                                        Available: {availableStock}
-                                      </span>
+                                    <div className="space-y-0.5">
+                                      <div className={hasEnoughStock ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                                        Available Stock: {availableStock}
+                                      </div>
                                       {!hasEnoughStock && (
-                                        <span className="text-red-500 ml-2">Insufficient stock!</span>
+                                        <div className="text-red-500 font-medium">⚠ Insufficient stock!</div>
                                       )}
-                                    </>
+                                    </div>
                                   ) : (
                                     <span className="text-gray-500">No stock info</span>
                                   )}

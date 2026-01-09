@@ -1,5 +1,5 @@
-import { 
-  Plus, Edit2, Trash2, Search, X, Package, DollarSign, Truck, 
+import {
+  Plus, Edit2, Trash2, Search, X, Package, DollarSign, Truck,
   Calendar, FileText, CheckCircle, Clock, ChevronDown, XCircle
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
@@ -34,9 +34,8 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-left flex items-center justify-between ${
-          disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-left flex items-center justify-between ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+          }`}
       >
         <span className={selectedOption ? 'text-gray-900' : 'text-gray-500'}>
           {selectedOption ? selectedOption[displayKey] : placeholder}
@@ -81,7 +80,7 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
                 const isAlreadySelected = formData?.orderItems?.some(
                   (item, idx) => item.productId === option.id && idx !== index
                 ) || false;
-                
+
                 return (
                   <button
                     key={option[valueKey]}
@@ -94,13 +93,12 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
                       }
                     }}
                     disabled={isDisabled || isAlreadySelected}
-                    className={`w-full px-4 py-2 text-left transition ${
-                      isDisabled || isAlreadySelected
+                    className={`w-full px-4 py-2 text-left transition ${isDisabled || isAlreadySelected
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         : value === option[valueKey]
-                        ? 'bg-blue-50 text-blue-700 font-medium hover:bg-blue-100'
-                        : 'hover:bg-blue-50'
-                    }`}
+                          ? 'bg-blue-50 text-blue-700 font-medium hover:bg-blue-100'
+                          : 'hover:bg-blue-50'
+                      }`}
                   >
                     {option[displayKey]}
                     {(isDisabled || isAlreadySelected) && (
@@ -142,27 +140,27 @@ const SupplierInventoryManagement = () => {
   }, []);
 
   const loadData = async () => {
-  setLoading(true);
-  setLoadingMessage('Loading supplier orders...'); // Add this line
-  try {
-    const [ordersRes, productsRes] = await Promise.all([
-      api.get('/supplier-orders'),
-      api.get('/products')
-    ]);
-    
-    if (ordersRes.success) setOrders(ordersRes.data || []);
-    if (productsRes.success) setProducts(productsRes.data || []);
-  } catch (error) {
-    toast.error('Failed to load data');
-  } finally {
-    setLoading(false);
-    setLoadingMessage('');
-  }
-};
+    setLoading(true);
+    setLoadingMessage('Loading supplier orders...'); // Add this line
+    try {
+      const [ordersRes, productsRes] = await Promise.all([
+        api.get('/supplier-orders'),
+        api.get('/products')
+      ]);
+
+      if (ordersRes.success) setOrders(ordersRes.data || []);
+      if (productsRes.success) setProducts(productsRes.data || []);
+    } catch (error) {
+      toast.error('Failed to load data');
+    } finally {
+      setLoading(false);
+      setLoadingMessage('');
+    }
+  };
 
   const suppliers = [...new Set(products.map(p => p.supplier).filter(Boolean))];
 
-  const supplierProducts = formData.supplierName 
+  const supplierProducts = formData.supplierName
     ? products.filter(p => p.supplier === formData.supplierName)
     : [];
 
@@ -177,27 +175,27 @@ const SupplierInventoryManagement = () => {
 
 
 
-const formatDateForInput = (date) => {
-  if (!date) return '';
-  
+  const formatDateForInput = (date) => {
+    if (!date) return '';
 
-  if (Array.isArray(date)) {
-    const [year, month, day] = date;
-    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  }
-  
 
-  if (typeof date === 'string' && date.includes('-')) {
-    return date;
-  }
-  
+    if (Array.isArray(date)) {
+      const [year, month, day] = date;
+      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
 
-  if (date instanceof Date) {
-    return date.toISOString().split('T')[0];
-  }
-  
-  return '';
-};
+
+    if (typeof date === 'string' && date.includes('-')) {
+      return date;
+    }
+
+
+    if (date instanceof Date) {
+      return date.toISOString().split('T')[0];
+    }
+
+    return '';
+  };
 
 
 
@@ -211,7 +209,7 @@ const formatDateForInput = (date) => {
   const updateOrderItem = (index, field, value) => {
     setFormData(prev => ({
       ...prev,
-      orderItems: prev.orderItems.map((item, i) => 
+      orderItems: prev.orderItems.map((item, i) =>
         i === index ? { ...item, [field]: value } : item
       )
     }));
@@ -238,7 +236,7 @@ const formatDateForInput = (date) => {
   const updatePaymentInstruction = (index, field, value) => {
     setFormData(prev => ({
       ...prev,
-      paymentInstructions: prev.paymentInstructions.map((pi, i) => 
+      paymentInstructions: prev.paymentInstructions.map((pi, i) =>
         i === index ? { ...pi, [field]: value } : pi
       )
     }));
@@ -269,7 +267,7 @@ const formatDateForInput = (date) => {
   const updateDelivery = (index, field, value) => {
     setFormData(prev => ({
       ...prev,
-      deliveries: prev.deliveries.map((d, i) => 
+      deliveries: prev.deliveries.map((d, i) =>
         i === index ? { ...d, [field]: value } : d
       )
     }));
@@ -278,7 +276,7 @@ const formatDateForInput = (date) => {
   const addDeliveryPayment = (deliveryIndex) => {
     setFormData(prev => ({
       ...prev,
-      deliveries: prev.deliveries.map((d, i) => 
+      deliveries: prev.deliveries.map((d, i) =>
         i === deliveryIndex ? {
           ...d,
           paymentInstructions: [...d.paymentInstructions, {
@@ -294,7 +292,7 @@ const formatDateForInput = (date) => {
   const removeDeliveryPayment = (deliveryIndex, paymentIndex) => {
     setFormData(prev => ({
       ...prev,
-      deliveries: prev.deliveries.map((d, i) => 
+      deliveries: prev.deliveries.map((d, i) =>
         i === deliveryIndex ? {
           ...d,
           paymentInstructions: d.paymentInstructions.filter((_, pi) => pi !== paymentIndex)
@@ -306,10 +304,10 @@ const formatDateForInput = (date) => {
   const updateDeliveryPayment = (deliveryIndex, paymentIndex, field, value) => {
     setFormData(prev => ({
       ...prev,
-      deliveries: prev.deliveries.map((d, i) => 
+      deliveries: prev.deliveries.map((d, i) =>
         i === deliveryIndex ? {
           ...d,
-          paymentInstructions: d.paymentInstructions.map((p, pi) => 
+          paymentInstructions: d.paymentInstructions.map((p, pi) =>
             pi === paymentIndex ? { ...p, [field]: value } : p
           )
         } : d
@@ -318,17 +316,17 @@ const formatDateForInput = (date) => {
   };
 
   const calculateTotals = () => {
-    const paymentTotal = formData.paymentInstructions.reduce((sum, pi) => 
+    const paymentTotal = formData.paymentInstructions.reduce((sum, pi) =>
       sum + (parseFloat(pi.amount) || 0), 0
     );
 
-    const deliveryTotal = formData.deliveries.reduce((sum, d) => 
-      sum + d.paymentInstructions.reduce((dSum, dpi) => 
+    const deliveryTotal = formData.deliveries.reduce((sum, d) =>
+      sum + d.paymentInstructions.reduce((dSum, dpi) =>
         dSum + (parseFloat(dpi.amount) || 0), 0
       ), 0
     );
 
-    const totalQuantity = formData.orderItems.reduce((sum, item) => 
+    const totalQuantity = formData.orderItems.reduce((sum, item) =>
       sum + (parseInt(item.quantity) || 0), 0
     );
 
@@ -339,132 +337,132 @@ const formatDateForInput = (date) => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!formData.supplierName || !formData.orderNumber) {
-    toast.error('Please fill in supplier name and order number');
-    return;
-  }
+    if (!formData.supplierName || !formData.orderNumber) {
+      toast.error('Please fill in supplier name and order number');
+      return;
+    }
 
-  if (formData.orderItems.length === 0) {
-    toast.error('Please add at least one product');
-    return;
-  }
+    if (formData.orderItems.length === 0) {
+      toast.error('Please add at least one product');
+      return;
+    }
 
-  if (formData.paymentInstructions.length === 0) {
-    toast.error('Please add at least one payment instruction');
-    return;
-  }
+    if (formData.paymentInstructions.length === 0) {
+      toast.error('Please add at least one payment instruction');
+      return;
+    }
 
-  setActionLoading(true);
-  setLoadingMessage(editingOrder ? 'Updating order...' : 'Creating order...');
+    setActionLoading(true);
+    setLoadingMessage(editingOrder ? 'Updating order...' : 'Creating order...');
 
-  try {
-    const payload = {
-      ...formData,
-      orderItems: formData.orderItems.map(item => ({
-        productId: parseInt(item.productId),
-        quantity: parseInt(item.quantity)
-      })),
-      paymentInstructions: formData.paymentInstructions.map(pi => ({
-        ...pi,
-        amount: parseFloat(pi.amount)
-      })),
-      deliveries: formData.deliveries.map(d => ({
-        ...d,
-        shippingDuration: d.shippingDuration ? parseInt(d.shippingDuration) : null,
-        paymentInstructions: d.paymentInstructions.map(dpi => ({
-          ...dpi,
-          amount: parseFloat(dpi.amount)
+    try {
+      const payload = {
+        ...formData,
+        orderItems: formData.orderItems.map(item => ({
+          productId: parseInt(item.productId),
+          quantity: parseInt(item.quantity)
+        })),
+        paymentInstructions: formData.paymentInstructions.map(pi => ({
+          ...pi,
+          amount: parseFloat(pi.amount)
+        })),
+        deliveries: formData.deliveries.map(d => ({
+          ...d,
+          shippingDuration: d.shippingDuration ? parseInt(d.shippingDuration) : null,
+          paymentInstructions: d.paymentInstructions.map(dpi => ({
+            ...dpi,
+            amount: parseFloat(dpi.amount)
+          }))
         }))
-      }))
-    };
+      };
 
-    let response;
-    if (editingOrder) {
-      response = await api.put(`/supplier-orders/${editingOrder.id}`, payload);
-    } else {
-      response = await api.post('/supplier-orders', payload);
-    }
+      let response;
+      if (editingOrder) {
+        response = await api.put(`/supplier-orders/${editingOrder.id}`, payload);
+      } else {
+        response = await api.post('/supplier-orders', payload);
+      }
 
-    if (response.success) {
-      toast.success(editingOrder ? 'Order updated successfully' : 'Order created successfully');
-      setShowModal(false);
-      resetForm();
-      loadData();
+      if (response.success) {
+        toast.success(editingOrder ? 'Order updated successfully' : 'Order created successfully');
+        setShowModal(false);
+        resetForm();
+        loadData();
+      }
+    } catch (error) {
+      toast.error('Failed to save order');
+    } finally {
+      setActionLoading(false);
+      setLoadingMessage('');
     }
-  } catch (error) {
-    toast.error('Failed to save order');
-  } finally {
-    setActionLoading(false);
-    setLoadingMessage('');
-  }
-};
+  };
 
   const handleEdit = async (order) => {
-  setActionLoading(true);
-  setLoadingMessage('Loading order details...');
-  
-  try {
-    setEditingOrder(order);
-    setFormData({
-      supplierName: order.supplierName || '',
-      orderNumber: order.orderNumber || '',
-      modeOfPayment: order.modeOfPayment || '',
-      orderDate: formatDateForInput(order.orderDate) || new Date().toISOString().split('T')[0],
-      overallStatus: order.overallStatus || 'PENDING',
-      orderItems: order.orderItems?.map(item => ({
-        productId: item.product.id,
-        quantity: item.quantity
-      })) || [],
-      paymentInstructions: order.paymentInstructions?.map(pi => ({
-        instruction: pi.instruction,
-        amount: pi.amount,
-        paymentDate: formatDateForInput(pi.paymentDate) || new Date().toISOString().split('T')[0]
-      })) || [],
-      deliveries: order.deliveries?.map(d => ({
-        deliveryStatus: d.deliveryStatus,
-        deliveryName: d.deliveryName,
-        estimatedDeliveryDate: formatDateForInput(d.estimatedDeliveryDate) || '',
-        actualDeliveryDate: formatDateForInput(d.actualDeliveryDate) || '',
-        shippingDuration: d.shippingDuration || '',
-        modeOfPayment: d.modeOfPayment,
-        paymentInstructions: d.paymentInstructions?.map(dpi => ({
-          instruction: dpi.instruction,
-          amount: dpi.amount,
-          deliveryDate: formatDateForInput(dpi.deliveryDate) || new Date().toISOString().split('T')[0]
+    setActionLoading(true);
+    setLoadingMessage('Loading order details...');
+
+    try {
+      setEditingOrder(order);
+      setFormData({
+        supplierName: order.supplierName || '',
+        orderNumber: order.orderNumber || '',
+        modeOfPayment: order.modeOfPayment || '',
+        orderDate: formatDateForInput(order.orderDate) || new Date().toISOString().split('T')[0],
+        overallStatus: order.overallStatus || 'PENDING',
+        orderItems: order.orderItems?.map(item => ({
+          productId: item.product.id,
+          quantity: item.quantity
+        })) || [],
+        paymentInstructions: order.paymentInstructions?.map(pi => ({
+          instruction: pi.instruction,
+          amount: pi.amount,
+          paymentDate: formatDateForInput(pi.paymentDate) || new Date().toISOString().split('T')[0]
+        })) || [],
+        deliveries: order.deliveries?.map(d => ({
+          deliveryStatus: d.deliveryStatus,
+          deliveryName: d.deliveryName,
+          estimatedDeliveryDate: formatDateForInput(d.estimatedDeliveryDate) || '',
+          actualDeliveryDate: formatDateForInput(d.actualDeliveryDate) || '',
+          shippingDuration: d.shippingDuration || '',
+          modeOfPayment: d.modeOfPayment,
+          paymentInstructions: d.paymentInstructions?.map(dpi => ({
+            instruction: dpi.instruction,
+            amount: dpi.amount,
+            deliveryDate: formatDateForInput(dpi.deliveryDate) || new Date().toISOString().split('T')[0]
+          })) || []
         })) || []
-      })) || []
-    });
-  } catch (error) {
-    toast.error('Failed to load order details');
-  } finally {
-    setActionLoading(false);
-    setLoadingMessage('');
-  }
-  
-  setShowModal(true);
-};
+      });
+    } catch (error) {
+      toast.error('Failed to load order details');
+    } finally {
+      setActionLoading(false);
+      setLoadingMessage('');
+    }
+
+    setShowModal(true);
+  };
 
 
 
   const handleDelete = async (id) => {
-  if (!window.confirm('Are you sure you want to delete this order?')) return;
-  
-  setActionLoading(true);
-  setLoadingMessage('Deleting order...');
+    if (!window.confirm('Are you sure you want to delete this order?')) return;
 
-  try {
-    await api.delete(`/supplier-orders/${id}`);
-    toast.success('Order deleted successfully');
-    loadData();
-  } catch (error) {
-    toast.error('Failed to delete order');
-  } finally {
-    setActionLoading(false);
-    setLoadingMessage('');
-  }
-};
+    setActionLoading(true);
+    setLoadingMessage('Deleting order...');
+
+    try {
+      await api.delete(`/supplier-orders/${id}`);
+      toast.success('Order deleted successfully');
+      loadData();
+    } catch (error) {
+      toast.error('Failed to delete order');
+    } finally {
+      setActionLoading(false);
+      setLoadingMessage('');
+    }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -559,16 +557,15 @@ const formatDateForInput = (date) => {
                         ₱{order.unitCost?.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                          order.overallStatus === 'OK' 
-                            ? 'bg-green-100 text-green-800' 
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${order.overallStatus === 'OK'
+                            ? 'bg-green-100 text-green-800'
                             : order.overallStatus === 'DONE'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {order.overallStatus === 'OK' ? <CheckCircle size={14} /> : 
-                          order.overallStatus === 'DONE' ? <XCircle size={14} /> : 
-                          <Clock size={14} />}
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                          {order.overallStatus === 'OK' ? <CheckCircle size={14} /> :
+                            order.overallStatus === 'DONE' ? <XCircle size={14} /> :
+                              <Clock size={14} />}
                           {order.overallStatus}
                         </span>
                       </td>
@@ -679,15 +676,15 @@ const formatDateForInput = (date) => {
                       Overall Status <span className="text-red-500">*</span>
                     </label>
                     <select
-                        value={formData.overallStatus}
-                        onChange={(e) => setFormData({ ...formData, overallStatus: e.target.value })}
-                        required
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="PENDING">PENDING</option>
-                        <option value="OK">OK</option>
-                        <option value="DONE">DONE</option>
-                      </select>
+                      value={formData.overallStatus}
+                      onChange={(e) => setFormData({ ...formData, overallStatus: e.target.value })}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="PENDING">PENDING</option>
+                      <option value="OK">OK</option>
+                      <option value="DONE">DONE</option>
+                    </select>
                     <p className="text-xs text-gray-500 mt-1">Set to OK to update product unit costs</p>
                   </div>
                 </div>
@@ -719,22 +716,44 @@ const formatDateForInput = (date) => {
                       <div key={index} className="p-4 bg-gray-50 rounded-lg border">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div className="md:col-span-2">
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Product</label>
-                              <SearchableDropdown
-                                  options={supplierProducts.map(p => ({
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Product</label>
+                            <SearchableDropdown
+                              options={supplierProducts.flatMap(p => {
+                                if (p.variations && p.variations.length > 0) {
+                                  return p.variations.map(v => {
+                                    const truncatedName = p.productName.length > 12
+                                      ? p.productName.substring(0, 12) + '...'
+                                      : p.productName;
+                                    const variationLabel = Object.entries(v.attributes || {})
+                                      .map(([key, val]) => `${key}: ${val}`)
+                                      .join(', ');
+                                    return {
+                                      id: v.id,
+                                      name: `${v.upc || 'N/A'} - ${truncatedName} - ${v.sku || 'N/A'}`,
+                                      subLabel: variationLabel
+                                    };
+                                  });
+                                } else {
+                                  const truncatedName = p.productName.length > 12
+                                    ? p.productName.substring(0, 12) + '...'
+                                    : p.productName;
+                                  return [{
                                     id: p.id,
-                                    name: `${p.productName} (${p.sku})`
-                                  }))}
-                                  value={item.productId}
-                                  onChange={(value) => updateOrderItem(index, 'productId', value)}
-                                  placeholder="Select product"
-                                  displayKey="name"
-                                  valueKey="id"
-                                  required={true}
-                                  formData={formData}
-                                  index={index}
-                                />
-                            </div>
+                                    name: `${p.upc || 'N/A'} - ${truncatedName} - ${p.sku || 'N/A'}`,
+                                    subLabel: 'No variations'
+                                  }];
+                                }
+                              })}
+                              value={item.productId}
+                              onChange={(value) => updateOrderItem(index, 'productId', value)}
+                              placeholder="Select product"
+                              displayKey="name"
+                              valueKey="id"
+                              required={true}
+                              formData={formData}
+                              index={index}
+                            />
+                          </div>
 
                           <div className="flex gap-2">
                             <div className="flex-1">
@@ -766,10 +785,10 @@ const formatDateForInput = (date) => {
               {/* Payment Instructions */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                        <span className="text-xl">₱</span>
-                        Payment Instructions
-                    </h3>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <span className="text-xl">₱</span>
+                    Payment Instructions
+                  </h3>
                   <button
                     type="button"
                     onClick={addPaymentInstruction}
@@ -818,7 +837,7 @@ const formatDateForInput = (date) => {
                               <input
                                 type="date"
                                 value={pi.paymentDate}
-                                onChange={(e) => updatePaymentInstruction(index, 'paymentDate', e.target.value)}required
+                                onChange={(e) => updatePaymentInstruction(index, 'paymentDate', e.target.value)} required
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                               />
                             </div>
@@ -864,7 +883,7 @@ const formatDateForInput = (date) => {
                 ) : (
                   <div className="space-y-4">
                     {formData.deliveries.map((delivery, dIndex) => {
-                      const delivTotal = delivery.paymentInstructions.reduce((sum, dpi) => 
+                      const delivTotal = delivery.paymentInstructions.reduce((sum, dpi) =>
                         sum + (parseFloat(dpi.amount) || 0), 0
                       );
 
