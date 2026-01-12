@@ -306,7 +306,7 @@ const SalesManagement = () => {
   const [sales, setSales] = useState([]);
   const [branches, setBranches] = useState([]);
   const [products, setProducts] = useState([]);
-  const [clients, setClients] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
@@ -339,7 +339,7 @@ const SalesManagement = () => {
   });
 
   const [filterData, setFilterData] = useState({
-    clientId: '',
+    companyId: '',
     branchId: '',
     status: '',
     startDate: '',
@@ -362,7 +362,7 @@ const SalesManagement = () => {
         warehouseStocksRes,
         branchStocksRes,
         salesRes,
-        clientsRes
+        companiesRes
       ] = await Promise.all([
         api.get('/inventories'),
         api.get('/products'),
@@ -371,7 +371,7 @@ const SalesManagement = () => {
         api.get('/stocks/warehouses'),
         api.get('/stocks/branches'),
         api.get('/sales'),
-        api.get('/clients')
+        api.get('/companies')
       ]);
 
       if (invRes.success) setInventories(invRes.data || []);
@@ -381,7 +381,7 @@ const SalesManagement = () => {
       if (warehouseStocksRes.success) setWarehouseStocks(warehouseStocksRes.data || []);
       if (branchStocksRes.success) setBranchStocks(branchStocksRes.data || []);
       if (salesRes.success) setSales(salesRes.data || []);
-      if (clientsRes.success) setClients(clientsRes.data || []);
+      if (companiesRes.success) setCompanies(companiesRes.data || []);
 
       try {
         const summaryRes = await api.get('/inventories/products/summary');
@@ -401,7 +401,7 @@ const SalesManagement = () => {
     }
   };
 
-  const getProductPriceForClient = async (productId, clientId, variationId = 0) => {
+  const getProductPriceForCompany = async (productId, companyId, variationId = 0) => {
     try {
       // Check if product has variations
       const product = products.find(p => p.id === productId);
@@ -416,7 +416,7 @@ const SalesManagement = () => {
       const effectiveVariationId = hasVariations ? variationId : 0;
 
       const response = await api.get(
-        `/sales/product-price?productId=${productId}&clientId=${clientId}&variationId=${effectiveVariationId}`
+        `/sales/product-price?productId=${productId}&companyId=${companyId}&variationId=${effectiveVariationId}`
       );
 
       if (response.success) {
@@ -439,8 +439,8 @@ const SalesManagement = () => {
     }
   };
 
-  const loadProductPricesForClient = async (clientId) => {
-    if (!clientId) {
+  const loadProductPricesForCompany = async (companyId) => {
+    if (!companyId) {
       setProductPrices({});
       return;
     }
@@ -451,12 +451,12 @@ const SalesManagement = () => {
         // For products with variations, we need to check each variation
         if (product.variations && product.variations.length > 0) {
           for (const variation of product.variations) {
-            const price = await getProductPriceForClient(product.id, clientId, variation.id);
+            const price = await getProductPriceForCompany(product.id, companyId, variation.id);
             priceMap[variation.id] = price;
           }
         } else {
           // For products without variations, use productId with variationId=0
-          const price = await getProductPriceForClient(product.id, clientId, 0);
+          const price = await getProductPriceForCompany(product.id, companyId, 0);
           priceMap[product.id] = price;
         }
       } catch (error) {
@@ -504,7 +504,7 @@ const SalesManagement = () => {
         const info = await api.get(`/sales/branch-info/${sale.branch.id}`);
         if (info.success) {
           setBranchInfo(info.data);
-          await loadProductPricesForClient(info.data?.clientId);
+          await loadProductPricesForCompany(info.data?.companyId);
 
           // Load stock for all products in the sale
           const stockMap = {};
@@ -561,7 +561,7 @@ const SalesManagement = () => {
         const info = await api.get(`/sales/branch-info/${branchId}`);
         if (info.success) {
           setBranchInfo(info.data);
-          await loadProductPricesForClient(info.data?.clientId);
+          await loadProductPricesForCompany(info.data?.companyId);
 
           // Load branch stock information for all products
           const stockMap = {};
@@ -637,7 +637,7 @@ const SalesManagement = () => {
     const newItems = [...formData.items];
     const oldProductId = newItems[index].productId;
 
-    newItems[index][field] = field === 'quantity' ? parseInt(value) || 1 : value;
+    newItems[index][field] = field === 'quantity' ? parseInt(value) || 0 : value;
     setFormData({ ...formData, items: newItems });
 
     // If product changed and we have a branch selected, load its stock
@@ -649,8 +649,8 @@ const SalesManagement = () => {
 
 
   const handleGenerateSalesMemo = async () => {
-    if (!filterData.clientId) {
-      toast.error('Please select a client first', { duration: 4000 });
+    if (!filterData.companyId) {
+      toast.error('Please select a company first', { duration: 4000 });
       return;
     }
 
@@ -669,7 +669,7 @@ const SalesManagement = () => {
           toast.error(
             'No sales data found for the selected criteria.\n\n' +
             'Please ensure:\n' +
-            '• Sales exist for the selected client\n' +
+            '• Sales exist for the selected company\n' +
             '• Sales are CONFIRMED or INVOICED\n' +
             '• Date range includes sales data',
             { duration: 6000 }
@@ -775,7 +775,7 @@ const SalesManagement = () => {
 
       // Build query params
       const params = new URLSearchParams();
-      if (filterData.clientId) params.append('clientId', filterData.clientId);
+      if (filterData.companyId) params.append('companyId', filterData.companyId);
       if (filterData.branchId) params.append('branchId', filterData.branchId);
       if (filterData.status) params.append('status', filterData.status);
       if (filterData.startDate) params.append('startDate', filterData.startDate);
@@ -802,8 +802,8 @@ const SalesManagement = () => {
 
 
   const handleGenerateInvoice = async () => {
-    if (!filterData.clientId) {
-      toast.error('Please select a client first', { duration: 4000 });
+    if (!filterData.companyId) {
+      toast.error('Please select a company first', { duration: 4000 });
       return;
     }
 
@@ -821,7 +821,7 @@ const SalesManagement = () => {
           toast.error(
             'No sales data found for invoice generation.\n\n' +
             'Please ensure:\n' +
-            '• Sales exist for the selected client\n' +
+            '• Sales exist for the selected company\n' +
             '• Sales are CONFIRMED or INVOICED\n' +
             '• Date range includes sales data',
             { duration: 6000 }
@@ -944,7 +944,7 @@ const SalesManagement = () => {
 
   const handleResetFilter = () => {
     setFilterData({
-      clientId: '',
+      companyId: '',
       branchId: '',
       status: '',
       startDate: '',
@@ -956,15 +956,14 @@ const SalesManagement = () => {
     setCurrentPage(1);
   };
 
-  // ADD THIS MISSING FUNCTION
-  const handleClientFilterChange = (value) => {
-    setFilterData({ ...filterData, clientId: value });
 
-    // If client changes and we have a branch selected that doesn't belong to this client,
-    // clear the branch selection
+  const handleCompanyFilterChange = (value) => {
+    setFilterData({ ...filterData, companyId: value });
+
+
     if (value && filterData.branchId) {
       const selectedBranch = branches.find(b => b.id === filterData.branchId);
-      if (selectedBranch && selectedBranch.client?.id !== value) {
+      if (selectedBranch && selectedBranch.company?.id !== value) {
         setFilterData(prev => ({ ...prev, branchId: '' }));
       }
     }
@@ -989,13 +988,13 @@ const SalesManagement = () => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = !searchTerm ||
       sale.branch?.branchName?.toLowerCase().includes(searchLower) ||
-      sale.client?.clientName?.toLowerCase().includes(searchLower) ||
+      sale.company?.companyName?.toLowerCase().includes(searchLower) ||
       sale.branch?.branchCode?.toLowerCase().includes(searchLower);
 
     if (!matchesSearch) return false;
 
 
-    if (filterData.clientId && sale.client?.id !== filterData.clientId) {
+    if (filterData.companyId && sale.company?.id !== filterData.companyId) {
       return false;
     }
 
@@ -1060,14 +1059,14 @@ const SalesManagement = () => {
   const monthsFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   const branchOptions = branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
-  const clientOptions = clients.map(c => ({
+  const companyOptions = companies.map(c => ({
     id: c.id,
-    name: c.clientName || c.companyName || c.name
+    name: c.companyName || c.companyName || c.name
   }));
 
-  const filteredBranchOptions = filterData.clientId
+  const filteredBranchOptions = filterData.companyId
     ? branches
-      .filter(b => b.client?.id === filterData.clientId)
+      .filter(b => b.company?.id === filterData.companyId)
       .map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }))
     : branchOptions;
 
@@ -1077,7 +1076,7 @@ const SalesManagement = () => {
     if (hasVariations) {
       // Products WITH variations
       return p.variations.map(v => {
-        const clientPrice = v.clientPrices?.find(cp => cp.client?.id === branchInfo?.clientId)?.price || 0;
+        const companyPrice = v.companyPrices?.find(cp => cp.company?.id === branchInfo?.companyId)?.price || 0;
 
         const truncatedName = p.productName.length > 12
           ? p.productName.substring(0, 12) + '...'
@@ -1093,16 +1092,16 @@ const SalesManagement = () => {
           fullName: p.productName,
           upc: v.upc,
           sku: v.sku,
-          price: clientPrice,
+          price: companyPrice,
           variationLabel: variationLabel,
           isVariation: true,
           hasVariations: true
         };
       });
     } else {
-      // Products WITHOUT variations - use client base price
-      const clientBasePrice = p.clientBasePrices?.find(
-        cbp => cbp.client?.id === branchInfo?.clientId
+      // Products WITHOUT variations - use company base price
+      const companyBasePrice = p.companyBasePrices?.find(
+        cbp => cbp.company?.id === branchInfo?.companyId
       )?.basePrice || productPrices[p.id] || 0;
 
       const truncatedName = p.productName.length > 12
@@ -1116,7 +1115,7 @@ const SalesManagement = () => {
         fullName: p.productName,
         upc: p.upc,
         sku: p.sku,
-        price: clientBasePrice,
+        price: companyBasePrice,
         isVariation: false,
         hasVariations: false
       }];
@@ -1174,7 +1173,7 @@ const SalesManagement = () => {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                 <input
                   type="text"
-                  placeholder="Search branch/client..."
+                  placeholder="Search branch/company..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-12 pr-4 py-3 border border-gray-300 rounded-lg w-80 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -1185,12 +1184,12 @@ const SalesManagement = () => {
             {/* Second Row: Advanced Filters */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 pt-4 border-t border-gray-200">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Client</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Company</label>
                 <SearchableDropdown
-                  options={clientOptions}
-                  value={filterData.clientId}
-                  onChange={handleClientFilterChange}
-                  placeholder="All Clients"
+                  options={companyOptions}
+                  value={filterData.companyId}
+                  onChange={handleCompanyFilterChange}
+                  placeholder="All Companies"
                   displayKey="name"
                   valueKey="id"
                 />
@@ -1206,8 +1205,8 @@ const SalesManagement = () => {
                   displayKey="name"
                   valueKey="id"
                 />
-                {filterData.clientId && filteredBranchOptions.length === 0 && (
-                  <p className="text-xs text-orange-600 mt-1">No branches for selected client</p>
+                {filterData.companyId && filteredBranchOptions.length === 0 && (
+                  <p className="text-xs text-orange-600 mt-1">No branches for selected company</p>
                 )}
               </div>
 
@@ -1247,7 +1246,7 @@ const SalesManagement = () => {
             </div>
 
             {/* Filter Actions */}
-            {(filterData.clientId || filterData.branchId || filterData.startDate || filterData.endDate || searchTerm || statusFilter !== 'ALL') && (
+            {(filterData.companyId || filterData.branchId || filterData.startDate || filterData.endDate || searchTerm || statusFilter !== 'ALL') && (
               <div className="flex justify-end pt-2">
                 <button
                   onClick={handleResetFilter}
@@ -1268,7 +1267,7 @@ const SalesManagement = () => {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -1292,7 +1291,7 @@ const SalesManagement = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {sale.client.clientName}
+                        {sale.company.companyName}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {months[sale.month - 1]} {sale.year}
@@ -1482,7 +1481,7 @@ const SalesManagement = () => {
 
                   {branchInfo && (
                     <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <p className="text-sm text-blue-800 mb-1"><strong>Client:</strong> {branchInfo.clientName}</p>
+                      <p className="text-sm text-blue-800 mb-1"><strong>Company:</strong> {branchInfo.companyName}</p>
                       <p className="text-sm text-blue-800 mb-1"><strong>TIN:</strong> {branchInfo.tin}</p>
                       <p className="text-sm text-blue-800"><strong>Address:</strong> {branchInfo.fullAddress}</p>
                     </div>
@@ -1523,12 +1522,12 @@ const SalesManagement = () => {
                         className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition font-medium"
                       >
                         <Plus size={16} />
-                        Add Item
+                        Add Product
                       </button>
                     </div>
                     {formData.items.length === 0 && (
                       <p className="text-sm text-gray-500 italic mb-4 text-center py-4 bg-gray-50 rounded-lg">
-                        No items added yet. Click "Add Item" to start.
+                        No products added yet. Click "Add Product" to start.
                       </p>
                     )}
                     {formData.items.map((item, i) => {
@@ -1540,7 +1539,7 @@ const SalesManagement = () => {
 
                       return (
                         <div key={i} className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50">
-                          <div className="flex gap-3 mb-3 items-center">
+                          <div className="flex gap-3 mb-3 items-start">
                             <div className="flex-1">
                               <VariationSearchableDropdown
                                 options={productOptions}
@@ -1555,17 +1554,17 @@ const SalesManagement = () => {
                             <div className="w-32">
                               <input
                                 type="number"
-                                value={item.quantity}
+                                value={item.quantity === 0 ? '' : item.quantity}
                                 onChange={(e) => handleItemChange(i, 'quantity', e.target.value)}
                                 placeholder="Quantity"
-                                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${!hasEnoughStock && !isLoadingStock ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${!hasEnoughStock && !isLoadingStock && item.quantity > 0 ? 'border-red-300 bg-red-50' : 'border-gray-300'
                                   }`}
-                                min="1"
+                                min="0"
                                 required
                                 disabled={isLoadingStock}
                               />
                               {item.productId && (
-                                <div className="text-xs mt-1">
+                                <div className="text-xs mt-2">
                                   {isLoadingStock ? (
                                     <span className="text-blue-600 flex items-center gap-1">
                                       <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
@@ -1577,11 +1576,11 @@ const SalesManagement = () => {
                                   ) : stockError ? (
                                     <span className="text-orange-600">{stockError}</span>
                                   ) : stockInfo ? (
-                                    <div className="space-y-0.5">
+                                    <div className="flex flex-col gap-0.5">
                                       <div className={hasEnoughStock ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
                                         Available Stock: {availableStock}
                                       </div>
-                                      {!hasEnoughStock && (
+                                      {!hasEnoughStock && item.quantity > 0 && (
                                         <div className="text-red-500 font-medium">⚠ Insufficient stock!</div>
                                       )}
                                     </div>
@@ -1648,8 +1647,8 @@ const SalesManagement = () => {
                     <p className="text-gray-500">{selectedSale.branch.branchCode}</p>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <h3 className="font-semibold text-gray-700 mb-2">Client</h3>
-                    <p className="text-gray-900 text-lg">{selectedSale.client.clientName}</p>
+                    <h3 className="font-semibold text-gray-700 mb-2">Company</h3>
+                    <p className="text-gray-900 text-lg">{selectedSale.company.companyName}</p>
                     <p className="text-gray-500">TIN: {selectedSale.tin || 'N/A'}</p>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
@@ -1766,12 +1765,12 @@ const SalesManagement = () => {
               </div>
               <div className="p-8 space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">Client *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Company *</label>
                   <SearchableDropdown
-                    options={clientOptions}
-                    value={filterData.clientId}
-                    onChange={(value) => setFilterData({ ...filterData, clientId: value })}
-                    placeholder="Select Client"
+                    options={companyOptions}
+                    value={filterData.companyId}
+                    onChange={(value) => setFilterData({ ...filterData, companyId: value })}
+                    placeholder="Select Company"
                     displayKey="name"
                     valueKey="id"
                     required
@@ -2473,15 +2472,15 @@ const SalesManagement = () => {
             </div>
             <div className="p-8 space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Client *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Company *</label>
                 <select
-                  value={filterData.clientId}
-                  onChange={(e) => setFilterData({ ...filterData, clientId: e.target.value })}
+                  value={filterData.companyId}
+                  onChange={(e) => setFilterData({ ...filterData, companyId: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
                 >
-                  <option value="">Select Client</option>
-                  {clients.map(c => (
-                    <option key={c.id} value={c.id}>{c.clientName}</option>
+                  <option value="">Select Company</option>
+                  {companies.map(c => (
+                    <option key={c.id} value={c.id}>{c.companyName}</option>
                   ))}
                 </select>
               </div>

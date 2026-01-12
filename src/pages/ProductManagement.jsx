@@ -251,31 +251,31 @@ const CategoryInput = ({ value, onChange, categories, existingCategories = [] })
 
 
 
-const MultiClientPriceSelector = ({ clients, selectedPrices, onChange, assignToRemaining, remainingPrice }) => {
-  const [showAllClients, setShowAllClients] = useState(false);
+const MultiCompanyPriceSelector = ({ companies, selectedPrices, onChange, assignToRemaining, remainingPrice }) => {
+  const [showAllCompanies, setShowAllCompanies] = useState(false);
 
-  const handleClientSelect = (clientId) => {
+  const handleCompanySelect = (companyId) => {
     const newPrices = { ...selectedPrices };
-    if (newPrices[clientId]) {
-      delete newPrices[clientId];
+    if (newPrices[companyId]) {
+      delete newPrices[companyId];
     } else {
-      newPrices[clientId] = '';
+      newPrices[companyId] = '';
     }
     onChange(newPrices, assignToRemaining, remainingPrice);
   };
 
-  const handlePriceChange = (clientId, price) => {
-    const newPrices = { ...selectedPrices, [clientId]: price };
+  const handlePriceChange = (companyId, price) => {
+    const newPrices = { ...selectedPrices, [companyId]: price };
     onChange(newPrices, assignToRemaining, remainingPrice);
   };
 
   const handleSelectAll = () => {
-    const allSelected = clients.every(c => selectedPrices[c.id] !== undefined);
+    const allSelected = companies.every(c => selectedPrices[c.id] !== undefined);
     if (allSelected) {
       onChange({}, assignToRemaining, remainingPrice);
     } else {
       const newPrices = {};
-      clients.forEach(c => {
+      companies.forEach(c => {
         newPrices[c.id] = selectedPrices[c.id] || '';
       });
       onChange(newPrices, assignToRemaining, remainingPrice);
@@ -291,19 +291,19 @@ const MultiClientPriceSelector = ({ clients, selectedPrices, onChange, assignToR
   };
 
   const selectedCount = Object.keys(selectedPrices).length;
-  const allSelected = selectedCount === clients.length;
-  const unassignedCount = clients.length - selectedCount;
+  const allSelected = selectedCount === companies.length;
+  const unassignedCount = companies.length - selectedCount;
 
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h4 className="text-sm font-medium text-gray-900">Client Prices</h4>
+          <h4 className="text-sm font-medium text-gray-900">Company Prices</h4>
           <p className="text-xs text-gray-500 mt-1">
             {selectedCount === 0
-              ? 'No clients selected'
-              : `${selectedCount} client${selectedCount > 1 ? 's' : ''} selected`}
+              ? 'No companies selected'
+              : `${selectedCount} company${selectedCount > 1 ? 's' : ''} selected`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -316,21 +316,21 @@ const MultiClientPriceSelector = ({ clients, selectedPrices, onChange, assignToR
           </button>
           <button
             type="button"
-            onClick={() => setShowAllClients(!showAllClients)}
+            onClick={() => setShowAllCompanies(!showAllCompanies)}
             className="text-sm text-gray-600 hover:text-gray-700"
           >
-            {showAllClients ? 'Show Less' : 'Show All'}
+            {showAllCompanies ? 'Show Less' : 'Show All'}
           </button>
         </div>
       </div>
 
-      {/* Client Selection */}
-      <div className={`space-y-2 ${!showAllClients ? 'max-h-60 overflow-y-auto' : ''}`}>
-        {clients.map((client) => {
-          const isSelected = selectedPrices[client.id] !== undefined;
+      {/* Company Selection */}
+      <div className={`space-y-2 ${!showAllCompanies ? 'max-h-60 overflow-y-auto' : ''}`}>
+        {companies.map((company) => {
+          const isSelected = selectedPrices[company.id] !== undefined;
           return (
             <div
-              key={client.id}
+              key={company.id}
               className={`p-3 border rounded-lg transition ${isSelected ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white'
                 }`}
             >
@@ -338,24 +338,24 @@ const MultiClientPriceSelector = ({ clients, selectedPrices, onChange, assignToR
                 <input
                   type="checkbox"
                   checked={isSelected}
-                  onChange={() => handleClientSelect(client.id)}
+                  onChange={() => handleCompanySelect(company.id)}
                   className="mt-1 h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                 />
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
                     <label
-                      onClick={() => handleClientSelect(client.id)}
+                      onClick={() => handleCompanySelect(company.id)}
                       className="text-sm font-medium text-gray-900 cursor-pointer"
                     >
-                      {client.clientName}
+                      {company.companyName}
                     </label>
                     {isSelected && (
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-500">₱</span>
                         <input
                           type="number"
-                          value={selectedPrices[client.id] || ''}
-                          onChange={(e) => handlePriceChange(client.id, e.target.value)}
+                          value={selectedPrices[company.id] || ''}
+                          onChange={(e) => handlePriceChange(company.id, e.target.value)}
                           onClick={(e) => e.stopPropagation()}
                           placeholder="0.00"
                           min="0.01"
@@ -372,7 +372,7 @@ const MultiClientPriceSelector = ({ clients, selectedPrices, onChange, assignToR
         })}
       </div>
 
-      {/* Assign to Remaining Clients */}
+      {/* Assign to Remaining Companies */}
       {unassignedCount > 0 && (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
           <div className="flex items-start gap-3">
@@ -388,10 +388,10 @@ const MultiClientPriceSelector = ({ clients, selectedPrices, onChange, assignToR
                 htmlFor="assign-remaining"
                 className="text-sm font-medium text-amber-900 cursor-pointer"
               >
-                Set default price for {unassignedCount} unassigned client{unassignedCount > 1 ? 's' : ''}
+                Set default price for {unassignedCount} unassigned company{unassignedCount > 1 ? 's' : ''}
               </label>
               <p className="text-xs text-amber-700 mt-1">
-                All clients without specific prices will receive this default price
+                All companies without specific prices will receive this default price
               </p>
               {assignToRemaining && (
                 <div className="flex items-center gap-2 mt-3">
@@ -418,10 +418,10 @@ const MultiClientPriceSelector = ({ clients, selectedPrices, onChange, assignToR
         <div className="p-3 bg-gray-50 rounded-lg">
           <div className="text-xs text-gray-600 space-y-1">
             {selectedCount > 0 && (
-              <div>✓ {selectedCount} client{selectedCount > 1 ? 's' : ''} with specific prices</div>
+              <div>✓ {selectedCount} company{selectedCount > 1 ? 's' : ''} with specific prices</div>
             )}
             {assignToRemaining && remainingPrice && (
-              <div>✓ {unassignedCount} client{unassignedCount > 1 ? 's' : ''} with default price of ₱{remainingPrice}</div>
+              <div>✓ {unassignedCount} company{unassignedCount > 1 ? 's' : ''} with default price of ₱{remainingPrice}</div>
             )}
           </div>
         </div>
@@ -509,7 +509,7 @@ const SupplierInput = ({ value, onChange, suppliers }) => {
 
 const ProductManagement = () => {
   const [products, setProducts] = useState([]);
-  const [clients, setClients] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -523,12 +523,12 @@ const ProductManagement = () => {
     sku: '',
     supplier: '',
     countryOfOrigin: '',
-    clientPrices: {},
-    clientBasePrices: {},
+    companyPrices: {},
+    companyBasePrices: {},
     assignToRemainingBase: false,
     remainingBasePriceValue: '',
     assignToRemaining: false,
-    remainingClientsPrice: '',
+    remainingCompaniesPrice: '',
     dimensions: '',
     weight: '',
     materials: '',
@@ -588,7 +588,7 @@ const ProductManagement = () => {
   useEffect(() => {
     if (variationTypes.length > 0 && variationTypes.every(vt => vt.values.length > 0)) {
       generateVariationCombinations();
-    } else {
+    } else if (variationTypes.length === 0) {
       setVariationCombinations([]);
     }
   }, [variationTypes]);
@@ -600,8 +600,8 @@ const ProductManagement = () => {
     setLoadingMessage('Loading products...');
     try {
       const productsResponse = await api.get('/products');
-      const clientsResponse = await api.get('/clients');
-      const suppliersResponse = await api.get('/products/suppliers'); // Add this
+      const companiesResponse = await api.get('/companies');
+      const suppliersResponse = await api.get('/products/suppliers');
 
       if (productsResponse.success) {
         setProducts(productsResponse.data || []);
@@ -610,11 +610,11 @@ const ProductManagement = () => {
         setProducts([]);
       }
 
-      if (clientsResponse.success) {
-        setClients(clientsResponse.data || []);
+      if (companiesResponse.success) {
+        setCompanies(companiesResponse.data || []);
       } else {
-        toast.error(clientsResponse.error || 'Failed to load clients');
-        setClients([]);
+        toast.error(companiesResponse.error || 'Failed to load companies');
+        setCompanies([]);
       }
 
       // Add this
@@ -627,7 +627,7 @@ const ProductManagement = () => {
       toast.error('Failed to load data');
       console.error(error);
       setProducts([]);
-      setClients([]);
+      setCompanies([]);
       setSuppliers([]);
     } finally {
       setLoading(false);
@@ -643,12 +643,12 @@ const ProductManagement = () => {
 
 
 
-  const handleClientPricesChange = useCallback((prices, assignRemaining, remainingPrice) => {
+  const handleCompanyPricesChange = useCallback((prices, assignRemaining, remainingPrice) => {
     setFormData(prev => ({
       ...prev,
-      clientPrices: prices,
+      companyPrices: prices,
       assignToRemaining: assignRemaining,
-      remainingClientsPrice: remainingPrice
+      remainingCompaniesPrice: remainingPrice
     }));
   }, []);
 
@@ -656,14 +656,12 @@ const ProductManagement = () => {
 
   const generateVariationCombinations = useCallback(() => {
     if (variationTypes.length === 0 || !variationTypes.every(vt => vt.values.length > 0)) {
-      setVariationCombinations([]);
       return;
     }
 
     const generateCombos = (types, index = 0, current = {}) => {
       if (index === types.length) {
         const comboKey = Object.values(current).join('-');
-        // Don't reference variationCombinations here to avoid dependency
 
         return [{
           combination: comboKey,
@@ -674,7 +672,7 @@ const ProductManagement = () => {
           length: '',
           width: '',
           height: '',
-          clientPrices: {}
+          companyPrices: {}
         }];
       }
 
@@ -691,13 +689,18 @@ const ProductManagement = () => {
 
     setVariationCombinations(prevCombos => {
       const newCombinations = generateCombos(variationTypes);
+      const validCombinationKeys = new Set(newCombinations.map(c => c.combination));
+
+
+      const filteredPrevCombos = prevCombos.filter(c => validCombinationKeys.has(c.combination));
 
       return newCombinations.map(newCombo => {
-        const existing = prevCombos.find(c => c.combination === newCombo.combination);
+        const existing = filteredPrevCombos.find(c => c.combination === newCombo.combination);
         return existing ? { ...newCombo, ...existing } : newCombo;
       });
     });
   }, [variationTypes]);
+
 
   const updateVariationCombination = (index, field, value) => {
     const newCombinations = [...variationCombinations];
@@ -705,9 +708,9 @@ const ProductManagement = () => {
     setVariationCombinations(newCombinations);
   };
 
-  const updateVariationClientPrice = (comboIndex, clientId, price) => {
+  const updateVariationCompanyPrice = (comboIndex, companyId, price) => {
     const newCombinations = [...variationCombinations];
-    newCombinations[comboIndex].clientPrices[clientId] = price;
+    newCombinations[comboIndex].companyPrices[companyId] = price;
     setVariationCombinations(newCombinations);
   };
 
@@ -739,7 +742,7 @@ const ProductManagement = () => {
             upc: combo.upc || null,
             weight: combo.weight ? parseFloat(combo.weight) : null,
             dimensions: null,
-            clientPrices: []
+            companyPrices: []
           };
 
           // Build dimensions string
@@ -750,11 +753,11 @@ const ProductManagement = () => {
             variationData.dimensions = `${l}×${w}×${h}`;
           }
 
-          // Build client prices for this variation
-          Object.entries(combo.clientPrices).forEach(([clientId, price]) => {
+          // Build company prices for this variation
+          Object.entries(combo.companyPrices).forEach(([companyId, price]) => {
             if (price && parseFloat(price) > 0) {
-              variationData.clientPrices.push({
-                clientId: parseInt(clientId),
+              variationData.companyPrices.push({
+                companyId: parseInt(companyId),
                 price: parseFloat(price)
               });
             }
@@ -765,39 +768,39 @@ const ProductManagement = () => {
       }
 
 
-      const clientPricesArray = [];
+      const companyPricesArray = [];
 
-      Object.keys(formData.clientPrices).forEach(clientId => {
-        const price = parseFloat(formData.clientPrices[clientId]);
+      Object.keys(formData.companyPrices).forEach(companyId => {
+        const price = parseFloat(formData.companyPrices[companyId]);
         if (price > 0) {
-          clientPricesArray.push({
-            clientId: parseInt(clientId),
+          companyPricesArray.push({
+            companyId: parseInt(companyId),
             price: price
           });
         }
       });
 
-      if (formData.assignToRemaining && formData.remainingClientsPrice) {
-        const assignedClientIds = new Set(Object.keys(formData.clientPrices).map(id => parseInt(id)));
-        clients.forEach(client => {
-          if (!assignedClientIds.has(client.id)) {
-            clientPricesArray.push({
-              clientId: client.id,
-              price: parseFloat(formData.remainingClientsPrice)
+      if (formData.assignToRemaining && formData.remainingCompaniesPrice) {
+        const assignedCompanyIds = new Set(Object.keys(formData.companyPrices).map(id => parseInt(id)));
+        companies.forEach(company => {
+          if (!assignedCompanyIds.has(company.id)) {
+            companyPricesArray.push({
+              companyId: company.id,
+              price: parseFloat(formData.remainingCompaniesPrice)
             });
           }
         });
       }
 
 
-      const clientBasePricesArray = [];
+      const companyBasePricesArray = [];
 
       if (variationCombinations.length === 0) {
-        Object.keys(formData.clientBasePrices).forEach(clientId => {
-          const basePrice = parseFloat(formData.clientBasePrices[clientId]);
+        Object.keys(formData.companyBasePrices).forEach(companyId => {
+          const basePrice = parseFloat(formData.companyBasePrices[companyId]);
           if (basePrice > 0) {
-            clientBasePricesArray.push({
-              clientId: parseInt(clientId),
+            companyBasePricesArray.push({
+              companyId: parseInt(companyId),
               basePrice: basePrice
             });
           }
@@ -805,11 +808,11 @@ const ProductManagement = () => {
 
 
         if (formData.assignToRemainingBase && formData.remainingBasePriceValue) {
-          const assignedClientIds = new Set(Object.keys(formData.clientBasePrices).map(id => parseInt(id)));
-          clients.forEach(client => {
-            if (!assignedClientIds.has(client.id)) {
-              clientBasePricesArray.push({
-                clientId: client.id,
+          const assignedCompanyIds = new Set(Object.keys(formData.companyBasePrices).map(id => parseInt(id)));
+          companies.forEach(company => {
+            if (!assignedCompanyIds.has(company.id)) {
+              companyBasePricesArray.push({
+                companyId: company.id,
                 basePrice: parseFloat(formData.remainingBasePriceValue)
               });
             }
@@ -830,8 +833,8 @@ const ProductManagement = () => {
         brand: formData.brand || null,
         shelfLife: formData.shelfLife || null,
         variations: normalizedVariations,
-        clientPrices: clientPricesArray,
-        clientBasePrices: clientBasePricesArray
+        companyPrices: companyPricesArray,
+        companyBasePrices: companyBasePricesArray
       };
 
       let response;
@@ -917,21 +920,21 @@ const ProductManagement = () => {
   const handleEdit = (product) => {
     setEditingProduct(product);
 
-    const clientPricesObj = {};
-    if (product.clientPrices) {
-      product.clientPrices.forEach(cp => {
-        if (cp.client?.id) {
-          clientPricesObj[cp.client.id] = cp.price;
+    const companyPricesObj = {};
+    if (product.companyPrices) {
+      product.companyPrices.forEach(cp => {
+        if (cp.company?.id) {
+          companyPricesObj[cp.company.id] = cp.price;
         }
       });
     }
 
-    // ✅ ADD THIS: Load client base prices
-    const clientBasePricesObj = {};
-    if (product.clientBasePrices) {
-      product.clientBasePrices.forEach(cbp => {
-        if (cbp.client?.id) {
-          clientBasePricesObj[cbp.client.id] = cbp.basePrice;
+    // ✅ ADD THIS: Load company base prices
+    const companyBasePricesObj = {};
+    if (product.companyBasePrices) {
+      product.companyBasePrices.forEach(cbp => {
+        if (cbp.company?.id) {
+          companyBasePricesObj[cbp.company.id] = cbp.basePrice;
         }
       });
     }
@@ -943,12 +946,12 @@ const ProductManagement = () => {
       sku: product.sku || '',
       supplier: product.supplier || '',
       countryOfOrigin: product.countryOfOrigin || '',
-      clientPrices: clientPricesObj,
-      clientBasePrices: clientBasePricesObj,
+      companyPrices: companyPricesObj,
+      companyBasePrices: companyBasePricesObj,
       assignToRemainingBase: false,
       remainingBasePriceValue: '',
       assignToRemaining: false,
-      remainingClientsPrice: '',
+      remainingCompanyPrice: '',
       dimensions: product.dimensions || '',
       weight: product.weight || '',
       materials: product.materials || '',
@@ -1014,12 +1017,12 @@ const ProductManagement = () => {
           // Parse dimensions
           const dims = v.dimensions ? v.dimensions.split('×') : ['', '', ''];
 
-          // Build client prices map
-          const clientPricesMap = {};
-          if (v.clientPrices) {
-            v.clientPrices.forEach(cp => {
-              if (cp.client?.id) {
-                clientPricesMap[cp.client.id] = cp.price;
+          // Build company prices map
+          const companyPricesMap = {};
+          if (v.companyPrices) {
+            v.companyPrices.forEach(cp => {
+              if (cp.company?.id) {
+                companyPricesMap[cp.company.id] = cp.price;
               }
             });
           }
@@ -1033,7 +1036,7 @@ const ProductManagement = () => {
             length: dims[0] || '',
             width: dims[1] || '',
             height: dims[2] || '',
-            clientPrices: clientPricesMap
+            companyPrices: companyPricesMap
           };
         });
 
@@ -1082,12 +1085,12 @@ const ProductManagement = () => {
       sku: '',
       supplier: '',
       countryOfOrigin: '',
-      clientPrices: {},
-      clientBasePrices: {},
+      companyPrices: {},
+      companyBasePrices: {},
       assignToRemainingBase: false,
       remainingBasePriceValue: '',
       assignToRemaining: false,
-      remainingClientsPrice: '',
+      remainingCompanyPrice: '',
       dimensions: '',
       weight: '',
       materials: '',
@@ -1150,7 +1153,7 @@ const ProductManagement = () => {
     return pageNumbers;
   };
 
-  const clientOptions = clients.map(c => ({ id: c.id, name: c.clientName }));
+  const companyOptions = companies.map(c => ({ id: c.id, name: c.companyName }));
 
   if (loading) {
     return (
@@ -1202,7 +1205,7 @@ const ProductManagement = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">UPC</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Cost</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client Price</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company Price</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
                 <th
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 transition"
@@ -1295,18 +1298,18 @@ const ProductManagement = () => {
                       <td className="px-6 py-4 text-sm">
                         {product.variations && product.variations.length > 0 ? (
                           <div className="space-y-1">
-                            {product.variations[0].clientPrices && product.variations[0].clientPrices.length > 0 ? (
+                            {product.variations[0].companyPrices && product.variations[0].companyPrices.length > 0 ? (
                               <>
-                                {product.variations[0].clientPrices.slice(0, 2).map((cp, idx) => (
+                                {product.variations[0].companyPrices.slice(0, 2).map((cp, idx) => (
                                   <div key={idx} className="text-xs">
                                     <span className="font-medium text-blue-600">
                                       ₱{Number(cp.price).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                                     </span>
-                                    <span className="text-gray-500 ml-1">({cp.client?.clientName})</span>
+                                    <span className="text-gray-500 ml-1">({cp.company?.companyName})</span>
                                   </div>
                                 ))}
-                                {product.variations[0].clientPrices.length > 2 && (
-                                  <div className="text-xs text-gray-500">+{product.variations[0].clientPrices.length - 2} more</div>
+                                {product.variations[0].companyPrices.length > 2 && (
+                                  <div className="text-xs text-gray-500">+{product.variations[0].companyPrices.length - 2} more</div>
                                 )}
                               </>
                             ) : (
@@ -1554,7 +1557,6 @@ const ProductManagement = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Shelf Life
-                      <span className="text-xs text-gray-500 ml-2">(e.g., "12 months", "2 years")</span>
                     </label>
                     <input
                       type="text"
@@ -1562,7 +1564,7 @@ const ProductManagement = () => {
                       value={formData.shelfLife}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="e.g., 12 months, 2 years"
+                      placeholder="Example: 12 months, 2 years"
                     />
                   </div>
 
@@ -1624,18 +1626,18 @@ const ProductManagement = () => {
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <span style={{ fontSize: '20px' }}>₱</span>
-                    Client Base Prices
+                    Company Base Prices
                     <span className="text-xs font-normal text-gray-500 ml-2">
                       (For products without variations)
                     </span>
                   </h3>
-                  <MultiClientPriceSelector
-                    clients={clients}
-                    selectedPrices={formData.clientBasePrices}
+                  <MultiCompanyPriceSelector
+                    companies={companies}
+                    selectedPrices={formData.companyBasePrices}
                     onChange={(prices, assignRemaining, remainingPrice) => {
                       setFormData(prev => ({
                         ...prev,
-                        clientBasePrices: prices,
+                        companyBasePrices: prices,
                         assignToRemainingBase: assignRemaining,
                         remainingBasePriceValue: remainingPrice
                       }));
@@ -1645,7 +1647,7 @@ const ProductManagement = () => {
                   />
                   <p className="text-xs text-amber-600 mt-3 flex items-center gap-1">
                     <AlertCircle size={14} />
-                    Note: Client base prices are only available for products without variations.
+                    Note: Company base prices are only available for products without variations.
                     If you add variations below, variation-specific pricing will be used instead.
                   </p>
                 </div>
@@ -1657,9 +1659,9 @@ const ProductManagement = () => {
                   <div className="flex items-center gap-2 text-gray-600">
                     <AlertCircle size={18} />
                     <div>
-                      <p className="text-sm font-medium">Client Base Prices Disabled</p>
+                      <p className="text-sm font-medium">Company Base Prices Disabled</p>
                       <p className="text-xs mt-1">
-                        This product has variations. Please set client prices for each variation in the table below.
+                        This product has variations. Please set company prices for each variation in the table below.
                       </p>
                     </div>
                   </div>
@@ -1893,7 +1895,7 @@ const ProductManagement = () => {
 
 
                   {/* Variation Combinations Table */}
-                  {variationTypes.length > 0 && variationTypes.every(vt => vt.values.length > 0) && variationCombinations.length > 0 && (
+                  {variationCombinations.length > 0 && (
                     <div className="mt-6 border border-gray-300 rounded-lg overflow-hidden">
                       <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3">
                         <h4 className="text-white font-semibold flex items-center gap-2">
@@ -1911,13 +1913,13 @@ const ProductManagement = () => {
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-40">UPC</th>
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-32">Weight (kg)</th>
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-64">Dimensions (L×W×H cm)</th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase min-w-[400px]">Client Prices</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase min-w-[400px]">Company Prices</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-200">
                             {variationCombinations.map((combo, comboIndex) => (
                               <tr key={comboIndex} className="hover:bg-gray-50">
-                                {/* Variation Name */}
+
                                 <td className="px-4 py-3 w-48">
                                   <div className="flex flex-wrap gap-1">
                                     {Object.entries(combo.attributes).map(([type, value]) => (
@@ -1928,50 +1930,54 @@ const ProductManagement = () => {
                                   </div>
                                 </td>
 
-                                {/* SKU - WIDER */}
+
                                 <td className="px-4 py-3 w-40">
                                   <input
                                     type="text"
                                     value={combo.sku}
                                     onChange={(e) => updateVariationCombination(comboIndex, 'sku', e.target.value)}
-                                    placeholder="Enter SKU"
+                                    placeholder="Enter SKU *"
+                                    required
                                     className="w-full min-w-[150px] px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                   />
                                 </td>
 
-                                {/* UPC - WIDER */}
+
                                 <td className="px-4 py-3 w-40">
                                   <input
                                     type="text"
                                     value={combo.upc}
                                     onChange={(e) => updateVariationCombination(comboIndex, 'upc', e.target.value)}
-                                    placeholder="Enter UPC"
+                                    placeholder="Enter UPC *"
+                                    required
                                     className="w-full min-w-[150px] px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                   />
                                 </td>
 
-                                {/* Weight - WIDER */}
+
                                 <td className="px-4 py-3 w-32">
                                   <input
                                     type="number"
                                     value={combo.weight || ''}
                                     onChange={(e) => updateVariationCombination(comboIndex, 'weight', e.target.value)}
-                                    placeholder="0.00"
+                                    placeholder="0.00 *"
                                     step="0.01"
                                     min="0"
+                                    required
                                     className="w-full min-w-[100px] px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                   />
                                 </td>
 
-                                {/* Dimensions - WIDER */}
+  
                                 <td className="px-4 py-3 w-64">
                                   <div className="flex items-center gap-2">
                                     <input
                                       type="number"
                                       value={combo.length}
                                       onChange={(e) => updateVariationCombination(comboIndex, 'length', e.target.value)}
-                                      placeholder="Length"
+                                      placeholder="L *"
                                       step="0.01"
+                                      required
                                       className="w-20 px-2 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     />
                                     <X size={12} className="text-gray-400 flex-shrink-0" />
@@ -1979,8 +1985,9 @@ const ProductManagement = () => {
                                       type="number"
                                       value={combo.width}
                                       onChange={(e) => updateVariationCombination(comboIndex, 'width', e.target.value)}
-                                      placeholder="Width"
+                                      placeholder="W *"
                                       step="0.01"
+                                      required
                                       className="w-20 px-2 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     />
                                     <X size={12} className="text-gray-400 flex-shrink-0" />
@@ -1988,27 +1995,28 @@ const ProductManagement = () => {
                                       type="number"
                                       value={combo.height}
                                       onChange={(e) => updateVariationCombination(comboIndex, 'height', e.target.value)}
-                                      placeholder="Height"
+                                      placeholder="H *"
                                       step="0.01"
+                                      required
                                       className="w-20 px-2 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     />
                                   </div>
                                 </td>
 
-                                {/* Client Prices - WIDER */}
+
                                 <td className="px-4 py-3 min-w-[400px]">
                                   <div className="space-y-2">
-                                    {clients.map((client) => (
-                                      <div key={client.id} className="flex items-center gap-3">
-                                        <label className="text-xs text-gray-700 font-medium min-w-[140px] truncate" title={client.clientName}>
-                                          {client.clientName}
+                                    {companies.map((company) => (
+                                      <div key={company.id} className="flex items-center gap-3">
+                                        <label className="text-xs text-gray-700 font-medium min-w-[140px] truncate" title={company.companyName}>
+                                          {company.companyName}
                                         </label>
                                         <div className="flex items-center gap-2 flex-1">
                                           <span className="text-sm text-gray-500">₱</span>
                                           <input
                                             type="number"
-                                            value={combo.clientPrices[client.id] || ''}
-                                            onChange={(e) => updateVariationClientPrice(comboIndex, client.id, e.target.value)}
+                                            value={combo.companyPrices[company.id] || ''}
+                                            onChange={(e) => updateVariationCompanyPrice(comboIndex, company.id, e.target.value)}
                                             placeholder="0.00"
                                             step="0.01"
                                             min="0"
@@ -2027,10 +2035,7 @@ const ProductManagement = () => {
 
                       {/* Bulk Actions */}
                       <div className="bg-gray-50 px-4 py-3 border-t border-gray-200">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm text-gray-600">
-                            💡 Tip: Fill in SKU, UPC, dimensions, and prices for each variation
-                          </p>
+                        <div className="flex items-center justify-end">
                           <button
                             type="button"
                             onClick={() => {
@@ -2043,7 +2048,7 @@ const ProductManagement = () => {
                                   length: '',
                                   width: '',
                                   height: '',
-                                  clientPrices: {}
+                                  companyPrices: {}
                                 })));
                               }
                             }}

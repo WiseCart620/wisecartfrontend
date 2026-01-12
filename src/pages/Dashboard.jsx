@@ -178,7 +178,7 @@ const Dashboard = () => {
     activeRevenue: 0,
     pendingDeliveries: 0,
     lowStock: 0,
-    totalClients: 0,
+    totalCompanies: 0,
     averageOrderValue: 0,
     deliveredOrders: 0,
     conversionRate: 0,
@@ -189,12 +189,12 @@ const Dashboard = () => {
 
   const navigate = useNavigate();
   const [sales, setSales] = useState([]);
-  const [clients, setClients] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [branches, setBranches] = useState([]);
   const [products, setProducts] = useState([]);
   const [deliveries, setDeliveries] = useState([]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedClient, setSelectedClient] = useState('all');
+  const [selectedCompany, setSelectedCompany] = useState('all');
   const [selectedBranch, setSelectedBranch] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [recentSales, setRecentSales] = useState([]);
@@ -215,8 +215,8 @@ const Dashboard = () => {
   const [filterType, setFilterType] = useState('all');
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
-  const [selectedClientForBranches, setSelectedClientForBranches] = useState(null);
-  const [selectedClientForTopBranches, setSelectedClientForTopBranches] = useState(null);
+  const [selectedCompanyForBranches, setSelectedCompanyForBranches] = useState(null);
+  const [selectedCompanyForTopBranches, setSelectedCompanyForTopBranches] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [productCategories, setProductCategories] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState('all');
@@ -242,7 +242,7 @@ const Dashboard = () => {
         setSelectedProductId(productAnalysis[0].id);
       }
     }
-  }, [sales, selectedYear, selectedClient, selectedBranch, performanceYear, performanceView, performanceMonth, selectedProductId]);
+  }, [sales, selectedYear, selectedCompany, selectedBranch, performanceYear, performanceView, performanceMonth, selectedProductId]);
 
 
   useEffect(() => {
@@ -254,26 +254,26 @@ const Dashboard = () => {
 
 
   useEffect(() => {
-    if (selectedClient === 'all') {
+    if (selectedCompany === 'all') {
       setAvailableBranches(branches);
       setSelectedBranch('all');
     } else {
-      // Get branches that have sales for the selected client
-      const clientBranches = [...new Set(
+      // Get branches that have sales for the selected company
+      const companyBranches = [...new Set(
         sales
-          .filter(s => s.client?.clientName === selectedClient)
+          .filter(s => s.company?.companyName === selectedCompany)
           .map(s => s.branch?.branchName)
           .filter(Boolean)
       )];
 
       const filteredBranches = branches.filter(b =>
-        clientBranches.includes(b.branchName)
+        companyBranches.includes(b.branchName)
       );
 
       setAvailableBranches(filteredBranches);
       setSelectedBranch('all');
     }
-  }, [selectedClient, branches, sales]);
+  }, [selectedCompany, branches, sales]);
 
 
   useEffect(() => {
@@ -365,14 +365,14 @@ const Dashboard = () => {
   }, [alerts, activeTab, searchQuery, filterSeverity, filterType]);
 
 
-  const getClientBranchBreakdown = (clientName) => {
+  const getCompanyBranchBreakdown = (companyName) => {
     const product = productSalesData.find(p => p.id === selectedProductId);
     if (!product) return [];
 
-    // Get all sales for this product and client, filtered by performance view
-    const clientSales = sales.filter(sale => {
+    // Get all sales for this product and company, filtered by performance view
+    const companySales = sales.filter(sale => {
       const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED';
-      const clientMatch = sale.client?.clientName === clientName;
+      const companyMatch = sale.company?.companyName === companyName;
 
       // Check if this sale contains the selected product
       const hasProduct = sale.items?.some(item => item.product?.id === selectedProductId);
@@ -380,7 +380,7 @@ const Dashboard = () => {
 
       // If "Overall" view, no date filtering
       if (performanceView === 'overall') {
-        return statusMatch && clientMatch;
+        return statusMatch && companyMatch;
       }
 
       // Filter by year and optionally month
@@ -390,14 +390,14 @@ const Dashboard = () => {
       const yearMatch = saleYear === performanceYear;
       const monthMatch = performanceView === 'month' ? saleMonth === performanceMonth : true;
 
-      return statusMatch && clientMatch && yearMatch && monthMatch;
+      return statusMatch && companyMatch && yearMatch && monthMatch;
     });
 
     // Aggregate by branch
     const branchData = {};
     const salesByBranch = {}; // Track unique sales per branch
 
-    clientSales.forEach(sale => {
+    companySales.forEach(sale => {
       const branchName = sale.branch?.branchName || 'Unknown Branch';
 
       sale.items?.forEach(item => {
@@ -524,8 +524,8 @@ const Dashboard = () => {
         .sort((a, b) => b.revenue - a.revenue)
         .slice(0, 10);
 
-      // Calculate top clients - FILTER BY SELECTED PRODUCT
-      const clientPerformance = {};
+      // Calculate top companies - FILTER BY SELECTED PRODUCT
+      const companyPerformance = {};
       filteredSales.forEach(sale => {
         if (sale.status === 'CONFIRMED' || sale.status === 'INVOICED') {
           // If a product is selected, only include sales that contain that product
@@ -534,11 +534,11 @@ const Dashboard = () => {
 
           if (!hasSelectedProduct) return;
 
-          const key = sale.client?.id;
-          if (!clientPerformance[key]) {
-            clientPerformance[key] = {
+          const key = sale.company?.id;
+          if (!companyPerformance[key]) {
+            companyPerformance[key] = {
               id: key,
-              name: sale.client?.clientName || 'Unknown Client',
+              name: sale.company?.companyName || 'Unknown Company',
               revenue: 0,
               salesCount: 0,
               averageOrderValue: 0,
@@ -549,25 +549,25 @@ const Dashboard = () => {
           if (selectedProductId) {
             sale.items?.forEach(item => {
               if (item.product?.id === selectedProductId) {
-                clientPerformance[key].revenue += item.amount || 0;
+                companyPerformance[key].revenue += item.amount || 0;
               }
             });
-            clientPerformance[key].salesCount += 1;
+            companyPerformance[key].salesCount += 1;
           } else {
-            clientPerformance[key].revenue += sale.totalAmount || 0;
-            clientPerformance[key].salesCount += 1;
+            companyPerformance[key].revenue += sale.totalAmount || 0;
+            companyPerformance[key].salesCount += 1;
           }
 
-          clientPerformance[key].averageOrderValue =
-            clientPerformance[key].revenue / clientPerformance[key].salesCount;
+          companyPerformance[key].averageOrderValue =
+            companyPerformance[key].revenue / companyPerformance[key].salesCount;
         }
       });
 
-      const topClients = Object.values(clientPerformance)
+      const topCompanies = Object.values(companyPerformance)
         .sort((a, b) => b.revenue - a.revenue)
         .slice(0, 10);
 
-      setPerformanceData({ topProducts, topBranches, topClients });
+      setPerformanceData({ topProducts, topBranches, topCompanies });
     } catch (err) {
       console.error('Failed to load performance data', err);
     }
@@ -600,7 +600,7 @@ const Dashboard = () => {
         const productId = item.product?.id;
         const productName = item.product?.productName || 'Unknown Product';
         const branchName = sale.branch?.branchName || 'Unknown Branch';
-        const clientName = sale.client?.clientName || 'Unknown Client';
+        const companyName = sale.company?.companyName || 'Unknown Company';
 
         // FIX: Use sale.month and sale.year if available, otherwise parse from date
         let month, year;
@@ -623,7 +623,7 @@ const Dashboard = () => {
             totalQuantity: 0,
             byMonth: {},
             byBranch: {},
-            byClient: {},
+            byCompany: {},
             salesCount: 0
           };
         }
@@ -657,17 +657,17 @@ const Dashboard = () => {
         product.byBranch[branchName].quantity += item.quantity || 0;
         product.byBranch[branchName].count += 1;
 
-        // Client analysis
-        if (!product.byClient[clientName]) {
-          product.byClient[clientName] = {
+        // company analysis
+        if (!product.byCompany[companyName]) {
+          product.byCompany[companyName] = {
             revenue: 0,
             quantity: 0,
             count: 0
           };
         }
-        product.byClient[clientName].revenue += item.amount || 0;
-        product.byClient[clientName].quantity += item.quantity || 0;
-        product.byClient[clientName].count += 1;
+        product.byCompany[companyName].revenue += item.amount || 0;
+        product.byCompany[companyName].quantity += item.quantity || 0;
+        product.byCompany[companyName].count += 1;
       });
     });
 
@@ -752,36 +752,35 @@ const getSelectedProductStats = () => {
       return statusMatch && yearMatch && monthMatch;
     });
 
-    // Calculate client data from filtered sales
-    const clientData = {};
+    // Calculate company data from filtered sales
+    const companyData = {};
 
     filteredSales.forEach(sale => {
-      const clientName = sale.client?.clientName || 'Unknown Client';
-
+      const companyName = sale.company?.companyName || 'Unknown Company';
       sale.items?.forEach(item => {
         if (item.product?.id === productId) {
-          if (!clientData[clientName]) {
-            clientData[clientName] = {
+          if (!companyData[companyName]) {
+            companyData[companyName] = {
               revenue: 0,
               quantity: 0
             };
           }
-          clientData[clientName].revenue += item.amount || 0;
-          clientData[clientName].quantity += item.quantity || 0;
+          companyData[companyName].revenue += item.amount || 0;
+          companyData[companyName].quantity += item.quantity || 0;
         }
       });
     });
 
-    // Sort clients by revenue
-    const clients = Object.keys(clientData).sort((a, b) =>
-      clientData[b].revenue - clientData[a].revenue
+    // Sort companies by revenue
+    const companies = Object.keys(companyData).sort((a, b) =>
+      companyData[b].revenue - companyData[a].revenue
     );
 
-    if (clients.length === 0) return null;
+    if (companies.length === 0) return null;
 
-    const labels = clients;
-    const salesData = clients.map(client => clientData[client].revenue);
-    const quantityData = clients.map(client => clientData[client].quantity);
+    const labels = companies;
+    const salesData = companies.map(company => companyData[company].revenue);
+    const quantityData = companies.map(company => companyData[company].quantity);
 
     return {
       labels,
@@ -878,22 +877,22 @@ const getSelectedProductStats = () => {
     try {
       setActionLoading(true)
       setLoadingMessage('loading stats');
-      const [salesRes, deliveriesRes, productsRes, clientsRes, branchesRes] = await Promise.all([
+      const [salesRes, deliveriesRes, productsRes, companiesRes, branchesRes] = await Promise.all([
         api.get('/sales'),
         api.get('/deliveries'),
         api.get('/products'),
-        api.get('/clients'),
+        api.get('/companies'),
         api.get('/branches'),
       ]);
 
       const salesData = salesRes.success ? salesRes.data || [] : [];
       const deliveriesData = deliveriesRes.success ? deliveriesRes.data || [] : [];
       const productsData = productsRes.success ? productsRes.data || [] : [];
-      const clientsData = clientsRes.success ? clientsRes.data || [] : [];
+      const companiesData = companiesRes.success ? companiesRes.data || [] : [];
       const branchesData = branchesRes.success ? branchesRes.data || [] : [];
 
       setSales(salesData);
-      setClients(clientsData);
+      setCompanies(companiesData);
       setBranches(branchesData);
       setProducts(productsData);
       setDeliveries(deliveriesData);
@@ -917,7 +916,7 @@ const getSelectedProductStats = () => {
         : 0;
 
 
-      const totalLeads = clientsData.length * 2;
+      const totalLeads = companiesData.length * 2;
       const conversionRate = salesData.length > 0
         ? (activeSales.length / totalLeads * 100)
         : 0;
@@ -966,7 +965,7 @@ const getSelectedProductStats = () => {
         activeRevenue,
         pendingDeliveries,
         lowStock: productsData.filter(p => p.quantity < 10).length,
-        totalClients: clientsData.length,
+        totalCompanies: companiesData.length,
         averageOrderValue: parseFloat(averageOrderValue.toFixed(2)),
         deliveredOrders,
         conversionRate: parseFloat(conversionRate.toFixed(1)),
@@ -999,13 +998,13 @@ const getSelectedProductStats = () => {
 
       const statusMatch = (sale.status === 'CONFIRMED' || sale.status === 'INVOICED');
 
-      // Client filter
-      const clientMatch = selectedClient === 'all' || sale.client?.clientName === selectedClient;
+      // Company filter
+      const companyMatch = selectedCompany === 'all' || sale.company?.companyName === selectedCompany;
 
       // Branch filter
       const branchMatch = selectedBranch === 'all' || sale.branch?.branchName === selectedBranch;
 
-      return yearMatch && statusMatch && clientMatch && branchMatch;
+      return yearMatch && statusMatch && companyMatch && branchMatch;
     });
 
     filteredSales.forEach(sale => {
@@ -1033,10 +1032,10 @@ const getSelectedProductStats = () => {
       const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
       const yearMatch = saleYear === selectedYear;
       const statusMatch = (sale.status === 'CONFIRMED' || sale.status === 'INVOICED');
-      const clientMatch = selectedClient === 'all' || sale.client?.clientName === selectedClient;
+      const companyMatch = selectedCompany === 'all' || sale.company?.companyName === selectedCompany;
       const branchMatch = selectedBranch === 'all' || sale.branch?.branchName === selectedBranch;
 
-      return yearMatch && statusMatch && clientMatch && branchMatch;
+      return yearMatch && statusMatch && companyMatch && branchMatch;
     });
 
     filteredSales.forEach(sale => {
@@ -1172,7 +1171,7 @@ const getSelectedProductStats = () => {
         }
       ]
     };
-  }, [sales, selectedYear, selectedClient, selectedBranch]);
+  }, [sales, selectedYear, selectedCompany, selectedBranch]);
 
 
   const monthlySalesData = getMonthlySalesData();
@@ -1586,7 +1585,7 @@ const getSelectedProductStats = () => {
                             }`}
                           onClick={() => {
                             setSelectedProductId(product.id);
-                            setSelectedClientForBranches(null);
+                            setSelectedCompanyForBranches(null);
                           }}
                         >
                           <div className="flex items-center gap-2 mb-2">
@@ -1800,8 +1799,8 @@ const getSelectedProductStats = () => {
                         </div>
                       </div>
 
-                      {/* Product Chart or Client Branch Breakdown */}
-                      {!selectedClientForBranches ? (
+                      {/* Product Chart or Company Branch Breakdown */}
+                      {!selectedCompanyForBranches ? (
                         <div style={{ height: '250px' }}>
                           {(() => {
                             const chartData = getProductChartData(selectedProductId);
@@ -1890,18 +1889,18 @@ const getSelectedProductStats = () => {
                           })()}
                         </div>
                       ) : (
-                        /* Client Branch Breakdown - Compact */
+                        /* Company Branch Breakdown - Compact */
                         <div className="space-y-2">
                           <div className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-blue-50 p-2 rounded-lg border border-purple-200">
                             <div className="flex items-center gap-2">
                               <Building className="text-purple-600" size={16} />
                               <div>
-                                <h4 className="text-sm font-bold text-gray-900">{selectedClientForBranches}</h4>
+                                <h4 className="text-sm font-bold text-gray-900">{selectedCompanyForBranches}</h4>
                                 <p className="text-xs text-gray-600">Branch Breakdown</p>
                               </div>
                             </div>
                             <button
-                              onClick={() => setSelectedClientForBranches(null)}
+                              onClick={() => setSelectedCompanyForBranches(null)}
                               className="px-2 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-50 transition-colors flex items-center gap-1"
                             >
                               <X size={12} />
@@ -1911,7 +1910,7 @@ const getSelectedProductStats = () => {
 
                           <div className="space-y-2 max-h-[300px] overflow-y-auto">
                             {(() => {
-                              const branches = getClientBranchBreakdown(selectedClientForBranches);
+                              const branches = getCompanyBranchBreakdown(selectedCompanyForBranches);
                               if (branches.length === 0) {
                                 return (
                                   <div className="text-center py-6 text-gray-400">
@@ -1985,14 +1984,14 @@ const getSelectedProductStats = () => {
                       <p className="text-xs mt-1">Click on any product from the list</p>
                     </div>
                   )}
-                  {/* Top Clients & Branches Section */}
+                  {/* Top Companies & Branches Section */}
                   <div className="mt-6 pt-6 border-t border-gray-200">
                     <div className="grid grid-cols-2 gap-4">
-                      {/* Top Clients */}
+                      {/* Top Companies */}
                       <div>
                         <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                           <Users size={16} className="text-blue-600" />
-                          Top Clients ({performanceView === 'overall'
+                          Top Companies ({performanceView === 'overall'
                             ? 'All Time'
                             : performanceView === 'year'
                               ? performanceYear
@@ -2000,20 +1999,20 @@ const getSelectedProductStats = () => {
                           })
                         </h4>
                         <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                          {performanceData.topClients && performanceData.topClients.length > 0 ? (
-                            performanceData.topClients.map((client, idx) => {
-                              const maxRevenue = performanceData.topClients[0]?.revenue || 1;
-                              const barWidth = (client.revenue / maxRevenue) * 100;
+                          {performanceData.topCompanies && performanceData.topCompanies.length > 0 ? (
+                            performanceData.topCompanies.map((company, idx) => {
+                              const maxRevenue = performanceData.topCompanies[0]?.revenue || 1;
+                              const barWidth = (company.revenue / maxRevenue) * 100;
 
                               return (
                                 <div
-                                  key={client.id || idx}
-                                  className={`p-3 rounded-lg border transition-all cursor-pointer ${selectedClientForTopBranches === client.name
+                                  key={company.id || idx}
+                                  className={`p-3 rounded-lg border transition-all cursor-pointer ${selectedCompanyForTopBranches === company.name
                                     ? 'bg-blue-50 border-blue-500 shadow-md'
                                     : 'bg-gray-50 border-gray-200 hover:border-blue-300'
                                     }`}
-                                  onClick={() => setSelectedClientForTopBranches(
-                                    selectedClientForTopBranches === client.name ? null : client.name
+                                  onClick={() => setSelectedCompanyForTopBranches(
+                                    selectedCompanyForTopBranches === company.name ? null : company.name
                                   )}
                                 >
                                   <div className="flex items-center gap-2 mb-2">
@@ -2024,13 +2023,13 @@ const getSelectedProductStats = () => {
                                       #{idx + 1}
                                     </span>
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-semibold text-gray-900 truncate">{client.name}</p>
+                                      <p className="text-sm font-semibold text-gray-900 truncate">{company.name}</p>
                                     </div>
                                   </div>
                                   <div className="space-y-1">
                                     <div className="flex justify-between items-center text-xs">
                                       <span className="text-gray-600">Sales</span>
-                                      <span className="font-bold text-green-600">{formatCurrency(client.revenue)}</span>
+                                      <span className="font-bold text-green-600">{formatCurrency(company.revenue)}</span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded-full h-2">
                                       <div
@@ -2039,8 +2038,8 @@ const getSelectedProductStats = () => {
                                       ></div>
                                     </div>
                                     <div className="flex justify-between items-center text-xs text-gray-500">
-                                      <span>{client.salesCount} sales</span>
-                                      <span>Avg/Sale: {formatCurrency(client.averageOrderValue)}</span>
+                                      <span>{company.salesCount} sales</span>
+                                      <span>Avg/Sale: {formatCurrency(company.averageOrderValue)}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -2049,7 +2048,7 @@ const getSelectedProductStats = () => {
                           ) : (
                             <div className="text-center py-6 text-gray-400">
                               <Users size={24} className="mx-auto mb-2 opacity-50" />
-                              <p className="text-sm">No client data for this period</p>
+                              <p className="text-sm">No company data for this period</p>
                             </div>
                           )}
                         </div>
@@ -2065,9 +2064,9 @@ const getSelectedProductStats = () => {
                               ? performanceYear
                               : `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][performanceMonth - 1]} ${performanceYear}`
                           })
-                          {selectedClientForTopBranches && (
+                          {selectedCompanyForTopBranches && (
                             <span className="text-xs font-normal text-blue-600">
-                              - {selectedClientForTopBranches}
+                              - {selectedCompanyForTopBranches}
                             </span>
                           )}
                         </h4>
@@ -2075,10 +2074,10 @@ const getSelectedProductStats = () => {
                           {(() => {
                             let branchesToShow = performanceData.topBranches || [];
 
-                            if (selectedClientForTopBranches) {
-                              const clientSales = sales.filter(sale => {
+                            if (selectedCompanyForTopBranches) {
+                              const companySales = sales.filter(sale => {
                                 const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED';
-                                const clientMatch = sale.client?.clientName === selectedClientForTopBranches;
+                                const companyMatch = sale.company?.companyName === selectedCompanyForTopBranches;
 
                                 // If product is selected, only include sales that have this product
                                 if (selectedProductId) {
@@ -2087,7 +2086,7 @@ const getSelectedProductStats = () => {
                                 }
 
                                 if (performanceView === 'overall') {
-                                  return statusMatch && clientMatch;
+                                  return statusMatch && companyMatch;
                                 }
 
                                 const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
@@ -2096,13 +2095,13 @@ const getSelectedProductStats = () => {
                                 const yearMatch = saleYear === performanceYear;
                                 const monthMatch = performanceView === 'month' ? saleMonth === performanceMonth : true;
 
-                                return statusMatch && clientMatch && yearMatch && monthMatch;
+                                return statusMatch && companyMatch && yearMatch && monthMatch;
                               });
 
                               const branchRevenue = {};
                               const salesByBranch = {}; // Track unique sales per branch
 
-                              clientSales.forEach(sale => {
+                              companySales.forEach(sale => {
                                 const branchId = sale.branch?.id;
                                 const branchName = sale.branch?.branchName || 'Unknown Branch';
                                 const branchCode = sale.branch?.branchCode || 'N/A';
@@ -2233,12 +2232,12 @@ const getSelectedProductStats = () => {
                     Active Sales Trend ({selectedYear})
                   </h3>
                   <p className="text-sm text-gray-500">Confirmed & Invoiced sales combined</p>
-                  {(selectedClient !== 'all' || selectedBranch !== 'all') && (
+                  {(selectedCompany !== 'all' || selectedBranch !== 'all') && (
                     <div className="flex flex-wrap items-center gap-2 mt-2">
-                      {selectedClient !== 'all' && (
+                      {selectedCompany !== 'all' && (
                         <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
                           <Users size={12} />
-                          {selectedClient}
+                          {selectedCompany}
                         </span>
                       )}
                       {selectedBranch !== 'all' && (
@@ -2257,10 +2256,10 @@ const getSelectedProductStats = () => {
                     <span className="text-sm font-medium text-gray-700">Active Sales</span>
                   </div>
 
-                  {selectedClient !== 'all' || selectedBranch !== 'all' ? (
+                  {selectedCompany !== 'all' || selectedBranch !== 'all' ? (
                     <button
                       onClick={() => {
-                        setSelectedClient('all');
+                        setSelectedCompany('all');
                         setSelectedBranch('all');
                       }}
                       className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap flex items-center gap-2"
@@ -2296,16 +2295,16 @@ const getSelectedProductStats = () => {
                     <UserIcon size={16} className="text-gray-400" />
                     <div className="min-w-[200px]">
                       <SearchableSelect
-                        value={selectedClient}
-                        onChange={setSelectedClient}
+                        value={selectedCompany}
+                        onChange={setSelectedCompany}
                         options={[
-                          { value: 'all', label: 'All Clients' },
-                          ...clients.map(client => ({
-                            value: client.clientName,
-                            label: client.clientName
+                          { value: 'all', label: 'All Companies' },
+                          ...companies.map(company => ({
+                            value: company.companyName,
+                            label: company.companyName
                           }))
                         ]}
-                        placeholder="Filter by Client"
+                        placeholder="Filter by Company"
                       />
                     </div>
                   </div>
@@ -2319,7 +2318,7 @@ const getSelectedProductStats = () => {
                         options={[
                           {
                             value: 'all',
-                            label: selectedClient === 'all' ? 'All Branches' : 'All Branches'
+                            label: selectedCompany === 'all' ? 'All Branches' : 'All Branches'
                           },
                           ...availableBranches.map(branch => ({
                             value: branch.branchName,
@@ -2327,7 +2326,7 @@ const getSelectedProductStats = () => {
                           }))
                         ]}
                         placeholder="Filter by Branch"
-                        disabled={selectedClient === 'all' && availableBranches.length === 0}
+                        disabled={selectedCompany === 'all' && availableBranches.length === 0}
                       />
                     </div>
                   </div>
@@ -2516,13 +2515,13 @@ const getSelectedProductStats = () => {
                     Product Sales by Month ({selectedYear})
                   </h3>
                   <p className="text-sm text-gray-500 mt-1">
-                    {selectedClient !== 'all' && selectedBranch !== 'all'
-                      ? `${selectedClient} - ${selectedBranch}`
-                      : selectedClient !== 'all' && selectedBranch === 'all'
-                        ? `${selectedClient} - All Branches`
+                    {selectedCompany !== 'all' && selectedBranch !== 'all'
+                      ? `${selectedCompany} - ${selectedBranch}`
+                      : selectedCompany !== 'all' && selectedBranch === 'all'
+                        ? `${selectedCompany} - All Branches`
                         : selectedBranch !== 'all'
-                          ? `All Clients - ${selectedBranch}`
-                          : 'All Clients - All Branches'
+                          ? `All Companies - ${selectedBranch}`
+                          : 'All Companies - All Branches'
                     }
                   </p>
                 </div>
@@ -2994,7 +2993,7 @@ const getSelectedProductStats = () => {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <p className="font-medium text-gray-900 truncate">
-                                {sale.client?.clientName || 'Unknown Client'}
+                                {sale.company?.companyName || 'Unknown Company'}
                               </p>
                               <StatusBadge
                                 status={

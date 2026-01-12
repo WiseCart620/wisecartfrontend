@@ -1465,7 +1465,7 @@ const EnhancedInventoryManagement = () => {
   const [showBranchFilter, setShowBranchFilter] = useState(true);
   const [showTransactionFilter, setShowTransactionFilter] = useState(true);
   const [sales, setSales] = useState([]);
-  const [clients, setClients] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [deletingId, setDeletingId] = useState(null);
@@ -1609,7 +1609,7 @@ const EnhancedInventoryManagement = () => {
         warehouseStocksRes,
         branchStocksRes,
         salesRes,
-        clientsRes
+        companiesRes
       ] = await Promise.all([
         api.get('/inventories'),
         api.get('/products'),
@@ -1618,7 +1618,7 @@ const EnhancedInventoryManagement = () => {
         api.get('/stocks/warehouses'),
         api.get('/stocks/branches'),
         api.get('/sales'),
-        api.get('/clients')
+        api.get('/companies')
       ]);
 
       // Access the data property from each response
@@ -1629,7 +1629,7 @@ const EnhancedInventoryManagement = () => {
       const warehouseStocksData = warehouseStocksRes.success ? warehouseStocksRes.data || [] : [];
       const branchStocksData = branchStocksRes.success ? branchStocksRes.data || [] : [];
       const salesData = salesRes.success ? salesRes.data || [] : [];
-      const clientsData = clientsRes.success ? clientsRes.data || [] : [];
+      const companiesData = companiesRes.success ? companiesRes.data || [] : [];
 
       setInventories(inventoriesData);
       setProducts(productsData);
@@ -1638,7 +1638,7 @@ const EnhancedInventoryManagement = () => {
       setWarehouseStocks(warehouseStocksData);
       setBranchStocks(branchStocksData);
       setSales(salesData);
-      setClients(clientsData);
+      setCompanies(companiesData);
 
       const cleanedInventories = [];
       const seenSaleIds = new Set();
@@ -1828,7 +1828,7 @@ const EnhancedInventoryManagement = () => {
             generatedBy: fullSale.generatedBy,
             invoicedAt: fullSale.invoicedAt,
             confirmedAt: fullSale.createdAt,
-            clientName: fullSale.client?.clientName,
+            companyName: fullSale.company?.companyName,
             month: fullSale.month,
             year: fullSale.year,
             fullTransactionHistory: thisSaleTransactions
@@ -2512,7 +2512,7 @@ const EnhancedInventoryManagement = () => {
         <Toaster position="top-right" />
 
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Enhanced Inventory Management</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Inventory Management</h1>
           <p className="text-gray-600">Track stock movements across warehouses and branches with delivery integration</p>
         </div>
 

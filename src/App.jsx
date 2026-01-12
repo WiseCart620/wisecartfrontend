@@ -8,7 +8,7 @@ import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import SalesManagement from './pages/SalesManagement';
 import ProductManagement from './pages/ProductManagement';
-import BranchClientManagement from './pages/BranchClientManagement';
+import BranchCompanyManagement from './pages/BranchCompanyManagement';
 import WarehouseInventory from './pages/InventoryRecord';
 import Supplier from './pages/SupplierInventoryManagement';
 import NotFound from './pages/NotFound';
@@ -105,7 +105,7 @@ function App() {
             <Route path="/branches" element={
               <ProtectedRoute>
                 <Layout>
-                  <BranchClientManagement />
+                  <BranchCompanyManagement />
                 </Layout>
               </ProtectedRoute>
             } />

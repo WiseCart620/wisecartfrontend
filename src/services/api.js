@@ -5,19 +5,17 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://wisecart.ph/a
 
 // Ultra-friendly rate limit configuration
 const RATE_LIMIT_CONFIG = {
-    maxRetries: 3,           // 3 retries (enough for 5s window)
-    baseDelay: 500,          // 500ms base delay
-    maxDelay: 2000,          // 2 seconds maximum
-    backoffMultiplier: 1.2,  // Gentle exponential backoff
-    showToast: true,         // Show friendly messages
-    autoRetry: true,         // Auto-retry on rate limit
+    maxRetries: 3,
+    baseDelay: 500,
+    maxDelay: 2000,
+    backoffMultiplier: 1.2,
+    showToast: true,
+    autoRetry: true,
 };
 
 let activeRetryToast = null;
 
-// ============================================
-// JWT UTILITIES
-// ============================================
+
 const decodeJWT = (token) => {
     try {
         const base64Url = token.split('.')[1];

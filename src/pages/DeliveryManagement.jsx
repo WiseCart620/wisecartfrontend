@@ -262,7 +262,7 @@ const DeliveryManagement = () => {
   const [branches, setBranches] = useState([]);
   const [products, setProducts] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
-  const [clients, setClients] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedDelivery, setSelectedDelivery] = useState(null);
@@ -291,7 +291,7 @@ const DeliveryManagement = () => {
   });
 
   const [filterData, setFilterData] = useState({
-    clientId: '',
+    companyId: '',
     branchId: '',
     status: '',
     startDate: '',
@@ -319,8 +319,8 @@ const DeliveryManagement = () => {
           day: 'numeric'
         }),
         branchName: fullDelivery.branch?.branchName || delivery.branchName,
-        clientName: fullDelivery.client?.clientName || delivery.clientName,
-        clientTin: fullDelivery.client?.tin || 'N/A',
+        companyName: fullDelivery.company?.companyName || delivery.companyName,
+        companyTin: fullDelivery.company?.tin || 'N/A',
         branchAddress: `${fullDelivery.branch?.address || ''}, ${fullDelivery.branch?.city || ''}, ${fullDelivery.branch?.province || ''}`.trim(),
         preparedBy: fullDelivery.preparedBy || localStorage.getItem('fullName') || '',
         purchaseOrderNumber: fullDelivery.purchaseOrderNumber || '',
@@ -406,7 +406,9 @@ const DeliveryManagement = () => {
       return false;
     }
 
-    const invalidQuantities = formData.items.filter(item => !item.quantity || item.quantity < 1);
+    const invalidQuantities = formData.items.filter(item =>
+      item.quantity === '' || item.quantity === 0 || item.quantity < 1
+    );
     if (invalidQuantities.length > 0) {
       alert('Please enter valid quantities (minimum 1) for all items');
       return false;
@@ -420,7 +422,11 @@ const DeliveryManagement = () => {
     const oldWarehouseId = newItems[index].warehouseId;
     const oldProductId = newItems[index].productId;
 
-    newItems[index][field] = field === 'quantity' ? parseInt(value) || 1 : value;
+    if (field === 'quantity') {
+      newItems[index][field] = value === '' ? '' : parseInt(value) || 0;
+    } else {
+      newItems[index][field] = value;
+    }
     setFormData({ ...formData, items: newItems });
 
     if (field === 'warehouseId' || field === 'productId') {
@@ -435,6 +441,13 @@ const DeliveryManagement = () => {
         }
       }
     }
+
+    // Reset quantity to empty when warehouse or product changes
+    if ((field === 'warehouseId' && value !== oldWarehouseId) ||
+      (field === 'productId' && value !== oldProductId)) {
+      newItems[index].quantity = '';
+      setFormData({ ...formData, items: newItems });
+    }
   };
 
   useEffect(() => {
@@ -444,19 +457,19 @@ const DeliveryManagement = () => {
   const loadData = async () => {
     try {
       setActionLoading(true);
-      const [deliveriesRes, branchesRes, productsRes, warehousesRes, clientsRes] = await Promise.all([
+      const [deliveriesRes, branchesRes, productsRes, warehousesRes, companiesRes] = await Promise.all([
         api.get('/deliveries/list'),
         api.get('/branches'),
         api.get('/products'),
         api.get('/warehouse'),
-        api.get('/clients')
+        api.get('/companies')
       ]);
 
       if (deliveriesRes.success) setDeliveries(deliveriesRes.data || []);
       if (branchesRes.success) setBranches(branchesRes.data || []);
       if (productsRes.success) setProducts(productsRes.data || []);
       if (warehousesRes.success) setWarehouses(warehousesRes.data || []);
-      if (clientsRes.success) setClients(clientsRes.data || []);
+      if (companiesRes.success) setCompanies(companiesRes.data || []);
     } catch (error) {
       console.error('Failed to load data', error);
       alert('Failed to load data: ' + error.message);
@@ -528,9 +541,9 @@ const DeliveryManagement = () => {
           }))
         });
         setBranchInfo({
-          clientName: fullDelivery.client.clientName,
-          tin: fullDelivery.client.tin,
-          fullAddress: `${fullDelivery.client.address || ''}, ${fullDelivery.client.city || ''}, ${fullDelivery.client.province || ''}`.trim()
+          companyName: fullDelivery.company.companyName,
+          tin: fullDelivery.company.tin,
+          fullAddress: `${fullDelivery.company.address || ''}, ${fullDelivery.company.city || ''}, ${fullDelivery.company.province || ''}`.trim()
         });
 
         // Load stock for all items
@@ -596,10 +609,10 @@ const DeliveryManagement = () => {
 
 
 
-  const handleClientFilterChange = (value) => {
+  const handleCompanyFilterChange = (value) => {
     setFilterData({
       ...filterData,
-      clientId: value,
+      companyId: value,
       branchId: ''
     });
   };
@@ -617,11 +630,11 @@ const DeliveryManagement = () => {
     if (branchId) {
       try {
         const branch = branches.find(b => b.id === branchId);
-        if (branch && branch.client) {
+        if (branch && branch.company) {
           setBranchInfo({
-            clientName: branch.client.clientName,
-            tin: branch.client.tin,
-            fullAddress: `${branch.client.address || ''}, ${branch.client.city || ''}, ${branch.client.province || ''}`.trim()
+            companyName: branch.company.companyName,
+            tin: branch.company.tin,
+            fullAddress: `${branch.company.address || ''}, ${branch.company.city || ''}, ${branch.company.province || ''}`.trim()
           });
         }
       } catch (error) {
@@ -636,7 +649,7 @@ const DeliveryManagement = () => {
   const handleAddItem = () => {
     setFormData({
       ...formData,
-      items: [...formData.items, { productId: '', quantity: 1, unit: '', warehouseId: '' }]
+      items: [...formData.items, { productId: '', quantity: '', unit: '', warehouseId: '' }]
     });
   };
 
@@ -720,7 +733,7 @@ const DeliveryManagement = () => {
 
   const handleResetFilter = () => {
     setFilterData({
-      clientId: '',
+      companyId: '',
       branchId: '',
       status: '',
       startDate: '',
@@ -743,15 +756,13 @@ const DeliveryManagement = () => {
     };
 
     return [...deliveries].sort((a, b) => {
-      // First sort by date (newest first)
       const dateA = new Date(a.date);
       const dateB = new Date(b.date);
 
       if (dateB - dateA !== 0) {
-        return dateB - dateA; // Newest first
+        return dateB - dateA;
       }
 
-      // If dates are the same, sort by status
       const orderA = statusOrder[a.status] || 999;
       const orderB = statusOrder[b.status] || 999;
       return orderA - orderB;
@@ -759,36 +770,34 @@ const DeliveryManagement = () => {
   };
 
   const filteredDeliveries = sortByStatus(deliveries.filter(delivery => {
-    // Receipt Number Search
+
     if (filterData.receiptNumber &&
       !delivery.deliveryReceiptNumber?.toLowerCase().includes(filterData.receiptNumber.toLowerCase())) {
       return false;
     }
 
-    // Client Filter
-    if (filterData.clientId && delivery.client?.id !== filterData.clientId) {
-      // If we don't have client info directly, try to match by name
-      const client = clients.find(c => c.id === filterData.clientId);
-      if (!client || delivery.clientName !== client.clientName) {
+
+    if (filterData.companyId && delivery.company?.id !== filterData.companyId) {
+      const company = companies.find(c => c.id === filterData.companyId);
+      if (!company || delivery.companyName !== company.companyName) {
         return false;
       }
     }
 
-    // Branch Filter
+
     if (filterData.branchId && delivery.branch?.id !== filterData.branchId) {
-      // If we don't have branch info directly, try to match by name
       const branch = branches.find(b => b.id === filterData.branchId);
       if (!branch || delivery.branchName !== branch.branchName) {
         return false;
       }
     }
 
-    // Status Filter
+
     if (filterData.status && delivery.status !== filterData.status) {
       return false;
     }
 
-    // Date Range Filter
+
     if (filterData.startDate || filterData.endDate) {
       const deliveryDate = new Date(delivery.date);
 
@@ -813,7 +822,7 @@ const DeliveryManagement = () => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = !searchTerm ||
       delivery.branchName?.toLowerCase().includes(searchLower) ||
-      delivery.clientName?.toLowerCase().includes(searchLower) ||
+      delivery.companyName?.toLowerCase().includes(searchLower) ||
       delivery.deliveryReceiptNumber?.toLowerCase().includes(searchLower);
 
     return matchesSearch;
@@ -911,9 +920,9 @@ const DeliveryManagement = () => {
   };
 
   const branchOptions = branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
-  const filteredBranchOptions = filterData.clientId
+  const filteredBranchOptions = filterData.companyId
     ? branches
-      .filter(b => b.client?.id === filterData.clientId)
+      .filter(b => b.company?.id === filterData.companyId)
       .map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }))
     : branchOptions;
   const productOptions = products.flatMap(p => {
@@ -922,10 +931,10 @@ const DeliveryManagement = () => {
         const stockInfo = warehouseStocks[`${formData.items?.findIndex(item => item.productId === v.id)}_${v.id}_${formData.items?.find(item => item.productId === v.id)?.warehouseId || ''}`];
         const availableStock = stockInfo ? stockInfo.availableQuantity : 0;
 
-        // Format for dropdown: UPC-PRODUCTNAME-SKU
+
         const dropdownName = `${v.upc || 'N/A'} - ${p.productName} - ${v.sku || 'N/A'}`;
 
-        // Get variation label
+
         const variationLabel = v.combinationDisplay ||
           (v.attributes ? Object.entries(v.attributes || {})
             .map(([key, val]) => `${key}: ${val}`)
@@ -934,8 +943,8 @@ const DeliveryManagement = () => {
         return {
           id: v.id,
           parentProductId: p.id,
-          name: dropdownName, // Shows in dropdown: UPC - PRODUCTNAME - SKU
-          subLabel: variationLabel, // For detailed panel
+          name: dropdownName,
+          subLabel: variationLabel,
           fullName: p.productName,
           upc: v.upc,
           sku: v.sku,
@@ -947,15 +956,13 @@ const DeliveryManagement = () => {
     } else {
       const stockInfo = warehouseStocks[`${formData.items?.findIndex(item => item.productId === p.id)}_${p.id}_${formData.items?.find(item => item.productId === p.id)?.warehouseId || ''}`];
       const availableStock = stockInfo ? stockInfo.availableQuantity : 0;
-
-      // Format for dropdown: UPC-PRODUCTNAME-SKU
       const dropdownName = `${p.upc || 'N/A'} - ${p.productName} - ${p.sku || 'N/A'}`;
 
       return [{
         id: p.id,
         parentProductId: p.id,
-        name: dropdownName, // Shows in dropdown: UPC - PRODUCTNAME - SKU
-        subLabel: 'No variations', // For detailed panel
+        name: dropdownName,
+        subLabel: 'No variations',
         fullName: p.productName,
         upc: p.upc,
         sku: p.sku,
@@ -981,7 +988,6 @@ const DeliveryManagement = () => {
 
           <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
             <div className="flex flex-col gap-4">
-              {/* First Row: Action Button and Quick Search */}
               <div className="flex flex-wrap gap-3 items-center justify-between">
                 <button
                   onClick={() => handleOpenModal('create')}
@@ -1005,15 +1011,14 @@ const DeliveryManagement = () => {
                 </div>
               </div>
 
-              {/* Second Row: Advanced Filters */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 pt-4 border-t border-gray-200">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Client</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Company</label>
                   <SearchableDropdown
-                    options={clients.map(c => ({ id: c.id, name: c.clientName }))}
-                    value={filterData.clientId}
-                    onChange={handleClientFilterChange}
-                    placeholder="All Clients"
+                    options={companies.map(c => ({ id: c.id, name: c.companyName }))}
+                    value={filterData.companyId}
+                    onChange={handleCompanyFilterChange}
+                    placeholder="All Companies"
                     displayKey="name"
                     valueKey="id"
                   />
@@ -1025,13 +1030,13 @@ const DeliveryManagement = () => {
                     options={filteredBranchOptions}
                     value={filterData.branchId}
                     onChange={(value) => setFilterData({ ...filterData, branchId: value })}
-                    placeholder={filterData.clientId ? "Select Branch" : "Select Client First"}
+                    placeholder={filterData.companyId ? "Select Branch" : "Select Company"}
                     displayKey="name"
                     valueKey="id"
-                    disabled={!filterData.clientId}
+                    disabled={!filterData.companyId}
                   />
-                  {filterData.clientId && filteredBranchOptions.length === 0 && (
-                    <p className="text-xs text-orange-600 mt-1">No branches available for this client</p>
+                  {filterData.companyId && filteredBranchOptions.length === 0 && (
+                    <p className="text-xs text-orange-600 mt-1">No branches available for this company</p>
                   )}
                 </div>
 
@@ -1071,7 +1076,7 @@ const DeliveryManagement = () => {
               </div>
 
               {/* Filter Actions */}
-              {(filterData.clientId || filterData.branchId || filterData.status || filterData.startDate || filterData.endDate || filterData.receiptNumber) && (
+              {(filterData.companyId || filterData.branchId || filterData.status || filterData.startDate || filterData.endDate || filterData.receiptNumber) && (
                 <div className="flex justify-end pt-2">
                   <button
                     onClick={handleResetFilter}
@@ -1092,7 +1097,7 @@ const DeliveryManagement = () => {
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receipt #</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -1117,7 +1122,7 @@ const DeliveryManagement = () => {
                           {delivery.branchName}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {delivery.clientName}
+                          {delivery.companyName}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {new Date(delivery.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
@@ -1294,7 +1299,7 @@ const DeliveryManagement = () => {
 
                     {branchInfo && (
                       <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                        <p className="text-sm text-blue-800 mb-1"><strong>Client:</strong> {branchInfo.clientName}</p>
+                        <p className="text-sm text-blue-800 mb-1"><strong>Company:</strong> {branchInfo.companyName}</p>
                         <p className="text-sm text-blue-800 mb-1"><strong>TIN:</strong> {branchInfo.tin}</p>
                         <p className="text-sm text-blue-800"><strong>Address:</strong> {branchInfo.fullAddress}</p>
                       </div>
@@ -1394,12 +1399,12 @@ const DeliveryManagement = () => {
                           className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition font-medium"
                         >
                           <Plus size={16} />
-                          Add Item
+                          Add Product
                         </button>
                       </div>
                       {formData.items.length === 0 && (
                         <p className="text-sm text-gray-500 italic mb-4 text-center py-4 bg-gray-50 rounded-lg">
-                          No items added yet. Click "Add Item" to start.
+                          No product added yet. Click "Add Product" to start.
                         </p>
                       )}
                       {formData.items.map((item, i) => {
@@ -1411,8 +1416,10 @@ const DeliveryManagement = () => {
 
                         return (
                           <div key={i} className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50">
-                            <div className="grid grid-cols-2 gap-4 mb-3">
-                              <div>
+
+                            <div className="grid grid-cols-3 gap-4 mb-4">
+
+                              <div className="col-span-1">
                                 <label className="block text-xs font-medium text-gray-700 mb-2">Product *</label>
                                 <VariationSearchableDropdown
                                   options={productOptions}
@@ -1424,7 +1431,9 @@ const DeliveryManagement = () => {
                                   index={i}
                                 />
                               </div>
-                              <div>
+
+
+                              <div className="col-span-1">
                                 <label className="block text-xs font-medium text-gray-700 mb-2">
                                   Warehouse *
                                   <span className="text-red-500 ml-1">*</span>
@@ -1438,11 +1447,34 @@ const DeliveryManagement = () => {
                                   valueKey="id"
                                   required
                                 />
+
+
                                 {!item.warehouseId && (
                                   <p className="text-red-500 text-xs mt-1">Warehouse selection is required</p>
                                 )}
 
-                                {/* Loading State */}
+
+                                <div className="mt-3">
+                                  <label className="block text-xs font-medium text-gray-700 mb-2">Quantity *</label>
+                                  <input
+                                    type="number"
+                                    value={item.quantity}
+                                    onChange={(e) => handleItemChange(i, 'quantity', e.target.value)}
+                                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm ${hasInsufficientStock && !isLoadingStock
+                                      ? 'border-red-300 bg-red-50'
+                                      : 'border-gray-300'
+                                      }`}
+                                    min="0"
+                                    required
+                                    disabled={isLoadingStock}
+                                    placeholder="0"
+                                  />
+                                  {(item.quantity === '' || item.quantity === 0 || item.quantity < 1) && (
+                                    <p className="text-red-500 text-xs mt-1">Quantity is required (minimum 1)</p>
+                                  )}
+                                </div>
+
+
                                 {isLoadingStock && (
                                   <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
                                     <div className="flex items-center gap-2 text-blue-600 text-xs">
@@ -1455,7 +1487,7 @@ const DeliveryManagement = () => {
                                   </div>
                                 )}
 
-                                {/* Error State */}
+
                                 {!isLoadingStock && stockError && (
                                   <div className="mt-2 p-2 bg-orange-50 rounded border border-orange-200">
                                     <div className="text-xs text-orange-700">
@@ -1480,28 +1512,7 @@ const DeliveryManagement = () => {
                                   </div>
                                 )}
                               </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3 mb-3">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-2">Quantity *</label>
-                                <input
-                                  type="number"
-                                  value={item.quantity}
-                                  onChange={(e) => handleItemChange(i, 'quantity', e.target.value)}
-                                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm ${hasInsufficientStock && !isLoadingStock
-                                    ? 'border-red-300 bg-red-50'
-                                    : 'border-gray-300'
-                                    }`}
-                                  min="1"
-                                  required
-                                  disabled={isLoadingStock}
-                                />
-                                {hasInsufficientStock && !isLoadingStock && stockInfo && (
-                                  <p className="text-red-500 text-xs mt-1">
-                                    Max available: {stockInfo.availableQuantity || 0}
-                                  </p>
-                                )}
-                              </div>
+
                               <div>
                                 <label className="block text-xs font-medium text-gray-700 mb-2">Unit</label>
                                 <input
@@ -1514,10 +1525,13 @@ const DeliveryManagement = () => {
                                 />
                               </div>
                             </div>
+
+
+                            {/* Remove Item Button */}
                             <button
                               type="button"
                               onClick={() => handleRemoveItem(i)}
-                              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition text-sm font-medium"
+                              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition text-sm font-medium mt-4"
                               disabled={isLoadingStock}
                             >
                               <Trash2 size={16} />
@@ -1584,7 +1598,7 @@ const DeliveryManagement = () => {
                       </div>
                     </div>
 
-                    {/* Branch and Client Info */}
+                    {/* Branch and Company Info */}
                     <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -1593,9 +1607,9 @@ const DeliveryManagement = () => {
                           <p className="text-sm text-blue-700">Code: {selectedDelivery.branch?.branchCode || 'N/A'}</p>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-blue-700 mb-1">Client</label>
-                          <p className="text-base font-semibold text-blue-900">{selectedDelivery.client?.clientName}</p>
-                          <p className="text-sm text-blue-700">TIN: {selectedDelivery.client?.tin || 'N/A'}</p>
+                          <label className="block text-sm font-medium text-blue-700 mb-1">Company</label>
+                          <p className="text-base font-semibold text-blue-900">{selectedDelivery.company?.companyName}</p>
+                          <p className="text-sm text-blue-700">TIN: {selectedDelivery.company?.tin || 'N/A'}</p>
                         </div>
                       </div>
                       <div className="mt-3">
@@ -1854,7 +1868,7 @@ const DeliveryManagement = () => {
                         <div className="flex items-start mb-7">
                           <span className="font-bold text-gray-900 text-sm w-32 flex-shrink-0">DELIVERED TO:</span>
                           <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
-                            {`${receiptData.branchName} - ${receiptData.clientName}`}
+                            {`${receiptData.branchName} - ${receiptData.companyName}`}
                           </div>
                         </div>
                       </div>
@@ -1903,7 +1917,7 @@ const DeliveryManagement = () => {
                         <div className="flex items-start mb-7">
                           <span className="font-bold text-gray-900 text-sm w-32 flex-shrink-0">TIN:</span>
                           <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
-                            {receiptData.clientTin}
+                            {receiptData.companyTin}
                           </div>
                         </div>
                       </div>

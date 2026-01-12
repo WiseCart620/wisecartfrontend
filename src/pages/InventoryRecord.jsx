@@ -130,11 +130,8 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
       >
         <div className="flex-1 min-w-0">
           {selectedOption ? (
-            <div>
-              <div className="text-gray-900 font-medium truncate">{selectedOption.name}</div>
-              {selectedOption.subLabel && (
-                <div className="text-xs text-gray-500 truncate">{selectedOption.subLabel}</div>
-              )}
+            <div className="text-gray-900 font-medium truncate">
+              {selectedOption.name}
             </div>
           ) : (
             <span className="text-gray-500">{placeholder}</span>
@@ -179,18 +176,14 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
                       }
                     }}
                     disabled={isAlreadySelected}
-                    className={`w-full px-4 py-3 text-left border-b border-gray-100 transition ${isAlreadySelected
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : value === option.id
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'hover:bg-blue-50'
+                    className={`w-full px-4 py-3 text-left border-b border-gray-100 transition text-sm ${isAlreadySelected
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : value === option.id
+                          ? 'bg-blue-50 text-blue-700 font-medium'
+                          : 'text-gray-900 hover:bg-blue-50'
                       }`}
                   >
-                    <div className="font-medium text-sm">{option.name}</div>
-                    {option.subLabel && (
-                      <div className="text-xs text-gray-600 mt-1">{option.subLabel}</div>
-                    )}
-                    {/* REMOVED the stock info from dropdown items */}
+                    {option.name}
                     {isAlreadySelected && (
                       <span className="text-xs text-red-500 mt-1 block">Already selected</span>
                     )}
@@ -204,50 +197,52 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
 
       {selectedOption && (
         <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-          <div className="text-xs space-y-1.5">
-            <div className="text-gray-700 space-y-1">
+          <div className="text-xs space-y-2">
+            {/* Product Name Row */}
+            <div className="flex justify-between items-start">
               <div>
                 <span className="text-gray-500">Product:</span>
                 <span className="ml-2 font-medium">{selectedOption.fullName}</span>
               </div>
-
-              {selectedOption.isVariation && selectedOption.subLabel && selectedOption.subLabel !== 'No variations' && (
-                <div>
-                  <span className="text-gray-500">Variation:</span>
-                  <span className="ml-2 font-medium text-blue-600">{selectedOption.subLabel}</span>
-                </div>
+              {selectedOption.price && selectedOption.price > 0 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  ₱{selectedOption.price.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                </span>
               )}
+            </div>
 
-              <div className="flex items-start justify-between">
-                <div className="space-y-0.5">
-                  <div>
-                    <span className="text-gray-500">UPC:</span>
-                    <span className="ml-2 font-medium">{selectedOption.upc || 'N/A'}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">SKU:</span>
-                    <span className="ml-2 font-medium">{selectedOption.sku || 'N/A'}</span>
-                  </div>
-                </div>
-
-                {selectedOption.price && selectedOption.price > 0 && (
-                  <div className="text-right">
-                    <span className="text-gray-500">Price:</span>
-                    <span className="ml-2 font-bold text-green-600">
-                      ₱{selectedOption.price.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                )}
+            {/* SKU and UPC Row */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <span className="text-gray-500">SKU:</span>
+                <span className="ml-2 font-medium">{selectedOption.sku || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="text-gray-500">UPC:</span>
+                <span className="ml-2 font-medium">{selectedOption.upc || 'N/A'}</span>
               </div>
             </div>
 
-            {selectedOption.isVariation && selectedOption.subLabel && (
-              <div className="pt-1 border-t border-gray-300">
-                <span className={`inline-flex px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800`}>
-                  Product with Variations
-                </span>
+            {/* Variation Row (if exists) */}
+            {selectedOption.subLabel && selectedOption.subLabel !== 'No variations' && (
+              <div>
+                <span className="text-gray-500">Variation:</span>
+                <span className="ml-2 font-medium text-blue-600">{selectedOption.subLabel}</span>
               </div>
             )}
+
+            {/* Badge Row */}
+            <div className="pt-1">
+              {selectedOption.isVariation ? (
+                <span className="inline-flex px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                  Product with Variations
+                </span>
+              ) : (
+                <span className="inline-flex px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">
+                  Product (No Variations)
+                </span>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -461,12 +456,34 @@ const InventoryRecordsManagement = () => {
     toWarehouseId: '',
     fromBranchId: '',
     toBranchId: '',
-    verificationDate: new Date().toISOString().split('T')[0],
-    verifiedBy: '',
+    dateProcessed: new Date().toISOString().split('T')[0],
+    processedBy: '',
     remarks: '',
     status: 'PENDING',
     items: []
   });
+
+
+
+
+  const getCurrentUser = () => {
+    try {
+      const userStr = localStorage.getItem('user') ||
+        localStorage.getItem('currentUser') ||
+        localStorage.getItem('authUser');
+
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        return user.fullName || user.full_name || user.name || user.username || '';
+      }
+    } catch (e) {
+      console.error('Error parsing user from localStorage:', e);
+    }
+    return localStorage.getItem('fullName') ||
+      localStorage.getItem('userName') ||
+      localStorage.getItem('username') ||
+      'System';
+  };
 
   const inventoryTypes = [
     { value: 'STOCK_IN', label: 'Stock In', color: 'green' },
@@ -631,10 +648,11 @@ const InventoryRecordsManagement = () => {
         toWarehouseId: '',
         fromBranchId: '',
         toBranchId: '',
-        verificationDate: new Date().toISOString().split('T')[0],
-        verifiedBy: localStorage.getItem('fullName') || localStorage.getItem('username') || '',
+        dateProcessed: new Date().toISOString().split('T')[0],
+        processedBy: getCurrentUser(),
         remarks: '',
         status: 'PENDING',
+        confirmedBy: '',
         items: []
       });
       setWarehouseStocks({});
@@ -680,10 +698,11 @@ const InventoryRecordsManagement = () => {
           toWarehouseId: fullInventory.toWarehouse?.id || '',
           fromBranchId: fullInventory.fromBranch?.id || '',
           toBranchId: fullInventory.toBranch?.id || '',
-          verificationDate: fullInventory.verificationDate,
-          verifiedBy: fullInventory.verifiedBy,
+          dateProcessed: fullInventory.dateProcessed,
+          processedBy: fullInventory.processedBy,
           remarks: fullInventory.remarks || '',
-          status: 'PENDING', // ✅ Always reset to PENDING when editing
+          status: 'PENDING',
+          confirmedBy: fullInventory.confirmedBy || '',
           items: fullInventory.items.map(item => ({
             productId: item.product.id,
             quantity: item.quantity
@@ -767,8 +786,8 @@ const InventoryRecordsManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.verifiedBy) {
-      alert('Please enter verified by name');
+    if (!formData.processedBy) {
+      alert('Please enter processed by name');
       return;
     }
 
@@ -809,7 +828,7 @@ const InventoryRecordsManagement = () => {
 
 
 
-  const handleConfirmInventory = async (inventory) => {
+  const handleConfirmInventory = async (inventory, confirmedByUser = null) => {
     let locationInfo = '';
     if (inventory.inventoryType === 'STOCK_IN') {
       locationInfo = `\n📦 Adding stock to: ${inventory.toWarehouse?.warehouseName || inventory.toBranch?.branchName}`;
@@ -834,6 +853,8 @@ const InventoryRecordsManagement = () => {
       return;
     }
 
+    const currentUser = confirmedByUser || getCurrentUser() || 'System';
+
     try {
       setActionLoading(true);
       setLoadingMessage('Confirming inventory...');
@@ -842,7 +863,9 @@ const InventoryRecordsManagement = () => {
       loadingToast.textContent = '⏳ Confirming inventory...';
       document.body.appendChild(loadingToast);
 
-      const response = await api.patch(`/inventories/${inventory.id}/confirm`);
+      const response = await api.patch(`/inventories/${inventory.id}/confirm`, {
+        confirmedBy: currentUser
+      });
 
       document.body.removeChild(loadingToast);
 
@@ -1053,7 +1076,7 @@ const InventoryRecordsManagement = () => {
   const filteredInventories = sortByStatus(inventories.filter(inventory => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch =
-      inventory.verifiedBy?.toLowerCase().includes(searchLower) ||
+      inventory.processedBy?.toLowerCase().includes(searchLower) ||
       inventory.remarks?.toLowerCase().includes(searchLower);
 
     const matchesStatus = statusFilter === 'ALL' || inventory.status === statusFilter;
@@ -1068,7 +1091,7 @@ const InventoryRecordsManagement = () => {
 
     const matchesToBranch = !toBranchFilter || inventory.toBranch?.id === parseInt(toBranchFilter);
 
-    const inventoryDate = new Date(inventory.verificationDate);
+    const inventoryDate = new Date(inventory.dateProcessed);
     const matchesStartDate = !startDateFilter || inventoryDate >= new Date(startDateFilter);
     const matchesEndDate = !endDateFilter || inventoryDate <= new Date(endDateFilter + 'T23:59:59');
 
@@ -1086,39 +1109,38 @@ const InventoryRecordsManagement = () => {
   const productOptions = products.flatMap(p => {
     if (p.variations && p.variations.length > 0) {
       return p.variations.map(v => {
-        const truncatedName = p.productName.length > 12
-          ? p.productName.substring(0, 12) + '...'
-          : p.productName;
+        const dropdownName = `${v.upc || 'N/A'} - ${p.productName} - ${v.sku || 'N/A'}`;
 
-        const variationLabel = Object.entries(v.attributes || {})
-          .map(([key, val]) => `${key}: ${val}`)
-          .join(', ');
+        const variationLabel = v.combinationDisplay ||
+          (v.attributes ? Object.entries(v.attributes || {})
+            .map(([key, val]) => `${key}: ${val}`)
+            .join(', ') : 'Variation');
 
         return {
           id: v.id,
           parentProductId: p.id,
-          name: `${v.upc || 'N/A'} - ${truncatedName} - ${v.sku || 'N/A'}`,
+          name: dropdownName,
           subLabel: variationLabel,
           fullName: p.productName,
           upc: v.upc,
           sku: v.sku,
-          availableStock: 0
+          price: v.price || p.price,
+          isVariation: true
         };
       });
     } else {
-      const truncatedName = p.productName.length > 12
-        ? p.productName.substring(0, 12) + '...'
-        : p.productName;
+      const dropdownName = `${p.upc || 'N/A'} - ${p.productName} - ${p.sku || 'N/A'}`;
 
       return [{
         id: p.id,
         parentProductId: p.id,
-        name: `${p.upc || 'N/A'} - ${truncatedName} - ${p.sku || 'N/A'}`,
+        name: dropdownName,
         subLabel: 'No variations',
         fullName: p.productName,
         upc: p.upc,
         sku: p.sku,
-        availableStock: 0
+        price: p.price,
+        isVariation: false
       }];
     }
   });
@@ -1336,7 +1358,7 @@ const InventoryRecordsManagement = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {new Date(inventory.verificationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                          {new Date(inventory.dateProcessed).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
@@ -1345,12 +1367,19 @@ const InventoryRecordsManagement = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            <span className={`px-3 py-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(inventory.status)}`}>
-                              {inventory.status || 'PENDING'}
-                            </span>
-                            {inventory.status === 'CONFIRMED' && (
-                              <Check size={16} className="text-green-600" />
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`px-3 py-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(inventory.status)}`}>
+                                {inventory.status || 'PENDING'}
+                              </span>
+                              {inventory.status === 'CONFIRMED' && (
+                                <Check size={16} className="text-green-600" />
+                              )}
+                            </div>
+                            {inventory.status === 'CONFIRMED' && inventory.confirmedBy && (
+                              <span className="text-xs text-gray-500">
+                                by {inventory.confirmedBy}
+                              </span>
                             )}
                           </div>
                         </td>
@@ -1370,20 +1399,6 @@ const InventoryRecordsManagement = () => {
                             >
                               <Edit2 size={18} />
                             </button>
-
-                            {inventory.status === 'PENDING' && (
-                              <button
-                                onClick={() => handleConfirmInventory(inventory)}
-                                className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition shadow-sm group relative"
-                                title="Confirm & Update Stock"
-                              >
-                                <Check size={18} />
-                                <span className="text-sm font-medium">Confirm</span>
-                                <div className="hidden group-hover:block absolute bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded whitespace-nowrap z-50">
-                                  This will update warehouse/branch stock levels
-                                </div>
-                              </button>
-                            )}
 
                             <button
                               onClick={() => handleDelete(inventory.id)}
@@ -1501,9 +1516,15 @@ const InventoryRecordsManagement = () => {
                           />
                         </div>
                       )}
-                      <div className={`p-5 rounded-lg border ${needsFromLocation ? 'bg-blue-50 border-blue-200' : 'bg-blue-50 border-blue-200 col-span-2'
+                      <div className={`p-5 rounded-lg border ${formData.inventoryType === 'DAMAGE'
+                        ? 'bg-red-50 border-red-200 col-span-2'
+                        : needsFromLocation
+                          ? 'bg-blue-50 border-blue-200'
+                          : 'bg-blue-50 border-blue-200 col-span-2'
                         }`}>
-                        <label className="block font-medium mb-2 text-blue-800">To Location *</label>
+                        <label className={`block font-medium mb-2 ${formData.inventoryType === 'DAMAGE' ? 'text-red-800' : 'text-blue-800'}`}>
+                          To Location *
+                        </label>
                         <GroupedLocationDropdown
                           locations={getLocationOptions(formData.inventoryType, 'to')}
                           value={formData.toWarehouseId ? `warehouse|${formData.toWarehouseId}` : formData.toBranchId ? `branch|${formData.toBranchId}` : ''}
@@ -1518,12 +1539,12 @@ const InventoryRecordsManagement = () => {
                       <div>
                         <label className="block font-medium mb-2">
                           <Calendar className="inline mr-2" size={18} />
-                          Verification Date *
+                          Date Processed*
                         </label>
                         <input
                           type="date"
-                          value={formData.verificationDate}
-                          onChange={e => setFormData(prev => ({ ...prev, verificationDate: e.target.value }))}
+                          value={formData.dateProcessed}
+                          onChange={e => setFormData(prev => ({ ...prev, dateProcessed: e.target.value }))}
                           required
                           className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
                         />
@@ -1531,17 +1552,35 @@ const InventoryRecordsManagement = () => {
                       <div>
                         <label className="block font-medium mb-2">
                           <User className="inline mr-2" size={18} />
-                          Verified By *
+                          Processed By *
                         </label>
                         <input
                           type="text"
-                          value={formData.verifiedBy}
-                          onChange={e => setFormData(prev => ({ ...prev, verifiedBy: e.target.value }))}
+                          value={formData.processedBy}
+                          onChange={e => setFormData(prev => ({ ...prev, processedBy: e.target.value }))}
                           required
                           placeholder="Name"
                           className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
+                      {(modalMode === 'edit' && selectedInventory?.status === 'PENDING') && (
+                        <div className="md:col-span-2">
+                          <label className="block font-medium mb-2">
+                            <User className="inline mr-2" size={18} />
+                            Confirmed By (Optional - defaults to current user)
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.confirmedBy || ''}
+                            onChange={e => setFormData(prev => ({ ...prev, confirmedBy: e.target.value }))}
+                            placeholder={getCurrentUser() || 'Current User'}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Leave empty to use current user: {getCurrentUser() || 'Current User'}
+                          </p>
+                        </div>
+                      )}
                       <div className="md:col-span-2">
                         <label className="block font-medium mb-2">
                           <MessageSquare className="inline mr-2" size={18} />
@@ -1578,7 +1617,7 @@ const InventoryRecordsManagement = () => {
                           onClick={handleAddItem}
                           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                         >
-                          <Plus size={16} /> Add Item
+                          <Plus size={16} /> Add Product
                         </button>
                       </div>
 
@@ -1597,7 +1636,7 @@ const InventoryRecordsManagement = () => {
 
                       {formData.items.length === 0 ? (
                         <div className="text-center py-10 bg-gray-50 rounded-lg text-gray-500">
-                          No items yet. Click "Add Item" to start.
+                          No products yet. Click "Add Product" to start.
                         </div>
                       ) : (
                         <div className="space-y-4">
@@ -1707,20 +1746,38 @@ const InventoryRecordsManagement = () => {
                     </div>
                   </div>
 
-                  <div className="mt-8 flex justify-end gap-4 pt-6 border-t border-gray-200">
-                    <button
-                      type="button"
-                      onClick={handleCloseModal}
-                      className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
-                    >
-                      {modalMode === 'create' ? 'Create Record' : 'Update Record'}
-                    </button>
+                  <div className="mt-8 flex justify-between items-center pt-6 border-t border-gray-200">
+                    <div>
+                      {modalMode === 'edit' && selectedInventory && selectedInventory.status === 'PENDING' && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const confirmedByUser = formData.confirmedBy || getCurrentUser() || 'System';
+                            handleCloseModal();
+                            await handleConfirmInventory(selectedInventory, confirmedByUser);
+                          }}
+                          className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white hover:bg-green-700 rounded-lg transition shadow-sm font-medium"
+                        >
+                          <Check size={18} />
+                          <span>Confirm Inventory</span>
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex gap-4">
+                      <button
+                        type="button"
+                        onClick={handleCloseModal}
+                        className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
+                      >
+                        {modalMode === 'create' ? 'Create Record' : 'Update Record'}
+                      </button>
+                    </div>
                   </div>
                 </form>
               </div>
@@ -1752,10 +1809,10 @@ const InventoryRecordsManagement = () => {
                         </span>
                       </p>
                       <p className="text-sm text-gray-600 mb-1">
-                        <strong>Date:</strong> {new Date(selectedInventory.verificationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        <strong>Date:</strong> {new Date(selectedInventory.dateProcessed).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                       </p>
                       <p className="text-sm text-gray-600 mb-1">
-                        <strong>Verified By:</strong> {selectedInventory.verifiedBy}
+                        <strong>Processed By:</strong> {selectedInventory.processedBy}
                       </p>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-lg">
@@ -1783,9 +1840,30 @@ const InventoryRecordsManagement = () => {
                     </div>
                     <div className="p-4 bg-gray-50 rounded-lg">
                       <h3 className="font-semibold text-gray-700 mb-2">Status</h3>
-                      <span className={`px-4 py-2 inline-flex text-sm leading-5 font-semibold rounded-full ${getStatusColor(selectedInventory.status)}`}>
-                        {selectedInventory.status || 'PENDING'}
-                      </span>
+                      <div className="space-y-2">
+                        <span className={`px-4 py-2 inline-flex text-sm leading-5 font-semibold rounded-full ${getStatusColor(selectedInventory.status)}`}>
+                          {selectedInventory.status || 'PENDING'}
+                        </span>
+
+                        {selectedInventory.status === 'CONFIRMED' && selectedInventory.confirmedBy && (
+                          <div className="text-sm text-gray-600 space-y-1 mt-2">
+                            <p>
+                              <strong>Confirmed By:</strong> {selectedInventory.confirmedBy}
+                            </p>
+                            {selectedInventory.confirmedAt && (
+                              <p>
+                                <strong>Confirmed At:</strong> {new Date(selectedInventory.confirmedAt).toLocaleString('en-US', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {selectedInventory.status === 'CONFIRMED' && (
@@ -1809,9 +1887,12 @@ const InventoryRecordsManagement = () => {
                           </div>
                         </div>
                         {selectedInventory.confirmedAt && (
-                          <p className="text-xs text-green-600 mt-2">
-                            Confirmed on: {new Date(selectedInventory.confirmedAt).toLocaleString()}
-                          </p>
+                          <div className="mt-2 text-xs text-green-600 space-y-0.5">
+                            <p>Confirmed on: {new Date(selectedInventory.confirmedAt).toLocaleString()}</p>
+                            {selectedInventory.confirmedBy && (
+                              <p>Confirmed by: {selectedInventory.confirmedBy}</p>
+                            )}
+                          </div>
                         )}
                       </div>
                     )}
@@ -1860,7 +1941,21 @@ const InventoryRecordsManagement = () => {
                   </div>
                 </div>
 
-                <div className="p-8 border-t border-gray-200 flex justify-end">
+                <div className="p-8 border-t border-gray-200 flex justify-between items-center">
+                  <div>
+                    {selectedInventory.status === 'PENDING' && (
+                      <button
+                        onClick={() => {
+                          handleCloseModal();
+                          handleConfirmInventory(selectedInventory);
+                        }}
+                        className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white hover:bg-green-700 rounded-lg transition shadow-sm font-medium"
+                      >
+                        <Check size={18} />
+                        <span>Confirm Inventory</span>
+                      </button>
+                    )}
+                  </div>
                   <button
                     onClick={handleCloseModal}
                     className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
