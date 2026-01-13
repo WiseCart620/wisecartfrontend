@@ -529,7 +529,9 @@ const ProductManagement = () => {
     remainingBasePriceValue: '',
     assignToRemaining: false,
     remainingCompaniesPrice: '',
-    dimensions: '',
+    length: '',
+    width: '',
+    height: '',
     weight: '',
     materials: '',
     brand: '',
@@ -662,7 +664,6 @@ const ProductManagement = () => {
     const generateCombos = (types, index = 0, current = {}) => {
       if (index === types.length) {
         const comboKey = Object.values(current).join('-');
-
         return [{
           combination: comboKey,
           attributes: { ...current },
@@ -688,16 +689,115 @@ const ProductManagement = () => {
     };
 
     setVariationCombinations(prevCombos => {
-      const newCombinations = generateCombos(variationTypes);
-      const validCombinationKeys = new Set(newCombinations.map(c => c.combination));
+      console.log('🔍 Previous combinations:', prevCombos);
+      const preservedDataMap = new Map();
 
+      prevCombos.forEach(combo => {
+        const clonedPrices = {};
+        if (combo.companyPrices) {
+          Object.keys(combo.companyPrices).forEach(key => {
+            clonedPrices[key] = combo.companyPrices[key];
+          });
+        }
 
-      const filteredPrevCombos = prevCombos.filter(c => validCombinationKeys.has(c.combination));
+        preservedDataMap.set(combo.combination, {
+          sku: combo.sku || '',
+          upc: combo.upc || '',
+          weight: combo.weight !== undefined && combo.weight !== null && combo.weight !== '' ? combo.weight : '',
+          length: combo.length || '',
+          width: combo.width || '',
+          height: combo.height || '',
+          companyPrices: clonedPrices,
+          attributes: combo.attributes
+        });
 
-      return newCombinations.map(newCombo => {
-        const existing = filteredPrevCombos.find(c => c.combination === newCombo.combination);
-        return existing ? { ...newCombo, ...existing } : newCombo;
+        console.log(`📦 Preserved: ${combo.combination}`, preservedDataMap.get(combo.combination));
       });
+
+      const newCombinations = generateCombos(variationTypes);
+      console.log('🆕 Generated combinations:', newCombinations.length);
+
+      const result = newCombinations.map(newCombo => {
+        let preserved = preservedDataMap.get(newCombo.combination);
+
+        if (!preserved) {
+          const newAttrValues = new Set(Object.values(newCombo.attributes));
+
+          for (const [key, data] of preservedDataMap.entries()) {
+            const preservedAttrValues = new Set(Object.values(data.attributes));
+
+            const hasOverlap = [...preservedAttrValues].every(val => newAttrValues.has(val));
+
+            if (hasOverlap) {
+              preserved = data;
+              console.log(`✅ Partial match for ${newCombo.combination} from ${key}`);
+              break;
+            }
+          }
+        }
+
+        if (preserved) {
+          console.log(`✅ Restoring data for: ${newCombo.combination}`);
+          return {
+            combination: newCombo.combination,
+            attributes: newCombo.attributes,
+            sku: preserved.sku,
+            upc: preserved.upc,
+            weight: preserved.weight,
+            length: preserved.length,
+            width: preserved.width,
+            height: preserved.height,
+            companyPrices: { ...preserved.companyPrices }
+          };
+        }
+
+        let inheritedData = null;
+        const newAttrEntries = Object.entries(newCombo.attributes);
+
+        for (const [key, data] of preservedDataMap.entries()) {
+          const oldAttrEntries = Object.entries(data.attributes);
+
+          const matchingAttrs = newAttrEntries.filter(([newKey, newVal]) =>
+            oldAttrEntries.some(([oldKey, oldVal]) => oldVal === newVal)
+          );
+
+          if (matchingAttrs.length > 0) {
+            inheritedData = data;
+            console.log(`🔄 Inheriting data for ${newCombo.combination} from ${key}`);
+            break;
+          }
+        }
+
+        if (inheritedData) {
+          return {
+            combination: newCombo.combination,
+            attributes: newCombo.attributes,
+            sku: inheritedData.sku,
+            upc: inheritedData.upc,
+            weight: inheritedData.weight,
+            length: inheritedData.length,
+            width: inheritedData.width,
+            height: inheritedData.height,
+            companyPrices: { ...inheritedData.companyPrices }
+          };
+        }
+
+        console.log(`🆕 New empty combination: ${newCombo.combination}`);
+        return {
+          combination: newCombo.combination,
+          attributes: newCombo.attributes,
+          sku: '',
+          upc: '',
+          weight: '',
+          length: '',
+          width: '',
+          height: '',
+          companyPrices: {}
+        };
+      });
+
+      console.log('📊 Final combinations:', result);
+      return result;
     });
   }, [variationTypes]);
 
@@ -820,15 +920,26 @@ const ProductManagement = () => {
         }
       }
 
+
+      let dimensionsString = null;
+      if (variationCombinations.length === 0) {
+        if (formData.length || formData.width || formData.height) {
+          const l = formData.length || '0';
+          const w = formData.width || '0';
+          const h = formData.height || '0';
+          dimensionsString = `${l}×${w}×${h}`;
+        }
+      }
+
       const payload = {
         productName: formData.productName,
         category: formData.category || null,
-        upc: formData.upc || null,
-        sku: formData.sku,
+        upc: variationCombinations.length === 0 ? formData.upc : null,
+        sku: variationCombinations.length === 0 ? formData.sku : null,
         supplier: formData.supplier || null,
         countryOfOrigin: formData.countryOfOrigin || null,
-        weight: formData.weight ? parseFloat(formData.weight) : null,
-        dimensions: formData.dimensions || null,
+        weight: variationCombinations.length === 0 && formData.weight ? parseFloat(formData.weight) : null,
+        dimensions: dimensionsString,
         materials: formData.materials || null,
         brand: formData.brand || null,
         shelfLife: formData.shelfLife || null,
@@ -929,15 +1040,17 @@ const ProductManagement = () => {
       });
     }
 
-    // ✅ ADD THIS: Load company base prices
+    // ✅ FIX: Load company base prices correctly
     const companyBasePricesObj = {};
-    if (product.companyBasePrices) {
+    if (product.companyBasePrices && product.companyBasePrices.length > 0) {
       product.companyBasePrices.forEach(cbp => {
         if (cbp.company?.id) {
           companyBasePricesObj[cbp.company.id] = cbp.basePrice;
         }
       });
     }
+
+    const dims = product.dimensions ? product.dimensions.split('×') : ['', '', ''];
 
     setFormData({
       productName: product.productName || '',
@@ -952,7 +1065,9 @@ const ProductManagement = () => {
       remainingBasePriceValue: '',
       assignToRemaining: false,
       remainingCompanyPrice: '',
-      dimensions: product.dimensions || '',
+      length: dims[0] || '',
+      width: dims[1] || '',
+      height: dims[2] || '',
       weight: product.weight || '',
       materials: product.materials || '',
       brand: product.brand || '',
@@ -962,6 +1077,8 @@ const ProductManagement = () => {
     });
 
     setShowModal(true);
+
+    // Rest of variation loading code remains the same...
     if (product.variations && product.variations.length > 0) {
       const typeMap = new Map();
 
@@ -971,14 +1088,12 @@ const ProductManagement = () => {
           try {
             attrs = JSON.parse(v.attributesJson);
           } catch (e) {
-            // Fallback to old structure
             attrs = { [v.variationType]: v.variationValue };
           }
         } else {
           attrs = { [v.variationType]: v.variationValue };
         }
 
-        // Build type map
         Object.entries(attrs).forEach(([type, value]) => {
           if (!typeMap.has(type)) {
             const isCustomType = !variationTypes.includes(type);
@@ -998,7 +1113,6 @@ const ProductManagement = () => {
       const types = Array.from(typeMap.values());
       setVariationTypes(types);
 
-      // Build combinations with data after types are set
       setTimeout(() => {
         const combos = product.variations.map(v => {
           let attrs = {};
@@ -1013,11 +1127,8 @@ const ProductManagement = () => {
           }
 
           const comboKey = Object.values(attrs).join('-');
-
-          // Parse dimensions
           const dims = v.dimensions ? v.dimensions.split('×') : ['', '', ''];
 
-          // Build company prices map
           const companyPricesMap = {};
           if (v.companyPrices) {
             v.companyPrices.forEach(cp => {
@@ -1032,7 +1143,7 @@ const ProductManagement = () => {
             attributes: attrs,
             sku: v.sku || '',
             upc: v.upc || '',
-            weight: v.weight || '',
+            weight: v.weight !== null && v.weight !== undefined ? v.weight : '',
             length: dims[0] || '',
             width: dims[1] || '',
             height: dims[2] || '',
@@ -1091,7 +1202,9 @@ const ProductManagement = () => {
       remainingBasePriceValue: '',
       assignToRemaining: false,
       remainingCompanyPrice: '',
-      dimensions: '',
+      length: '',
+      width: '',
+      height: '',
       weight: '',
       materials: '',
       brand: '',
@@ -1099,12 +1212,10 @@ const ProductManagement = () => {
       shelfLife: '',
       variations: []
     });
-    setEditingProduct(null);
     setVariationTypes([]);
     setVariationCombinations([]);
+    setEditingProduct(null);
   };
-
-
 
 
   const filteredProducts = getSortedProducts(
@@ -1276,7 +1387,9 @@ const ProductManagement = () => {
                               <div className="text-xs text-gray-500">+{product.variations.length - 2} more</div>
                             )}
                           </div>
-                        ) : '-'}
+                        ) : (
+                          <span className="text-sm text-gray-900">{product.sku || '-'}</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
                         {product.variations && product.variations.length > 0 ? (
@@ -1288,7 +1401,9 @@ const ProductManagement = () => {
                               <div className="text-xs text-gray-500">+{product.variations.length - 2} more</div>
                             )}
                           </div>
-                        ) : '-'}
+                        ) : (
+                          <span className="text-sm text-gray-900">{product.upc || '-'}</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-sm font-medium text-green-600">
                         {product.unitCost != null
@@ -1317,7 +1432,25 @@ const ProductManagement = () => {
                             )}
                           </div>
                         ) : (
-                          <span className="text-gray-400">-</span>
+                          <div className="space-y-1">
+                            {product.companyBasePrices && product.companyBasePrices.length > 0 ? (
+                              <>
+                                {product.companyBasePrices.slice(0, 2).map((cbp, idx) => (
+                                  <div key={idx} className="text-xs">
+                                    <span className="font-medium text-blue-600">
+                                      ₱{Number(cbp.basePrice).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                    </span>
+                                    <span className="text-gray-500 ml-1">({cbp.company?.companyName})</span>
+                                  </div>
+                                ))}
+                                {product.companyBasePrices.length > 2 && (
+                                  <div className="text-xs text-gray-500">+{product.companyBasePrices.length - 2} more</div>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-gray-400">No base prices set</span>
+                            )}
+                          </div>
                         )}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">{product.supplier || '-'}</td>
@@ -1594,6 +1727,108 @@ const ProductManagement = () => {
                   Physical Details
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* SKU - Only show if no variations */}
+                  {variationCombinations.length === 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        SKU <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="sku"
+                        value={formData.sku}
+                        onChange={handleInputChange}
+                        required={variationCombinations.length === 0}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Enter SKU"
+                      />
+                    </div>
+                  )}
+
+                  {/* UPC - Only show if no variations */}
+                  {variationCombinations.length === 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        UPC <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="upc"
+                        value={formData.upc}
+                        onChange={handleInputChange}
+                        required={variationCombinations.length === 0}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Enter UPC"
+                      />
+                    </div>
+                  )}
+
+                  {/* Weight - Only show if no variations */}
+                  {variationCombinations.length === 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Weight (kg) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="weight"
+                        value={formData.weight}
+                        onChange={handleInputChange}
+                        required={variationCombinations.length === 0}
+                        step="0.01"
+                        min="0"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  )}
+
+
+                  {variationCombinations.length === 0 && (
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Dimensions (L×W×H cm) <span className="text-red-500">*</span>
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          name="length"
+                          value={formData.length}
+                          onChange={handleInputChange}
+                          placeholder="Length"
+                          step="0.01"
+                          min="0"
+                          required={variationCombinations.length === 0}
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <X size={16} className="text-gray-400" />
+                        <input
+                          type="number"
+                          name="width"
+                          value={formData.width}
+                          onChange={handleInputChange}
+                          placeholder="Width"
+                          step="0.01"
+                          min="0"
+                          required={variationCombinations.length === 0}
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <X size={16} className="text-gray-400" />
+                        <input
+                          type="number"
+                          name="height"
+                          value={formData.height}
+                          onChange={handleInputChange}
+                          placeholder="Height"
+                          step="0.01"
+                          min="0"
+                          required={variationCombinations.length === 0}
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {/* Materials */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Materials</label>
                     <input
@@ -1606,6 +1841,7 @@ const ProductManagement = () => {
                     />
                   </div>
 
+                  {/* Unit Cost */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Unit Cost (₱)
@@ -1620,6 +1856,21 @@ const ProductManagement = () => {
                     <p className="text-xs text-gray-500 mt-1">Automatically calculated when supplier order status is OK</p>
                   </div>
                 </div>
+
+                {/* Show disabled message when variations exist */}
+                {variationCombinations.length > 0 && (
+                  <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-amber-700">
+                      <AlertCircle size={18} />
+                      <div>
+                        <p className="text-sm font-medium">SKU, UPC, Weight & Dimensions Disabled</p>
+                        <p className="text-xs mt-1">
+                          This product has variations. Please set these values for each variation in the table below.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {variationCombinations.length === 0 && (
@@ -1677,8 +1928,22 @@ const ProductManagement = () => {
                   </h3>
                 </div>
 
-                {/* Variation Type Manager */}
+
                 <div className="space-y-4">
+                  {variationCombinations.length > 0 && (
+                    <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center gap-2 text-blue-700">
+                        <AlertCircle size={18} />
+                        <div>
+                          <p className="text-sm font-medium">Variations Active</p>
+                          <p className="text-xs mt-1">
+                            Company base prices and base product fields (SKU, UPC, Weight, Dimensions) are disabled.
+                            Set these values for each variation in the table below.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   {variationTypes.map((varType, typeIndex) => (
                     <div key={typeIndex} className="p-5 bg-gray-50 rounded-xl border border-gray-200">
                       {/* Variation Type Header */}
@@ -1881,7 +2146,6 @@ const ProductManagement = () => {
                     </div>
                   ))}
 
-                  {/* Add Variation Type Button */}
                   <button
                     type="button"
                     onClick={() => {
@@ -1890,7 +2154,7 @@ const ProductManagement = () => {
                     className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition flex items-center justify-center gap-2"
                   >
                     <Plus size={18} />
-                    Add Variation Type
+                    {variationTypes.length === 0 ? 'Add Variation Type' : 'Add Another Variation Type'}
                   </button>
 
 
@@ -1968,7 +2232,7 @@ const ProductManagement = () => {
                                   />
                                 </td>
 
-  
+
                                 <td className="px-4 py-3 w-64">
                                   <div className="flex items-center gap-2">
                                     <input

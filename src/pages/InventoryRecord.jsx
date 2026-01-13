@@ -157,7 +157,10 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
           </div>
           <div className="overflow-y-auto max-h-80">
             {filteredOptions.length === 0 ? (
-              <div className="px-4 py-6 text-center text-gray-500 text-sm">No products found</div>
+              <div className="px-4 py-6 text-center">
+                <div className="text-gray-500 text-sm mb-2">No products found</div>
+                <div className="text-xs text-gray-400">Try searching by ID, UPC, SKU, or product name</div>
+              </div>
             ) : (
               filteredOptions.map((option) => {
                 const isAlreadySelected = formData?.items?.some(
@@ -177,10 +180,10 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
                     }}
                     disabled={isAlreadySelected}
                     className={`w-full px-4 py-3 text-left border-b border-gray-100 transition text-sm ${isAlreadySelected
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : value === option.id
-                          ? 'bg-blue-50 text-blue-700 font-medium'
-                          : 'text-gray-900 hover:bg-blue-50'
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : value === option.id
+                        ? 'bg-blue-50 text-blue-700 font-medium'
+                        : 'text-gray-900 hover:bg-blue-50'
                       }`}
                   >
                     {option.name}
@@ -705,6 +708,7 @@ const InventoryRecordsManagement = () => {
           confirmedBy: fullInventory.confirmedBy || '',
           items: fullInventory.items.map(item => ({
             productId: item.product.id,
+            variationId: item.variationId || null,
             quantity: item.quantity
           }))
         });
@@ -745,18 +749,34 @@ const InventoryRecordsManagement = () => {
 
   const handleItemChange = async (index, field, value) => {
     const newItems = [...formData.items];
-    newItems[index][field] = field === 'quantity' ? parseInt(value) || 1 : value;
-    setFormData({ ...formData, items: newItems });
 
-    if (field === 'productId' && value) {
-      await loadLocationStock(value, index);
+    if (field === 'productId') {
+      const selectedOption = productOptions.find(opt => opt.id === value);
+
+      if (selectedOption) {
+        newItems[index] = {
+          ...newItems[index],
+          productId: selectedOption.parentProductId,
+          variationId: selectedOption.variationId || null,
+        };
+
+        await loadLocationStock(value, index);
+      }
+    } else if (field === 'quantity') {
+      newItems[index][field] = parseInt(value) || 1;
     }
+
+    setFormData({ ...formData, items: newItems });
   };
 
   const handleAddItem = () => {
     setFormData({
       ...formData,
-      items: [...formData.items, { productId: '', quantity: 1 }]
+      items: [...formData.items, {
+        productId: '',
+        variationId: null,
+        quantity: 1
+      }]
     });
   };
 
@@ -1601,6 +1621,9 @@ const InventoryRecordsManagement = () => {
                         <label className="block text-lg font-semibold">
                           <Package className="inline mr-2" size={20} />
                           Items *
+                          <span className="ml-2 text-sm font-normal text-gray-500">
+                            ({products.length} products available)
+                          </span>
                           {(formData.toWarehouseId || formData.toBranchId || formData.fromWarehouseId || formData.fromBranchId) && (
                             <span className="ml-2 text-sm font-normal text-blue-600">
                               (

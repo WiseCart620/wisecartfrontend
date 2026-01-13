@@ -494,10 +494,14 @@ const SalesManagement = () => {
         branchId: sale.branch.id,
         month: sale.month,
         year: sale.year,
-        items: sale.items.map(item => ({ productId: item.product.id, quantity: item.quantity || 1 }))
+        items: sale.items.map(item => ({
+          productId: item.product.id,
+          variationId: item.variation?.id || item.product.id,
+          quantity: item.quantity || 1
+        }))
       });
 
-      // Show loading toast for edit mode
+
       const loadingToast = toast.loading('Loading sale data and stock information...');
 
       try {
@@ -626,7 +630,7 @@ const SalesManagement = () => {
 
 
   const handleAddItem = () => {
-    setFormData({ ...formData, items: [...formData.items, { productId: '', quantity: 1 }] });
+    setFormData({ ...formData, items: [...formData.items, { productId: '', variationId: '', quantity: 1 }] });
   };
 
   const handleRemoveItem = (index) => {
@@ -638,9 +642,27 @@ const SalesManagement = () => {
     const oldProductId = newItems[index].productId;
 
     newItems[index][field] = field === 'quantity' ? parseInt(value) || 0 : value;
+
+    if (field === 'productId' && value) {
+      const selectedProduct = productOptions.find(p => p.id === value);
+
+      if (selectedProduct) {
+        if (selectedProduct.hasVariations && selectedProduct.isVariation) {
+          newItems[index].variationId = value;
+          newItems[index].actualProductId = selectedProduct.parentProductId;
+        } else {
+          newItems[index].variationId = value;
+          newItems[index].actualProductId = value;
+        }
+        console.log('Set variationId to:', newItems[index].variationId,
+          'actualProductId:', newItems[index].actualProductId,
+          'for product:', selectedProduct.fullName,
+          'isVariation:', selectedProduct.isVariation);
+      }
+    }
+
     setFormData({ ...formData, items: newItems });
 
-    // If product changed and we have a branch selected, load its stock
     if (field === 'productId' && value && value !== oldProductId && formData.branchId) {
       await loadProductStock(value, formData.branchId);
     }

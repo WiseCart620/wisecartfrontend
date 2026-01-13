@@ -5,7 +5,7 @@ import './deliveryReceipt.css';
 import { LoadingOverlay } from './LoadingOverlay';
 
 
-const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey, valueKey, required = false }) => {
+const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey, valueKey, required = false, disabled = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
@@ -30,8 +30,10 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
     <div ref={dropdownRef} className="relative">
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-left flex items-center justify-between bg-white"
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
+        className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-left flex items-center justify-between ${disabled ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'bg-white'
+          }`}
       >
         <span className={selectedOption ? 'text-gray-900' : 'text-gray-500'}>
           {selectedOption ? selectedOption[displayKey] : placeholder}
@@ -39,7 +41,7 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
         <ChevronDown size={20} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {isOpen && (
+      {isOpen && !disabled && (
         <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-hidden">
           <div className="p-3 border-b border-gray-200">
             <div className="relative">
@@ -99,7 +101,7 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
 
 
 
-const VariationSearchableDropdown = ({ options, value, onChange, placeholder, required = false, formData, index }) => {
+const VariationSearchableDropdown = ({ options, value, onChange, placeholder, required = false, formData, index, disabled = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
@@ -128,8 +130,10 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
       {/* Dropdown button - Shows ONLY UPC-PRODUCTNAME-SKU */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-left flex items-center justify-between bg-white"
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
+        className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-left flex items-center justify-between ${disabled ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'bg-white'
+          }`}
       >
         <div className="flex-1 min-w-0">
           {selectedOption ? (
@@ -200,11 +204,9 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
         </div>
       )}
 
-      {/* Detailed info panel - shows BELOW when product is selected */}
       {selectedOption && (
         <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
           <div className="text-xs space-y-2">
-            {/* Product Name Row */}
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-gray-500">Product:</span>
@@ -217,7 +219,6 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
               )}
             </div>
 
-            {/* SKU and UPC Row */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <span className="text-gray-500">SKU:</span>
@@ -284,10 +285,11 @@ const DeliveryManagement = () => {
     purchaseOrderNumber: '',
     transmittal: '',
     preparedBy: '',
-    status: 'PENDING',
+    status: 'PREPARING',
     customStatus: '',
     remarks: '',
-    items: []
+    items: [],
+    selectedWarehouseId: ''
   });
 
   const [filterData, setFilterData] = useState({
@@ -406,12 +408,29 @@ const DeliveryManagement = () => {
       return false;
     }
 
-    const invalidQuantities = formData.items.filter(item =>
-      item.quantity === '' || item.quantity === 0 || item.quantity < 1
+
+    const invalidPreparedQty = formData.items.filter(item =>
+      item.preparedQty === '' || item.preparedQty === 0 || item.preparedQty < 1
     );
-    if (invalidQuantities.length > 0) {
-      alert('Please enter valid quantities (minimum 1) for all items');
+    if (invalidPreparedQty.length > 0) {
+      alert('Please enter valid prepared quantities (minimum 1) for all items');
       return false;
+    }
+
+    if (formData.status === 'DELIVERED') {
+      const invalidDeliveredQty = formData.items.filter(item =>
+        item.deliveredQty === '' || item.deliveredQty === 0 || item.deliveredQty < 1
+      );
+      if (invalidDeliveredQty.length > 0) {
+        alert('Please enter valid delivered quantities (minimum 1) for all items when status is DELIVERED');
+        return false;
+      }
+
+      const exceedsQty = formData.items.filter(item => item.deliveredQty > item.preparedQty);
+      if (exceedsQty.length > 0) {
+        alert('Delivered quantity cannot exceed prepared quantity for any item');
+        return false;
+      }
     }
 
     return true;
@@ -422,16 +441,16 @@ const DeliveryManagement = () => {
     const oldWarehouseId = newItems[index].warehouseId;
     const oldProductId = newItems[index].productId;
 
-    if (field === 'quantity') {
+    if (field === 'preparedQty' || field === 'deliveredQty') {
       newItems[index][field] = value === '' ? '' : parseInt(value) || 0;
     } else {
       newItems[index][field] = value;
     }
+
     setFormData({ ...formData, items: newItems });
 
     if (field === 'warehouseId' || field === 'productId') {
       const item = newItems[index];
-
       if (item.warehouseId && item.productId) {
         const warehouseChanged = field === 'warehouseId' && value !== oldWarehouseId;
         const productChanged = field === 'productId' && value !== oldProductId;
@@ -442,10 +461,11 @@ const DeliveryManagement = () => {
       }
     }
 
-    // Reset quantity to empty when warehouse or product changes
     if ((field === 'warehouseId' && value !== oldWarehouseId) ||
       (field === 'productId' && value !== oldProductId)) {
-      newItems[index].quantity = '';
+      newItems[index].preparedQty = '';
+      newItems[index].deliveredQty = '';
+      newItems[index].uom = '';
       setFormData({ ...formData, items: newItems });
     }
   };
@@ -492,7 +512,7 @@ const DeliveryManagement = () => {
         purchaseOrderNumber: '',
         transmittal: '',
         preparedBy: localStorage.getItem('fullName') || localStorage.getItem('username') || '',
-        status: 'PENDING',
+        status: 'PREPARING',
         customStatus: '',
         remarks: '',
         items: []
@@ -533,10 +553,13 @@ const DeliveryManagement = () => {
           status: fullDelivery.status,
           customStatus: fullDelivery.customStatus || '',
           remarks: fullDelivery.remarks || '',
+          selectedWarehouseId: fullDelivery.items[0]?.warehouse?.id || '',
           items: fullDelivery.items.map(item => ({
             productId: item.product.id,
             quantity: item.quantity,
-            unit: item.unit || '',
+            preparedQty: item.preparedQty || '',
+            deliveredQty: item.deliveredQty || '',
+            uom: item.uom || '',
             warehouseId: item.warehouse?.id || ''
           }))
         });
@@ -546,7 +569,6 @@ const DeliveryManagement = () => {
           fullAddress: `${fullDelivery.company.address || ''}, ${fullDelivery.company.city || ''}, ${fullDelivery.company.province || ''}`.trim()
         });
 
-        // Load stock for all items
         const stockLoadPromises = fullDelivery.items.map((item, index) => {
           if (item.warehouse?.id && item.product?.id) {
             return loadWarehouseStock(item.warehouse.id, item.product.id, index);
@@ -649,7 +671,13 @@ const DeliveryManagement = () => {
   const handleAddItem = () => {
     setFormData({
       ...formData,
-      items: [...formData.items, { productId: '', quantity: '', unit: '', warehouseId: '' }]
+      items: [...formData.items, {
+        productId: '',
+        preparedQty: '',
+        deliveredQty: '',
+        uom: '',
+        warehouseId: formData.selectedWarehouseId || ''
+      }]
     });
   };
 
@@ -664,17 +692,29 @@ const DeliveryManagement = () => {
       return;
     }
 
+
+    for (const item of formData.items) {
+      if (item.deliveredQty > item.preparedQty) {
+        const product = products.find(p => p.id === item.productId);
+        alert(`Delivered quantity (${item.deliveredQty}) cannot exceed prepared quantity (${item.preparedQty}) for product "${product?.productName}"`);
+        return;
+      }
+    }
+
+
     try {
       setActionLoading(true);
       setLoadingMessage(modalMode === 'create' ? 'Creating delivery...' : 'Updating delivery...');
       for (const item of formData.items) {
         const stockResponse = await api.get(`/stocks/warehouses/${item.warehouseId}/products/${item.productId}`);
 
-        if (!stockResponse.success || stockResponse.data?.availableQuantity < item.quantity) {
+        const quantityNeeded = item.preparedQty || 0;
+
+        if (!stockResponse.success || stockResponse.data?.availableQuantity < quantityNeeded) {
           const product = products.find(p => p.id === item.productId);
           const warehouse = warehouses.find(w => w.id === item.warehouseId);
 
-          alert(`Insufficient stock for product "${product?.productName}" in warehouse "${warehouse?.warehouseName}". Available: ${stockResponse.data?.availableQuantity || 0}, Requested: ${item.quantity}`);
+          alert(`Insufficient stock for product "${product?.productName}" in warehouse "${warehouse?.warehouseName}". Available: ${stockResponse.data?.availableQuantity || 0}, Requested: ${quantityNeeded}`);
           return;
         }
       }
@@ -746,13 +786,10 @@ const DeliveryManagement = () => {
 
   const sortByStatus = (deliveries) => {
     const statusOrder = {
-      'PENDING': 1,
-      'PREPARING': 2,
-      'CONFIRMED': 3,
-      'IN_TRANSIT': 4,
-      'DELIVERED': 5,
-      'RETURNED': 6,
-      'CANCELLED': 7
+      'PREPARING': 1,
+      'IN_TRANSIT': 2,
+      'DELIVERED': 3,
+      'CANCELLED': 4
     };
 
     return [...deliveries].sort((a, b) => {
@@ -902,18 +939,15 @@ const DeliveryManagement = () => {
   };
 
   const deliveryStatuses = [
-    'PENDING', 'PREPARING', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'CONFIRMED', 'RETURNED'
+    'PREPARING', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'
   ];
 
   const getStatusColor = (status) => {
     const colors = {
-      PENDING: 'bg-yellow-100 text-yellow-800',
       PREPARING: 'bg-blue-100 text-blue-800',
       IN_TRANSIT: 'bg-purple-100 text-purple-800',
       DELIVERED: 'bg-green-100 text-green-800',
       CANCELLED: 'bg-red-100 text-red-800',
-      CONFIRMED: 'bg-teal-100 text-teal-800',
-      RETURNED: 'bg-orange-100 text-orange-800',
       CUSTOM: 'bg-gray-100 text-gray-800'
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
@@ -1134,9 +1168,21 @@ const DeliveryManagement = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-3 py-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(delivery.status)}`}>
-                            {delivery.customStatus || delivery.status}
-                          </span>
+                          <div className="status-with-date">
+                            <span className={`px-3 py-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(delivery.status)}`}>
+                              {delivery.customStatus || delivery.status}
+                            </span>
+                            {delivery.status === 'DELIVERED' && delivery.dateDelivered && (
+                              <span className="date-badge">
+                                {new Date(delivery.dateDelivered).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex items-center gap-3">
@@ -1154,15 +1200,7 @@ const DeliveryManagement = () => {
                             >
                               <Edit2 size={18} />
                             </button>
-                            {delivery.status === 'PENDING' && (
-                              <button
-                                onClick={() => handleUpdateStatus(delivery.id, 'DELIVERED')}  // Changed from CONFIRMED to DELIVERED
-                                className="flex items-center gap-2 px-3 py-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-lg transition"
-                                title="Mark as Delivered"
-                              >
-                                <Check size={18} />
-                              </button>
-                            )}
+
                             <button
                               onClick={() => handleDelete(delivery.id)}
                               className="flex items-center gap-2 px-3 py-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition"
@@ -1274,7 +1312,12 @@ const DeliveryManagement = () => {
                   <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-3">Branch *</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                          Branch *
+                          {(formData.status === 'IN_TRANSIT' || formData.status === 'DELIVERED' || formData.status === 'CANCELLED') && (
+                            <span className="ml-2 text-xs text-orange-600">(Locked - Cannot change in {formData.status} status)</span>
+                          )}
+                        </label>
                         <SearchableDropdown
                           options={branchOptions}
                           value={formData.branchId}
@@ -1283,6 +1326,7 @@ const DeliveryManagement = () => {
                           displayKey="name"
                           valueKey="id"
                           required
+                          disabled={formData.status === 'IN_TRANSIT' || formData.status === 'DELIVERED' || formData.status === 'CANCELLED'}
                         />
                       </div>
                       <div>
@@ -1348,33 +1392,50 @@ const DeliveryManagement = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-6">
+                    {modalMode === 'edit' && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-3">Status</label>
                         <select
                           value={formData.status}
-                          onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                          onChange={(e) => {
+                            const newStatus = e.target.value;
+
+                            // Auto-fill deliveredQty with preparedQty when changing to DELIVERED
+                            if (newStatus === 'DELIVERED') {
+                              const updatedItems = formData.items.map(item => ({
+                                ...item,
+                                deliveredQty: item.deliveredQty || item.preparedQty
+                              }));
+                              setFormData({
+                                ...formData,
+                                status: newStatus,
+                                items: updatedItems
+                              });
+                            } else {
+                              setFormData({ ...formData, status: newStatus });
+                            }
+                          }}
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                         >
-                          {deliveryStatuses.map(status => (
-                            <option key={status} value={status}>{status}</option>
-                          ))}
-                          <option value="CUSTOM">CUSTOM</option>
+                          {formData.status === 'PREPARING' && (
+                            <>
+                              <option value="PREPARING">PREPARING</option>
+                              <option value="IN_TRANSIT">IN_TRANSIT</option>
+                            </>
+                          )}
+                          {formData.status === 'IN_TRANSIT' && (
+                            <>
+                              <option value="IN_TRANSIT">IN_TRANSIT</option>
+                              <option value="DELIVERED">DELIVERED</option>
+                              <option value="CANCELLED">CANCELLED</option>
+                            </>
+                          )}
+                          {(formData.status === 'DELIVERED' || formData.status === 'CANCELLED') && (
+                            <option value={formData.status}>{formData.status}</option>
+                          )}
                         </select>
                       </div>
-                      {formData.status === 'CUSTOM' && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-3">Custom Status</label>
-                          <input
-                            type="text"
-                            value={formData.customStatus}
-                            onChange={(e) => setFormData({ ...formData, customStatus: e.target.value })}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                          />
-                        </div>
-                      )}
-                    </div>
-
+                    )}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-3">Remarks</label>
                       <textarea
@@ -1386,6 +1447,42 @@ const DeliveryManagement = () => {
                     </div>
 
                     <div>
+                      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                          Select Warehouse (applies to all items) *
+                          {formData.status === 'PREPARING' ? (
+                            <span className="ml-2 text-xs text-green-600">(Editable)</span>
+                          ) : (
+                            <span className="ml-2 text-xs text-orange-600">(Locked in {formData.status} status)</span>
+                          )}
+                        </label>
+                        <SearchableDropdown
+                          options={warehouseOptions}
+                          value={formData.selectedWarehouseId}
+                          onChange={(value) => {
+                            // Update warehouse for all existing items
+                            const newItems = formData.items.map(item => ({
+                              ...item,
+                              warehouseId: value
+                            }));
+                            setFormData({
+                              ...formData,
+                              selectedWarehouseId: value,
+                              items: newItems
+                            });
+                          }}
+                          placeholder="Select Warehouse"
+                          displayKey="name"
+                          valueKey="id"
+                          required
+                          disabled={formData.status === 'IN_TRANSIT' || formData.status === 'DELIVERED'}
+                        />
+                        {(formData.status === 'IN_TRANSIT' || formData.status === 'DELIVERED') && (
+                          <p className="text-xs text-orange-600 mt-2">
+                            ⚠️ Warehouse cannot be changed when status is {formData.status}
+                          </p>
+                        )}
+                      </div>
                       <div className="flex justify-between items-center mb-3">
                         <div>
                           <label className="block text-sm font-medium text-gray-700">Items *</label>
@@ -1411,137 +1508,163 @@ const DeliveryManagement = () => {
                         const stockKey = `${i}_${item.productId}_${item.warehouseId}`;
                         const stockInfo = warehouseStocks[stockKey];
                         const isLoadingStock = loadingStocks[stockKey];
-                        const stockError = stockErrors[stockKey];
-                        const hasInsufficientStock = stockInfo && item.quantity > (stockInfo.availableQuantity || 0);
+                        const hasInsufficientStock = stockInfo && item.preparedQty > (stockInfo.availableQuantity || 0);
+
+                        const isDelivered = formData.status === 'DELIVERED';
+                        const isInTransit = formData.status === 'IN_TRANSIT';
+                        const isPreparing = formData.status === 'PREPARING';
 
                         return (
                           <div key={i} className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50">
+                            {/* Product Selection */}
+                            <div className="mb-4">
+                              <label className="block text-xs font-medium text-gray-700 mb-2">
+                                Product *
+                              </label>
+                              <VariationSearchableDropdown
+                                options={productOptions}
+                                value={item.productId}
+                                onChange={(value) => handleItemChange(i, 'productId', value)}
+                                placeholder="Select Product Variation"
+                                required
+                                formData={formData}
+                                index={i}
+                                disabled={isDelivered || isInTransit}
+                              />
+                            </div>
 
-                            <div className="grid grid-cols-3 gap-4 mb-4">
-
-                              <div className="col-span-1">
-                                <label className="block text-xs font-medium text-gray-700 mb-2">Product *</label>
-                                <VariationSearchableDropdown
-                                  options={productOptions}
-                                  value={item.productId}
-                                  onChange={(value) => handleItemChange(i, 'productId', value)}
-                                  placeholder="Select Product Variation"
-                                  required
-                                  formData={formData}
-                                  index={i}
-                                />
-                              </div>
-
-
-                              <div className="col-span-1">
-                                <label className="block text-xs font-medium text-gray-700 mb-2">
-                                  Warehouse *
-                                  <span className="text-red-500 ml-1">*</span>
-                                </label>
-                                <SearchableDropdown
-                                  options={warehouseOptions}
-                                  value={item.warehouseId}
-                                  onChange={(value) => handleItemChange(i, 'warehouseId', value)}
-                                  placeholder="Select Warehouse"
-                                  displayKey="name"
-                                  valueKey="id"
-                                  required
-                                />
-
-
-                                {!item.warehouseId && (
-                                  <p className="text-red-500 text-xs mt-1">Warehouse selection is required</p>
-                                )}
-
-
-                                <div className="mt-3">
-                                  <label className="block text-xs font-medium text-gray-700 mb-2">Quantity *</label>
-                                  <input
-                                    type="number"
-                                    value={item.quantity}
-                                    onChange={(e) => handleItemChange(i, 'quantity', e.target.value)}
-                                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm ${hasInsufficientStock && !isLoadingStock
-                                      ? 'border-red-300 bg-red-50'
-                                      : 'border-gray-300'
-                                      }`}
-                                    min="0"
-                                    required
-                                    disabled={isLoadingStock}
-                                    placeholder="0"
-                                  />
-                                  {(item.quantity === '' || item.quantity === 0 || item.quantity < 1) && (
-                                    <p className="text-red-500 text-xs mt-1">Quantity is required (minimum 1)</p>
-                                  )}
-                                </div>
-
-
-                                {isLoadingStock && (
-                                  <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
-                                    <div className="flex items-center gap-2 text-blue-600 text-xs">
-                                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                      </svg>
-                                      <span>Loading stock information...</span>
-                                    </div>
-                                  </div>
-                                )}
-
-
-                                {!isLoadingStock && stockError && (
-                                  <div className="mt-2 p-2 bg-orange-50 rounded border border-orange-200">
-                                    <div className="text-xs text-orange-700">
-                                      <div className="font-medium">⚠️ {stockError}</div>
-                                      <div className="text-xs mt-1">Stock data unavailable. Please verify before submitting.</div>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {!isLoadingStock && !stockError && stockInfo && item.warehouseId && (
-                                  <div className={`mt-2 p-2 rounded border ${hasInsufficientStock ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
-                                    <div className={`text-xs space-y-1 ${hasInsufficientStock ? 'text-red-700' : 'text-blue-700'}`}>
-                                      <div className="font-semibold text-sm">
-                                        Available Stock: {stockInfo.availableQuantity || 0}
-                                      </div>
-                                    </div>
-                                    {hasInsufficientStock && (
-                                      <div className="text-red-600 text-xs mt-1 font-medium">
-                                        ⚠️ Quantity exceeds available stock!
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-2">Unit</label>
-                                <input
-                                  type="text"
-                                  value={item.unit}
-                                  onChange={(e) => handleItemChange(i, 'unit', e.target.value)}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
-                                  placeholder="pcs, box, etc."
-                                  disabled={isLoadingStock}
-                                />
+                            {/* Warehouse Display */}
+                            <div className="mb-3 p-3 bg-blue-50 rounded border border-blue-200">
+                              <div className="flex items-center gap-2 text-sm">
+                                <Package size={16} className="text-blue-600" />
+                                <span className="font-medium text-blue-900">Warehouse:</span>
+                                <span className="text-blue-700">
+                                  {warehouseOptions.find(w => w.id === item.warehouseId)?.name || 'Not selected'}
+                                </span>
                               </div>
                             </div>
 
+                            {/* ✅ NEW: Two-Quantity System */}
+                            <div className="grid gap-4 mb-3" style={{ gridTemplateColumns: '1fr 2fr 1fr' }}>
 
-                            {/* Remove Item Button */}
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveItem(i)}
-                              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition text-sm font-medium mt-4"
-                              disabled={isLoadingStock}
-                            >
-                              <Trash2 size={16} />
-                              Remove Item
-                            </button>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-2">
+                                  Prepared Qty (For Reservation) *
+                                </label>
+                                <input
+                                  type="number"
+                                  value={item.preparedQty || ''}
+                                  onChange={(e) => handleItemChange(i, 'preparedQty', e.target.value)}
+                                  className="w-full px-3 py-2 border border-blue-300 bg-blue-50 rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm font-medium"
+                                  min="0"
+                                  disabled={isDelivered}
+                                  placeholder="Enter prepared quantity"
+                                  required
+                                />
+                                {(item.preparedQty === '' || item.preparedQty === 0 || item.preparedQty < 1) && (
+                                  <p className="text-red-500 text-xs mt-1">Prepared quantity required (min 1)</p>
+                                )}
+                                <p className="text-xs text-gray-500 mt-1">
+                                  This quantity will be reserved from warehouse stock
+                                </p>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                                    Delivered Qty (Actual Received) *
+                                  </label>
+                                  <input
+                                    type="number"
+                                    value={item.deliveredQty || ''}
+                                    onChange={(e) => handleItemChange(i, 'deliveredQty', e.target.value)}
+                                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 transition text-sm font-medium ${isDelivered
+                                      ? 'border-green-300 bg-green-50 focus:ring-green-500'
+                                      : 'border-gray-300 bg-gray-100 cursor-not-allowed'
+                                      }`}
+                                    min="0"
+                                    max={item.preparedQty || 0}
+                                    disabled={!isDelivered}
+                                    placeholder={isDelivered ? "Enter delivered quantity" : "Set when delivered"}
+                                    required={isDelivered}
+                                  />
+                                  {isDelivered && (item.deliveredQty === '' || item.deliveredQty === 0 || item.deliveredQty < 1) && (
+                                    <p className="text-red-500 text-xs mt-1">Delivered quantity required (min 1)</p>
+                                  )}
+                                  {isDelivered && item.deliveredQty > item.preparedQty && (
+                                    <p className="text-red-500 text-xs mt-1">
+                                      Cannot exceed prepared quantity ({item.preparedQty})
+                                    </p>
+                                  )}
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    {isDelivered
+                                      ? "This quantity will be deducted from warehouse and added to branch"
+                                      : "Enter this after changing status to DELIVERED"}
+                                  </p>
+                                </div>
+
+                                {/* UOM */}
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                                    UOM (Unit of Measure)
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={item.uom || ''}
+                                    onChange={(e) => handleItemChange(i, 'uom', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition text-sm"
+                                    placeholder="pcs, box, kg, etc."
+                                    disabled={isDelivered || isInTransit}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Stock Information */}
+                            {isLoadingStock && (
+                              <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
+                                <div className="flex items-center gap-2 text-blue-600 text-xs">
+                                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                  </svg>
+                                  <span>Loading stock information...</span>
+                                </div>
+                              </div>
+                            )}
+
+                            {!isLoadingStock && stockInfo && (
+                              <div className={`mt-2 p-2 rounded border ${hasInsufficientStock ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
+                                <div className={`text-xs ${hasInsufficientStock ? 'text-red-700' : 'text-blue-700'}`}>
+                                  <div className="font-semibold text-sm">
+                                    Available Stock: {stockInfo.availableQuantity || 0}
+                                  </div>
+                                </div>
+                                {hasInsufficientStock && (
+                                  <div className="text-red-600 text-xs mt-1 font-medium">
+                                    ⚠️ Prepared quantity exceeds available stock!
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Remove Button - Only in PREPARING status */}
+                            {isPreparing && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveItem(i)}
+                                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition text-sm font-medium mt-4"
+                              >
+                                <Trash2 size={16} />
+                                Remove Item
+                              </button>
+                            )}
                           </div>
                         );
                       })}
                     </div>
                   </div>
+
 
                   <div className="mt-8 flex justify-end gap-4 pt-6 border-t border-gray-200">
                     <button
@@ -1597,6 +1720,40 @@ const DeliveryManagement = () => {
                         </p>
                       </div>
                     </div>
+
+                    {/* Date Prepared/Delivered - NEW SECTION */}
+                    {(selectedDelivery.datePrepared || selectedDelivery.dateDelivered) && (
+                      <div className="grid grid-cols-2 gap-6">
+                        {selectedDelivery.datePrepared && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-500 mb-1">Date Prepared</label>
+                            <p className="text-base font-semibold text-gray-900">
+                              {new Date(selectedDelivery.datePrepared).toLocaleString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                        )}
+                        {selectedDelivery.dateDelivered && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-500 mb-1">Date Delivered</label>
+                            <p className="text-base font-semibold text-green-700">
+                              {new Date(selectedDelivery.dateDelivered).toLocaleString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Branch and Company Info */}
                     <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
@@ -1674,9 +1831,10 @@ const DeliveryManagement = () => {
                             <tr>
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU/UPC</th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Source Warehouse</th>
-                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Warehouse</th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Prepared</th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Delivered</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">UOM</th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
@@ -1690,28 +1848,22 @@ const DeliveryManagement = () => {
                                     {item.product?.sku || item.product?.upc || '-'}
                                   </td>
                                   <td className="px-4 py-3 text-sm text-gray-600">
-                                    <div className="flex items-center gap-2">
-                                      <Package size={14} className="text-gray-400" />
-                                      <span>{item.warehouse?.warehouseName || 'N/A'}</span>
-                                    </div>
-                                    {item.warehouse?.warehouseCode && (
-                                      <span className="text-xs text-gray-500">({item.warehouse.warehouseCode})</span>
-                                    )}
-                                    {item.warehouse?.location && (
-                                      <span className="text-xs text-gray-500 block">{item.warehouse.location}</span>
-                                    )}
+                                    {item.warehouse?.warehouseName || 'N/A'}
                                   </td>
-                                  <td className="px-4 py-3 text-sm text-right font-semibold text-gray-900">
-                                    {item.quantity}
+                                  <td className="px-4 py-3 text-sm text-right font-semibold text-blue-700">
+                                    {item.preparedQty || '-'}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-right font-semibold text-green-700">
+                                    {item.deliveredQty || '-'}
                                   </td>
                                   <td className="px-4 py-3 text-sm text-gray-600">
-                                    {item.unit || 'pcs'}
+                                    {item.uom || 'pcs'}
                                   </td>
                                 </tr>
                               ))
                             ) : (
                               <tr>
-                                <td colSpan="5" className="px-4 py-8 text-center text-gray-500 italic">
+                                <td colSpan="6" className="px-4 py-8 text-center text-gray-500 italic">
                                   No items found
                                 </td>
                               </tr>
