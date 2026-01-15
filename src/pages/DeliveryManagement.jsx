@@ -127,7 +127,6 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
 
   return (
     <div ref={dropdownRef} className="relative">
-      {/* Dropdown button - Shows ONLY UPC-PRODUCTNAME-SKU */}
       <button
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
@@ -147,7 +146,6 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
         <ChevronDown size={20} className={`text-gray-400 transition-transform ml-2 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Dropdown menu - Shows ONLY UPC-PRODUCTNAME-SKU */}
       {isOpen && (
         <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-hidden">
           <div className="p-3 border-b border-gray-200">
@@ -191,7 +189,6 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
                         : 'text-gray-900 hover:bg-blue-50'
                       }`}
                   >
-                    {/* ONLY show UPC-PRODUCTNAME-SKU in dropdown */}
                     {option.name}
                     {isAlreadySelected && (
                       <span className="text-xs text-red-500 mt-1 block">Already selected</span>
@@ -230,7 +227,6 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
               </div>
             </div>
 
-            {/* Variation Row (if exists) */}
             {selectedOption.subLabel && selectedOption.subLabel !== 'No variations' && (
               <div>
                 <span className="text-gray-500">Variation:</span>
@@ -238,7 +234,6 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
               </div>
             )}
 
-            {/* Badge Row */}
             <div className="pt-1">
               {selectedOption.isVariation ? (
                 <span className="inline-flex px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
@@ -443,11 +438,6 @@ const DeliveryManagement = () => {
         return false;
       }
 
-      const exceedsQty = formData.items.filter(item => item.deliveredQty > item.preparedQty);
-      if (exceedsQty.length > 0) {
-        alert('Delivered quantity cannot exceed prepared quantity for any item');
-        return false;
-      }
     } else {
       if (formData.dateDelivered) {
         setFormData({ ...formData, dateDelivered: '' });
@@ -456,6 +446,8 @@ const DeliveryManagement = () => {
 
     return true;
   };
+
+
 
 
 
@@ -580,6 +572,7 @@ const DeliveryManagement = () => {
         }
 
         setSelectedDelivery(fullDelivery);
+
         const formatDateForInput = (dateString) => {
           if (!dateString) return '';
           let cleanDate = dateString.replace('Z', '').split('.')[0].split('+')[0];
@@ -612,23 +605,42 @@ const DeliveryManagement = () => {
           selectedWarehouseId: fullDelivery.items[0]?.warehouse?.id || '',
           datePrepared: fullDelivery.datePrepared ? formatDateForInput(fullDelivery.datePrepared) : formatDateForInput(fullDelivery.date || new Date()),
           dateDelivered: fullDelivery.dateDelivered ? formatDateForInput(fullDelivery.dateDelivered) : '',
-          items: fullDelivery.items.map(item => ({
-            productId: item.product.id,
-            quantity: item.quantity,
-            preparedQty: item.preparedQty || '',
-            deliveredQty: item.deliveredQty || '',
-            uom: item.uom || '',
-            warehouseId: item.warehouse?.id || '',
-            originalPreparedQty: item.preparedQty || 0
-          }))
-        });
+          items: fullDelivery.items.map(item => {
+            // ✅ FIXED: Extract variation info from the backend response
+            let productId = item.product.id;
+            let variationId = null;
 
+            // Check if there's a variation in the response
+            if (item.variation && item.variation.id) {
+              // If variation exists, use the variation ID as productId
+              productId = item.variation.id;
+              variationId = item.variation.id;
+            }
+
+            console.log('Mapping item:', {
+              productName: item.product.productName,
+              productId: productId,
+              variationId: variationId,
+              hasVariation: !!item.variation
+            });
+
+            return {
+              productId: productId,
+              variationId: variationId,
+              quantity: item.quantity,
+              preparedQty: item.preparedQty || '',
+              deliveredQty: item.deliveredQty || '',
+              uom: item.uom || '',
+              warehouseId: item.warehouse?.id || '',
+              originalPreparedQty: item.preparedQty || 0
+            };
+          })
+        });
 
         setBranchInfo({
           companyName: fullDelivery.company.companyName,
           tin: fullDelivery.company.tin,
           fullAddress: `${fullDelivery.company.address || ''}, ${fullDelivery.company.city || ''}, ${fullDelivery.company.province || ''}`.trim(),
-
           branchName: fullDelivery.branch.branchName,
           branchCode: fullDelivery.branch.branchCode,
           branchAddress: `${fullDelivery.branch.address || ''}, ${fullDelivery.branch.city || ''}, ${fullDelivery.branch.province || ''}`.trim(),
@@ -788,9 +800,11 @@ const DeliveryManagement = () => {
         const itemIndex = formData.items.indexOf(item);
         const stockKey = `${itemIndex}_${item.productId}_${item.warehouseId}`;
         const stockInfo = warehouseStocks[stockKey];
-        const effectiveMaxQty = (stockInfo?.availableQuantity || 0) + (item.preparedQty || 0);
 
-        if (item.deliveredQty > effectiveMaxQty) {
+        // ✅ NEW LOGIC: Delivered can be ≤ (Prepared + Available)
+        const maxAllowedQty = (item.preparedQty || 0) + (stockInfo?.availableQuantity || 0);
+
+        if (item.deliveredQty > maxAllowedQty) {
           const product = products.find(p => p.id === item.productId);
           const warehouse = warehouses.find(w => w.id === item.warehouseId);
 
@@ -798,8 +812,8 @@ const DeliveryManagement = () => {
             `Product: ${product?.productName}\n` +
             `Warehouse: ${warehouse?.warehouseName}\n\n` +
             `Delivered Quantity: ${item.deliveredQty}\n` +
-            `Maximum Allowed: ${effectiveMaxQty}\n` +
-            `  (Available: ${stockInfo?.availableQuantity || 0} + Prepared: ${item.preparedQty || 0})\n\n` +
+            `Maximum Allowed: ${maxAllowedQty}\n` +
+            `  (Prepared: ${item.preparedQty || 0} + Available: ${stockInfo?.availableQuantity || 0})\n\n` +
             `Please reduce the delivered quantity or increase warehouse stock.`);
           return;
         }
@@ -1109,6 +1123,7 @@ const DeliveryManagement = () => {
         return {
           id: v.id,
           parentProductId: p.id,
+          variationId: v.id,
           name: dropdownName,
           subLabel: variationLabel,
           fullName: p.productName,
@@ -1127,6 +1142,7 @@ const DeliveryManagement = () => {
       return [{
         id: p.id,
         parentProductId: p.id,
+        variationId: null,
         name: dropdownName,
         subLabel: 'No variations',
         fullName: p.productName,
@@ -2183,18 +2199,10 @@ const DeliveryManagement = () => {
                                   <td className="px-4 py-3 text-sm text-gray-600">
                                     <div className="space-y-1">
                                       <div className="text-xs">
-                                        <span className="font-medium">SKU:</span> {
-                                          item.product?.variations && item.product.variations.length > 0
-                                            ? (item.product.variations.find(v => v.id === item.productId)?.sku || item.product?.sku || 'N/A')
-                                            : (item.product?.sku || 'N/A')
-                                        }
+                                        <span className="font-medium">SKU:</span> {item.product?.sku || 'N/A'}
                                       </div>
                                       <div className="text-xs">
-                                        <span className="font-medium">UPC:</span> {
-                                          item.product?.variations && item.product.variations.length > 0
-                                            ? (item.product.variations.find(v => v.id === item.productId)?.upc || item.product?.upc || 'N/A')
-                                            : (item.product?.upc || 'N/A')
-                                        }
+                                        <span className="font-medium">UPC:</span> {item.product?.upc || 'N/A'}
                                       </div>
                                     </div>
                                   </td>

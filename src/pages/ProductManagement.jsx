@@ -23,6 +23,7 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
         setIsOpen(false);
       }
     };
+    
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
@@ -563,9 +564,7 @@ const ProductManagement = () => {
 
     return [...products].sort((a, b) => {
       let aValue = a[sortConfig.key];
-      let bValue = b[sortConfig.key];
-
-      // Handle date sorting
+      let bValue = b[sortConfig.key]
       if (sortConfig.key === 'createdAt') {
         aValue = aValue ? new Date(aValue).getTime() : 0;
         bValue = bValue ? new Date(bValue).getTime() : 0;
@@ -619,7 +618,6 @@ const ProductManagement = () => {
         setCompanies([]);
       }
 
-      // Add this
       if (suppliersResponse.success) {
         setSuppliers(suppliersResponse.data || []);
       } else {
@@ -689,7 +687,6 @@ const ProductManagement = () => {
     };
 
     setVariationCombinations(prevCombos => {
-      console.log('🔍 Previous combinations:', prevCombos);
       const preservedDataMap = new Map();
 
       prevCombos.forEach(combo => {
@@ -711,11 +708,9 @@ const ProductManagement = () => {
           attributes: combo.attributes
         });
 
-        console.log(`📦 Preserved: ${combo.combination}`, preservedDataMap.get(combo.combination));
       });
 
       const newCombinations = generateCombos(variationTypes);
-      console.log('🆕 Generated combinations:', newCombinations.length);
 
       const result = newCombinations.map(newCombo => {
         let preserved = preservedDataMap.get(newCombo.combination);
@@ -730,14 +725,12 @@ const ProductManagement = () => {
 
             if (hasOverlap) {
               preserved = data;
-              console.log(`✅ Partial match for ${newCombo.combination} from ${key}`);
               break;
             }
           }
         }
 
         if (preserved) {
-          console.log(`✅ Restoring data for: ${newCombo.combination}`);
           return {
             combination: newCombo.combination,
             attributes: newCombo.attributes,
@@ -763,7 +756,6 @@ const ProductManagement = () => {
 
           if (matchingAttrs.length > 0) {
             inheritedData = data;
-            console.log(`🔄 Inheriting data for ${newCombo.combination} from ${key}`);
             break;
           }
         }
@@ -782,7 +774,6 @@ const ProductManagement = () => {
           };
         }
 
-        console.log(`🆕 New empty combination: ${newCombo.combination}`);
         return {
           combination: newCombo.combination,
           attributes: newCombo.attributes,
@@ -795,8 +786,6 @@ const ProductManagement = () => {
           companyPrices: {}
         };
       });
-
-      console.log('📊 Final combinations:', result);
       return result;
     });
   }, [variationTypes]);

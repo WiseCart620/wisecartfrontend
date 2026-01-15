@@ -162,14 +162,15 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
                 <div className="text-xs text-gray-400">Try searching by ID, UPC, SKU, or product name</div>
               </div>
             ) : (
-              filteredOptions.map((option) => {
+              filteredOptions.map((option, optionIndex) => {
+                // FIXED: Compare the unique IDs (option.id) instead of parentProductId
                 const isAlreadySelected = formData?.items?.some(
-                  (item, idx) => item.productId === option.id && idx !== index
+                  (item, idx) => idx !== index && item.productId === option.id
                 );
 
                 return (
                   <button
-                    key={option.id}
+                    key={`${option.id}-${optionIndex}`}
                     type="button"
                     onClick={() => {
                       if (!isAlreadySelected) {
@@ -186,10 +187,15 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
                         : 'text-gray-900 hover:bg-blue-50'
                       }`}
                   >
-                    {option.name}
-                    {isAlreadySelected && (
-                      <span className="text-xs text-red-500 mt-1 block">Already selected</span>
-                    )}
+                    <div className="flex flex-col">
+                      <div className="font-medium">{option.name}</div>
+                      {option.subLabel && option.subLabel !== 'No variations' && (
+                        <div className="text-xs text-gray-600 mt-0.5">Variation: {option.subLabel}</div>
+                      )}
+                      {isAlreadySelected && (
+                        <div className="text-xs text-red-500 mt-1">Already selected</div>
+                      )}
+                    </div>
                   </button>
                 );
               })
@@ -250,8 +256,10 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
         </div>
       )}
     </div>
+
   );
 };
+
 
 
 const GroupedLocationDropdown = ({ locations, value, onChange, placeholder }) => {
@@ -305,28 +313,32 @@ const GroupedLocationDropdown = ({ locations, value, onChange, placeholder }) =>
             {filtered.length === 0 ? (
               <div className="px-4 py-6 text-center text-gray-500 text-sm">No results</div>
             ) : (
-              filtered.map((opt, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => {
-                    if (!opt.isGroup) {
-                      onChange(opt.value);
-                      setIsOpen(false);
-                      setSearchTerm('');
-                    }
-                  }}
-                  disabled={opt.isGroup}
-                  className={`w-full px-4 py-2.5 text-left text-sm transition ${opt.isGroup
-                    ? 'font-bold text-gray-700 bg-gray-100 cursor-default'
-                    : value === opt.value
-                      ? 'bg-blue-50 text-blue-700 font-medium'
-                      : 'hover:bg-gray-50 text-gray-900'
-                    }`}
-                >
-                  {opt.label}
-                </button>
-              ))
+              filtered.map((opt, i) => {
+                const uniqueKey = `${opt.isGroup ? 'group-' : 'option-'}${opt.value || 'no-value'}-${opt.label.replace(/\s+/g, '-').toLowerCase()}-${i}-${Math.random().toString(36).substr(2, 9)}`;
+
+                return (
+                  <button
+                    key={uniqueKey}
+                    type="button"
+                    onClick={() => {
+                      if (!opt.isGroup) {
+                        onChange(opt.value);
+                        setIsOpen(false);
+                        setSearchTerm('');
+                      }
+                    }}
+                    disabled={opt.isGroup}
+                    className={`w-full px-4 py-2.5 text-left text-sm transition ${opt.isGroup
+                      ? 'font-bold text-gray-700 bg-gray-100 cursor-default'
+                      : value === opt.value
+                        ? 'bg-blue-50 text-blue-700 font-medium'
+                        : 'hover:bg-gray-50 text-gray-900'
+                      }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })
             )}
           </div>
         </div>
@@ -334,7 +346,6 @@ const GroupedLocationDropdown = ({ locations, value, onChange, placeholder }) =>
     </div>
   );
 };
-
 
 
 
@@ -533,7 +544,7 @@ const InventoryRecordsManagement = () => {
     }
   };
 
-  const loadLocationStock = async (productId, itemIndex) => {
+  const loadLocationStock = async (productId, variationId, itemIndex) => {
     try {
       let locationId = null;
       let locationType = null;
@@ -556,64 +567,82 @@ const InventoryRecordsManagement = () => {
         let stockRes = null;
 
         if (locationType === 'warehouse') {
-          stockRes = await api.get(`/stocks/warehouses/${locationId}/products/${productId}`);
-          if (stockRes.success) {
+          const endpoint = variationId
+            ? `/stocks/warehouses/${locationId}/products/${productId}/variations/${variationId}`
+            : `/stocks/warehouses/${locationId}/products/${productId}`;
+
+          stockRes = await api.get(endpoint);
+        } else if (locationType === 'branch') {
+          const endpoint = variationId
+            ? `/stocks/branches/${locationId}/products/${productId}/variations/${variationId}`
+            : `/stocks/branches/${locationId}/products/${productId}`;
+
+          stockRes = await api.get(endpoint);
+        }
+
+        if (stockRes?.success) {
+          const stockKey = variationId
+            ? `${itemIndex}_${productId}_${variationId}_${locationId}`
+            : `${itemIndex}_${productId}_${locationId}`;
+
+          if (locationType === 'warehouse') {
             setWarehouseStocks(prev => ({
               ...prev,
-              [`${itemIndex}_${productId}_${locationId}`]: stockRes.data
+              [stockKey]: stockRes.data
             }));
-          }
-        } else if (locationType === 'branch') {
-          try {
-            stockRes = await api.get(`/stocks/branches/${locationId}/products/${productId}`);
-            if (stockRes.success) {
-              setBranchStocks(prev => ({
-                ...prev,
-                [`${itemIndex}_${productId}_${locationId}`]: stockRes.data
-              }));
-            }
-          } catch (error) {
-            const defaultStock = { availableQuantity: 0, quantity: 0, reservedQuantity: 0 };
+          } else {
             setBranchStocks(prev => ({
               ...prev,
-              [`${itemIndex}_${productId}_${locationId}`]: defaultStock
+              [stockKey]: stockRes.data
             }));
           }
         }
-
-        return stockRes?.success ? stockRes.data : { availableQuantity: 0, quantity: 0, reservedQuantity: 0 };
       }
     } catch (error) {
       console.error('Failed to load stock:', error);
-      return { availableQuantity: 0, quantity: 0, reservedQuantity: 0 };
     }
-    return null;
   };
 
-  const getItemStockInfo = (itemIndex, productId) => {
+
+
+  const getItemStockInfo = (itemIndex, productId, variationId) => {
     let locationId = null;
+
+    let actualProductId = productId;
+    if (typeof productId === 'string') {
+      if (productId.startsWith('var_')) {
+        const parts = productId.split('_');
+        actualProductId = parts[2];
+      } else if (productId.startsWith('prod_')) {
+        actualProductId = productId.replace('prod_', '');
+      }
+    }
+    const createStockKey = (locId) => {
+      return variationId
+        ? `${itemIndex}_${actualProductId}_${variationId}_${locId}`
+        : `${itemIndex}_${actualProductId}_${locId}`;
+    };
 
     if (formData.fromWarehouseId) {
       locationId = formData.fromWarehouseId;
-      const warehouseKey = `${itemIndex}_${productId}_${locationId}`;
+      const warehouseKey = createStockKey(locationId);
       return warehouseStocks[warehouseKey];
     } else if (formData.fromBranchId) {
       locationId = formData.fromBranchId;
-      const branchKey = `${itemIndex}_${productId}_${locationId}`;
+      const branchKey = createStockKey(locationId);
       return branchStocks[branchKey];
     } else if (formData.toWarehouseId) {
       locationId = formData.toWarehouseId;
-      const warehouseKey = `${itemIndex}_${productId}_${locationId}`;
+      const warehouseKey = createStockKey(locationId);
       return warehouseStocks[warehouseKey];
     } else if (formData.toBranchId) {
       locationId = formData.toBranchId;
-      const branchKey = `${itemIndex}_${productId}_${locationId}`;
+      const branchKey = createStockKey(locationId);
       return branchStocks[branchKey];
     }
 
     return null;
   };
-
 
   const checkCanModify = async (inventoryId) => {
     try {
@@ -719,7 +748,11 @@ const InventoryRecordsManagement = () => {
         for (let i = 0; i < fullInventory.items.length; i++) {
           const item = fullInventory.items[i];
           if (item.product?.id) {
-            await loadLocationStock(item.product.id, i);
+            await loadLocationStock(
+              item.product.id,
+              item.variationId || null,
+              i
+            );
           }
         }
       } catch (error) {
@@ -747,6 +780,8 @@ const InventoryRecordsManagement = () => {
     setBranchStocks({});
   };
 
+
+
   const handleItemChange = async (index, field, value) => {
     const newItems = [...formData.items];
 
@@ -756,11 +791,15 @@ const InventoryRecordsManagement = () => {
       if (selectedOption) {
         newItems[index] = {
           ...newItems[index],
-          productId: selectedOption.parentProductId,
-          variationId: selectedOption.variationId || null,
+          productId: selectedOption.originalProductId,
+          variationId: selectedOption.variationOriginalId,
         };
 
-        await loadLocationStock(value, index);
+        await loadLocationStock(
+          selectedOption.originalProductId,
+          selectedOption.variationOriginalId,
+          index
+        );
       }
     } else if (field === 'quantity') {
       newItems[index][field] = parseInt(value) || 1;
@@ -768,6 +807,8 @@ const InventoryRecordsManagement = () => {
 
     setFormData({ ...formData, items: newItems });
   };
+
+
 
   const handleAddItem = () => {
     setFormData({
@@ -1129,18 +1170,17 @@ const InventoryRecordsManagement = () => {
   const productOptions = products.flatMap(p => {
     if (p.variations && p.variations.length > 0) {
       return p.variations.map(v => {
-        const dropdownName = `${v.upc || 'N/A'} - ${p.productName} - ${v.sku || 'N/A'}`;
-
-        const variationLabel = v.combinationDisplay ||
-          (v.attributes ? Object.entries(v.attributes || {})
-            .map(([key, val]) => `${key}: ${val}`)
-            .join(', ') : 'Variation');
+        // Create a truly unique ID by combining product and variation
+        const uniqueId = `${p.id}_${v.id}`;
 
         return {
-          id: v.id,
+          id: uniqueId, // Use combined ID
+          originalProductId: p.id,
+          originalVariationId: v.id,
           parentProductId: p.id,
-          name: dropdownName,
-          subLabel: variationLabel,
+          variationOriginalId: v.id,
+          name: `${p.productName} - ${v.combinationDisplay || 'Variation'}`,
+          subLabel: v.combinationDisplay || 'Variation',
           fullName: p.productName,
           upc: v.upc,
           sku: v.sku,
@@ -1149,12 +1189,16 @@ const InventoryRecordsManagement = () => {
         };
       });
     } else {
-      const dropdownName = `${p.upc || 'N/A'} - ${p.productName} - ${p.sku || 'N/A'}`;
+      // For products without variations, use product ID with prefix
+      const uniqueId = `prod_${p.id}`;
 
       return [{
-        id: p.id,
+        id: uniqueId,
+        originalProductId: p.id,
+        originalVariationId: null,
         parentProductId: p.id,
-        name: dropdownName,
+        variationOriginalId: null,
+        name: `${p.productName} - ${p.sku || p.upc || 'No SKU'}`,
         subLabel: 'No variations',
         fullName: p.productName,
         upc: p.upc,
@@ -1164,6 +1208,8 @@ const InventoryRecordsManagement = () => {
       }];
     }
   });
+
+  console.log('Final productOptions:', productOptions);
 
   const needsFromLocation = ['TRANSFER', 'RETURN'].includes(formData.inventoryType);
 
@@ -1664,11 +1710,11 @@ const InventoryRecordsManagement = () => {
                       ) : (
                         <div className="space-y-4">
                           {formData.items.map((item, i) => {
-                            const stockInfo = getItemStockInfo(i, item.productId);
+                            const stockInfo = getItemStockInfo(i, item.productId, item.variationId);
                             const selectedLocation = formData.fromWarehouseId || formData.fromBranchId || formData.toWarehouseId || formData.toBranchId;
 
                             return (
-                              <div key={i} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                              <div key={`item-${i}-${item.productId || 'new'}-${item.variationId || 'none'}-${Date.now()}`}>
                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                                   <div className="md:col-span-8">
                                     <label className="block text-xs font-medium text-gray-700 mb-2">Product *</label>
@@ -1941,7 +1987,7 @@ const InventoryRecordsManagement = () => {
                         <tbody className="divide-y divide-gray-200">
                           {selectedInventory.items && selectedInventory.items.length > 0 ? (
                             selectedInventory.items.map((item, i) => (
-                              <tr key={i} className="hover:bg-gray-50 transition">
+                              <tr key={`view-item-${item.id || i}-${item.product?.id || 'unknown'}`} className="hover:bg-gray-50 transition">
                                 <td className="px-6 py-4 text-sm font-medium text-gray-900">
                                   <div>{item.product.productName}</div>
                                   <div className="text-xs text-gray-500">{item.product.sku || item.product.upc}</div>
