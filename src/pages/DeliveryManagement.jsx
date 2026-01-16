@@ -101,7 +101,7 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
 
 
 
-const VariationSearchableDropdown = ({ options, value, onChange, placeholder, required = false, formData, index, disabled = false }) => {
+const VariationSearchableDropdown = ({ options, value, onChange, placeholder, required = false, formData, index }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
@@ -116,23 +116,43 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredOptions = options.filter(option =>
-    option.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    option.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    option.upc?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    option.sku?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredOptions = options.filter(option => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      option.name?.toLowerCase().includes(searchLower) ||
+      option.subLabel?.toLowerCase().includes(searchLower) ||
+      option.fullName?.toLowerCase().includes(searchLower) ||
+      option.upc?.toLowerCase().includes(searchLower) ||
+      option.sku?.toLowerCase().includes(searchLower)
+    );
+  });
 
-  const selectedOption = options.find(opt => opt.id === value);
+
+
+  const selectedOption = options.find(opt => {
+    if (opt.id === value) {
+      return true;
+    }
+
+
+    const currentItem = formData?.items?.[index];
+    if (currentItem) {
+      const productMatch = currentItem.productId === opt.parentProductId;
+      const variationMatch = currentItem.variationId === opt.variationId;
+      return productMatch && variationMatch;
+    }
+
+    return false;
+  });
+
+
 
   return (
     <div ref={dropdownRef} className="relative">
       <button
         type="button"
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        disabled={disabled}
-        className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-left flex items-center justify-between ${disabled ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'bg-white'
-          }`}
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-left flex items-center justify-between bg-white"
       >
         <div className="flex-1 min-w-0">
           {selectedOption ? (
@@ -153,7 +173,7 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <input
                 type="text"
-                placeholder="Search by UPC, product name, or SKU..."
+                placeholder="Search by name, UPC, SKU, or variation..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
@@ -163,16 +183,23 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
           </div>
           <div className="overflow-y-auto max-h-80">
             {filteredOptions.length === 0 ? (
-              <div className="px-4 py-6 text-center text-gray-500 text-sm">No products found</div>
+              <div className="px-4 py-6 text-center">
+                <div className="text-gray-500 text-sm mb-2">No products found</div>
+                <div className="text-xs text-gray-400">Try searching by ID, UPC, SKU, or product name</div>
+              </div>
             ) : (
-              filteredOptions.map((option) => {
+              filteredOptions.map((option, optionIndex) => {
                 const isAlreadySelected = formData?.items?.some(
-                  (item, idx) => item.productId === option.id && idx !== index
+                  (item, idx) => {
+                    if (idx === index) return false;
+                    return item.productId === option.parentProductId &&
+                      item.variationId === option.variationId;
+                  }
                 );
 
                 return (
                   <button
-                    key={option.id}
+                    key={`${option.id}-${optionIndex}`}
                     type="button"
                     onClick={() => {
                       if (!isAlreadySelected) {
@@ -189,10 +216,15 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
                         : 'text-gray-900 hover:bg-blue-50'
                       }`}
                   >
-                    {option.name}
-                    {isAlreadySelected && (
-                      <span className="text-xs text-red-500 mt-1 block">Already selected</span>
-                    )}
+                    <div className="flex flex-col">
+                      <div className="font-medium">{option.name}</div>
+                      {option.subLabel && option.subLabel !== 'No variations' && (
+                        <div className="text-xs text-gray-600 mt-0.5">Variation: {option.subLabel}</div>
+                      )}
+                      {isAlreadySelected && (
+                        <div className="text-xs text-red-500 mt-1">Already selected</div>
+                      )}
+                    </div>
                   </button>
                 );
               })
@@ -350,21 +382,36 @@ const DeliveryManagement = () => {
   };
 
 
-  const loadWarehouseStock = async (warehouseId, productId, itemIndex) => {
+  const loadWarehouseStock = async (warehouseId, productId, variationId, itemIndex) => {
     if (!warehouseId || !productId) return;
 
-    const stockKey = `${itemIndex}_${productId}_${warehouseId}`;
+
+
+    const stockKey = variationId
+      ? `${itemIndex}_${productId}_${variationId}_${warehouseId}`
+      : `${itemIndex}_${productId}_${warehouseId}`;
+
+    if (warehouseStocks[stockKey]) {
+      return;
+    }
 
     setLoadingStocks(prev => ({ ...prev, [stockKey]: true }));
     setStockErrors(prev => ({ ...prev, [stockKey]: null }));
 
     try {
-      const stock = await api.get(`/stocks/warehouses/${warehouseId}/products/${productId}`);
+      const endpoint = variationId
+        ? `/stocks/warehouses/${warehouseId}/products/${productId}/variations/${variationId}`
+        : `/stocks/warehouses/${warehouseId}/products/${productId}`;
 
-      if (stock.success) {
+
+
+      const stock = await api.get(endpoint);
+
+      if (stock.success || stock.data) {
+
         setWarehouseStocks(prev => ({
           ...prev,
-          [stockKey]: stock.data
+          [stockKey]: stock.data || stock
         }));
       }
     } catch (error) {
@@ -458,26 +505,40 @@ const DeliveryManagement = () => {
 
     if (field === 'preparedQty' || field === 'deliveredQty') {
       newItems[index][field] = value === '' ? '' : parseInt(value) || 0;
+    } else if (field === 'productId') {
+      const selectedOption = productOptions.find(opt => opt.id === value);
+
+      if (selectedOption) {
+        newItems[index] = {
+          ...newItems[index],
+          productId: selectedOption.parentProductId,
+          variationId: selectedOption.variationId || null
+        };
+
+        setFormData({ ...formData, items: newItems });
+        if (newItems[index].warehouseId) {
+          setTimeout(() => {
+            loadWarehouseStock(
+              newItems[index].warehouseId,
+              selectedOption.parentProductId,
+              selectedOption.variationId,
+              index
+            );
+          }, 0);
+        }
+        return;
+      }
     } else {
       newItems[index][field] = value;
     }
 
     setFormData({ ...formData, items: newItems });
 
-    if (field === 'warehouseId' || field === 'productId') {
+    if (field === 'warehouseId' && value !== oldWarehouseId) {
       const item = newItems[index];
-      if (item.warehouseId && item.productId) {
-        const warehouseChanged = field === 'warehouseId' && value !== oldWarehouseId;
-        const productChanged = field === 'productId' && value !== oldProductId;
-
-        if (warehouseChanged || productChanged) {
-          await loadWarehouseStock(item.warehouseId, item.productId, index);
-        }
+      if (item.productId && value) {
+        await loadWarehouseStock(value, item.productId, item.variationId, index);
       }
-    }
-
-    if ((field === 'warehouseId' && value !== oldWarehouseId) ||
-      (field === 'productId' && value !== oldProductId)) {
       newItems[index].preparedQty = '';
       newItems[index].deliveredQty = '';
       newItems[index].uom = '';
@@ -606,23 +667,18 @@ const DeliveryManagement = () => {
           datePrepared: fullDelivery.datePrepared ? formatDateForInput(fullDelivery.datePrepared) : formatDateForInput(fullDelivery.date || new Date()),
           dateDelivered: fullDelivery.dateDelivered ? formatDateForInput(fullDelivery.dateDelivered) : '',
           items: fullDelivery.items.map(item => {
-            // ✅ FIXED: Extract variation info from the backend response
-            let productId = item.product.id;
+            let productId = item.product?.id || item.productId;
             let variationId = null;
 
-            // Check if there's a variation in the response
-            if (item.variation && item.variation.id) {
-              // If variation exists, use the variation ID as productId
-              productId = item.variation.id;
+            if (item.variationId) {
+              variationId = item.variationId;
+            } else if (item.productVariationId) {
+              variationId = item.productVariationId;
+            } else if (item.variation?.id) {
               variationId = item.variation.id;
+            } else if (item.productVariation?.id) {
+              variationId = item.productVariation.id;
             }
-
-            console.log('Mapping item:', {
-              productName: item.product.productName,
-              productId: productId,
-              variationId: variationId,
-              hasVariation: !!item.variation
-            });
 
             return {
               productId: productId,
@@ -648,9 +704,18 @@ const DeliveryManagement = () => {
           branchContactNumber: fullDelivery.branch.contactNumber || ''
         });
 
+
         const stockLoadPromises = fullDelivery.items.map((item, index) => {
           if (item.warehouse?.id && item.product?.id) {
-            return loadWarehouseStock(item.warehouse.id, item.product.id, index);
+            let variationId = item.variationId || item.productVariationId || item.variation?.id || null;
+
+
+            return loadWarehouseStock(
+              item.warehouse.id,
+              item.product.id,
+              variationId,
+              index
+            );
           }
           return Promise.resolve();
         });
@@ -825,7 +890,11 @@ const DeliveryManagement = () => {
       setLoadingMessage(modalMode === 'create' ? 'Creating delivery...' : 'Updating delivery...');
 
       for (const item of formData.items) {
-        const stockResponse = await api.get(`/stocks/warehouses/${item.warehouseId}/products/${item.productId}`);
+        const endpoint = item.variationId
+          ? `/stocks/warehouses/${item.warehouseId}/products/${item.productId}/variations/${item.variationId}`
+          : `/stocks/warehouses/${item.warehouseId}/products/${item.productId}`;
+
+        const stockResponse = await api.get(endpoint);
 
         const quantityNeeded = item.preparedQty || 0;
         const originalReserved = item.originalPreparedQty || 0;
@@ -835,7 +904,15 @@ const DeliveryManagement = () => {
           const product = products.find(p => p.id === item.productId);
           const warehouse = warehouses.find(w => w.id === item.warehouseId);
 
-          alert(`Insufficient stock for product "${product?.productName}" in warehouse "${warehouse?.warehouseName}". Available (including reserved): ${effectiveAvailableStock}, Requested: ${quantityNeeded}`);
+          let productName = product?.productName || 'Unknown Product';
+          if (item.variationId && product?.variations) {
+            const variation = product.variations.find(v => v.id === item.variationId);
+            if (variation) {
+              productName = `${productName} (${variation.combinationDisplay || 'Variation'})`;
+            }
+          }
+
+          alert(`Insufficient stock for product "${productName}" in warehouse "${warehouse?.warehouseName}".\n\nAvailable (including reserved): ${effectiveAvailableStock}\nRequested: ${quantityNeeded}\n\nCurrent stock: ${stockResponse.data?.quantity || 0}\nReserved: ${stockResponse.data?.reservedQuantity || 0}\nAvailable: ${stockResponse.data?.availableQuantity || 0}`);
           return;
         }
       }
@@ -1108,20 +1185,14 @@ const DeliveryManagement = () => {
   const productOptions = products.flatMap(p => {
     if (p.variations && p.variations.length > 0) {
       return p.variations.map(v => {
-        const stockInfo = warehouseStocks[`${formData.items?.findIndex(item => item.productId === v.id)}_${v.id}_${formData.items?.find(item => item.productId === v.id)?.warehouseId || ''}`];
-        const availableStock = stockInfo ? stockInfo.availableQuantity : 0;
-
-
         const dropdownName = `${v.upc || 'N/A'} - ${p.productName} - ${v.sku || 'N/A'}`;
-
-
         const variationLabel = v.combinationDisplay ||
           (v.attributes ? Object.entries(v.attributes || {})
             .map(([key, val]) => `${key}: ${val}`)
             .join(', ') : 'Variation');
 
         return {
-          id: v.id,
+          id: `${p.id}_${v.id}`,
           parentProductId: p.id,
           variationId: v.id,
           name: dropdownName,
@@ -1130,17 +1201,14 @@ const DeliveryManagement = () => {
           upc: v.upc,
           sku: v.sku,
           price: v.price || p.price,
-          availableStock: availableStock,
           isVariation: true
         };
       });
     } else {
-      const stockInfo = warehouseStocks[`${formData.items?.findIndex(item => item.productId === p.id)}_${p.id}_${formData.items?.find(item => item.productId === p.id)?.warehouseId || ''}`];
-      const availableStock = stockInfo ? stockInfo.availableQuantity : 0;
       const dropdownName = `${p.upc || 'N/A'} - ${p.productName} - ${p.sku || 'N/A'}`;
 
       return [{
-        id: p.id,
+        id: `prod_${p.id}`,
         parentProductId: p.id,
         variationId: null,
         name: dropdownName,
@@ -1149,7 +1217,6 @@ const DeliveryManagement = () => {
         upc: p.upc,
         sku: p.sku,
         price: p.price,
-        availableStock: availableStock,
         isVariation: false
       }];
     }
@@ -1839,12 +1906,17 @@ const DeliveryManagement = () => {
                         </p>
                       )}
                       {formData.items.map((item, i) => {
-                        const stockKey = `${i}_${item.productId}_${item.warehouseId}`;
+                        const stockKey = item.variationId
+                          ? `${i}_${item.productId}_${item.variationId}_${item.warehouseId}`
+                          : `${i}_${item.productId}_${item.warehouseId}`;
+
                         const stockInfo = warehouseStocks[stockKey];
                         const isLoadingStock = loadingStocks[stockKey];
+
                         const effectiveAvailable = modalMode === 'edit'
                           ? (stockInfo?.availableQuantity || 0) + (item.originalPreparedQty || 0)
                           : (stockInfo?.availableQuantity || 0);
+
                         const hasInsufficientStock = stockInfo && item.preparedQty > effectiveAvailable;
 
                         const isDelivered = formData.status === 'DELIVERED';
@@ -1860,7 +1932,11 @@ const DeliveryManagement = () => {
                               </label>
                               <VariationSearchableDropdown
                                 options={productOptions}
-                                value={item.productId}
+                                value={
+                                  item.variationId
+                                    ? `${item.productId}_${item.variationId}`
+                                    : `prod_${item.productId}`
+                                }
                                 onChange={(value) => handleItemChange(i, 'productId', value)}
                                 placeholder="Select Product Variation"
                                 required

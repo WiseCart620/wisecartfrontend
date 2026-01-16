@@ -111,15 +111,27 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredOptions = options.filter(option =>
-    option.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    option.subLabel?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    option.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    option.upc?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    option.sku?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredOptions = options.filter(option => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      option.name?.toLowerCase().includes(searchLower) ||
+      option.subLabel?.toLowerCase().includes(searchLower) ||
+      option.fullName?.toLowerCase().includes(searchLower) ||
+      option.upc?.toLowerCase().includes(searchLower) ||
+      option.sku?.toLowerCase().includes(searchLower)
+    );
+  });
 
-  const selectedOption = options.find(opt => opt.id === value);
+
+  const selectedOption = options.find(opt => {
+    if (formData?.items?.[index]?.productId === opt.originalProductId &&
+      formData?.items?.[index]?.variationId === opt.originalVariationId) {
+      return true;
+    }
+    return opt.id === value;
+  });
+
+
 
   return (
     <div ref={dropdownRef} className="relative">
@@ -163,10 +175,14 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
               </div>
             ) : (
               filteredOptions.map((option, optionIndex) => {
-                // FIXED: Compare the unique IDs (option.id) instead of parentProductId
-                const isAlreadySelected = formData?.items?.some(
-                  (item, idx) => idx !== index && item.productId === option.id
-                );
+                const isAlreadySelected = formData?.items?.some((item, idx) => {
+                  if (idx === index) return false;
+
+                  return (
+                    item.productId === option.originalProductId &&
+                    item.variationId === option.originalVariationId
+                  );
+                });
 
                 return (
                   <button
@@ -463,6 +479,7 @@ const InventoryRecordsManagement = () => {
   const [toBranchFilter, setToBranchFilter] = useState('');
   const [startDateFilter, setStartDateFilter] = useState('');
   const [endDateFilter, setEndDateFilter] = useState('');
+  const [loadingStocks, setLoadingStocks] = useState({});
 
   const [formData, setFormData] = useState({
     inventoryType: 'STOCK_IN',
@@ -545,6 +562,8 @@ const InventoryRecordsManagement = () => {
   };
 
   const loadLocationStock = async (productId, variationId, itemIndex) => {
+    const loadingKey = `${itemIndex}_${productId}_${variationId}`;
+    setLoadingStocks(prev => ({ ...prev, [loadingKey]: true }));
     try {
       let locationId = null;
       let locationType = null;
@@ -563,39 +582,48 @@ const InventoryRecordsManagement = () => {
         locationType = 'branch';
       }
 
-      if (locationId && productId && locationType) {
-        let stockRes = null;
+      if (!locationId || !productId || !locationType) {
+        return;
+      }
+
+      const stockKey = variationId
+        ? `${itemIndex}_${productId}_${variationId}_${locationId}`
+        : `${itemIndex}_${productId}_${locationId}`;
+
+      if (locationType === 'warehouse' && warehouseStocks[stockKey]) {
+        return;
+      }
+      if (locationType === 'branch' && branchStocks[stockKey]) {
+        return;
+      }
+
+      let endpoint = '';
+
+      if (locationType === 'warehouse') {
+        endpoint = variationId
+          ? `/stocks/warehouses/${locationId}/products/${productId}/variations/${variationId}`
+          : `/stocks/warehouses/${locationId}/products/${productId}`;
+      } else if (locationType === 'branch') {
+        endpoint = variationId
+          ? `/stocks/branches/${locationId}/products/${productId}/variations/${variationId}`
+          : `/stocks/branches/${locationId}/products/${productId}`;
+      }
+
+      const stockRes = await api.get(endpoint);
+
+      if (stockRes?.success || stockRes?.data) {
+        const stockData = stockRes.data || stockRes;
 
         if (locationType === 'warehouse') {
-          const endpoint = variationId
-            ? `/stocks/warehouses/${locationId}/products/${productId}/variations/${variationId}`
-            : `/stocks/warehouses/${locationId}/products/${productId}`;
-
-          stockRes = await api.get(endpoint);
-        } else if (locationType === 'branch') {
-          const endpoint = variationId
-            ? `/stocks/branches/${locationId}/products/${productId}/variations/${variationId}`
-            : `/stocks/branches/${locationId}/products/${productId}`;
-
-          stockRes = await api.get(endpoint);
-        }
-
-        if (stockRes?.success) {
-          const stockKey = variationId
-            ? `${itemIndex}_${productId}_${variationId}_${locationId}`
-            : `${itemIndex}_${productId}_${locationId}`;
-
-          if (locationType === 'warehouse') {
-            setWarehouseStocks(prev => ({
-              ...prev,
-              [stockKey]: stockRes.data
-            }));
-          } else {
-            setBranchStocks(prev => ({
-              ...prev,
-              [stockKey]: stockRes.data
-            }));
-          }
+          setWarehouseStocks(prev => ({
+            ...prev,
+            [stockKey]: stockData
+          }));
+        } else {
+          setBranchStocks(prev => ({
+            ...prev,
+            [stockKey]: stockData
+          }));
         }
       }
     } catch (error) {
@@ -607,16 +635,8 @@ const InventoryRecordsManagement = () => {
 
   const getItemStockInfo = (itemIndex, productId, variationId) => {
     let locationId = null;
+    const actualProductId = productId;
 
-    let actualProductId = productId;
-    if (typeof productId === 'string') {
-      if (productId.startsWith('var_')) {
-        const parts = productId.split('_');
-        actualProductId = parts[2];
-      } else if (productId.startsWith('prod_')) {
-        actualProductId = productId.replace('prod_', '');
-      }
-    }
     const createStockKey = (locId) => {
       return variationId
         ? `${itemIndex}_${actualProductId}_${variationId}_${locId}`
@@ -643,6 +663,7 @@ const InventoryRecordsManagement = () => {
 
     return null;
   };
+
 
   const checkCanModify = async (inventoryId) => {
     try {
@@ -789,17 +810,37 @@ const InventoryRecordsManagement = () => {
       const selectedOption = productOptions.find(opt => opt.id === value);
 
       if (selectedOption) {
+        // ✅ CHECK IF THIS EXACT COMBINATION ALREADY EXISTS IN OTHER ITEMS
+        const isDuplicate = formData.items.some((item, idx) => {
+          if (idx === index) return false; // Skip current item
+
+          return (
+            item.productId === selectedOption.originalProductId &&
+            item.variationId === selectedOption.originalVariationId
+          );
+        });
+
+        if (isDuplicate) {
+          alert('⚠️ This product variation is already added!\n\nPlease select a different variation or update the quantity of the existing item.');
+          return;
+        }
+
         newItems[index] = {
           ...newItems[index],
           productId: selectedOption.originalProductId,
-          variationId: selectedOption.variationOriginalId,
+          variationId: selectedOption.originalVariationId,
         };
 
-        await loadLocationStock(
-          selectedOption.originalProductId,
-          selectedOption.variationOriginalId,
-          index
-        );
+        setFormData({ ...formData, items: newItems });
+        setTimeout(() => {
+          loadLocationStock(
+            selectedOption.originalProductId,
+            selectedOption.originalVariationId,
+            index
+          );
+        }, 0);
+
+        return;
       }
     } else if (field === 'quantity') {
       newItems[index][field] = parseInt(value) || 1;
@@ -854,6 +895,28 @@ const InventoryRecordsManagement = () => {
 
     if (formData.items.length === 0) {
       alert('Please add at least one item');
+      return;
+    }
+
+
+    console.log('=== SUBMITTING INVENTORY ===');
+    console.log('Items being sent:', formData.items.map(item => ({
+      productId: item.productId,
+      variationId: item.variationId,
+      quantity: item.quantity
+    })));
+
+    const duplicates = formData.items.filter((item, index) =>
+      formData.items.findIndex(i =>
+        i.productId === item.productId &&
+        i.variationId === item.variationId
+      ) !== index
+    );
+
+    if (duplicates.length > 0) {
+      console.error('❌ DUPLICATE ITEMS DETECTED:', duplicates);
+      alert('Error: Duplicate items detected!\n\n' +
+        duplicates.map(d => `Product ${d.productId}, Variation ${d.variationId}`).join('\n'));
       return;
     }
 
@@ -1168,29 +1231,47 @@ const InventoryRecordsManagement = () => {
   const totalPages = Math.ceil(filteredInventories.length / itemsPerPage);
 
   const productOptions = products.flatMap(p => {
+    // Helper function to truncate product name to first 10 words
+    const truncateProductName = (name) => {
+      if (!name) return '';
+      const words = name.trim().split(/\s+/);
+      if (words.length <= 10) return name;
+      return words.slice(0, 10).join(' ') + '...';
+    };
+
     if (p.variations && p.variations.length > 0) {
       return p.variations.map(v => {
-        // Create a truly unique ID by combining product and variation
         const uniqueId = `${p.id}_${v.id}`;
+        const truncatedName = truncateProductName(p.productName);
+        const upc = v.upc || p.upc || 'No UPC';
+        const sku = v.sku || p.sku || 'No SKU';
+
+        // Format: UPC - Product Name (truncated) - SKU
+        const displayName = `${upc} - ${truncatedName} - ${sku}`;
 
         return {
-          id: uniqueId, // Use combined ID
+          id: uniqueId,
           originalProductId: p.id,
           originalVariationId: v.id,
           parentProductId: p.id,
           variationOriginalId: v.id,
-          name: `${p.productName} - ${v.combinationDisplay || 'Variation'}`,
+          name: displayName,
           subLabel: v.combinationDisplay || 'Variation',
           fullName: p.productName,
-          upc: v.upc,
-          sku: v.sku,
+          upc: v.upc || p.upc,
+          sku: v.sku || p.sku,
           price: v.price || p.price,
           isVariation: true
         };
       });
     } else {
-      // For products without variations, use product ID with prefix
       const uniqueId = `prod_${p.id}`;
+      const truncatedName = truncateProductName(p.productName);
+      const upc = p.upc || 'No UPC';
+      const sku = p.sku || 'No SKU';
+
+      // Format: UPC - Product Name (truncated) - SKU
+      const displayName = `${upc} - ${truncatedName} - ${sku}`;
 
       return [{
         id: uniqueId,
@@ -1198,7 +1279,7 @@ const InventoryRecordsManagement = () => {
         originalVariationId: null,
         parentProductId: p.id,
         variationOriginalId: null,
-        name: `${p.productName} - ${p.sku || p.upc || 'No SKU'}`,
+        name: displayName,
         subLabel: 'No variations',
         fullName: p.productName,
         upc: p.upc,
@@ -1209,7 +1290,6 @@ const InventoryRecordsManagement = () => {
     }
   });
 
-  console.log('Final productOptions:', productOptions);
 
   const needsFromLocation = ['TRANSFER', 'RETURN'].includes(formData.inventoryType);
 
@@ -1667,9 +1747,6 @@ const InventoryRecordsManagement = () => {
                         <label className="block text-lg font-semibold">
                           <Package className="inline mr-2" size={20} />
                           Items *
-                          <span className="ml-2 text-sm font-normal text-gray-500">
-                            ({products.length} products available)
-                          </span>
                           {(formData.toWarehouseId || formData.toBranchId || formData.fromWarehouseId || formData.fromBranchId) && (
                             <span className="ml-2 text-sm font-normal text-blue-600">
                               (
@@ -1728,7 +1805,6 @@ const InventoryRecordsManagement = () => {
                                       index={i}
                                     />
 
-                                    {/* Stock Information Display */}
                                     {selectedLocation && item.productId && stockInfo && (
                                       <div className="mt-2 p-2 bg-white rounded border border-blue-100">
                                         <div className="text-xs text-gray-700">
@@ -1750,7 +1826,6 @@ const InventoryRecordsManagement = () => {
                                           )}
                                         </div>
 
-                                        {/* Warning if quantity exceeds available */}
                                         {item.quantity > stockInfo.availableQuantity && formData.inventoryType !== 'STOCK_IN' && (
                                           <div className="mt-1 flex items-center gap-1 text-red-600 text-xs font-medium">
                                             <AlertCircle size={12} />
@@ -1760,7 +1835,17 @@ const InventoryRecordsManagement = () => {
                                       </div>
                                     )}
 
-                                    {/* Stock not loaded yet */}
+
+                                    {selectedLocation && item.productId && !stockInfo && loadingStocks[`${i}_${item.productId}_${item.variationId}`] && (
+                                      <div className="mt-2">
+                                        <div className="text-xs text-blue-600 italic flex items-center gap-2">
+                                          <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                          Loading stock information...
+                                        </div>
+                                      </div>
+                                    )}
+
+
                                     {selectedLocation && item.productId && !stockInfo && (
                                       <div className="mt-2">
                                         <div className="text-xs text-gray-500 italic">Loading stock information...</div>

@@ -205,7 +205,13 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
             ) : (
               filteredOptions.map((option) => {
                 const isAlreadySelected = formData?.items?.some(
-                  (item, idx) => item.productId === option.id && idx !== index
+                  (item, idx) => {
+                    if (idx === index) return false;
+                    if (option.isVariation) {
+                      return item.variationId === option.id;
+                    }
+                    return item.productId === option.id && !item.variationId;
+                  }
                 );
 
                 return (
@@ -342,6 +348,10 @@ const SalesManagement = () => {
     companyId: '',
     branchId: '',
     status: '',
+    startMonth: new Date().getMonth() + 1,
+    endMonth: new Date().getMonth() + 1,
+    startYear: new Date().getFullYear(),
+    endYear: new Date().getFullYear(),
     startDate: '',
     endDate: ''
   });
@@ -516,13 +526,27 @@ const SalesManagement = () => {
 
           for (const item of sale.items) {
             try {
-              const stock = await api.get(`/stocks/branches/${sale.branch.id}/products/${item.product.id}`);
+              const variationId = item.variation?.id || null;
+              const stockKey = variationId
+                ? `${item.product.id}_${variationId}`
+                : `${item.product.id}`;
+
+              const endpoint = variationId
+                ? `/stocks/branches/${sale.branch.id}/products/${item.product.id}/variations/${variationId}`
+                : `/stocks/branches/${sale.branch.id}/products/${item.product.id}`;
+
+              const stock = await api.get(endpoint);
               if (stock.success) {
-                stockMap[item.product.id] = stock.data;
+                stockMap[stockKey] = stock.data;
               }
             } catch (error) {
-              stockMap[item.product.id] = { quantity: 0, availableQuantity: 0 };
-              errors[item.product.id] = 'Failed to load stock';
+              const variationId = item.variation?.id || null;
+              const stockKey = variationId
+                ? `${item.product.id}_${variationId}`
+                : `${item.product.id}`;
+
+              stockMap[stockKey] = { quantity: 0, availableQuantity: 0 };
+              errors[stockKey] = 'Failed to load stock';
             }
           }
 
@@ -597,32 +621,41 @@ const SalesManagement = () => {
     }
   };
 
-  const loadProductStock = async (productId, branchId) => {
-    if (!branchId) return;
 
-    setLoadingStocks(prev => ({ ...prev, [productId]: true }));
-    setStockErrors(prev => ({ ...prev, [productId]: null }));
+  const loadProductStock = async (productId, branchId, variationId = null) => {
+    if (!branchId) return;
+    const stockKey = variationId
+      ? `${productId}_${variationId}`
+      : `${productId}`;
+
+    setLoadingStocks(prev => ({ ...prev, [stockKey]: true }));
+    setStockErrors(prev => ({ ...prev, [stockKey]: null }));
 
     try {
-      const stock = await api.get(`/stocks/branches/${branchId}/products/${productId}`);
+      const endpoint = variationId
+        ? `/stocks/branches/${branchId}/products/${productId}/variations/${variationId}`
+        : `/stocks/branches/${branchId}/products/${productId}`;
+
+
+      const stock = await api.get(endpoint);
       if (stock.success) {
         setBranchStocks(prev => ({
           ...prev,
-          [productId]: stock.data
+          [stockKey]: stock.data
         }));
       }
     } catch (error) {
-      console.error('Failed to load stock for product:', productId);
+      console.error('Failed to load stock for product:', productId, 'variation:', variationId);
       setBranchStocks(prev => ({
         ...prev,
-        [productId]: { quantity: 0, availableQuantity: 0 }
+        [stockKey]: { quantity: 0, availableQuantity: 0 }
       }));
       setStockErrors(prev => ({
         ...prev,
-        [productId]: 'Failed to load stock'
+        [stockKey]: 'Failed to load stock'
       }));
     } finally {
-      setLoadingStocks(prev => ({ ...prev, [productId]: false }));
+      setLoadingStocks(prev => ({ ...prev, [stockKey]: false }));
     }
   };
 
@@ -640,31 +673,42 @@ const SalesManagement = () => {
   const handleItemChange = async (index, field, value) => {
     const newItems = [...formData.items];
     const oldProductId = newItems[index].productId;
+    const oldVariationId = newItems[index].variationId;
 
-    newItems[index][field] = field === 'quantity' ? parseInt(value) || 0 : value;
-
-    if (field === 'productId' && value) {
+    if (field === 'quantity') {
+      newItems[index][field] = parseInt(value) || 0;
+    } else if (field === 'productId' && value) {
       const selectedProduct = productOptions.find(p => p.id === value);
 
       if (selectedProduct) {
-        if (selectedProduct.hasVariations && selectedProduct.isVariation) {
-          newItems[index].variationId = value;
-          newItems[index].actualProductId = selectedProduct.parentProductId;
+        if (selectedProduct.isVariation && selectedProduct.hasVariations) {
+          newItems[index].productId = selectedProduct.parentProductId;
+          newItems[index].variationId = selectedProduct.id;
         } else {
-          newItems[index].variationId = value;
-          newItems[index].actualProductId = value;
+          newItems[index].productId = selectedProduct.id;
+          newItems[index].variationId = null;
         }
-        console.log('Set variationId to:', newItems[index].variationId,
-          'actualProductId:', newItems[index].actualProductId,
-          'for product:', selectedProduct.fullName,
-          'isVariation:', selectedProduct.isVariation);
       }
+    } else {
+      newItems[index][field] = value;
     }
 
     setFormData({ ...formData, items: newItems });
+    const variationChanged = newItems[index].variationId !== oldVariationId;
+    const productChanged = value !== oldProductId;
 
-    if (field === 'productId' && value && value !== oldProductId && formData.branchId) {
-      await loadProductStock(value, formData.branchId);
+    if (field === 'productId' && value && (productChanged || variationChanged) && formData.branchId) {
+      const selectedProduct = productOptions.find(p => p.id === value);
+      if (selectedProduct) {
+        const stockProductId = selectedProduct.isVariation
+          ? selectedProduct.parentProductId
+          : selectedProduct.id;
+
+        const stockVariationId = selectedProduct.isVariation
+          ? selectedProduct.id
+          : null;
+        await loadProductStock(stockProductId, formData.branchId, stockVariationId);
+      }
     }
   };
 
@@ -711,7 +755,6 @@ const SalesManagement = () => {
           { duration: 4000 }
         );
 
-        console.log('Sales memo set successfully:', memoData);
       } else {
         toast.error(response.message || 'Failed to generate sales memo', { duration: 5000 });
       }
@@ -1557,11 +1600,15 @@ const SalesManagement = () => {
                       </p>
                     )}
                     {formData.items.map((item, i) => {
-                      const stockInfo = branchStocks[item.productId];
+                      const stockKey = item.variationId
+                        ? `${item.productId}_${item.variationId}`
+                        : `${item.productId}`;
+
+                      const stockInfo = branchStocks[stockKey];
                       const availableStock = stockInfo ? stockInfo.availableQuantity : 0;
                       const hasEnoughStock = availableStock >= item.quantity;
-                      const isLoadingStock = loadingStocks[item.productId];
-                      const stockError = stockErrors[item.productId];
+                      const isLoadingStock = loadingStocks[stockKey];
+                      const stockError = stockErrors[stockKey];
 
                       return (
                         <div key={i} className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50">
@@ -1569,7 +1616,7 @@ const SalesManagement = () => {
                             <div className="flex-1">
                               <VariationSearchableDropdown
                                 options={productOptions}
-                                value={item.productId}
+                                value={item.variationId || item.productId}
                                 onChange={(value) => handleItemChange(i, 'productId', value)}
                                 placeholder="Select Product Variation"
                                 required
@@ -1580,7 +1627,7 @@ const SalesManagement = () => {
                             <div className="w-32">
                               <input
                                 type="number"
-                                value={item.quantity === 0 ? '' : item.quantity}
+                                value={item.quantity === 0 ? '' : (item.quantity || '')}
                                 onChange={(e) => handleItemChange(i, 'quantity', e.target.value)}
                                 placeholder="Quantity"
                                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${!hasEnoughStock && !isLoadingStock && item.quantity > 0 ? 'border-red-300 bg-red-50' : 'border-gray-300'
@@ -1788,6 +1835,7 @@ const SalesManagement = () => {
         )}
 
 
+
         {/* Invoice Generation Modal */}
         {showInvoiceModal && (
           <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6">
@@ -1807,13 +1855,30 @@ const SalesManagement = () => {
                   <SearchableDropdown
                     options={companyOptions}
                     value={filterData.companyId}
-                    onChange={(value) => setFilterData({ ...filterData, companyId: value })}
+                    onChange={(value) => setFilterData({ ...filterData, companyId: value, branchId: '' })}
                     placeholder="Select Company"
                     displayKey="name"
                     valueKey="id"
                     required
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Branch (Optional - Leave empty for all branches)
+                  </label>
+                  <SearchableDropdown
+                    options={filteredBranchOptions}
+                    value={filterData.branchId}
+                    onChange={(value) => setFilterData({ ...filterData, branchId: value })}
+                    placeholder="All Branches"
+                    displayKey="name"
+                    valueKey="id"
+                  />
+                  {filterData.companyId && filteredBranchOptions.length === 0 && (
+                    <p className="text-xs text-orange-600 mt-1">No branches for selected company</p>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">Start Month</label>
@@ -2511,17 +2576,34 @@ const SalesManagement = () => {
             <div className="p-8 space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">Company *</label>
-                <select
+                <SearchableDropdown
+                  options={companyOptions}
                   value={filterData.companyId}
-                  onChange={(e) => setFilterData({ ...filterData, companyId: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
-                >
-                  <option value="">Select Company</option>
-                  {companies.map(c => (
-                    <option key={c.id} value={c.id}>{c.companyName}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setFilterData({ ...filterData, companyId: value, branchId: '' })}
+                  placeholder="Select Company"
+                  displayKey="name"
+                  valueKey="id"
+                  required
+                />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Branch (Optional - Leave empty for all branches)
+                </label>
+                <SearchableDropdown
+                  options={filteredBranchOptions}
+                  value={filterData.branchId}
+                  onChange={(value) => setFilterData({ ...filterData, branchId: value })}
+                  placeholder="All Branches"
+                  displayKey="name"
+                  valueKey="id"
+                />
+                {filterData.companyId && filteredBranchOptions.length === 0 && (
+                  <p className="text-xs text-orange-600 mt-1">No branches for selected company</p>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">Start Month</label>

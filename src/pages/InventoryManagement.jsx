@@ -1470,6 +1470,7 @@ const EnhancedInventoryManagement = () => {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [deletingId, setDeletingId] = useState(null);
   const [viewingId, setViewingId] = useState(null);
+  const [showVariationFilter, setShowVariationFilter] = useState('ALL');
 
 
 
@@ -1609,7 +1610,8 @@ const EnhancedInventoryManagement = () => {
         warehouseStocksRes,
         branchStocksRes,
         salesRes,
-        companiesRes
+        companiesRes,
+        productVariationSummariesRes
       ] = await Promise.all([
         api.get('/inventories'),
         api.get('/products'),
@@ -1618,10 +1620,13 @@ const EnhancedInventoryManagement = () => {
         api.get('/stocks/warehouses'),
         api.get('/stocks/branches'),
         api.get('/sales'),
-        api.get('/companies')
+        api.get('/companies'),
+        api.get('/transactions/products/summary/variations')
       ]);
+      if (productVariationSummariesRes.success) {
+        setProductSummaries(productVariationSummariesRes.data || []);
+      }
 
-      // Access the data property from each response
       const inventoriesData = invRes.success ? invRes.data || [] : [];
       const productsData = prodRes.success ? prodRes.data || [] : [];
       const warehousesData = warehousesRes.success ? warehousesRes.data || [] : [];
@@ -1684,16 +1689,30 @@ const EnhancedInventoryManagement = () => {
   };
 
 
-  // Filter data based on search terms
-  const filteredProductSummaries = productSummaries.filter(product => {
-    const matchesSearch = product.productName?.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
-      product.sku?.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
-      product.upc?.toLowerCase().includes(productSearchTerm.toLowerCase());
 
-    return matchesSearch;
+
+  const filteredProductSummaries = productSummaries.filter(product => {
+    const searchLower = productSearchTerm.toLowerCase();
+
+    const matchesSearch =
+      product.productName?.toLowerCase().includes(searchLower) ||
+      product.sku?.toLowerCase().includes(searchLower) ||
+      product.upc?.toLowerCase().includes(searchLower) ||
+      (product.variationSku && product.variationSku.toLowerCase().includes(searchLower)) ||
+      (product.variationName && product.variationName.toLowerCase().includes(searchLower)) ||
+      (product.combinationDisplay && product.combinationDisplay.toLowerCase().includes(searchLower));
+
+    const isVariation = product.isVariation === true || product.variationId;
+
+    const matchesVariationFilter =
+      showVariationFilter === 'ALL' ||
+      (showVariationFilter === 'BASE_ONLY' && !isVariation) ||
+      (showVariationFilter === 'VARIATION_ONLY' && isVariation);
+
+    return matchesSearch && matchesVariationFilter;
   });
 
-  // Filter warehouse stocks with advanced filters
+
   const filteredWarehouseStocks = warehouseStocks.filter(stock => {
     const matchesSearch =
       stock.productName?.toLowerCase().includes(stockSearchTerm.toLowerCase()) ||
@@ -2053,23 +2072,33 @@ const EnhancedInventoryManagement = () => {
 
   const handleViewTransactions = async (product, showStock = false) => {
     try {
-      // ✅ ADD THESE LINES
       setActionLoading(true);
       setLoadingMessage('Loading transaction history...');
+      let targetId;
+      if (product.isVariation && product.variationId) {
+        targetId = product.variationId;
+      } else {
+        targetId = product.productId;
+      }
 
       setSelectedProduct({
         productId: product.productId,
+        variationId: product.variationId,
         productName: product.productName,
         sku: product.sku,
         upc: product.upc,
+        isVariation: product.isVariation,
+        variationName: product.variationName,
+        variationSku: product.variationSku,
+        combinationDisplay: product.combinationDisplay,
         warehouseId: product.warehouseId,
         warehouseName: product.warehouseName,
         branchId: product.branchId,
-        branchName: product.branchName,
+        branchName: product.branchName
       });
-
-      const transactionsRes = await api.get(`/transactions/product/${product.productId}`);
+      const transactionsRes = await api.get(`/transactions/product/${targetId}`);
       const transactionsData = transactionsRes.success ? transactionsRes.data || [] : [];
+
       setProductTransactions(transactionsData);
       setShowStockDetails(showStock);
       setShowTransactionsModal(true);
@@ -2077,15 +2106,14 @@ const EnhancedInventoryManagement = () => {
       console.error('Failed to load product transactions:', err);
       toast.error('Failed to load transaction history');
     } finally {
-      // ✅ ADD THESE LINES
       setActionLoading(false);
       setLoadingMessage('');
     }
   };
 
+
   const handleViewStockTransactions = async (stock, locationType) => {
     try {
-      // ✅ ADD THESE LINES
       setActionLoading(true);
       setLoadingMessage('Loading stock transactions...');
 
@@ -2564,9 +2592,9 @@ const EnhancedInventoryManagement = () => {
           </div>
         </div>
 
-        {/* Product Inventory Summary */}
         {activeTab === 'products' && (
           <div className="mb-8">
+            {/* Search Bar - Keep this */}
             <div className="flex flex-col md:flex-row gap-4 mb-6">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
@@ -2580,6 +2608,53 @@ const EnhancedInventoryManagement = () => {
               </div>
             </div>
 
+            {/* ADD THIS VARIATION FILTER PANEL */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+              <h3 className="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                <Filter size={16} />
+                Product Filters
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Search products by name, SKU, or UPC..."
+                    value={productSearchTerm}
+                    onChange={(e) => setProductSearchTerm(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <select
+                  value={showVariationFilter}
+                  onChange={(e) => setShowVariationFilter(e.target.value)}
+                  className="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="ALL">All Products</option>
+                  <option value="BASE_ONLY">Base Products Only</option>
+                  <option value="VARIATION_ONLY">Variations Only</option>
+                </select>
+              </div>
+
+              {/* Clear Filters Button */}
+              {(productSearchTerm || showVariationFilter !== 'ALL') && (
+                <div className="flex justify-end mt-4">
+                  <button
+                    onClick={() => {
+                      setProductSearchTerm('');
+                      setShowVariationFilter('ALL');
+                    }}
+                    className="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition flex items-center gap-1"
+                  >
+                    <X size={14} />
+                    Clear Filters
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* KEEP THE ENTIRE TABLE SECTION EXACTLY AS IS - Just paste it here */}
             <div className="bg-white rounded-xl shadow overflow-hidden mb-6">
               <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -2633,76 +2708,135 @@ const EnhancedInventoryManagement = () => {
                         </td>
                       </tr>
                     ) : (
-                      currentProductSummaries.map((product) => (
-                        <tr key={product.productId} className="hover:bg-gray-50">
-                          <td className="px-3 py-3">
-                            <div className="max-w-[200px]">
-                              <div className="font-medium text-gray-900 text-xs break-words whitespace-normal leading-tight">
-                                {product.productName}
+                      currentProductSummaries.map((product) => {
+                        const isVariation = product.isVariation || product.variationId;
+
+                        // Generate a unique key for each product/variation
+                        const uniqueKey = isVariation
+                          ? `variation-${product.variationId}-${product.productId}`
+                          : `product-${product.productId}`;
+
+                        // For variations, use variation-specific SKU/UPC if available
+                        const displaySku = isVariation ? (product.variationSku || product.sku) : product.sku;
+                        const displayUpc = isVariation ? (product.variationUpc || product.upc) : product.upc;
+
+                        return (
+                          <tr
+                            key={uniqueKey}
+                            className={`hover:bg-gray-50 ${isVariation ? 'bg-blue-50 border-l-4 border-blue-400' : ''}`}
+                          >
+                            <td className="px-3 py-3">
+                              <div className="max-w-[200px]">
+                                <div className="font-medium text-gray-900 text-sm break-words whitespace-normal leading-tight">
+                                  {product.productName}
+                                  {isVariation && product.variationName && (
+                                    <span className="ml-2 text-blue-600 font-semibold">
+                                      ({product.variationName})
+                                    </span>
+                                  )}
+                                </div>
+                                {isVariation && product.combinationDisplay && (
+                                  <div className="text-xs text-gray-600 mt-1">
+                                    {product.combinationDisplay}
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          </td>
-                          <td className="px-3 py-3 text-xs">
-                            <div className="space-y-1">
-                              <div className="font-medium">SKU: {product.sku}</div>
-                              {product.upc && <div className="text-gray-500">UPC: {product.upc}</div>}
-                            </div>
-                          </td>
-                          <td className="px-2 py-3 text-center">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              +{product.totalStockIn || 0}
-                            </span>
-                          </td>
-                          <td className="px-2 py-3 text-center">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              -{product.totalTransferOut || 0}
-                            </span>
-                          </td>
-                          <td className="px-2 py-3 text-center">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                              +{product.totalReturn || 0}
-                            </span>
-                          </td>
-                          <td className="px-2 py-3 text-center">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              -{product.totalDamage || 0}
-                            </span>
-                          </td>
-                          <td className="px-2 py-3 text-center">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
-                              <CheckCircle size={12} />
-                              {product.totalDelivered || 0}
-                            </span>
-                          </td>
-                          <td className="px-2 py-3 text-center">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
-                              <ShoppingCart size={12} />
-                              {product.totalSales || 0}
-                            </span>
-                          </td>
-                          <td className="px-2 py-3 text-center">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                              <Truck size={12} />
-                              {product.warehousePendingDelivery || 0}
-                            </span>
-                          </td>
-                          <td className="px-2 py-3 text-center">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                              <Clock size={12} />
-                              {product.branchPendingDelivery || 0}
-                            </span>
-                          </td>
-                          <td className="px-3 py-3 text-right">
-                            <button
-                              onClick={() => handleViewTransactions(product, true)}
-                              className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded transition"
-                            >
-                              <Eye size={14} />
-                              View History
-                            </button>
-                          </td>
-                        </tr>
-                      ))
+                            </td>
+                            <td className="px-3 py-3 text-xs">
+                              <div className="space-y-1">
+                                <div className="font-medium">
+                                  SKU: {displaySku || 'N/A'}
+                                </div>
+                                {displayUpc && displayUpc !== 'N/A' && (
+                                  <div className="text-gray-500">UPC: {displayUpc}</div>
+                                )}
+                                {isVariation && (
+                                  <>
+                                    {product.sku && product.sku !== displaySku && (
+                                      <div className="text-xs text-gray-400 mt-1">
+                                        Base SKU: {product.sku}
+                                      </div>
+                                    )}
+                                    {product.upc && product.upc !== displayUpc && (
+                                      <div className="text-xs text-gray-400">
+                                        Base UPC: {product.upc}
+                                      </div>
+                                    )}
+                                    <div className="text-xs text-blue-700 font-medium bg-blue-100 px-2 py-1 rounded mt-1 inline-block">
+                                      Product Variation
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-2 py-3 text-center">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                +{product.totalStockIn || 0}
+                              </span>
+                            </td>
+                            <td className="px-2 py-3 text-center">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                -{product.totalTransferOut || 0}
+                              </span>
+                            </td>
+                            <td className="px-2 py-3 text-center">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                +{product.totalReturn || 0}
+                              </span>
+                            </td>
+                            <td className="px-2 py-3 text-center">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                -{product.totalDamage || 0}
+                              </span>
+                            </td>
+                            <td className="px-2 py-3 text-center">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
+                                <CheckCircle size={12} />
+                                {product.totalDelivered || 0}
+                              </span>
+                            </td>
+                            <td className="px-2 py-3 text-center">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
+                                <ShoppingCart size={12} />
+                                {product.totalSales || 0}
+                              </span>
+                            </td>
+                            <td className="px-2 py-3 text-center">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                <Truck size={12} />
+                                {product.warehousePendingDelivery || 0}
+                              </span>
+                            </td>
+                            <td className="px-2 py-3 text-center">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                <Clock size={12} />
+                                {product.branchPendingDelivery || 0}
+                              </span>
+                            </td>
+                            <td className="px-3 py-3 text-right">
+                              <button
+                                onClick={() => {
+                                  const targetProduct = {
+                                    ...product,
+                                    productId: product.productId,
+                                    variationId: product.variationId,
+                                    productName: product.productName,
+                                    sku: displaySku,
+                                    upc: displayUpc,
+                                    isVariation: isVariation,
+                                    variationName: product.variationName
+                                  };
+                                  handleViewTransactions(targetProduct, true);
+                                }}
+                                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded transition"
+                              >
+                                <Eye size={14} />
+                                View History
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
@@ -2911,15 +3045,31 @@ const EnhancedInventoryManagement = () => {
                             </td>
                             <td className="px-4 py-3">
                               <div className="max-w-[200px]">
-                                <div className="font-medium text-gray-900 text-sm" title={stock.productName}>
-                                  {stock.productName}
+                                <div className="font-medium text-gray-900 text-sm">
+                                  {stock.fullProductName || stock.productName}
                                 </div>
+                                {stock.combinationDisplay && (
+                                  <div className="text-xs text-gray-500 mt-0.5">
+                                    {stock.combinationDisplay}
+                                  </div>
+                                )}
                               </div>
                             </td>
                             <td className="px-4 py-3 text-xs">
                               <div className="space-y-1">
-                                <div className="font-medium">SKU: {stock.sku}</div>
-                                {stock.upc && <div className="text-gray-500">UPC: {stock.upc}</div>}
+                                <div className="font-medium">
+                                  SKU: {stock.displaySku || stock.productSku || 'N/A'}
+                                </div>
+                                {stock.displayUpc && stock.displayUpc !== 'N/A' && (
+                                  <div className="text-gray-500">UPC: {stock.displayUpc}</div>
+                                )}
+                                {stock.variationName && (
+                                  <div className="text-xs text-blue-600 font-medium mt-1">
+                                    Variation: {stock.variationName}
+                                    {stock.variationSku && ` (SKU: ${stock.variationSku})`}
+                                    {stock.variationUpc && stock.variationUpc !== 'N/A' && ` (UPC: ${stock.variationUpc})`}
+                                  </div>
+                                )}
                               </div>
                             </td>
                             <td className="px-3 py-3 text-center">
@@ -3198,15 +3348,31 @@ const EnhancedInventoryManagement = () => {
                             </td>
                             <td className="px-4 py-3">
                               <div className="max-w-[200px]">
-                                <div className="font-medium text-gray-900 text-sm" title={stock.productName}>
-                                  {stock.productName}
+                                <div className="font-medium text-gray-900 text-sm">
+                                  {stock.fullProductName || stock.productName}
                                 </div>
+                                {stock.combinationDisplay && (
+                                  <div className="text-xs text-gray-500 mt-0.5">
+                                    {stock.combinationDisplay}
+                                  </div>
+                                )}
                               </div>
                             </td>
                             <td className="px-4 py-3 text-xs">
                               <div className="space-y-1">
-                                <div className="font-medium">SKU: {stock.sku}</div>
-                                {stock.upc && <div className="text-gray-500">UPC: {stock.upc}</div>}
+                                <div className="font-medium">
+                                  SKU: {stock.displaySku || stock.productSku || 'N/A'}
+                                </div>
+                                {stock.displayUpc && stock.displayUpc !== 'N/A' && (
+                                  <div className="text-gray-500">UPC: {stock.displayUpc}</div>
+                                )}
+                                {stock.variationName && (
+                                  <div className="text-xs text-blue-600 font-medium mt-1">
+                                    Variation: {stock.variationName}
+                                    {stock.variationSku && ` (SKU: ${stock.variationSku})`}
+                                    {stock.variationUpc && stock.variationUpc !== 'N/A' && ` (UPC: ${stock.variationUpc})`}
+                                  </div>
+                                )}
                               </div>
                             </td>
                             <td className="px-3 py-3 text-center">
@@ -3374,8 +3540,6 @@ const EnhancedInventoryManagement = () => {
                       <option value="ALL">All Types</option>
                       <option value="STOCK_IN">Stock In</option>
                       <option value="TRANSFER">Transfer</option>
-                      <option value="TRANSFER_IN">Transfer In</option>
-                      <option value="TRANSFER_OUT">Transfer Out</option>
                       <option value="RETURN">Return</option>
                       <option value="DAMAGE">Damage</option>
                       <option value="DELIVERY">Delivery</option>
@@ -3464,7 +3628,6 @@ const EnhancedInventoryManagement = () => {
                       <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Items</th>
                       <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Quantity</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date & Time</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Verified By</th>
                       <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
                     </tr>
                   </thead>
@@ -3543,20 +3706,13 @@ const EnhancedInventoryManagement = () => {
 
                                 try {
                                   let date;
-
-                                  // Check if it's an array (Jackson timestamp array format)
                                   if (Array.isArray(transactionTimestamp)) {
-                                    // Array format: [year, month, day, hour, minute, second, nanosecond]
                                     const [year, month, day, hour, minute, second] = transactionTimestamp;
-                                    // Month in JavaScript Date is 0-indexed, so subtract 1
                                     date = new Date(year, month - 1, day, hour || 0, minute || 0, second || 0);
                                   } else {
-                                    // String format: convert SQL timestamp to ISO
                                     const isoTimestamp = String(transactionTimestamp).replace(' ', 'T');
                                     date = new Date(isoTimestamp);
                                   }
-
-                                  // Validate the date
                                   if (isNaN(date.getTime())) {
                                     console.error('Invalid date:', transactionTimestamp);
                                     return (
@@ -3596,7 +3752,6 @@ const EnhancedInventoryManagement = () => {
                                 }
                               })()}
                             </td>
-                            <td className="px-4 py-3 text-sm">{transaction.verifiedBy || transaction.preparedBy || transaction.generatedBy || 'N/A'}</td>
                             <td className="px-4 py-3 text-center">
                               <button
                                 onClick={() => handleViewTransaction(transaction)}
