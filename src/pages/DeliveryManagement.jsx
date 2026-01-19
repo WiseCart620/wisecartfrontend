@@ -384,16 +384,9 @@ const DeliveryManagement = () => {
 
   const loadWarehouseStock = async (warehouseId, productId, variationId, itemIndex) => {
     if (!warehouseId || !productId) return;
-
-
-
     const stockKey = variationId
       ? `${itemIndex}_${productId}_${variationId}_${warehouseId}`
       : `${itemIndex}_${productId}_${warehouseId}`;
-
-    if (warehouseStocks[stockKey]) {
-      return;
-    }
 
     setLoadingStocks(prev => ({ ...prev, [stockKey]: true }));
     setStockErrors(prev => ({ ...prev, [stockKey]: null }));
@@ -404,18 +397,24 @@ const DeliveryManagement = () => {
         : `/stocks/warehouses/${warehouseId}/products/${productId}`;
 
 
-
       const stock = await api.get(endpoint);
 
-      if (stock.success || stock.data) {
+      const stockData = stock.success ? stock.data : stock;
 
+      if (stockData) {
         setWarehouseStocks(prev => ({
           ...prev,
-          [stockKey]: stock.data || stock
+          [stockKey]: stockData
+        }));
+      } else {
+        console.warn('⚠️ No stock data received');
+        setWarehouseStocks(prev => ({
+          ...prev,
+          [stockKey]: { quantity: 0, availableQuantity: 0 }
         }));
       }
     } catch (error) {
-      console.error('Failed to load stock information:', error);
+      console.error('❌ Failed to load stock information:', error);
       setWarehouseStocks(prev => ({
         ...prev,
         [stockKey]: { quantity: 0, availableQuantity: 0 }
@@ -515,6 +514,7 @@ const DeliveryManagement = () => {
           variationId: selectedOption.variationId || null
         };
 
+
         setFormData({ ...formData, items: newItems });
         if (newItems[index].warehouseId) {
           setTimeout(() => {
@@ -536,9 +536,14 @@ const DeliveryManagement = () => {
 
     if (field === 'warehouseId' && value !== oldWarehouseId) {
       const item = newItems[index];
+      setFormData({ ...formData, items: newItems });
+
       if (item.productId && value) {
-        await loadWarehouseStock(value, item.productId, item.variationId, index);
+        setTimeout(() => {
+          loadWarehouseStock(value, item.productId, item.variationId, index);
+        }, 100);
       }
+
       newItems[index].preparedQty = '';
       newItems[index].deliveredQty = '';
       newItems[index].uom = '';
@@ -549,6 +554,27 @@ const DeliveryManagement = () => {
   useEffect(() => {
     loadData();
   }, [filterData.status])
+
+
+
+
+  useEffect(() => {
+    if (formData.selectedWarehouseId && formData.items.length > 0) {
+      formData.items.forEach((item, index) => {
+        if (item.productId) {
+          loadWarehouseStock(
+            formData.selectedWarehouseId,
+            item.productId,
+            item.variationId,
+            index
+          );
+        }
+      });
+    }
+  }, [formData.selectedWarehouseId]);
+
+
+
 
   const loadData = async () => {
     try {
@@ -865,8 +891,6 @@ const DeliveryManagement = () => {
         const itemIndex = formData.items.indexOf(item);
         const stockKey = `${itemIndex}_${item.productId}_${item.warehouseId}`;
         const stockInfo = warehouseStocks[stockKey];
-
-        // ✅ NEW LOGIC: Delivered can be ≤ (Prepared + Available)
         const maxAllowedQty = (item.preparedQty || 0) + (stockInfo?.availableQuantity || 0);
 
         if (item.deliveredQty > maxAllowedQty) {
@@ -2053,11 +2077,14 @@ const DeliveryManagement = () => {
                                     <div className="font-semibold text-sm">
                                       Available Stock: {stockInfo.availableQuantity || 0}
                                     </div>
+                                    <div className="text-xs text-gray-500">
+                                      Total: {stockInfo.quantity || 0} | Reserved: {stockInfo.reservedQuantity || 0}
+                                    </div>
                                     {modalMode === 'edit' && item.originalPreparedQty > 0 && (
                                       <div className="text-xs text-blue-600">
-                                        + Originally Reserved: {item.originalPreparedQty}
+                                        Originally Reserved: {item.originalPreparedQty}
                                         <div className="font-semibold text-green-700">
-                                          = Effective Available: {(stockInfo.availableQuantity || 0) + (item.originalPreparedQty || 0)}
+                                          Effective Available: {(stockInfo.availableQuantity || 0) + (item.originalPreparedQty || 0)}
                                         </div>
                                       </div>
                                     )}

@@ -116,6 +116,7 @@ const GroupedSearchableDropdown = ({ options, value, onChange, placeholder }) =>
 };
 
 
+
 const ProductDropdown = ({ options, value, onChange, placeholder }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -2074,11 +2075,16 @@ const EnhancedInventoryManagement = () => {
     try {
       setActionLoading(true);
       setLoadingMessage('Loading transaction history...');
+
       let targetId;
+      let targetType;
+
       if (product.isVariation && product.variationId) {
         targetId = product.variationId;
+        targetType = 'variation';
       } else {
         targetId = product.productId;
+        targetType = 'product';
       }
 
       setSelectedProduct({
@@ -2094,9 +2100,19 @@ const EnhancedInventoryManagement = () => {
         warehouseId: product.warehouseId,
         warehouseName: product.warehouseName,
         branchId: product.branchId,
-        branchName: product.branchName
+        branchName: product.branchName,
+        // ADD: Pass the target type for API call
+        targetId: targetId,
+        targetType: targetType
       });
-      const transactionsRes = await api.get(`/transactions/product/${targetId}`);
+
+      let transactionsRes;
+      if (product.isVariation && product.variationId) {
+        transactionsRes = await api.get(`/transactions/variation/${product.variationId}`);
+      } else {
+        transactionsRes = await api.get(`/transactions/product/${product.productId}`);
+      }
+
       const transactionsData = transactionsRes.success ? transactionsRes.data || [] : [];
 
       setProductTransactions(transactionsData);
@@ -2112,106 +2128,125 @@ const EnhancedInventoryManagement = () => {
   };
 
 
-  const handleViewStockTransactions = async (stock, locationType) => {
-    try {
-      setActionLoading(true);
-      setLoadingMessage('Loading stock transactions...');
+ const handleViewStockTransactions = async (stock, locationType) => {
+  try {
+    setActionLoading(true);
+    setLoadingMessage('Loading stock transactions...');
 
-      setSelectedProduct({
-        productId: stock.productId,
-        productName: stock.productName,
-        sku: stock.sku,
-        warehouseId: stock.warehouseId,
-        warehouseName: stock.warehouseName,
-        branchId: stock.branchId,
-        branchName: stock.branchName,
-        locationType: locationType
-      });
+    // Check if this stock has variation information
+    const hasVariation = stock.variationId || stock.isVariation;
+    const targetId = hasVariation ? (stock.variationId || stock.id) : (stock.productId || stock.id);
+    const targetType = hasVariation ? 'variation' : 'product';
 
-      const transactionsRes = await api.get(`/transactions/product/${stock.productId}`);
-      const transactionsData = transactionsRes.success ? transactionsRes.data || [] : [];
+    setSelectedProduct({
+      productId: stock.productId,
+      variationId: stock.variationId,
+      productName: stock.productName,
+      sku: stock.sku,
+      warehouseId: stock.warehouseId,
+      warehouseName: stock.warehouseName,
+      branchId: stock.branchId,
+      branchName: stock.branchName,
+      locationType: locationType,
+      variationName: stock.variationName,
+      variationSku: stock.variationSku,
+      isVariation: hasVariation,
+      targetId: targetId,
+      targetType: targetType
+    });
 
-
-      // Filter transactions for this specific location
-      let filteredTransactions = transactionsData;
-      if (locationType === 'warehouse' && stock.warehouseId) {
-        filteredTransactions = transactionsData.filter(t => {
-          const transactionType = t.transactionType || t.inventoryType;
-
-          // For TRANSFER - show BOTH sending out (SUBTRACT) AND receiving in (ADD)
-          if (transactionType === 'TRANSFER') {
-            // Show SUBTRACT if this warehouse is the source (sending out)
-            const isSendingOut = t.fromWarehouse?.id === stock.warehouseId && t.action === 'SUBTRACT';
-            // Show ADD if this warehouse is the destination (receiving in)
-            const isReceivingIn = t.toWarehouse?.id === stock.warehouseId && t.action === 'ADD';
-            return isSendingOut || isReceivingIn;
-          }
-
-          // For DELIVERY - only show SUBTRACT (warehouse side - sending to branch)
-          if (transactionType === 'DELIVERY') {
-            return t.fromWarehouse?.id === stock.warehouseId && t.action === 'SUBTRACT';
-          }
-
-          // For STOCK_IN - show if warehouse is the destination
-          if (transactionType === 'STOCK_IN') {
-            return t.toWarehouse?.id === stock.warehouseId;
-          }
-
-          // For RETURN - show ADD (receiving returns back to warehouse)
-          if (transactionType === 'RETURN') {
-            return t.toWarehouse?.id === stock.warehouseId && t.action === 'ADD';
-          }
-
-          // For DAMAGE - show SUBTRACT (damaged items removed from warehouse)
-          if (transactionType === 'DAMAGE') {
-            return t.fromWarehouse?.id === stock.warehouseId && t.action === 'SUBTRACT';
-          }
-
-          // For other transactions, show if warehouse is involved in either side
-          return t.fromWarehouse?.id === stock.warehouseId ||
-            t.toWarehouse?.id === stock.warehouseId;
-        });
-      } else if (locationType === 'branch' && stock.branchId) {
-        filteredTransactions = transactionsData.filter(t => {
-          const transactionType = t.transactionType || t.inventoryType;
-
-          // For TRANSFER - only show ADD (receiving at branch)
-          if (transactionType === 'TRANSFER') {
-            return t.toBranch?.id === stock.branchId && t.action === 'ADD';
-          }
-
-          // For DELIVERY - only show ADD (branch side - receiving from warehouse)
-          if (transactionType === 'DELIVERY') {
-            return t.toBranch?.id === stock.branchId && t.action === 'ADD';
-          }
-
-          // For SALE - show SUBTRACT (items sold from branch)
-          if (transactionType === 'SALE') {
-            return t.fromBranch?.id === stock.branchId && t.action === 'SUBTRACT';
-          }
-
-          // For RETURN - show SUBTRACT (items returned from branch)
-          if (transactionType === 'RETURN') {
-            return t.fromBranch?.id === stock.branchId && t.action === 'SUBTRACT';
-          }
-
-          // For other transactions, show if branch is involved in either side
-          return t.fromBranch?.id === stock.branchId ||
-            t.toBranch?.id === stock.branchId;
-        });
-      }
-
-      setProductTransactions(filteredTransactions);
-      setShowTransactionsModal(true);
-    } catch (err) {
-      console.error('Failed to load stock transactions:', err);
-      toast.error('Failed to load transactions');
-    } finally {
-      // ✅ ADD THESE LINES
-      setActionLoading(false);
-      setLoadingMessage('');
+    // Use the appropriate API endpoint based on whether it's a variation or base product
+    let transactionsRes;
+    if (hasVariation && stock.variationId) {
+      transactionsRes = await api.get(`/transactions/variation/${stock.variationId}`);
+    } else {
+      transactionsRes = await api.get(`/transactions/product/${stock.productId || stock.id}`);
     }
-  };
+    
+    const transactionsData = transactionsRes.success ? transactionsRes.data || [] : [];
+
+    // Filter transactions for this specific location
+    let filteredTransactions = transactionsData;
+    if (locationType === 'warehouse' && stock.warehouseId) {
+      filteredTransactions = transactionsData.filter(t => {
+        const transactionType = t.transactionType || t.inventoryType;
+
+        // For TRANSFER - show BOTH sending out (SUBTRACT) AND receiving in (ADD)
+        if (transactionType === 'TRANSFER') {
+          // Show SUBTRACT if this warehouse is the source (sending out)
+          const isSendingOut = t.fromWarehouse?.id === stock.warehouseId && t.action === 'SUBTRACT';
+          // Show ADD if this warehouse is the destination (receiving in)
+          const isReceivingIn = t.toWarehouse?.id === stock.warehouseId && t.action === 'ADD';
+          return isSendingOut || isReceivingIn;
+        }
+
+        // For DELIVERY - only show SUBTRACT (warehouse side - sending to branch)
+        if (transactionType === 'DELIVERY') {
+          return t.fromWarehouse?.id === stock.warehouseId && t.action === 'SUBTRACT';
+        }
+
+        // For STOCK_IN - show if warehouse is the destination
+        if (transactionType === 'STOCK_IN') {
+          return t.toWarehouse?.id === stock.warehouseId;
+        }
+
+        // For RETURN - show ADD (receiving returns back to warehouse)
+        if (transactionType === 'RETURN') {
+          return t.toWarehouse?.id === stock.warehouseId && t.action === 'ADD';
+        }
+
+        // For DAMAGE - show SUBTRACT (damaged items removed from warehouse)
+        if (transactionType === 'DAMAGE') {
+          return t.fromWarehouse?.id === stock.warehouseId && t.action === 'SUBTRACT';
+        }
+
+        // For other transactions, show if warehouse is involved in either side
+        return t.fromWarehouse?.id === stock.warehouseId ||
+          t.toWarehouse?.id === stock.warehouseId;
+      });
+    } else if (locationType === 'branch' && stock.branchId) {
+      filteredTransactions = transactionsData.filter(t => {
+        const transactionType = t.transactionType || t.inventoryType;
+
+        // For TRANSFER - only show ADD (receiving at branch)
+        if (transactionType === 'TRANSFER') {
+          return t.toBranch?.id === stock.branchId && t.action === 'ADD';
+        }
+
+        // For DELIVERY - only show ADD (branch side - receiving from warehouse)
+        if (transactionType === 'DELIVERY') {
+          return t.toBranch?.id === stock.branchId && t.action === 'ADD';
+        }
+
+        // For SALE - show SUBTRACT (items sold from branch)
+        if (transactionType === 'SALE') {
+          return t.fromBranch?.id === stock.branchId && t.action === 'SUBTRACT';
+        }
+
+        // For RETURN - show SUBTRACT (items returned from branch)
+        if (transactionType === 'RETURN') {
+          return t.fromBranch?.id === stock.branchId && t.action === 'SUBTRACT';
+        }
+
+        // For other transactions, show if branch is involved in either side
+        return t.fromBranch?.id === stock.branchId ||
+          t.toBranch?.id === stock.branchId;
+      });
+    }
+
+    setProductTransactions(filteredTransactions);
+    setShowTransactionsModal(true);
+  } catch (err) {
+    console.error('Failed to load stock transactions:', err);
+    toast.error('Failed to load transactions');
+  } finally {
+    setActionLoading(false);
+    setLoadingMessage('');
+  }
+};
+
+
+
 
   const calculateTotalQuantity = (items) => {
     if (!items || !Array.isArray(items)) return 0;
@@ -2710,20 +2745,17 @@ const EnhancedInventoryManagement = () => {
                     ) : (
                       currentProductSummaries.map((product) => {
                         const isVariation = product.isVariation || product.variationId;
-
-                        // Generate a unique key for each product/variation
                         const uniqueKey = isVariation
                           ? `variation-${product.variationId}-${product.productId}`
                           : `product-${product.productId}`;
 
-                        // For variations, use variation-specific SKU/UPC if available
                         const displaySku = isVariation ? (product.variationSku || product.sku) : product.sku;
                         const displayUpc = isVariation ? (product.variationUpc || product.upc) : product.upc;
 
                         return (
                           <tr
                             key={uniqueKey}
-                            className={`hover:bg-gray-50 ${isVariation ? 'bg-blue-50 border-l-4 border-blue-400' : ''}`}
+                            className="hover:bg-gray-50"
                           >
                             <td className="px-3 py-3">
                               <div className="max-w-[200px]">
@@ -2749,23 +2781,6 @@ const EnhancedInventoryManagement = () => {
                                 </div>
                                 {displayUpc && displayUpc !== 'N/A' && (
                                   <div className="text-gray-500">UPC: {displayUpc}</div>
-                                )}
-                                {isVariation && (
-                                  <>
-                                    {product.sku && product.sku !== displaySku && (
-                                      <div className="text-xs text-gray-400 mt-1">
-                                        Base SKU: {product.sku}
-                                      </div>
-                                    )}
-                                    {product.upc && product.upc !== displayUpc && (
-                                      <div className="text-xs text-gray-400">
-                                        Base UPC: {product.upc}
-                                      </div>
-                                    )}
-                                    <div className="text-xs text-blue-700 font-medium bg-blue-100 px-2 py-1 rounded mt-1 inline-block">
-                                      Product Variation
-                                    </div>
-                                  </>
                                 )}
                               </div>
                             </td>
@@ -2824,7 +2839,8 @@ const EnhancedInventoryManagement = () => {
                                     sku: displaySku,
                                     upc: displayUpc,
                                     isVariation: isVariation,
-                                    variationName: product.variationName
+                                    variationName: product.variationName,
+                                    variationSku: product.variationSku
                                   };
                                   handleViewTransactions(targetProduct, true);
                                 }}
@@ -3058,10 +3074,12 @@ const EnhancedInventoryManagement = () => {
                             <td className="px-4 py-3 text-xs">
                               <div className="space-y-1">
                                 <div className="font-medium">
-                                  SKU: {stock.displaySku || stock.productSku || 'N/A'}
+                                  SKU: {stock.variationSku || stock.productSku || stock.sku || 'N/A'}
                                 </div>
-                                {stock.displayUpc && stock.displayUpc !== 'N/A' && (
-                                  <div className="text-gray-500">UPC: {stock.displayUpc}</div>
+                                {(stock.variationUpc || stock.productUpc || stock.upc) && (stock.variationUpc || stock.productUpc || stock.upc) !== 'N/A' && (
+                                  <div className="text-gray-500">
+                                    UPC: {stock.variationUpc || stock.productUpc || stock.upc}
+                                  </div>
                                 )}
                                 {stock.variationName && (
                                   <div className="text-xs text-blue-600 font-medium mt-1">
@@ -3080,7 +3098,6 @@ const EnhancedInventoryManagement = () => {
                                 {stock.quantity || 0}
                               </span>
                             </td>
-                            {/* ✅ Use backend value - deliveredQuantity */}
                             <td className="px-3 py-3 text-center">
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
                                 <CheckCircle size={12} />
@@ -3088,7 +3105,7 @@ const EnhancedInventoryManagement = () => {
                               </span>
                             </td>
 
-                            {/* ✅ Use backend value - pendingDeliveries */}
+
                             <td className="px-3 py-3 text-center">
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                                 <Truck size={12} />
@@ -3330,10 +3347,6 @@ const EnhancedInventoryManagement = () => {
                       </tr>
                     ) : (
                       currentBranchStocks.map((stock) => {
-                        const confirmedSales = stock.confirmedSales || 0;
-                        const invoicedSales = stock.invoicedSales || 0;
-                        const totalSales = confirmedSales + invoicedSales;
-
                         return (
                           <tr key={stock.id} className="hover:bg-gray-50">
                             <td className="px-4 py-3">
@@ -3361,10 +3374,12 @@ const EnhancedInventoryManagement = () => {
                             <td className="px-4 py-3 text-xs">
                               <div className="space-y-1">
                                 <div className="font-medium">
-                                  SKU: {stock.displaySku || stock.productSku || 'N/A'}
+                                  SKU: {stock.variationSku || stock.productSku || stock.sku || 'N/A'}
                                 </div>
-                                {stock.displayUpc && stock.displayUpc !== 'N/A' && (
-                                  <div className="text-gray-500">UPC: {stock.displayUpc}</div>
+                                {(stock.variationUpc || stock.productUpc || stock.upc) && (stock.variationUpc || stock.productUpc || stock.upc) !== 'N/A' && (
+                                  <div className="text-gray-500">
+                                    UPC: {stock.variationUpc || stock.productUpc || stock.upc}
+                                  </div>
                                 )}
                                 {stock.variationName && (
                                   <div className="text-xs text-blue-600 font-medium mt-1">
@@ -3389,34 +3404,29 @@ const EnhancedInventoryManagement = () => {
                                 {stock.deliveredQuantity || 0}
                               </span>
                             </td>
-
                             <td className="px-3 py-3 text-center">
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
                                 <ShoppingCart size={12} />
                                 {stock.totalSales || 0}
                               </span>
                             </td>
-
                             <td className="px-3 py-3 text-center">
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                                 <Truck size={12} />
                                 {stock.pendingDeliveries || 0}
                               </span>
                             </td>
-
                             <td className="px-3 py-3 text-center">
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                                 <Clock size={12} />
                                 {stock.pendingSales || 0}
                               </span>
                             </td>
-
                             <td className="px-3 py-3 text-center">
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                 {stock.availableQuantity || 0}
                               </span>
                             </td>
-
                             <td className="px-4 py-3 text-xs text-gray-500">
                               {(() => {
                                 const date = parseDate(stock.lastUpdated);
@@ -3429,7 +3439,6 @@ const EnhancedInventoryManagement = () => {
                                 );
                               })()}
                             </td>
-
                             <td className="px-4 py-3 text-center">
                               <button
                                 onClick={() => handleViewStockTransactions(stock, 'branch')}

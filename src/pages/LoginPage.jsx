@@ -46,8 +46,8 @@ const LoginPage = () => {
 
       localStorage.setItem('authToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
-      
-      // Fetch full user details from /me endpoint
+
+
       const userResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/me`, {
         method: 'GET',
         headers: {
@@ -59,24 +59,32 @@ const LoginPage = () => {
       let userData;
       if (userResponse.ok) {
         userData = await userResponse.json();
+        console.log('✅ Fetched user data from /me:', userData);
       } else {
-        // Fallback if /me endpoint fails
+        console.warn('⚠️ /me endpoint failed, using JWT fallback');
+
         userData = {
           username: data.username,
           role: decodeJWT(data.accessToken)?.role || 'USER'
         };
       }
-      
+
+
       localStorage.setItem('user', JSON.stringify(userData));
-      
-      // Update context
+
+
+      const userRole = userData.role || 'USER';
+      localStorage.setItem('userRole', userRole);
+
+      console.log('✅ Login successful - Username:', userData.username, 'Role:', userRole);
+
       login(data.accessToken, userData);
 
       toast.success(`Welcome back, ${userData.fullName || userData.username}!`);
-      
+
       // Use navigate instead of window.location.href
       navigate('/dashboard', { replace: true });
-      
+
     } catch (err) {
       console.error('Login error:', err);
       setError(err.message);

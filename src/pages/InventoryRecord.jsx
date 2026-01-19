@@ -96,6 +96,13 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
 
 
 
+const isAdmin = () => {
+  const userRole = localStorage.getItem('userRole') || 'USER';
+  return userRole === 'ADMIN';
+};
+
+
+
 const VariationSearchableDropdown = ({ options, value, onChange, placeholder, required = false, formData, index }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -118,7 +125,9 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
       option.subLabel?.toLowerCase().includes(searchLower) ||
       option.fullName?.toLowerCase().includes(searchLower) ||
       option.upc?.toLowerCase().includes(searchLower) ||
-      option.sku?.toLowerCase().includes(searchLower)
+      option.sku?.toLowerCase().includes(searchLower) ||
+      (option.upc && option.upc.toLowerCase().includes(searchLower)) ||
+      (option.sku && option.sku.toLowerCase().includes(searchLower))
     );
   });
 
@@ -256,6 +265,7 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
               </div>
             )}
 
+
             {/* Badge Row */}
             <div className="pt-1">
               {selectedOption.isVariation ? (
@@ -271,6 +281,7 @@ const VariationSearchableDropdown = ({ options, value, onChange, placeholder, re
           </div>
         </div>
       )}
+
     </div>
 
   );
@@ -527,6 +538,38 @@ const InventoryRecordsManagement = () => {
     loadData();
   }, [statusFilter]);
 
+
+  useEffect(() => {
+    const hasLocation = formData.fromWarehouseId || formData.fromBranchId ||
+      formData.toWarehouseId || formData.toBranchId;
+
+    if (hasLocation && formData.items.length > 0) {
+      formData.items.forEach((item, index) => {
+        if (item.productId) {
+          loadLocationStock(item.productId, item.variationId, index);
+        }
+      });
+    }
+  }, [formData.fromWarehouseId, formData.fromBranchId, formData.toWarehouseId, formData.toBranchId]);
+
+
+
+  useEffect(() => {
+    const userRole = localStorage.getItem('userRole');
+    const userStr = localStorage.getItem('user');
+
+    if (!userRole && userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        const role = user.role || 'USER';
+        localStorage.setItem('userRole', role);
+      } catch (e) {
+        console.error('❌ Error parsing user data:', e);
+      }
+    }
+  }, []);
+
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -581,8 +624,12 @@ const InventoryRecordsManagement = () => {
         locationId = formData.toBranchId;
         locationType = 'branch';
       }
-
       if (!locationId || !productId || !locationType) {
+        setLoadingStocks(prev => {
+          const newState = { ...prev };
+          delete newState[loadingKey];
+          return newState;
+        });
         return;
       }
 
@@ -628,8 +675,17 @@ const InventoryRecordsManagement = () => {
       }
     } catch (error) {
       console.error('Failed to load stock:', error);
+    } finally {
+      setLoadingStocks(prev => {
+        const newState = { ...prev };
+        delete newState[loadingKey];
+        return newState;
+      });
     }
   };
+
+
+
 
 
 
@@ -689,6 +745,13 @@ const InventoryRecordsManagement = () => {
     }
   };
 
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedInventory(null);
+    setWarehouseStocks({});
+    setBranchStocks({});
+  };
+
 
   const handleOpenModal = async (mode, inventory = null) => {
     setModalMode(mode);
@@ -710,32 +773,24 @@ const InventoryRecordsManagement = () => {
       });
       setWarehouseStocks({});
       setBranchStocks({});
+      setShowModal(true);
+
     } else if (mode === 'edit' && inventory) {
-      // ✅ CHECK IF CONFIRMED INVENTORY CAN BE MODIFIED
       if (inventory.status === 'CONFIRMED') {
-        const canModify = await checkCanModify(inventory.id);
-        if (!canModify) {
-          alert('❌ Cannot edit this inventory record\n\nThe stock from this inventory has already been used in deliveries or sales.\n\nTo modify this record, you would need to:\n1. Revert any deliveries/sales that used this stock\n2. Then edit the inventory record\n\nContact your administrator for assistance.');
-          return;
-        }
-
-        // Show warning that editing will revert stock
-        const confirmEdit = window.confirm(
-          '⚠️ Warning: Editing CONFIRMED Inventory\n\n' +
-          'This inventory has been confirmed but the stock hasn\'t been used yet.\n\n' +
-          'Editing will:\n' +
-          '• Revert this inventory to PENDING status\n' +
-          '• Reverse the stock changes that were applied\n' +
-          '• Require re-confirmation after editing\n\n' +
-          'Do you want to continue?'
-        );
-
-        if (!confirmEdit) {
-          return;
-        }
+        alert('⚠️ CONFIRMED INVENTORY CANNOT BE EDITED\n\n' +
+          'Once an inventory is confirmed, it cannot be edited.\n\n' +
+          'Stock changes have been applied to the system.\n\n' +
+          'If you need to make changes:\n' +
+          '1. Delete this record (admin only, if stock hasn\'t been used)\n' +
+          '2. Create a new inventory record with the correct information\n\n' +
+          'Contact your administrator for assistance.');
+        return;
       }
 
       try {
+        setActionLoading(true);
+        setLoadingMessage('Loading inventory details...');
+
         const fullInventoryRes = await api.get(`/inventories/${inventory.id}`);
 
         if (!fullInventoryRes.success) {
@@ -776,29 +831,35 @@ const InventoryRecordsManagement = () => {
             );
           }
         }
+
+        setActionLoading(false);
+        setLoadingMessage('');
+        setShowModal(true);
       } catch (error) {
         console.error('Failed to load inventory details');
         alert('Failed to load inventory details: ' + error.message);
+        setActionLoading(false);
+        setLoadingMessage('');
       }
     } else if (mode === 'view' && inventory) {
       try {
+        setActionLoading(true);
+        setLoadingMessage('Loading inventory details...');
+
         const fullInventoryRes = await api.get(`/inventories/${inventory.id}`);
         if (fullInventoryRes.success) {
           setSelectedInventory(fullInventoryRes.data);
         }
+
+        setActionLoading(false);
+        setLoadingMessage('');
+        setShowModal(true);
       } catch (error) {
         console.error('Failed to load inventory details:', error);
+        setActionLoading(false);
+        setLoadingMessage('');
       }
     }
-
-    setShowModal(true);
-  };
-
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setSelectedInventory(null);
-    setWarehouseStocks({});
-    setBranchStocks({});
   };
 
 
@@ -810,9 +871,8 @@ const InventoryRecordsManagement = () => {
       const selectedOption = productOptions.find(opt => opt.id === value);
 
       if (selectedOption) {
-        // ✅ CHECK IF THIS EXACT COMBINATION ALREADY EXISTS IN OTHER ITEMS
         const isDuplicate = formData.items.some((item, idx) => {
-          if (idx === index) return false; // Skip current item
+          if (idx === index) return false;
 
           return (
             item.productId === selectedOption.originalProductId &&
@@ -832,13 +892,19 @@ const InventoryRecordsManagement = () => {
         };
 
         setFormData({ ...formData, items: newItems });
-        setTimeout(() => {
-          loadLocationStock(
-            selectedOption.originalProductId,
-            selectedOption.originalVariationId,
-            index
-          );
-        }, 0);
+
+        const hasLocation = formData.fromWarehouseId || formData.fromBranchId ||
+          formData.toWarehouseId || formData.toBranchId;
+
+        if (hasLocation) {
+          setTimeout(() => {
+            loadLocationStock(
+              selectedOption.originalProductId,
+              selectedOption.originalVariationId,
+              index
+            );
+          }, 0);
+        }
 
         return;
       }
@@ -898,14 +964,6 @@ const InventoryRecordsManagement = () => {
       return;
     }
 
-
-    console.log('=== SUBMITTING INVENTORY ===');
-    console.log('Items being sent:', formData.items.map(item => ({
-      productId: item.productId,
-      variationId: item.variationId,
-      quantity: item.quantity
-    })));
-
     const duplicates = formData.items.filter((item, index) =>
       formData.items.findIndex(i =>
         i.productId === item.productId &&
@@ -928,11 +986,13 @@ const InventoryRecordsManagement = () => {
         status: 'PENDING'
       };
 
+      const userRole = localStorage.getItem('userRole') || 'USER';
+
       if (modalMode === 'create') {
         const response = await api.post('/inventories', payload);
         alert('Inventory record created successfully as PENDING!');
       } else {
-        await api.put(`/inventories/${selectedInventory.id}`, payload);
+        await api.put(`/inventories/${selectedInventory.id}?userRole=${userRole}`, payload);
         alert('Inventory record updated successfully!');
       }
 
@@ -1012,28 +1072,49 @@ const InventoryRecordsManagement = () => {
 
   const handleDelete = async (id) => {
     const inventory = inventories.find(inv => inv.id === id);
+    const userRole = localStorage.getItem('userRole') || 'USER';
 
     if (inventory && inventory.status === 'CONFIRMED') {
-
-      const canModify = await checkCanModify(id);
-
-      if (!canModify) {
-        alert('❌ Cannot delete this inventory record\n\nThe stock from this inventory has already been used in deliveries or sales.\n\nDeleting this would create stock inconsistencies.\n\nContact your administrator if you need to adjust this record.');
+      if (userRole !== 'ADMIN') {
+        alert('⚠️ PERMISSION DENIED\n\nOnly administrators can delete CONFIRMED inventory records.\n\nPlease contact your system administrator if you need to delete this record.');
         return;
       }
 
-      // Show warning about deleting confirmed inventory
-      const confirmDelete = window.confirm(
-        '⚠️ Warning: Deleting CONFIRMED Inventory\n\n' +
-        'This inventory has been confirmed but the stock hasn\'t been used yet.\n\n' +
-        'Deleting will:\n' +
-        '• Permanently remove this inventory record\n' +
-        '• Reverse all stock changes that were applied\n' +
-        '• Cannot be undone\n\n' +
-        'Are you absolutely sure you want to delete this record?'
-      );
+      try {
+        setActionLoading(true);
+        setLoadingMessage('Checking if inventory can be deleted...');
 
-      if (!confirmDelete) {
+        const canModifyResponse = await api.get(`/inventories/${id}/can-modify`);
+
+        const responseData = canModifyResponse?.data?.data || canModifyResponse?.data;
+        const canModify = responseData?.canModify ?? false;
+
+        setActionLoading(false);
+        setLoadingMessage('');
+
+        if (!canModify) {
+          alert('❌ Cannot delete this inventory record\n\nThe stock from this inventory has already been used in deliveries or sales.\n\nDeleting this would create stock inconsistencies.\n\nContact your administrator if you need to adjust this record.');
+          return;
+        }
+
+        const confirmDelete = window.confirm(
+          '⚠️ Warning: Deleting CONFIRMED Inventory\n\n' +
+          'This inventory has been confirmed but the stock hasn\'t been used yet.\n\n' +
+          'Deleting will:\n' +
+          '• Permanently remove this inventory record\n' +
+          '• Reverse all stock changes that were applied\n' +
+          '• Cannot be undone\n\n' +
+          'Are you absolutely sure you want to delete this record?'
+        );
+
+        if (!confirmDelete) {
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking if can modify:', error);
+        setActionLoading(false);
+        setLoadingMessage('');
+        alert('Failed to check if inventory can be deleted. Please try again.');
         return;
       }
     } else {
@@ -1046,7 +1127,8 @@ const InventoryRecordsManagement = () => {
       setActionLoading(true);
       setLoadingMessage('Deleting inventory record...');
 
-      const response = await api.delete(`/inventories/${id}`);
+      const userRole = localStorage.getItem('userRole') || 'USER';
+      const response = await api.delete(`/inventories/${id}?userRole=${userRole}`);
 
       if (response.success) {
         alert('✅ Inventory deleted successfully');
@@ -1144,11 +1226,13 @@ const InventoryRecordsManagement = () => {
     setWarehouseStocks({});
     setBranchStocks({});
 
-    if (newFormData.items.length > 0) {
+    if (newFormData.items.length > 0 && (warehouseId || branchId)) {
       for (let i = 0; i < newFormData.items.length; i++) {
         const item = newFormData.items[i];
         if (item.productId) {
-          await loadLocationStock(item.productId, i);
+          setTimeout(() => {
+            loadLocationStock(item.productId, item.variationId, i);
+          }, 100);
         }
       }
     }
@@ -1231,7 +1315,6 @@ const InventoryRecordsManagement = () => {
   const totalPages = Math.ceil(filteredInventories.length / itemsPerPage);
 
   const productOptions = products.flatMap(p => {
-    // Helper function to truncate product name to first 10 words
     const truncateProductName = (name) => {
       if (!name) return '';
       const words = name.trim().split(/\s+/);
@@ -1245,9 +1328,7 @@ const InventoryRecordsManagement = () => {
         const truncatedName = truncateProductName(p.productName);
         const upc = v.upc || p.upc || 'No UPC';
         const sku = v.sku || p.sku || 'No SKU';
-
-        // Format: UPC - Product Name (truncated) - SKU
-        const displayName = `${upc} - ${truncatedName} - ${sku}`;
+        const displayName = `${upc || sku} - ${truncatedName}`;
 
         return {
           id: uniqueId,
@@ -1258,8 +1339,8 @@ const InventoryRecordsManagement = () => {
           name: displayName,
           subLabel: v.combinationDisplay || 'Variation',
           fullName: p.productName,
-          upc: v.upc || p.upc,
-          sku: v.sku || p.sku,
+          upc: upc,
+          sku: sku,
           price: v.price || p.price,
           isVariation: true
         };
@@ -1270,8 +1351,7 @@ const InventoryRecordsManagement = () => {
       const upc = p.upc || 'No UPC';
       const sku = p.sku || 'No SKU';
 
-      // Format: UPC - Product Name (truncated) - SKU
-      const displayName = `${upc} - ${truncatedName} - ${sku}`;
+      const displayName = `${upc || sku} - ${truncatedName}`;
 
       return [{
         id: uniqueId,
@@ -1282,8 +1362,8 @@ const InventoryRecordsManagement = () => {
         name: displayName,
         subLabel: 'No variations',
         fullName: p.productName,
-        upc: p.upc,
-        sku: p.sku,
+        upc: upc,
+        sku: sku,
         price: p.price,
         isVariation: false
       }];
@@ -1533,25 +1613,54 @@ const InventoryRecordsManagement = () => {
                           <div className="flex items-center gap-3">
                             <button
                               onClick={() => handleOpenModal('view', inventory)}
-                              className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition"
+                              disabled={actionLoading}
+                              className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                               title="View"
                             >
-                              <Eye size={18} />
+                              {actionLoading ? (
+                                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                              ) : (
+                                <Eye size={18} />
+                              )}
                             </button>
                             <button
                               onClick={() => handleOpenModal('edit', inventory)}
-                              className="flex items-center gap-2 px-3 py-2 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-lg transition"
-                              title={inventory.status === 'CONFIRMED' ? 'Edit (will check if modifiable)' : 'Edit'}
+                              disabled={actionLoading}
+                              className={`flex items-center gap-2 px-3 py-2 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-lg transition ${actionLoading
+                                ? 'opacity-50 cursor-not-allowed'
+                                : ''
+                                }`}
+                              title={
+                                inventory.status === 'CONFIRMED'
+                                  ? 'Edit (will check if modifiable)'
+                                  : 'Edit'
+                              }
                             >
-                              <Edit2 size={18} />
+                              {actionLoading ? (
+                                <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                              ) : (
+                                <Edit2 size={18} />
+                              )}
                             </button>
 
                             <button
                               onClick={() => handleDelete(inventory.id)}
-                              className="flex items-center gap-2 px-3 py-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition"
-                              title={inventory.status === 'CONFIRMED' ? 'Delete (will check if modifiable)' : 'Delete'}
+                              disabled={actionLoading}
+                              className={`flex items-center gap-2 px-3 py-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition ${actionLoading
+                                ? 'opacity-50 cursor-not-allowed'
+                                : ''
+                                }`}
+                              title={
+                                inventory.status === 'CONFIRMED'
+                                  ? 'Delete (will check if modifiable)'
+                                  : 'Delete'
+                              }
                             >
-                              <Trash2 size={18} />
+                              {actionLoading ? (
+                                <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                              ) : (
+                                <Trash2 size={18} />
+                              )}
                             </button>
                           </div>
                         </td>
@@ -1804,14 +1913,13 @@ const InventoryRecordsManagement = () => {
                                       formData={formData}
                                       index={i}
                                     />
-
                                     {selectedLocation && item.productId && stockInfo && (
                                       <div className="mt-2 p-2 bg-white rounded border border-blue-100">
                                         <div className="text-xs text-gray-700">
                                           <div className="flex items-center justify-between mb-1">
                                             <span className="font-medium">Available Stock:</span>
-                                            <span className={`font-bold ${item.quantity > stockInfo.availableQuantity ? 'text-red-600' : 'text-green-600'}`}>
-                                              {stockInfo.availableQuantity || 0} units
+                                            <span className={`font-bold ${item.quantity > (stockInfo.availableQuantity ?? stockInfo.quantity) ? 'text-red-600' : 'text-green-600'}`}>
+                                              {stockInfo.availableQuantity ?? stockInfo.quantity ?? 0} units
                                             </span>
                                           </div>
                                           <div className="flex items-center justify-between text-xs text-gray-500">
@@ -1826,7 +1934,7 @@ const InventoryRecordsManagement = () => {
                                           )}
                                         </div>
 
-                                        {item.quantity > stockInfo.availableQuantity && formData.inventoryType !== 'STOCK_IN' && (
+                                        {item.quantity > (stockInfo.availableQuantity ?? stockInfo.quantity) && formData.inventoryType !== 'STOCK_IN' && (
                                           <div className="mt-1 flex items-center gap-1 text-red-600 text-xs font-medium">
                                             <AlertCircle size={12} />
                                             Quantity exceeds available stock!
@@ -1870,14 +1978,14 @@ const InventoryRecordsManagement = () => {
                                       value={item.quantity || ''}
                                       onChange={e => handleItemChange(i, 'quantity', e.target.value)}
                                       required
-                                      className={`w-full px-4 py-3 border rounded-lg ${stockInfo && item.quantity > stockInfo.availableQuantity && formData.inventoryType !== 'STOCK_IN'
+                                      className={`w-full px-4 py-3 border rounded-lg ${stockInfo && item.quantity > (stockInfo.availableQuantity ?? stockInfo.quantity) && formData.inventoryType !== 'STOCK_IN'
                                         ? 'border-red-300 bg-red-50'
                                         : ''
                                         }`}
                                     />
-                                    {stockInfo && item.quantity > stockInfo.availableQuantity && formData.inventoryType !== 'STOCK_IN' && (
+                                    {stockInfo && item.quantity > (stockInfo.availableQuantity ?? stockInfo.quantity) && formData.inventoryType !== 'STOCK_IN' && (
                                       <div className="text-xs text-red-500 mt-1">
-                                        Max available: {stockInfo.availableQuantity}
+                                        Max available: {stockInfo.availableQuantity ?? stockInfo.quantity}
                                       </div>
                                     )}
                                   </div>
