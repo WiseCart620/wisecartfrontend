@@ -524,9 +524,9 @@ const ProductRow = ({ product, onEdit, onDelete }) => {
             </span>
           ) : (
             <div className="space-y-1">
-              {product.companyBasePrices && product.companyBasePrices.length > 0 ? (
+              {product.unitCost ? (
                 <div className="text-sm font-medium text-green-600">
-                  ₱{Number(product.companyBasePrices[0].basePrice).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                  ₱{Number(product.unitCost).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                 </div>
               ) : (
                 <span className="text-xs text-gray-400">No price set</span>
@@ -591,7 +591,7 @@ const ProductRow = ({ product, onEdit, onDelete }) => {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Weight</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Dimensions</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Company Prices</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Unit Cost</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Unit Price</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -647,7 +647,7 @@ const ProductRow = ({ product, onEdit, onDelete }) => {
                           </div>
                         </td>
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                          {product.unitCost ? `₱${Number(product.unitCost).toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '-'}
+                          {variation.unitPrice ? `₱${Number(variation.unitPrice).toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '-'}
                         </td>
                       </tr>
                     ))}
@@ -1379,6 +1379,7 @@ const ProductManagement = () => {
             width: dims[1] || '',
             height: dims[2] || '',
             imageUrl: v.imageUrl || '',
+            unitPrice: v.unitPrice || null,
             companyPrices: companyPricesMap
           };
         });
@@ -1510,7 +1511,7 @@ const ProductManagement = () => {
   }
 
   return (
-      <div className="p-6 max-w-full mx-auto px-8">
+    <div className="p-6 max-w-full mx-auto px-8">
       <LoadingOverlay show={actionLoading} message={loadingMessage} />
       <Toaster position="top-right" />
 
@@ -1916,7 +1917,6 @@ const ProductManagement = () => {
                     </div>
                   )}
 
-
                   {variationCombinations.length === 0 && (
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1962,7 +1962,6 @@ const ProductManagement = () => {
                     </div>
                   )}
 
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Materials</label>
                     <input
@@ -1989,23 +1988,25 @@ const ProductManagement = () => {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Unit Cost (₱)
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.unitCost || ''}
-                      disabled
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed text-gray-900"
-                      placeholder="Set via Purchase Orders"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      {formData.unitCost
-                        ? `Current unit cost: ₱${parseFloat(formData.unitCost).toFixed(2)}`
-                        : 'Set unit price in Purchase Orders to update this value'}
-                    </p>
-                  </div>
+                  {variationCombinations.length === 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Unit Cost (₱)
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.unitCost || ''}
+                        disabled
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed text-gray-900"
+                        placeholder="Set via Purchase Orders"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formData.unitCost
+                          ? `Current unit cost: ₱${parseFloat(formData.unitCost).toFixed(2)}`
+                          : 'Set unit price in Purchase Orders to update this value'}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {variationCombinations.length > 0 && (
@@ -2013,7 +2014,7 @@ const ProductManagement = () => {
                     <div className="flex items-center gap-2 text-amber-700">
                       <AlertCircle size={18} />
                       <div>
-                        <p className="text-sm font-medium">SKU, UPC, Weight & Dimensions Disabled</p>
+                        <p className="text-sm font-medium">SKU, UPC, Weight, Dimensions & Unit Cost Disabled</p>
                         <p className="text-xs mt-1">
                           This product has variations. Please set these values for each variation in the table below.
                         </p>
@@ -2307,7 +2308,6 @@ const ProductManagement = () => {
                     {variationTypes.length === 0 ? 'Add Variation Type' : 'Add Another Variation Type'}
                   </button>
 
-
                   {/* Variation Combinations Table */}
                   {variationCombinations.length > 0 && (
                     <div className="mt-6 border border-gray-300 rounded-lg overflow-hidden">
@@ -2328,6 +2328,7 @@ const ProductManagement = () => {
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-40">UPC</th>
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-32">Weight (kg)</th>
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-64">Dimensions (L×W×H cm)</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-32">Unit Cost (₱)</th>
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase min-w-[400px]">Company Prices</th>
                             </tr>
                           </thead>
@@ -2461,6 +2462,22 @@ const ProductManagement = () => {
                                       className="w-20 px-2 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     />
                                   </div>
+                                </td>
+
+                                {/* Unit Cost (Read-only) */}
+                                <td className="px-4 py-3 w-32">
+                                  <input
+                                    type="text"
+                                    value={combo.unitPrice ? `₱${parseFloat(combo.unitPrice).toFixed(2)}` : ''}
+                                    disabled
+                                    className="w-full min-w-[120px] px-3 py-2 text-sm border border-gray-300 rounded bg-gray-100 cursor-not-allowed text-gray-900"
+                                    placeholder="Set via PO"
+                                  />
+                                  {!combo.unitPrice && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      Set in Purchase Orders
+                                    </p>
+                                  )}
                                 </td>
 
                                 {/* Company Prices */}

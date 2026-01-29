@@ -116,38 +116,26 @@ const InventoryRequestManagement = () => {
         }));
     };
 
-    const CollapsibleQtyList = ({ items, isExpanded }) => {
-        return (
-            <div className="text-sm">
-                <div className="h-6"></div>
-                <div className={`${isExpanded ? 'mt-2' : ''} space-y-1.5`}>
-                    {items.map((item, idx) => (
-                        <div key={idx} className="font-medium">
-                            {item.qty} {item.uom}
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    };
 
 
 
-    const IRRTableRow = ({ req, handleDeleteIrr, setViewingIrr, setEditingIrr, setShowIrrModal, setIrrFormData, suppliers, setSelectedSupplier, setLoadingProducts, setSupplierProducts, setButtonLoadingState, setActionLoading, buttonLoading, api }) => {
+
+    const IRRTableRow = ({ req, handleDeleteIrr, setViewingIrr, setEditingIrr, setShowIrrModal, setIrrFormData, suppliers, setSelectedSupplier, setLoadingProducts, setSupplierProducts, setButtonLoadingState, setActionLoading, buttonLoading, api, expandedRpqRows, toggleRpqRow }) => {
         const [isExpanded, setIsExpanded] = useState(false);
 
         return (
             <tr key={req.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 font-medium text-gray-900">{req.controlNumber}</td>
                 <td className="px-6 py-4 text-gray-900">{req.requestor}</td>
-                {/* In the RPQ table */}
                 <td className="px-6 py-4">
                     {req.items && req.items.length > 0 ? (
                         req.items.length === 1 ? (
                             <div className="text-sm">
-                                <div className="text-gray-900 font-medium">{req.items[0].productName}</div>
+                                <div className="text-gray-900 font-medium">
+                                    {req.items[0].productName} - {req.items[0].qty} {req.items[0].uom}
+                                </div>
                                 {req.items[0].variation && (
-                                    <div className="text-xs text-gray-500">{req.items[0].variation}</div>
+                                    <div className="text-xs text-gray-500 mt-0.5">{req.items[0].variation}</div>
                                 )}
                             </div>
                         ) : (
@@ -163,7 +151,9 @@ const InventoryRequestManagement = () => {
                                     <div className="mt-2 space-y-1.5 pl-5 border-l-2 border-blue-200">
                                         {req.items.map((item, idx) => (
                                             <div key={idx}>
-                                                <div className="text-gray-900 font-medium">{item.productName}</div>
+                                                <div className="text-gray-900 font-medium">
+                                                    {item.productName} - {item.qty} {item.uom}
+                                                </div>
                                                 {item.variation && (
                                                     <div className="text-xs text-gray-500">{item.variation}</div>
                                                 )}
@@ -175,19 +165,6 @@ const InventoryRequestManagement = () => {
                         )
                     ) : (
                         <div className="text-sm text-gray-500">-</div>
-                    )}
-                </td>
-                <td className="px-6 py-4 text-gray-900">
-                    {req.items && req.items.length > 0 ? (
-                        req.items.length === 1 ? (
-                            <div className="text-sm font-medium">
-                                {req.items[0].qty} {req.items[0].uom}
-                            </div>
-                        ) : (
-                            <CollapsibleQtyList items={req.items} isExpanded={isExpanded} />
-                        )
-                    ) : (
-                        '-'
                     )}
                 </td>
                 <td className="px-6 py-4 text-gray-900">
@@ -370,11 +347,31 @@ const InventoryRequestManagement = () => {
         }
     };
 
+    const pendingIrrCount = irrRequests.filter(req => req.status === 'PENDING').length;
+    const pendingRpqCount = rpqRequests.filter(req =>
+        req.status === 'DRAFT' || req.status === 'PENDING'
+    ).length;
 
     const tabs = [
-        { id: 'irr', label: 'Inventory Request', icon: FileText, count: irrRequests.length },
-        { id: 'rpq', label: 'Product Quotation', icon: Package, count: rpqRequests.length },
-        { id: 'po', label: 'Purchase Orders & Payments', icon: ShoppingCart }
+        {
+            id: 'irr',
+            label: 'Inventory Request',
+            icon: FileText,
+            count: irrRequests.length,
+            pendingCount: pendingIrrCount
+        },
+        {
+            id: 'rpq',
+            label: 'Product Quotation',
+            icon: Package,
+            count: rpqRequests.length,
+            pendingCount: pendingRpqCount
+        },
+        {
+            id: 'po',
+            label: 'Purchase Orders & Payments',
+            icon: ShoppingCart
+        }
     ];
 
     const handleProductChange = (productId, product) => {
@@ -474,9 +471,21 @@ const InventoryRequestManagement = () => {
         const yearRequests = existingRequests.filter(req =>
             req.controlNumber && req.controlNumber.startsWith(`${prefix}-${year}`)
         );
-        const nextNumber = yearRequests.length + 1;
+        let maxNumber = 0;
+        yearRequests.forEach(req => {
+            const parts = req.controlNumber.split('-');
+            if (parts.length === 3) {
+                const num = parseInt(parts[2]);
+                if (!isNaN(num) && num > maxNumber) {
+                    maxNumber = num;
+                }
+            }
+        });
+        const nextNumber = maxNumber + 1;
         return `${prefix}-${year}-${String(nextNumber).padStart(2, '0')}`;
     };
+
+
 
     const handleIrrSubmit = async (e) => {
         e.preventDefault();
@@ -657,6 +666,21 @@ const InventoryRequestManagement = () => {
             return;
         }
 
+        // ✅ ADD THIS DEBUG
+        console.log('===== DEBUG: Items being sent to RPQ =====');
+        items.forEach((item, idx) => {
+            console.log(`Item ${idx}:`, {
+                productId: item.productId,
+                productName: item.productName,
+                displayName: item.displayName,
+                variation: item.variation,
+                sku: item.sku,
+                upc: item.upc,
+                qty: item.qty
+            });
+        });
+        console.log('==========================================');
+
         setButtonLoadingState('proceed-rpq', true);
         setActionLoading(true);
 
@@ -681,7 +705,7 @@ const InventoryRequestManagement = () => {
                 items: items.map(item => ({
                     productId: item.productId,
                     variationId: item.variationId || null,
-                    productName: item.productName || '',
+                    productName: item.productName || item.displayName || '',
                     sku: item.sku || '',
                     upc: item.upc || '',
                     variation: item.variation || '',
@@ -785,7 +809,7 @@ const InventoryRequestManagement = () => {
             setActionLoading(false);
         }
     };
-    
+
 
     const handleConfirmProduct = async (rpq) => {
         if (!window.confirm('Confirm this product quotation?')) return;
@@ -924,12 +948,24 @@ const InventoryRequestManagement = () => {
                             >
                                 <Icon size={20} />
                                 {tab.label}
+
+                                {/* Total Count */}
                                 {tab.count !== undefined && (
                                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${activeTab === tab.id
                                         ? 'bg-blue-100 text-blue-600'
                                         : 'bg-gray-100 text-gray-600'
                                         }`}>
                                         {tab.count}
+                                    </span>
+                                )}
+
+                                {/* Pending Count Badge (yellow/amber) */}
+                                {tab.pendingCount !== undefined && tab.pendingCount > 0 && (
+                                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${activeTab === tab.id
+                                        ? 'bg-amber-100 text-amber-700'
+                                        : 'bg-amber-50 text-amber-600'
+                                        } border border-amber-300`}>
+                                        {tab.pendingCount} pending
                                     </span>
                                 )}
                             </button>
@@ -973,7 +1009,6 @@ const InventoryRequestManagement = () => {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Control #</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requestor</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -1004,6 +1039,8 @@ const InventoryRequestManagement = () => {
                                                 setActionLoading={setActionLoading}
                                                 buttonLoading={buttonLoading}
                                                 api={api}
+                                                expandedRpqRows={expandedRpqRows}
+                                                toggleRpqRow={toggleRpqRow}
                                             />
                                         ))
                                     )}
@@ -1059,7 +1096,9 @@ const InventoryRequestManagement = () => {
                                                     {req.items && req.items.length > 0 ? (
                                                         req.items.length === 1 ? (
                                                             <div className="text-sm">
-                                                                <div className="text-gray-900 font-medium">{req.items[0].productName}</div>
+                                                                <div className="text-gray-900 font-medium">
+                                                                    {req.items[0].productName} - {req.items[0].qty} {req.items[0].uom}
+                                                                </div>
                                                                 {req.items[0].variation && (
                                                                     <div className="text-xs text-gray-500 mt-0.5">{req.items[0].variation}</div>
                                                                 )}
@@ -1077,7 +1116,9 @@ const InventoryRequestManagement = () => {
                                                                     <div className="mt-2 space-y-1.5 pl-5 border-l-2 border-blue-200">
                                                                         {req.items.map((item, idx) => (
                                                                             <div key={idx}>
-                                                                                <div className="text-gray-900 font-medium">{item.productName}</div>
+                                                                                <div className="text-gray-900 font-medium">
+                                                                                    {item.productName} - {item.qty} {item.uom}
+                                                                                </div>
                                                                                 {item.variation && (
                                                                                     <div className="text-xs text-gray-500">{item.variation}</div>
                                                                                 )}
