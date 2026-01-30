@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     Plus, Edit2, Trash2, Search, X, Eye, Check,
-    Building2, Package, ArrowRight, Loader2, FileText, ShoppingCart, ChevronDown, ChevronRight
+    Building2, Package, ArrowRight, Loader2, FileText, ShoppingCart, ChevronDown, ChevronRight, Download
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { api } from '../services/api';
@@ -52,10 +52,16 @@ const InventoryRequestManagement = () => {
         sku: '',
         variation: '',
         uom: '',
-        mdr: '',
+        moq: '',
         qty: '',
-        initialPaymentAmount: '',
-        finalPaymentAmount: '',
+        initialPaymentPercent: '',
+        finalPaymentPercent: '',
+        productionQuestion1: '',
+        productionLeadTime: '',
+        productionDetails: '',
+        productionAnswer1: '',
+        productionQuestion2: '',
+        productionAnswer2: '',
         paymentInstruction: ''
     });
 
@@ -465,6 +471,7 @@ const InventoryRequestManagement = () => {
 
 
 
+
     const generateControlNumber = (type, existingRequests) => {
         const year = new Date().getFullYear();
         const prefix = type === 'IRR' ? 'IRR' : 'RPQ';
@@ -482,7 +489,7 @@ const InventoryRequestManagement = () => {
             }
         });
         const nextNumber = maxNumber + 1;
-        return `${prefix}-${year}-${String(nextNumber).padStart(2, '0')}`;
+        return `${prefix}-${year}-${String(nextNumber).padStart(4, '0')}`; // Changed from 2 to 4
     };
 
 
@@ -712,7 +719,7 @@ const InventoryRequestManagement = () => {
                     uom: item.uom || 'PCS',
                     qty: item.qty
                 })),
-                mdr: '',
+                moq: '',
                 initialPaymentAmount: 0,
                 finalPaymentAmount: 0,
                 paymentInstruction: '',
@@ -753,8 +760,6 @@ const InventoryRequestManagement = () => {
 
     const handleRpqSubmit = async (e) => {
         e.preventDefault();
-
-        // Validate that all items have quantity
         if (rpqFormData.items && rpqFormData.items.length > 0) {
             for (const item of rpqFormData.items) {
                 if (!item.qty || item.qty <= 0) {
@@ -763,7 +768,6 @@ const InventoryRequestManagement = () => {
                 }
             }
         }
-
         setSubmitting(true);
         setActionLoading(true);
         try {
@@ -771,9 +775,8 @@ const InventoryRequestManagement = () => {
                 supplierId: rpqFormData.supplierId,
                 supplierName: rpqFormData.supplierName,
                 supplierInfo: rpqFormData.supplierInfo,
-                // Make sure items are included with all properties
                 items: rpqFormData.items.map(item => ({
-                    id: item.id || null, // Include existing item ID if available
+                    id: item.id || null,
                     productId: item.productId,
                     variationId: item.variationId || null,
                     productName: item.productName,
@@ -782,17 +785,21 @@ const InventoryRequestManagement = () => {
                     variation: item.variation || '',
                     uom: item.uom || 'PCS',
                     qty: parseInt(item.qty) || 1,
-                    mdr: item.mdr ? parseInt(item.mdr) : null // Include MDR
+                    moq: item.moq ? parseInt(item.moq) : null,
+                    unitPrice: item.unitPrice ? parseFloat(item.unitPrice) : null,
+                    totalAmount: item.unitPrice && item.qty ?
+                        parseFloat(item.unitPrice) * parseInt(item.qty) : null
                 })),
-                mdr: rpqFormData.mdr || '',
+                moq: rpqFormData.moq || '',
                 initialPaymentAmount: parseFloat(rpqFormData.initialPaymentAmount) || 0,
                 finalPaymentAmount: parseFloat(rpqFormData.finalPaymentAmount) || 0,
+                initialPaymentPercent: parseFloat(rpqFormData.initialPaymentPercent) || 0,
+                finalPaymentPercent: parseFloat(rpqFormData.finalPaymentPercent) || 0,
+                productionLeadTime: rpqFormData.productionLeadTime || '',
+                productionDetails: rpqFormData.productionDetails || '',
                 paymentInstruction: rpqFormData.paymentInstruction || '',
                 status: 'PENDING'
             };
-
-            console.log('Submitting RPQ payload:', payload); // For debugging
-
             const response = await api.put(`/quotation-requests/${editingRpq.id}`, payload);
             if (response.success) {
                 toast.success('Quotation request updated successfully');
@@ -802,7 +809,6 @@ const InventoryRequestManagement = () => {
             }
         } catch (error) {
             console.error('Error updating quotation:', error);
-            console.error('Error response:', error.response?.data);
             toast.error(error.response?.data?.message || 'Failed to update quotation request');
         } finally {
             setSubmitting(false);
@@ -894,14 +900,23 @@ const InventoryRequestManagement = () => {
             sku: '',
             variation: '',
             uom: '',
-            mdr: '',
+            moq: '',
             qty: '',
             initialPaymentAmount: '',
             finalPaymentAmount: '',
+            finalPaymentPercent: '',
+            productionLeadTime: '',
+            initialPaymentPercent: '',
+            productionDetails: '',
+            productionQuestion1: '',
+            productionAnswer1: '',
+            productionQuestion2: '',
+            productionAnswer2: '',
             paymentInstruction: ''
         });
         setEditingRpq(null);
     };
+
 
     const filteredIrrRequests = irrRequests.filter(req =>
         req.controlNumber?.toLowerCase().includes(searchIrr.toLowerCase()) ||
@@ -1160,10 +1175,18 @@ const InventoryRequestManagement = () => {
                                                                     supplierId: req.supplierId,
                                                                     supplierName: req.supplierName,
                                                                     supplierInfo: req.supplierInfo || {},
-                                                                    items: req.items || [],
-                                                                    mdr: req.mdr || '',
+                                                                    items: req.items?.map(item => ({
+                                                                        ...item,
+                                                                        unitPrice: item.unitPrice || '',
+                                                                        totalAmount: item.totalAmount || ''
+                                                                    })) || [],
+                                                                    moq: req.moq || '',
                                                                     initialPaymentAmount: req.initialPaymentAmount || '',
                                                                     finalPaymentAmount: req.finalPaymentAmount || '',
+                                                                    initialPaymentPercent: req.initialPaymentPercent || '',
+                                                                    finalPaymentPercent: req.finalPaymentPercent || '',
+                                                                    productionLeadTime: req.productionLeadTime || '',
+                                                                    productionDetails: req.productionDetails || '',
                                                                     paymentInstruction: req.paymentInstruction || ''
                                                                 });
                                                                 setShowRpqModal(true);
@@ -1552,7 +1575,6 @@ const InventoryRequestManagement = () => {
                             )}
 
 
-                            {/* Control Number */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Control Number
@@ -1711,211 +1733,381 @@ const InventoryRequestManagement = () => {
                 </div>
             )}
 
-            {/* RPQ Modal */}
             {showRpqModal && (
                 <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
-                        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-                            <h2 className="text-xl font-bold text-gray-900">
-                                Edit Quotation Request
-                            </h2>
-                            <button
-                                onClick={() => {
-                                    setShowRpqModal(false);
-                                    resetRpqForm();
-                                }}
-                                className="p-2 hover:bg-gray-100 rounded-lg"
-                            >
-                                <X size={20} />
-                            </button>
+                    <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
+                            <h2 className="text-xl font-bold text-gray-900">Edit Product Quotation Request</h2>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const printWindow = window.open('', '', 'width=800,height=900');
+                                        const content = document.getElementById('rpq-print-content').innerHTML;
+                                        printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>RPQ ${editingRpq?.controlNumber || ''}</title>
+        <style>
+            @page { size: A4; margin: 15mm; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; line-height: 1.3; }
+            .company-name { font-family: Georgia, serif; font-size: 24pt; font-weight: bold; letter-spacing: -0.5px; }
+            .company-address { font-size: 11pt; line-height: 1.2; }
+            .control-number { font-size: 10pt; font-weight: bold; }
+            .title { font-size: 16pt; font-weight: bold; text-align: center; margin: 10px 0; }
+            .date-section { text-align: right; font-size: 10pt; margin: 5px 0; }
+            .section { border: 1px solid #000; padding: 8px; margin: 8px 0; }
+            .section-title { font-weight: bold; font-size: 11pt; margin-bottom: 5px; }
+            table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+            th, td { border: 1px solid #000; padding: 6px 4px; text-align: left; font-size: 9pt; vertical-align: top; }
+            th { background-color: #f0f0f0; font-weight: bold; }
+            .text-right { text-align: right; }
+            .font-bold { font-weight: bold; }
+            .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+            .info-row { margin: 3px 0; font-size: 10pt; }
+            .label { font-weight: bold; }
+            .production-line { border-bottom: 1px solid #000; min-height: 20px; margin: 8px 0; padding: 2px 0; }
+            .no-print { display: none !important; }
+            .border-b-2 { border-bottom: 2px solid #000; }
+        </style>
+    </head>
+    <body>${content}</body>
+    </html>
+`);
+                                        printWindow.document.close();
+                                        printWindow.focus();
+                                        printWindow.print();
+                                        printWindow.close();
+                                    }}
+                                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2"
+                                >
+                                    <Download size={18} />
+                                    Download PDF
+                                </button>
+                                <button onClick={() => { setShowRpqModal(false); resetRpqForm(); }} className="p-2 hover:bg-gray-100 rounded-lg">
+                                    <X size={20} />
+                                </button>
+                            </div>
                         </div>
 
-                        <form onSubmit={handleRpqSubmit} className="p-6 space-y-6">
-                            {/* Supplier Information */}
-                            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                    <Building2 size={18} />
-                                    Supplier Information
-                                </h3>
-                                <div className="space-y-2 text-sm">
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <span className="text-gray-600">Name:</span>
-                                            <span className="ml-2 font-medium text-gray-900">{rpqFormData.supplierName}</span>
+                        <form onSubmit={handleRpqSubmit} className="p-8 space-y-6">
+                            <div id="rpq-print-content">
+                                {/* Header with Control Number */}
+                                <div className="mb-5 pb-4 flex justify-between items-start">
+                                    <div className="text-left leading-none space-y-0">
+                                        <div className="text-[34px] font-bold text-gray-900 font-serif tracking-tight company-name">
+                                            WISECART MERCHANTS CORP.
                                         </div>
-                                        <div>
-                                            <span className="text-gray-600">Contact Person:</span>
-                                            <span className="ml-2 font-medium text-gray-900">
-                                                {rpqFormData.supplierInfo?.contactPerson || '-'}
-                                            </span>
+                                        <div className="text-[18px] text-gray-900 font-medium space-y-[1px] tracking-tight company-address">
+                                            <div>407B 4F Tower One Plaza Magellan The Mactan Newtown</div>
+                                            <div>Mactan 6015 City of Lapu-lapu Cebu, Phils.</div>
+                                            <div>VAT REG. TIN 010-751-561-00000</div>
                                         </div>
-                                        <div>
-                                            <span className="text-gray-600">Contact No:</span>
-                                            <span className="ml-2 font-medium text-gray-900">
-                                                {rpqFormData.supplierInfo?.contactNo || '-'}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-600">Email:</span>
-                                            <span className="ml-2 font-medium text-gray-900">
-                                                {rpqFormData.supplierInfo?.email || '-'}
-                                            </span>
-                                        </div>
+                                    </div>
+                                    <div className="text-right control-number">
+                                        <div className="font-semibold">Control #: {editingRpq?.controlNumber}</div>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Products Table with Editable MDR and Quantity */}
-                            {rpqFormData.items && rpqFormData.items.length > 0 && (
-                                <div className="border rounded-lg overflow-hidden">
-                                    <div className="bg-gray-50 px-4 py-3 border-b">
-                                        <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                                            <Package size={18} />
-                                            Products ({rpqFormData.items.length})
-                                        </h3>
+                                {/* Title */}
+                                <div className="text-center mb-4 title">
+                                    <h2 className="text-2xl font-bold text-gray-900">REQUEST FOR PRODUCT QUOTATION</h2>
+                                </div>
+
+                                {/* Date */}
+                                <div className="mb-4 flex justify-end date-section">
+                                    <span className="font-medium">Date: </span>
+                                    <span>{editingRpq?.createdAt ? new Date(editingRpq.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}</span>
+                                </div>
+
+                                {/* Supplier Details */}
+                                <div className="mb-4 p-3 border border-gray-300 rounded-lg section">
+                                    <h3 className="font-bold text-gray-900 mb-2 section-title">Supplier Details</h3>
+                                    <div className="grid grid-cols-2 gap-3 text-sm grid-2">
+                                        <div className="info-row"><span className="font-semibold label">Supplier Name: </span><span>{rpqFormData.supplierName}</span></div>
+                                        <div className="info-row"><span className="font-semibold label">Contact Person: </span><span>{rpqFormData.supplierInfo?.contactPerson || '-'}</span></div>
+                                        <div className="info-row"><span className="font-semibold label">Contact Number: </span><span>{rpqFormData.supplierInfo?.contactNo || '-'}</span></div>
+                                        <div className="info-row"><span className="font-semibold label">Email: </span><span>{rpqFormData.supplierInfo?.email || '-'}</span></div>
                                     </div>
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full">
-                                            <thead className="bg-gray-100 border-b">
+                                </div>
+
+
+                                {rpqFormData.items && rpqFormData.items.length > 0 && (
+                                    <div className="mb-4">
+                                        <h3 className="font-bold text-gray-900 mb-2 section-title">Products</h3>
+                                        <table className="w-full border-collapse border border-gray-300">
+                                            <thead className="bg-gray-100">
                                                 <tr>
-                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product Name</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variation</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">UOM</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">MDR</th>
+                                                    <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Product Name</th>
+                                                    <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Variation</th>
+                                                    <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">UPC</th>
+                                                    <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">UOM</th>
+                                                    <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Quantity</th>
+                                                    <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Unit Price</th>
+                                                    <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Total</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-gray-200 bg-white">
+                                            <tbody>
                                                 {rpqFormData.items.map((item, idx) => (
-                                                    <tr key={idx} className="hover:bg-gray-50">
-                                                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                                                            {item.productName}
+                                                    <tr key={idx}>
+                                                        <td className="px-3 py-2 border border-gray-300">
+                                                            <div className="text-xs font-medium text-gray-900">{item.productName}</div>
+                                                            <div className="text-[10px] text-gray-500 mt-0.5">SKU: {item.sku || '-'}</div>
                                                         </td>
-                                                        <td className="px-4 py-3 text-sm text-gray-600">
-                                                            {item.sku || '-'}
+                                                        <td className="px-3 py-2 text-xs border border-gray-300">{item.variation || '-'}</td>
+                                                        <td className="px-3 py-2 text-xs border border-gray-300">{item.upc || '-'}</td>
+                                                        <td className="px-3 py-2 border border-gray-300">
+                                                            <input
+                                                                type="text"
+                                                                value={item.uom || 'PCS'}
+                                                                onChange={(e) => {
+                                                                    const newItems = [...rpqFormData.items];
+                                                                    newItems[idx] = { ...newItems[idx], uom: e.target.value };
+                                                                    setRpqFormData({ ...rpqFormData, items: newItems });
+                                                                }}
+                                                                className="w-16 px-2 py-1 border border-gray-300 rounded text-xs no-print"
+                                                            />
+                                                            <span className="hidden print:inline text-xs">{item.uom || 'PCS'}</span>
                                                         </td>
-                                                        <td className="px-4 py-3 text-sm text-gray-600">
-                                                            {item.variation || '-'}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                                                            {item.uom || 'PCS'}
-                                                        </td>
-                                                        <td className="px-4 py-3">
+                                                        <td className="px-3 py-2 border border-gray-300">
                                                             <input
                                                                 type="number"
                                                                 value={item.qty}
                                                                 onChange={(e) => {
                                                                     const newItems = [...rpqFormData.items];
-                                                                    newItems[idx] = { ...newItems[idx], qty: parseInt(e.target.value) || 0 };
+                                                                    const qty = parseInt(e.target.value) || 0;
+                                                                    const unitPrice = parseFloat(newItems[idx].unitPrice) || 0;
+                                                                    newItems[idx] = {
+                                                                        ...newItems[idx],
+                                                                        qty: e.target.value,
+                                                                        totalAmount: unitPrice * qty
+                                                                    };
                                                                     setRpqFormData({ ...rpqFormData, items: newItems });
                                                                 }}
                                                                 min="1"
-                                                                step="1"
-                                                                required
-                                                                className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                                placeholder="Qty"
+                                                                className="w-16 px-2 py-1 border border-gray-300 rounded text-xs no-print"
                                                             />
+                                                            <span className="hidden print:inline text-xs">{item.qty}</span>
                                                         </td>
-                                                        <td className="px-4 py-3">
+                                                        <td className="px-3 py-2 border border-gray-300">
                                                             <input
                                                                 type="number"
-                                                                value={item.mdr || ''}
+                                                                value={item.unitPrice || ''}
                                                                 onChange={(e) => {
                                                                     const newItems = [...rpqFormData.items];
-                                                                    newItems[idx] = { ...newItems[idx], mdr: e.target.value };
+                                                                    const unitPrice = parseFloat(e.target.value) || 0;
+                                                                    const qty = parseInt(newItems[idx].qty) || 0;
+                                                                    newItems[idx] = {
+                                                                        ...newItems[idx],
+                                                                        unitPrice: e.target.value,
+                                                                        totalAmount: unitPrice * qty
+                                                                    };
                                                                     setRpqFormData({ ...rpqFormData, items: newItems });
                                                                 }}
                                                                 min="0"
-                                                                step="1"
-                                                                className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                                placeholder="MDR"
+                                                                step="0.01"
+                                                                className="w-20 px-2 py-1 border border-gray-300 rounded text-xs no-print"
+                                                                placeholder="₱0.00"
                                                             />
+                                                            <span className="hidden print:inline text-xs">
+                                                                {parseFloat(item.unitPrice) > 0 ? `₱${parseFloat(item.unitPrice).toFixed(2)}` : ''}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-3 py-2 border border-gray-300">
+                                                            <div className="px-2 py-1 bg-gray-50 text-xs font-medium text-gray-900 no-print">
+                                                                {(() => {
+                                                                    const total = (parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0);
+                                                                    return total > 0 ? `₱${total.toFixed(2)}` : '';
+                                                                })()}
+                                                            </div>
+                                                            <span className="hidden print:inline text-xs font-medium">
+                                                                {(() => {
+                                                                    const total = (parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0);
+                                                                    return total > 0 ? `₱${total.toFixed(2)}` : '';
+                                                                })()}
+                                                            </span>
                                                         </td>
                                                     </tr>
                                                 ))}
                                             </tbody>
+                                            <tfoot className="bg-gray-50">
+                                                <tr>
+                                                    <td colSpan="6" className="px-3 py-2 text-right font-bold text-sm border border-gray-300">GRAND TOTAL:</td>
+                                                    <td className="px-3 py-2 font-bold text-sm border border-gray-300">
+                                                        ₱{rpqFormData.items.reduce((sum, item) =>
+                                                            sum + ((parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0)), 0
+                                                        ).toFixed(2)}
+                                                    </td>
+                                                </tr>
+                                            </tfoot>
                                         </table>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            {/* Payment Arrangement */}
-                            <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-                                <h3 className="font-semibold text-gray-900 mb-3">Payment Arrangement</h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Initial Payment Amount
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={rpqFormData.initialPaymentAmount}
-                                            onChange={(e) => setRpqFormData({ ...rpqFormData, initialPaymentAmount: e.target.value })}
-                                            step="0.01"
-                                            min="0"
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                            placeholder="Enter amount"
-                                        />
+
+                                <div className="mb-4 p-3 border border-gray-300 rounded-lg section">
+                                    <h3 className="font-bold text-gray-900 mb-2 section-title">Payment Arrangement</h3>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-xs font-semibold label whitespace-nowrap">Initial Payment (%):</label>
+                                            <input
+                                                type="number"
+                                                value={rpqFormData.initialPaymentPercent || ''}
+                                                onChange={(e) => {
+                                                    const percent = parseFloat(e.target.value) || 0;
+                                                    const grandTotal = rpqFormData.items.reduce((sum, item) =>
+                                                        sum + ((parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0)), 0);
+                                                    setRpqFormData({
+                                                        ...rpqFormData,
+                                                        initialPaymentPercent: e.target.value,
+                                                        initialPaymentAmount: (grandTotal * percent) / 100
+                                                    });
+                                                }}
+                                                min="0"
+                                                max="100"
+                                                step="0.01"
+                                                className="w-16 px-2 py-1 border border-gray-300 rounded text-xs no-print"
+                                                placeholder="0"
+                                            />
+                                            <span className="text-xs font-medium no-print">% = ₱</span>
+                                            <input
+                                                type="text"
+                                                value={(rpqFormData.initialPaymentAmount || 0).toFixed(2)}
+                                                readOnly
+                                                className="w-24 px-2 py-1 bg-gray-100 border-b-2 border-gray-400 text-xs font-medium no-print text-right"
+                                            />
+                                            <span className="hidden print:inline text-xs">
+                                                <span className="border-b-2 border-gray-800 inline-block min-w-[50px] text-center px-1">
+                                                    {rpqFormData.initialPaymentPercent || '     '}
+                                                </span>
+                                                % = ₱
+                                                <span className="border-b-2 border-gray-800 inline-block min-w-[100px] text-right px-1">
+                                                    {rpqFormData.initialPaymentAmount ? (rpqFormData.initialPaymentAmount).toFixed(2) : '          '}
+                                                </span>
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-xs font-semibold label whitespace-nowrap">Final Payment (%):</label>
+                                            <input
+                                                type="number"
+                                                value={rpqFormData.finalPaymentPercent || ''}
+                                                onChange={(e) => {
+                                                    const percent = parseFloat(e.target.value) || 0;
+                                                    const grandTotal = rpqFormData.items.reduce((sum, item) =>
+                                                        sum + ((parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0)), 0);
+                                                    setRpqFormData({
+                                                        ...rpqFormData,
+                                                        finalPaymentPercent: e.target.value,
+                                                        finalPaymentAmount: (grandTotal * percent) / 100
+                                                    });
+                                                }}
+                                                min="0"
+                                                max="100"
+                                                step="0.01"
+                                                className="w-16 px-2 py-1 border border-gray-300 rounded text-xs no-print"
+                                                placeholder="0"
+                                            />
+                                            <span className="text-xs font-medium no-print">% = ₱</span>
+                                            <input
+                                                type="text"
+                                                value={(rpqFormData.finalPaymentAmount || 0).toFixed(2)}
+                                                readOnly
+                                                className="w-24 px-2 py-1 bg-gray-100 border-b-2 border-gray-400 text-xs font-medium no-print text-right"
+                                            />
+                                            <span className="hidden print:inline text-xs">
+                                                <span className="border-b-2 border-gray-800 inline-block min-w-[50px] text-center px-1">
+                                                    {rpqFormData.finalPaymentPercent || '     '}
+                                                </span>
+                                                % = ₱
+                                                <span className="border-b-2 border-gray-800 inline-block min-w-[100px] text-right px-1">
+                                                    {rpqFormData.finalPaymentAmount ? (rpqFormData.finalPaymentAmount).toFixed(2) : '          '}
+                                                </span>
+                                            </span>
+                                        </div>
                                     </div>
+                                </div>
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Final Payment Amount
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={rpqFormData.finalPaymentAmount}
-                                            onChange={(e) => setRpqFormData({ ...rpqFormData, finalPaymentAmount: e.target.value })}
-                                            step="0.01"
-                                            min="0"
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                            placeholder="Enter amount"
-                                        />
+
+
+                                <div className="mb-4 p-3 border border-gray-300 rounded-lg section">
+                                    <h3 className="font-bold text-gray-900 mb-2 section-title">Payment Method</h3>
+                                    <div className="space-y-2">
+                                        <div className="info-row text-xs">
+                                            <span className="font-semibold label">Mode of Payment: </span>
+                                            <span>{rpqFormData.supplierInfo?.modeOfPayment || '-'}</span>
+                                        </div>
+                                        <div className="info-row text-xs">
+                                            <span className="font-semibold label">Bank Name: </span>
+                                            <span>{rpqFormData.supplierInfo?.bankName || '-'}</span>
+                                        </div>
+                                        <div className="info-row text-xs">
+                                            <span className="font-semibold label">Account Number: </span>
+                                            <span>{rpqFormData.supplierInfo?.accountNumber || '-'}</span>
+                                        </div>
+                                        <div className="info-row text-xs">
+                                            <span className="font-semibold label">Account Name: </span>
+                                            <span>{rpqFormData.supplierInfo?.accountName || '-'}</span>
+                                        </div>
+                                        <div className="info-row text-xs">
+                                            <span className="font-semibold label">Swift Code: </span>
+                                            <span>{rpqFormData.supplierInfo?.swiftCode || '-'}</span>
+                                        </div>
+                                        <div className="info-row text-xs">
+                                            <span className="font-semibold label">Address: </span>
+                                            <span>{rpqFormData.supplierInfo?.address || '-'}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Payment Instruction */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Payment Instruction
-                                </label>
-                                <textarea
-                                    value={rpqFormData.paymentInstruction}
-                                    onChange={(e) => setRpqFormData({ ...rpqFormData, paymentInstruction: e.target.value })}
-                                    rows="4"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Enter payment instructions, terms, or special conditions..."
-                                />
+                                <div className="mb-4 p-3 border border-gray-300 rounded-lg section">
+                                    <h3 className="font-bold text-gray-900 mb-2 section-title">Production Details</h3>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-3">
+                                            <label className="text-xs font-semibold label whitespace-nowrap">Production Lead Time:</label>
+                                            <input
+                                                type="number"
+                                                value={rpqFormData.productionLeadTime || ''}
+                                                onChange={(e) => setRpqFormData({ ...rpqFormData, productionLeadTime: e.target.value })}
+                                                className="w-20 px-2 py-1 border border-gray-300 rounded text-xs no-print"
+                                                placeholder="0"
+                                                min="0"
+                                            />
+                                            <span className="text-xs">days</span>
+                                            <span className="hidden print:inline text-xs">{rpqFormData.productionLeadTime || ''} days</span>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-semibold mb-1 label">Remarks:</label>
+                                            <textarea
+                                                value={rpqFormData.productionDetails || ''}
+                                                onChange={(e) => setRpqFormData({ ...rpqFormData, productionDetails: e.target.value })}
+                                                rows="3"
+                                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs no-print"
+                                                placeholder="Enter production remarks or special instructions..."
+                                            />
+                                            <div className="hidden print:block text-xs production-line min-h-[60px] whitespace-pre-wrap">
+                                                {rpqFormData.productionDetails || ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Requestor */}
+                                <div className="mb-4">
+                                    <div className="text-xs info-row"><span className="font-semibold label">Requestor: </span><span>{editingRpq?.requestor || currentUserName}</span></div>
+                                </div>
                             </div>
 
                             {/* Submit Buttons */}
-                            <div className="flex gap-3 pt-4 border-t">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowRpqModal(false);
-                                        resetRpqForm();
-                                    }}
-                                    disabled={submitting}
-                                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={submitting}
-                                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 disabled:opacity-50"
-                                >
-                                    {submitting ? (
-                                        <>
-                                            <Loader2 size={18} className="animate-spin" />
-                                            Updating...
-                                        </>
-                                    ) : (
-                                        'Update Quotation'
-                                    )}
+                            <div className="flex gap-3 pt-4 border-t no-print">
+                                <button type="button" onClick={() => { setShowRpqModal(false); resetRpqForm(); }} disabled={submitting}
+                                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50">Cancel</button>
+                                <button type="submit" disabled={submitting}
+                                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 disabled:opacity-50">
+                                    {submitting ? <><Loader2 size={18} className="animate-spin" />Updating...</> : 'Update Quotation'}
                                 </button>
                             </div>
                         </form>
