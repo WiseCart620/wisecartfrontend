@@ -72,6 +72,50 @@ const InventoryRequestManagement = () => {
     const [searchIrr, setSearchIrr] = useState('');
     const [searchRpq, setSearchRpq] = useState('');
 
+
+
+
+    const formatNumberWithCommas = (value) => {
+        if (!value && value !== 0) return '';
+        const stringValue = String(value);
+        const numericValue = stringValue.replace(/[^0-9.]/g, '');
+        if (!numericValue) return '';
+
+        const parts = numericValue.split('.');
+        let wholePart = parts[0];
+        const decimalPart = parts.length > 1 ? parts[1] : '';
+        wholePart = wholePart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return decimalPart ? `${wholePart}.${decimalPart}` : wholePart;
+    };
+
+    const parseFormattedNumber = (formattedValue) => {
+        if (!formattedValue && formattedValue !== 0) return '';
+        const stringValue = String(formattedValue);
+        return stringValue.replace(/[^0-9.]/g, '');
+    };
+
+    const calculateAmountFromPercent = (percent, total) => {
+        const percentage = parseFloat(percent) || 0;
+        const totalAmount = parseFloat(total) || 0;
+        return (totalAmount * percentage) / 100;
+    };
+
+
+    const formatNumber = (num) => {
+        if (!num && num !== 0) return '-';
+        return parseInt(num).toLocaleString('en-US');
+    };
+
+    const formatCurrency = (amount) => {
+        if (!amount && amount !== 0) return '$0.00';
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount);
+    };
+
     useEffect(() => {
         loadInitialData();
     }, []);
@@ -140,7 +184,7 @@ const InventoryRequestManagement = () => {
                         req.items.length === 1 ? (
                             <div className="text-sm">
                                 <div className="text-gray-900 font-medium">
-                                    {req.items[0].productName} - {req.items[0].qty} {req.items[0].uom}
+                                    {req.items[0].productName} - {formatNumber(req.items[0].qty)} {req.items[0].uom}
                                 </div>
                                 {req.items[0].variation && (
                                     <div className="text-xs text-gray-500 mt-0.5">{req.items[0].variation}</div>
@@ -160,7 +204,7 @@ const InventoryRequestManagement = () => {
                                         {req.items.map((item, idx) => (
                                             <div key={idx}>
                                                 <div className="text-gray-900 font-medium">
-                                                    {item.productName} - {item.qty} {item.uom}
+                                                    {item.productName} - {formatNumber(item.qty)} {item.uom}
                                                 </div>
                                                 {item.variation && (
                                                     <div className="text-xs text-gray-500">{item.variation}</div>
@@ -288,6 +332,28 @@ const InventoryRequestManagement = () => {
                 </td>
             </tr>
         );
+    };
+
+
+
+    const recalculatePaymentAmounts = () => {
+        const grandTotal = rpqFormData.items.reduce((sum, item) => {
+            const unitPrice = parseFloat(parseFormattedNumber(item.unitPrice || 0)) || 0;
+            const qty = parseInt(item.qty) || 0;
+            return sum + (unitPrice * qty);
+        }, 0);
+
+        if (rpqFormData.initialPaymentPercent) {
+            const initialPercent = parseFloat(rpqFormData.initialPaymentPercent) || 0;
+            const finalPercent = initialPercent > 0 ? Math.max(0, 100 - initialPercent) : '';
+
+            setRpqFormData(prev => ({
+                ...prev,
+                initialPaymentAmount: (grandTotal * initialPercent) / 100,
+                finalPaymentPercent: finalPercent === '' ? '' : finalPercent.toString(),
+                finalPaymentAmount: finalPercent === '' ? 0 : (grandTotal * finalPercent) / 100
+            }));
+        }
     };
 
 
@@ -432,7 +498,7 @@ const InventoryRequestManagement = () => {
             return;
         }
 
-        // Check if product already exists
+
         const exists = irrFormData.items.some(item => {
             if (selectedProd.isVariation) {
                 return item.productId === selectedProd.id && item.variationId === selectedProd.variationId;
@@ -525,7 +591,6 @@ const InventoryRequestManagement = () => {
             return;
         }
 
-        // Validate all items have quantity
         for (const item of irrFormData.items) {
             if (!item.qty || item.qty <= 0) {
                 toast.error('All products must have quantity greater than 0');
@@ -635,10 +700,7 @@ const InventoryRequestManagement = () => {
 
         setLoadingProducts(true);
         try {
-            // Check if supplier is a forwarder
             const isForwarder = supplier?.type?.toLowerCase() === 'forwarder';
-
-            // If forwarder, get all products, otherwise get products by supplier
             const endpoint = isForwarder
                 ? '/products'
                 : `/products/by-supplier/${supplierId}`;
@@ -646,10 +708,7 @@ const InventoryRequestManagement = () => {
             const response = await api.get(endpoint);
 
             if (response.success && response.data) {
-                // Handle different response structures
                 const products = response.data.data || response.data;
-
-                // Make sure products is an array
                 const productsArray = Array.isArray(products) ? products : [];
 
                 const flattenedProducts = [];
@@ -691,28 +750,11 @@ const InventoryRequestManagement = () => {
             return;
         }
 
-        // ✅ ADD THIS DEBUG
-        console.log('===== DEBUG: Items being sent to RPQ =====');
-        items.forEach((item, idx) => {
-            console.log(`Item ${idx}:`, {
-                productId: item.productId,
-                productName: item.productName,
-                displayName: item.displayName,
-                variation: item.variation,
-                sku: item.sku,
-                upc: item.upc,
-                qty: item.qty
-            });
-        });
-        console.log('==========================================');
-
         setButtonLoadingState('proceed-rpq', true);
         setActionLoading(true);
 
         try {
             const supplier = suppliers.find(s => s.id === supplierId);
-
-            // Create ONE RPQ with ALL items
             const rpqPayload = {
                 irrId: irrData.id,
                 requestor: currentUserName,
@@ -725,7 +767,12 @@ const InventoryRequestManagement = () => {
                     address: supplier?.address || '',
                     modeOfPayment: supplier?.modeOfPayment || '',
                     bankName: supplier?.bankName || '',
-                    accountNumber: supplier?.accountNumber || ''
+                    accountNumber: supplier?.accountNumber || '',
+                    beneficiaryName: supplier?.beneficiaryName || '',
+                    swiftCode: supplier?.swiftCode || '',
+                    bankAddress: supplier?.bankAddress || '',
+                    bankCountry: supplier?.bankCountry || '',
+                    beneficiaryAddress: supplier?.beneficiaryAddress || ''
                 },
                 items: items.map(item => ({
                     productId: item.productId,
@@ -743,7 +790,6 @@ const InventoryRequestManagement = () => {
                 paymentInstruction: '',
                 status: 'DRAFT'
             };
-
             const response = await api.post('/quotation-requests', rpqPayload);
             if (response.success) {
                 await api.patch(`/inventory-requests/${irrData.id}`, { status: 'PROCEEDED_TO_RPQ' });
@@ -762,18 +808,6 @@ const InventoryRequestManagement = () => {
             setButtonLoadingState('proceed-rpq', false);
             setActionLoading(false);
         }
-    };
-
-
-
-    const formatCurrency = (amount) => {
-        if (!amount) return '₱0.00';
-        return new Intl.NumberFormat('en-PH', {
-            style: 'currency',
-            currency: 'PHP',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(amount);
     };
 
     const handleRpqSubmit = async (e) => {
@@ -804,9 +838,10 @@ const InventoryRequestManagement = () => {
                     uom: item.uom || 'PCS',
                     qty: parseInt(item.qty) || 1,
                     moq: item.moq ? parseInt(item.moq) : null,
-                    unitPrice: item.unitPrice ? parseFloat(item.unitPrice) : null,
+                    // Parse unit price from comma-separated format
+                    unitPrice: item.unitPrice ? parseFloat(parseFormattedNumber(item.unitPrice)) : null,
                     totalAmount: item.unitPrice && item.qty ?
-                        parseFloat(item.unitPrice) * parseInt(item.qty) : null
+                        parseFloat(parseFormattedNumber(item.unitPrice)) * parseInt(item.qty) : null
                 })),
                 moq: rpqFormData.moq || '',
                 initialPaymentAmount: parseFloat(rpqFormData.initialPaymentAmount) || 0,
@@ -1217,7 +1252,7 @@ const InventoryRequestManagement = () => {
                                                         req.items.length === 1 ? (
                                                             <div className="text-sm">
                                                                 <div className="text-gray-900 font-medium">
-                                                                    {req.items[0].productName} - {req.items[0].qty} {req.items[0].uom}
+                                                                    {req.items[0].productName} - {formatNumber(req.items[0].qty)} {req.items[0].uom}
                                                                 </div>
                                                                 {req.items[0].variation && (
                                                                     <div className="text-xs text-gray-500 mt-0.5">{req.items[0].variation}</div>
@@ -1237,7 +1272,7 @@ const InventoryRequestManagement = () => {
                                                                         {req.items.map((item, idx) => (
                                                                             <div key={idx}>
                                                                                 <div className="text-gray-900 font-medium">
-                                                                                    {item.productName} - {item.qty} {item.uom}
+                                                                                    {item.productName} - {formatNumber(item.qty)} {item.uom}
                                                                                 </div>
                                                                                 {item.variation && (
                                                                                     <div className="text-xs text-gray-500">{item.variation}</div>
@@ -1282,6 +1317,7 @@ const InventoryRequestManagement = () => {
                                                                     supplierInfo: req.supplierInfo || {},
                                                                     items: req.items?.map(item => ({
                                                                         ...item,
+                                                                        uom: item.uom || 'PCS',
                                                                         unitPrice: item.unitPrice || '',
                                                                         totalAmount: item.totalAmount || ''
                                                                     })) || [],
@@ -1294,6 +1330,15 @@ const InventoryRequestManagement = () => {
                                                                     productionDetails: req.productionDetails || '',
                                                                     paymentInstruction: req.paymentInstruction || ''
                                                                 });
+                                                                if (req.documents) {
+                                                                    setUploadedFiles({
+                                                                        rpq: req.documents.rpq ? { url: req.documents.rpq, name: 'RPQ Document' } : null,
+                                                                        commercialInvoice: req.documents.commercialInvoice ? { url: req.documents.commercialInvoice, name: 'Commercial Invoice' } : null,
+                                                                        salesContract: req.documents.salesContract ? { url: req.documents.salesContract, name: 'Sales Contract' } : null,
+                                                                        packingList: req.documents.packingList ? { url: req.documents.packingList, name: 'Packing List' } : null
+                                                                    });
+                                                                }
+
                                                                 setShowRpqModal(true);
                                                             }}
                                                             disabled={req.status === 'CONFIRMED'}
@@ -1558,7 +1603,7 @@ const InventoryRequestManagement = () => {
 
                                                 <div>
                                                     <span className="text-gray-600 font-medium">SKU:</span>
-                                                    <p className="text-gray-900 mt-1">
+                                                    <p className="text-gray-900 mt-1 font-medium">
                                                         {selectedProd.isVariation ? variation?.sku : selectedProd.sku || '-'}
                                                     </p>
                                                 </div>
@@ -1840,7 +1885,7 @@ const InventoryRequestManagement = () => {
 
             {showRpqModal && (
                 <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="bg-white rounded-xl shadow-xl max-w-7xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
                             <h2 className="text-xl font-bold text-gray-900">Edit Product Quotation Request</h2>
                             <div className="flex items-center gap-2">
@@ -1855,35 +1900,35 @@ const InventoryRequestManagement = () => {
     <head>
         <title>RPQ ${editingRpq?.controlNumber || ''}</title>
         <style>
-            @page { size: A4; margin: 15mm; }
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; line-height: 1.3; }
-            .company-name { font-family: Georgia, serif; font-size: 24pt; font-weight: bold; letter-spacing: -0.5px; }
-            .company-address { font-size: 11pt; line-height: 1.2; }
-            .control-number { font-size: 10pt; font-weight: bold; }
-            .title { font-size: 16pt; font-weight: bold; text-align: center; margin: 10px 0; }
-            .date-section { text-align: right; font-size: 10pt; margin: 5px 0; }
-            .section { border: 1px solid #000; padding: 8px; margin: 8px 0; }
-            .section-title { font-weight: bold; font-size: 11pt; margin-bottom: 5px; }
-            table { width: 100%; border-collapse: collapse; margin: 8px 0; }
-            th, td { border: 1px solid #000; padding: 6px 4px; text-align: left; font-size: 9pt; vertical-align: top; }
-            th { background-color: #f0f0f0; font-weight: bold; }
-            .text-right { text-align: right; }
-            .font-bold { font-weight: bold; }
-            .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-            .info-row { margin: 3px 0; font-size: 10pt; }
-            .label { font-weight: bold; }
-            .production-line { border-bottom: 1px solid #000; min-height: 20px; margin: 8px 0; padding: 2px 0; }
-            .no-print { display: none !important; }
-            .min-h-\[20px\] { min-height: 20px; }
-            .border-b-2 { border-bottom: 2px solid #000; }
-            .border-b-2 { 
-             border-bottom: 2px solid #000; 
-             padding-bottom: 2px;
-}
-.min-w-\[80px\] { min-width: 80px; }
-.min-w-\[150px\] { min-width: 150px; }
-        </style>
+    @page { size: A4; margin: 15mm; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; line-height: 1.3; }
+    .company-name { font-family: Georgia, serif; font-size: 24pt; font-weight: bold; letter-spacing: -0.5px; }
+    .company-address { font-size: 11pt; line-height: 1.2; }
+    .control-number { font-size: 10pt; font-weight: bold; }
+    .title { font-size: 14pt; font-weight: bold; text-align: center; margin: 10px 0; }
+    .date-section { text-align: right; font-size: 10pt; margin: 5px 0; }
+    .section { border: 1px solid #000; padding: 8px; margin: 8px 0; }
+    .section-title { font-weight: bold; font-size: 11pt; margin-bottom: 5px; }
+    table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+    th, td { border: 1px solid #000; padding: 6px 4px; text-align: left; font-size: 9pt; vertical-align: top; }
+    th { background-color: #f0f0f0; font-weight: bold; }
+    .text-right { text-align: right; }
+    .font-bold { font-weight: bold; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .info-row { margin: 3px 0; font-size: 10pt; }
+    .label { font-weight: bold; }
+    .production-line { border-bottom: 1px solid #000; min-height: 20px; margin: 8px 0; padding: 2px 0; }
+    .no-print { display: none !important; }
+    .min-h-\[20px\] { min-height: 20px; }
+    .border-b { border-bottom: 1px solid #000; }
+    .pb-1 { padding-bottom: 4px; }
+    .mt-2 { margin-top: 8px; }
+    .mt-3 { margin-top: 12px; }
+    .text-\[9px\] { font-size: 9px !important; }
+    td .text-\[9px\] { font-size: 9px !important; }
+    .mt-0\.5 { margin-top: 2px; }
+</style>
     </head>
     <body>${content}</body>
     </html>
@@ -1957,8 +2002,8 @@ const InventoryRequestManagement = () => {
                                                     <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">UPC</th>
                                                     <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">UOM</th>
                                                     <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Quantity</th>
-                                                    <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Unit Price</th>
-                                                    <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Total</th>
+                                                    <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Unit Price/USD</th>
+                                                    <th className="px-3 py-2f text-left text-xs font-bold border border-gray-300">Total/USD</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -1966,7 +2011,7 @@ const InventoryRequestManagement = () => {
                                                     <tr key={idx}>
                                                         <td className="px-3 py-2 border border-gray-300">
                                                             <div className="text-xs font-medium text-gray-900">{item.productName}</div>
-                                                            <div className="text-[9px] text-gray-500 mt-0.5">SKU: {item.sku || '-'}</div>
+                                                            <div className="text-[11px] text-gray-500 mt-0.5">SKU: {item.sku || '-'}</div>
                                                         </td>
                                                         <td className="px-3 py-2 text-xs border border-gray-300">{item.variation || '-'}</td>
                                                         <td className="px-3 py-2 text-xs border border-gray-300">{item.upc || '-'}</td>
@@ -1974,70 +2019,78 @@ const InventoryRequestManagement = () => {
                                                             <input
                                                                 type="text"
                                                                 value={item.uom || 'PCS'}
-                                                                onChange={(e) => {
-                                                                    const newItems = [...rpqFormData.items];
-                                                                    newItems[idx] = { ...newItems[idx], uom: e.target.value };
-                                                                    setRpqFormData({ ...rpqFormData, items: newItems });
-                                                                }}
-                                                                className="w-16 px-2 py-1 border border-gray-300 rounded text-xs no-print"
+                                                                readOnly
+                                                                className="w-20 px-2 py-1 border border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed no-print"
                                                             />
                                                             <span className="hidden print:inline text-xs">{item.uom || 'PCS'}</span>
                                                         </td>
                                                         <td className="px-3 py-2 border border-gray-300">
                                                             <input
-                                                                type="number"
-                                                                value={item.qty}
+                                                                type="text"
+                                                                value={item.qty ? parseInt(item.qty).toLocaleString('en-US') : ''}
                                                                 onChange={(e) => {
+                                                                    const numericValue = e.target.value.replace(/[^0-9]/g, '');
                                                                     const newItems = [...rpqFormData.items];
-                                                                    const qty = parseInt(e.target.value) || 0;
+                                                                    const qty = parseInt(numericValue) || 0;
                                                                     const unitPrice = parseFloat(newItems[idx].unitPrice) || 0;
                                                                     newItems[idx] = {
                                                                         ...newItems[idx],
-                                                                        qty: e.target.value,
+                                                                        qty: numericValue,
                                                                         totalAmount: unitPrice * qty
                                                                     };
                                                                     setRpqFormData({ ...rpqFormData, items: newItems });
                                                                 }}
-                                                                min="1"
-                                                                className="w-16 px-2 py-1 border border-gray-300 rounded text-xs no-print"
+                                                                className="w-24 px-2 py-1 border border-gray-300 rounded text-xs no-print text-right"
+                                                                placeholder="0"
                                                             />
-                                                            <span className="hidden print:inline text-xs">{item.qty}</span>
+                                                            <span className="hidden print:inline text-xs">{item.qty ? parseInt(item.qty).toLocaleString('en-US') : ''}</span>
                                                         </td>
                                                         <td className="px-3 py-2 border border-gray-300">
                                                             <input
-                                                                type="number"
-                                                                value={item.unitPrice || ''}
+                                                                type="text"
+                                                                value={formatNumberWithCommas(item.unitPrice || '')}
                                                                 onChange={(e) => {
+                                                                    const rawValue = parseFormattedNumber(e.target.value);
                                                                     const newItems = [...rpqFormData.items];
-                                                                    const unitPrice = parseFloat(e.target.value) || 0;
+                                                                    const unitPrice = parseFloat(rawValue) || 0;
                                                                     const qty = parseInt(newItems[idx].qty) || 0;
                                                                     newItems[idx] = {
                                                                         ...newItems[idx],
-                                                                        unitPrice: e.target.value,
+                                                                        unitPrice: rawValue,
                                                                         totalAmount: unitPrice * qty
                                                                     };
                                                                     setRpqFormData({ ...rpqFormData, items: newItems });
+                                                                    recalculatePaymentAmounts();
                                                                 }}
-                                                                min="0"
-                                                                step="0.01"
-                                                                className="w-20 px-2 py-1 border border-gray-300 rounded text-xs no-print"
-                                                                placeholder="₱0.00"
+                                                                onBlur={(e) => {
+                                                                    if (e.target.value) {
+                                                                        const numericValue = parseFormattedNumber(e.target.value);
+                                                                        const formatted = numericValue ? parseFloat(numericValue).toFixed(2) : '';
+                                                                        const newItems = [...rpqFormData.items];
+                                                                        newItems[idx].unitPrice = formatted;
+                                                                        setRpqFormData({ ...rpqFormData, items: newItems });
+                                                                        recalculatePaymentAmounts();
+                                                                    }
+                                                                }}
+                                                                className="w-24 px-2 py-1 border border-gray-300 rounded text-xs no-print text-right"
+                                                                placeholder="0.00"
                                                             />
                                                             <span className="hidden print:inline text-xs">
-                                                                {parseFloat(item.unitPrice) > 0 ? `₱${parseFloat(item.unitPrice).toFixed(2)}` : ''}
+                                                                {item.unitPrice && parseFloat(item.unitPrice) > 0 ? `$${formatNumberWithCommas(parseFloat(item.unitPrice).toFixed(2))}` : ''}
                                                             </span>
                                                         </td>
                                                         <td className="px-3 py-2 border border-gray-300">
-                                                            <div className="px-2 py-1 bg-gray-50 text-xs font-medium text-gray-900 no-print">
+                                                            <div className="px-2 py-1 bg-gray-50 text-xs font-medium text-gray-900 no-print text-right">
                                                                 {(() => {
                                                                     const total = (parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0);
-                                                                    return total > 0 ? `₱${total.toFixed(2)}` : '';
+                                                                    return total > 0 ? `$${formatNumberWithCommas(total.toFixed(2))}` : '';
                                                                 })()}
                                                             </div>
+
                                                             <span className="hidden print:inline text-xs font-medium">
                                                                 {(() => {
                                                                     const total = (parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0);
-                                                                    return total > 0 ? `₱${total.toFixed(2)}` : '';
+                                                                    return total > 0 ? `$${formatNumberWithCommas(total.toFixed(2))}` : '';
                                                                 })()}
                                                             </span>
                                                         </td>
@@ -2047,10 +2100,10 @@ const InventoryRequestManagement = () => {
                                             <tfoot className="bg-gray-50">
                                                 <tr>
                                                     <td colSpan="6" className="px-3 py-2 text-right font-bold text-sm border border-gray-300">GRAND TOTAL:</td>
-                                                    <td className="px-3 py-2 font-bold text-sm border border-gray-300">
-                                                        ₱{rpqFormData.items.reduce((sum, item) =>
-                                                            sum + ((parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0)), 0
-                                                        ).toFixed(2)}
+                                                    <td className="px-3 py-2 font-bold text-sm border border-gray-300 text-right">
+                                                        ${formatNumberWithCommas(rpqFormData.items.reduce((sum, item) =>
+                                                            sum + ((parseFloat(parseFormattedNumber(item.unitPrice || 0)) || 0) * (parseInt(item.qty) || 0)), 0
+                                                        ).toFixed(2))}
                                                     </td>
                                                 </tr>
                                             </tfoot>
@@ -2060,87 +2113,100 @@ const InventoryRequestManagement = () => {
                                 <div className="mb-4 p-3 border border-gray-300 rounded-lg section">
                                     <h3 className="font-bold text-gray-900 mb-2 section-title">Payment Arrangement</h3>
                                     <div className="space-y-3">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 mt-2">
                                             <label className="text-xs font-semibold label whitespace-nowrap">Initial Payment (%):</label>
                                             <input
                                                 type="number"
                                                 value={rpqFormData.initialPaymentPercent || ''}
                                                 onChange={(e) => {
-                                                    const initialPercent = parseFloat(e.target.value) || 0;
-                                                    const finalPercent = initialPercent > 0 ? Math.max(0, 100 - initialPercent) : '';
-                                                    const grandTotal = rpqFormData.items.reduce((sum, item) =>
-                                                        sum + ((parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0)), 0);
-                                                    setRpqFormData({
-                                                        ...rpqFormData,
-                                                        initialPaymentPercent: e.target.value,
-                                                        initialPaymentAmount: (grandTotal * initialPercent) / 100,
-                                                        finalPaymentPercent: finalPercent === '' ? '' : finalPercent.toString(),
-                                                        finalPaymentAmount: finalPercent === '' ? 0 : (grandTotal * finalPercent) / 100
-                                                    });
+                                                    const value = e.target.value;
+                                                    // Allow only numbers 0-100 with max 2 decimal places
+                                                    if (value === '' || (parseFloat(value) >= 0 && parseFloat(value) <= 100)) {
+                                                        const initialPercent = parseFloat(value) || 0;
+                                                        const finalPercent = initialPercent > 0 ? Math.max(0, 100 - initialPercent) : '';
+
+                                                        const grandTotal = rpqFormData.items.reduce((sum, item) => {
+                                                            const unitPrice = parseFloat(parseFormattedNumber(item.unitPrice || 0)) || 0;
+                                                            const qty = parseInt(item.qty) || 0;
+                                                            return sum + (unitPrice * qty);
+                                                        }, 0);
+
+                                                        setRpqFormData({
+                                                            ...rpqFormData,
+                                                            initialPaymentPercent: value,
+                                                            initialPaymentAmount: (grandTotal * initialPercent) / 100,
+                                                            finalPaymentPercent: finalPercent === '' ? '' : finalPercent.toString(),
+                                                            finalPaymentAmount: finalPercent === '' ? 0 : (grandTotal * finalPercent) / 100
+                                                        });
+                                                    }
+                                                }}
+                                                onBlur={(e) => {
+                                                    if (e.target.value && parseFloat(e.target.value) > 100) {
+                                                        const grandTotal = rpqFormData.items.reduce((sum, item) => {
+                                                            const unitPrice = parseFloat(parseFormattedNumber(item.unitPrice || 0)) || 0;
+                                                            const qty = parseInt(item.qty) || 0;
+                                                            return sum + (unitPrice * qty);
+                                                        }, 0);
+                                                        setRpqFormData(prev => ({
+                                                            ...prev,
+                                                            initialPaymentPercent: '100',
+                                                            initialPaymentAmount: calculateAmountFromPercent('100', grandTotal),
+                                                            finalPaymentPercent: '0',
+                                                            finalPaymentAmount: 0
+                                                        }));
+                                                    }
                                                 }}
                                                 min="0"
                                                 max="100"
                                                 step="0.01"
-                                                className="w-16 px-2 py-1 border border-gray-300 rounded text-xs no-print"
+                                                className="w-16 px-2 py-1 border border-gray-300 rounded text-xs no-print text-right"
                                                 placeholder="0"
                                             />
-                                            <span className="text-xs font-medium no-print">% = ₱</span>
+                                            <span className="text-xs font-medium no-print">% = $</span>
                                             <input
                                                 type="text"
-                                                value={(rpqFormData.initialPaymentAmount || 0).toFixed(2)}
+                                                value={formatNumberWithCommas(rpqFormData.initialPaymentAmount?.toFixed(2))}
                                                 readOnly
-                                                className="w-24 px-2 py-1 bg-gray-100 border-b-2 border-gray-400 text-xs font-medium no-print text-right"
+                                                className="w-32 px-2 py-1 bg-gray-100 border-b-2 border-gray-400 text-xs font-medium no-print text-right"
                                             />
                                             <span className="hidden print:inline text-xs whitespace-nowrap">
-                                                <span className="border-b-2 border-gray-800 inline-block min-w-[100px] text-center px-2 min-h-[20px]">
-                                                    {rpqFormData.initialPaymentPercent ? `${rpqFormData.initialPaymentPercent}%` : '________'}
+                                                <span className="inline-block min-w-[100px] text-center border-b border-black pb-1 px-2">
+                                                    {rpqFormData.initialPaymentPercent ? `${rpqFormData.initialPaymentPercent}%` : '\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0'}
                                                 </span>
-                                                {' = ₱ '}
-                                                <span className="border-b-2 border-gray-800 inline-block min-w-[180px] text-right px-2 min-h-[20px]">
+                                                <span> = $ </span>
+                                                <span className="inline-block min-w-[180px] text-right border-b border-black pb-1 px-2">
                                                     {rpqFormData.initialPaymentAmount && rpqFormData.initialPaymentAmount > 0
-                                                        ? (rpqFormData.initialPaymentAmount).toFixed(2)
-                                                        : '________________'}
+                                                        ? formatNumberWithCommas(rpqFormData.initialPaymentAmount.toFixed(2))
+                                                        : '\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0'}
                                                 </span>
                                             </span>
                                         </div>
 
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 mt-3">
                                             <label className="text-xs font-semibold label whitespace-nowrap">Final Payment (%):</label>
                                             <input
-                                                type="number"
+                                                type="text"
                                                 value={rpqFormData.finalPaymentPercent || ''}
-                                                onChange={(e) => {
-                                                    const percent = parseFloat(e.target.value) || 0;
-                                                    const grandTotal = rpqFormData.items.reduce((sum, item) =>
-                                                        sum + ((parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0)), 0);
-                                                    setRpqFormData({
-                                                        ...rpqFormData,
-                                                        finalPaymentPercent: e.target.value,
-                                                        finalPaymentAmount: (grandTotal * percent) / 100
-                                                    });
-                                                }}
-                                                min="0"
-                                                max="100"
-                                                step="0.01"
-                                                className="w-16 px-2 py-1 border border-gray-300 rounded text-xs no-print bg-gray-50"
+                                                readOnly
+                                                className="w-16 px-2 py-1 border border-gray-300 rounded text-xs no-print bg-gray-100 cursor-not-allowed text-right"
                                                 placeholder="0"
                                             />
-                                            <span className="text-xs font-medium no-print">% = ₱</span>
+                                            <span className="text-xs font-medium no-print">% = $</span>
                                             <input
                                                 type="text"
-                                                value={(rpqFormData.finalPaymentAmount || 0).toFixed(2)}
+                                                value={formatNumberWithCommas(rpqFormData.finalPaymentAmount?.toFixed(2))}
                                                 readOnly
-                                                className="w-24 px-2 py-1 bg-gray-100 border-b-2 border-gray-400 text-xs font-medium no-print text-right"
+                                                className="w-32 px-2 py-1 bg-gray-100 border-b-2 border-gray-400 text-xs font-medium no-print text-right"
                                             />
                                             <span className="hidden print:inline text-xs whitespace-nowrap">
-                                                <span className="border-b-2 border-gray-800 inline-block min-w-[100px] text-center px-2 min-h-[20px]">
-                                                    {rpqFormData.finalPaymentPercent ? `${rpqFormData.finalPaymentPercent}%` : '________'}
+                                                <span className="inline-block min-w-[100px] text-center border-b border-black pb-1 px-2">
+                                                    {rpqFormData.finalPaymentPercent ? `${rpqFormData.finalPaymentPercent}%` : '\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0'}
                                                 </span>
-                                                {' = ₱ '}
-                                                <span className="border-b-2 border-gray-800 inline-block min-w-[180px] text-right px-2 min-h-[20px]">
+                                                <span> = $ </span>
+                                                <span className="inline-block min-w-[180px] text-right border-b border-black pb-1 px-2">
                                                     {rpqFormData.finalPaymentAmount && rpqFormData.finalPaymentAmount > 0
-                                                        ? (rpqFormData.finalPaymentAmount).toFixed(2)
-                                                        : '________________'}
+                                                        ? formatNumberWithCommas(rpqFormData.finalPaymentAmount.toFixed(2))
+                                                        : '\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0'}
                                                 </span>
                                             </span>
                                         </div>
@@ -2149,31 +2215,38 @@ const InventoryRequestManagement = () => {
 
                                 <div className="mb-4 p-3 border border-gray-300 rounded-lg section">
                                     <h3 className="font-bold text-gray-900 mb-2 section-title">Payment Method</h3>
-
-                                    <div className="space-y-2">
-                                        <div className="info-row text-xs">
+                                    <div className="grid grid-cols-2 gap-3 text-sm grid-2">
+                                        <div className="info-row">
                                             <span className="font-semibold label">Mode of Payment: </span>
                                             <span>{rpqFormData.supplierInfo?.modeOfPayment || '-'}</span>
                                         </div>
-                                        <div className="info-row text-xs">
+                                        <div className="info-row">
                                             <span className="font-semibold label">Bank Name: </span>
                                             <span>{rpqFormData.supplierInfo?.bankName || '-'}</span>
                                         </div>
-                                        <div className="info-row text-xs">
+                                        <div className="info-row">
                                             <span className="font-semibold label">Account Number: </span>
                                             <span>{rpqFormData.supplierInfo?.accountNumber || '-'}</span>
                                         </div>
-                                        <div className="info-row text-xs">
+                                        <div className="info-row">
                                             <span className="font-semibold label">Account Name: </span>
-                                            <span>{rpqFormData.supplierInfo?.accountName || '-'}</span>
+                                            <span>{rpqFormData.supplierInfo?.beneficiaryName || '-'}</span>
                                         </div>
-                                        <div className="info-row text-xs">
+                                        <div className="info-row">
                                             <span className="font-semibold label">Swift Code: </span>
                                             <span>{rpqFormData.supplierInfo?.swiftCode || '-'}</span>
                                         </div>
-                                        <div className="info-row text-xs">
-                                            <span className="font-semibold label">Address: </span>
-                                            <span>{rpqFormData.supplierInfo?.address || '-'}</span>
+                                        <div className="info-row">
+                                            <span className="font-semibold label">Bank Address: </span>
+                                            <span>{rpqFormData.supplierInfo?.bankAddress || '-'}</span>
+                                        </div>
+                                        <div className="info-row">
+                                            <span className="font-semibold label">Bank Country: </span>
+                                            <span>{rpqFormData.supplierInfo?.bankCountry || '-'}</span>
+                                        </div>
+                                        <div className="info-row">
+                                            <span className="font-semibold label">Beneficiary Address: </span>
+                                            <span>{rpqFormData.supplierInfo?.beneficiaryAddress || '-'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -2193,8 +2266,8 @@ const InventoryRequestManagement = () => {
                                             />
                                             <span className="text-xs no-print">days</span>
                                             <span className="hidden print:inline text-xs">
-                                                <span className="border-b-2 border-gray-800 inline-block min-w-[80px] text-center px-1">
-                                                    {rpqFormData.productionLeadTime || '          '}
+                                                <span className="inline-block min-w-[120px] text-center border-b border-black pb-1 px-2">
+                                                    {rpqFormData.productionLeadTime || '\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0'}
                                                 </span>
                                                 {' '}days
                                             </span>
@@ -2257,9 +2330,18 @@ const InventoryRequestManagement = () => {
                                                 <FileText size={16} className="text-green-600" />
                                                 <span className="text-sm text-gray-700 flex-1">{uploadedFiles.rpq.name}</span>
                                                 <a
+                                                    href={getFileUrl(uploadedFiles.rpq.url)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                                    title="View"
+                                                >
+                                                    <Eye size={16} />
+                                                </a>
+                                                <a
                                                     href={getFileDownloadUrl(uploadedFiles.rpq.url)}
                                                     download
-                                                    className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                                    className="p-1 text-green-600 hover:bg-green-100 rounded"
                                                     title="Download"
                                                 >
                                                     <Download size={16} />
@@ -2303,9 +2385,18 @@ const InventoryRequestManagement = () => {
                                                 <FileText size={16} className="text-green-600" />
                                                 <span className="text-sm text-gray-700 flex-1">{uploadedFiles.commercialInvoice.name}</span>
                                                 <a
+                                                    href={getFileUrl(uploadedFiles.commercialInvoice.url)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                                    title="View"
+                                                >
+                                                    <Eye size={16} />
+                                                </a>
+                                                <a
                                                     href={getFileDownloadUrl(uploadedFiles.commercialInvoice.url)}
                                                     download
-                                                    className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                                    className="p-1 text-green-600 hover:bg-green-100 rounded"
                                                     title="Download"
                                                 >
                                                     <Download size={16} />
@@ -2349,9 +2440,18 @@ const InventoryRequestManagement = () => {
                                                 <FileText size={16} className="text-green-600" />
                                                 <span className="text-sm text-gray-700 flex-1">{uploadedFiles.salesContract.name}</span>
                                                 <a
+                                                    href={getFileUrl(uploadedFiles.salesContract.url)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                                    title="View"
+                                                >
+                                                    <Eye size={16} />
+                                                </a>
+                                                <a
                                                     href={getFileDownloadUrl(uploadedFiles.salesContract.url)}
                                                     download
-                                                    className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                                    className="p-1 text-green-600 hover:bg-green-100 rounded"
                                                     title="Download"
                                                 >
                                                     <Download size={16} />
@@ -2395,13 +2495,23 @@ const InventoryRequestManagement = () => {
                                                 <FileText size={16} className="text-green-600" />
                                                 <span className="text-sm text-gray-700 flex-1">{uploadedFiles.packingList.name}</span>
                                                 <a
+                                                    href={getFileUrl(uploadedFiles.packingList.url)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                                    title="View"
+                                                >
+                                                    <Eye size={16} />
+                                                </a>
+                                                <a
                                                     href={getFileDownloadUrl(uploadedFiles.packingList.url)}
                                                     download
-                                                    className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                                    className="p-1 text-green-600 hover:bg-green-100 rounded"
                                                     title="Download"
                                                 >
                                                     <Download size={16} />
                                                 </a>
+
                                                 <button
                                                     onClick={() => handleRemoveDocument('packingList')}
                                                     className="p-1 text-red-600 hover:bg-red-100 rounded"
@@ -2432,7 +2542,7 @@ const InventoryRequestManagement = () => {
             {/* RPQ View Modal */}
             {viewingRpq && (
                 <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="bg-white rounded-xl shadow-xl max-w-7xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="border-b px-6 py-4 flex items-center justify-between">
                             <h2 className="text-xl font-bold text-gray-900">Quotation Request Details</h2>
                             <button
@@ -2443,128 +2553,414 @@ const InventoryRequestManagement = () => {
                             </button>
                         </div>
 
-                        <div className="p-6 space-y-6">
-                            {/* Header Info */}
-                            <div className="grid grid-cols-2 gap-4 pb-4 border-b">
-                                <div>
-                                    <span className="text-sm text-gray-600">Control Number:</span>
-                                    <p className="font-semibold text-gray-900">{viewingRpq.controlNumber}</p>
+                        <div className="p-8 space-y-6">
+                            {/* Header with Control Number */}
+                            <div className="mb-5 pb-4 flex justify-between items-start">
+                                <div className="text-left leading-none space-y-0">
+                                    <div className="text-[34px] font-bold text-gray-900 font-serif tracking-tight">
+                                        WISECART MERCHANTS CORP.
+                                    </div>
+                                    <div className="text-[18px] text-gray-900 font-medium space-y-[1px] tracking-tight">
+                                        <div>407B 4F Tower One Plaza Magellan The Mactan Newtown</div>
+                                        <div>Mactan 6015 City of Lapu-lapu Cebu, Phils.</div>
+                                        <div>VAT REG. TIN 010-751-561-00000</div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <span className="text-sm text-gray-600">Requestor:</span>
-                                    <p className="font-semibold text-gray-900">{viewingRpq.requestor}</p>
-                                </div>
-                                <div>
-                                    <span className="text-sm text-gray-600">Date:</span>
-                                    <p className="font-semibold text-gray-900">
-                                        {viewingRpq.createdAt ? new Date(viewingRpq.createdAt).toLocaleDateString() : '-'}
-                                    </p>
-                                </div>
-                                <div>
-                                    <span className="text-sm text-gray-600">Status:</span>
-                                    <p className="font-semibold text-gray-900">{viewingRpq.status || 'DRAFT'}</p>
+                                <div className="text-right">
+                                    <div className="font-semibold">Control #: {viewingRpq.controlNumber}</div>
                                 </div>
                             </div>
 
-                            {/* Supplier Info */}
-                            <div className="p-4 bg-blue-50 rounded-lg">
-                                <h3 className="font-semibold text-gray-900 mb-3">Supplier Information</h3>
+                            {/* Title */}
+                            <div className="text-center mb-4">
+                                <h2 className="text-2xl font-bold text-gray-900">REQUEST FOR PRODUCT QUOTATION</h2>
+                            </div>
+
+                            {/* Date */}
+                            <div className="mb-4 flex justify-end">
+                                <span className="font-medium">Date: </span>
+                                <span>{viewingRpq.createdAt ? new Date(viewingRpq.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}</span>
+                            </div>
+
+                            {/* Supplier Details */}
+                            <div className="mb-4 p-3 border border-gray-300 rounded-lg">
+                                <h3 className="font-bold text-gray-900 mb-2">Supplier Details</h3>
                                 <div className="grid grid-cols-2 gap-3 text-sm">
-                                    <div>
-                                        <span className="text-gray-600">Name:</span>
-                                        <p className="font-medium text-gray-900">{viewingRpq.supplierName}</p>
+                                    <div className="info-row">
+                                        <span className="font-semibold">Supplier Name: </span>
+                                        <span>{viewingRpq.supplierName}</span>
                                     </div>
-                                    <div>
-                                        <span className="text-gray-600">Contact Person:</span>
-                                        <p className="font-medium text-gray-900">{viewingRpq.supplierInfo?.contactPerson || '-'}</p>
+                                    <div className="info-row">
+                                        <span className="font-semibold">Contact Person: </span>
+                                        <span>{viewingRpq.supplierInfo?.contactPerson || '-'}</span>
                                     </div>
-                                    <div>
-                                        <span className="text-gray-600">Contact No:</span>
-                                        <p className="font-medium text-gray-900">{viewingRpq.supplierInfo?.contactNo || '-'}</p>
+                                    <div className="info-row">
+                                        <span className="font-semibold">Contact Number: </span>
+                                        <span>{viewingRpq.supplierInfo?.contactNo || '-'}</span>
                                     </div>
-                                    <div>
-                                        <span className="text-gray-600">Email:</span>
-                                        <p className="font-medium text-gray-900">{viewingRpq.supplierInfo?.email || '-'}</p>
+                                    <div className="info-row">
+                                        <span className="font-semibold">Email: </span>
+                                        <span>{viewingRpq.supplierInfo?.email || '-'}</span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Product Info */}
-                            <div className="p-4 bg-gray-50 rounded-lg">
-                                <h3 className="font-semibold text-gray-900 mb-3">Product Information</h3>
-                                {viewingRpq.items && viewingRpq.items.length > 0 ? (
-                                    <div className="border rounded-lg overflow-hidden">
-                                        <table className="w-full">
-                                            <thead className="bg-gray-100 border-b">
-                                                <tr>
-                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Product</th>
-                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">SKU</th>
-                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Variation</th>
-                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Qty</th>
+                            {/* Products Table */}
+                            {viewingRpq.items && viewingRpq.items.length > 0 && (
+                                <div className="mb-4">
+                                    <h3 className="font-bold text-gray-900 mb-2">Products</h3>
+                                    <table className="w-full border-collapse border border-gray-300">
+                                        <thead className="bg-gray-100">
+                                            <tr>
+                                                <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Product Name</th>
+                                                <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Variation</th>
+                                                <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">UPC</th>
+                                                <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">UOM</th>
+                                                <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Quantity</th>
+                                                <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Unit Price</th>
+                                                <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {viewingRpq.items.map((item, idx) => (
+                                                <tr key={idx}>
+                                                    <td className="px-3 py-2 border border-gray-300">
+                                                        <div className="text-xs font-medium text-gray-900">{item.productName}</div>
+                                                        <div className="text-[11px] text-gray-500 mt-0.5">SKU: {item.sku || '-'}</div>
+                                                    </td>
+                                                    <td className="px-3 py-2 text-xs border border-gray-300">{item.variation || '-'}</td>
+                                                    <td className="px-3 py-2 text-xs border border-gray-300">{item.upc || '-'}</td>s
+                                                    <td className="px-3 py-2 text-xs border border-gray-300">{item.uom || 'PCS'}</td>
+                                                    <td className="px-3 py-2 text-xs border border-gray-300">
+                                                        {item.qty ? item.qty.toLocaleString() : '-'}
+                                                    </td>
+                                                    <td className="px-3 py-2 text-xs border border-gray-300">
+                                                        {item.unitPrice && parseFloat(item.unitPrice) > 0 ? `$${parseFloat(item.unitPrice).toFixed(2)}` : '-'}
+                                                    </td>
+                                                    <td className="px-3 py-2 text-xs font-medium border border-gray-300">
+                                                        {(() => {
+                                                            const total = (parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0);
+                                                            return total > 0 ? `$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-';
+                                                        })()}
+                                                    </td>
                                                 </tr>
-                                            </thead>
-                                            <tbody className="divide-y">
-                                                {viewingRpq.items.map((item, idx) => (
-                                                    <tr key={idx}>
-                                                        <td className="px-4 py-2 text-sm font-medium text-gray-900">{item.productName}</td>
-                                                        <td className="px-4 py-2 text-sm text-gray-600">{item.sku || '-'}</td>
-                                                        <td className="px-4 py-2 text-sm text-gray-600">{item.variation || '-'}</td>
-                                                        <td className="px-4 py-2 text-sm text-gray-900">{item.qty} {item.uom}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                            ))}
+                                        </tbody>
+                                        <tfoot className="bg-gray-50">
+                                            <tr>
+                                                <td colSpan="6" className="px-3 py-2 text-right font-bold text-sm border border-gray-300">GRAND TOTAL:</td>
+                                                <td className="px-3 py-2 font-bold text-sm border border-gray-300 text-right">
+                                                    ${formatNumberWithCommas(viewingRpq.items.reduce((sum, item) =>
+                                                        sum + ((parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0)), 0
+                                                    ).toFixed(2))}
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            )}
+
+                            {/* Payment Arrangement */}
+                            <div className="mb-4 p-3 border border-gray-300 rounded-lg">
+                                <h3 className="font-bold text-gray-900 mb-2">Payment Arrangement</h3>
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <label className="text-xs font-semibold whitespace-nowrap">Initial Payment (%):</label>
+                                        <span className="text-xs">
+                                            {viewingRpq.initialPaymentPercent ? `${viewingRpq.initialPaymentPercent}%` : '-'} = {formatCurrency(viewingRpq.initialPaymentAmount || 0)}
+                                        </span>
                                     </div>
-                                ) : (
-                                    <p className="text-sm text-gray-500">No products</p>
-                                )}
+                                    <div className="flex items-center gap-2">
+                                        <label className="text-xs font-semibold whitespace-nowrap">Final Payment (%):</label>
+                                        <span className="text-xs">
+                                            {viewingRpq.finalPaymentPercent ? `${viewingRpq.finalPaymentPercent}%` : '-'} = {formatCurrency(viewingRpq.finalPaymentAmount || 0)}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* Payment Info */}
-                            <div className="p-4 bg-amber-50 rounded-lg">
-                                <h3 className="font-semibold text-gray-900 mb-3">Payment Arrangement</h3>
+                            {/* Payment Method */}
+                            <div className="mb-4 p-3 border border-gray-300 rounded-lg">
+                                <h3 className="font-bold text-gray-900 mb-2">Payment Method</h3>
                                 <div className="grid grid-cols-2 gap-3 text-sm">
-                                    <div>
-                                        <span className="text-gray-600">Initial Payment Amount:</span>
-                                        <p className="font-medium text-gray-900">
-                                            {formatCurrency(viewingRpq.initialPaymentAmount)}
-                                        </p>
+                                    <div className="info-row">
+                                        <span className="font-semibold">Mode of Payment: </span>
+                                        <span>{viewingRpq.supplierInfo?.modeOfPayment || 'N/A'}</span>
                                     </div>
-                                    <div>
-                                        <span className="text-gray-600">Final Payment Amount:</span>
-                                        <p className="font-medium text-gray-900">
-                                            {formatCurrency(viewingRpq.finalPaymentAmount)}
-                                        </p>
+                                    <div className="info-row">
+                                        <span className="font-semibold">Bank Name: </span>
+                                        <span>{viewingRpq.supplierInfo?.bankName || 'N/A'}</span>
                                     </div>
-                                    {viewingRpq.paymentInstruction && (
-                                        <div className="col-span-2">
-                                            <span className="text-gray-600">Payment Instruction:</span>
-                                            <p className="font-medium text-gray-900">{viewingRpq.paymentInstruction}</p>
+                                    <div className="info-row">
+                                        <span className="font-semibold">Account Number: </span>
+                                        <span>{viewingRpq.supplierInfo?.accountNumber || 'N/A'}</span>
+                                    </div>
+                                    <div className="info-row">
+                                        <span className="font-semibold">Account Name: </span>
+                                        <span>{viewingRpq.supplierInfo?.beneficiaryName || viewingRpq.supplierInfo?.accountName || 'N/A'}</span>
+                                    </div>
+                                    <div className="info-row">
+                                        <span className="font-semibold">Swift Code: </span>
+                                        <span>{viewingRpq.supplierInfo?.swiftCode || 'N/A'}</span>
+                                    </div>
+                                    <div className="info-row">
+                                        <span className="font-semibold">Bank Address: </span>
+                                        <span>{viewingRpq.supplierInfo?.bankAddress || 'N/A'}</span>
+                                    </div>
+                                    <div className="info-row">
+                                        <span className="font-semibold">Bank Country: </span>
+                                        <span>{viewingRpq.supplierInfo?.bankCountry || 'N/A'}</span>
+                                    </div>
+                                    <div className="info-row">
+                                        <span className="font-semibold">Beneficiary Address: </span>
+                                        <span>{viewingRpq.supplierInfo?.beneficiaryAddress || 'N/A'}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Production Details */}
+                            <div className="mb-4 p-3 border border-gray-300 rounded-lg">
+                                <h3 className="font-bold text-gray-900 mb-2">Production Details</h3>
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-3">
+                                        <label className="text-xs font-semibold whitespace-nowrap">Production Lead Time:</label>
+                                        <span className="text-xs">{viewingRpq.productionLeadTime || '-'} days</span>
+                                    </div>
+                                    {viewingRpq.productionDetails && (
+                                        <div>
+                                            <label className="block text-xs font-semibold mb-1">Remarks:</label>
+                                            <div className="text-xs whitespace-pre-wrap">{viewingRpq.productionDetails}</div>
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Action Button */}
+
+                            <div className="mb-4 p-3 border border-gray-300 rounded-lg">
+                                <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+                                    <FileText size={18} />
+                                    Required Documents
+                                </h3>
+                                <div className="space-y-3">
+                                    {/* RPQ Document */}
+                                    <div className="flex items-center gap-3">
+                                        <label className="text-sm font-medium text-gray-700 w-48">Upload RPQ:</label>
+                                        {viewingRpq.documents?.rpq ? (
+                                            <div className="flex-1 flex items-center gap-2 bg-green-50 px-3 py-2 rounded border border-green-200">
+                                                <FileText size={16} className="text-green-600" />
+                                                <span className="text-sm text-gray-700 flex-1">RPQ Document</span>
+                                                <a
+                                                    href={getFileUrl(viewingRpq.documents.rpq)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                                    title="View"
+                                                >
+                                                    <Eye size={16} />
+                                                </a>
+                                                <a
+                                                    href={getFileDownloadUrl(viewingRpq.documents.rpq)}
+                                                    download
+                                                    className="p-1 text-green-600 hover:bg-green-100 rounded"
+                                                    title="Download"
+                                                >
+                                                    <Download size={16} />
+                                                </a>
+                                            </div>
+                                        ) : (
+                                            <span className="text-sm text-gray-500">Not uploaded</span>
+                                        )}
+                                    </div>
+
+                                    {/* Commercial Invoice */}
+                                    <div className="flex items-center gap-3">
+                                        <label className="text-sm font-medium text-gray-700 w-48">Upload Commercial Invoice:</label>
+                                        {viewingRpq.documents?.commercialInvoice ? (
+                                            <div className="flex-1 flex items-center gap-2 bg-green-50 px-3 py-2 rounded border border-green-200">
+                                                <FileText size={16} className="text-green-600" />
+                                                <span className="text-sm text-gray-700 flex-1">Commercial Invoice</span>
+                                                <a
+                                                    href={getFileUrl(viewingRpq.documents.commercialInvoice)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                                    title="View"
+                                                >
+                                                    <Eye size={16} />
+                                                </a>
+                                                <a
+                                                    href={getFileDownloadUrl(viewingRpq.documents.commercialInvoice)}
+                                                    download
+                                                    className="p-1 text-green-600 hover:bg-green-100 rounded"
+                                                    title="Download"
+                                                >
+                                                    <Download size={16} />
+                                                </a>
+                                            </div>
+                                        ) : (
+                                            <span className="text-sm text-gray-500">Not uploaded</span>
+                                        )}
+                                    </div>
+
+                                    {/* Sales Contract */}
+                                    <div className="flex items-center gap-3">
+                                        <label className="text-sm font-medium text-gray-700 w-48">Upload Sales Contract:</label>
+                                        {viewingRpq.documents?.salesContract ? (
+                                            <div className="flex-1 flex items-center gap-2 bg-green-50 px-3 py-2 rounded border border-green-200">
+                                                <FileText size={16} className="text-green-600" />
+                                                <span className="text-sm text-gray-700 flex-1">Sales Contract</span>
+                                                <a
+                                                    href={getFileUrl(viewingRpq.documents.salesContract)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                                    title="View"
+                                                >
+                                                    <Eye size={16} />
+                                                </a>
+                                                <a
+                                                    href={getFileDownloadUrl(viewingRpq.documents.salesContract)}
+                                                    download
+                                                    className="p-1 text-green-600 hover:bg-green-100 rounded"
+                                                    title="Download"
+                                                >
+                                                    <Download size={16} />
+                                                </a>
+                                            </div>
+                                        ) : (
+                                            <span className="text-sm text-gray-500">Not uploaded</span>
+                                        )}
+                                    </div>
+
+                                    {/* Packing List */}
+                                    <div className="flex items-center gap-3">
+                                        <label className="text-sm font-medium text-gray-700 w-48">Upload Packing List:</label>
+                                        {viewingRpq.documents?.packingList ? (
+                                            <div className="flex-1 flex items-center gap-2 bg-green-50 px-3 py-2 rounded border border-green-200">
+                                                <FileText size={16} className="text-green-600" />
+                                                <span className="text-sm text-gray-700 flex-1">Packing List</span>
+                                                <a
+                                                    href={getFileUrl(viewingRpq.documents.packingList)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                                    title="View"
+                                                >
+                                                    <Eye size={16} />
+                                                </a>
+                                                <a
+                                                    href={getFileDownloadUrl(viewingRpq.documents.packingList)}
+                                                    download
+                                                    className="p-1 text-green-600 hover:bg-green-100 rounded"
+                                                    title="Download"
+                                                >
+                                                    <Download size={16} />
+                                                </a>
+                                            </div >
+                                        ) : (
+                                            <span className="text-sm text-gray-500">Not uploaded</span>
+                                        )}
+                                    </div >
+                                </div >
+                            </div >
+
+                            {/* Requestor */}
+                            < div className="mb-4" >
+                                <div className="text-xs">
+                                    <span className="font-semibold">Requestor: </span>
+                                    <span>{viewingRpq.requestor}</span>
+                                </div>
+                                <div className="text-xs mt-1">
+                                    <span className="font-semibold">Status: </span>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${viewingRpq.status === 'CONFIRMED'
+                                        ? 'bg-green-100 text-green-800'
+                                        : viewingRpq.status === 'PENDING'
+                                            ? 'bg-blue-100 text-blue-800'
+                                            : 'bg-gray-100 text-gray-800'
+                                        }`}>
+                                        {viewingRpq.status || 'DRAFT'}
+                                    </span>
+                                </div>
+                            </div >
+
                             {viewingRpq.status !== 'CONFIRMED' && (
                                 <div className="pt-4 border-t">
-                                    <button
-                                        onClick={() => handleConfirmProduct(viewingRpq)}
-                                        disabled={buttonLoading['confirm-product']}
-                                        className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2 font-medium disabled:opacity-50"
-                                    >
-                                        {buttonLoading['confirm-product'] ? (
+                                    {(() => {
+                                        // Check if all required fields are filled
+                                        const hasAllProducts = viewingRpq.items && viewingRpq.items.length > 0;
+                                        const allProductsHavePrices = viewingRpq.items?.every(item =>
+                                            item.unitPrice && parseFloat(item.unitPrice) > 0
+                                        );
+                                        const hasPaymentArrangement =
+                                            viewingRpq.initialPaymentPercent > 0 &&
+                                            viewingRpq.finalPaymentPercent > 0;
+                                        const hasProductionLeadTime = viewingRpq.productionLeadTime && viewingRpq.productionLeadTime !== '';
+                                        const hasAllDocuments =
+                                            viewingRpq.documents?.rpq &&
+                                            viewingRpq.documents?.commercialInvoice &&
+                                            viewingRpq.documents?.salesContract &&
+                                            viewingRpq.documents?.packingList;
+
+                                        const isComplete =
+                                            hasAllProducts &&
+                                            allProductsHavePrices &&
+                                            hasPaymentArrangement &&
+                                            hasProductionLeadTime &&
+                                            hasAllDocuments;
+
+                                        const missingFields = [];
+                                        if (!allProductsHavePrices) missingFields.push('Unit prices for all products');
+                                        if (!hasPaymentArrangement) missingFields.push('Payment arrangement (Initial & Final payment)');
+                                        if (!hasProductionLeadTime) missingFields.push('Production lead time');
+                                        if (!viewingRpq.documents?.rpq) missingFields.push('RPQ document');
+                                        if (!viewingRpq.documents?.commercialInvoice) missingFields.push('Commercial Invoice');
+                                        if (!viewingRpq.documents?.salesContract) missingFields.push('Sales Contract');
+                                        if (!viewingRpq.documents?.packingList) missingFields.push('Packing List');
+
+                                        return (
                                             <>
-                                                <Loader2 size={20} className="animate-spin" />
-                                                Confirming...
+                                                {!isComplete && missingFields.length > 0 && (
+                                                    <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                                        <div className="flex items-start gap-2">
+                                                            <div className="text-yellow-600 mt-0.5">⚠️</div>
+                                                            <div>
+                                                                <h4 className="font-semibold text-yellow-800 mb-2">Cannot Confirm - Missing Required Fields:</h4>
+                                                                <ul className="list-disc list-inside text-sm text-yellow-700 space-y-1">
+                                                                    {missingFields.map((field, idx) => (
+                                                                        <li key={idx}>{field}</li>
+                                                                    ))}
+                                                                </ul>
+                                                                <p className="text-xs text-yellow-600 mt-2">
+                                                                    Please click Edit to complete all required fields before confirming.
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <button
+                                                    onClick={() => handleConfirmProduct(viewingRpq)}
+                                                    disabled={!isComplete || buttonLoading['confirm-product']}
+                                                    className={`w-full px-4 py-3 rounded-lg flex items-center justify-center gap-2 font-medium transition-colors ${isComplete
+                                                        ? 'bg-green-600 text-white hover:bg-green-700'
+                                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                        } disabled:opacity-50`}
+                                                    title={!isComplete ? 'Complete all required fields to confirm' : 'Confirm this quotation'}
+                                                >
+                                                    {buttonLoading['confirm-product'] ? (
+                                                        <>
+                                                            <Loader2 size={20} className="animate-spin" />
+                                                            Confirming...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Check size={20} />
+                                                            Confirm Product
+                                                        </>
+                                                    )}
+                                                </button>
                                             </>
-                                        ) : (
-                                            <>
-                                                <Check size={20} />
-                                                Confirm Product
-                                            </>
-                                        )}
-                                    </button>
+                                        );
+                                    })()}
                                 </div>
                             )}
                         </div>
@@ -2580,4 +2976,5 @@ const InventoryRequestManagement = () => {
         </div>
     );
 };
+
 export default InventoryRequestManagement;
