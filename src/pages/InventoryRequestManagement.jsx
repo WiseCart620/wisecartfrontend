@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import {
     Plus, Edit2, Trash2, Search, X, Eye, Check,
-    Building2, Package, ArrowRight, Loader2, FileText, ShoppingCart, ChevronDown, ChevronRight, Download
+    Building2, Package, ArrowRight, Loader2, FileText, ShoppingCart, ChevronDown, ChevronRight, Download, Upload
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { api } from '../services/api';
 import LoadingOverlay from '../components/common/LoadingOverlay';
 import PurchaseOrderManagement from './PurchaseOrderManagement';
+import { getFileUrl, getFileDownloadUrl, getPlaceholderImage } from '../utils/fileUtils';
+
 
 
 
@@ -357,6 +359,22 @@ const InventoryRequestManagement = () => {
     const pendingRpqCount = rpqRequests.filter(req =>
         req.status === 'DRAFT' || req.status === 'PENDING'
     ).length;
+
+
+
+    const [uploadedFiles, setUploadedFiles] = useState({
+        rpq: null,
+        commercialInvoice: null,
+        salesContract: null,
+        packingList: null
+    });
+    const [uploadingFiles, setUploadingFiles] = useState({
+        rpq: false,
+        commercialInvoice: false,
+        salesContract: false,
+        packingList: false
+    });
+
 
     const tabs = [
         {
@@ -798,8 +816,16 @@ const InventoryRequestManagement = () => {
                 productionLeadTime: rpqFormData.productionLeadTime || '',
                 productionDetails: rpqFormData.productionDetails || '',
                 paymentInstruction: rpqFormData.paymentInstruction || '',
-                status: 'PENDING'
+                status: 'PENDING',
+                // Add this line to save uploaded documents:
+                documents: {
+                    rpq: uploadedFiles.rpq?.url || null,
+                    commercialInvoice: uploadedFiles.commercialInvoice?.url || null,
+                    salesContract: uploadedFiles.salesContract?.url || null,
+                    packingList: uploadedFiles.packingList?.url || null
+                }
             };
+
             const response = await api.put(`/quotation-requests/${editingRpq.id}`, payload);
             if (response.success) {
                 toast.success('Quotation request updated successfully');
@@ -915,6 +941,12 @@ const InventoryRequestManagement = () => {
             paymentInstruction: ''
         });
         setEditingRpq(null);
+        setUploadedFiles({
+            rpq: null,
+            commercialInvoice: null,
+            salesContract: null,
+            packingList: null
+        });
     };
 
 
@@ -935,6 +967,79 @@ const InventoryRequestManagement = () => {
             </div>
         );
     }
+
+
+
+    const handleDocumentUpload = async (file, documentType) => {
+        if (!file) return;
+
+        setUploadingFiles(prev => ({ ...prev, [documentType]: true }));
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('prefix', `rpq_${documentType}`);
+
+            let uploadEndpoint = '/upload/image';
+            if (file.type === 'application/pdf') {
+                uploadEndpoint = '/upload/document';
+            } else if (file.type.includes('word') || file.type.includes('msword')) {
+                uploadEndpoint = '/upload/document';
+            } else if (file.type.startsWith('image/')) {
+                uploadEndpoint = '/upload/image';
+            }
+
+            const uploadResponse = await api.upload(uploadEndpoint, formData);
+
+            if (uploadResponse.success) {
+                let fileUrl;
+                if (uploadResponse.data?.data?.url) {
+                    fileUrl = uploadResponse.data.data.url;
+                } else if (uploadResponse.data?.url) {
+                    fileUrl = uploadResponse.data.url;
+                } else {
+                    throw new Error('File uploaded but URL not found in response');
+                }
+
+                setUploadedFiles(prev => ({
+                    ...prev,
+                    [documentType]: {
+                        url: fileUrl,
+                        name: file.name,
+                        type: file.type
+                    }
+                }));
+
+                toast.success(`${getDocumentLabel(documentType)} uploaded successfully`);
+            } else {
+                throw new Error(uploadResponse.error || 'Upload failed');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            toast.error(`Failed to upload ${getDocumentLabel(documentType)}: ${error.message}`);
+        } finally {
+            setUploadingFiles(prev => ({ ...prev, [documentType]: false }));
+        }
+    };
+
+    const getDocumentLabel = (type) => {
+        const labels = {
+            rpq: 'RPQ',
+            commercialInvoice: 'Commercial Invoice',
+            salesContract: 'Sales Contract',
+            packingList: 'Packing List'
+        };
+        return labels[type] || type;
+    };
+
+    const handleRemoveDocument = (documentType) => {
+        setUploadedFiles(prev => ({
+            ...prev,
+            [documentType]: null
+        }));
+        toast.success(`${getDocumentLabel(documentType)} removed`);
+    };
+
 
     return (
         <div className="p-6 max-w-full mx-auto px-8">
@@ -1770,7 +1875,14 @@ const InventoryRequestManagement = () => {
             .label { font-weight: bold; }
             .production-line { border-bottom: 1px solid #000; min-height: 20px; margin: 8px 0; padding: 2px 0; }
             .no-print { display: none !important; }
+            .min-h-\[20px\] { min-height: 20px; }
             .border-b-2 { border-bottom: 2px solid #000; }
+            .border-b-2 { 
+             border-bottom: 2px solid #000; 
+             padding-bottom: 2px;
+}
+.min-w-\[80px\] { min-width: 80px; }
+.min-w-\[150px\] { min-width: 150px; }
         </style>
     </head>
     <body>${content}</body>
@@ -1854,7 +1966,7 @@ const InventoryRequestManagement = () => {
                                                     <tr key={idx}>
                                                         <td className="px-3 py-2 border border-gray-300">
                                                             <div className="text-xs font-medium text-gray-900">{item.productName}</div>
-                                                            <div className="text-[10px] text-gray-500 mt-0.5">SKU: {item.sku || '-'}</div>
+                                                            <div className="text-[9px] text-gray-500 mt-0.5">SKU: {item.sku || '-'}</div>
                                                         </td>
                                                         <td className="px-3 py-2 text-xs border border-gray-300">{item.variation || '-'}</td>
                                                         <td className="px-3 py-2 text-xs border border-gray-300">{item.upc || '-'}</td>
@@ -1945,8 +2057,6 @@ const InventoryRequestManagement = () => {
                                         </table>
                                     </div>
                                 )}
-
-
                                 <div className="mb-4 p-3 border border-gray-300 rounded-lg section">
                                     <h3 className="font-bold text-gray-900 mb-2 section-title">Payment Arrangement</h3>
                                     <div className="space-y-3">
@@ -1956,13 +2066,16 @@ const InventoryRequestManagement = () => {
                                                 type="number"
                                                 value={rpqFormData.initialPaymentPercent || ''}
                                                 onChange={(e) => {
-                                                    const percent = parseFloat(e.target.value) || 0;
+                                                    const initialPercent = parseFloat(e.target.value) || 0;
+                                                    const finalPercent = initialPercent > 0 ? Math.max(0, 100 - initialPercent) : '';
                                                     const grandTotal = rpqFormData.items.reduce((sum, item) =>
                                                         sum + ((parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0)), 0);
                                                     setRpqFormData({
                                                         ...rpqFormData,
                                                         initialPaymentPercent: e.target.value,
-                                                        initialPaymentAmount: (grandTotal * percent) / 100
+                                                        initialPaymentAmount: (grandTotal * initialPercent) / 100,
+                                                        finalPaymentPercent: finalPercent === '' ? '' : finalPercent.toString(),
+                                                        finalPaymentAmount: finalPercent === '' ? 0 : (grandTotal * finalPercent) / 100
                                                     });
                                                 }}
                                                 min="0"
@@ -1978,13 +2091,15 @@ const InventoryRequestManagement = () => {
                                                 readOnly
                                                 className="w-24 px-2 py-1 bg-gray-100 border-b-2 border-gray-400 text-xs font-medium no-print text-right"
                                             />
-                                            <span className="hidden print:inline text-xs">
-                                                <span className="border-b-2 border-gray-800 inline-block min-w-[50px] text-center px-1">
-                                                    {rpqFormData.initialPaymentPercent || '     '}
+                                            <span className="hidden print:inline text-xs whitespace-nowrap">
+                                                <span className="border-b-2 border-gray-800 inline-block min-w-[100px] text-center px-2 min-h-[20px]">
+                                                    {rpqFormData.initialPaymentPercent ? `${rpqFormData.initialPaymentPercent}%` : '________'}
                                                 </span>
-                                                % = ₱
-                                                <span className="border-b-2 border-gray-800 inline-block min-w-[100px] text-right px-1">
-                                                    {rpqFormData.initialPaymentAmount ? (rpqFormData.initialPaymentAmount).toFixed(2) : '          '}
+                                                {' = ₱ '}
+                                                <span className="border-b-2 border-gray-800 inline-block min-w-[180px] text-right px-2 min-h-[20px]">
+                                                    {rpqFormData.initialPaymentAmount && rpqFormData.initialPaymentAmount > 0
+                                                        ? (rpqFormData.initialPaymentAmount).toFixed(2)
+                                                        : '________________'}
                                                 </span>
                                             </span>
                                         </div>
@@ -2007,7 +2122,7 @@ const InventoryRequestManagement = () => {
                                                 min="0"
                                                 max="100"
                                                 step="0.01"
-                                                className="w-16 px-2 py-1 border border-gray-300 rounded text-xs no-print"
+                                                className="w-16 px-2 py-1 border border-gray-300 rounded text-xs no-print bg-gray-50"
                                                 placeholder="0"
                                             />
                                             <span className="text-xs font-medium no-print">% = ₱</span>
@@ -2017,23 +2132,24 @@ const InventoryRequestManagement = () => {
                                                 readOnly
                                                 className="w-24 px-2 py-1 bg-gray-100 border-b-2 border-gray-400 text-xs font-medium no-print text-right"
                                             />
-                                            <span className="hidden print:inline text-xs">
-                                                <span className="border-b-2 border-gray-800 inline-block min-w-[50px] text-center px-1">
-                                                    {rpqFormData.finalPaymentPercent || '     '}
+                                            <span className="hidden print:inline text-xs whitespace-nowrap">
+                                                <span className="border-b-2 border-gray-800 inline-block min-w-[100px] text-center px-2 min-h-[20px]">
+                                                    {rpqFormData.finalPaymentPercent ? `${rpqFormData.finalPaymentPercent}%` : '________'}
                                                 </span>
-                                                % = ₱
-                                                <span className="border-b-2 border-gray-800 inline-block min-w-[100px] text-right px-1">
-                                                    {rpqFormData.finalPaymentAmount ? (rpqFormData.finalPaymentAmount).toFixed(2) : '          '}
+                                                {' = ₱ '}
+                                                <span className="border-b-2 border-gray-800 inline-block min-w-[180px] text-right px-2 min-h-[20px]">
+                                                    {rpqFormData.finalPaymentAmount && rpqFormData.finalPaymentAmount > 0
+                                                        ? (rpqFormData.finalPaymentAmount).toFixed(2)
+                                                        : '________________'}
                                                 </span>
                                             </span>
                                         </div>
                                     </div>
                                 </div>
 
-
-
                                 <div className="mb-4 p-3 border border-gray-300 rounded-lg section">
                                     <h3 className="font-bold text-gray-900 mb-2 section-title">Payment Method</h3>
+
                                     <div className="space-y-2">
                                         <div className="info-row text-xs">
                                             <span className="font-semibold label">Mode of Payment: </span>
@@ -2075,8 +2191,13 @@ const InventoryRequestManagement = () => {
                                                 placeholder="0"
                                                 min="0"
                                             />
-                                            <span className="text-xs">days</span>
-                                            <span className="hidden print:inline text-xs">{rpqFormData.productionLeadTime || ''} days</span>
+                                            <span className="text-xs no-print">days</span>
+                                            <span className="hidden print:inline text-xs">
+                                                <span className="border-b-2 border-gray-800 inline-block min-w-[80px] text-center px-1">
+                                                    {rpqFormData.productionLeadTime || '          '}
+                                                </span>
+                                                {' '}days
+                                            </span>
                                         </div>
 
                                         <div>
@@ -2098,6 +2219,199 @@ const InventoryRequestManagement = () => {
                                 {/* Requestor */}
                                 <div className="mb-4">
                                     <div className="text-xs info-row"><span className="font-semibold label">Requestor: </span><span>{editingRpq?.requestor || currentUserName}</span></div>
+                                </div>
+                            </div>
+
+                            {/* Document Uploads Section - ONLY show on screen, NOT in print */}
+                            <div className="mb-4 p-3 border border-gray-300 rounded-lg section no-print">
+                                <h3 className="font-bold text-gray-900 mb-2 section-title flex items-center gap-2">
+                                    <Upload size={18} />
+                                    Required Documents
+                                </h3>
+                                <div className="space-y-3">
+                                    {/* Upload RPQ */}
+                                    <div className="flex items-center gap-3">
+                                        <label className="text-sm font-medium text-gray-700 w-48">Upload RPQ:</label>
+                                        {!uploadedFiles.rpq ? (
+                                            <div className="flex-1">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*,.pdf,.doc,.docx"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files[0];
+                                                        if (file) handleDocumentUpload(file, 'rpq');
+                                                    }}
+                                                    disabled={uploadingFiles.rpq}
+                                                    className="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+                                                    id="upload-rpq"
+                                                />
+                                                {uploadingFiles.rpq && (
+                                                    <span className="ml-2 text-xs text-blue-600">
+                                                        <Loader2 size={14} className="inline animate-spin mr-1" />
+                                                        Uploading...
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="flex-1 flex items-center gap-2 bg-green-50 px-3 py-2 rounded border border-green-200">
+                                                <FileText size={16} className="text-green-600" />
+                                                <span className="text-sm text-gray-700 flex-1">{uploadedFiles.rpq.name}</span>
+                                                <a
+                                                    href={getFileDownloadUrl(uploadedFiles.rpq.url)}
+                                                    download
+                                                    className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                                    title="Download"
+                                                >
+                                                    <Download size={16} />
+                                                </a>
+                                                <button
+                                                    onClick={() => handleRemoveDocument('rpq')}
+                                                    className="p-1 text-red-600 hover:bg-red-100 rounded"
+                                                    title="Remove"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Upload Commercial Invoice */}
+                                    <div className="flex items-center gap-3">
+                                        <label className="text-sm font-medium text-gray-700 w-48">Upload Commercial Invoice:</label>
+                                        {!uploadedFiles.commercialInvoice ? (
+                                            <div className="flex-1">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*,.pdf,.doc,.docx"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files[0];
+                                                        if (file) handleDocumentUpload(file, 'commercialInvoice');
+                                                    }}
+                                                    disabled={uploadingFiles.commercialInvoice}
+                                                    className="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+                                                    id="upload-commercial-invoice"
+                                                />
+                                                {uploadingFiles.commercialInvoice && (
+                                                    <span className="ml-2 text-xs text-blue-600">
+                                                        <Loader2 size={14} className="inline animate-spin mr-1" />
+                                                        Uploading...
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="flex-1 flex items-center gap-2 bg-green-50 px-3 py-2 rounded border border-green-200">
+                                                <FileText size={16} className="text-green-600" />
+                                                <span className="text-sm text-gray-700 flex-1">{uploadedFiles.commercialInvoice.name}</span>
+                                                <a
+                                                    href={getFileDownloadUrl(uploadedFiles.commercialInvoice.url)}
+                                                    download
+                                                    className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                                    title="Download"
+                                                >
+                                                    <Download size={16} />
+                                                </a>
+                                                <button
+                                                    onClick={() => handleRemoveDocument('commercialInvoice')}
+                                                    className="p-1 text-red-600 hover:bg-red-100 rounded"
+                                                    title="Remove"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Upload Sales Contract */}
+                                    <div className="flex items-center gap-3">
+                                        <label className="text-sm font-medium text-gray-700 w-48">Upload Sales Contract:</label>
+                                        {!uploadedFiles.salesContract ? (
+                                            <div className="flex-1">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*,.pdf,.doc,.docx"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files[0];
+                                                        if (file) handleDocumentUpload(file, 'salesContract');
+                                                    }}
+                                                    disabled={uploadingFiles.salesContract}
+                                                    className="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+                                                    id="upload-sales-contract"
+                                                />
+                                                {uploadingFiles.salesContract && (
+                                                    <span className="ml-2 text-xs text-blue-600">
+                                                        <Loader2 size={14} className="inline animate-spin mr-1" />
+                                                        Uploading...
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="flex-1 flex items-center gap-2 bg-green-50 px-3 py-2 rounded border border-green-200">
+                                                <FileText size={16} className="text-green-600" />
+                                                <span className="text-sm text-gray-700 flex-1">{uploadedFiles.salesContract.name}</span>
+                                                <a
+                                                    href={getFileDownloadUrl(uploadedFiles.salesContract.url)}
+                                                    download
+                                                    className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                                    title="Download"
+                                                >
+                                                    <Download size={16} />
+                                                </a>
+                                                <button
+                                                    onClick={() => handleRemoveDocument('salesContract')}
+                                                    className="p-1 text-red-600 hover:bg-red-100 rounded"
+                                                    title="Remove"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Upload Packing List */}
+                                    <div className="flex items-center gap-3">
+                                        <label className="text-sm font-medium text-gray-700 w-48">Upload Packing List:</label>
+                                        {!uploadedFiles.packingList ? (
+                                            <div className="flex-1">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*,.pdf,.doc,.docx"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files[0];
+                                                        if (file) handleDocumentUpload(file, 'packingList');
+                                                    }}
+                                                    disabled={uploadingFiles.packingList}
+                                                    className="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+                                                    id="upload-packing-list"
+                                                />
+                                                {uploadingFiles.packingList && (
+                                                    <span className="ml-2 text-xs text-blue-600">
+                                                        <Loader2 size={14} className="inline animate-spin mr-1" />
+                                                        Uploading...
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="flex-1 flex items-center gap-2 bg-green-50 px-3 py-2 rounded border border-green-200">
+                                                <FileText size={16} className="text-green-600" />
+                                                <span className="text-sm text-gray-700 flex-1">{uploadedFiles.packingList.name}</span>
+                                                <a
+                                                    href={getFileDownloadUrl(uploadedFiles.packingList.url)}
+                                                    download
+                                                    className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                                    title="Download"
+                                                >
+                                                    <Download size={16} />
+                                                </a>
+                                                <button
+                                                    onClick={() => handleRemoveDocument('packingList')}
+                                                    className="p-1 text-red-600 hover:bg-red-100 rounded"
+                                                    title="Remove"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
