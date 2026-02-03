@@ -6,8 +6,8 @@ import {
 import toast, { Toaster } from 'react-hot-toast';
 import { api } from '../services/api';
 import LoadingOverlay from '../components/common/LoadingOverlay';
-import PurchaseOrderManagement from './PurchaseOrderManagement';
 import { getFileUrl, getFileDownloadUrl, getPlaceholderImage } from '../utils/fileUtils';
+import PurchaseOrderManagement, { getPaymentCounts } from './UploadPaymentManagement';
 
 
 
@@ -20,6 +20,12 @@ const InventoryRequestManagement = () => {
     const setButtonLoadingState = (key, value) => {
         setButtonLoading(prev => ({ ...prev, [key]: value }));
     };
+    const [paymentCounts, setPaymentCounts] = useState({
+        pending: 0,
+        partial: 0,
+        fullPaid: 0,
+        total: 0
+    });
     const [activeTab, setActiveTab] = useState('irr');
     const [irrRequests, setIrrRequests] = useState([]);
     const [loadingProducts, setLoadingProducts] = useState(false);
@@ -106,6 +112,26 @@ const InventoryRequestManagement = () => {
         return parseInt(num).toLocaleString('en-US');
     };
 
+
+    const handleCalculatorInput = (currentValue, newInput, isBackspace) => {
+        const currentCents = Math.round(parseFloat(currentValue || '0') * 100);
+        const currentStr = currentCents.toString().padStart(1, '0');
+
+        let newCents;
+        if (isBackspace) {
+            newCents = Math.floor(currentCents / 10);
+        } else {
+            const digit = newInput.replace(/[^0-9]/g, '').slice(-1);
+            if (digit) {
+                newCents = parseInt(currentStr + digit);
+            } else {
+                return currentValue;
+            }
+        }
+        return (newCents / 100).toFixed(2);
+    };
+
+
     const formatCurrency = (amount) => {
         if (!amount && amount !== 0) return '$0.00';
         return new Intl.NumberFormat('en-US', {
@@ -120,6 +146,18 @@ const InventoryRequestManagement = () => {
         loadInitialData();
     }, []);
 
+
+    useEffect(() => {
+        loadPaymentCounts();
+        const handleUpdate = () => loadPaymentCounts();
+        window.addEventListener('productUpdated', handleUpdate);
+        window.addEventListener('paymentUpdated', handleUpdate);
+
+        return () => {
+            window.removeEventListener('productUpdated', handleUpdate);
+            window.removeEventListener('paymentUpdated', handleUpdate);
+        };
+    }, []);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -421,6 +459,12 @@ const InventoryRequestManagement = () => {
         }
     };
 
+
+    const loadPaymentCounts = async () => {
+        const counts = await getPaymentCounts();
+        setPaymentCounts(counts);
+    };
+
     const pendingIrrCount = irrRequests.filter(req => req.status === 'PENDING').length;
     const pendingRpqCount = rpqRequests.filter(req =>
         req.status === 'DRAFT' || req.status === 'PENDING'
@@ -460,7 +504,9 @@ const InventoryRequestManagement = () => {
         {
             id: 'po',
             label: 'Purchase Orders & Payments',
-            icon: ShoppingCart
+            icon: ShoppingCart,
+            count: paymentCounts.total,
+            pendingCount: paymentCounts.pending + paymentCounts.partial
         }
     ];
 
@@ -838,7 +884,6 @@ const InventoryRequestManagement = () => {
                     uom: item.uom || 'PCS',
                     qty: parseInt(item.qty) || 1,
                     moq: item.moq ? parseInt(item.moq) : null,
-                    // Parse unit price from comma-separated format
                     unitPrice: item.unitPrice ? parseFloat(parseFormattedNumber(item.unitPrice)) : null,
                     totalAmount: item.unitPrice && item.qty ?
                         parseFloat(parseFormattedNumber(item.unitPrice)) * parseInt(item.qty) : null
@@ -852,7 +897,6 @@ const InventoryRequestManagement = () => {
                 productionDetails: rpqFormData.productionDetails || '',
                 paymentInstruction: rpqFormData.paymentInstruction || '',
                 status: 'PENDING',
-                // Add this line to save uploaded documents:
                 documents: {
                     rpq: uploadedFiles.rpq?.url || null,
                     commercialInvoice: uploadedFiles.commercialInvoice?.url || null,
@@ -1036,6 +1080,7 @@ const InventoryRequestManagement = () => {
                     throw new Error('File uploaded but URL not found in response');
                 }
 
+                // Update in state first
                 setUploadedFiles(prev => ({
                     ...prev,
                     [documentType]: {
@@ -1045,7 +1090,29 @@ const InventoryRequestManagement = () => {
                     }
                 }));
 
-                toast.success(`${getDocumentLabel(documentType)} uploaded successfully`);
+                // If viewing/editing RPQ, update the database immediately
+                if (editingRpq || viewingRpq) {
+                    const rpqId = editingRpq?.id || viewingRpq?.id;
+                    const currentRpq = editingRpq || viewingRpq;
+
+                    const updatePayload = {
+                        ...currentRpq,
+                        documents: {
+                            ...(currentRpq.documents || {}),
+                            [documentType]: fileUrl
+                        }
+                    };
+
+                    const response = await api.put(`/quotation-requests/${rpqId}`, updatePayload);
+
+                    if (response.success) {
+                        toast.success(`${getDocumentLabel(documentType)} uploaded and saved successfully`);
+                    } else {
+                        throw new Error('Failed to save document to database');
+                    }
+                } else {
+                    toast.success(`${getDocumentLabel(documentType)} uploaded successfully`);
+                }
             } else {
                 throw new Error(uploadResponse.error || 'Upload failed');
             }
@@ -1097,8 +1164,8 @@ const InventoryRequestManagement = () => {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition-colors ${activeTab === tab.id
-                                    ? 'border-blue-600 text-blue-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        ? 'border-blue-600 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                     }`}
                             >
                                 <Icon size={20} />
@@ -1107,8 +1174,8 @@ const InventoryRequestManagement = () => {
                                 {/* Total Count */}
                                 {tab.count !== undefined && (
                                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${activeTab === tab.id
-                                        ? 'bg-blue-100 text-blue-600'
-                                        : 'bg-gray-100 text-gray-600'
+                                            ? 'bg-blue-100 text-blue-600'
+                                            : 'bg-gray-100 text-gray-600'
                                         }`}>
                                         {tab.count}
                                     </span>
@@ -1117,18 +1184,17 @@ const InventoryRequestManagement = () => {
                                 {/* Pending Count Badge (yellow/amber) */}
                                 {tab.pendingCount !== undefined && tab.pendingCount > 0 && (
                                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${activeTab === tab.id
-                                        ? 'bg-amber-100 text-amber-700'
-                                        : 'bg-amber-50 text-amber-600'
+                                            ? 'bg-amber-100 text-amber-700'
+                                            : 'bg-amber-50 text-amber-600'
                                         } border border-amber-300`}>
                                         {tab.pendingCount} pending
                                     </span>
                                 )}
                             </button>
-                        );
+                        );  
                     })}
                 </nav>
             </div>
-
             {/* Tab Content */}
             {activeTab === 'irr' && (
                 <div>
@@ -1676,28 +1742,23 @@ const InventoryRequestManagement = () => {
                                                         {item.variation || '-'}
                                                     </td>
                                                     <td className="px-4 py-3">
-                                                        <select
-                                                            value={item.uom}
-                                                            onChange={(e) => handleItemChange(index, 'uom', e.target.value)}
-                                                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                                                        >
-                                                            <option value="PCS">PCS</option>
-                                                            <option value="BOX">BOX</option>
-                                                            <option value="CTN">CTN</option>
-                                                            <option value="KG">KG</option>
-                                                            <option value="L">L</option>
-                                                            <option value="M">M</option>
-                                                            <option value="SET">SET</option>
-                                                            <option value="PACK">PACK</option>
-                                                        </select>
+                                                        <input
+                                                            type="text"
+                                                            value="PCS"
+                                                            readOnly
+                                                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm bg-gray-100 cursor-not-allowed text-center"
+                                                        />
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         <input
-                                                            type="number"
-                                                            value={item.qty}
-                                                            onChange={(e) => handleItemChange(index, 'qty', e.target.value)}
-                                                            min="1"
-                                                            className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
+                                                            type="text"
+                                                            value={item.qty ? parseInt(item.qty).toLocaleString('en-US') : ''}
+                                                            onChange={(e) => {
+                                                                const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                                                                handleItemChange(index, 'qty', numericValue);
+                                                            }}
+                                                            className="w-20 px-2 py-1 border border-gray-300 rounded text-sm text-right"
+                                                            placeholder="0"
                                                         />
                                                     </td>
                                                     <td className="px-4 py-3 text-center">
@@ -1863,7 +1924,7 @@ const InventoryRequestManagement = () => {
                                                         <td className="px-4 py-2 text-sm">{item.sku || '-'}</td>
                                                         <td className="px-4 py-2 text-sm">{item.upc || '-'}</td>
                                                         <td className="px-4 py-2 text-sm">{item.variation || '-'}</td>
-                                                        <td className="px-4 py-2 text-sm">{item.qty} {item.uom}</td>
+                                                        <td className="px-4 py-2 text-sm">{item.qty ? parseInt(item.qty).toLocaleString('en-US') : '-'} PCS</td>
                                                     </tr>
                                                 ))}
                                             </tbody>
@@ -2018,11 +2079,11 @@ const InventoryRequestManagement = () => {
                                                         <td className="px-3 py-2 border border-gray-300">
                                                             <input
                                                                 type="text"
-                                                                value={item.uom || 'PCS'}
+                                                                value="PCS"
                                                                 readOnly
-                                                                className="w-20 px-2 py-1 border border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed no-print"
+                                                                className="w-20 px-2 py-1 border border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed no-print text-center"
                                                             />
-                                                            <span className="hidden print:inline text-xs">{item.uom || 'PCS'}</span>
+                                                            <span className="hidden print:inline text-xs">PCS</span>
                                                         </td>
                                                         <td className="px-3 py-2 border border-gray-300">
                                                             <input
@@ -2048,29 +2109,42 @@ const InventoryRequestManagement = () => {
                                                         <td className="px-3 py-2 border border-gray-300">
                                                             <input
                                                                 type="text"
-                                                                value={formatNumberWithCommas(item.unitPrice || '')}
+                                                                value={formatNumberWithCommas(item.unitPrice || '0.00')}
                                                                 onChange={(e) => {
-                                                                    const rawValue = parseFormattedNumber(e.target.value);
+                                                                    // This is handled by onKeyDown
+                                                                }}
+                                                                onKeyDown={(e) => {
+                                                                    e.preventDefault(); // Prevent default input behavior
+
                                                                     const newItems = [...rpqFormData.items];
-                                                                    const unitPrice = parseFloat(rawValue) || 0;
+                                                                    let newValue;
+
+                                                                    if (e.key === 'Backspace' || e.key === 'Delete') {
+                                                                        // Handle backspace/delete
+                                                                        newValue = handleCalculatorInput(item.unitPrice || '0.00', '', true);
+                                                                    } else if (e.key >= '0' && e.key <= '9') {
+                                                                        // Handle number input
+                                                                        newValue = handleCalculatorInput(item.unitPrice || '0.00', e.key, false);
+                                                                    } else if (e.key === 'Tab' || e.key === 'Enter') {
+                                                                        // Allow tab and enter
+                                                                        e.preventDefault();
+                                                                        return;
+                                                                    } else {
+                                                                        // Ignore other keys
+                                                                        return;
+                                                                    }
+
+                                                                    const unitPrice = parseFloat(newValue);
                                                                     const qty = parseInt(newItems[idx].qty) || 0;
+
                                                                     newItems[idx] = {
                                                                         ...newItems[idx],
-                                                                        unitPrice: rawValue,
+                                                                        unitPrice: newValue,
                                                                         totalAmount: unitPrice * qty
                                                                     };
+
                                                                     setRpqFormData({ ...rpqFormData, items: newItems });
                                                                     recalculatePaymentAmounts();
-                                                                }}
-                                                                onBlur={(e) => {
-                                                                    if (e.target.value) {
-                                                                        const numericValue = parseFormattedNumber(e.target.value);
-                                                                        const formatted = numericValue ? parseFloat(numericValue).toFixed(2) : '';
-                                                                        const newItems = [...rpqFormData.items];
-                                                                        newItems[idx].unitPrice = formatted;
-                                                                        setRpqFormData({ ...rpqFormData, items: newItems });
-                                                                        recalculatePaymentAmounts();
-                                                                    }
                                                                 }}
                                                                 className="w-24 px-2 py-1 border border-gray-300 rounded text-xs no-print text-right"
                                                                 placeholder="0.00"
@@ -2165,7 +2239,11 @@ const InventoryRequestManagement = () => {
                                             <span className="text-xs font-medium no-print">% = $</span>
                                             <input
                                                 type="text"
-                                                value={formatNumberWithCommas(rpqFormData.initialPaymentAmount?.toFixed(2))}
+                                                value={formatNumberWithCommas(
+                                                    rpqFormData.initialPaymentAmount
+                                                        ? Number(rpqFormData.initialPaymentAmount).toFixed(2)
+                                                        : '0.00'
+                                                )}
                                                 readOnly
                                                 className="w-32 px-2 py-1 bg-gray-100 border-b-2 border-gray-400 text-xs font-medium no-print text-right"
                                             />
@@ -2194,7 +2272,11 @@ const InventoryRequestManagement = () => {
                                             <span className="text-xs font-medium no-print">% = $</span>
                                             <input
                                                 type="text"
-                                                value={formatNumberWithCommas(rpqFormData.finalPaymentAmount?.toFixed(2))}
+                                                value={formatNumberWithCommas(
+                                                    rpqFormData.finalPaymentAmount
+                                                        ? Number(rpqFormData.finalPaymentAmount).toFixed(2)
+                                                        : '0.00'
+                                                )}
                                                 readOnly
                                                 className="w-32 px-2 py-1 bg-gray-100 border-b-2 border-gray-400 text-xs font-medium no-print text-right"
                                             />
@@ -2629,10 +2711,10 @@ const InventoryRequestManagement = () => {
                                                         <div className="text-[11px] text-gray-500 mt-0.5">SKU: {item.sku || '-'}</div>
                                                     </td>
                                                     <td className="px-3 py-2 text-xs border border-gray-300">{item.variation || '-'}</td>
-                                                    <td className="px-3 py-2 text-xs border border-gray-300">{item.upc || '-'}</td>s
+                                                    <td className="px-3 py-2 text-xs border border-gray-300">{item.upc || '-'}</td>
                                                     <td className="px-3 py-2 text-xs border border-gray-300">{item.uom || 'PCS'}</td>
                                                     <td className="px-3 py-2 text-xs border border-gray-300">
-                                                        {item.qty ? item.qty.toLocaleString() : '-'}
+                                                        {item.qty ? parseInt(item.qty).toLocaleString('en-US') : '-'}
                                                     </td>
                                                     <td className="px-3 py-2 text-xs border border-gray-300">
                                                         {item.unitPrice && parseFloat(item.unitPrice) > 0 ? `$${parseFloat(item.unitPrice).toFixed(2)}` : '-'}
@@ -2735,17 +2817,44 @@ const InventoryRequestManagement = () => {
                                 </div>
                             </div>
 
-
+                            {/* Required Documents - Can Upload */}
                             <div className="mb-4 p-3 border border-gray-300 rounded-lg">
                                 <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                                    <FileText size={18} />
+                                    <Upload size={18} />
                                     Required Documents
                                 </h3>
                                 <div className="space-y-3">
                                     {/* RPQ Document */}
                                     <div className="flex items-center gap-3">
                                         <label className="text-sm font-medium text-gray-700 w-48">Upload RPQ:</label>
-                                        {viewingRpq.documents?.rpq ? (
+                                        {!viewingRpq.documents?.rpq ? (
+                                            <div className="flex-1">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*,.pdf,.doc,.docx"
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files[0];
+                                                        if (file) {
+                                                            await handleDocumentUpload(file, 'rpq');
+                                                            // Update viewingRpq with new document
+                                                            const updatedRpq = await api.get(`/quotation-requests/${viewingRpq.id}`);
+                                                            if (updatedRpq.success) {
+                                                                setViewingRpq(updatedRpq.data);
+                                                                await loadRpqRequests();
+                                                            }
+                                                        }
+                                                    }}
+                                                    disabled={uploadingFiles.rpq}
+                                                    className="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+                                                />
+                                                {uploadingFiles.rpq && (
+                                                    <span className="ml-2 text-xs text-blue-600">
+                                                        <Loader2 size={14} className="inline animate-spin mr-1" />
+                                                        Uploading...
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ) : (
                                             <div className="flex-1 flex items-center gap-2 bg-green-50 px-3 py-2 rounded border border-green-200">
                                                 <FileText size={16} className="text-green-600" />
                                                 <span className="text-sm text-gray-700 flex-1">RPQ Document</span>
@@ -2766,16 +2875,69 @@ const InventoryRequestManagement = () => {
                                                 >
                                                     <Download size={16} />
                                                 </a>
+                                                <button
+                                                    onClick={async () => {
+                                                        if (window.confirm('Remove this document?')) {
+                                                            try {
+                                                                const response = await api.put(`/quotation-requests/${viewingRpq.id}`, {
+                                                                    ...viewingRpq,
+                                                                    documents: {
+                                                                        ...viewingRpq.documents,
+                                                                        rpq: null
+                                                                    }
+                                                                });
+                                                                if (response.success) {
+                                                                    toast.success('Document removed');
+                                                                    const updatedRpq = await api.get(`/quotation-requests/${viewingRpq.id}`);
+                                                                    if (updatedRpq.success) {
+                                                                        setViewingRpq(updatedRpq.data);
+                                                                        await loadRpqRequests();
+                                                                    }
+                                                                }
+                                                            } catch (error) {
+                                                                toast.error('Failed to remove document');
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="p-1 text-red-600 hover:bg-red-100 rounded"
+                                                    title="Remove"
+                                                >
+                                                    <X size={16} />
+                                                </button>
                                             </div>
-                                        ) : (
-                                            <span className="text-sm text-gray-500">Not uploaded</span>
                                         )}
                                     </div>
 
                                     {/* Commercial Invoice */}
                                     <div className="flex items-center gap-3">
                                         <label className="text-sm font-medium text-gray-700 w-48">Upload Commercial Invoice:</label>
-                                        {viewingRpq.documents?.commercialInvoice ? (
+                                        {!viewingRpq.documents?.commercialInvoice ? (
+                                            <div className="flex-1">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*,.pdf,.doc,.docx"
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files[0];
+                                                        if (file) {
+                                                            await handleDocumentUpload(file, 'commercialInvoice');
+                                                            const updatedRpq = await api.get(`/quotation-requests/${viewingRpq.id}`);
+                                                            if (updatedRpq.success) {
+                                                                setViewingRpq(updatedRpq.data);
+                                                                await loadRpqRequests();
+                                                            }
+                                                        }
+                                                    }}
+                                                    disabled={uploadingFiles.commercialInvoice}
+                                                    className="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+                                                />
+                                                {uploadingFiles.commercialInvoice && (
+                                                    <span className="ml-2 text-xs text-blue-600">
+                                                        <Loader2 size={14} className="inline animate-spin mr-1" />
+                                                        Uploading...
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ) : (
                                             <div className="flex-1 flex items-center gap-2 bg-green-50 px-3 py-2 rounded border border-green-200">
                                                 <FileText size={16} className="text-green-600" />
                                                 <span className="text-sm text-gray-700 flex-1">Commercial Invoice</span>
@@ -2796,16 +2958,69 @@ const InventoryRequestManagement = () => {
                                                 >
                                                     <Download size={16} />
                                                 </a>
+                                                <button
+                                                    onClick={async () => {
+                                                        if (window.confirm('Remove this document?')) {
+                                                            try {
+                                                                const response = await api.put(`/quotation-requests/${viewingRpq.id}`, {
+                                                                    ...viewingRpq,
+                                                                    documents: {
+                                                                        ...viewingRpq.documents,
+                                                                        commercialInvoice: null
+                                                                    }
+                                                                });
+                                                                if (response.success) {
+                                                                    toast.success('Document removed');
+                                                                    const updatedRpq = await api.get(`/quotation-requests/${viewingRpq.id}`);
+                                                                    if (updatedRpq.success) {
+                                                                        setViewingRpq(updatedRpq.data);
+                                                                        await loadRpqRequests();
+                                                                    }
+                                                                }
+                                                            } catch (error) {
+                                                                toast.error('Failed to remove document');
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="p-1 text-red-600 hover:bg-red-100 rounded"
+                                                    title="Remove"
+                                                >
+                                                    <X size={16} />
+                                                </button>
                                             </div>
-                                        ) : (
-                                            <span className="text-sm text-gray-500">Not uploaded</span>
                                         )}
                                     </div>
 
                                     {/* Sales Contract */}
                                     <div className="flex items-center gap-3">
                                         <label className="text-sm font-medium text-gray-700 w-48">Upload Sales Contract:</label>
-                                        {viewingRpq.documents?.salesContract ? (
+                                        {!viewingRpq.documents?.salesContract ? (
+                                            <div className="flex-1">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*,.pdf,.doc,.docx"
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files[0];
+                                                        if (file) {
+                                                            await handleDocumentUpload(file, 'salesContract');
+                                                            const updatedRpq = await api.get(`/quotation-requests/${viewingRpq.id}`);
+                                                            if (updatedRpq.success) {
+                                                                setViewingRpq(updatedRpq.data);
+                                                                await loadRpqRequests();
+                                                            }
+                                                        }
+                                                    }}
+                                                    disabled={uploadingFiles.salesContract}
+                                                    className="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+                                                />
+                                                {uploadingFiles.salesContract && (
+                                                    <span className="ml-2 text-xs text-blue-600">
+                                                        <Loader2 size={14} className="inline animate-spin mr-1" />
+                                                        Uploading...
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ) : (
                                             <div className="flex-1 flex items-center gap-2 bg-green-50 px-3 py-2 rounded border border-green-200">
                                                 <FileText size={16} className="text-green-600" />
                                                 <span className="text-sm text-gray-700 flex-1">Sales Contract</span>
@@ -2826,16 +3041,69 @@ const InventoryRequestManagement = () => {
                                                 >
                                                     <Download size={16} />
                                                 </a>
+                                                <button
+                                                    onClick={async () => {
+                                                        if (window.confirm('Remove this document?')) {
+                                                            try {
+                                                                const response = await api.put(`/quotation-requests/${viewingRpq.id}`, {
+                                                                    ...viewingRpq,
+                                                                    documents: {
+                                                                        ...viewingRpq.documents,
+                                                                        salesContract: null
+                                                                    }
+                                                                });
+                                                                if (response.success) {
+                                                                    toast.success('Document removed');
+                                                                    const updatedRpq = await api.get(`/quotation-requests/${viewingRpq.id}`);
+                                                                    if (updatedRpq.success) {
+                                                                        setViewingRpq(updatedRpq.data);
+                                                                        await loadRpqRequests();
+                                                                    }
+                                                                }
+                                                            } catch (error) {
+                                                                toast.error('Failed to remove document');
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="p-1 text-red-600 hover:bg-red-100 rounded"
+                                                    title="Remove"
+                                                >
+                                                    <X size={16} />
+                                                </button>
                                             </div>
-                                        ) : (
-                                            <span className="text-sm text-gray-500">Not uploaded</span>
                                         )}
                                     </div>
 
                                     {/* Packing List */}
                                     <div className="flex items-center gap-3">
                                         <label className="text-sm font-medium text-gray-700 w-48">Upload Packing List:</label>
-                                        {viewingRpq.documents?.packingList ? (
+                                        {!viewingRpq.documents?.packingList ? (
+                                            <div className="flex-1">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*,.pdf,.doc,.docx"
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files[0];
+                                                        if (file) {
+                                                            await handleDocumentUpload(file, 'packingList');
+                                                            const updatedRpq = await api.get(`/quotation-requests/${viewingRpq.id}`);
+                                                            if (updatedRpq.success) {
+                                                                setViewingRpq(updatedRpq.data);
+                                                                await loadRpqRequests();
+                                                            }
+                                                        }
+                                                    }}
+                                                    disabled={uploadingFiles.packingList}
+                                                    className="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+                                                />
+                                                {uploadingFiles.packingList && (
+                                                    <span className="ml-2 text-xs text-blue-600">
+                                                        <Loader2 size={14} className="inline animate-spin mr-1" />
+                                                        Uploading...
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ) : (
                                             <div className="flex-1 flex items-center gap-2 bg-green-50 px-3 py-2 rounded border border-green-200">
                                                 <FileText size={16} className="text-green-600" />
                                                 <span className="text-sm text-gray-700 flex-1">Packing List</span>
@@ -2856,9 +3124,36 @@ const InventoryRequestManagement = () => {
                                                 >
                                                     <Download size={16} />
                                                 </a>
+                                                <button
+                                                    onClick={async () => {
+                                                        if (window.confirm('Remove this document?')) {
+                                                            try {
+                                                                const response = await api.put(`/quotation-requests/${viewingRpq.id}`, {
+                                                                    ...viewingRpq,
+                                                                    documents: {
+                                                                        ...viewingRpq.documents,
+                                                                        packingList: null
+                                                                    }
+                                                                });
+                                                                if (response.success) {
+                                                                    toast.success('Document removed');
+                                                                    const updatedRpq = await api.get(`/quotation-requests/${viewingRpq.id}`);
+                                                                    if (updatedRpq.success) {
+                                                                        setViewingRpq(updatedRpq.data);
+                                                                        await loadRpqRequests();
+                                                                    }
+                                                                }
+                                                            } catch (error) {
+                                                                toast.error('Failed to remove document');
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="p-1 text-red-600 hover:bg-red-100 rounded"
+                                                    title="Remove"
+                                                >
+                                                    <X size={16} />
+                                                </button>
                                             </div >
-                                        ) : (
-                                            <span className="text-sm text-gray-500">Not uploaded</span>
                                         )}
                                     </div >
                                 </div >
@@ -2883,97 +3178,92 @@ const InventoryRequestManagement = () => {
                                 </div>
                             </div >
 
-                            {viewingRpq.status !== 'CONFIRMED' && (
-                                <div className="pt-4 border-t">
-                                    {(() => {
-                                        // Check if all required fields are filled
-                                        const hasAllProducts = viewingRpq.items && viewingRpq.items.length > 0;
-                                        const allProductsHavePrices = viewingRpq.items?.every(item =>
-                                            item.unitPrice && parseFloat(item.unitPrice) > 0
-                                        );
-                                        const hasPaymentArrangement =
-                                            viewingRpq.initialPaymentPercent > 0 &&
-                                            viewingRpq.finalPaymentPercent > 0;
-                                        const hasProductionLeadTime = viewingRpq.productionLeadTime && viewingRpq.productionLeadTime !== '';
-                                        const hasAllDocuments =
-                                            viewingRpq.documents?.rpq &&
-                                            viewingRpq.documents?.commercialInvoice &&
-                                            viewingRpq.documents?.salesContract &&
-                                            viewingRpq.documents?.packingList;
+                            {
+                                viewingRpq.status !== 'CONFIRMED' && (
+                                    <div className="pt-4 border-t">
+                                        {(() => {
+                                            // Check if all required fields are filled (REMOVED document check)
+                                            const hasAllProducts = viewingRpq.items && viewingRpq.items.length > 0;
+                                            const allProductsHavePrices = viewingRpq.items?.every(item =>
+                                                item.unitPrice && parseFloat(item.unitPrice) > 0
+                                            );
+                                            const hasPaymentArrangement =
+                                                viewingRpq.initialPaymentPercent > 0 &&
+                                                viewingRpq.finalPaymentPercent > 0;
+                                            const hasProductionLeadTime = viewingRpq.productionLeadTime && viewingRpq.productionLeadTime !== '';
 
-                                        const isComplete =
-                                            hasAllProducts &&
-                                            allProductsHavePrices &&
-                                            hasPaymentArrangement &&
-                                            hasProductionLeadTime &&
-                                            hasAllDocuments;
+                                            const isComplete =
+                                                hasAllProducts &&
+                                                allProductsHavePrices &&
+                                                hasPaymentArrangement &&
+                                                hasProductionLeadTime;
 
-                                        const missingFields = [];
-                                        if (!allProductsHavePrices) missingFields.push('Unit prices for all products');
-                                        if (!hasPaymentArrangement) missingFields.push('Payment arrangement (Initial & Final payment)');
-                                        if (!hasProductionLeadTime) missingFields.push('Production lead time');
-                                        if (!viewingRpq.documents?.rpq) missingFields.push('RPQ document');
-                                        if (!viewingRpq.documents?.commercialInvoice) missingFields.push('Commercial Invoice');
-                                        if (!viewingRpq.documents?.salesContract) missingFields.push('Sales Contract');
-                                        if (!viewingRpq.documents?.packingList) missingFields.push('Packing List');
+                                            const missingFields = [];
+                                            if (!allProductsHavePrices) missingFields.push('Unit prices for all products');
+                                            if (!hasPaymentArrangement) missingFields.push('Payment arrangement (Initial & Final payment)');
+                                            if (!hasProductionLeadTime) missingFields.push('Production lead time');
 
-                                        return (
-                                            <>
-                                                {!isComplete && missingFields.length > 0 && (
-                                                    <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                                        <div className="flex items-start gap-2">
-                                                            <div className="text-yellow-600 mt-0.5">⚠️</div>
-                                                            <div>
-                                                                <h4 className="font-semibold text-yellow-800 mb-2">Cannot Confirm - Missing Required Fields:</h4>
-                                                                <ul className="list-disc list-inside text-sm text-yellow-700 space-y-1">
-                                                                    {missingFields.map((field, idx) => (
-                                                                        <li key={idx}>{field}</li>
-                                                                    ))}
-                                                                </ul>
-                                                                <p className="text-xs text-yellow-600 mt-2">
-                                                                    Please click Edit to complete all required fields before confirming.
-                                                                </p>
+                                            return (
+                                                <>
+                                                    {!isComplete && missingFields.length > 0 && (
+                                                        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                                            <div className="flex items-start gap-2">
+                                                                <div className="text-yellow-600 mt-0.5">⚠️</div>
+                                                                <div>
+                                                                    <h4 className="font-semibold text-yellow-800 mb-2">Cannot Confirm - Missing Required Fields:</h4>
+                                                                    <ul className="list-disc list-inside text-sm text-yellow-700 space-y-1">
+                                                                        {missingFields.map((field, idx) => (
+                                                                            <li key={idx}>{field}</li>
+                                                                        ))}
+                                                                    </ul>
+                                                                    <p className="text-xs text-yellow-600 mt-2">
+                                                                        Please click Edit to complete all required fields before confirming.
+                                                                    </p>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                )}
-                                                <button
-                                                    onClick={() => handleConfirmProduct(viewingRpq)}
-                                                    disabled={!isComplete || buttonLoading['confirm-product']}
-                                                    className={`w-full px-4 py-3 rounded-lg flex items-center justify-center gap-2 font-medium transition-colors ${isComplete
-                                                        ? 'bg-green-600 text-white hover:bg-green-700'
-                                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                                        } disabled:opacity-50`}
-                                                    title={!isComplete ? 'Complete all required fields to confirm' : 'Confirm this quotation'}
-                                                >
-                                                    {buttonLoading['confirm-product'] ? (
-                                                        <>
-                                                            <Loader2 size={20} className="animate-spin" />
-                                                            Confirming...
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Check size={20} />
-                                                            Confirm Product
-                                                        </>
                                                     )}
-                                                </button>
-                                            </>
-                                        );
-                                    })()}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
+                                                    <button
+                                                        onClick={() => handleConfirmProduct(viewingRpq)}
+                                                        disabled={!isComplete || buttonLoading['confirm-product']}
+                                                        className={`w-full px-4 py-3 rounded-lg flex items-center justify-center gap-2 font-medium transition-colors ${isComplete
+                                                            ? 'bg-green-600 text-white hover:bg-green-700'
+                                                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                            } disabled:opacity-50`}
+                                                        title={!isComplete ? 'Complete all required fields to confirm' : 'Confirm this quotation'}
+                                                    >
+                                                        {buttonLoading['confirm-product'] ? (
+                                                            <>
+                                                                <Loader2 size={20} className="animate-spin" />
+                                                                Confirming...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Check size={20} />
+                                                                Confirm Product
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                </>
+                                            );
+                                        })()}
+                                    </div>
+                                )
+                            }
+
+                        </div >
+                    </div >
+                </div >
             )}
 
-            {activeTab === 'po' && (
-                <div className="border-t-4 border-gray-300 pt-12 mt-12">
-                    <PurchaseOrderManagement />
-                </div>
-            )}
-        </div>
+            {
+                activeTab === 'po' && (
+                    <div className="border-t-4 border-gray-300 pt-12 mt-12">
+                        <PurchaseOrderManagement />
+                    </div>
+                )
+            }
+        </div >
     );
 };
 
