@@ -1,6 +1,6 @@
 import { toast } from 'react-hot-toast';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://152.42.235.205:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://152.42.235.205:8080/api';
 
 
 const RATE_LIMIT_CONFIG = {
