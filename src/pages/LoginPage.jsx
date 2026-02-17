@@ -59,7 +59,6 @@ const LoginPage = () => {
       let userData;
       if (userResponse.ok) {
         userData = await userResponse.json();
-        console.log('✅ Fetched user data from /me:', userData);
       } else {
         console.warn('⚠️ /me endpoint failed, using JWT fallback');
 
