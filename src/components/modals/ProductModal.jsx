@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     X, Package, Globe, Box, Tag, AlertCircle,
-    Edit2, Plus, Trash2, DollarSign, Copy
+    Edit2, Plus, Trash2, DollarSign, Copy, Search
 } from 'lucide-react';
 import SearchableDropdown from '../common/SearchableDropdown';
 import CategoryInput from '../forms/CategoryInput';
@@ -27,7 +27,7 @@ const ProductModal = ({
     selectedSupplier,
     setSelectedSupplier,
     handleInputChange,
-    handleSupplierChange,
+    handleSupplierToggle,
     onClose,
     onSubmit
 }) => {
@@ -36,6 +36,13 @@ const ProductModal = ({
         newCombinations[index][field] = value;
         setVariationCombinations(newCombinations);
     };
+
+    const [supplierSearch, setSupplierSearch] = useState('');
+    const [supplierDropdownOpen, setSupplierDropdownOpen] = useState(false);
+
+    const filteredSuppliers = suppliers.filter(s =>
+        s.name.toLowerCase().includes(supplierSearch.toLowerCase())
+    );
 
     const updateVariationCompanyPrice = (comboIndex, companyId, price) => {
         const newCombinations = [...variationCombinations];
@@ -213,40 +220,127 @@ const ProductModal = ({
                             Supplier & Origin
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
-                                <SearchableDropdown
-                                    options={suppliers}
-                                    value={formData.supplierId}
-                                    onChange={handleSupplierChange}
-                                    placeholder="Select supplier"
-                                    displayKey="name"
-                                    valueKey="id"
-                                    required={false}
-                                />
-                            </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Suppliers</label>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Country of Origin</label>
-                                <input
-                                    type="text"
-                                    name="countryOfOrigin"
-                                    value={formData.countryOfOrigin}
-                                    onChange={handleInputChange}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="Enter country"
-                                />
-                                {selectedSupplier?.country && (
-                                    <p className="text-xs text-blue-600 mt-1">
-                                        Auto-filled from supplier: {selectedSupplier.country}
-                                    </p>
+                                {/* Dropdown trigger button */}
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSupplierDropdownOpen(prev => !prev)}
+                                        className="w-full flex items-center justify-between px-4 py-2 border border-gray-300 rounded-lg bg-white hover:border-blue-500 focus:ring-2 focus:ring-blue-500 transition text-sm"
+                                    >
+                                        <span className={formData.supplierIds?.length > 0 ? 'text-gray-900' : 'text-gray-400'}>
+                                            {formData.supplierIds?.length > 0
+                                                ? `${[...new Set(formData.supplierIds)].length} supplier(s) selected` // Show unique count
+                                                : 'Select suppliers...'}
+                                        </span>
+                                        <svg className={`w-4 h-4 text-gray-500 transition-transform ${supplierDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+
+                                    {/* Dropdown panel */}
+                                    {supplierDropdownOpen && (
+                                        <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
+                                            {/* Search inside dropdown */}
+                                            <div className="p-2 border-b border-gray-100">
+                                                <div className="relative">
+                                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Search suppliers..."
+                                                        value={supplierSearch}
+                                                        onChange={(e) => setSupplierSearch(e.target.value)}
+                                                        className="w-full pl-8 pr-4 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                                        autoFocus
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Supplier list */}
+                                            <div className="max-h-52 overflow-y-auto">
+                                                {filteredSuppliers.map(supplier => {
+                                                    const isSelected = formData.supplierIds?.includes(supplier.id);
+                                                    return (
+                                                        <div
+                                                            key={`supplier-${supplier.id}`}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation(); // Prevent event bubbling
+                                                                e.preventDefault(); // Prevent any default behavior
+                                                                handleSupplierToggle(supplier.id);
+                                                            }}
+                                                            onMouseDown={(e) => e.preventDefault()} // Prevent focus issues
+                                                            className={`flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-blue-50 transition ${isSelected ? 'bg-blue-50' : ''}`}
+                                                        >
+                                                            <div>
+                                                                <p className="text-sm font-medium text-gray-800">{supplier.name}</p>
+                                                                {supplier.country && (
+                                                                    <p className="text-xs text-gray-500">{supplier.country}</p>
+                                                                )}
+                                                            </div>
+                                                            {isSelected && (
+                                                                <span className="text-blue-600">✓</span>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+
+                                            </div>
+
+                                            {/* Close button */}
+                                            <div className="p-2 border-t border-gray-100">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSupplierDropdownOpen(false)}
+                                                    className="w-full py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition"
+                                                >
+                                                    Done
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {formData.supplierIds?.length > 0 && (
+                                    <div className="mt-2">
+                                        <div className="flex items-center gap-3 px-3 py-1.5 mb-1">
+                                            <div className="flex-1 min-w-0">
+                                                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Supplier</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                <Globe size={13} className="text-gray-400" />
+                                                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide w-40">Country of Origin</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            {/* Use Set to ensure unique IDs when rendering */}
+                                            {[...new Set(formData.supplierIds)].map(id => {
+                                                const supplier = suppliers.find(s => s.id === id);
+                                                if (!supplier) return null;
+
+                                                return (
+                                                    <div key={`selected-${id}`} className="flex items-center gap-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-medium text-gray-800">{supplier.name}</p>
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                            <Globe size={13} className="text-gray-400" />
+                                                            <div className="w-40 px-3 py-1.5 text-sm bg-gray-100 border border-gray-200 rounded-md text-gray-700">
+                                                                {formData.supplierCountries?.[id] || supplier?.country || 'Not specified'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                 )}
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Shelf Life
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Shelf Life</label>
                                 <input
                                     type="text"
                                     name="shelfLife"
@@ -258,9 +352,7 @@ const ProductModal = ({
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Creation Date
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Creation Date</label>
                                 <input
                                     type="text"
                                     value={editingProduct?.createdAt ? new Date(editingProduct.createdAt).toLocaleDateString() : 'Auto-generated on save'}
@@ -268,9 +360,7 @@ const ProductModal = ({
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed text-gray-600"
                                 />
                                 <p className="text-xs text-gray-500 mt-1">
-                                    {editingProduct?.createdAt
-                                        ? 'Product created on this date'
-                                        : 'Will be set automatically when product is created'}
+                                    {editingProduct?.createdAt ? 'Product created on this date' : 'Will be set automatically when product is created'}
                                 </p>
                             </div>
                         </div>
@@ -756,17 +846,14 @@ const ProductModal = ({
                                             <thead className="bg-gray-50 border-b border-gray-200" style={{ position: 'sticky', top: 0, zIndex: 1 }}>
                                                 <tr>
                                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-28" style={{ position: 'sticky', left: 0, zIndex: 2, backgroundColor: '#f9fafb', width: '112px', minWidth: '112px', maxWidth: '112px' }}>Image</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-48" style={{ position: 'sticky', left: '112px', zIndex: 2, backgroundColor: '#f9fafb', boxShadow: '2px 0 4px rgba(0,0,0,0.08)' }}>Variation</th>                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-40">SKU</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-48" style={{ position: 'sticky', left: '112px', zIndex: 2, backgroundColor: '#f9fafb', boxShadow: '2px 0 4px rgba(0,0,0,0.08)' }}>Variation</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-40">SKU</th>
                                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-40">UPC</th>
                                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-32">Weight (kg)</th>
                                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-64">Dimensions (L×W×H cm)</th>
                                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-32">Unit Cost (₱)</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase" style={{ minWidth: '360px' }}>
-                                                        Company Prices <span className="text-red-500">*</span>
-                                                    </th>
-                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase" style={{ minWidth: '360px' }}>
-                                                        Company SKU <span className="text-red-500">*</span>
-                                                    </th>
+                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase" style={{ minWidth: '360px' }}>Company Prices <span className="text-red-500">*</span></th>
+                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase" style={{ minWidth: '360px' }}>Company SKU <span className="text-red-500">*</span></th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-200">

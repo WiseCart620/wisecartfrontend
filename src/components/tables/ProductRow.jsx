@@ -10,23 +10,21 @@ import {
 const ProductRow = ({
     product,
     onEdit,
-    onDelete
+    onDelete,
+    suppliers = []
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [imageError, setImageError] = useState(false);
 
-    // Function to get the full image URL
     const getImageUrl = (imageUrl) => {
         if (!imageUrl) return getPlaceholderImage();
 
-        // If it's already a full URL, return it
         if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
             return imageUrl;
         }
 
         const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
-        // Extract clean path
         let cleanPath = imageUrl.trim();
         if (cleanPath.startsWith('/uploads/')) {
             cleanPath = cleanPath.substring('/uploads/'.length);
@@ -35,11 +33,9 @@ const ProductRow = ({
             cleanPath = cleanPath.substring('uploads/'.length);
         }
 
-        // Use the serve endpoint with path parameter
         return `${API_BASE_URL}/files/serve?path=${encodeURIComponent(cleanPath)}`;
     };
 
-    // Add this helper function
     const getPlaceholderImage = () => {
         return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2VlZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
     };
@@ -65,6 +61,42 @@ const ProductRow = ({
 
     const hasVariations = product.variations && product.variations.length > 0;
     const daysSinceCreation = getDaysSinceCreation(product.createdAt);
+
+    // Helper function to get unique suppliers from product
+    const getProductSuppliers = () => {
+        let supplierList = [];
+        
+        // Check if product has suppliers array (from API)
+        if (product.suppliers && Array.isArray(product.suppliers)) {
+            supplierList = product.suppliers;
+        }
+        
+        // Check if product has supplierIds (from form data)
+        if (product.supplierIds && Array.isArray(product.supplierIds)) {
+            const suppliersFromIds = product.supplierIds
+                .map(id => suppliers.find(s => s.id === id))
+                .filter(Boolean);
+            
+            // Merge with existing suppliers, avoiding duplicates by ID
+            supplierList = [...supplierList, ...suppliersFromIds];
+        }
+        
+        // Remove duplicates based on supplier ID
+        const uniqueSuppliers = [];
+        const seenIds = new Set();
+        
+        supplierList.forEach(supplier => {
+            if (supplier && supplier.id && !seenIds.has(supplier.id)) {
+                seenIds.add(supplier.id);
+                uniqueSuppliers.push(supplier);
+            }
+        });
+        
+        return uniqueSuppliers;
+    };
+
+    const productSuppliers = getProductSuppliers();
+
     const VariationImage = ({ imageUrl, alt }) => {
         const [varImageError, setVarImageError] = useState(false);
 
@@ -157,8 +189,27 @@ const ProductRow = ({
                     {product.category || '-'}
                 </td>
 
-                <td className="px-6 py-4 text-sm text-gray-600">
-                    {product.supplier?.name || '-'}
+                <td className="px-6 py-4">
+                    {productSuppliers.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 max-w-[250px]">
+                            {productSuppliers.slice(0, 3).map((supplier, index) => (
+                                <span
+                                    key={`${supplier.id}-${index}`}
+                                    className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium whitespace-nowrap"
+                                    title={supplier.country || ''}
+                                >
+                                    {supplier.name || 'Unknown'}
+                                </span>
+                            ))}
+                            {productSuppliers.length > 3 && (
+                                <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
+                                    +{productSuppliers.length - 3}
+                                </span>
+                            )}
+                        </div>
+                    ) : (
+                        <span className="text-sm text-gray-400">-</span>
+                    )}
                 </td>
 
                 <td className="px-6 py-4">
@@ -206,12 +257,14 @@ const ProductRow = ({
                         <button
                             onClick={() => onEdit(product)}
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                            title="Edit product"
                         >
                             <Edit2 size={18} />
                         </button>
                         <button
                             onClick={() => onDelete(product.id)}
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                            title="Delete product"
                         >
                             <Trash2 size={18} />
                         </button>

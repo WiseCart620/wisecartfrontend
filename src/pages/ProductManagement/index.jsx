@@ -56,7 +56,8 @@ const ProductManagement = () => {
     category: '',
     upc: '',
     sku: '',
-    supplierId: '',
+    supplierIds: [],
+    supplierCountries: {},
     countryOfOrigin: '',
     companyPrices: {},
     companyBasePrices: {},
@@ -80,6 +81,32 @@ const ProductManagement = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (formData.supplierIds?.length > 0) {
+      const uniqueIds = [...new Set(formData.supplierIds)];
+      if (uniqueIds.length !== formData.supplierIds.length) {
+        console.log('Cleaning up duplicates:', {
+          before: formData.supplierIds,
+          after: uniqueIds
+        });
+        setFormData(prev => ({
+          ...prev,
+          supplierIds: uniqueIds
+        }));
+      }
+    }
+  }, [formData.supplierIds]);
+
+  useEffect(() => {
+    if (formData.supplierIds?.length > 0) {
+      console.log('Current supplierIds:', formData.supplierIds);
+      console.log('Unique supplierIds:', [...new Set(formData.supplierIds)]);
+      console.log('Count discrepancy:',
+        formData.supplierIds.length - [...new Set(formData.supplierIds)].length
+      );
+    }
+  }, [formData.supplierIds]);
 
   const handleSort = (key) => {
     let direction = 'asc';
@@ -117,14 +144,37 @@ const ProductManagement = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSupplierChange = (supplierId) => {
-    const supplier = suppliers.find(s => s.id === parseInt(supplierId));
-    setSelectedSupplier(supplier);
-    setFormData(prev => ({
-      ...prev,
-      supplierId: supplierId,
-      countryOfOrigin: supplier?.country || prev.countryOfOrigin
-    }));
+  const handleSupplierToggle = (supplierId) => {
+    const id = parseInt(supplierId);
+    setFormData(prev => {
+      // Ensure we're working with unique IDs from the start
+      const currentIds = [...new Set(prev.supplierIds || [])];
+      const exists = currentIds.includes(id);
+
+      let newIds;
+      if (exists) {
+        newIds = currentIds.filter(sid => sid !== id);
+      } else {
+        newIds = [...currentIds, id];
+      }
+
+      // Update supplier countries
+      const newSupplierCountries = { ...prev.supplierCountries };
+      if (!exists) {
+        const supplier = suppliers.find(s => s.id === id);
+        if (supplier?.country) {
+          newSupplierCountries[id] = supplier.country;
+        }
+      } else {
+        delete newSupplierCountries[id];
+      }
+
+      return {
+        ...prev,
+        supplierIds: newIds,
+        supplierCountries: newSupplierCountries
+      };
+    });
   };
 
   const handleEdit = (product) => {
@@ -150,12 +200,24 @@ const ProductManagement = () => {
 
     const dims = product.dimensions ? product.dimensions.split('×') : ['', '', ''];
 
+    const supplierCountries = {};
+    if (product.suppliers) {
+      product.suppliers.forEach(s => {
+        if (s.country) supplierCountries[s.id] = s.country;
+      });
+    }
+
+    const supplierIds = product.suppliers
+      ? [...new Set(product.suppliers.map(s => s.id))]
+      : [];
+
     setFormData({
       productName: product.productName || '',
       category: product.category || '',
       upc: product.upc || '',
       sku: product.sku || '',
-      supplierId: product.supplier?.id || '',
+      supplierIds: product.suppliers ? product.suppliers.map(s => s.id) : [],
+      supplierCountries,
       countryOfOrigin: product.countryOfOrigin || '',
       companyPrices: companyPricesObj,
       companyBasePrices: companyBasePricesObj,
@@ -524,7 +586,7 @@ const ProductManagement = () => {
           selectedSupplier={selectedSupplier}
           setSelectedSupplier={setSelectedSupplier}
           handleInputChange={handleInputChange}
-          handleSupplierChange={handleSupplierChange}
+          handleSupplierToggle={handleSupplierToggle}
           onClose={() => {
             setShowModal(false);
             resetForm();
