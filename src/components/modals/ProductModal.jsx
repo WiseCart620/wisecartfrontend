@@ -51,6 +51,15 @@ const ProductModal = ({
     };
 
 
+    const formatPriceDisplay = (val) => {
+        if (val === '' || val === undefined || val === null) return '';
+        const str = String(val);
+        if (str.endsWith('.')) return str;
+        const num = parseFloat(str);
+        if (isNaN(num)) return str;
+        return num.toFixed(2);
+    };
+
     const applyPriceToAllCompanies = (comboIndex, price) => {
         const newCombinations = [...variationCombinations];
         companies.forEach((company) => {
@@ -1103,12 +1112,22 @@ const ProductModal = ({
                                                                         <div className="flex items-center gap-1 flex-shrink-0" style={{ width: '140px' }}>
                                                                             <span className="text-sm text-gray-500">₱</span>
                                                                             <input
-                                                                                type="number"
-                                                                                value={combo.companyPrices[company.id] || ''}
-                                                                                onChange={(e) => updateVariationCompanyPrice(comboIndex, company.id, e.target.value)}
+                                                                                type="text"
+                                                                                inputMode="decimal"
+                                                                                value={formatPriceDisplay(combo.companyPrices[company.id])}
+                                                                                onChange={(e) => {
+                                                                                    const val = e.target.value;
+                                                                                    if (/^\d*\.?\d*$/.test(val)) {
+                                                                                        updateVariationCompanyPrice(comboIndex, company.id, val);
+                                                                                    }
+                                                                                }}
+                                                                                onBlur={(e) => {
+                                                                                    const val = parseFloat(e.target.value);
+                                                                                    if (!isNaN(val)) {
+                                                                                        updateVariationCompanyPrice(comboIndex, company.id, val.toFixed(2));
+                                                                                    }
+                                                                                }}
                                                                                 placeholder="0.00 *"
-                                                                                step="0.01"
-                                                                                min="0"
                                                                                 required
                                                                                 className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                                             />
