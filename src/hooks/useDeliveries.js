@@ -296,37 +296,45 @@ export const useDeliveries = () => {
     });
   };
 
-  const filterDeliveries = (deliveriesList, filters) => {
-    return deliveriesList.filter(delivery => {
-      if (filters.receiptNumber &&
-        !delivery.deliveryReceiptNumber?.toLowerCase().includes(filters.receiptNumber.toLowerCase())) {
+  // In your useDeliveries.js hook, update the filterDeliveries function:
+
+  const filterDeliveries = (deliveries, filters) => {
+    return deliveries.filter(delivery => {
+      // Company filter
+      if (filters.companyId && delivery.company?.id !== filters.companyId) {
         return false;
       }
 
+      // Branch filter
+      if (filters.branchId && delivery.branch?.id !== filters.branchId) {
+        return false;
+      }
+
+      // Warehouse filter
       if (filters.warehouseId) {
-        const warehouses = delivery.warehouses || [];
-        const hasWarehouse =
-          warehouses.some(wh => String(wh.id) === String(filters.warehouseId)) ||
-          String(delivery.warehouseId) === String(filters.warehouseId);
+        const hasWarehouse = delivery.warehouses?.some(w => w.id === filters.warehouseId);
         if (!hasWarehouse) return false;
       }
 
-      if (filters.companyId) {
-        const deliveryCompanyId = delivery.company?.id ?? delivery.companyId;
-        if (String(deliveryCompanyId) !== String(filters.companyId)) return false;
-      }
-
-      if (filters.branchId) {
-        const deliveryBranchId = delivery.branch?.id ?? delivery.branchId;
-        if (String(deliveryBranchId) !== String(filters.branchId)) return false;
-      }
-
+      // Status filter
       if (filters.status && delivery.status !== filters.status) {
         return false;
       }
 
+      // Product filter - Check if delivery contains the specific product/variation
+      if (filters.productId || filters.variationId) {
+        const hasProduct = delivery.items?.some(item => {
+          if (filters.variationId) {
+            return item.variationId === filters.variationId;
+          }
+          return item.productId === filters.productId;
+        });
+        if (!hasProduct) return false;
+      }
+
+      // Date range filter
       if (filters.startDate || filters.endDate) {
-        const deliveryDate = new Date(delivery.date);
+        const deliveryDate = new Date(delivery.datePrepared || delivery.date);
 
         if (filters.startDate) {
           const startDate = new Date(filters.startDate);
@@ -339,6 +347,13 @@ export const useDeliveries = () => {
           endDate.setHours(23, 59, 59, 999);
           if (deliveryDate > endDate) return false;
         }
+      }
+
+      // Receipt number search
+      if (filters.receiptNumber) {
+        const searchTerm = filters.receiptNumber.toLowerCase();
+        const receiptMatch = delivery.deliveryReceiptNumber?.toLowerCase().includes(searchTerm);
+        if (!receiptMatch) return false;
       }
 
       return true;

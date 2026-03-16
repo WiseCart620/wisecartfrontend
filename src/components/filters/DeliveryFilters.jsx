@@ -10,11 +10,32 @@ const DeliveryFilters = ({
   companies = [],
   branches = [],
   warehouses = [],
-  statusOptions = ['PREPARING', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED']
+  products = [], // Add products prop
+  statusOptions = ['PREPARING', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'PENDING', 'RETURNED']
 }) => {
   const companyOptions = companies.map(c => ({ id: c.id, name: c.companyName }));
   const branchOptions = branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
   const warehouseOptions = warehouses.map(w => ({ id: w.id, name: `${w.warehouseName} (${w.warehouseCode})` }));
+  
+  // Create product options with variation support
+  const productOptions = products.flatMap(product => {
+    if (product.variations && product.variations.length > 0) {
+      return product.variations.map(variation => ({
+        id: variation.id,
+        name: `${product.productName} - ${variation.combinationDisplay || 'Variation'}`,
+        productId: product.id,
+        variationId: variation.id,
+        sku: variation.sku || product.sku
+      }));
+    }
+    return [{
+      id: product.id,
+      name: product.productName,
+      productId: product.id,
+      variationId: null,
+      sku: product.sku
+    }];
+  });
 
   const filteredBranchOptions = filterData.companyId
     ? branches
@@ -43,7 +64,7 @@ const DeliveryFilters = ({
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3 pt-4 border-t border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t border-gray-200">
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Company</label>
             <SearchableDropdown
@@ -62,7 +83,7 @@ const DeliveryFilters = ({
               options={filteredBranchOptions}
               value={filterData.branchId}
               onChange={(value) => onFilterChange({ branchId: value })}
-              placeholder={filterData.companyId ? "Select Branch" : "Select Company"}
+              placeholder={filterData.companyId ? "Select Branch" : "Select Company First"}
               displayKey="name"
               valueKey="id"
               disabled={!filterData.companyId}
@@ -96,6 +117,37 @@ const DeliveryFilters = ({
                 <option key={status} value={status}>{status}</option>
               ))}
             </select>
+          </div>
+        </div>
+
+        {/* Second row - Product and Date filters */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="lg:col-span-2">
+            <label className="block text-xs font-medium text-gray-700 mb-1">Product / SKU</label>
+            <SearchableDropdown
+              options={productOptions}
+              value={filterData.productId || filterData.variationId}
+              onChange={(value, option) => {
+                if (option) {
+                  onFilterChange({ 
+                    productId: option.productId,
+                    variationId: option.variationId,
+                    productName: option.name
+                  });
+                } else {
+                  onFilterChange({ productId: '', variationId: '', productName: '' });
+                }
+              }}
+              placeholder="Search by product name or SKU..."
+              displayKey="name"
+              valueKey="id"
+              searchable={true}
+            />
+            {filterData.productName && (
+              <p className="text-xs text-blue-600 mt-1">
+                Filtering by: {filterData.productName}
+              </p>
+            )}
           </div>
 
           <div>

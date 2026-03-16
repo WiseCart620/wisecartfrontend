@@ -14,9 +14,9 @@ import '../../styles/deliveryReceipt.css';
 // Sort option definitions
 const SORT_OPTIONS = [
   { value: 'receipt_desc', label: 'DR # — Highest first', icon: Hash },
-  { value: 'receipt_asc',  label: 'DR # — Lowest first',  icon: Hash },
+  { value: 'receipt_asc', label: 'DR # — Lowest first', icon: Hash },
   { value: 'timestamp_desc', label: 'Date — Newest first', icon: Clock },
-  { value: 'timestamp_asc',  label: 'Date — Oldest first', icon: Clock },
+  { value: 'timestamp_asc', label: 'Date — Oldest first', icon: Clock },
 ];
 
 const DeliveryManagement = () => {
@@ -364,6 +364,9 @@ const DeliveryManagement = () => {
       branchId: '',
       warehouseId: '',
       status: '',
+      productId: '',
+      variationId: '',
+      productName: '',
       startDate: '',
       endDate: '',
       receiptNumber: ''
@@ -425,6 +428,7 @@ const DeliveryManagement = () => {
           companies={companies}
           branches={branches}
           warehouses={warehouses}
+          products={products}
         />
 
         <DeliveryTable
