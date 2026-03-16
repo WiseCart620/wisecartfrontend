@@ -62,7 +62,7 @@ const DeliveryTable = ({
             <col className="w-[60px]" />
             <col className="w-[110px]" />
             <col className="w-[180px]" />
-            <col className="w-[200px]" />
+            <col className="w-[250px]" /> {/* Increased branch width to show full text */}
             <col className="w-[130px]" />
             <col className="w-[130px]" />
             <col className="w-[90px]" />
@@ -112,7 +112,7 @@ const DeliveryTable = ({
                     <span className="text-sm font-medium text-gray-500">{rowNumber}</span>
                   </td>
 
-                  {/* Receipt # - Sticky - MINIMIZED WIDTH */}
+                  {/* Receipt # - Sticky */}
                   <td className="px-2 py-3 sticky left-[60px] bg-white z-10 border-r border-gray-200">
                     <div className="text-sm font-bold text-gray-900 truncate">{delivery.deliveryReceiptNumber}</div>
                   </td>
@@ -136,11 +136,11 @@ const DeliveryTable = ({
                     )}
                   </td>
 
-                  {/* To Branch - SINGLE ROW with truncate if needed */}
+                  {/* To Branch - NO TRUNCATE, FULL TEXT VISIBLE */}
                   <td className="px-2 py-3">
-                    <div className="flex items-center gap-1 truncate">
-                      <Truck size={12} className="text-green-500 flex-shrink-0" />
-                      <span className="text-sm font-semibold text-gray-800 truncate">{delivery.branchName}</span>
+                    <div className="flex items-center gap-1 whitespace-normal break-words">
+                      <Truck size={12} className="text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm font-semibold text-gray-800">{delivery.branchName}</span>
                     </div>
                   </td>
 
