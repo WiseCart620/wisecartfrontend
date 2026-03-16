@@ -63,7 +63,7 @@ const DeliveryTable = ({
             <col className="w-[50px]" />
             <col className="w-[140px]" />
             <col className="w-[180px]" />
-            <col className="w-[180px]" /> {/* Increased width for branch */}
+            <col className="w-[180px]" />
             <col className="w-[120px]" />
             <col className="w-[120px]" />
             <col className="w-[80px]" />
@@ -145,20 +145,22 @@ const DeliveryTable = ({
                     </div>
                   </td>
 
-                  {/* Date Prepared */}
+                  {/* Date Prepared - FIXED: Added year */}
                   <td className="px-2 py-2.5 text-xs text-gray-600">
                     {delivery.datePrepared
                       ? new Date(delivery.datePrepared).toLocaleDateString('en-US', { 
+                          year: 'numeric',
                           month: 'short', 
                           day: 'numeric' 
                         })
                       : '—'}
                   </td>
 
-                  {/* Date Delivered */}
+                  {/* Date Delivered - FIXED: Added year */}
                   <td className="px-2 py-2.5 text-xs text-gray-600">
                     {delivery.dateDelivered
                       ? new Date(delivery.dateDelivered).toLocaleDateString('en-US', { 
+                          year: 'numeric',
                           month: 'short', 
                           day: 'numeric' 
                         })
