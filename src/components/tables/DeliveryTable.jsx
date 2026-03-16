@@ -63,7 +63,7 @@ const DeliveryTable = ({
             <col className="w-[50px]" />
             <col className="w-[140px]" />
             <col className="w-[180px]" />
-            <col className="w-[150px]" />
+            <col className="w-[180px]" /> {/* Increased width for branch */}
             <col className="w-[120px]" />
             <col className="w-[120px]" />
             <col className="w-[80px]" />
@@ -109,20 +109,17 @@ const DeliveryTable = ({
                 <tr key={delivery.id} className="hover:bg-blue-50/30 transition-colors">
 
                   {/* Row Number - Sticky */}
-                  <td className="px-2 py-2 text-center sticky left-0 bg-white z-10 border-r border-gray-200">
+                  <td className="px-2 py-2.5 text-center sticky left-0 bg-white z-10 border-r border-gray-200">
                     <span className="text-xs font-medium text-gray-500">{rowNumber}</span>
                   </td>
 
                   {/* Receipt # - Sticky */}
-                  <td className="px-2 py-2 sticky left-[50px] bg-white z-10 border-r border-gray-200">
+                  <td className="px-2 py-2.5 sticky left-[50px] bg-white z-10 border-r border-gray-200">
                     <div className="text-xs font-bold text-gray-900 truncate">{delivery.deliveryReceiptNumber}</div>
-                    {delivery.preparedBy && (
-                      <div className="text-[10px] text-gray-400 truncate">By: {delivery.preparedBy}</div>
-                    )}
                   </td>
 
                   {/* From Warehouse */}
-                  <td className="px-2 py-2">
+                  <td className="px-2 py-2.5">
                     {delivery.warehouses && delivery.warehouses.length > 0 ? (
                       <div className="space-y-0.5">
                         {delivery.warehouses.slice(0, 1).map((wh, idx) => (
@@ -140,16 +137,16 @@ const DeliveryTable = ({
                     )}
                   </td>
 
-                  {/* To Branch */}
-                  <td className="px-2 py-2">
-                    <div className="flex items-center gap-1 truncate">
-                      <Truck size={11} className="text-green-500 flex-shrink-0" />
-                      <span className="text-xs font-semibold text-gray-800 truncate">{delivery.branchName}</span>
+                  {/* To Branch - NO TRUNCATE */}
+                  <td className="px-2 py-2.5">
+                    <div className="flex items-center gap-1 whitespace-normal break-words">
+                      <Truck size={11} className="text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-xs font-semibold text-gray-800">{delivery.branchName}</span>
                     </div>
                   </td>
 
                   {/* Date Prepared */}
-                  <td className="px-2 py-2 text-xs text-gray-600">
+                  <td className="px-2 py-2.5 text-xs text-gray-600">
                     {delivery.datePrepared
                       ? new Date(delivery.datePrepared).toLocaleDateString('en-US', { 
                           month: 'short', 
@@ -159,7 +156,7 @@ const DeliveryTable = ({
                   </td>
 
                   {/* Date Delivered */}
-                  <td className="px-2 py-2 text-xs text-gray-600">
+                  <td className="px-2 py-2.5 text-xs text-gray-600">
                     {delivery.dateDelivered
                       ? new Date(delivery.dateDelivered).toLocaleDateString('en-US', { 
                           month: 'short', 
@@ -169,7 +166,7 @@ const DeliveryTable = ({
                   </td>
 
                   {/* SKU (Item Count) */}
-                  <td className="px-2 py-2 text-center">
+                  <td className="px-2 py-2.5 text-center">
                     <span className="inline-flex items-center gap-1">
                       <Package size={12} className="text-gray-400" />
                       <span className="text-xs font-bold text-gray-800">{delivery.itemCount}</span>
@@ -177,7 +174,7 @@ const DeliveryTable = ({
                   </td>
 
                   {/* Qty (Prepared Qty) */}
-                  <td className="px-2 py-2 text-right">
+                  <td className="px-2 py-2.5 text-right">
                     {drTotalPrepared > 0 ? (
                       <span className="text-xs font-bold text-blue-700">
                         {drTotalPrepared}
@@ -188,14 +185,14 @@ const DeliveryTable = ({
                   </td>
 
                   {/* Status */}
-                  <td className="px-2 py-2">
+                  <td className="px-2 py-2.5">
                     <span className={`px-1.5 py-0.5 inline-flex text-[10px] font-bold rounded-full ${getStatusColor(delivery.status)}`}>
                       {delivery.customStatus || delivery.status}
                     </span>
                   </td>
 
                   {/* Actions */}
-                  <td className="px-2 py-2">
+                  <td className="px-2 py-2.5">
                     <div className="flex items-center gap-0.5">
                       {/* View */}
                       <button
