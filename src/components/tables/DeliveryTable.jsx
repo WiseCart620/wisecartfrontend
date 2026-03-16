@@ -56,14 +56,13 @@ const DeliveryTable = ({
 
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full">
-      {/* No scroll - table fits perfectly */}
       <div className="overflow-visible">
         <table className="w-full table-fixed">
           <colgroup>
             <col className="w-[60px]" />
-            <col className="w-[110px]" /> {/* Reduced receipt # width */}
+            <col className="w-[110px]" />
             <col className="w-[180px]" />
-            <col className="w-[200px]" /> {/* Increased branch width for single row */}
+            <col className="w-[200px]" />
             <col className="w-[130px]" />
             <col className="w-[130px]" />
             <col className="w-[90px]" />
@@ -75,7 +74,7 @@ const DeliveryTable = ({
           {/* ── HEAD ── */}
           <thead className="bg-gray-50 border-b-2 border-gray-200">
             <tr>
-              <th className="px-2 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-20 border-r border-gray-200">#</th>
+              <th className="px-2 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-20 border-r border-gray-200">Number</th>
               <th className="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider sticky left-[60px] bg-gray-50 z-20 border-r border-gray-200">Receipt #</th>
               <th className="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">From (Warehouse)</th>
               <th className="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">To (Branch)</th>
