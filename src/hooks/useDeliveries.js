@@ -296,64 +296,69 @@ export const useDeliveries = () => {
     });
   };
 
-  // In your useDeliveries.js hook, update the filterDeliveries function:
-
   const filterDeliveries = (deliveries, filters) => {
     return deliveries.filter(delivery => {
-      // Company filter
-      if (filters.companyId && delivery.company?.id !== filters.companyId) {
-        return false;
+
+      // Company — handle both nested object and flat id
+      if (filters.companyId) {
+        const id = delivery.company?.id ?? delivery.companyId;
+        if (id !== filters.companyId) return false;
       }
 
-      // Branch filter
-      if (filters.branchId && delivery.branch?.id !== filters.branchId) {
-        return false;
+      // Branch — handle both nested object and flat id
+      if (filters.branchId) {
+        const id = delivery.branch?.id ?? delivery.branchId;
+        if (id !== filters.branchId) return false;
       }
 
-      // Warehouse filter
+      // Warehouse — warehouses live inside items, not on the delivery root
       if (filters.warehouseId) {
-        const hasWarehouse = delivery.warehouses?.some(w => w.id === filters.warehouseId);
+        const hasWarehouse = delivery.items?.some(item =>
+          (item.warehouse?.id ?? item.warehouseId) === filters.warehouseId
+        );
         if (!hasWarehouse) return false;
       }
 
-      // Status filter
+      // Status
       if (filters.status && delivery.status !== filters.status) {
         return false;
       }
 
-      // Product filter - Check if delivery contains the specific product/variation
-      if (filters.productId || filters.variationId) {
+      // Product / variation — handle both nested and flat item shapes
+      if (filters.variationId || filters.productId) {
         const hasProduct = delivery.items?.some(item => {
+          const itemVariationId = item.variation?.id ?? item.variationId;
+          const itemProductId = item.product?.id ?? item.productId;
+
           if (filters.variationId) {
-            return item.variationId === filters.variationId;
+            return itemVariationId === filters.variationId;
           }
-          return item.productId === filters.productId;
+          return itemProductId === filters.productId;
         });
         if (!hasProduct) return false;
       }
 
-      // Date range filter
+      // Date range
       if (filters.startDate || filters.endDate) {
         const deliveryDate = new Date(delivery.datePrepared || delivery.date);
 
         if (filters.startDate) {
-          const startDate = new Date(filters.startDate);
-          startDate.setHours(0, 0, 0, 0);
-          if (deliveryDate < startDate) return false;
+          const start = new Date(filters.startDate);
+          start.setHours(0, 0, 0, 0);
+          if (deliveryDate < start) return false;
         }
 
         if (filters.endDate) {
-          const endDate = new Date(filters.endDate);
-          endDate.setHours(23, 59, 59, 999);
-          if (deliveryDate > endDate) return false;
+          const end = new Date(filters.endDate);
+          end.setHours(23, 59, 59, 999);
+          if (deliveryDate > end) return false;
         }
       }
 
-      // Receipt number search
+      // Receipt number (case-insensitive partial match)
       if (filters.receiptNumber) {
-        const searchTerm = filters.receiptNumber.toLowerCase();
-        const receiptMatch = delivery.deliveryReceiptNumber?.toLowerCase().includes(searchTerm);
-        if (!receiptMatch) return false;
+        const search = filters.receiptNumber.toLowerCase();
+        if (!delivery.deliveryReceiptNumber?.toLowerCase().includes(search)) return false;
       }
 
       return true;

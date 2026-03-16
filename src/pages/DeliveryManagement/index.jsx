@@ -65,6 +65,9 @@ const DeliveryManagement = () => {
     branchId: '',
     warehouseId: '',
     status: '',
+    productId: '',
+    variationId: '',
+    productName: '',
     startDate: '',
     endDate: '',
     receiptNumber: ''

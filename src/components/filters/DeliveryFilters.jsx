@@ -16,7 +16,7 @@ const DeliveryFilters = ({
   const companyOptions = companies.map(c => ({ id: c.id, name: c.companyName }));
   const branchOptions = branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
   const warehouseOptions = warehouses.map(w => ({ id: w.id, name: `${w.warehouseName} (${w.warehouseCode})` }));
-  
+
   // Create product options with variation support
   const productOptions = products.flatMap(product => {
     if (product.variations && product.variations.length > 0) {
@@ -39,11 +39,11 @@ const DeliveryFilters = ({
 
   const filteredBranchOptions = filterData.companyId
     ? branches
-        .filter(b => b.company?.id === filterData.companyId)
-        .map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }))
+      .filter(b => b.company?.id === filterData.companyId)
+      .map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }))
     : branchOptions;
 
-  const hasActiveFilters = Object.values(filterData).some(value => 
+  const hasActiveFilters = Object.values(filterData).some(value =>
     value !== '' && value !== null && value !== undefined
   );
 
@@ -52,7 +52,7 @@ const DeliveryFilters = ({
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap gap-3 items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">Filter Deliveries</h3>
-          
+
           {hasActiveFilters && (
             <button
               onClick={onReset}
@@ -127,15 +127,18 @@ const DeliveryFilters = ({
             <SearchableDropdown
               options={productOptions}
               value={filterData.productId || filterData.variationId}
-              onChange={(value, option) => {
+              onChange={(value) => {
+                if (!value) {
+                  onFilterChange({ productId: '', variationId: '', productName: '' });
+                  return;
+                }
+                const option = productOptions.find(o => o.id === value);
                 if (option) {
-                  onFilterChange({ 
+                  onFilterChange({
                     productId: option.productId,
                     variationId: option.variationId,
                     productName: option.name
                   });
-                } else {
-                  onFilterChange({ productId: '', variationId: '', productName: '' });
                 }
               }}
               placeholder="Search by product name or SKU..."
