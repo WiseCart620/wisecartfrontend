@@ -61,11 +61,11 @@ const DeliveryTable = ({
         <table className="w-full table-fixed">
           <colgroup>
             <col className="w-[60px]" />
-            <col className="w-[130px]" /> {/* Reduced receipt # width */}
+            <col className="w-[110px]" /> {/* Reduced receipt # width */}
             <col className="w-[180px]" />
-            <col className="w-[180px]" />
-            <col className="w-[130px]" /> {/* Increased date width */}
-            <col className="w-[130px]" /> {/* Increased date width */}
+            <col className="w-[200px]" /> {/* Increased branch width for single row */}
+            <col className="w-[130px]" />
+            <col className="w-[130px]" />
             <col className="w-[90px]" />
             <col className="w-[90px]" />
             <col className="w-[110px]" />
@@ -113,7 +113,7 @@ const DeliveryTable = ({
                     <span className="text-sm font-medium text-gray-500">{rowNumber}</span>
                   </td>
 
-                  {/* Receipt # - Sticky - REDUCED WIDTH */}
+                  {/* Receipt # - Sticky - MINIMIZED WIDTH */}
                   <td className="px-2 py-3 sticky left-[60px] bg-white z-10 border-r border-gray-200">
                     <div className="text-sm font-bold text-gray-900 truncate">{delivery.deliveryReceiptNumber}</div>
                   </td>
@@ -137,15 +137,15 @@ const DeliveryTable = ({
                     )}
                   </td>
 
-                  {/* To Branch - NO TRUNCATE */}
+                  {/* To Branch - SINGLE ROW with truncate if needed */}
                   <td className="px-2 py-3">
-                    <div className="flex items-center gap-1 whitespace-normal break-words">
-                      <Truck size={12} className="text-green-500 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm font-semibold text-gray-800">{delivery.branchName}</span>
+                    <div className="flex items-center gap-1 truncate">
+                      <Truck size={12} className="text-green-500 flex-shrink-0" />
+                      <span className="text-sm font-semibold text-gray-800 truncate">{delivery.branchName}</span>
                     </div>
                   </td>
 
-                  {/* Date Prepared - INCREASED SIZE */}
+                  {/* Date Prepared */}
                   <td className="px-2 py-3 text-sm text-gray-600">
                     {delivery.datePrepared
                       ? new Date(delivery.datePrepared).toLocaleDateString('en-US', { 
@@ -156,7 +156,7 @@ const DeliveryTable = ({
                       : '—'}
                   </td>
 
-                  {/* Date Delivered - INCREASED SIZE */}
+                  {/* Date Delivered */}
                   <td className="px-2 py-3 text-sm text-gray-600">
                     {delivery.dateDelivered
                       ? new Date(delivery.dateDelivered).toLocaleDateString('en-US', { 
