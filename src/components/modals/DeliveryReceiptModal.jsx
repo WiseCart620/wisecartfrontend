@@ -211,7 +211,7 @@ const DeliveryReceiptModal = ({
                   <th className="text-left px-3 py-1.5 font-bold text-gray-900 text-xs uppercase tracking-wider" style={{ width: '51%' }}>
                     Particulars
                   </th>
-                  <th className="text-left px-3 py-1.5 font-bold text-gray-900 text-xs uppercase tracking-wider" style={{ width: '30%' }}>
+                  <th className="text-left px-3 py-1.5 font-bold text-gray-900 text-xs uppercase tracking-wider" style={{ width: '28%' }}>
                     {receipt.items?.some(item => item.extra) && (
                       <input
                         type="text"
@@ -230,50 +230,29 @@ const DeliveryReceiptModal = ({
                 {receipt.items?.length > 0 ? (
                   receipt.items.map((item, i) => (
                     <tr key={i} className="align-top">
+                      {/* Quantity */}
                       <td className="px-6 py-1 text-xs font-medium text-gray-900">
-                        <input
-                          type="text"
-                          readOnly
-                          value={item.deliveredQty || item.preparedQty || item.quantity || 0}
-                          className="w-full border-none bg-transparent p-0"
-                        />
+                        {item.deliveredQty || item.preparedQty || item.quantity || 0}
                       </td>
+
+                      {/* Unit */}
                       <td className="px-2 py-1 text-xs font-medium text-gray-900">
-                        <input
-                          type="text"
-                          readOnly
-                          value={item.uom || item.unit || 'pcs'}
-                          className="w-full border-none bg-transparent p-0"
-                        />
+                        {item.uom || item.unit || 'pcs'}
                       </td>
-                      <td className="px-2 py-1 text-xs font-medium text-gray-900">
-                        <input
-                          type="text"
-                          readOnly
-                          value={item.unit || 'pcs'}
-                          className="w-full border-none bg-transparent p-0"
-                        />
-                      </td>
-                      <td className="px-3 py-1 text-xs text-gray-900 leading-tight">
+
+                      {/* Particulars */}
+                      <td className="px-3 py-1 text-xs text-gray-900 leading-tight" colSpan={1}>
                         <div className="font-semibold">
-                          <input
-                            type="text"
-                            readOnly
-                            value={`${item.product?.productName || 'Product'}${item.product?.upc ? ` - ${item.product.upc}` : ''}`}
-                            className="w-full border-none bg-transparent p-0"
-                          />
+                          {`${item.product?.productName || item.productName || 'Product'}${item.product?.upc ? ` - ${item.product.upc}` : ''}`}
                         </div>
                         {item.particular && (
                           <div className="text-[10px] text-gray-600 -mt-0.5">
-                            <input
-                              type="text"
-                              readOnly
-                              value={item.particular}
-                              className="w-full border-none bg-transparent p-0 text-[10px]"
-                            />
+                            {item.particular}
                           </div>
                         )}
                       </td>
+
+                      {/* Extra */}
                       <td className="px-3 py-1 text-xs">
                         <input
                           type="text"
