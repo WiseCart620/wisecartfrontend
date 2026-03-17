@@ -13,7 +13,8 @@ const VariationSearchableDropdown = ({
   warehouseStocks = {},
   branchStocks = {},
   loadingStocks = {},
-  onAddProduct
+  onAddProduct,
+  hideLocationHint = false  // ← new: pass true to suppress "Select a location" message
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,11 +53,9 @@ const VariationSearchableDropdown = ({
     return opt.id === value;
   });
 
-  // Function to get stock information for an option - FIXED
   const getStockInfo = (option) => {
     if (!option) return null;
 
-    // Determine which location is selected
     let locationId = null;
     let locationType = null;
 
@@ -80,7 +79,6 @@ const VariationSearchableDropdown = ({
       ? `${index}_${option.parentProductId}_${option.variationId}_${locationId}`
       : `${index}_${option.parentProductId}_${locationId}`;
 
-    // Get stock from correct location type
     if (locationType === 'warehouse') {
       return warehouseStocks[stockKey];
     } else if (locationType === 'branch') {
@@ -92,7 +90,6 @@ const VariationSearchableDropdown = ({
 
   const stockInfo = selectedOption ? getStockInfo(selectedOption) : null;
 
-  // Determine which location is selected for loading key
   let locationId = null;
   if (formData?.fromWarehouseId) {
     locationId = formData.fromWarehouseId;
@@ -104,9 +101,10 @@ const VariationSearchableDropdown = ({
     locationId = formData.toBranchId;
   }
 
-  const isLoading = selectedOption ? loadingStocks[`${index}_${selectedOption.parentProductId}_${selectedOption.variationId || ''}_${locationId || ''}`] : false;
+  const isLoading = selectedOption
+    ? loadingStocks[`${index}_${selectedOption.parentProductId}_${selectedOption.variationId || ''}_${locationId || ''}`]
+    : false;
 
-  // Get location name for display
   const getLocationName = () => {
     if (formData?.fromWarehouseId) return 'Source Warehouse';
     if (formData?.fromBranchId) return 'Source Branch';
@@ -206,9 +204,8 @@ const VariationSearchableDropdown = ({
       {selectedOption && (
         <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
           <div className="text-xs space-y-2">
-            {/* Product Details Grid - 2 columns */}
+            {/* Product Details Grid */}
             <div className="grid grid-cols-2 gap-y-1 gap-x-4">
-              {/* Top row: Product | Variant */}
               <div className="flex items-center">
                 <span className="text-gray-500 w-16 flex-shrink-0">Product:</span>
                 <span className="font-medium truncate ml-1">{selectedOption.fullName}</span>
@@ -221,7 +218,6 @@ const VariationSearchableDropdown = ({
                 </div>
               )}
 
-              {/* Bottom row: SKU | UPC */}
               <div className="flex items-center">
                 <span className="text-gray-500 w-16 flex-shrink-0">SKU:</span>
                 <span className="font-medium truncate ml-1">{selectedOption.sku || 'N/A'}</span>
@@ -233,9 +229,7 @@ const VariationSearchableDropdown = ({
               </div>
             </div>
 
-
-            {/* All Company Prices - NEW */}
-            {/* All Company Prices - Collapsible */}
+            {/* All Company Prices */}
             {selectedOption.allCompanyPrices && selectedOption.allCompanyPrices.length > 0 && (
               <div className="pt-2 border-t border-gray-200">
                 <details className="group">
@@ -262,15 +256,12 @@ const VariationSearchableDropdown = ({
             {/* Stock Information Section */}
             {(formData?.fromWarehouseId || formData?.fromBranchId || formData?.toWarehouseId || formData?.toBranchId) && (stockInfo || isLoading) && (
               <div className="pt-2 border-t border-gray-200">
-                {/* Stock Header with icon */}
                 <div className="flex items-center gap-1 mb-2">
                   <Package size={12} className="text-gray-500" />
                   <span className="text-gray-700 font-medium">{getLocationName()} Stock</span>
                 </div>
 
-                {/* Stock Data Grid - Available | Total */}
                 <div className="grid grid-cols-2 gap-2 mb-2">
-                  {/* Available Stock */}
                   <div className="flex items-center justify-between p-2 bg-white rounded border border-gray-200">
                     <span className="text-gray-600 text-xs">Available:</span>
                     {isLoading ? (
@@ -286,7 +277,6 @@ const VariationSearchableDropdown = ({
                     )}
                   </div>
 
-                  {/* Total Stock */}
                   <div className="flex items-center justify-between p-2 bg-white rounded border border-gray-200">
                     <span className="text-gray-600 text-xs">Total:</span>
                     {isLoading ? (
@@ -316,8 +306,8 @@ const VariationSearchableDropdown = ({
               </div>
             )}
 
-            {/* Show message when no location is selected */}
-            {!(formData?.fromWarehouseId || formData?.fromBranchId || formData?.toWarehouseId || formData?.toBranchId) && (
+            {/* "Select a location" hint — hidden when hideLocationHint=true */}
+            {!hideLocationHint && !(formData?.fromWarehouseId || formData?.fromBranchId || formData?.toWarehouseId || formData?.toBranchId) && (
               <div className="pt-2 border-t border-gray-200">
                 <div className="text-xs text-yellow-600 italic">
                   Select a location to see stock information
