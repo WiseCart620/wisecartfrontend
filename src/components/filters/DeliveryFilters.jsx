@@ -126,13 +126,20 @@ const DeliveryFilters = ({
             <label className="block text-xs font-medium text-gray-700 mb-1">Product / SKU</label>
             <SearchableDropdown
               options={productOptions}
-              value={filterData.productId || filterData.variationId}
+              value={
+                filterData.variationId
+                  ? productOptions.find(o => o.variationId == filterData.variationId)?.id
+                  : filterData.productId
+                    ? productOptions.find(o => !o.variationId && o.productId == filterData.productId)?.id
+                    : ''
+              }
               onChange={(value) => {
                 if (!value) {
                   onFilterChange({ productId: '', variationId: '', productName: '' });
                   return;
                 }
-                const option = productOptions.find(o => o.id === value);
+                // eslint-disable-next-line eqeqeq
+                const option = productOptions.find(o => o.id == value);
                 if (option) {
                   onFilterChange({
                     productId: option.productId,

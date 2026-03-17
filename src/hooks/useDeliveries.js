@@ -18,7 +18,7 @@ export const useDeliveries = () => {
       setError(null);
 
       const [deliveriesRes, branchesRes, productsRes, warehousesRes, companiesRes] = await Promise.all([
-        api.get('/deliveries/list'),
+        api.get('/deliveries'),
         api.get('/branches'),
         api.get('/products'),
         api.get('/warehouse'),
@@ -324,16 +324,17 @@ export const useDeliveries = () => {
         return false;
       }
 
-      // Product / variation — handle both nested and flat item shapes
       if (filters.variationId || filters.productId) {
         const hasProduct = delivery.items?.some(item => {
           const itemVariationId = item.variation?.id ?? item.variationId;
           const itemProductId = item.product?.id ?? item.productId;
 
           if (filters.variationId) {
-            return itemVariationId === filters.variationId;
+            // eslint-disable-next-line eqeqeq
+            return itemVariationId == filters.variationId;
           }
-          return itemProductId === filters.productId;
+          // eslint-disable-next-line eqeqeq
+          return itemProductId == filters.productId;
         });
         if (!hasProduct) return false;
       }
