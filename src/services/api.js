@@ -29,7 +29,6 @@ const handleInactivityLogout = () => {
 };
 
 export const startActivityTracking = () => {
-    // On tab restore/focus: only logout if truly expired AND no recent API activity
     const handleVisibilityChange = () => {
         if (document.visibilityState === 'visible') {
             const lastActivity = localStorage.getItem('lastActivity');
