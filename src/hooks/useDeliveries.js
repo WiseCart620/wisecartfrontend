@@ -25,7 +25,39 @@ export const useDeliveries = () => {
         api.get('/companies')
       ]);
 
-      if (deliveriesRes.success) setDeliveries(deliveriesRes.data || []);
+      if (deliveriesRes.success) {
+        const normalized = (deliveriesRes.data || []).map(d => ({
+          ...d,
+          branchId: d.branch?.id ?? d.branchId,
+          branchName: d.branch?.branchName ?? d.branchName,
+          companyId: d.company?.id ?? d.companyId,
+          companyName: d.company?.companyName ?? d.companyName,
+          warehouses: d.items
+            ? [
+              ...new Map(
+                d.items
+                  .filter(item => item.warehouse)
+                  .map(item => [
+                    item.warehouse.id,
+                    {
+                      id: item.warehouse.id,
+                      warehouseName: item.warehouse.warehouseName,
+                      warehouseCode: item.warehouse.warehouseCode
+                    }
+                  ])
+              ).values()
+            ]
+            : d.warehouses || [],
+          totalPreparedQty: d.items
+            ? d.items.reduce((sum, item) => sum + (item.preparedQty || 0), 0)
+            : d.totalPreparedQty || 0,
+          totalDeliveredQty: d.items
+            ? d.items.reduce((sum, item) => sum + (item.deliveredQty || 0), 0)
+            : d.totalDeliveredQty || 0,
+          itemCount: d.items?.length ?? d.itemCount ?? 0
+        }));
+        setDeliveries(normalized);
+      }
       if (branchesRes.success) setBranches(branchesRes.data || []);
       if (productsRes.success) setProducts(productsRes.data || []);
       if (warehousesRes.success) setWarehouses(warehousesRes.data || []);

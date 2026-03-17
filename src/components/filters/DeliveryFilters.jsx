@@ -43,6 +43,8 @@ const DeliveryFilters = ({
       .map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }))
     : branchOptions;
 
+  const availableBranchOptions = filteredBranchOptions;
+
   const hasActiveFilters = Object.values(filterData).some(value =>
     value !== '' && value !== null && value !== undefined
   );
@@ -70,7 +72,14 @@ const DeliveryFilters = ({
             <SearchableDropdown
               options={companyOptions}
               value={filterData.companyId}
-              onChange={(value) => onFilterChange({ companyId: value, branchId: '' })}
+              onChange={(value) => {
+                const currentBranch = branches.find(b => b.id === filterData.branchId);
+                const branchBelongsToCompany = currentBranch?.company?.id === value;
+                onFilterChange({
+                  companyId: value,
+                  branchId: branchBelongsToCompany ? filterData.branchId : ''
+                });
+              }}
               placeholder="All Companies"
               displayKey="name"
               valueKey="id"
@@ -80,13 +89,13 @@ const DeliveryFilters = ({
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Branch</label>
             <SearchableDropdown
-              options={filteredBranchOptions}
+              options={availableBranchOptions}
               value={filterData.branchId}
               onChange={(value) => onFilterChange({ branchId: value })}
-              placeholder={filterData.companyId ? "Select Branch" : "Select Company First"}
+              placeholder="All Branches"
               displayKey="name"
               valueKey="id"
-              disabled={!filterData.companyId}
+              searchable={true}
             />
             {filterData.companyId && filteredBranchOptions.length === 0 && (
               <p className="text-xs text-orange-600 mt-1">No branches available for this company</p>
