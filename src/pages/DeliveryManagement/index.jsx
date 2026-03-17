@@ -321,6 +321,8 @@ const DeliveryManagement = () => {
         remarks: fullDelivery.remarks || '',
         items: fullDelivery.items?.map(item => ({
           ...item,
+          quantity: item.deliveredQty || item.preparedQty || 0,
+          unit: item.uom || 'pcs',
           warehouseName: item.warehouse?.warehouseName || 'N/A',
           warehouseCode: item.warehouse?.warehouseCode || 'N/A'
         })) || [],

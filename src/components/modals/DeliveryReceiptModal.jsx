@@ -234,7 +234,15 @@ const DeliveryReceiptModal = ({
                         <input
                           type="text"
                           readOnly
-                          value={item.quantity || 1}
+                          value={item.deliveredQty || item.preparedQty || item.quantity || 0}
+                          className="w-full border-none bg-transparent p-0"
+                        />
+                      </td>
+                      <td className="px-2 py-1 text-xs font-medium text-gray-900">
+                        <input
+                          type="text"
+                          readOnly
+                          value={item.uom || item.unit || 'pcs'}
                           className="w-full border-none bg-transparent p-0"
                         />
                       </td>
