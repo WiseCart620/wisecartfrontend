@@ -7,8 +7,6 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://152.42.235.20
 const INACTIVITY_LIMIT = 60 * 60 * 1000; // 1 hour
 let inactivityTimer = null;
 
-let lastPingTime = 0;
-const PING_INTERVAL = 5 * 60 * 1000; // ping backend every 5 minutes of activity
 
 const resetInactivityTimer = () => {
     localStorage.setItem('lastActivity', Date.now().toString());
@@ -17,18 +15,6 @@ const resetInactivityTimer = () => {
         handleInactivityLogout();
     }, INACTIVITY_LIMIT);
 
-    // Ping backend every 5 minutes to keep server-side session alive
-    const now = Date.now();
-    if (now - lastPingTime > PING_INTERVAL) {
-        lastPingTime = now;
-        const token = localStorage.getItem('authToken');
-        if (token) {
-            fetch(`${API_BASE_URL}/auth/activity`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            }).catch(() => { }); // silent — don't disrupt UX
-        }
-    }
 };
 
 const handleInactivityLogout = () => {
