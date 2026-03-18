@@ -18,22 +18,22 @@ const DeliveryTable = ({
 }) => {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const indexOfFirstItem = (currentPage - 1) * itemsPerPage + 1;
-  const indexOfLastItem  = Math.min(currentPage * itemsPerPage, totalItems);
+  const indexOfLastItem = Math.min(currentPage * itemsPerPage, totalItems);
 
   const getStatusColor = (status) => {
     const colors = {
-      PENDING:    'bg-gray-100 text-gray-700',
-      PREPARING:  'bg-yellow-100 text-yellow-800',
+      PENDING: 'bg-gray-100 text-gray-700',
+      PREPARING: 'bg-yellow-100 text-yellow-800',
       IN_TRANSIT: 'bg-purple-100 text-purple-800',
-      DELIVERED:  'bg-green-100 text-green-800',
-      CANCELLED:  'bg-red-100 text-red-800',
-      RETURNED:   'bg-orange-100 text-orange-800',
+      DELIVERED: 'bg-green-100 text-green-800',
+      CANCELLED: 'bg-red-100 text-red-800',
+      RETURNED: 'bg-orange-100 text-orange-800',
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
-  const grandTotalPrepared  = deliveries.reduce((s, d) => s + (d.totalPreparedQty  || 0), 0);
-  const grandTotalSKU       = deliveries.reduce((s, d) => s + (d.itemCount         || 0), 0);
+  const grandTotalPrepared = deliveries.reduce((s, d) => s + (d.totalPreparedQty || 0), 0);
+  const grandTotalSKU = deliveries.reduce((s, d) => s + (d.itemCount || 0), 0);
 
   if (isLoading) {
     return (
@@ -62,7 +62,7 @@ const DeliveryTable = ({
             <col className="w-[60px]" />
             <col className="w-[110px]" />
             <col className="w-[180px]" />
-            <col className="w-[250px]" /> {/* Increased branch width to show full text */}
+            <col className="w-[250px]" />
             <col className="w-[130px]" />
             <col className="w-[130px]" />
             <col className="w-[90px]" />
@@ -90,16 +90,16 @@ const DeliveryTable = ({
           {/* ── BODY ── */}
           <tbody className="bg-white divide-y divide-gray-100">
             {deliveries.map((delivery, index) => {
-              const drTotalPrepared  = delivery.totalPreparedQty  || 0;
+              const drTotalPrepared = delivery.totalPreparedQty || 0;
 
               const isDelivered = delivery.status === 'DELIVERED';
-              const isPending   = delivery.status === 'PENDING';
+              const isPending = delivery.status === 'PENDING';
               const isPreparing = delivery.status === 'PREPARING';
               const isCancelled = delivery.status === 'CANCELLED';
-              const isReturned  = delivery.status === 'RETURNED';
+              const isReturned = delivery.status === 'RETURNED';
 
               const canDelete = isPending || isPreparing;
-              const canEdit   = !isDelivered && !isCancelled && !isReturned;
+              const canEdit = !isDelivered && !isCancelled && !isReturned;
 
               // Calculate the actual row number based on current page
               const rowNumber = (currentPage - 1) * itemsPerPage + index + 1;
@@ -147,22 +147,22 @@ const DeliveryTable = ({
                   {/* Date Prepared */}
                   <td className="px-2 py-3 text-sm text-gray-600">
                     {delivery.datePrepared
-                      ? new Date(delivery.datePrepared).toLocaleDateString('en-US', { 
-                          year: 'numeric',
-                          month: 'short', 
-                          day: 'numeric' 
-                        })
+                      ? new Date(delivery.datePrepared).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })
                       : '—'}
                   </td>
 
                   {/* Date Delivered */}
                   <td className="px-2 py-3 text-sm text-gray-600">
                     {delivery.dateDelivered
-                      ? new Date(delivery.dateDelivered).toLocaleDateString('en-US', { 
-                          year: 'numeric',
-                          month: 'short', 
-                          day: 'numeric' 
-                        })
+                      ? new Date(delivery.dateDelivered).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })
                       : '—'}
                   </td>
 
