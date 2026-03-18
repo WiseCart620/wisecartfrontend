@@ -3,8 +3,9 @@
     size: A4;
     margin: 0.7cm !important;
   }
-  
-  html, body {
+
+  html,
+  body {
     overflow: hidden !important;
     width: 100% !important;
     height: 100% !important;
@@ -15,12 +16,12 @@
   body * {
     visibility: hidden !important;
   }
-  
+
   #delivery-receipt,
   #delivery-receipt * {
     visibility: visible !important;
   }
-  
+
   #delivery-receipt {
     position: absolute !important;
     left: 0 !important;
@@ -34,12 +35,12 @@
     page-break-after: avoid !important;
     page-break-inside: avoid !important;
   }
-  
-  
+
+
   .print-hidden {
     display: none !important;
   }
-  
+
   .print-only {
     display: inline !important;
     color: black !important;
@@ -48,44 +49,44 @@
 
   /* Add these rules inside the @media print section, after the existing rules */
 
-/* Hide the "Receive the above goods..." text */
-#delivery-receipt .text-right.font-bold.leading-tight {
-  color: transparent !important;
-}
+  /* Hide the "Receive the above goods..." text */
+  #delivery-receipt .text-right.font-bold.leading-tight {
+    color: transparent !important;
+  }
 
-/* Hide the "Prepared by:" label */
-#delivery-receipt .font-bold.text-gray-900.text-sm.w-25 {
-  color: transparent !important;
-}
+  /* Hide the "Prepared by:" label */
+  #delivery-receipt .font-bold.text-gray-900.text-sm.w-25 {
+    color: transparent !important;
+  }
 
-/* Hide the "Received by:" label */
-#delivery-receipt .font-bold.text-gray-900.text-sm.w-40 {
-  color: transparent !important;
-}
+  /* Hide the "Received by:" label */
+  #delivery-receipt .font-bold.text-gray-900.text-sm.w-40 {
+    color: transparent !important;
+  }
 
-/* Hide the "Customer Signature over Printed Name" text */
-#delivery-receipt .text-xs.text-black-900.mt-0.ml-32.font-bold {
-  color: transparent !important;
-}
+  /* Hide the "Customer Signature over Printed Name" text */
+  #delivery-receipt .text-xs.text-black-900.mt-0.ml-32.font-bold {
+    color: transparent !important;
+  }
 
-/* Hide the "Date Received:" label */
-#delivery-receipt .font-bold.text-gray-900.text-sm.w-40 {
-  color: transparent !important;
-}
+  /* Hide the "Date Received:" label */
+  #delivery-receipt .font-bold.text-gray-900.text-sm.w-40 {
+    color: transparent !important;
+  }
 
-/* Hide the "Prepared by:" label and its input data */
-#delivery-receipt .font-bold.text-gray-900.text-sm.w-25 {
-  color: transparent !important;
-}
+  /* Hide the "Prepared by:" label and its input data */
+  #delivery-receipt .font-bold.text-gray-900.text-sm.w-25 {
+    color: transparent !important;
+  }
 
-#delivery-receipt .font-bold.text-gray-900.text-sm.w-25 + div {
-  color: transparent !important;
-}
+  #delivery-receipt .font-bold.text-gray-900.text-sm.w-25+div {
+    color: transparent !important;
+  }
 
-#delivery-receipt .font-bold.text-gray-900.text-sm.w-25 + div * {
-  color: transparent !important;
-}
-  
+  #delivery-receipt .font-bold.text-gray-900.text-sm.w-25+div * {
+    color: transparent !important;
+  }
+
   /* Make all text transparent by default */
   #delivery-receipt * {
     color: transparent !important;
@@ -93,40 +94,49 @@
     background: none !important;
     background-color: transparent !important;
   }
-  
+
   /* Make data divs visible (the content areas) */
   #delivery-receipt div.text-black-900 {
     color: black !important;
   }
-  
+
   /* Make readonly inputs visible */
   #delivery-receipt input[readonly] {
     color: black !important;
   }
-  
+
   /* Make editable inputs in table cells visible */
   #delivery-receipt td input:not([readonly]) {
     color: black !important;
   }
-  
+
+  /* Make tbody td text visible (Quantity, Unit, Particulars) */
+  #delivery-receipt tbody td {
+    color: black !important;
+  }
+
+  #delivery-receipt tbody td * {
+    color: black !important;
+  }
+
   /* Make print-only spans visible */
   #delivery-receipt .print-only {
     color: black !important;
   }
-  
+
   /* Keep table headers transparent */
   #delivery-receipt thead th {
     color: transparent !important;
   }
-  
+
   #delivery-receipt thead th * {
     color: transparent !important;
   }
-  
+
   #delivery-receipt table {
     border-collapse: collapse !important;
   }
-  
+
   #delivery-receipt th {
     border: none !important;
     padding: 2px 4px !important;
@@ -165,32 +175,32 @@
     padding: 0 !important;
     margin: 0 !important;
   }
-  
+
   #delivery-receipt {
     font-size: 12px !important;
     line-height: 1.2 !important;
   }
-  
+
   #delivery-receipt .text-\[34px\] {
     font-size: 24px !important;
   }
-  
+
   #delivery-receipt .text-\[18px\] {
     font-size: 14px !important;
   }
-  
+
   #delivery-receipt .text-3xl {
     font-size: 20px !important;
   }
-  
+
   #delivery-receipt .p-8 {
     padding: 0 !important;
   }
-  
+
   #delivery-receipt .mb-5 {
     margin-bottom: 10px !important;
   }
-  
+
   #delivery-receipt .mt-12 {
     margin-top: 20px !important;
   }
@@ -200,7 +210,7 @@
   .print-only {
     display: none !important;
   }
-  
+
   .print-hidden {
     display: inline-block !important;
   }
