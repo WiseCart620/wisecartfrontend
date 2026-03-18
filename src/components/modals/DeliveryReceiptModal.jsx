@@ -200,28 +200,32 @@ const DeliveryReceiptModal = ({
           {/* Items Table */}
           <div className="-mt-3 leading-none">
             <table className="w-full border-collapse" style={{ minHeight: '175mm' }}>
+              <colgroup>
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '9%' }} />
+                <col style={{ width: '51%' }} />
+                <col style={{ width: '28%' }} />
+              </colgroup>
               <thead>
                 <tr className="border-b border-gray-900">
-                  <th className="text-left px-3 py-1.5 font-bold text-gray-900 text-xs uppercase tracking-wider" style={{ width: '12%' }}>
+                  <th className="text-left px-3 py-1.5 font-bold text-gray-900 text-xs uppercase tracking-wider">
                     Quantity
                   </th>
-                  <th className="text-left px-2 py-1.5 font-bold text-gray-900 text-xs uppercase tracking-wider" style={{ width: '9%' }}>
+                  <th className="text-left px-2 py-1.5 font-bold text-gray-900 text-xs uppercase tracking-wider">
                     Unit
                   </th>
-                  <th className="text-left px-3 py-1.5 font-bold text-gray-900 text-xs uppercase tracking-wider" style={{ width: '51%' }}>
+                  <th className="text-left px-3 py-1.5 font-bold text-gray-900 text-xs uppercase tracking-wider">
                     Particulars
                   </th>
-                  <th className="text-left px-3 py-1.5 font-bold text-gray-900 text-xs uppercase tracking-wider" style={{ width: '28%' }}>
-                    {receipt.items?.some(item => item.extra) && (
-                      <input
-                        type="text"
-                        value={receipt.extraHeader || 'EXTRA'}
-                        onChange={(e) => setReceipt({ ...receipt, extraHeader: e.target.value })}
-                        className="w-full bg-transparent font-bold text-xs uppercase px-0 py-0.5 border-none focus:outline-none focus:border-blue-500 print-hidden"
-                      />
-                    )}
-                    <span className="print-only">
-                      {receipt.items?.some(item => item.extra) ? (receipt.extraHeader || 'EXTRA') : ''}
+                  <th className="text-left px-3 py-1.5 font-bold text-gray-900 text-xs uppercase tracking-wider">
+                    <input
+                      type="text"
+                      value={receipt.extraHeader || 'EXTRA'}
+                      onChange={(e) => setReceipt({ ...receipt, extraHeader: e.target.value })}
+                      className="w-full bg-transparent font-bold text-xs uppercase px-0 py-0.5 border-none focus:outline-none print:hidden"
+                    />
+                    <span className="hidden print:inline">
+                      {receipt.extraHeader || 'EXTRA'}
                     </span>
                   </th>
                 </tr>
@@ -262,9 +266,9 @@ const DeliveryReceiptModal = ({
                             newItems[i] = { ...newItems[i], extra: e.target.value };
                             setReceipt({ ...receipt, items: newItems });
                           }}
-                          className="w-full bg-transparent border-b border-gray-300 text-xs px-0 py-0.5 focus:outline-none focus:border-blue-500 print:border-0 print:p-0 print-hidden"
+                          className="w-full bg-transparent border-b border-gray-300 text-xs px-0 py-0.5 focus:outline-none focus:border-blue-500 print:hidden"
                         />
-                        <span className="print-only">{item.extra || ''}</span>
+                        <span className="hidden print:inline">{item.extra || ''}</span>
                       </td>
                     </tr>
                   ))
