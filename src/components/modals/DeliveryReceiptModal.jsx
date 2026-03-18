@@ -235,17 +235,17 @@ const DeliveryReceiptModal = ({
                   receipt.items.map((item, i) => (
                     <tr key={i} className="align-top">
                       {/* Quantity */}
-                      <td className="px-6 py-1 text-xs font-medium text-gray-900">
+                      <td className="px-6 py-1 text-xs font-medium text-black-900">
                         {item.deliveredQty || item.preparedQty || item.quantity || 0}
                       </td>
 
                       {/* Unit */}
-                      <td className="px-2 py-1 text-xs font-medium text-gray-900">
+                      <td className="px-2 py-1 text-xs font-medium text-black-900">
                         {item.uom || item.unit || 'pcs'}
                       </td>
 
                       {/* Particulars */}
-                      <td className="px-3 py-1 text-xs text-gray-900 leading-tight" colSpan={1}>
+                      <td className="px-3 py-1 text-xs text-black-900 leading-tight" colSpan={1}>
                         <div className="font-semibold">
                           {`${item.product?.productName || item.productName || 'Product'}${item.product?.upc ? ` - ${item.product.upc}` : ''}`}
                         </div>
