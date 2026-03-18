@@ -4,7 +4,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://152.42.235.20
 
 
 // ─── Inactivity logout (1 hour) ──────────────────────────────────
-const INACTIVITY_LIMIT = 60 * 60 * 1000; // 1 hour
+const INACTIVITY_LIMIT = 8 * 60 * 60 * 1000;
 let inactivityTimer = null;
 
 
@@ -22,7 +22,7 @@ const handleInactivityLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
     localStorage.removeItem('lastActivity');
-    toast.error('⏰ You have been logged out due to 1 hour of inactivity.', { duration: 5000 });
+    toast.error('⏰ You have been logged out due to inactivity.', { duration: 5000 });
     if (!window.location.pathname.includes('/login')) {
         setTimeout(() => { window.location.href = '/login'; }, 1500);
     }
@@ -237,7 +237,7 @@ const handleResponse = async (response) => {
         try {
             const data = await response.clone().json();
             if (data?.reason === 'inactivity') {
-                toast.error('⏰ Logged out due to 1 hour of inactivity.', { duration: 5000 });
+                toast.error('⏰ Logged out due to inactivity.', { duration: 5000 });
             } else {
                 toast.error('🔒 Session expired. Please log in again.', { duration: 3000 });
             }
