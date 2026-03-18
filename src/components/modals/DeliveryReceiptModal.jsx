@@ -250,7 +250,7 @@ const DeliveryReceiptModal = ({
                           {`${item.product?.productName || item.productName || 'Product'}${item.product?.upc ? ` - ${item.product.upc}` : ''}`}
                         </div>
                         {item.particular && (
-                          <div className="text-[10px] text-gray-600 -mt-0.5">
+                          <div className="text-[10px] text-black-600 -mt-0.5">
                             {item.particular}
                           </div>
                         )}
@@ -266,7 +266,7 @@ const DeliveryReceiptModal = ({
                             newItems[i] = { ...newItems[i], extra: e.target.value };
                             setReceipt({ ...receipt, items: newItems });
                           }}
-                          className="w-full bg-transparent border-b border-gray-300 text-xs px-0 py-0.5 focus:outline-none focus:border-blue-500 print:hidden"
+                          className="w-full bg-transparent border-b border-black-300 text-xs px-0 py-0.5 focus:outline-none focus:border-blue-500 print:hidden"
                         />
                         <span className="hidden print:inline">{item.extra || ''}</span>
                       </td>
