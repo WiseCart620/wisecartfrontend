@@ -175,14 +175,14 @@ const DeliveryViewModal = ({
                   <div className="flex items-center gap-3 text-sm">
                     <div className="flex items-center gap-1">
                       <span className="text-gray-500">Prepared:</span>
-                      <span className="font-bold text-blue-700">{totalPrepared} pcs</span>
+                      <span className="font-bold text-blue-700">{totalPrepared.toLocaleString('en-US')} pcs</span>
                     </div>
                     {isDelivered && (
                       <>
                         <span className="text-gray-300">|</span>
                         <div className="flex items-center gap-1">
                           <span className="text-gray-500">Delivered:</span>
-                          <span className="font-bold text-green-700">{totalDelivered} pcs</span>
+                          <span className="font-bold text-green-700">{totalDelivered.toLocaleString('en-US')} pcs</span>
                         </div>
                       </>
                     )}
@@ -240,12 +240,11 @@ const DeliveryViewModal = ({
                               </div>
                             </div>
                           </td>
-                          {/* ── FIX: was `|| '-'` which shows '-' for 0; use `?? '—'` on null/undefined only ── */}
                           <td className="px-4 py-3 text-sm text-right font-semibold text-blue-700">
-                            {item.preparedQty != null ? item.preparedQty : '—'}
+                            {item.preparedQty != null ? item.preparedQty.toLocaleString('en-US') : '—'}
                           </td>
                           <td className="px-4 py-3 text-sm text-right font-semibold text-green-700">
-                            {item.deliveredQty != null ? item.deliveredQty : '—'}
+                            {item.deliveredQty != null ? item.deliveredQty.toLocaleString('en-US') : '—'}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-600">{item.uom || 'pcs'}</td>
                         </tr>
@@ -269,7 +268,7 @@ const DeliveryViewModal = ({
                         {/* Prepared total */}
                         <td className="px-4 py-3 text-right whitespace-nowrap">
                           <div className="inline-flex items-center justify-end gap-1">
-                            <span className="text-sm font-bold text-blue-800">{totalPrepared}</span>
+                            <span className="text-sm font-bold text-blue-800">{totalPrepared.toLocaleString('en-US')}</span>
                             <span className="text-xs text-blue-500">pcs</span>
                           </div>
                         </td>
@@ -277,7 +276,7 @@ const DeliveryViewModal = ({
                         <td className="px-4 py-3 text-right whitespace-nowrap">
                           {isDelivered ? (
                             <div className="inline-flex items-center justify-end gap-1">
-                              <span className="text-sm font-bold text-green-800">{totalDelivered}</span>
+                              <span className="text-sm font-bold text-green-800">{totalDelivered.toLocaleString('en-US')}</span>
                               <span className="text-xs text-green-500">pcs</span>
                             </div>
                           ) : (

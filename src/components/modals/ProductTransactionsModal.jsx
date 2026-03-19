@@ -388,40 +388,40 @@ const ProductTransactionsModal = ({
                                             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                                                 <div className="text-xs text-gray-500 mb-1">Warehouse Total</div>
                                                 <div className="text-2xl font-bold text-gray-900">
-                                                    {warehouseStocks.find(s =>
+                                                    {(warehouseStocks.find(s =>
                                                         s.warehouseId === product.warehouseId &&
                                                         s.productId === product.productId
-                                                    )?.quantity || 0}
+                                                    )?.quantity || 0).toLocaleString('en-US')}
                                                 </div>
                                                 <div className="text-xs text-gray-400 mt-1">{product.warehouseName}</div>
                                             </div>
                                             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                                                 <div className="text-xs text-gray-500 mb-1">Available</div>
                                                 <div className="text-2xl font-bold text-green-600">
-                                                    {warehouseStocks.find(s =>
+                                                    {(warehouseStocks.find(s =>
                                                         s.warehouseId === product.warehouseId &&
                                                         s.productId === product.productId
-                                                    )?.availableQuantity || 0}
+                                                    )?.availableQuantity || 0).toLocaleString('en-US')}
                                                 </div>
                                                 <div className="text-xs text-gray-400 mt-1">Ready to use</div>
                                             </div>
                                             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                                                 <div className="text-xs text-gray-500 mb-1">Reserved</div>
                                                 <div className="text-2xl font-bold text-orange-600">
-                                                    {warehouseStocks.find(s =>
+                                                    {(warehouseStocks.find(s =>
                                                         s.warehouseId === product.warehouseId &&
                                                         s.productId === product.productId
-                                                    )?.reservedQuantity || 0}
+                                                    )?.reservedQuantity || 0).toLocaleString('en-US')}
                                                 </div>
                                                 <div className="text-xs text-gray-400 mt-1">For pending orders</div>
                                             </div>
                                             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                                                 <div className="text-xs text-gray-500 mb-1">Delivered</div>
                                                 <div className="text-2xl font-bold text-teal-600">
-                                                    {warehouseStocks.find(s =>
+                                                    {(warehouseStocks.find(s =>
                                                         s.warehouseId === product.warehouseId &&
                                                         s.productId === product.productId
-                                                    )?.deliveredQuantity || 0}
+                                                    )?.deliveredQuantity || 0).toLocaleString('en-US')}
                                                 </div>
                                                 <div className="text-xs text-gray-400 mt-1">Sent to branches</div>
                                             </div>
@@ -434,40 +434,40 @@ const ProductTransactionsModal = ({
                                             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                                                 <div className="text-xs text-gray-500 mb-1">Branch Total</div>
                                                 <div className="text-2xl font-bold text-gray-900">
-                                                    {branchStocks.find(s =>
+                                                    {(branchStocks.find(s =>
                                                         s.branchId === product.branchId &&
                                                         s.productId === product.productId
-                                                    )?.quantity || 0}
+                                                    )?.quantity || 0).toLocaleString('en-US')}
                                                 </div>
                                                 <div className="text-xs text-gray-400 mt-1">{product.branchName}</div>
                                             </div>
                                             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                                                 <div className="text-xs text-gray-500 mb-1">Available</div>
                                                 <div className="text-2xl font-bold text-green-600">
-                                                    {branchStocks.find(s =>
+                                                    {(branchStocks.find(s =>
                                                         s.branchId === product.branchId &&
                                                         s.productId === product.productId
-                                                    )?.availableQuantity || 0}
+                                                    )?.availableQuantity || 0).toLocaleString('en-US')}
                                                 </div>
                                                 <div className="text-xs text-gray-400 mt-1">Ready for sale</div>
                                             </div>
                                             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                                                 <div className="text-xs text-gray-500 mb-1">Pending Sales</div>
                                                 <div className="text-2xl font-bold text-purple-600">
-                                                    {branchStocks.find(s =>
+                                                    {(branchStocks.find(s =>
                                                         s.branchId === product.branchId &&
                                                         s.productId === product.productId
-                                                    )?.pendingSales || 0}
+                                                    )?.pendingSales || 0).toLocaleString('en-US')}
                                                 </div>
                                                 <div className="text-xs text-gray-400 mt-1">Awaiting confirmation</div>
                                             </div>
                                             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                                                 <div className="text-xs text-gray-500 mb-1">Total Sales</div>
                                                 <div className="text-2xl font-bold text-pink-600">
-                                                    {branchStocks.find(s =>
+                                                    {(branchStocks.find(s =>
                                                         s.branchId === product.branchId &&
                                                         s.productId === product.productId
-                                                    )?.totalSales || 0}
+                                                    )?.totalSales || 0).toLocaleString('en-US')}
                                                 </div>
                                                 <div className="text-xs text-gray-400 mt-1">Sold to customers</div>
                                             </div>
@@ -483,7 +483,7 @@ const ProductTransactionsModal = ({
                                             <div className="text-xl font-bold text-blue-600">
                                                 {warehouseStocks
                                                     .filter(s => s.productId === product.productId)
-                                                    .reduce((sum, s) => sum + (s.quantity || 0), 0)}
+                                                    .reduce((sum, s) => sum + (s.quantity || 0), 0).toLocaleString('en-US')}
                                             </div>
                                         </div>
                                         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
@@ -491,7 +491,7 @@ const ProductTransactionsModal = ({
                                             <div className="text-xl font-bold text-green-600">
                                                 {branchStocks
                                                     .filter(s => s.productId === product.productId)
-                                                    .reduce((sum, s) => sum + (s.quantity || 0), 0)}
+                                                    .reduce((sum, s) => sum + (s.quantity || 0), 0).toLocaleString('en-US')}
                                             </div>
                                         </div>
                                         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
@@ -499,7 +499,7 @@ const ProductTransactionsModal = ({
                                             <div className="text-xl font-bold text-teal-600">
                                                 {warehouseStocks
                                                     .filter(s => s.productId === product.productId)
-                                                    .reduce((sum, s) => sum + (s.deliveredQuantity || 0), 0)}
+                                                    .reduce((sum, s) => sum + (s.deliveredQuantity || 0), 0).toLocaleString('en-US')}
                                             </div>
                                         </div>
                                         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
@@ -507,7 +507,7 @@ const ProductTransactionsModal = ({
                                             <div className="text-xl font-bold text-pink-600">
                                                 {branchStocks
                                                     .filter(s => s.productId === product.productId)
-                                                    .reduce((sum, s) => sum + (s.totalSales || 0), 0)}
+                                                    .reduce((sum, s) => sum + (s.totalSales || 0), 0).toLocaleString('en-US')}
                                             </div>
                                         </div>
                                     </div>
@@ -990,7 +990,7 @@ const ProductTransactionsModal = ({
                                                         </td>
                                                         <td className="px-4 py-3 text-sm font-medium">
                                                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold ${quantityInfo.colorClass}`}>
-                                                                {quantityInfo.sign}{quantityInfo.quantity}
+                                                                {quantityInfo.sign}{quantityInfo.quantity.toLocaleString('en-US')}
                                                             </span>
                                                         </td>
                                                         <td className="px-4 py-3 text-sm">
@@ -1125,7 +1125,7 @@ const ProductTransactionsModal = ({
                                                                                             <div>
                                                                                                 <span className="text-gray-500">Quantity:</span>
                                                                                                 <span className={`ml-1 px-1.5 py-0.5 rounded font-medium ${histQuantityInfo.colorClass}`}>
-                                                                                                    {histQuantityInfo.sign}{histQuantityInfo.quantity}
+                                                                                                    {histQuantityInfo.sign}{histQuantityInfo.quantity.toLocaleString('en-US')}
                                                                                                 </span>
                                                                                             </div>
                                                                                             <div>

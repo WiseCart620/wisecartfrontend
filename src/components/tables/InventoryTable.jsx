@@ -102,7 +102,7 @@ const InventoryTable = ({
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <Package size={16} className="text-gray-400" />
-                        <span className="text-sm font-semibold text-gray-900">{inventory.items?.length || 0}</span>
+                        <span className="text-sm font-semibold text-gray-900">{(inventory.items?.length || 0).toLocaleString('en-US')}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -197,7 +197,7 @@ const InventoryTable = ({
               <td className="px-6 py-3 whitespace-nowrap">
                 <div className="flex items-center gap-2">
                   <Package size={16} className="text-gray-500" />
-                  <span className="text-sm font-bold text-gray-800">{grandTotalItems}</span>
+                  <span className="text-sm font-bold text-gray-800">{grandTotalItems.toLocaleString('en-US')}</span>
                 </div>
               </td>
               <td className="px-6 py-3 whitespace-nowrap">

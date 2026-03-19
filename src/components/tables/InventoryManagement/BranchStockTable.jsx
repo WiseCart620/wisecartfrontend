@@ -115,36 +115,36 @@ const BranchStockTable = ({
                       ? 'bg-green-100 text-green-800'
                       : 'bg-red-100 text-red-800'
                       }`}>
-                      {stock.quantity || 0}
+                      {(stock.quantity || 0).toLocaleString('en-US')}
                     </span>
                   </td>
                   <td className="px-3 py-3 text-center">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
                       <CheckCircle size={12} />
-                      {stock.deliveredQuantity || 0}
+                      {(stock.deliveredQuantity || 0).toLocaleString('en-US')}
                     </span>
                   </td>
                   <td className="px-3 py-3 text-center">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
                       <ShoppingCart size={12} />
-                      {stock.totalSales || 0}
+                      {(stock.totalSales || 0).toLocaleString('en-US')}
                     </span>
                   </td>
                   <td className="px-3 py-3 text-center">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                       <Truck size={12} />
-                      {stock.pendingDeliveries || 0}
+                      {(stock.pendingDeliveries || 0).toLocaleString('en-US')}
                     </span>
                   </td>
                   <td className="px-3 py-3 text-center">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                       <Clock size={12} />
-                      {stock.pendingSales || 0}
+                     {(stock.pendingSales || 0).toLocaleString('en-US')}
                     </span>
                   </td>
                   <td className="px-3 py-3 text-center">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {stock.availableQuantity || 0}
+                      {(stock.availableQuantity || 0).toLocaleString('en-US')}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-500">

@@ -77,7 +77,7 @@ const TransactionTable = ({
                         </div>
                       </div>
                     </td>
-                    <td className="px-3 py-3 text-center text-sm">{transaction.items?.length || 0}</td>
+                    <td className="px-3 py-3 text-center text-sm">{(transaction.items?.length || 0).toLocaleString('en-US')}</td>
                     <td className="px-3 py-3 text-center text-sm font-medium text-blue-600">
                       {calculateTotalQuantity(transaction.items).toLocaleString()}
                     </td>

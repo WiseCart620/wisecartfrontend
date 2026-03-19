@@ -103,24 +103,24 @@ const WarehouseStockTable = ({
                       ? 'bg-green-100 text-green-800'
                       : 'bg-red-100 text-red-800'
                       }`}>
-                      {stock.quantity || 0}
+                      {(stock.quantity || 0).toLocaleString('en-US')}
                     </span>
                   </td>
                   <td className="px-3 py-3 text-center">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
                       <CheckCircle size={12} />
-                      {stock.deliveredQuantity || 0}
+                      {(stock.deliveredQuantity || 0).toLocaleString('en-US')}
                     </span>
                   </td>
                   <td className="px-3 py-3 text-center">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                       <Truck size={12} />
-                      {stock.pendingDeliveries || 0}
+                      {(stock.pendingDeliveries || 0).toLocaleString('en-US')}
                     </span>
                   </td>
                   <td className="px-3 py-3 text-center">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {Math.max(0, (stock.quantity || 0) - (stock.reservedQuantity || 0))}
+                      {Math.max(0, (stock.quantity || 0) - (stock.reservedQuantity || 0)).toLocaleString('en-US')}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-500">

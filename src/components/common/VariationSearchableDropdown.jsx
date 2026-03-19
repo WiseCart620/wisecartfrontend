@@ -270,7 +270,7 @@ const VariationSearchableDropdown = ({
                       </div>
                     ) : stockInfo ? (
                       <span className="font-semibold text-green-600">
-                        {stockInfo.availableQuantity ?? stockInfo.quantity ?? 0}
+                        {(stockInfo.availableQuantity ?? stockInfo.quantity ?? 0).toLocaleString('en-US')}
                       </span>
                     ) : (
                       <span className="text-gray-400 text-xs">No data</span>
@@ -285,7 +285,7 @@ const VariationSearchableDropdown = ({
                       </div>
                     ) : stockInfo ? (
                       <span className="font-semibold text-gray-700">
-                        {stockInfo.quantity || 0}
+                        {(stockInfo.quantity || 0).toLocaleString('en-US')}
                       </span>
                     ) : (
                       <span className="text-gray-400 text-xs">No data</span>
@@ -298,7 +298,7 @@ const VariationSearchableDropdown = ({
                     <div className="flex items-center justify-between p-2 bg-white rounded border border-orange-200">
                       <span className="text-gray-600 text-xs">Reserved:</span>
                       <span className="font-semibold text-orange-600">
-                        {stockInfo.reservedQuantity}
+                        {(stockInfo.reservedQuantity).toLocaleString('en-US')}
                       </span>
                     </div>
                   </div>

@@ -178,7 +178,7 @@ const DeliveryTable = ({
                   <td className="px-2 py-3 text-right">
                     {drTotalPrepared > 0 ? (
                       <span className="text-sm font-bold text-blue-700">
-                        {drTotalPrepared}
+                        {drTotalPrepared.toLocaleString('en-US')}
                       </span>
                     ) : (
                       '—'
@@ -266,10 +266,10 @@ const DeliveryTable = ({
                 {/* Empty cell for spacing */}
               </td>
               <td className="px-2 py-2 text-center">
-                <span className="text-sm font-bold text-gray-800">{grandTotalSKU}</span>
+                <span className="text-sm font-bold text-gray-800">{grandTotalSKU.toLocaleString('en-US')}</span>
               </td>
               <td className="px-2 py-2 text-right">
-                <span className="text-sm font-bold text-blue-800">{grandTotalPrepared}</span>
+                <span className="text-sm font-bold text-blue-800">{grandTotalPrepared.toLocaleString('en-US')}</span>
               </td>
               <td colSpan={2} />
             </tr>

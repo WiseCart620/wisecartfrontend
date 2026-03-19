@@ -1281,49 +1281,49 @@ const SalesManagement = () => {
                   onChange={(e) => setFilterData({ ...filterData, endDate: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-</div>
+              </div>
             </div>
 
             {/* Third Row: Product Search */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-gray-100">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Filter by Product / UPC / SKU
-                  </label>
-                  <VariationSearchableDropdown
-                    options={allProductOptions}
-                    value={
-                      filterData.variationId
-                        ? allProductOptions.find(o => o.variationId === filterData.variationId)?.id ?? ''
-                        : filterData.productId
-                          ? allProductOptions.find(o => !o.variationId && o.parentProductId === filterData.productId)?.id ?? ''
-                          : ''
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Filter by Product / UPC / SKU
+                </label>
+                <VariationSearchableDropdown
+                  options={allProductOptions}
+                  value={
+                    filterData.variationId
+                      ? allProductOptions.find(o => o.variationId === filterData.variationId)?.id ?? ''
+                      : filterData.productId
+                        ? allProductOptions.find(o => !o.variationId && o.parentProductId === filterData.productId)?.id ?? ''
+                        : ''
+                  }
+                  onChange={(value) => {
+                    if (!value) {
+                      setFilterData(prev => ({ ...prev, productId: '', variationId: '', productName: '' }));
+                      return;
                     }
-                    onChange={(value) => {
-                      if (!value) {
-                        setFilterData(prev => ({ ...prev, productId: '', variationId: '', productName: '' }));
-                        return;
-                      }
-                      const option = allProductOptions.find(o => o.id === value);
-                      if (option) {
-                        setFilterData(prev => ({
-                          ...prev,
-                          productId: option.parentProductId,
-                          variationId: option.variationId ?? '',
-                          productName: option.subLabel !== 'No variations'
-                            ? `${option.fullName} — ${option.subLabel}`
-                            : option.fullName,
-                        }));
-                        setCurrentPage(1);
-                      }
-                    }}
-                    placeholder="Search by product name, UPC, or SKU..."
-                    hideLocationHint={true}
-                  />
-                  {filterData.productName && (
-                    <p className="text-xs text-blue-600 mt-1">Filtering by: {filterData.productName}</p>
-                  )}
-                </div>
+                    const option = allProductOptions.find(o => o.id === value);
+                    if (option) {
+                      setFilterData(prev => ({
+                        ...prev,
+                        productId: option.parentProductId,
+                        variationId: option.variationId ?? '',
+                        productName: option.subLabel !== 'No variations'
+                          ? `${option.fullName} — ${option.subLabel}`
+                          : option.fullName,
+                      }));
+                      setCurrentPage(1);
+                    }
+                  }}
+                  placeholder="Search by product name, UPC, or SKU..."
+                  hideLocationHint={true}
+                />
+                {filterData.productName && (
+                  <p className="text-xs text-blue-600 mt-1">Filtering by: {filterData.productName}</p>
+                )}
+              </div>
             </div>
 
             {/* Filter Actions */}
@@ -1717,9 +1717,9 @@ const SalesManagement = () => {
                                   {/* Quantity */}
                                   <td className="px-4 py-3">
                                     <input
-                                      type="number"
-                                      value={item.quantity === 0 ? '' : (item.quantity || '')}
-                                      onChange={(e) => handleItemChange(i, 'quantity', e.target.value)}
+                                      type="text"
+                                      value={item.quantity && item.quantity !== 0 ? Number(item.quantity).toLocaleString('en-US') : ''}
+                                      onChange={(e) => handleItemChange(i, 'quantity', e.target.value.replace(/,/g, ''))}
                                       placeholder="Qty"
                                       className={`w-24 px-3 py-2 border rounded-lg text-sm font-medium ${!hasEnoughStock && !isLoadingStock && item.quantity > 0
                                         ? 'border-red-300 bg-red-50'

@@ -511,18 +511,18 @@ const DeliveryFormModal = ({
                                                                     <div className="flex items-center gap-2 text-blue-600 text-xs"><div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />Loading...</div>
                                                                 ) : stockInfo ? (
                                                                     <div className="text-sm space-y-1">
-                                                                        <div className={`font-bold ${hasInsufficientStock ? 'text-red-600' : 'text-green-600'}`}>Available: {stockInfo.availableQuantity || 0}</div>
-                                                                        <div className="text-xs text-gray-500">Total: {stockInfo.quantity || 0}</div>
-                                                                        {mode === 'edit' && item.originalPreparedQty > 0 && <div className="text-xs text-blue-600">Effective: {effectiveAvailable}</div>}
+                                                                        <div className={`font-bold ${hasInsufficientStock ? 'text-red-600' : 'text-green-600'}`}>Available: {(stockInfo.availableQuantity || 0).toLocaleString('en-US')}</div>
+                                                                        <div className="text-xs text-gray-500">Total: {(stockInfo.quantity || 0).toLocaleString('en-US')}</div>
+                                                                        {mode === 'edit' && item.originalPreparedQty > 0 && <div className="text-xs text-blue-600">Effective: {effectiveAvailable.toLocaleString('en-US')}</div>}
                                                                     </div>
                                                                 ) : <span className="text-xs text-gray-400 italic">No data</span>}
                                                             </td>
                                                             {/* Prepared Qty — right-aligned */}
                                                             <td className="px-4 py-3 text-right">
                                                                 <input
-                                                                    type="number"
-                                                                    value={item.preparedQty || ''}
-                                                                    onChange={(e) => handleItemChange(i, 'preparedQty', e.target.value)}
+                                                                    type="text"
+                                                                    value={item.preparedQty !== '' && item.preparedQty != null ? Number(item.preparedQty).toLocaleString('en-US') : ''}
+                                                                    onChange={(e) => handleItemChange(i, 'preparedQty', e.target.value.replace(/,/g, ''))}
                                                                     className={`w-24 px-3 py-2 border rounded-lg text-sm font-medium text-right ${hasInsufficientStock ? 'border-red-300 bg-red-50' : 'border-blue-300 bg-blue-50'}`}
                                                                     min="1"
                                                                     disabled={isDelivered}
@@ -533,9 +533,9 @@ const DeliveryFormModal = ({
                                                             {/* Delivered Qty — right-aligned */}
                                                             <td className="px-4 py-3 text-right">
                                                                 <input
-                                                                    type="number"
-                                                                    value={item.deliveredQty || ''}
-                                                                    onChange={(e) => handleItemChange(i, 'deliveredQty', e.target.value)}
+                                                                    type="text"
+                                                                    value={item.deliveredQty !== '' && item.deliveredQty != null ? Number(item.deliveredQty).toLocaleString('en-US') : ''}
+                                                                    onChange={(e) => handleItemChange(i, 'deliveredQty', e.target.value.replace(/,/g, ''))}
                                                                     className={`w-24 px-3 py-2 border rounded-lg text-sm font-medium text-right ${isDelivered ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-100 cursor-not-allowed'}`}
                                                                     min="0"
                                                                     disabled={!isDelivered}
@@ -566,7 +566,7 @@ const DeliveryFormModal = ({
                                                     {/* Prepared total */}
                                                     <td className="px-4 py-3 text-right whitespace-nowrap">
                                                         <div className="inline-flex items-center justify-end gap-1">
-                                                            <span className="text-sm font-bold text-blue-800">{totalPrepared}</span>
+                                                            <span className="text-sm font-bold text-blue-800">{totalPrepared.toLocaleString('en-US')}</span>
                                                             <span className="text-xs text-blue-500">pcs</span>
                                                         </div>
                                                     </td>
@@ -574,7 +574,7 @@ const DeliveryFormModal = ({
                                                     <td className="px-4 py-3 text-right whitespace-nowrap">
                                                         {isDeliveredStatus ? (
                                                             <div className="inline-flex items-center justify-end gap-1">
-                                                                <span className="text-sm font-bold text-green-800">{totalDelivered}</span>
+                                                                <span className="text-sm font-bold text-green-800">{totalDelivered.toLocaleString('en-US')}</span>
                                                                 <span className="text-xs text-green-500">pcs</span>
                                                             </div>
                                                         ) : (
@@ -592,14 +592,14 @@ const DeliveryFormModal = ({
                                     <div className="mt-2 flex items-center justify-end gap-4 px-1">
                                         <div className="flex items-center gap-1.5 text-sm">
                                             <span className="text-gray-500">Total Prepared:</span>
-                                            <span className="font-bold text-blue-700">{totalPrepared} pcs</span>
+                                            <span className="font-bold text-blue-700">{totalPrepared.toLocaleString('en-US')} pcs</span>
                                         </div>
                                         {isDeliveredStatus && (
                                             <>
                                                 <span className="text-gray-300">|</span>
                                                 <div className="flex items-center gap-1.5 text-sm">
                                                     <span className="text-gray-500">Total Delivered:</span>
-                                                    <span className="font-bold text-green-700">{totalDelivered} pcs</span>
+                                                    <span className="font-bold text-green-700">{totalDelivered.toLocaleString('en-US')} pcs</span>
                                                 </div>
                                                 {totalPrepared !== totalDelivered && (
                                                     <>
