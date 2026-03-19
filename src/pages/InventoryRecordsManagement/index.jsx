@@ -11,6 +11,7 @@ import useInventory from '../../hooks/data/useInventory';
 import usePagination from '../../hooks/ui/usePagination';
 import { getCurrentUser, isAdmin } from '../../utils/authUtils';
 import { api } from '../../services/api';
+import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
 
 
 // ─── Fixed Delete Error Modal with Collapsible Product Cards ─────────────────────
@@ -20,7 +21,6 @@ const DeleteErrorModal = ({ message, onClose }) => {
   const lines = message.split('\n');
   const [expandedProducts, setExpandedProducts] = useState({});
 
-  // Parse into product → { deliveryReceipts[], saleRefs[] }
   const productMap = {};
   let inDeliveries = false;
   let inSales = false;
@@ -46,10 +46,7 @@ const DeleteErrorModal = ({ message, onClose }) => {
   const hasStructuredData = products.length > 0;
 
   const toggleProduct = (productIndex) => {
-    setExpandedProducts(prev => ({
-      ...prev,
-      [productIndex]: !prev[productIndex]
-    }));
+    setExpandedProducts(prev => ({ ...prev, [productIndex]: !prev[productIndex] }));
   };
 
   const expandAll = () => {
@@ -59,7 +56,6 @@ const DeleteErrorModal = ({ message, onClose }) => {
   };
 
   const collapseAll = () => { setExpandedProducts({}); };
-
 
   const parseRef = (raw) => {
     const parenMatch = raw.match(/^(.+?)\s*\(([^)]+)\)\s*$/);
@@ -118,7 +114,6 @@ const DeleteErrorModal = ({ message, onClose }) => {
   const totalSaleQty = products.reduce((s, [, v]) => s + v.saleRefs.reduce((a, r) => a + (parseRef(r).qty ?? 0), 0), 0);
   const grandTotalQty = totalDeliveryQty + totalSaleQty;
 
-
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/50 to-black/60 backdrop-blur-md" onClick={onClose} />
@@ -173,10 +168,10 @@ const DeleteErrorModal = ({ message, onClose }) => {
             </div>
             {products.length > 0 && (
               <div className="flex items-center gap-2 ml-4">
-                <button onClick={expandAll} className="px-3 py-1 text-xs font-medium text-gray-600 bg-white/70 border border-gray-200/60 rounded-full hover:bg-white/90 transition-colors backdrop-blur-sm flex items-center gap-1" title="Expand all products">
+                <button onClick={expandAll} className="px-3 py-1 text-xs font-medium text-gray-600 bg-white/70 border border-gray-200/60 rounded-full hover:bg-white/90 transition-colors backdrop-blur-sm flex items-center gap-1">
                   <span>▼</span> Expand All
                 </button>
-                <button onClick={collapseAll} className="px-3 py-1 text-xs font-medium text-gray-600 bg-white/70 border border-gray-200/60 rounded-full hover:bg-white/90 transition-colors backdrop-blur-sm flex items-center gap-1" title="Collapse all products">
+                <button onClick={collapseAll} className="px-3 py-1 text-xs font-medium text-gray-600 bg-white/70 border border-gray-200/60 rounded-full hover:bg-white/90 transition-colors backdrop-blur-sm flex items-center gap-1">
                   <span>▶</span> Collapse All
                 </button>
               </div>
@@ -196,7 +191,6 @@ const DeleteErrorModal = ({ message, onClose }) => {
 
                   return (
                     <div key={i} className={`rounded-xl border-2 ${meta.borderColor} overflow-hidden shadow-sm backdrop-blur-sm bg-white/80 transition-all duration-200`}>
-                      {/* Product header - clickable */}
                       <div className={`flex items-center gap-3 px-4 py-3 ${meta.headerBg} ${meta.headerBorder} backdrop-blur-sm cursor-pointer hover:brightness-95 transition-all duration-200`} onClick={() => toggleProduct(i)}>
                         <div className={`w-1 h-8 rounded-full ${meta.leftBar} flex-shrink-0`} />
                         <span className="text-xs font-mono text-gray-500 w-5">{isExpanded ? '▼' : '▶'}</span>
@@ -222,11 +216,9 @@ const DeleteErrorModal = ({ message, onClose }) => {
                         <span className={`flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full ${meta.labelBg} backdrop-blur-sm`}>{meta.label}</span>
                       </div>
 
-                      {/* Collapsible content */}
                       <div className={isExpanded ? 'block' : 'hidden'}>
                         <div className="px-4 py-3 bg-white/60 backdrop-blur-sm space-y-4">
 
-                          {/* Delivery receipts */}
                           {deliveryReceipts.length > 0 && (
                             <div>
                               <div className="flex items-center gap-1.5 mb-3">
@@ -240,30 +232,21 @@ const DeleteErrorModal = ({ message, onClose }) => {
                                 </span>
                               </div>
 
-                              {/* ── FIXED: DR Cards Grid — label cell no longer truncates ── */}
                               <div className="grid grid-cols-2 gap-3">
                                 {deliveryReceipts.map((dr, j) => {
                                   const { label, qty, status, from, to } = parseRef(dr);
                                   const sm = status ? getStatusMeta(status) : null;
                                   return (
                                     <div key={j} className="flex flex-col bg-white/70 backdrop-blur-sm rounded-lg border border-blue-200/60 shadow-sm overflow-visible">
-                                      {/* Main pill row */}
                                       <div className="flex w-full min-h-[2rem]">
-                                        {/* DR number — FIXED: removed w-24/truncate, now wraps fully */}
                                         <div className="flex-shrink-0 px-2 py-1.5 bg-blue-500/10 border-r border-blue-200/60" style={{ minWidth: '8rem', maxWidth: '14rem', overflowX: 'auto' }}>
-                                          <span className="block text-xs font-mono font-medium text-blue-800 whitespace-nowrap">
-                                            {label}
-                                          </span>
+                                          <span className="block text-xs font-mono font-medium text-blue-800 whitespace-nowrap">{label}</span>
                                         </div>
-
-                                        {/* Quantity */}
                                         {qty !== null && (
                                           <div className="w-16 flex-shrink-0 px-2 py-1.5 bg-blue-500/80 border-r border-blue-300/60 flex items-center justify-center">
                                             <span className="text-xs font-bold text-white text-center whitespace-nowrap">{qty} pcs</span>
                                           </div>
                                         )}
-
-                                        {/* Status */}
                                         {sm ? (
                                           <div className={`flex-1 min-w-0 px-2 py-1.5 ${sm.bg} flex items-center justify-center gap-1 backdrop-blur-sm`}>
                                             <span>{sm.icon}</span>
@@ -273,8 +256,6 @@ const DeleteErrorModal = ({ message, onClose }) => {
                                           <div className="flex-1 px-2 py-1.5 bg-gray-100/50" />
                                         )}
                                       </div>
-
-                                      {/* From → To route row */}
                                       {(from || to) ? (
                                         <div className="flex items-center justify-between px-2 py-1.5 bg-gray-500/5 border-t border-blue-100/60 text-[10px] backdrop-blur-sm gap-1">
                                           <div className="flex items-center gap-1 min-w-0 flex-1">
@@ -295,7 +276,6 @@ const DeleteErrorModal = ({ message, onClose }) => {
                                 })}
                               </div>
 
-                              {/* Status legend */}
                               {[...new Set(deliveryReceipts.map(dr => parseRef(dr).status).filter(Boolean))].length > 1 && (
                                 <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 pt-2 border-t border-gray-200/50">
                                   <span className="text-xs text-gray-400 mr-1">Status:</span>
@@ -316,7 +296,6 @@ const DeleteErrorModal = ({ message, onClose }) => {
                             </div>
                           )}
 
-                          {/* Sales */}
                           {saleRefs.length > 0 && (
                             <div>
                               <div className="flex items-center gap-1.5 mb-3">
@@ -330,29 +309,20 @@ const DeleteErrorModal = ({ message, onClose }) => {
                                 </span>
                               </div>
 
-                              {/* Sale Cards Grid */}
                               <div className="grid grid-cols-2 gap-3">
                                 {saleRefs.map((ref, j) => {
                                   const { label, qty, status, branch, company } = parseRef(ref);
                                   return (
                                     <div key={j} className="flex flex-col bg-white/70 backdrop-blur-sm rounded-lg border border-orange-200/60 shadow-sm overflow-visible">
-                                      {/* Main pill row */}
                                       <div className="flex w-full min-h-[2rem]">
-                                        {/* Reference number — FIXED: same treatment as DR */}
                                         <div className="flex-shrink-0 px-2 py-1.5 bg-orange-500/10 border-r border-orange-200/60" style={{ minWidth: '8rem', maxWidth: '14rem', overflowX: 'auto' }}>
-                                          <span className="block text-xs font-mono font-medium text-orange-800 whitespace-nowrap">
-                                            {label}
-                                          </span>
+                                          <span className="block text-xs font-mono font-medium text-orange-800 whitespace-nowrap">{label}</span>
                                         </div>
-
-                                        {/* Quantity */}
                                         {qty !== null && (
                                           <div className="w-16 flex-shrink-0 px-2 py-1.5 bg-orange-500/80 border-r border-orange-300/60 flex items-center justify-center">
                                             <span className="text-xs font-bold text-white text-center whitespace-nowrap">{qty} pcs</span>
                                           </div>
                                         )}
-
-                                        {/* Status */}
                                         {status ? (
                                           <div className={`flex-1 min-w-0 px-2 py-1.5 ${status === 'INVOICED' ? 'bg-purple-500/80' : 'bg-yellow-400/80'} flex items-center justify-center gap-1 backdrop-blur-sm`}>
                                             <span className="text-xs font-bold text-white whitespace-nowrap">
@@ -363,8 +333,6 @@ const DeleteErrorModal = ({ message, onClose }) => {
                                           <div className="flex-1 px-2 py-1.5 bg-gray-100/50" />
                                         )}
                                       </div>
-
-                                      {/* Branch + Company info row */}
                                       {(branch || company) ? (
                                         <div className="flex items-center justify-between px-2 py-1.5 bg-gray-500/5 border-t border-orange-100/60 text-[10px] backdrop-blur-sm gap-1">
                                           {branch && (
@@ -397,7 +365,6 @@ const DeleteErrorModal = ({ message, onClose }) => {
                   );
                 })}
 
-                {/* Footer note */}
                 <div className="bg-amber-500/10 border border-amber-200/60 rounded-xl p-4 mt-2 backdrop-blur-sm">
                   <p className="text-sm text-amber-800/90 leading-relaxed">
                     <strong>ℹ️ To delete this record,</strong> you must first void or cancel all the delivery receipts and sales listed above, then try again.
@@ -411,7 +378,6 @@ const DeleteErrorModal = ({ message, onClose }) => {
             )}
           </div>
 
-          {/* Footer */}
           <div className="flex-shrink-0 px-6 py-4 bg-gray-500/5 border-t border-gray-200/50 backdrop-blur-sm">
             <button onClick={onClose} className="w-full py-2.5 px-4 bg-gray-800/90 hover:bg-gray-900 text-white font-medium rounded-xl transition-colors text-sm backdrop-blur-sm">
               Close
@@ -456,6 +422,9 @@ const InventoryRecordsManagement = () => {
   const [toBranchFilter, setToBranchFilter] = useState('');
   const [startDateFilter, setStartDateFilter] = useState('');
   const [endDateFilter, setEndDateFilter] = useState('');
+
+  // ── Product filter state — must be declared before filteredInventories ──
+  const [productFilter, setProductFilter] = useState({ productId: '', variationId: '', productName: '' });
 
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('create');
@@ -571,7 +540,15 @@ const InventoryRecordsManagement = () => {
     const inventoryDate = new Date(inventory.dateProcessed);
     const matchesStartDate = !startDateFilter || inventoryDate >= new Date(startDateFilter);
     const matchesEndDate = !endDateFilter || inventoryDate <= new Date(endDateFilter + 'T23:59:59');
-    return matchesSearch && matchesStatus && matchesType && matchesFromWarehouse && matchesToWarehouse && matchesFromBranch && matchesToBranch && matchesStartDate && matchesEndDate;
+    const matchesProduct = !productFilter.productId || inventory.items?.some(item => {
+      const productMatch = item.product?.id === productFilter.productId;
+      if (!productMatch) return false;
+      if (productFilter.variationId) return item.variationId === productFilter.variationId;
+      return true;
+    });
+
+    return matchesSearch && matchesStatus && matchesType && matchesFromWarehouse && matchesToWarehouse
+      && matchesFromBranch && matchesToBranch && matchesStartDate && matchesEndDate && matchesProduct;
   });
 
   const sortedInventories = [...filteredInventories].sort((a, b) => {
@@ -909,6 +886,32 @@ const InventoryRecordsManagement = () => {
     setTypeFilter('ALL'); setFromWarehouseFilter(''); setToWarehouseFilter('');
     setFromBranchFilter(''); setToBranchFilter(''); setStartDateFilter('');
     setEndDateFilter(''); setSearchTerm(''); setStatusFilter('ALL');
+    setProductFilter({ productId: '', variationId: '', productName: '' });
+  };
+
+  // Derive the selected option ID for the dropdown from productFilter state
+  const selectedProductFilterOptionId = productFilter.variationId
+    ? productOptions.find(o => o.variationId === productFilter.variationId)?.id ?? ''
+    : productFilter.productId
+    ? productOptions.find(o => !o.variationId && o.parentProductId === productFilter.productId)?.id ?? ''
+    : '';
+
+  const handleProductFilterChange = (value) => {
+    if (!value) {
+      setProductFilter({ productId: '', variationId: '', productName: '' });
+      return;
+    }
+    const option = productOptions.find(o => o.id === value);
+    if (option) {
+      setProductFilter({
+        productId: option.parentProductId,
+        variationId: option.variationId ?? '',
+        productName: option.subLabel !== 'No variations'
+          ? `${option.fullName} — ${option.subLabel}`
+          : option.fullName,
+      });
+      setCurrentPage(1);
+    }
   };
 
   return (
@@ -943,6 +946,38 @@ const InventoryRecordsManagement = () => {
             endDateFilter={endDateFilter} setEndDateFilter={setEndDateFilter}
             warehouses={warehouses} branches={branches} onClearFilters={clearAllFilters}
           />
+
+          {/* ── Product Search Filter ── */}
+          <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Filter by Product / UPC / SKU
+                </label>
+                <VariationSearchableDropdown
+                  options={productOptions}
+                  value={selectedProductFilterOptionId}
+                  onChange={handleProductFilterChange}
+                  placeholder="Search by product name, UPC, or SKU..."
+                  hideLocationHint={true}
+                />
+                {productFilter.productName && (
+                  <p className="text-xs text-blue-600 mt-1">Filtering by: {productFilter.productName}</p>
+                )}
+              </div>
+              {productFilter.productId && (
+                <div>
+                  <button
+                    onClick={() => setProductFilter({ productId: '', variationId: '', productName: '' })}
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
+                  >
+                    <X size={14} />
+                    Clear Product Filter
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
 
           <InventoryTable
             inventories={currentInventories}

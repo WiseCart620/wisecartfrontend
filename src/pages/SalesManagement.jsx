@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import '../styles/invoice-print.css';
 import { api } from '../services/api';
 import toast, { Toaster } from 'react-hot-toast';
@@ -191,7 +191,10 @@ const SalesManagement = () => {
     startYear: new Date().getFullYear(),
     endYear: new Date().getFullYear(),
     startDate: '',
-    endDate: ''
+    endDate: '',
+    productId: '',
+    variationId: '',
+    productName: ''
   });
 
 
@@ -956,7 +959,10 @@ const SalesManagement = () => {
       branchId: '',
       status: '',
       startDate: '',
-      endDate: ''
+      endDate: '',
+      productId: '',
+      variationId: '',
+      productName: ''
     });
     setStatusFilter('ALL');
     setSearchTerm('');
@@ -1031,6 +1037,16 @@ const SalesManagement = () => {
       }
     }
 
+    if (filterData.productId) {
+      const hasProduct = sale.items?.some(item => {
+        const productMatch = item.product?.id === filterData.productId;
+        if (!productMatch) return false;
+        if (filterData.variationId) return item.variation?.id === filterData.variationId;
+        return true;
+      });
+      if (!hasProduct) return false;
+    }
+
     return true;
   }));
 
@@ -1055,6 +1071,34 @@ const SalesManagement = () => {
       .filter(b => b.company?.id === filterData.companyId)
       .map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }))
     : branchOptions;
+
+
+  const allProductOptions = useMemo(() => products.flatMap(p => {
+    if (p.variations && p.variations.length > 0) {
+      return p.variations.map(v => ({
+        id: `${p.id}_${v.id}`,
+        parentProductId: p.id,
+        variationId: v.id,
+        name: p.productName,
+        fullName: p.productName,
+        subLabel: v.combinationDisplay || 'Variation',
+        upc: v.upc || '',
+        sku: v.sku || '',
+        isVariation: true,
+      }));
+    }
+    return [{
+      id: `prod_${p.id}`,
+      parentProductId: p.id,
+      variationId: null,
+      name: p.productName,
+      fullName: p.productName,
+      subLabel: 'No variations',
+      upc: p.upc || '',
+      sku: p.sku || '',
+      isVariation: false,
+    }];
+  }), [products]);
 
   const productOptions = products.flatMap(p => {
     const hasVariations = p.variations && p.variations.length > 0;
@@ -1237,11 +1281,53 @@ const SalesManagement = () => {
                   onChange={(e) => setFilterData({ ...filterData, endDate: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-              </div>
+</div>
+            </div>
+
+            {/* Third Row: Product Search */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-gray-100">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Filter by Product / UPC / SKU
+                  </label>
+                  <VariationSearchableDropdown
+                    options={allProductOptions}
+                    value={
+                      filterData.variationId
+                        ? allProductOptions.find(o => o.variationId === filterData.variationId)?.id ?? ''
+                        : filterData.productId
+                          ? allProductOptions.find(o => !o.variationId && o.parentProductId === filterData.productId)?.id ?? ''
+                          : ''
+                    }
+                    onChange={(value) => {
+                      if (!value) {
+                        setFilterData(prev => ({ ...prev, productId: '', variationId: '', productName: '' }));
+                        return;
+                      }
+                      const option = allProductOptions.find(o => o.id === value);
+                      if (option) {
+                        setFilterData(prev => ({
+                          ...prev,
+                          productId: option.parentProductId,
+                          variationId: option.variationId ?? '',
+                          productName: option.subLabel !== 'No variations'
+                            ? `${option.fullName} — ${option.subLabel}`
+                            : option.fullName,
+                        }));
+                        setCurrentPage(1);
+                      }
+                    }}
+                    placeholder="Search by product name, UPC, or SKU..."
+                    hideLocationHint={true}
+                  />
+                  {filterData.productName && (
+                    <p className="text-xs text-blue-600 mt-1">Filtering by: {filterData.productName}</p>
+                  )}
+                </div>
             </div>
 
             {/* Filter Actions */}
-            {(filterData.companyId || filterData.branchId || filterData.startDate || filterData.endDate || searchTerm || statusFilter !== 'ALL') && (
+            {(filterData.companyId || filterData.branchId || filterData.startDate || filterData.endDate || filterData.productId || searchTerm || statusFilter !== 'ALL') && (
               <div className="flex justify-end pt-2">
                 <button
                   onClick={handleResetFilter}
