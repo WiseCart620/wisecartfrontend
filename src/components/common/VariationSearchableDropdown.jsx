@@ -14,7 +14,7 @@ const VariationSearchableDropdown = ({
   branchStocks = {},
   loadingStocks = {},
   onAddProduct,
-  hideLocationHint = false  // ← new: pass true to suppress "Select a location" message
+  hideLocationHint = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -79,27 +79,18 @@ const VariationSearchableDropdown = ({
       ? `${index}_${option.parentProductId}_${option.variationId}_${locationId}`
       : `${index}_${option.parentProductId}_${locationId}`;
 
-    if (locationType === 'warehouse') {
-      return warehouseStocks[stockKey];
-    } else if (locationType === 'branch') {
-      return branchStocks[stockKey];
-    }
-
+    if (locationType === 'warehouse') return warehouseStocks[stockKey];
+    if (locationType === 'branch') return branchStocks[stockKey];
     return null;
   };
 
   const stockInfo = selectedOption ? getStockInfo(selectedOption) : null;
 
   let locationId = null;
-  if (formData?.fromWarehouseId) {
-    locationId = formData.fromWarehouseId;
-  } else if (formData?.fromBranchId) {
-    locationId = formData.fromBranchId;
-  } else if (formData?.toWarehouseId) {
-    locationId = formData.toWarehouseId;
-  } else if (formData?.toBranchId) {
-    locationId = formData.toBranchId;
-  }
+  if (formData?.fromWarehouseId) locationId = formData.fromWarehouseId;
+  else if (formData?.fromBranchId) locationId = formData.fromBranchId;
+  else if (formData?.toWarehouseId) locationId = formData.toWarehouseId;
+  else if (formData?.toBranchId) locationId = formData.toBranchId;
 
   const isLoading = selectedOption
     ? loadingStocks[`${index}_${selectedOption.parentProductId}_${selectedOption.variationId || ''}_${locationId || ''}`]
@@ -115,6 +106,7 @@ const VariationSearchableDropdown = ({
 
   return (
     <div ref={dropdownRef} className="relative">
+      {/* Trigger button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -132,6 +124,7 @@ const VariationSearchableDropdown = ({
         <ChevronDown size={20} className={`text-gray-400 transition-transform ml-2 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
+      {/* Dropdown list */}
       {isOpen && (
         <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-hidden">
           <div className="p-3 border-b border-gray-200">
@@ -155,13 +148,10 @@ const VariationSearchableDropdown = ({
               </div>
             ) : (
               filteredOptions.map((option, optionIndex) => {
-                const isAlreadySelected = formData?.items?.some(
-                  (item, idx) => {
-                    if (idx === index) return false;
-                    return item.productId === option.parentProductId &&
-                      item.variationId === option.variationId;
-                  }
-                );
+                const isAlreadySelected = formData?.items?.some((item, idx) => {
+                  if (idx === index) return false;
+                  return item.productId === option.parentProductId && item.variationId === option.variationId;
+                });
 
                 return (
                   <button
@@ -176,10 +166,10 @@ const VariationSearchableDropdown = ({
                     }}
                     disabled={isAlreadySelected}
                     className={`w-full px-4 py-3 text-left border-b border-gray-100 transition text-sm ${isAlreadySelected
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : value === option.id
-                        ? 'bg-blue-50 text-blue-700 font-medium'
-                        : 'text-gray-900 hover:bg-blue-50'
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : value === option.id
+                          ? 'bg-blue-50 text-blue-700 font-medium'
+                          : 'text-gray-900 hover:bg-blue-50'
                       }`}
                   >
                     <div className="flex flex-col">
@@ -201,37 +191,66 @@ const VariationSearchableDropdown = ({
         </div>
       )}
 
+      {/* Selected product info card */}
       {selectedOption && (
-        <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
           <div className="text-xs space-y-2">
-            {/* Product Details Grid */}
-            <div className="grid grid-cols-2 gap-y-1 gap-x-4">
-              <div className="flex items-center">
-                <span className="text-gray-500 w-16 flex-shrink-0">Product:</span>
-                <span className="font-medium truncate ml-1">{selectedOption.fullName}</span>
-              </div>
 
-              {selectedOption.subLabel && selectedOption.subLabel !== 'No variations' && (
+            {/* ── Top row: product details (left) + Add to List button (right) ── */}
+            <div className="flex items-start justify-between gap-3">
+              {/* Product details grid */}
+              <div className="grid grid-cols-2 gap-y-1 gap-x-4 flex-1">
                 <div className="flex items-center">
-                  <span className="text-gray-500 w-16 flex-shrink-0">Variant:</span>
-                  <span className="font-medium text-blue-600 truncate ml-1">{selectedOption.subLabel}</span>
+                  <span className="text-gray-500 w-16 flex-shrink-0">Product:</span>
+                  <span className="font-medium truncate ml-1">{selectedOption.fullName}</span>
                 </div>
+
+                {selectedOption.subLabel && selectedOption.subLabel !== 'No variations' && (
+                  <div className="flex items-center">
+                    <span className="text-gray-500 w-16 flex-shrink-0">Variant:</span>
+                    <span className="font-medium text-blue-600 truncate ml-1">{selectedOption.subLabel}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center">
+                  <span className="text-gray-500 w-16 flex-shrink-0">SKU:</span>
+                  <span className="font-medium truncate ml-1">{selectedOption.sku || 'N/A'}</span>
+                </div>
+
+                <div className="flex items-center">
+                  <span className="text-gray-500 w-16 flex-shrink-0">UPC:</span>
+                  <span className="font-medium truncate ml-1">{selectedOption.upc || 'N/A'}</span>
+                </div>
+
+                {/* Product type badge sits in the grid area */}
+                <div className="col-span-2 pt-1">
+                  {selectedOption.isVariation ? (
+                    <span className="inline-flex px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                      Product with Variations
+                    </span>
+                  ) : (
+                    <span className="inline-flex px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">
+                      Product (No Variations)
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Add to List button — right side, aligned to top */}
+              {onAddProduct && (
+                <button
+                  type="button"
+                  onClick={onAddProduct}
+                  className="flex-shrink-0 self-start py-5 px-7 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition flex items-center gap-2"                >
+                  <Package size={13} />
+                  Add to List
+                </button>
               )}
-
-              <div className="flex items-center">
-                <span className="text-gray-500 w-16 flex-shrink-0">SKU:</span>
-                <span className="font-medium truncate ml-1">{selectedOption.sku || 'N/A'}</span>
-              </div>
-
-              <div className="flex items-center">
-                <span className="text-gray-500 w-16 flex-shrink-0">UPC:</span>
-                <span className="font-medium truncate ml-1">{selectedOption.upc || 'N/A'}</span>
-              </div>
             </div>
 
             {/* All Company Prices */}
             {selectedOption.allCompanyPrices && selectedOption.allCompanyPrices.length > 0 && (
-              <div className="pt-2 border-t border-gray-200">
+              <div className="pt-2 border-t border-blue-200">
                 <details className="group">
                   <summary className="flex items-center justify-between cursor-pointer list-none">
                     <div className="text-gray-700 font-medium">All Company Prices ({selectedOption.allCompanyPrices.length})</div>
@@ -253,9 +272,9 @@ const VariationSearchableDropdown = ({
               </div>
             )}
 
-            {/* Stock Information Section */}
+            {/* Stock Information */}
             {(formData?.fromWarehouseId || formData?.fromBranchId || formData?.toWarehouseId || formData?.toBranchId) && (stockInfo || isLoading) && (
-              <div className="pt-2 border-t border-gray-200">
+              <div className="pt-2 border-t border-blue-200">
                 <div className="flex items-center gap-1 mb-2">
                   <Package size={12} className="text-gray-500" />
                   <span className="text-gray-700 font-medium">{getLocationName()} Stock</span>
@@ -266,7 +285,7 @@ const VariationSearchableDropdown = ({
                     <span className="text-gray-600 text-xs">Available:</span>
                     {isLoading ? (
                       <div className="flex items-center gap-1 text-blue-600 text-xs">
-                        <div className="w-2 h-2 border border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-2 h-2 border border-blue-600 border-t-transparent rounded-full animate-spin" />
                       </div>
                     ) : stockInfo ? (
                       <span className="font-semibold text-green-600">
@@ -281,7 +300,7 @@ const VariationSearchableDropdown = ({
                     <span className="text-gray-600 text-xs">Total:</span>
                     {isLoading ? (
                       <div className="flex items-center gap-1 text-blue-600 text-xs">
-                        <div className="w-2 h-2 border border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-2 h-2 border border-blue-600 border-t-transparent rounded-full animate-spin" />
                       </div>
                     ) : stockInfo ? (
                       <span className="font-semibold text-gray-700">
@@ -298,7 +317,7 @@ const VariationSearchableDropdown = ({
                     <div className="flex items-center justify-between p-2 bg-white rounded border border-orange-200">
                       <span className="text-gray-600 text-xs">Reserved:</span>
                       <span className="font-semibold text-orange-600">
-                        {(stockInfo.reservedQuantity).toLocaleString('en-US')}
+                        {stockInfo.reservedQuantity.toLocaleString('en-US')}
                       </span>
                     </div>
                   </div>
@@ -306,41 +325,15 @@ const VariationSearchableDropdown = ({
               </div>
             )}
 
-            {/* "Select a location" hint — hidden when hideLocationHint=true */}
+            {/* Select a location hint */}
             {!hideLocationHint && !(formData?.fromWarehouseId || formData?.fromBranchId || formData?.toWarehouseId || formData?.toBranchId) && (
-              <div className="pt-2 border-t border-gray-200">
+              <div className="pt-2 border-t border-blue-200">
                 <div className="text-xs text-yellow-600 italic">
                   Select a location to see stock information
                 </div>
               </div>
             )}
 
-            {/* Product Type Badge */}
-            <div className="pt-1">
-              {selectedOption.isVariation ? (
-                <span className="inline-flex px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                  Product with Variations
-                </span>
-              ) : (
-                <span className="inline-flex px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">
-                  Product (No Variations)
-                </span>
-              )}
-            </div>
-
-            {/* Add Product Button */}
-            {onAddProduct && (
-              <div className="pt-2 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={onAddProduct}
-                  className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition flex items-center justify-center gap-2"
-                >
-                  <Package size={14} />
-                  Add to List
-                </button>
-              </div>
-            )}
           </div>
         </div>
       )}
