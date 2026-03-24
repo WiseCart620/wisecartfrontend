@@ -295,6 +295,29 @@ const DeliveryFormModal = ({
     const totalDelivered = formData.items.reduce((s, it) => s + (parseInt(it.deliveredQty) || 0), 0);
     const isDeliveredStatus = formData.status === 'DELIVERED';
 
+
+    const handleFormArrowNav = (e) => {
+        if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+
+        const focusable = Array.from(
+            e.currentTarget.querySelectorAll(
+                'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])'
+            )
+        ).filter(el => el.offsetParent !== null);
+
+        const current = document.activeElement;
+        const index = focusable.indexOf(current);
+        if (index === -1) return;
+
+        if (e.key === 'ArrowDown' && index < focusable.length - 1) {
+            e.preventDefault();
+            focusable[index + 1].focus();
+        } else if (e.key === 'ArrowUp' && index > 0) {
+            e.preventDefault();
+            focusable[index - 1].focus();
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6">
             <div className="bg-white rounded-2xl max-w-[65vw] w-full max-h-[95vh] overflow-y-auto shadow-2xl">
@@ -307,7 +330,7 @@ const DeliveryFormModal = ({
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-8">
+                <form onSubmit={handleSubmit} onKeyDown={handleFormArrowNav} className="p-8">
                     <div className="space-y-6">
 
                         {/* Row 1: Branch and Warehouse */}
