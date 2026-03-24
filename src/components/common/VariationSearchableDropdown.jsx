@@ -280,7 +280,12 @@ const VariationSearchableDropdown = ({
               {onAddProduct && (
                 <button
                   type="button"
-                  onClick={onAddProduct}
+                  onClick={() => {
+                    onAddProduct();
+                    setIsOpen(true);
+                    setSearchTerm('');
+                    setHighlightedIndex(-1);
+                  }}
                   className="flex-shrink-0 self-start py-5 px-7 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition flex items-center gap-2"                >
                   <Package size={13} />
                   Add to List
