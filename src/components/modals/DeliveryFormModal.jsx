@@ -297,7 +297,9 @@ const DeliveryFormModal = ({
 
 
     const handleFormArrowNav = (e) => {
-        if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+        if (!['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+        if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && e.target.tagName === 'INPUT' && e.target.type === 'text') return;
+        if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && e.target.tagName === 'TEXTAREA') return;
 
         const focusable = Array.from(
             e.currentTarget.querySelectorAll(
@@ -309,10 +311,10 @@ const DeliveryFormModal = ({
         const index = focusable.indexOf(current);
         if (index === -1) return;
 
-        if (e.key === 'ArrowDown' && index < focusable.length - 1) {
+        if ((e.key === 'ArrowDown' || e.key === 'ArrowRight') && index < focusable.length - 1) {
             e.preventDefault();
             focusable[index + 1].focus();
-        } else if (e.key === 'ArrowUp' && index > 0) {
+        } else if ((e.key === 'ArrowUp' || e.key === 'ArrowLeft') && index > 0) {
             e.preventDefault();
             focusable[index - 1].focus();
         }
