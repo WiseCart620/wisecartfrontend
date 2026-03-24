@@ -19,6 +19,8 @@ const VariationSearchableDropdown = ({
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
+  const listRef = useRef(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -131,16 +133,52 @@ const VariationSearchableDropdown = ({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <input
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setHighlightedIndex(prev => {
+                      const next = prev < filteredOptions.length - 1 ? prev + 1 : 0;
+                      listRef.current?.children[next]?.scrollIntoView({ block: 'nearest' });
+                      return next;
+                    });
+                  } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setHighlightedIndex(prev => {
+                      const next = prev > 0 ? prev - 1 : filteredOptions.length - 1;
+                      listRef.current?.children[next]?.scrollIntoView({ block: 'nearest' });
+                      return next;
+                    });
+                  } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const option = filteredOptions[highlightedIndex];
+                    const isAlreadySelected = formData?.items?.some((item, idx) => {
+                      if (idx === index) return false;
+                      return item.productId === option?.parentProductId && item.variationId === option?.variationId;
+                    });
+                    if (option && !isAlreadySelected) {
+                      onChange(option.id);
+                      setIsOpen(false);
+                      setSearchTerm('');
+                      setHighlightedIndex(-1);
+                    }
+                  } else if (e.key === 'Escape') {
+                    setIsOpen(false);
+                    setHighlightedIndex(-1);
+                  }
+                }}
                 type="text"
                 placeholder="Search by name, UPC, SKU, or variation..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setHighlightedIndex(-1);
+                }}
                 className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                 autoFocus
               />
             </div>
           </div>
-          <div className="overflow-y-auto max-h-80">
+          <div ref={listRef} className="overflow-y-auto max-h-80">
             {filteredOptions.length === 0 ? (
               <div className="px-4 py-6 text-center">
                 <div className="text-gray-500 text-sm mb-2">No products found</div>
@@ -166,7 +204,9 @@ const VariationSearchableDropdown = ({
                     }}
                     disabled={isAlreadySelected}
                     className={`w-full px-4 py-3 text-left border-b border-gray-100 transition text-sm ${isAlreadySelected
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : optionIndex === highlightedIndex
+                        ? 'bg-blue-100 text-blue-800 font-medium'
                         : value === option.id
                           ? 'bg-blue-50 text-blue-700 font-medium'
                           : 'text-gray-900 hover:bg-blue-50'
