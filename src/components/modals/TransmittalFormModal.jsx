@@ -472,14 +472,8 @@ const TransmittalFormModal = ({
                             </thead>
                             <tbody className="bg-white">
                                 {(transmittal.items || []).map((item, i) => {
-                                    let description = '';
-                                    if (item.product?.sku && item.product.sku !== '' && item.product.sku !== 'N/A') {
-                                        description = item.product.sku;
-                                    } else if (item.sku && item.sku !== '' && item.sku !== 'N/A') {
-                                        description = item.sku;
-                                    }
                                     const productName = item.product?.productName || item.productName || '';
-                                    description += description ? ` - ${productName}` : productName;
+                                    let description = productName;
                                     if (item.variationDisplay && item.variationDisplay !== '' &&
                                         item.variationDisplay !== 'No variations' &&
                                         !productName.includes(item.variationDisplay)) {
@@ -669,8 +663,8 @@ const TransmittalFormModal = ({
                                                     setBranchSearch('');
                                                 }}
                                                 className={`px-4 py-2.5 cursor-pointer hover:bg-blue-50 text-sm ${String(formData.branchId) === String(b.id)
-                                                        ? 'bg-blue-50 font-semibold text-blue-700'
-                                                        : 'text-gray-800'
+                                                    ? 'bg-blue-50 font-semibold text-blue-700'
+                                                    : 'text-gray-800'
                                                     }`}
                                             >
                                                 <div className="font-medium">{b.branchName}</div>

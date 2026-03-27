@@ -302,14 +302,8 @@ const PrintableTransmittal = ({ transmittal }) => {
                         </thead>
                         <tbody className="bg-white">
                             {(transmittal.items || []).map((item, i) => {
-                                let description = '';
-                                if (item.product?.sku && item.product.sku !== '' && item.product.sku !== 'N/A') {
-                                    description = item.product.sku;
-                                } else if (item.sku && item.sku !== '' && item.sku !== 'N/A') {
-                                    description = item.sku;
-                                }
                                 const productName = item.product?.productName || item.productName || '';
-                                description += description ? ` - ${productName}` : productName;
+                                let description = productName;
                                 if (item.variationDisplay && item.variationDisplay !== '' &&
                                     item.variationDisplay !== 'No variations' &&
                                     !productName.includes(item.variationDisplay)) {
