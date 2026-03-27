@@ -484,7 +484,7 @@ const TransmittalFormModal = ({
                                             <td className="px-2 py-2 text-base text-gray-900">{i + 1}</td>
                                             <td className="px-2 py-2 text-base font-mono text-gray-900">{item.upc || item.product?.upc || '—'}</td>
                                             <td className="px-2 py-2 text-gray-900">
-                                                <div className="font-medium text-[10.5px]">
+                                                <div className="font-medium text-[11px]">
                                                     {description}
                                                 </div>
                                             </td>
