@@ -14,6 +14,7 @@ import NotFound from './pages/NotFound';
 import Layout from './components/layout/Layout';
 import Supplier from './pages/SupplierManagement';
 import ProcurementManagement from './pages/ProcurementManagement/index.jsx';
+import TransmittalManagement from './pages/TransmittalManagement';
 import { AuthProvider, AuthLoading, ProtectedRoute, AdminRoute } from './context/AuthContext';
 import { startActivityTracking, stopActivityTracking } from './services/api';
 import { useEffect } from 'react';
@@ -56,6 +57,14 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <ProcurementManagement />
+                </Layout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/transmittals" element={
+              <ProtectedRoute>
+                <Layout>
+                  <TransmittalManagement />
                 </Layout>
               </ProtectedRoute>
             } />

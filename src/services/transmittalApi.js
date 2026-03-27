@@ -1,0 +1,53 @@
+// src/services/transmittalApi.js
+// Mirrors the pattern used in src/services/api.js for deliveries.
+// Replace BASE_URL with your actual backend base if different.
+
+import { api } from './api';
+
+export const transmittalApi = {
+
+  /** Fetch all transmittals (newest first) */
+  getAll: () => api.get('/transmittals'),
+
+  /** Fetch a single transmittal with full item details */
+  getById: (id) => api.get(`/transmittals/${id}`),
+
+  /** Get the next auto-generated control number from the server */
+  getNextControlNumber: () => api.get('/transmittals/next-control-number'),
+
+  /**
+   * Create a new transmittal.
+   * @param {Object} payload  — matches TransmittalRequest Java DTO
+   */
+  create: (payload) => api.post('/transmittals', payload),
+
+  /**
+   * Update an existing transmittal.
+   * @param {number} id
+   * @param {Object} payload  — matches TransmittalRequest Java DTO
+   */
+  update: (id, payload) => api.put(`/transmittals/${id}`, payload),
+
+  /** Delete a transmittal */
+  delete: (id) => api.delete(`/transmittals/${id}`),
+};
+
+/**
+ * Convert the frontend formData shape into the TransmittalRequest DTO shape
+ * expected by the Spring Boot backend.
+ */
+export const toTransmittalRequest = (formData) => ({
+  controlNumber: formData.controlNumber || null,
+  date: formData.date ? new Date(formData.date).toISOString() : new Date().toISOString(),
+  preparedBy: formData.preparedBy,
+  branchId: formData.branchId ? Number(formData.branchId) : null,
+  remarks: formData.remarks || null,
+  items: (formData.items || []).map(item => ({
+    productId:    item.parentProductId,
+    variationId:  item.variationId || null,
+    unitsPerCase: item.unitsPerCase ? parseInt(item.unitsPerCase, 10) : null,
+    caseQty:      item.caseQty      ? parseInt(item.caseQty,      10) : null,
+    uom:          item.uom  || null,
+    upc:          item.upc  || null,
+  })),
+});
