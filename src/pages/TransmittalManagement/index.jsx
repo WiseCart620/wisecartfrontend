@@ -313,8 +313,10 @@ const PrintableTransmittal = ({ transmittal }) => {
                                     <tr key={i} className="align-top">
                                         <td className="px-2 py-2 text-base text-gray-900">{i + 1}</td>
                                         <td className="px-2 py-2 text-base font-mono text-gray-900">{item.upc || item.product?.upc || '—'}</td>
-                                        <td className="px-2 py-2 text-base text-gray-900">
-                                            <div className="font-medium">{description}</div>
+                                        <td className="px-2 py-2 text-gray-900">
+                                            <div className="font-medium text-sm">
+                                                {description}
+                                            </div>
                                         </td>
                                         <td className="px-2 py-2 text-base text-gray-900">{item.uom || 'pcs'}</td>
                                         <td className="px-2 py-2 text-base text-right text-gray-900">{item.unitsPerCase || '—'}</td>
