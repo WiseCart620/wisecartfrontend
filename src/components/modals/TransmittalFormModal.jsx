@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Printer, Save, Package, Plus } from 'lucide-react';
 import VariationSearchableDropdown from '../common/VariationSearchableDropdown';
 
+
 const TransmittalFormModal = ({
     mode = 'create',
     transmittal = null,
@@ -25,7 +26,8 @@ const TransmittalFormModal = ({
         remarks: '',
         items: [],
     });
-
+    const [branchSearch, setBranchSearch] = useState('');
+    const [showBranchDropdown, setShowBranchDropdown] = useState(false);
     const [formData, setFormData] = useState(emptyForm);
     const [view, setView] = useState('form');
     const [selectedProductForAdd, setSelectedProductForAdd] = useState('');
@@ -632,16 +634,61 @@ const TransmittalFormModal = ({
                     {/* ── Branch ── */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Deliver To (Branch) *</label>
-                        <select
-                            value={formData.branchId}
-                            onChange={e => handleBranchChange(e.target.value)}
-                            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                        >
-                            <option value="">Select Branch...</option>
-                            {branches.map(b => (
-                                <option key={b.id} value={b.id}>{b.branchName} ({b.branchCode})</option>
-                            ))}
-                        </select>
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={showBranchDropdown ? branchSearch : formData.branchName}
+                                onChange={e => {
+                                    setBranchSearch(e.target.value);
+                                    setShowBranchDropdown(true);
+                                    if (!e.target.value) {
+                                        setFormData(p => ({ ...p, branchId: '', branchName: '', branchAddress: '' }));
+                                    }
+                                }}
+                                onFocus={() => {
+                                    setBranchSearch('');
+                                    setShowBranchDropdown(true);
+                                }}
+                                onBlur={() => setTimeout(() => setShowBranchDropdown(false), 150)}
+                                placeholder="Search branch by name or code..."
+                                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            />
+                            {showBranchDropdown && (
+                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                    {branches
+                                        .filter(b =>
+                                            b.branchName.toLowerCase().includes(branchSearch.toLowerCase()) ||
+                                            b.branchCode?.toLowerCase().includes(branchSearch.toLowerCase())
+                                        )
+                                        .map(b => (
+                                            <div
+                                                key={b.id}
+                                                onMouseDown={() => {
+                                                    handleBranchChange(String(b.id));
+                                                    setShowBranchDropdown(false);
+                                                    setBranchSearch('');
+                                                }}
+                                                className={`px-4 py-2.5 cursor-pointer hover:bg-blue-50 text-sm ${String(formData.branchId) === String(b.id)
+                                                        ? 'bg-blue-50 font-semibold text-blue-700'
+                                                        : 'text-gray-800'
+                                                    }`}
+                                            >
+                                                <div className="font-medium">{b.branchName}</div>
+                                                {b.branchCode && (
+                                                    <div className="text-xs text-gray-400">{b.branchCode}</div>
+                                                )}
+                                            </div>
+                                        ))
+                                    }
+                                    {branches.filter(b =>
+                                        b.branchName.toLowerCase().includes(branchSearch.toLowerCase()) ||
+                                        b.branchCode?.toLowerCase().includes(branchSearch.toLowerCase())
+                                    ).length === 0 && (
+                                            <div className="px-4 py-3 text-sm text-gray-400 text-center">No branches found</div>
+                                        )}
+                                </div>
+                            )}
+                        </div>
                         {formData.branchName && (
                             <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
                                 <span className="font-semibold">{formData.branchName}</span>
