@@ -87,7 +87,15 @@ const DeliveryManagement = () => {
   const currentDeliveries = filteredDeliveries.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredDeliveries.length / itemsPerPage);
 
-  // ── All existing delivery handlers (unchanged) ─────────────────────────────
+  // ── Helper: reload data and clamp page if it no longer exists ─────────────
+  const reloadAndClampPage = async (pageToKeep) => {
+    await loadData();
+    const newTotal = filteredDeliveries.length; // will update after re-render, so use a safe clamp
+    const newTotalPages = Math.max(1, Math.ceil(newTotal / itemsPerPage));
+    setCurrentPage(prev => Math.min(prev, Math.max(1, pageToKeep ?? prev)));
+  };
+
+  // ── All existing delivery handlers ─────────────────────────────────────────
   const handleOpenModal = async (mode, delivery = null) => {
     if (mode === 'edit' && delivery?.status === 'DELIVERED') {
       alert('Cannot edit a delivery that has already been DELIVERED.');
@@ -181,7 +189,14 @@ const DeliveryManagement = () => {
       if (result.success) {
         alert(`Delivery ${modalState.mode === 'create' ? 'created' : 'updated'} successfully!`);
         handleCloseModal();
-        setCurrentPage(1);
+        // Fetch fresh data from the server
+        await loadData();
+        // On create → go to page 1 so the new record is visible.
+        // On edit (e.g. status change) → stay on the same page.
+        if (modalState.mode === 'create') {
+          setCurrentPage(1);
+        }
+        // For edit, currentPage is left untouched — user stays where they were.
       } else {
         alert(result.error || 'Failed to save delivery');
       }
@@ -206,7 +221,14 @@ const DeliveryManagement = () => {
       const result = await deleteDelivery(id);
       if (result.success) {
         alert('Delivery deleted successfully');
-        if (filteredDeliveries.length % itemsPerPage === 1 && currentPage > 1) setCurrentPage(currentPage - 1);
+        await loadData();
+        // If we deleted the last item on a non-first page, step back one page
+        const newFilteredCount = filteredDeliveries.length - 1;
+        const newTotalPages = Math.max(1, Math.ceil(newFilteredCount / itemsPerPage));
+        if (currentPage > newTotalPages) {
+          setCurrentPage(newTotalPages);
+        }
+        // Otherwise stay on the same page
       } else {
         alert(result.error || 'Failed to delete delivery');
       }
@@ -229,6 +251,8 @@ const DeliveryManagement = () => {
       if (result.success) {
         alert('Delivery cancelled successfully. All stocks have been reverted.');
         setCancelModal({ show: false, delivery: null, remarks: '' });
+        // Fetch fresh data and stay on the same page
+        await loadData();
       } else {
         alert(result.error || 'Failed to cancel delivery');
       }
