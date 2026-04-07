@@ -42,6 +42,38 @@ const DeliveryFormModal = ({
     const [selectedProductForAdd, setSelectedProductForAdd] = useState('');
     const [branchStocks, setBranchStocks] = useState({});
 
+    // ── Helper: convert any date string to a valid datetime-local value ──
+    // Ensures the year is always exactly 4 digits (YYYY-MM-DDTHH:mm).
+    const toDatetimeLocal = (value) => {
+        if (!value) return '';
+        let clean = value.replace('Z', '').split('.')[0].split('+')[0];
+        if (clean.length > 16) clean = clean.substring(0, 16);
+        const dashIdx = clean.indexOf('-');
+        if (dashIdx > 4) {
+            const year = clean.substring(0, dashIdx).slice(-4);
+            clean = year + clean.substring(dashIdx);
+        }
+        if (dashIdx > 0 && dashIdx < 4) {
+            clean = clean.substring(0, dashIdx).padStart(4, '0') + clean.substring(dashIdx);
+        }
+        return clean;
+    };
+
+    // ── Helper: sanitize a datetime-local input's onChange value ─────────
+    // The browser fires onChange continuously as the user edits each field
+    // segment. We clamp the year to 4 digits before persisting to state.
+    const sanitizeDateInput = (rawValue) => {
+        if (!rawValue) return '';
+        // rawValue from datetime-local is always "YYYY-MM-DDTHH:mm"
+        const dashIdx = rawValue.indexOf('-');
+        if (dashIdx > 4) {
+            // Year has grown beyond 4 digits — keep only the last 4
+            const year = rawValue.substring(0, dashIdx).slice(-4);
+            return year + rawValue.substring(dashIdx);
+        }
+        return rawValue;
+    };
+
     useEffect(() => {
         if (mode === 'create') {
             const now = new Date();
@@ -657,8 +689,8 @@ const DeliveryFormModal = ({
                                 </label>
                                 <input
                                     type="datetime-local"
-                                    value={formData.datePrepared ? (() => { let c = formData.datePrepared.replace('Z', '').split('.')[0].split('+')[0]; if (c.length > 16) c = c.substring(0, 16); return c; })() : ''}
-                                    onChange={(e) => { if (mode === 'create' || (mode === 'edit' && formData.status === 'PREPARING')) setFormData({ ...formData, datePrepared: e.target.value + ':00' }); }}
+                                    value={toDatetimeLocal(formData.datePrepared)}
+                                    onChange={(e) => { if (mode === 'create' || (mode === 'edit' && formData.status === 'PREPARING')) setFormData({ ...formData, datePrepared: sanitizeDateInput(e.target.value) + ':00' }); }}
                                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-blue-500 transition ${mode === 'edit' && formData.status !== 'PREPARING' ? 'border-gray-200 bg-gray-100 cursor-not-allowed' : 'border-gray-300 focus:ring-blue-500 bg-white'}`}
                                     disabled={mode === 'edit' && formData.status !== 'PREPARING'}
                                     required
@@ -672,8 +704,8 @@ const DeliveryFormModal = ({
                                 <label className="block text-sm font-medium text-gray-700 mb-3">Date Delivered *</label>
                                 <input
                                     type="datetime-local"
-                                    value={formData.dateDelivered ? (() => { let c = formData.dateDelivered.replace('Z', '').split('.')[0].split('+')[0]; if (c.length > 16) c = c.substring(0, 16); return c; })() : ''}
-                                    onChange={(e) => setFormData({ ...formData, dateDelivered: e.target.value + ':00' })}
+                                    value={toDatetimeLocal(formData.dateDelivered)}
+                                    onChange={(e) => setFormData({ ...formData, dateDelivered: sanitizeDateInput(e.target.value) + ':00' })}
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white"
                                     required
                                 />
