@@ -811,10 +811,33 @@ const SalesManagement = () => {
         }
 
         invoiceData.adjustments = invoiceData.adjustments || [];
-        if (invoiceData.branchId) {
-          const branch = branches.find(b => b.id === invoiceData.branchId);
-          if (branch && branch.tin) {
-            invoiceData.tin = branch.tin;
+
+        if (filterData.branchId) {
+          const branch = branches.find(b => b.id === filterData.branchId);
+          if (branch) {
+            invoiceData.soldTo = branch.branchName;
+            invoiceData.registeredName = branch.branchName;
+            invoiceData.tin = branch.tin || invoiceData.tin || 'N/A';
+            invoiceData.businessAddress =
+              branch.fullAddress ||
+              [branch.address, branch.city, branch.province].filter(Boolean).join(', ') ||
+              invoiceData.businessAddress ||
+              'N/A';
+          }
+        } else {
+          const company = companies.find(c => c.id === filterData.companyId);
+          if (company) {
+            invoiceData.soldTo = company.companyName;
+            invoiceData.registeredName = company.companyName;
+            invoiceData.tin = company.tin || invoiceData.tin || 'N/A';
+            invoiceData.businessAddress =
+              company.fullAddress ||
+              [company.address, company.city, company.province]
+                .filter(Boolean)
+                .join(', ') ||
+              company.businessAddress ||
+              invoiceData.businessAddress ||
+              'N/A';
           }
         }
 

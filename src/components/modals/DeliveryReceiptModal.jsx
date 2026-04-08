@@ -199,25 +199,25 @@ const DeliveryReceiptModal = ({
 
           {/* Items Table */}
           <div className="-mt-3 leading-none">
-            <table className="w-full border-collapse" style={{ minHeight: '175mm' }}>
+            <table className="w-full border-collapse">
               <colgroup>
-                <col style={{ width: '12%' }} />
-                <col style={{ width: '9%' }} />
-                <col style={{ width: '51%' }} />
-                <col style={{ width: '28%' }} />
+                <col style={{ width: '7%' }} />
+                <col style={{ width: '4%' }} />
+                <col style={{ width: '70%' }} />
+                <col style={{ width: '19%' }} />
               </colgroup>
               <thead>
                 <tr className="border-b border-gray-900">
-                  <th className="text-left px-3 py-1.5 font-bold text-gray-900 text-xs uppercase tracking-wider">
+                  <th className="text-left px-2 py-0.5 font-bold text-gray-900 text-xs uppercase tracking-wider">
                     Quantity
                   </th>
-                  <th className="text-left px-2 py-1.5 font-bold text-gray-900 text-xs uppercase tracking-wider">
+                  <th className="text-left px-1 py-0.5 font-bold text-gray-900 text-xs uppercase tracking-wider">
                     Unit
                   </th>
-                  <th className="text-left px-3 py-1.5 font-bold text-gray-900 text-xs uppercase tracking-wider">
+                  <th className="text-left px-3 py-0.5 font-bold text-gray-900 text-xs uppercase tracking-wider">
                     Particulars
                   </th>
-                  <th className="text-left px-3 py-1.5 font-bold text-gray-900 text-xs uppercase tracking-wider">
+                  <th className="text-left px-3 py-0.5 font-bold text-gray-900 text-xs uppercase tracking-wider">
                     <input
                       type="text"
                       value={receipt.extraHeader || 'EXTRA'}
@@ -233,19 +233,19 @@ const DeliveryReceiptModal = ({
               <tbody className="bg-white">
                 {receipt.items?.length > 0 ? (
                   receipt.items.map((item, i) => (
-                    <tr key={i} className="align-top">
+                    <tr key={i} className="align-middle">
                       {/* Quantity */}
-                      <td className="px-6 py-1 text-xs font-medium text-gray-900">
+                      <td className="px-2 py-0.5 text-xs font-medium text-gray-900 whitespace-nowrap text-center">
                         {item.deliveredQty || item.preparedQty || item.quantity || 0}
                       </td>
 
                       {/* Unit */}
-                      <td className="px-2 py-1 text-xs font-medium text-gray-900">
+                      <td className="px-1 py-0.5 text-xs font-medium text-gray-900 whitespace-nowrap">
                         {item.uom || item.unit || 'pcs'}
                       </td>
 
                       {/* Particulars */}
-                      <td className="px-3 py-1 text-xs text-gray-900 leading-tight" colSpan={1}>
+                      <td className="px-3 py-0.5 text-xs text-gray-900 leading-tight" colSpan={1}>
                         <div className="font-semibold">
                           {`${item.product?.productName || item.productName || 'Product'}${item.product?.upc ? ` - ${item.product.upc}` : ''}`}
                         </div>
@@ -281,11 +281,11 @@ const DeliveryReceiptModal = ({
                 )}
 
                 {Array.from({ length: Math.max(0, 16 - (receipt.items?.length || 0)) }).map((_, i) => (
-                  <tr key={`empty-${i}`} className="border-b-0">
-                    <td className="px-3 py-0.5 text-xs">&nbsp;</td>
-                    <td className="px-2 py-0.5 text-xs">&nbsp;</td>
-                    <td className="px-3 py-0.5 text-xs">&nbsp;</td>
-                    <td className="px-3 py-0.5 text-xs">&nbsp;</td>
+                  <tr key={`empty-${i}`} style={{ height: '18px' }}>
+                    <td className="px-2 text-xs">&nbsp;</td>
+                    <td className="px-1 text-xs">&nbsp;</td>
+                    <td className="px-3 text-xs">&nbsp;</td>
+                    <td className="px-3 text-xs">&nbsp;</td>
                   </tr>
                 ))}
               </tbody>
