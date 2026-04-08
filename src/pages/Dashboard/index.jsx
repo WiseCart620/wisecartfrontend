@@ -893,48 +893,48 @@ const Dashboard = () => {
             {/* Enhanced Summary Stats */}
             {sales.length > 0 && (
               <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-6 border-t border-gray-200">
-                <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-700 p-4 rounded-lg border border-blue-400">
                   <div className="flex items-center gap-2 mb-2">
-                    <PesoIcon size={20} className="text-blue-600" />
-                    <p className="text-xs font-medium text-blue-700 uppercase">Total Sales</p>
+                    <PesoIcon size={20} color="white" />
+                    <p className="text-xs font-medium text-blue-100 uppercase">Total Sales</p>
                   </div>
-                  <p className="text-2xl font-bold text-blue-800">
+                  <p className="text-2xl font-bold text-white">
                     {formatCurrency(monthlySalesData.reduce((sum, month) => sum + month.activeRevenue, 0))}
                   </p>
-                  <p className="text-xs text-blue-600 mt-1">For {selectedYear}</p>
+                  <p className="text-xs text-blue-200 mt-1">For {selectedYear}</p>
                 </div>
 
-                <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-700 p-4 rounded-lg border border-blue-400">
                   <div className="flex items-center gap-2 mb-2">
-                    <TrendingUpIcon size={20} className="text-green-600" />
-                    <p className="text-xs font-medium text-green-700 uppercase">Avg Monthly</p>
+                    <TrendingUpIcon size={20} className="text-blue-100" />
+                    <p className="text-xs font-medium text-blue-100 uppercase">Avg Monthly</p>
                   </div>
-                  <p className="text-2xl font-bold text-green-800">
+                  <p className="text-2xl font-bold text-white">
                     {formatCurrency(
                       monthlySalesData.reduce((sum, month) => sum + month.activeRevenue, 0) /
                       Math.max(monthlySalesData.filter(m => m.activeRevenue > 0).length, 1)
                     )}
                   </p>
-                  <p className="text-xs text-green-600 mt-1">Per month average</p>
+                  <p className="text-xs text-blue-200 mt-1">Per month average</p>
                 </div>
 
-                <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-700 p-4 rounded-lg border border-blue-400">
                   <div className="flex items-center gap-2 mb-2">
-                    <ShoppingCart size={20} className="text-purple-600" />
-                    <p className="text-xs font-medium text-purple-700 uppercase">Transactions</p>
+                    <ShoppingCart size={20} className="text-blue-100" />
+                    <p className="text-xs font-medium text-blue-100 uppercase">Transactions</p>
                   </div>
-                  <p className="text-2xl font-bold text-purple-800">
+                  <p className="text-2xl font-bold text-white">
                     {formatNumber(monthlySalesData.reduce((sum, month) => sum + month.count, 0))}
                   </p>
-                  <p className="text-xs text-purple-600 mt-1">Total orders</p>
+                  <p className="text-xs text-blue-200 mt-1">Total orders</p>
                 </div>
 
-                <div className="bg-gradient-to-r from-amber-50 to-amber-100 p-4 rounded-lg border border-amber-200">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-700 p-4 rounded-lg border border-blue-400">
                   <div className="flex items-center gap-2 mb-2">
-                    <Calendar size={20} className="text-amber-600" />
-                    <p className="text-xs font-medium text-amber-700 uppercase">Best Month</p>
+                    <Calendar size={20} className="text-blue-100" />
+                    <p className="text-xs font-medium text-blue-100 uppercase">Best Month</p>
                   </div>
-                  <p className="text-2xl font-bold text-amber-800">
+                  <p className="text-2xl font-bold text-white">
                     {(() => {
                       const bestMonth = monthlySalesData.reduce((prev, current) =>
                         (prev.activeRevenue > current.activeRevenue) ? prev : current
@@ -942,7 +942,7 @@ const Dashboard = () => {
                       return bestMonth.month;
                     })()}
                   </p>
-                  <p className="text-xs text-amber-600 mt-1">
+                  <p className="text-xs text-blue-200 mt-1">
                     {formatCurrency(monthlySalesData.reduce((prev, current) =>
                       (prev.activeRevenue > current.activeRevenue) ? prev : current
                     ).activeRevenue)}

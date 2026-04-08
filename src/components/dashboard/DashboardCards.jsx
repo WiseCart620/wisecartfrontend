@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
-
+import PesoIcon from '../common/PesoIcon';
 const DashboardCards = ({ stats, alerts }) => {
     const cards = [
         {
@@ -45,28 +45,28 @@ const DashboardCards = ({ stats, alerts }) => {
                 }[card.color];
 
                 const trendIcon = card.trend > 0 ?
-                    <ArrowUpRight className="text-green-500" size={16} /> :
-                    card.trend < 0 ? <ArrowDownRight className="text-red-500" size={16} /> : null;
+                    <ArrowUpRight className="text-green-300" size={16} /> :
+                    card.trend < 0 ? <ArrowDownRight className="text-red-300" size={16} /> : null;
 
                 return (
-                    <div key={i} className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 p-5 border border-gray-200">
+                    <div key={i} className="bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 p-5 border border-blue-400">
                         <div className="flex-1">
                             <div className="flex items-center justify-between mb-2">
-                                <p className="text-sm text-gray-500 font-medium">{card.title}</p>
+                                <p className="text-sm text-blue-100 font-medium">{card.title}</p>
                                 {card.trend !== undefined && trendIcon && (
                                     <div className="flex items-center gap-1">
                                         {trendIcon}
-                                        <span className={`text-xs font-medium ${card.trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        <span className={`text-xs font-medium ${card.trend > 0 ? 'text-green-300' : 'text-red-300'}`}>
                                             {card.trendLabel ? `${Math.abs(card.trend)} ${card.trendLabel}` : `${Math.abs(card.trend)}%`}
                                         </span>
                                     </div>
                                 )}
                             </div>
-                            <p className="text-2xl font-bold text-gray-900">{card.value}</p>
-                            <p className="text-xs text-gray-400 mt-2">{card.description}</p>
+                            <p className="text-2xl font-bold text-white">{card.value}</p>
+                            <p className="text-xs text-blue-200 mt-2">{card.description}</p>
                         </div>
-                        <div className="mt-4 h-1 rounded-full bg-blue-100">
-                            <div className="h-full rounded-full bg-gradient-to-r from-blue-400 to-blue-600" style={{ width: '100%' }}></div>
+                        <div className="mt-4 h-1 rounded-full bg-blue-400 bg-opacity-40">
+                            <div className="h-full rounded-full bg-white bg-opacity-60" style={{ width: '100%' }}></div>
                         </div>
                     </div>
                 );
