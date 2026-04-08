@@ -6,7 +6,7 @@ const DashboardCards = ({ stats, alerts }) => {
         {
             title: 'Active Sales',
             value: formatNumber(stats?.activeSales),
-            color: 'green',
+            color: 'blue',
             description: `Total: ${formatNumber(stats?.totalSales)} sales`,
             trend: stats?.salesVelocity,
             trendLabel: 'sales/day'
@@ -21,13 +21,13 @@ const DashboardCards = ({ stats, alerts }) => {
         {
             title: 'Avg. Order Value',
             value: formatCurrency(stats?.averageOrderValue),
-            color: 'purple',
+            color: 'blue',
             description: 'Based on active sales'
         },
         {
             title: 'Sales Velocity',
             value: `${stats?.salesVelocity?.toFixed(1) || '0.0'}/day`,
-            color: 'green',
+            color: 'blue',
             description: 'Last 30 days average'
         },
     ];
@@ -65,8 +65,8 @@ const DashboardCards = ({ stats, alerts }) => {
                             <p className="text-2xl font-bold text-gray-900">{card.value}</p>
                             <p className="text-xs text-gray-400 mt-2">{card.description}</p>
                         </div>
-                        <div className={`mt-4 h-1 rounded-full ${bgColor} bg-opacity-20`}>
-                            <div className={`h-full rounded-full ${bgColor}`} style={{ width: '100%' }}></div>
+                        <div className="mt-4 h-1 rounded-full bg-blue-100">
+                            <div className="h-full rounded-full bg-gradient-to-r from-blue-400 to-blue-600" style={{ width: '100%' }}></div>
                         </div>
                     </div>
                 );
