@@ -895,7 +895,7 @@ const Dashboard = () => {
               <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-6 border-t border-gray-200">
                 <div className="bg-blue-50 bg-opacity-60 p-4 rounded-lg border border-blue-200">
                   <div className="flex items-center gap-2 mb-2">
-                    <PesoIcon size={20} color="#2563eb" />
+                    <span className="text-blue-600 font-bold text-lg leading-none">₱</span>
                     <p className="text-xs font-medium text-blue-600 uppercase">Total Sales</p>
                   </div>
                   <p className="text-2xl font-bold text-blue-800">
