@@ -112,6 +112,12 @@ const Dashboard = () => {
 
       setSales(salesData);
       setCompanies(companiesData);
+      const availableYears = [...new Set(
+        salesData.map(s => s.year || new Date(s.createdAt || s.date).getFullYear())
+      )];
+      if (availableYears.length > 0 && !availableYears.includes(performanceYear)) {
+        setPerformanceYear(Math.max(...availableYears));
+      }
       setBranches(branchesData);
       setProducts(productsData);
       setDeliveries(deliveriesData);
