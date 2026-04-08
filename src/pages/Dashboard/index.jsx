@@ -118,6 +118,9 @@ const Dashboard = () => {
       if (availableYears.length > 0 && !availableYears.includes(performanceYear)) {
         setPerformanceYear(Math.max(...availableYears));
       }
+      if (availableYears.length > 0 && !availableYears.includes(selectedYear)) {
+        setSelectedYear(Math.max(...availableYears));
+      }
       setBranches(branchesData);
       setProducts(productsData);
       setDeliveries(deliveriesData);
