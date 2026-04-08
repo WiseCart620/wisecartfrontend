@@ -315,28 +315,28 @@ const useProductManagement = (api) => {
 
             const companyBasePricesArray = [];
 
-            if (variationCombinations.length === 0) {
-                Object.keys(formData.companyBasePrices).forEach(companyId => {
-                    const basePrice = parseFloat(formData.companyBasePrices[companyId]);
-                    if (basePrice > 0) {
+            Object.entries(formData.companyBasePrices).forEach(([companyId, val]) => {
+                const basePrice = parseFloat(typeof val === 'object' ? val.price : val);
+                if (basePrice > 0) {
+                    companyBasePricesArray.push({
+                        companyId: parseInt(companyId),
+                        basePrice: basePrice,
+                        companySku: typeof val === 'object' ? (val.companySku || null) : null
+                    });
+                }
+            });
+
+            if (formData.assignToRemainingBase && formData.remainingBasePriceValue) {
+                const assignedCompanyIds = new Set(Object.keys(formData.companyBasePrices).map(id => parseInt(id)));
+                companies.forEach(company => {
+                    if (!assignedCompanyIds.has(company.id)) {
                         companyBasePricesArray.push({
-                            companyId: parseInt(companyId),
-                            basePrice: basePrice
+                            companyId: company.id,
+                            basePrice: parseFloat(formData.remainingBasePriceValue),
+                            companySku: null
                         });
                     }
                 });
-
-                if (formData.assignToRemainingBase && formData.remainingBasePriceValue) {
-                    const assignedCompanyIds = new Set(Object.keys(formData.companyBasePrices).map(id => parseInt(id)));
-                    companies.forEach(company => {
-                        if (!assignedCompanyIds.has(company.id)) {
-                            companyBasePricesArray.push({
-                                companyId: company.id,
-                                basePrice: parseFloat(formData.remainingBasePriceValue)
-                            });
-                        }
-                    });
-                }
             }
 
             let dimensionsString = null;

@@ -1,26 +1,29 @@
 import React, { useState } from 'react';
 
-const MultiCompanyPriceSelector = ({ 
-  companies, 
-  selectedPrices, 
-  onChange, 
-  assignToRemaining, 
-  remainingPrice 
+const MultiCompanyPriceSelector = ({
+  companies,
+  selectedPrices,
+  onChange,
+  assignToRemaining,
+  remainingPrice
 }) => {
   const [showAllCompanies, setShowAllCompanies] = useState(false);
 
   const handleCompanySelect = (companyId) => {
     const newPrices = { ...selectedPrices };
-    if (newPrices[companyId]) {
+    if (newPrices[companyId] !== undefined) {
       delete newPrices[companyId];
     } else {
-      newPrices[companyId] = '';
+      newPrices[companyId] = { price: '', companySku: '' };
     }
     onChange(newPrices, assignToRemaining, remainingPrice);
   };
 
-  const handlePriceChange = (companyId, price) => {
-    const newPrices = { ...selectedPrices, [companyId]: price };
+  const handleFieldChange = (companyId, field, value) => {
+    const newPrices = {
+      ...selectedPrices,
+      [companyId]: { ...(selectedPrices[companyId] || {}), [field]: value }
+    };
     onChange(newPrices, assignToRemaining, remainingPrice);
   };
 
@@ -31,7 +34,7 @@ const MultiCompanyPriceSelector = ({
     } else {
       const newPrices = {};
       companies.forEach(c => {
-        newPrices[c.id] = selectedPrices[c.id] || '';
+        newPrices[c.id] = selectedPrices[c.id] || { price: '', companySku: '' };
       });
       onChange(newPrices, assignToRemaining, remainingPrice);
     }
@@ -83,12 +86,12 @@ const MultiCompanyPriceSelector = ({
       <div className={`space-y-2 ${!showAllCompanies ? 'max-h-60 overflow-y-auto' : ''}`}>
         {companies.map((company) => {
           const isSelected = selectedPrices[company.id] !== undefined;
+          const val = selectedPrices[company.id] || {};
           return (
             <div
               key={company.id}
-              className={`p-3 border rounded-lg transition ${
-                isSelected ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white'
-              }`}
+              className={`p-3 border rounded-lg transition ${isSelected ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white'
+                }`}
             >
               <div className="flex items-start gap-3">
                 <input
@@ -98,20 +101,20 @@ const MultiCompanyPriceSelector = ({
                   className="mt-1 h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                 />
                 <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <label
-                      onClick={() => handleCompanySelect(company.id)}
-                      className="text-sm font-medium text-gray-900 cursor-pointer"
-                    >
-                      {company.companyName}
-                    </label>
-                    {isSelected && (
-                      <div className="flex items-center gap-2">
+                  <label
+                    onClick={() => handleCompanySelect(company.id)}
+                    className="text-sm font-medium text-gray-900 cursor-pointer"
+                  >
+                    {company.companyName}
+                  </label>
+                  {isSelected && (
+                    <div className="flex items-center gap-3 mt-2 flex-wrap">
+                      <div className="flex items-center gap-1">
                         <span className="text-xs text-gray-500">₱</span>
                         <input
                           type="number"
-                          value={selectedPrices[company.id] || ''}
-                          onChange={(e) => handlePriceChange(company.id, e.target.value)}
+                          value={val.price || ''}
+                          onChange={(e) => handleFieldChange(company.id, 'price', e.target.value)}
                           onClick={(e) => e.stopPropagation()}
                           placeholder="0.00"
                           min="0.01"
@@ -119,8 +122,25 @@ const MultiCompanyPriceSelector = ({
                           className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
-                    )}
-                  </div>
+                      <input
+                        type="text"
+                        value={val.companySku || ''}
+                        onChange={(e) => {
+                          const numeric = e.target.value.replace(/\D/g, '').slice(0, 13);
+                          handleFieldChange(company.id, 'companySku', numeric);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        placeholder="Company SKU (13 digits)"
+                        maxLength={13}
+                        className="w-36 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      {val.companySku && val.companySku.length !== 13 && (
+                        <p className="text-xs text-red-500 mt-0.5">
+                          {val.companySku.length}/13 digits
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

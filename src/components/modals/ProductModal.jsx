@@ -3,7 +3,6 @@ import {
     X, Package, Globe, Box, Tag, AlertCircle,
     Edit2, Plus, Trash2, Copy, Search
 } from 'lucide-react';
-import SearchableDropdown from '../common/SearchableDropdown';
 import CategoryInput from '../forms/CategoryInput';
 import MultiCompanyPriceSelector from '../common/MultiCompanyPriceSelector';
 import { getFileUrl } from '../../utils/fileUtils';
@@ -1323,10 +1322,20 @@ const ProductModal = ({
                                                                                                 <input
                                                                                                     type="text"
                                                                                                     value={combo.companySkus?.[companyId] ?? ''}
-                                                                                                    onChange={(e) => updateVariationCompanySku(comboIndex, companyId, e.target.value)}
-                                                                                                    placeholder="Enter SKU"
+                                                                                                    onChange={(e) => {
+                                                                                                        const numeric = e.target.value.replace(/\D/g, '').slice(0, 13);
+                                                                                                        updateVariationCompanySku(comboIndex, companyId, numeric);
+                                                                                                    }}
+                                                                                                    placeholder="13-digit SKU"
+                                                                                                    maxLength={13}
                                                                                                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                                                                 />
+                                                                                                {(combo.companySkus?.[companyId] ?? '').length > 0 &&
+                                                                                                    (combo.companySkus?.[companyId] ?? '').length !== 13 && (
+                                                                                                        <p className="text-xs text-red-500 mt-0.5">
+                                                                                                            {(combo.companySkus?.[companyId] ?? '').length}/13
+                                                                                                        </p>
+                                                                                                    )}
                                                                                             </div>
                                                                                         </div>
                                                                                     </div>

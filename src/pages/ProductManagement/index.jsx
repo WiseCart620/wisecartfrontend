@@ -8,7 +8,6 @@ import { api, API_BASE_URL } from '../../services/api';
 
 // Components
 import LoadingOverlay from '../../components/common/LoadingOverlay';
-import SearchableDropdown from '../../components/common/SearchableDropdown';
 import ProductRow from '../../components/tables/ProductRow';
 import ProductModal from '../../components/modals/ProductModal';
 
@@ -148,7 +147,12 @@ const ProductManagement = () => {
     const companyBasePricesObj = {};
     if (product.companyBasePrices?.length > 0) {
       product.companyBasePrices.forEach(cbp => {
-        if (cbp.company?.id) companyBasePricesObj[cbp.company.id] = cbp.basePrice;
+        if (cbp.company?.id) {
+          companyBasePricesObj[cbp.company.id] = {
+            price: cbp.basePrice,
+            companySku: cbp.companySku || ''
+          };
+        }
       });
     }
 
