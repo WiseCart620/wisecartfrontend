@@ -55,6 +55,7 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
 
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -196,6 +197,25 @@ const SalesManagement = () => {
     variationId: '',
     productName: ''
   });
+
+
+  useEffect(() => {
+    const es = new EventSource('/api/sales/stream');
+
+    es.addEventListener('sale-update', () => {
+      console.log('SSE received: refreshing sales data...');
+      loadData();
+    });
+
+    es.onerror = () => {
+      console.warn('Sales SSE connection error, reconnecting...');
+    };
+
+    return () => {
+      console.log('Closing SSE connection');
+      es.close();
+    };
+  }, [loadData]);
 
 
   useEffect(() => {

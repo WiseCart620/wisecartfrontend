@@ -70,6 +70,24 @@ export const useDeliveries = () => {
     }
   }, []);
 
+
+  // ── SSE: real-time delivery updates ──────────────────────────────────────
+  useEffect(() => {
+    const es = new EventSource('/api/deliveries/stream');
+
+    es.addEventListener('delivery-update', () => {
+      loadData();
+    });
+
+    es.onerror = () => {
+      console.warn('SSE connection lost, browser will retry automatically...');
+    };
+
+    return () => {
+      es.close();
+    };
+  }, [loadData]);
+
   const createDelivery = async (deliveryData) => {
     try {
       const response = await api.post('/deliveries', deliveryData);

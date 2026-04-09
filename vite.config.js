@@ -3,9 +3,9 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  
+
   base: '/',
-  
+
   build: {
     outDir: 'dist',
     sourcemap: false,
@@ -20,7 +20,7 @@ export default defineConfig({
       }
     }
   },
-  
+
   server: {
     port: 5173,
     open: true,
@@ -28,7 +28,13 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        ws: true,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('Accept', 'text/event-stream');
+          });
+        }
       }
     }
   }
