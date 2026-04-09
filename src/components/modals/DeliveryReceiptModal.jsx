@@ -94,30 +94,31 @@ const DeliveryReceiptModal = ({
           <div className="grid mb-4 -mt-4" style={{ gridTemplateColumns: '60% 40%', gap: '1rem' }}>
             <div>
               <div className="mb-3">
-                <div className="flex items-start" style={{ marginBottom: '28px', marginTop: '4px' }}>
+                <div className="flex items-end" style={{ marginBottom: '28px', marginTop: '4px' }}>
                   <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>DELIVERED TO:</span>
-                  <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
+                  <div className="text-black-900 text-sm flex-1 min-w-0 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
                     {`${receipt.branchName} - ${receipt.companyName}`}
                   </div>
                 </div>
               </div>
               <div className="mb-2">
-                <div className="flex items-start" style={{ marginBottom: '28px', marginTop: '-8px' }}>
+                <div className="flex items-end" style={{ marginBottom: '28px', marginTop: '-8px' }}>
                   <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>ADDRESS:</span>
-                  <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
+                  <div className="text-black-900 text-sm flex-1 min-w-0 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
                     {receipt.branchAddress}
                   </div>
                 </div>
               </div>
               <div style={{ marginTop: '-6px', marginLeft: '0px' }}>
-                <div className="flex items-start mb-1">
+                <div className="flex items-end mb-1">
                   <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>BUSINESS STYLE:</span>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <textarea
                       value={receipt.businessStyle || receipt.companyName || ''}
                       onChange={(e) => setReceipt(prev => ({ ...prev, businessStyle: e.target.value }))}
                       rows={1}
-                      className="text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-blue-500 bg-transparent break-words resize-none overflow-hidden" style={{ minHeight: '1.5rem' }}
+                      className="text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-blue-500 bg-transparent break-words resize-none overflow-hidden print:hidden"
+                      style={{ minHeight: '1.5rem' }}
                       onInput={(e) => {
                         e.target.style.height = 'auto';
                         e.target.style.height = e.target.scrollHeight + 'px';
