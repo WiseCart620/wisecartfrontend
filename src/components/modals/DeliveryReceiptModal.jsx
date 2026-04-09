@@ -92,43 +92,63 @@ const DeliveryReceiptModal = ({
           </div>
 
           <div className="grid mb-4 -mt-4" style={{ gridTemplateColumns: '60% 40%', gap: '1rem' }}>
-            <div>
-              <div className="mb-3">
-                <div className="flex items-end" style={{ marginBottom: '28px', marginTop: '4px' }}>
-                  <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>DELIVERED TO:</span>
-                  <div className="text-black-900 text-sm flex-1 min-w-0 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
+
+            {/* ── LEFT COLUMN ──────────────────────────────────────────────
+                Each field is absolutely anchored so wrapping text in one
+                field never shifts the vertical position of another.        */}
+            <div className="relative" style={{ height: '110px' }}>
+
+              {/* DELIVERED TO — anchored at top: 0 */}
+              <div className="absolute left-0 right-0" style={{ top: 0 }}>
+                <div className="flex items-start">
+                  <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>
+                    DELIVERED TO:
+                  </span>
+                  <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
                     {`${receipt.branchName} - ${receipt.companyName}`}
                   </div>
                 </div>
               </div>
-              <div className="mb-2">
-                <div className="flex items-end" style={{ marginBottom: '28px', marginTop: '-8px' }}>
-                  <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>ADDRESS:</span>
-                  <div className="text-black-900 text-sm flex-1 min-w-0 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
+
+              {/* ADDRESS — anchored at top: 38px */}
+              <div className="absolute left-0 right-0" style={{ top: '38px' }}>
+                <div className="flex items-start">
+                  <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>
+                    ADDRESS:
+                  </span>
+                  <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
                     {receipt.branchAddress}
                   </div>
                 </div>
               </div>
-              <div style={{ marginTop: '-6px', marginLeft: '0px' }}>
-                <div className="flex items-end mb-1">
-                  <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>BUSINESS STYLE:</span>
-                  <div className="flex-1 min-w-0">
+
+              {/* BUSINESS STYLE — anchored at top: 76px */}
+              <div className="absolute left-0 right-0" style={{ top: '76px' }}>
+                <div className="flex items-start">
+                  <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>
+                    BUSINESS STYLE:
+                  </span>
+                  <div className="flex-1">
                     <textarea
                       value={receipt.businessStyle || receipt.companyName || ''}
                       onChange={(e) => setReceipt(prev => ({ ...prev, businessStyle: e.target.value }))}
                       rows={1}
-                      className="text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-blue-500 bg-transparent break-words resize-none overflow-hidden print:hidden"
+                      className="text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-blue-500 bg-transparent break-words resize-none overflow-hidden"
                       style={{ minHeight: '1.5rem' }}
                       onInput={(e) => {
                         e.target.style.height = 'auto';
                         e.target.style.height = e.target.scrollHeight + 'px';
                       }}
                     />
-                    <div className="hidden print:block text-black-900 text-sm break-words px-2">{receipt.businessStyle || ''}</div>
+                    <div className="hidden print:block text-black-900 text-sm break-words px-2">
+                      {receipt.businessStyle || ''}
+                    </div>
                   </div>
                 </div>
               </div>
+
             </div>
+            {/* ── END LEFT COLUMN ──────────────────────────────────────── */}
 
             <div>
               {/* DATE — aligned with DELIVERED TO */}
@@ -147,7 +167,7 @@ const DeliveryReceiptModal = ({
                 </div>
               </div>
 
-              {/* TERMS OF PAYMENT — stacked above P.O. NUMBER */}
+              {/* TERMS OF PAYMENT */}
               <div className="flex items-start mb-1" style={{ marginLeft: '-28px', marginTop: '-10px' }}>
                 <span className="font-bold text-gray-900 text-sm whitespace-nowrap flex-shrink-0" style={{ width: '145px' }}>
                   TERMS OF PAYMENT:
@@ -165,7 +185,7 @@ const DeliveryReceiptModal = ({
                 </div>
               </div>
 
-              {/* P.O. NUMBER — below TERMS OF PAYMENT */}
+              {/* P.O. NUMBER */}
               <div className="flex items-start mb-3" style={{ marginLeft: '-10px', marginTop: '-6px' }}>
                 <span className="font-bold text-gray-900 whitespace-nowrap flex-shrink-0" style={{ width: '120px', fontSize: '14px' }}>
                   P.O. NUMBER:
@@ -227,17 +247,12 @@ const DeliveryReceiptModal = ({
                 {receipt.items?.length > 0 ? (
                   receipt.items.map((item, i) => (
                     <tr key={i} className="align-middle">
-                      {/* Quantity */}
                       <td className="px-2 py-0.5 text-xs font-medium text-gray-900 whitespace-nowrap text-center">
                         {item.deliveredQty || item.preparedQty || item.quantity || 0}
                       </td>
-
-                      {/* Unit */}
                       <td className="px-1 py-0.5 text-xs font-medium text-gray-900 whitespace-nowrap">
                         {item.uom || item.unit || 'pcs'}
                       </td>
-
-                      {/* Particulars */}
                       <td className="px-3 py-0.5 text-xs text-gray-900 leading-tight" colSpan={1}>
                         <div className="font-semibold">
                           {[
@@ -252,8 +267,6 @@ const DeliveryReceiptModal = ({
                           </div>
                         )}
                       </td>
-
-                      {/* Extra */}
                       <td className="px-3 py-1 text-xs">
                         <input
                           type="text"
@@ -298,7 +311,7 @@ const DeliveryReceiptModal = ({
 
           <div className="grid grid-cols-2 gap-8 mt-4" style={{ marginTop: 'auto', alignItems: 'flex-end' }}>
             <div>
-              <div className="mb-3" style={{ marginTop: '24px' }}>
+              <div className="mb-3" style={{ marginTop: '48px' }}>
                 <div className="flex items-center mb-0">
                   <span id="prepared-by-label" className="font-bold text-sm print:text-xs" style={{ width: '90px', flexShrink: 0 }}>Prepared by:</span>
                   <div className="relative flex-1">
