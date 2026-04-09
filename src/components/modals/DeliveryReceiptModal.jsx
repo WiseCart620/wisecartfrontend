@@ -168,7 +168,7 @@ const DeliveryReceiptModal = ({
 
               {/* P.O. NUMBER — below TERMS OF PAYMENT */}
               <div className="flex items-start mb-3" style={{ marginLeft: '-10px', marginTop: '-6px' }}>
-                <span className="font-bold text-gray-900 text-sm whitespace-nowrap flex-shrink-0" style={{ width: '145px' }}>
+                <span className="font-bold text-gray-900 whitespace-nowrap flex-shrink-0" style={{ width: '120px', fontSize: '14px' }}>
                   P.O. NUMBER:
                 </span>
                 <div className="flex-1 min-w-0 ml-1">
@@ -179,8 +179,8 @@ const DeliveryReceiptModal = ({
                     className="text-black-900 w-full border-b border-gray-300 text-sm px-1 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
                   />
                   <div
-                    className="hidden print:block text-black-900 text-sm px-1 min-h-[1.5rem]"
-                    style={{ borderBottom: '1px solid #111', wordBreak: 'break-word', whiteSpace: 'normal' }}
+                    className="hidden print:block text-black-900 px-1 min-h-[1.5rem]"
+                    style={{ borderBottom: '1px solid #111', wordBreak: 'break-word', whiteSpace: 'normal', fontSize: '13px' }}
                   >
                     {receipt.purchaseOrderNumber || '\u00A0'}
                   </div>
@@ -301,7 +301,7 @@ const DeliveryReceiptModal = ({
             <div>
               <div className="mb-3" style={{ marginTop: '24px' }}>
                 <div className="flex items-center mb-0">
-                  <span className="font-bold text-black-900 text-sm print:text-xs" style={{ width: '90px', flexShrink: 0 }}>Prepared by:</span>
+                  <span id="prepared-by-label" className="font-bold text-sm print:text-xs" style={{ width: '90px', flexShrink: 0 }}>Prepared by:</span>
                   <div className="relative flex-1">
                     <input
                       type="text"
@@ -309,8 +309,7 @@ const DeliveryReceiptModal = ({
                       onChange={(e) => setReceipt(prev => ({ ...prev, preparedBy: e.target.value }))}
                       className="text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
                     />
-                    {/* Visible when printing */}
-                    <div className="hidden print:block text-black-900 text-sm w-full px-2 border-b border-gray-900">
+                    <div id="prepared-by-value" className="text-sm w-full px-2" style={{ display: 'none', borderBottom: 'none' }}>
                       {receipt.preparedBy || '\u00A0'}
                     </div>
                   </div>

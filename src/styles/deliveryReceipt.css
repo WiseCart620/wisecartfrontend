@@ -95,8 +95,25 @@
     background-color: transparent !important;
   }
 
+
+
+  #delivery-receipt #prepared-by-value {
+    color: black !important;
+    display: block !important;
+    border-bottom: none !important;
+  }
+
+
+  #delivery-receipt #prepared-by-label {
+    color: transparent !important;
+  }
+
   /* Make data divs visible (the content areas) */
   #delivery-receipt div.text-black-900 {
+    color: black !important;
+  }
+
+  #delivery-receipt div[style*="color: black"] {
     color: black !important;
   }
 
