@@ -253,7 +253,7 @@ const SalesManagement = () => {
 
   useEffect(() => {
     const es = new EventSource('/api/sales/stream');
-    es.addEventListener('sale-update', () => {
+    es.addEventListener('delivery-update', () => {
       loadData();
     });
     es.onerror = () => {
