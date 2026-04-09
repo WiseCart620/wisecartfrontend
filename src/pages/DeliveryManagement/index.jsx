@@ -290,7 +290,8 @@ const DeliveryManagement = () => {
           quantity: item.deliveredQty || item.preparedQty || 0,
           unit: item.uom || 'pcs',
           warehouseName: item.warehouse?.warehouseName || 'N/A',
-          warehouseCode: item.warehouse?.warehouseCode || 'N/A'
+          warehouseCode: item.warehouse?.warehouseCode || 'N/A',
+          companySku: item.companySku || ''
         })) || [],
         extraHeader: fullDelivery.extraHeader || 'EXTRA',
         generatedDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
@@ -346,22 +347,20 @@ const DeliveryManagement = () => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 inline-flex">
             <button
               onClick={() => navigate('/deliveries')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200 font-medium ${
-                location.pathname === '/deliveries'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200 font-medium ${location.pathname === '/deliveries'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+                }`}
             >
               <ClipboardList size={18} />
               <span>Delivery Management</span>
             </button>
             <button
               onClick={() => navigate('/transmittals')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200 font-medium ${
-                location.pathname === '/transmittals'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200 font-medium ${location.pathname === '/transmittals'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+                }`}
             >
               <FileText size={18} />
               <span>Transmittal Forms</span>

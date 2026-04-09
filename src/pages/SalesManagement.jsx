@@ -812,11 +812,12 @@ const SalesManagement = () => {
 
         invoiceData.adjustments = invoiceData.adjustments || [];
 
+        const company = companies.find(c => c.id === filterData.companyId);
         if (filterData.branchId) {
           const branch = branches.find(b => b.id === filterData.branchId);
           if (branch) {
             invoiceData.soldTo = branch.branchName;
-            invoiceData.registeredName = branch.branchName;
+            invoiceData.registeredName = company?.companyName || branch.branchName;
             invoiceData.tin = branch.tin || invoiceData.tin || 'N/A';
             invoiceData.businessAddress =
               branch.fullAddress ||
@@ -825,7 +826,6 @@ const SalesManagement = () => {
               'N/A';
           }
         } else {
-          const company = companies.find(c => c.id === filterData.companyId);
           if (company) {
             invoiceData.soldTo = company.companyName;
             invoiceData.registeredName = company.companyName;

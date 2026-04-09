@@ -96,7 +96,7 @@ const DeliveryReceiptModal = ({
           <div className="grid mb-4 -mt-4" style={{ gridTemplateColumns: '60% 40%', gap: '1rem' }}>
             <div>
               <div className="mb-3">
-                <div className="flex items-start" style={{ marginBottom: '28px', marginTop: '10px' }}>
+                <div className="flex items-start" style={{ marginBottom: '28px', marginTop: '4px' }}>
                   <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>DELIVERED TO:</span>
                   <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
                     {`${receipt.branchName} - ${receipt.companyName}`}
@@ -111,8 +111,8 @@ const DeliveryReceiptModal = ({
                   </div>
                 </div>
               </div>
-              <div>
-                <div className="flex items-start mb-3">
+              <div style={{ marginTop: '-6px', marginLeft: '0px' }}>
+                <div className="flex items-start mb-1">
                   <span className="font-bold text-gray-900 text-sm w-32 flex-shrink-0">BUSINESS STYLE:</span>
                   <div className="flex-1">
                     <textarea
@@ -134,7 +134,7 @@ const DeliveryReceiptModal = ({
 
             <div>
               {/* DATE — aligned with DELIVERED TO */}
-              <div className="flex items-start" style={{ marginBottom: '28px', marginTop: '10px' }}>
+              <div className="flex items-start" style={{ marginBottom: '28px', marginTop: '4px' }}>
                 <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '60px' }}>DATE:</span>
                 <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
                   {receipt.date}
@@ -142,7 +142,7 @@ const DeliveryReceiptModal = ({
               </div>
 
               {/* TIN — below DATE */}
-              <div className="flex items-start" style={{ marginBottom: '28px', marginTop: '2px', marginLeft: '2px' }}>
+              <div className="flex items-start" style={{ marginBottom: '28px', marginTop: '-8px', marginLeft: '2px' }}>
                 <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '60px' }}>TIN:</span>
                 <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
                   {receipt.companyTin}
@@ -150,7 +150,7 @@ const DeliveryReceiptModal = ({
               </div>
 
               {/* TERMS OF PAYMENT — stacked above P.O. NUMBER */}
-              <div className="flex items-start mb-1" style={{ marginLeft: '-50px' }}>
+              <div className="flex items-start mb-1" style={{ marginLeft: '-28px', marginTop: '-10px' }}>
                 <span className="font-bold text-gray-900 text-sm whitespace-nowrap flex-shrink-0" style={{ width: '145px' }}>
                   TERMS OF PAYMENT:
                 </span>
@@ -168,7 +168,7 @@ const DeliveryReceiptModal = ({
               </div>
 
               {/* P.O. NUMBER — below TERMS OF PAYMENT */}
-              <div className="flex items-start mb-3" style={{ marginLeft: '-50px' }}>
+              <div className="flex items-start mb-3" style={{ marginLeft: '-10px', marginTop: '-6px' }}>
                 <span className="font-bold text-gray-900 text-sm whitespace-nowrap flex-shrink-0" style={{ width: '145px' }}>
                   P.O. NUMBER:
                 </span>
@@ -191,7 +191,7 @@ const DeliveryReceiptModal = ({
           </div>
 
           {/* Items Table */}
-          <div className="-mt-10 leading-none">
+          <div className="-mt-8 leading-none">
             <table className="w-full border-collapse">
               <colgroup>
                 <col style={{ width: '7%' }} />
@@ -242,7 +242,11 @@ const DeliveryReceiptModal = ({
                       {/* Particulars */}
                       <td className="px-3 py-0.5 text-xs text-gray-900 leading-tight" colSpan={1}>
                         <div className="font-semibold">
-                          {`${item.product?.productName || item.productName || 'Product'}${item.product?.upc ? ` - ${item.product.upc}` : ''}`}
+                          {[
+                            item.companySku || null,
+                            item.product?.productName || item.productName || 'Product',
+                            item.product?.upc || null
+                          ].filter(Boolean).join(' - ')}
                         </div>
                         {item.particular && (
                           <div className="text-[10px] text-black-600 -mt-0.5">
