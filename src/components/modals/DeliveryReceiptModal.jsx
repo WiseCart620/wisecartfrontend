@@ -84,7 +84,7 @@ const DeliveryReceiptModal = ({
                   <input
                     type="text"
                     value={receipt.deliveryReceiptNumberDisplay || receipt.deliveryReceiptNumber || ''}
-                    onChange={(e) => setReceipt({ ...receipt, deliveryReceiptNumberDisplay: e.target.value })}
+                    onChange={(e) => setReceipt(prev => ({ ...prev, deliveryReceiptNumberDisplay: e.target.value }))}
                     className="w-full bg-transparent border-none focus:outline-none focus:border-blue-500 text-lg text-center"
                     placeholder=""
                   />
@@ -117,7 +117,7 @@ const DeliveryReceiptModal = ({
                   <div className="flex-1">
                     <textarea
                       value={receipt.businessStyle || receipt.companyName || ''}
-                      onChange={(e) => setReceipt({ ...receipt, businessStyle: e.target.value })}
+                      onChange={(e) => setReceipt(prev => ({ ...prev, businessStyle: e.target.value }))}
                       rows={1}
                       className="text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-blue-500 bg-transparent break-words resize-none overflow-hidden" style={{ minHeight: '1.5rem' }}
                       onInput={(e) => {
@@ -157,7 +157,7 @@ const DeliveryReceiptModal = ({
                   <input
                     type="text"
                     value={receipt.termsOfPayment || ''}
-                    onChange={(e) => setReceipt({ ...receipt, termsOfPayment: e.target.value })}
+                    onChange={(e) => setReceipt(prev => ({ ...prev, termsOfPayment: e.target.value }))}
                     className="text-black-900 w-full border-b border-gray-300 text-sm px-1 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
                   />
                   <div className="hidden print:block text-black-900 text-sm px-1 border-b border-gray-900 min-h-[1.5rem]">
@@ -175,7 +175,7 @@ const DeliveryReceiptModal = ({
                   <input
                     type="text"
                     value={receipt.purchaseOrderNumber || ''}
-                    onChange={(e) => setReceipt({ ...receipt, purchaseOrderNumber: e.target.value })}
+                    onChange={(e) => setReceipt(prev => ({ ...prev, purchaseOrderNumber: e.target.value }))}
                     className="text-black-900 w-full border-b border-gray-300 text-sm px-1 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
                   />
                   <div
@@ -213,7 +213,7 @@ const DeliveryReceiptModal = ({
                     <input
                       type="text"
                       value={receipt.extraHeader || 'EXTRA'}
-                      onChange={(e) => setReceipt({ ...receipt, extraHeader: e.target.value })}
+                      onChange={(e) => setReceipt(prev => ({ ...prev, extraHeader: e.target.value }))}
                       className="w-full bg-transparent font-bold text-xs uppercase px-0 py-0.5 border-none focus:outline-none print:hidden"
                     />
                     {receipt.items?.some(item => item.extra) && (
@@ -260,9 +260,12 @@ const DeliveryReceiptModal = ({
                           type="text"
                           value={item.extra || ''}
                           onChange={(e) => {
-                            const newItems = [...receipt.items];
-                            newItems[i] = { ...newItems[i], extra: e.target.value };
-                            setReceipt({ ...receipt, items: newItems });
+                            const val = e.target.value;
+                            setReceipt(prev => {
+                              const newItems = [...prev.items];
+                              newItems[i] = { ...newItems[i], extra: val };
+                              return { ...prev, items: newItems };
+                            });
                           }}
                           className="w-full bg-transparent border-b border-black-300 text-xs px-0 py-0.5 focus:outline-none focus:border-blue-500 print:hidden"
                         />
@@ -298,12 +301,12 @@ const DeliveryReceiptModal = ({
             <div>
               <div className="mb-3" style={{ marginTop: '24px' }}>
                 <div className="flex items-center mb-0">
-                  <span className="font-bold text-gray-900 text-sm print:text-xs" style={{ width: '90px', flexShrink: 0 }}>Prepared by:</span>
+                  <span className="font-bold text-black-900 text-sm print:text-xs" style={{ width: '90px', flexShrink: 0 }}>Prepared by:</span>
                   <div className="relative flex-1">
                     <input
                       type="text"
                       value={receipt.preparedBy || ''}
-                      onChange={(e) => setReceipt({ ...receipt, preparedBy: e.target.value })}
+                      onChange={(e) => setReceipt(prev => ({ ...prev, preparedBy: e.target.value }))}
                       className="text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
                     />
                     {/* Visible when printing */}
