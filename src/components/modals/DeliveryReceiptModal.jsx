@@ -9,7 +9,7 @@ const DeliveryReceiptModal = ({
 }) => {
   const [receipt, setReceipt] = useState(receiptData);
   const [isSaving, setIsSaving] = useState(false);
-
+  const [isPrinting, setIsPrinting] = useState(false);
   const handleSave = async () => {
     setIsSaving(true);
     await onSave(receipt);
@@ -17,17 +17,15 @@ const DeliveryReceiptModal = ({
   };
 
   const handlePrint = () => {
-    document.querySelectorAll('.print-hidden').forEach(el => {
-      el.classList.remove('print-hidden');
-    });
-    setTimeout(() => {
-      window.print();
-      setTimeout(() => {
-        document.querySelectorAll('.print-hidden').forEach(el => {
-          el.classList.add('print-hidden');
-        });
-      }, 500);
-    }, 100);
+    const onBefore = () => setIsPrinting(true);
+    const onAfter = () => {
+      setIsPrinting(false);
+      window.removeEventListener('beforeprint', onBefore);
+      window.removeEventListener('afterprint', onAfter);
+    };
+    window.addEventListener('beforeprint', onBefore);
+    window.addEventListener('afterprint', onAfter);
+    window.print();
   };
 
   return (
@@ -113,7 +111,7 @@ const DeliveryReceiptModal = ({
               </div>
               <div style={{ marginTop: '-6px', marginLeft: '0px' }}>
                 <div className="flex items-start mb-1">
-                  <span className="font-bold text-gray-900 text-sm w-32 flex-shrink-0">BUSINESS STYLE:</span>
+                  <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>BUSINESS STYLE:</span>
                   <div className="flex-1">
                     <textarea
                       value={receipt.businessStyle || receipt.companyName || ''}
@@ -309,7 +307,7 @@ const DeliveryReceiptModal = ({
                       onChange={(e) => setReceipt(prev => ({ ...prev, preparedBy: e.target.value }))}
                       className="text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
                     />
-                    <div id="prepared-by-value" className="text-sm w-full px-2" style={{ display: 'none', borderBottom: 'none' }}>
+                    <div id="prepared-by-value" className="text-sm w-full px-2" style={{ display: isPrinting ? 'block' : 'none', borderBottom: 'none' }}>
                       {receipt.preparedBy || '\u00A0'}
                     </div>
                   </div>
