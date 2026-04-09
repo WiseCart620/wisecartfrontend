@@ -42,42 +42,33 @@ const DeliveryFormModal = ({
     const [selectedProductForAdd, setSelectedProductForAdd] = useState('');
     const [branchStocks, setBranchStocks] = useState({});
 
-    // ── Helper: convert any date string to a valid datetime-local value ──
-    // Ensures the year is always exactly 4 digits (YYYY-MM-DDTHH:mm).
-    const toDatetimeLocal = (value) => {
-        if (!value) return '';
-        let clean = value.replace('Z', '').split('.')[0].split('+')[0];
-        if (clean.length > 16) clean = clean.substring(0, 16);
-        const dashIdx = clean.indexOf('-');
-        if (dashIdx > 4) {
-            const year = clean.substring(0, dashIdx).slice(-4);
-            clean = year + clean.substring(dashIdx);
-        }
-        if (dashIdx > 0 && dashIdx < 4) {
-            clean = clean.substring(0, dashIdx).padStart(4, '0') + clean.substring(dashIdx);
-        }
-        return clean;
+    // ── Date helpers ──────────────────────────────────────────────────────
+    // Split a stored "YYYY-MM-DDTHH:mm:ss" value into its date and time parts
+    const getDatePart = (val) => {
+        if (!val) return '';
+        const t = val.indexOf('T');
+        return t > 0 ? val.substring(0, t) : val.substring(0, 10);
+    };
+    const getTimePart = (val) => {
+        if (!val) return '00:00';
+        const t = val.indexOf('T');
+        if (t < 0) return '00:00';
+        return val.substring(t + 1, t + 6); // "HH:mm"
+    };
+    const combineDatetime = (date, time) => {
+        if (!date) return '';
+        return `${date}T${time || '00:00'}:00`;
     };
 
-    // ── Helper: sanitize a datetime-local input's onChange value ─────────
-    // The browser fires onChange continuously as the user edits each field
-    // segment. We clamp the year to 4 digits before persisting to state.
-    const sanitizeDateInput = (rawValue) => {
-        if (!rawValue) return '';
-        // rawValue from datetime-local is always "YYYY-MM-DDTHH:mm"
-        const dashIdx = rawValue.indexOf('-');
-        if (dashIdx > 4) {
-            // Year has grown beyond 4 digits — keep only the last 4
-            const year = rawValue.substring(0, dashIdx).slice(-4);
-            return year + rawValue.substring(dashIdx);
-        }
-        return rawValue;
+    // ── NOW initialised from formatDateForInput output ────────────────────
+    const nowDatetime = () => {
+        const raw = formatDateForInput(new Date().toISOString()); // "YYYY-MM-DDTHH:mm:ss"
+        return raw;
     };
 
     useEffect(() => {
         if (mode === 'create') {
-            const now = new Date();
-            const localISOString = formatDateForInput(now.toISOString());
+            const localISOString = nowDatetime();
             setFormData({
                 branchId: '',
                 date: localISOString,
@@ -106,7 +97,7 @@ const DeliveryFormModal = ({
                 selectedWarehouseId = items[0].warehouse.id;
             }
 
-            const processedItems = items.map((item, index) => {
+            const processedItems = items.map((item) => {
                 const productId = item.product?.id;
                 let variationId = null;
                 if (item.variationId !== null && item.variationId !== undefined) {
@@ -130,7 +121,7 @@ const DeliveryFormModal = ({
 
             const editFormData = {
                 branchId: delivery.branch?.id || '',
-                date: delivery.date ? formatDateForInput(delivery.date) : formatDateForInput(new Date()),
+                date: delivery.date ? formatDateForInput(delivery.date) : nowDatetime(),
                 deliveryReceiptNumber: delivery.deliveryReceiptNumber || '',
                 purchaseOrderNumber: delivery.purchaseOrderNumber || '',
                 transmittal: delivery.transmittal || '',
@@ -273,10 +264,6 @@ const DeliveryFormModal = ({
         }
     };
 
-    const handleAddItem = () => {
-        setFormData({ ...formData, items: [...formData.items, { productId: '', preparedQty: '', deliveredQty: '', uom: '', warehouseId: formData.selectedWarehouseId || '', originalPreparedQty: 0 }] });
-    };
-
     const handleRemoveItem = (index) => {
         setFormData({ ...formData, items: formData.items.filter((_, i) => i !== index) });
     };
@@ -322,35 +309,36 @@ const DeliveryFormModal = ({
         return colors[status] || 'bg-gray-50 border-gray-200';
     };
 
-    // ── Compute running totals from items ─────────────────────────────────
     const totalPrepared = formData.items.reduce((s, it) => s + (parseInt(it.preparedQty) || 0), 0);
     const totalDelivered = formData.items.reduce((s, it) => s + (parseInt(it.deliveredQty) || 0), 0);
     const isDeliveredStatus = formData.status === 'DELIVERED';
-
 
     const handleFormArrowNav = (e) => {
         if (!['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
         if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && e.target.tagName === 'INPUT' && e.target.type === 'text') return;
         if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && e.target.tagName === 'TEXTAREA') return;
-
-        const focusable = Array.from(
-            e.currentTarget.querySelectorAll(
-                'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])'
-            )
+        if (e.target.type === 'date' || e.target.type === 'time') return; const focusable = Array.from(
+            e.currentTarget.querySelectorAll('input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])')
         ).filter(el => el.offsetParent !== null);
-
         const current = document.activeElement;
         const index = focusable.indexOf(current);
         if (index === -1) return;
-
-        if ((e.key === 'ArrowDown' || e.key === 'ArrowRight') && index < focusable.length - 1) {
-            e.preventDefault();
-            focusable[index + 1].focus();
-        } else if ((e.key === 'ArrowUp' || e.key === 'ArrowLeft') && index > 0) {
-            e.preventDefault();
-            focusable[index - 1].focus();
-        }
+        if ((e.key === 'ArrowDown' || e.key === 'ArrowRight') && index < focusable.length - 1) { e.preventDefault(); focusable[index + 1].focus(); }
+        else if ((e.key === 'ArrowUp' || e.key === 'ArrowLeft') && index > 0) { e.preventDefault(); focusable[index - 1].focus(); }
     };
+
+    const clampYear = (val) => {
+        if (!val) return val;
+        const parts = val.split('-');
+        if (parts[0]?.length > 4) parts[0] = parts[0].slice(0, 4);
+        return parts.join('-');
+    };
+
+    // ── Shared input classes ──────────────────────────────────────────────
+    const dateInputClass = 'flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white';
+    const timeInputClass = 'w-36 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white';
+    const lockedDateInputClass = 'flex-1 px-4 py-3 border border-gray-200 rounded-lg bg-gray-100 cursor-not-allowed';
+    const lockedTimeInputClass = 'w-36 px-4 py-3 border border-gray-200 rounded-lg bg-gray-100 cursor-not-allowed';
 
     return (
         <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6">
@@ -467,8 +455,7 @@ const DeliveryFormModal = ({
                                         setFormData({ ...formData, status: newStatus, dateDelivered: '' });
                                     } else if (newStatus === 'DELIVERED') {
                                         const updatedItems = formData.items.map(item => ({ ...item, deliveredQty: item.deliveredQty || item.preparedQty }));
-                                        const localISOString = formatDateForInput(new Date().toISOString());
-                                        setFormData({ ...formData, status: newStatus, dateDelivered: formData.dateDelivered || localISOString, items: updatedItems });
+                                        setFormData({ ...formData, status: newStatus, dateDelivered: formData.dateDelivered || nowDatetime(), items: updatedItems });
                                     } else if (newStatus === 'CANCELLED') {
                                         setFormData({ ...formData, status: newStatus, dateDelivered: '' });
                                     }
@@ -498,7 +485,7 @@ const DeliveryFormModal = ({
                             />
                         </div>
 
-                        {/* ── Items Table ─────────────────────────────────────────────────────── */}
+                        {/* Items Table */}
                         <div>
                             {formData.items.length === 0 ? (
                                 <div className="text-center py-10 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
@@ -544,17 +531,12 @@ const DeliveryFormModal = ({
 
                                                     return (
                                                         <tr key={`item-${i}`} className="hover:bg-gray-50">
-                                                            {/* Number */}
-                                                            <td className="px-4 py-3 text-center">
-                                                                <span className="text-sm font-semibold text-gray-500">{i + 1}</span>
-                                                            </td>
-                                                            {/* Product Name */}
+                                                            <td className="px-4 py-3 text-center"><span className="text-sm font-semibold text-gray-500">{i + 1}</span></td>
                                                             <td className="px-4 py-3">
                                                                 {selectedOption
                                                                     ? <div className="font-semibold text-gray-900 text-sm line-clamp-2">{selectedOption.fullName}</div>
                                                                     : <div className="text-gray-500 italic text-sm">Product not found</div>}
                                                             </td>
-                                                            {/* Variation */}
                                                             <td className="px-2 py-3">
                                                                 {selectedOption?.subLabel && selectedOption.subLabel !== 'No variations'
                                                                     ? <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{selectedOption.subLabel}</span>
@@ -574,7 +556,6 @@ const DeliveryFormModal = ({
                                                                     </div>
                                                                 ) : <span className="text-xs text-gray-400 italic">No data</span>}
                                                             </td>
-                                                            {/* Prepared Qty — right-aligned */}
                                                             <td className="px-4 py-3 text-right">
                                                                 <input
                                                                     type="text"
@@ -587,7 +568,6 @@ const DeliveryFormModal = ({
                                                                 />
                                                                 {hasInsufficientStock && <div className="text-xs text-red-600 mt-1">Exceeds stock!</div>}
                                                             </td>
-                                                            {/* Delivered Qty — right-aligned */}
                                                             <td className="px-4 py-3 text-right">
                                                                 <input
                                                                     type="text"
@@ -610,42 +590,32 @@ const DeliveryFormModal = ({
                                                     );
                                                 })}
                                             </tbody>
-
-                                            {/* ── Totals footer row ───────────────────────────────────────────── */}
                                             <tfoot>
                                                 <tr className="bg-gray-50 border-t-2 border-gray-300">
-                                                    {/* Label spans all columns up to Prepared Qty */}
                                                     <td colSpan={8} className="px-4 py-3 text-right">
                                                         <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
                                                             Total ({formData.items.length} item{formData.items.length !== 1 ? 's' : ''})
                                                         </span>
                                                     </td>
-                                                    {/* Prepared total */}
                                                     <td className="px-4 py-3 text-right whitespace-nowrap">
                                                         <div className="inline-flex items-center justify-end gap-1">
                                                             <span className="text-sm font-bold text-blue-800">{totalPrepared.toLocaleString('en-US')}</span>
                                                             <span className="text-xs text-blue-500">pcs</span>
                                                         </div>
                                                     </td>
-                                                    {/* Delivered total */}
                                                     <td className="px-4 py-3 text-right whitespace-nowrap">
                                                         {isDeliveredStatus ? (
                                                             <div className="inline-flex items-center justify-end gap-1">
                                                                 <span className="text-sm font-bold text-green-800">{totalDelivered.toLocaleString('en-US')}</span>
                                                                 <span className="text-xs text-green-500">pcs</span>
                                                             </div>
-                                                        ) : (
-                                                            <span className="text-xs text-gray-400 italic">—</span>
-                                                        )}
+                                                        ) : <span className="text-xs text-gray-400 italic">—</span>}
                                                     </td>
-                                                    {/* Empty action col */}
                                                     <td className="px-4 py-3" />
                                                 </tr>
                                             </tfoot>
                                         </table>
                                     </div>
-
-                                    {/* ── Quick summary strip below the table ─────────────────────────── */}
                                     <div className="mt-2 flex items-center justify-end gap-4 px-1">
                                         <div className="flex items-center gap-1.5 text-sm">
                                             <span className="text-gray-500">Total Prepared:</span>
@@ -676,7 +646,7 @@ const DeliveryFormModal = ({
                             )}
                         </div>
 
-                        {/* Row 4: Prepared By, Date Prepared */}
+                        {/* Row 4: Prepared By + Date Prepared */}
                         <div className="grid grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">Prepared By *</label>
@@ -687,14 +657,30 @@ const DeliveryFormModal = ({
                                     Date Prepared *
                                     {mode === 'edit' && formData.status !== 'PREPARING' && <span className="ml-2 text-xs text-orange-600">(Locked)</span>}
                                 </label>
-                                <input
-                                    type="datetime-local"
-                                    value={toDatetimeLocal(formData.datePrepared)}
-                                    onChange={(e) => { if (mode === 'create' || (mode === 'edit' && formData.status === 'PREPARING')) setFormData({ ...formData, datePrepared: sanitizeDateInput(e.target.value) + ':00' }); }}
-                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-blue-500 transition ${mode === 'edit' && formData.status !== 'PREPARING' ? 'border-gray-200 bg-gray-100 cursor-not-allowed' : 'border-gray-300 focus:ring-blue-500 bg-white'}`}
-                                    disabled={mode === 'edit' && formData.status !== 'PREPARING'}
-                                    required
-                                />
+                                {/* ── Split date + time inputs — no year-overflow bug ── */}
+                                {(() => {
+                                    const locked = mode === 'edit' && formData.status !== 'PREPARING';
+                                    return (
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="date"
+                                                value={getDatePart(formData.datePrepared)}
+                                                onChange={(e) => { if (!locked) setFormData({ ...formData, datePrepared: combineDatetime(clampYear(e.target.value), getTimePart(formData.datePrepared)) }); }}
+                                                className={locked ? lockedDateInputClass : dateInputClass}
+                                                max="9999-12-31" disabled={locked}
+                                                required
+                                            />
+                                            <input
+                                                type="time"
+                                                value={getTimePart(formData.datePrepared)}
+                                                onChange={(e) => { if (!locked) setFormData({ ...formData, datePrepared: combineDatetime(getDatePart(formData.datePrepared), e.target.value) }); }}
+                                                className={locked ? lockedTimeInputClass : timeInputClass}
+                                                disabled={locked}
+                                                required
+                                            />
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         </div>
 
@@ -702,13 +688,23 @@ const DeliveryFormModal = ({
                         {formData.status === 'DELIVERED' && (
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">Date Delivered *</label>
-                                <input
-                                    type="datetime-local"
-                                    value={toDatetimeLocal(formData.dateDelivered)}
-                                    onChange={(e) => setFormData({ ...formData, dateDelivered: sanitizeDateInput(e.target.value) + ':00' })}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white"
-                                    required
-                                />
+                                <div className="flex gap-2">
+                                    <input
+                                        type="date"
+                                        value={getDatePart(formData.dateDelivered)}
+                                        onChange={(e) => setFormData({ ...formData, dateDelivered: combineDatetime(clampYear(e.target.value), getTimePart(formData.dateDelivered)) })}
+                                        className={dateInputClass}
+                                        max="9999-12-31"
+                                        required
+                                    />
+                                    <input
+                                        type="time"
+                                        value={getTimePart(formData.dateDelivered)}
+                                        onChange={(e) => setFormData({ ...formData, dateDelivered: combineDatetime(getDatePart(formData.dateDelivered), e.target.value) })}
+                                        className={timeInputClass}
+                                        required
+                                    />
+                                </div>
                             </div>
                         )}
 

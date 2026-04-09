@@ -96,10 +96,10 @@ const DeliveryReceiptModal = ({
             {/* ── LEFT COLUMN ──────────────────────────────────────────────
                 Each field is absolutely anchored so wrapping text in one
                 field never shifts the vertical position of another.        */}
-            <div className="relative" style={{ height: '110px' }}>
+            <div className="relative" style={{ height: '135px' }}>
 
               {/* DELIVERED TO — anchored at top: 0 */}
-              <div className="absolute left-0 right-0" style={{ top: 0 }}>
+              <div className="absolute left-0 right-0" style={{ top: '4px' }}>
                 <div className="flex items-start">
                   <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>
                     DELIVERED TO:
@@ -123,7 +123,7 @@ const DeliveryReceiptModal = ({
               </div>
 
               {/* BUSINESS STYLE — anchored at top: 76px */}
-              <div className="absolute left-0 right-0" style={{ top: '76px' }}>
+              <div className="absolute left-0 right-0" style={{ top: '102px' }}>
                 <div className="flex items-start">
                   <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>
                     BUSINESS STYLE:
@@ -329,7 +329,7 @@ const DeliveryReceiptModal = ({
               </div>
             </div>
 
-            <div>
+            <div style={{ marginTop: '8px' }}>
               <div className="mb-2">
                 <div className="flex items-center mb-0">
                   <span className="font-bold text-gray-900 text-sm w-40 print:text-xs">Received by:</span>
