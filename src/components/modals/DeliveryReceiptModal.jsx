@@ -116,11 +116,10 @@ const DeliveryReceiptModal = ({
                   <span className="font-bold text-gray-900 text-sm w-32 flex-shrink-0">BUSINESS STYLE:</span>
                   <div className="flex-1">
                     <textarea
-                      value={receipt.businessStyle || ''}
+                      value={receipt.businessStyle || receipt.companyName || ''}
                       onChange={(e) => setReceipt({ ...receipt, businessStyle: e.target.value })}
                       rows={1}
-                      className="text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-blue-500 bg-transparent print:hidden break-words resize-none overflow-hidden"
-                      style={{ minHeight: '1.5rem' }}
+                      className="text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-blue-500 bg-transparent break-words resize-none overflow-hidden" style={{ minHeight: '1.5rem' }}
                       onInput={(e) => {
                         e.target.style.height = 'auto';
                         e.target.style.height = e.target.scrollHeight + 'px';
@@ -297,7 +296,7 @@ const DeliveryReceiptModal = ({
 
           <div className="grid grid-cols-2 gap-8 mt-4" style={{ marginTop: 'auto', alignItems: 'flex-end' }}>
             <div>
-              <div className="mb-3">
+              <div className="mb-3" style={{ marginTop: '24px' }}>
                 <div className="flex items-center mb-0">
                   <span className="font-bold text-gray-900 text-sm print:text-xs" style={{ width: '90px', flexShrink: 0 }}>Prepared by:</span>
                   <div className="relative flex-1">

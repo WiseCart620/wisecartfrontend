@@ -100,6 +100,21 @@
     color: black !important;
   }
 
+  /* Make business style textarea visible when printing */
+  #delivery-receipt textarea {
+    color: black !important;
+    visibility: visible !important;
+    display: block !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    resize: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
   /* Make readonly inputs visible */
   #delivery-receipt input[readonly] {
     color: black !important;
