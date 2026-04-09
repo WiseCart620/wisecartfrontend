@@ -93,7 +93,7 @@ const DeliveryReceiptModal = ({
             </div>
           </div>
 
-          <div className="grid mb-4 -mt-4" style={{ gridTemplateColumns: '55% 45%', gap: '1rem' }}>
+          <div className="grid mb-4 -mt-4" style={{ gridTemplateColumns: '60% 40%', gap: '1rem' }}>
             <div>
               <div className="mb-3">
                 <div className="flex items-start" style={{ marginBottom: '28px', marginTop: '10px' }}>
@@ -104,7 +104,7 @@ const DeliveryReceiptModal = ({
                 </div>
               </div>
               <div className="mb-2">
-                <div className="flex items-start" style={{ marginBottom: '28px', marginTop: '2px' }}>
+                <div className="flex items-start" style={{ marginBottom: '28px', marginTop: '-8px' }}>
                   <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>ADDRESS:</span>
                   <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
                     {receipt.branchAddress}
@@ -142,44 +142,47 @@ const DeliveryReceiptModal = ({
               </div>
 
               {/* TIN — below DATE */}
-              <div className="flex items-start" style={{ marginBottom: '28px', marginTop: '2px' }}>
+              <div className="flex items-start" style={{ marginBottom: '28px', marginTop: '2px', marginLeft: '2px' }}>
                 <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '60px' }}>TIN:</span>
                 <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
                   {receipt.companyTin}
                 </div>
               </div>
 
-              {/* TERMS OF PAYMENT */}
-              <div className="flex items-center mb-3 gap-2" style={{ overflow: 'visible' }}>
-                <span className="font-bold text-gray-900 text-sm whitespace-nowrap flex-shrink-0">
+              {/* TERMS OF PAYMENT — stacked above P.O. NUMBER */}
+              <div className="flex items-start mb-1" style={{ marginLeft: '-50px' }}>
+                <span className="font-bold text-gray-900 text-sm whitespace-nowrap flex-shrink-0" style={{ width: '145px' }}>
                   TERMS OF PAYMENT:
                 </span>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0 ml-1">
                   <input
                     type="text"
                     value={receipt.termsOfPayment || ''}
                     onChange={(e) => setReceipt({ ...receipt, termsOfPayment: e.target.value })}
-                    className="text-black-900 w-full border-b border-gray-300 text-sm px-2 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
+                    className="text-black-900 w-full border-b border-gray-300 text-sm px-1 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
                   />
-                  <div className="hidden print:block text-black-900 text-sm px-2 border-b border-gray-900 min-h-[1.5rem]">
+                  <div className="hidden print:block text-black-900 text-sm px-1 border-b border-gray-900 min-h-[1.5rem]">
                     {receipt.termsOfPayment || '\u00A0'}
                   </div>
                 </div>
               </div>
 
-              {/* P.O. NUMBER - separate row */}
-              <div className="flex items-center mb-3 gap-2">
-                <span className="font-bold text-gray-900 text-sm whitespace-nowrap flex-shrink-0">
+              {/* P.O. NUMBER — below TERMS OF PAYMENT */}
+              <div className="flex items-start mb-3" style={{ marginLeft: '-50px' }}>
+                <span className="font-bold text-gray-900 text-sm whitespace-nowrap flex-shrink-0" style={{ width: '145px' }}>
                   P.O. NUMBER:
                 </span>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0 ml-1">
                   <input
                     type="text"
                     value={receipt.purchaseOrderNumber || ''}
                     onChange={(e) => setReceipt({ ...receipt, purchaseOrderNumber: e.target.value })}
-                    className="text-black-900 w-full border-b border-gray-300 text-sm px-2 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
+                    className="text-black-900 w-full border-b border-gray-300 text-sm px-1 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
                   />
-                  <div className="hidden print:block text-black-900 text-sm border-b border-gray-900 min-h-[1.5rem] px-2">
+                  <div
+                    className="hidden print:block text-black-900 text-sm px-1 min-h-[1.5rem]"
+                    style={{ borderBottom: '1px solid #111', wordBreak: 'break-word', whiteSpace: 'normal' }}
+                  >
                     {receipt.purchaseOrderNumber || '\u00A0'}
                   </div>
                 </div>
@@ -214,9 +217,11 @@ const DeliveryReceiptModal = ({
                       onChange={(e) => setReceipt({ ...receipt, extraHeader: e.target.value })}
                       className="w-full bg-transparent font-bold text-xs uppercase px-0 py-0.5 border-none focus:outline-none print:hidden"
                     />
-                    <span className="print:inline hidden">
-                      {receipt.extraHeader || 'EXTRA'}
-                    </span>
+                    {receipt.items?.some(item => item.extra) && (
+                      <span className="hidden print:inline extra-header-print">
+                        {receipt.extraHeader || 'EXTRA'}
+                      </span>
+                    )}
                   </th>
                 </tr>
               </thead>

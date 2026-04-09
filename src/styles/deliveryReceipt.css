@@ -133,6 +133,10 @@
     color: transparent !important;
   }
 
+  #delivery-receipt thead th .extra-header-print {
+    color: black !important;
+  }
+
   #delivery-receipt table {
     border-collapse: collapse !important;
   }

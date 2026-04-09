@@ -125,20 +125,11 @@ const MultiCompanyPriceSelector = ({
                       <input
                         type="text"
                         value={val.companySku || ''}
-                        onChange={(e) => {
-                          const numeric = e.target.value.replace(/\D/g, '').slice(0, 13);
-                          handleFieldChange(company.id, 'companySku', numeric);
-                        }}
+                        onChange={(e) => handleFieldChange(company.id, 'companySku', e.target.value)}
                         onClick={(e) => e.stopPropagation()}
-                        placeholder="Company SKU (13 digits)"
-                        maxLength={13}
+                        placeholder="Company SKU"
                         className="w-36 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
-                      {val.companySku && val.companySku.length !== 13 && (
-                        <p className="text-xs text-red-500 mt-0.5">
-                          {val.companySku.length}/13 digits
-                        </p>
-                      )}
                     </div>
                   )}
                 </div>
