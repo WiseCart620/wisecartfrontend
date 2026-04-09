@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import '../styles/invoice-print.css';
 import { api } from '../services/api';
 import toast, { Toaster } from 'react-hot-toast';
@@ -7,7 +7,6 @@ import '../styles/sales-memo-print.css';
 import { LoadingOverlay } from '../components/common/LoadingOverlay';
 import VariationSearchableDropdown from '../components/common/VariationSearchableDropdown';
 import Pagination from '../components/common/Pagination';
-
 
 const formatCurrency = (amount) => {
   if (amount === null || amount === undefined) return '0.00';
@@ -199,46 +198,9 @@ const SalesManagement = () => {
   });
 
 
-  useEffect(() => {
-    const es = new EventSource('/api/sales/stream');
-
-    es.addEventListener('sale-update', () => {
-      console.log('SSE received: refreshing sales data...');
-      loadData();
-    });
-
-    es.onerror = () => {
-      console.warn('Sales SSE connection error, reconnecting...');
-    };
-
-    return () => {
-      console.log('Closing SSE connection');
-      es.close();
-    };
-  }, [loadData]);
 
 
-  useEffect(() => {
-    if (selectedProductForAdd && formData.branchId && productOptions.length > 0) {
-      const selectedOption = productOptions.find(opt => opt.id === selectedProductForAdd);
-      if (selectedOption) {
-        loadProductStock(
-          selectedOption.parentProductId,
-          formData.branchId,
-          selectedOption.variationId,
-          -1
-        );
-      }
-    }
-  }, [selectedProductForAdd, formData.branchId]);
-
-
-
-  useEffect(() => {
-    loadData();
-  }, [statusFilter]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     setLoadingMessage('Loading sales data...');
     try {
@@ -287,7 +249,38 @@ const SalesManagement = () => {
       setLoading(false);
       setLoadingMessage('');
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const es = new EventSource('/api/sales/stream');
+    es.addEventListener('sale-update', () => {
+      loadData();
+    });
+    es.onerror = () => {
+      console.warn('Sales SSE connection error, reconnecting...');
+    };
+    return () => {
+      es.close();
+    };
+  }, [loadData]);
+
+  useEffect(() => {
+    loadData();
+  }, [statusFilter]);
+
+  useEffect(() => {
+    if (selectedProductForAdd && formData.branchId && productOptions.length > 0) {
+      const selectedOption = productOptions.find(opt => opt.id === selectedProductForAdd);
+      if (selectedOption) {
+        loadProductStock(
+          selectedOption.parentProductId,
+          formData.branchId,
+          selectedOption.variationId,
+          -1
+        );
+      }
+    }
+  }, [selectedProductForAdd, formData.branchId]);
 
   const getProductPriceForCompany = async (productId, companyId, variationId = 0) => {
     try {
