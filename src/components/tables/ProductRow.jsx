@@ -224,7 +224,7 @@ const ProductRow = ({
                                     ₱{Number(product.unitCost).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                                 </div>
                             ) : (
-                                <span className="text-xs text-gray-400">No price set</span>
+                                <span className="text-xs text-gray-400"></span>
                             )}
                         </div>
                     )}
