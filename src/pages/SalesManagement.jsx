@@ -549,10 +549,10 @@ const SalesManagement = () => {
       const selectedProduct = productOptions.find(p => p.id === value);
 
       if (selectedProduct) {
-        const productId  = selectedProduct.parentProductId;
+        const productId = selectedProduct.parentProductId;
         const variationId = selectedProduct.variationId || null;
 
-        newItems[index].productId  = productId;
+        newItems[index].productId = productId;
         newItems[index].variationId = variationId;
 
         setFormData({ ...formData, items: newItems });
@@ -1298,6 +1298,7 @@ const SalesManagement = () => {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
+                  <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12">#</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
@@ -1309,13 +1310,16 @@ const SalesManagement = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {currentSales.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
                       {filteredSales.length === 0 ? 'No sales found' : 'No sales on this page'}
                     </td>
                   </tr>
                 ) : (
                   currentSales.map((sale) => (
                     <tr key={sale.id} className="hover:bg-gray-50 transition">
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-400 font-medium">
+                        {indexOfFirstItem + currentSales.indexOf(sale) + 1}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">{sale.branch.branchName}</div>
