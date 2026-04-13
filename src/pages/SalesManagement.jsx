@@ -200,9 +200,11 @@ const SalesManagement = () => {
 
 
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    setLoadingMessage('Loading sales data...');
+  const loadData = useCallback(async (background = false) => {
+    if (!background) {
+      setLoading(true);
+      setLoadingMessage('Loading sales data...');
+    }
     try {
       const [invRes, prodRes, warehousesRes, branchesRes, warehouseStocksRes, salesRes, companiesRes] =
         await Promise.allSettled([
@@ -263,8 +265,8 @@ const SalesManagement = () => {
 
   useEffect(() => {
     let es;
-    let retryTimeout;
     let retryDelay = 3000;
+    let retryTimeout;
 
     const connect = () => {
       es = new EventSource('https://erp.wisecart.ph/api/sales/stream');
@@ -274,7 +276,7 @@ const SalesManagement = () => {
       });
 
       es.addEventListener('delivery-update', () => {
-        loadData();
+        loadData(true); // background refresh — no loading overlay
       });
 
       es.onerror = () => {
