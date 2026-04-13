@@ -204,154 +204,112 @@ const SalesManagement = () => {
     setLoading(true);
     setLoadingMessage('Loading sales data...');
     try {
-      const [
-        invRes,
-        prodRes,
-        warehousesRes,
-        branchesRes,
-        warehouseStocksRes,
-        branchStocksRes,
-        salesRes,
-        companiesRes
-      ] = await Promise.all([
-        api.get('/inventories'),
-        api.get('/products'),
-        api.get('/warehouse'),
-        api.get('/branches'),
-        api.get('/stocks/warehouses'),
-        api.get('/stocks/branches'),
-        api.get('/sales'),
-        api.get('/companies')
-      ]);
+      const [invRes, prodRes, warehousesRes, branchesRes, warehouseStocksRes, salesRes, companiesRes] =
+        await Promise.allSettled([
+          api.get('/inventories'),
+          api.get('/products'),
+          api.get('/warehouse'),
+          api.get('/branches'),
+          api.get('/stocks/warehouses'),
+          api.get('/sales'),
+          api.get('/companies')
+        ]);
 
-      if (invRes.success) setInventories(invRes.data || []);
-      if (prodRes.success) setProducts(prodRes.data || []);
-      if (warehousesRes.success) setWarehouses(warehousesRes.data || []);
-      if (branchesRes.success) setBranches(branchesRes.data || []);
-      if (warehouseStocksRes.success) setWarehouseStocks(warehouseStocksRes.data || []);
-      if (branchStocksRes.success) setBranchStocks(branchStocksRes.data || []);
-      if (salesRes.success) setSales(salesRes.data || []);
-      if (companiesRes.success) setCompanies(companiesRes.data || []);
+      const extract = (result, name) => {
+        if (result.status === 'fulfilled' && result.value?.success) return result.value.data || [];
+        const reason = result.reason?.response?.data?.message
+          || result.reason?.response?.data
+          || result.reason?.message
+          || result.value?.message
+          || 'Unknown error';
+        toast.error(`Failed to load ${name}: ${reason}`, { duration: 4000 });
+        return null;
+      };
+
+      const inv = extract(invRes, 'inventories');
+      const prod = extract(prodRes, 'products');
+      const wh = extract(warehousesRes, 'warehouses');
+      const br = extract(branchesRes, 'branches');
+      const whStocks = extract(warehouseStocksRes, 'warehouse stocks');
+      const sales = extract(salesRes, 'sales');
+      const comp = extract(companiesRes, 'companies');
+
+      if (inv !== null) setInventories(inv);
+      if (prod !== null) setProducts(prod);
+      if (wh !== null) setWarehouses(wh);
+      if (br !== null) setBranches(br);
+      if (whStocks !== null) setWarehouseStocks(whStocks);
+      if (sales !== null) setSales(sales);
+      if (comp !== null) setCompanies(comp);
 
       try {
         const summaryRes = await api.get('/inventories/products/summary');
-        if (summaryRes.success) {
-          setProductSummaries(summaryRes.data || []);
-        }
+        if (summaryRes.success) setProductSummaries(summaryRes.data || []);
       } catch (summaryErr) {
         console.warn('Could not load product summaries:', summaryErr);
-        setProductSummaries([]);
       }
     } catch (err) {
-      console.error('Failed to load data:', err);
-      alert('Failed to load data');
+      toast.error(`Unexpected error: ${err.message || 'Unknown'}`);
     } finally {
       setLoading(false);
       setLoadingMessage('');
     }
   }, []);
 
-  useEffect(() => {
-    const es = new EventSource('/api/sales/stream');
-    es.addEventListener('delivery-update', () => {
-      loadData();
-    });
-    es.onerror = () => {
-      console.warn('Sales SSE connection error, reconnecting...');
-    };
-    return () => {
-      es.close();
-    };
-  }, [loadData]);
 
   useEffect(() => {
     loadData();
-  }, [statusFilter]);
+  }, []);
 
   useEffect(() => {
-    if (selectedProductForAdd && formData.branchId && productOptions.length > 0) {
-      const selectedOption = productOptions.find(opt => opt.id === selectedProductForAdd);
-      if (selectedOption) {
-        loadProductStock(
-          selectedOption.parentProductId,
-          formData.branchId,
-          selectedOption.variationId,
-          -1
-        );
-      }
-    }
-  }, [selectedProductForAdd, formData.branchId]);
+    let es;
+    let retryTimeout;
+    let retryDelay = 3000;
 
-  const getProductPriceForCompany = async (productId, companyId, variationId = 0) => {
-    try {
-      // Check if product has variations
-      const product = products.find(p => p.id === productId);
-      const hasVariations = product?.variations && product.variations.length > 0;
+    const connect = () => {
+      es = new EventSource('https://erp.wisecart.ph/api/sales/stream');
 
-      // If product has variations but no variationId is provided, throw error
-      if (hasVariations && !variationId) {
-        throw new Error('This product requires selecting a variation');
-      }
+      es.addEventListener('connected', () => {
+        retryDelay = 3000; // reset on successful connection
+      });
 
-      // If product doesn't have variations, pass 0 as variationId
-      const effectiveVariationId = hasVariations ? variationId : 0;
+      es.addEventListener('delivery-update', () => {
+        loadData();
+      });
 
-      const response = await api.get(
-        `/sales/product-price?productId=${productId}&companyId=${companyId}&variationId=${effectiveVariationId}`
-      );
+      es.onerror = () => {
+        es.close();
+        retryTimeout = setTimeout(() => {
+          retryDelay = Math.min(retryDelay * 2, 30000);
+          connect();
+        }, retryDelay);
+      };
+    };
 
-      if (response.success) {
-        return response.data?.price || 0;
-      }
+    connect();
 
-      // Fallback to product base price
-      return product?.basePrice || 0;
-    } catch (error) {
-      console.error('Failed to get price:', error);
+    return () => {
+      clearTimeout(retryTimeout);
+      if (es) es.close();
+    };
+  }, [loadData]);
 
-      if (error.message.includes('requires selecting a variation')) {
-        toast.error('This product requires selecting a variation. Please choose a variation from the dropdown.');
-      } else if (error.response?.data?.includes('Variation ID is required')) {
-        toast.error('This product has variations. Please select a specific variation.');
-      }
 
-      const product = products.find(p => p.id === productId);
-      return product?.basePrice || 0;
-    }
-  };
 
   const loadProductPricesForCompany = async (companyId) => {
     if (!companyId) {
       setProductPrices({});
       return;
     }
-
-    const priceMap = {};
-    for (const product of products) {
-      try {
-        // For products with variations, we need to check each variation
-        if (product.variations && product.variations.length > 0) {
-          for (const variation of product.variations) {
-            const price = await getProductPriceForCompany(product.id, companyId, variation.id);
-            priceMap[variation.id] = price;
-          }
-        } else {
-          // For products without variations, use productId with variationId=0
-          const price = await getProductPriceForCompany(product.id, companyId, 0);
-          priceMap[product.id] = price;
-        }
-      } catch (error) {
-        // Set default prices
-        if (product.variations && product.variations.length > 0) {
-          for (const variation of product.variations) {
-            priceMap[variation.id] = variation.price || product.price;
-          }
-        } else {
-          priceMap[product.id] = product.price;
-        }
+    try {
+      const response = await api.get(`/sales/product-prices?companyId=${companyId}`);
+      if (response.success) {
+        setProductPrices(response.data || {});
       }
+    } catch (error) {
+      console.warn('Could not load product prices:', error);
+      setProductPrices({});
     }
-    setProductPrices(priceMap);
   };
 
   const handleOpenModal = async (mode, sale = null) => {
@@ -962,15 +920,6 @@ const SalesManagement = () => {
       if (response.success || response.data?.message) {
         toast.success('Sale deleted successfully!');
         loadData();
-
-        try {
-          const branchStocksRes = await api.get('/stocks/branches');
-          if (branchStocksRes.success) {
-            setBranchStocks(branchStocksRes.data || []);
-          }
-        } catch (refreshErr) {
-          console.warn('Could not refresh branch stocks:', refreshErr);
-        }
       } else {
         toast.error('Failed to delete sale');
       }
@@ -1136,19 +1085,14 @@ const SalesManagement = () => {
     }];
   }), [products]);
 
-  const productOptions = products.flatMap(p => {
+  const productOptions = useMemo(() => products.flatMap(p => {
     const hasVariations = p.variations && p.variations.length > 0;
 
     if (hasVariations) {
-      // Products WITH variations
       return p.variations.map(v => {
-        const companyPrice = v.companyPrices?.find(cp => cp.company?.id === branchInfo?.companyId)?.price || 0;
-
-        // Get all company prices for this variation
-        const allCompanyPrices = v.companyPrices?.map(cp => ({
-          companyName: cp.company?.companyName || 'Unknown Company',
-          price: cp.price || 0
-        })) || [];
+        const companyMatch = v.companyPrices?.find(cp => cp.company?.id === branchInfo?.companyId);
+        const companyPrice = companyMatch?.price || 0;
+        const companySku = companyMatch?.companySku || null;
 
         const variationLabel = v.combinationDisplay ||
           (v.variationType && v.variationValue ? `${v.variationType}: ${v.variationValue}` : 'Variation');
@@ -1163,23 +1107,18 @@ const SalesManagement = () => {
           upc: v.upc,
           sku: v.sku,
           price: companyPrice,
-          allCompanyPrices: allCompanyPrices,
+          companySku: companySku,
           variationLabel: variationLabel,
           isVariation: true,
           hasVariations: true
         };
       });
     } else {
-      // Products WITHOUT variations - use company base price
-      const companyBasePrice = p.companyBasePrices?.find(
+      const companyBaseMatch = p.companyBasePrices?.find(
         cbp => cbp.company?.id === branchInfo?.companyId
-      )?.basePrice || productPrices[p.id] || 0;
-
-      // Get all company base prices
-      const allCompanyPrices = p.companyBasePrices?.map(cbp => ({
-        companyName: cbp.company?.companyName || 'Unknown Company',
-        price: cbp.basePrice || 0
-      })) || [];
+      );
+      const companyBasePrice = companyBaseMatch?.basePrice || productPrices[p.id] || 0;
+      const companySku = companyBaseMatch?.companySku || null;
 
       return [{
         id: `prod_${p.id}`,
@@ -1191,12 +1130,12 @@ const SalesManagement = () => {
         upc: p.upc,
         sku: p.sku,
         price: companyBasePrice,
-        allCompanyPrices: allCompanyPrices,
+        companySku: companySku,
         isVariation: false,
         hasVariations: false
       }];
     }
-  });
+  }), [products, branchInfo, productPrices]);
 
   if (loading) {
     return (
@@ -1630,9 +1569,11 @@ const SalesManagement = () => {
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Variation</th>
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">SKU</th>
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">UPC</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Company Prices</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Company SKU</th>
+                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Unit Price</th>
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Stock</th>
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Quantity</th>
+                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Amount</th>
                               <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Action</th>
                             </tr>
                           </thead>
@@ -1694,31 +1635,23 @@ const SalesManagement = () => {
                                     <span className="text-sm text-gray-900">{selectedOption?.upc || 'N/A'}</span>
                                   </td>
 
-                                  {/* Company Prices */}
-                                  {/* Company Prices - Collapsible */}
                                   <td className="px-4 py-3">
-                                    {selectedOption?.allCompanyPrices && selectedOption.allCompanyPrices.length > 0 ? (
-                                      <details className="group">
-                                        <summary className="flex items-center gap-2 cursor-pointer list-none text-xs font-medium text-blue-600 hover:text-blue-800">
-                                          <span>View Prices ({selectedOption.allCompanyPrices.length})</span>
-                                          <ChevronDown size={14} className="transition-transform group-open:rotate-180" />
-                                        </summary>
-                                        <div className="space-y-1 max-h-32 overflow-y-auto mt-2">
-                                          {selectedOption.allCompanyPrices.map((companyPrice, idx) => (
-                                            <div key={idx} className="flex items-center justify-between text-xs bg-gray-50 p-1.5 rounded border border-gray-200">
-                                              <span className="font-medium text-gray-700 truncate flex-1">
-                                                {companyPrice.companyName}
-                                              </span>
-                                              <span className="font-bold text-green-700 ml-2 whitespace-nowrap">
-                                                ₱{companyPrice.price.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                              </span>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </details>
-                                    ) : (
-                                      <span className="text-xs text-gray-500 italic">No prices</span>
-                                    )}
+                                    {selectedOption?.companySku
+                                      ? <span className="text-sm font-medium text-gray-900">{selectedOption.companySku}</span>
+                                      : <span className="text-xs text-gray-400 italic">—</span>
+                                    }
+                                  </td>
+
+                                  {/* Unit Price */}
+                                  <td className="px-4 py-3 text-right">
+                                    {(() => {
+                                      const price = selectedOption?.price ?? 0;
+                                      return price > 0
+                                        ? <span className="text-sm font-semibold text-green-700">
+                                          ₱{Number(price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                        : <span className="text-xs text-gray-400 italic">No price</span>;
+                                    })()}
                                   </td>
 
                                   {/* Stock */}
@@ -1771,6 +1704,21 @@ const SalesManagement = () => {
                                     )}
                                   </td>
 
+
+                                  {/* Amount */}
+                                  <td className="px-4 py-3 text-right">
+                                    {(() => {
+                                      const price = selectedOption?.price ?? 0;
+                                      const qty = item.quantity || 0;
+                                      const amount = price * qty;
+                                      return amount > 0
+                                        ? <span className="text-sm font-bold text-blue-700">
+                                          ₱{amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                        : <span className="text-xs text-gray-400">—</span>;
+                                    })()}
+                                  </td>
+
                                   {/* Action */}
                                   <td className="px-4 py-3 text-center">
                                     <button
@@ -1787,6 +1735,26 @@ const SalesManagement = () => {
                               );
                             })}
                           </tbody>
+                          <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+                            <tr>
+                              <td colSpan={8} className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
+                                Grand Total:
+                              </td>
+                              <td className="px-4 py-3 text-center text-sm font-bold text-gray-900">
+                                {formData.items.reduce((sum, item) => sum + (item.quantity || 0), 0).toLocaleString('en-US')}
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm font-bold text-blue-700">
+                                ₱{formData.items.reduce((sum, item) => {
+                                  const opt = productOptions.find(o =>
+                                    o.parentProductId === item.productId &&
+                                    (item.variationId ? o.variationId === item.variationId : !o.variationId)
+                                  );
+                                  return sum + ((opt?.price ?? 0) * (item.quantity || 0));
+                                }, 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </td>
+                              <td></td>
+                            </tr>
+                          </tfoot>
                         </table>
                       </div>
                     )}

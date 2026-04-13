@@ -71,20 +71,36 @@ export const useDeliveries = () => {
   }, []);
 
 
-  // ── SSE: real-time delivery updates ──────────────────────────────────────
   useEffect(() => {
-    const es = new EventSource('/api/deliveries/stream');
+    let es;
+    let retryTimeout;
+    let retryDelay = 3000;
 
-    es.addEventListener('delivery-update', () => {
-      loadData();
-    });
+    const connect = () => {
+      es = new EventSource('https://erp.wisecart.ph/api/deliveries/stream');
 
-    es.onerror = () => {
-      console.warn('SSE connection lost, browser will retry automatically...');
+      es.addEventListener('connected', () => {
+        retryDelay = 3000;
+      });
+
+      es.addEventListener('delivery-update', () => {
+        loadData();
+      });
+
+      es.onerror = () => {
+        es.close();
+        retryTimeout = setTimeout(() => {
+          retryDelay = Math.min(retryDelay * 2, 30000);
+          connect();
+        }, retryDelay);
+      };
     };
 
+    connect();
+
     return () => {
-      es.close();
+      clearTimeout(retryTimeout);
+      if (es) es.close();
     };
   }, [loadData]);
 
@@ -130,15 +146,17 @@ export const useDeliveries = () => {
 
   const cancelDelivery = async (id, remarks) => {
     try {
-      const encodedRemarks = encodeURIComponent(remarks);
-      const response = await api.patch(`/deliveries/${id}/cancel?remarks=${encodedRemarks}`);
-      if (response.success) {
-        await loadData();
-        return { success: true, data: response.data };
-      }
-      return { success: false, error: response.error };
-    } catch (err) {
-      return { success: false, error: err.message || 'Failed to cancel delivery' };
+      const response = await api.patch(
+        `/deliveries/${id}/cancel?remarks=${encodeURIComponent(remarks)}`
+      );
+      return { success: true, data: response.data || response };
+    } catch (error) {
+      const msg = error?.response?.data?.error
+        || error?.response?.data?.message
+        || error?.response?.data
+        || error?.message
+        || 'Failed to cancel delivery';
+      return { success: false, error: msg };
     }
   };
 

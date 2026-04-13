@@ -243,7 +243,10 @@ const DeliveryManagement = () => {
   const handleOpenCancelModal = (delivery) => { setCancelModal({ show: true, delivery, remarks: '' }); };
 
   const handleConfirmCancel = async () => {
-    if (!cancelModal.remarks.trim()) { alert('Please enter a reason for cancellation.'); return; }
+    if (!cancelModal.remarks.trim()) {
+      alert('Please enter a reason for cancellation.');
+      return;
+    }
     try {
       setActionLoading(true);
       setLoadingMessage('Cancelling delivery and reverting stocks...');
@@ -251,19 +254,24 @@ const DeliveryManagement = () => {
       if (result.success) {
         alert('Delivery cancelled successfully. All stocks have been reverted.');
         setCancelModal({ show: false, delivery: null, remarks: '' });
-        // Fetch fresh data and stay on the same page
         await loadData();
       } else {
+        // Show the full backend error — includes the item-by-item breakdown
         alert(result.error || 'Failed to cancel delivery');
       }
     } catch (error) {
-      alert(error.message || 'Failed to cancel delivery');
+      // error.message may be truncated by the hook — extract from response if possible
+      const msg = error?.response?.data?.error
+        || error?.response?.data?.message
+        || error?.message
+        || 'Failed to cancel delivery';
+      alert(msg);
     } finally {
       setActionLoading(false);
       setLoadingMessage('');
     }
   };
-
+  
   const handleGenerateReceipt = async (delivery) => {
     try {
       setActionLoading(true);

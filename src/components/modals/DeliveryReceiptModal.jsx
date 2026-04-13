@@ -91,15 +91,15 @@ const DeliveryReceiptModal = ({
             </div>
           </div>
 
-          <div className="grid mb-4 -mt-4" style={{ gridTemplateColumns: '60% 40%', gap: '1rem' }}>
+          <div className="grid -mt-4" style={{ gridTemplateColumns: '60% 40%', gap: '1rem', marginBottom: '52px' }}>
 
             {/* ── LEFT COLUMN ──────────────────────────────────────────────
-                Each field is absolutely anchored so wrapping text in one
-                field never shifts the vertical position of another.        */}
-            <div className="relative" style={{ height: '135px' }}>
+                CHANGED: top offsets shifted down by ~20px each so the
+                fields sit lower underneath the DELIVERY RECEIPT title.    */}
+            <div className="relative" style={{ height: '185px' }}>
 
-              {/* DELIVERED TO — anchored at top: 0 */}
-              <div className="absolute left-0 right-0" style={{ top: '4px' }}>
+              {/* DELIVERED TO */}
+              <div className="absolute left-0 right-0" style={{ top: '24px' }}>
                 <div className="flex items-start">
                   <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>
                     DELIVERED TO:
@@ -110,8 +110,8 @@ const DeliveryReceiptModal = ({
                 </div>
               </div>
 
-              {/* ADDRESS — anchored at top: 38px */}
-              <div className="absolute left-0 right-0" style={{ top: '38px' }}>
+              {/* ADDRESS — lowered further to top: 82px */}
+              <div className="absolute left-0 right-0" style={{ top: '82px' }}>
                 <div className="flex items-start">
                   <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>
                     ADDRESS:
@@ -122,8 +122,8 @@ const DeliveryReceiptModal = ({
                 </div>
               </div>
 
-              {/* BUSINESS STYLE — anchored at top: 76px */}
-              <div className="absolute left-0 right-0" style={{ top: '102px' }}>
+              {/* BUSINESS STYLE — moved up slightly to top: 132px */}
+              <div className="absolute left-0 right-0" style={{ top: '132px' }}>
                 <div className="flex items-start">
                   <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>
                     BUSINESS STYLE:
@@ -150,66 +150,78 @@ const DeliveryReceiptModal = ({
             </div>
             {/* ── END LEFT COLUMN ──────────────────────────────────────── */}
 
-            <div>
-              {/* DATE — aligned with DELIVERED TO */}
-              <div className="flex items-start" style={{ marginBottom: '28px', marginTop: '4px' }}>
-                <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '60px' }}>DATE:</span>
-                <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
-                  {receipt.date}
-                </div>
-              </div>
+            {/* ── RIGHT COLUMN — absolutely positioned to mirror left column ── */}
+            <div className="relative" style={{ height: '220px' }}>
 
-              {/* TIN — below DATE */}
-              <div className="flex items-start" style={{ marginBottom: '28px', marginTop: '-8px', marginLeft: '2px' }}>
-                <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '60px' }}>TIN:</span>
-                <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
-                  {receipt.companyTin}
-                </div>
-              </div>
-
-              {/* TERMS OF PAYMENT */}
-              <div className="flex items-start mb-1" style={{ marginLeft: '-28px', marginTop: '-10px' }}>
-                <span className="font-bold text-gray-900 text-sm whitespace-nowrap flex-shrink-0" style={{ width: '145px' }}>
-                  TERMS OF PAYMENT:
-                </span>
-                <div className="flex-1 min-w-0 ml-1">
-                  <input
-                    type="text"
-                    value={receipt.termsOfPayment || ''}
-                    onChange={(e) => setReceipt(prev => ({ ...prev, termsOfPayment: e.target.value }))}
-                    className="text-black-900 w-full border-b border-gray-300 text-sm px-1 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
-                  />
-                  <div className="hidden print:block text-black-900 text-sm px-1 border-b border-gray-900 min-h-[1.5rem]">
-                    {receipt.termsOfPayment || '\u00A0'}
+              {/* DATE — aligns with DELIVERED TO (top: 24px) */}
+              <div className="absolute left-0 right-0" style={{ top: '24px' }}>
+                <div className="flex items-start">
+                  <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '60px' }}>DATE:</span>
+                  <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
+                    {receipt.date}
                   </div>
                 </div>
               </div>
 
-              {/* P.O. NUMBER */}
-              <div className="flex items-start mb-3" style={{ marginLeft: '-10px', marginTop: '-6px' }}>
-                <span className="font-bold text-gray-900 whitespace-nowrap flex-shrink-0" style={{ width: '120px', fontSize: '14px' }}>
-                  P.O. NUMBER:
-                </span>
-                <div className="flex-1 min-w-0 ml-1">
-                  <input
-                    type="text"
-                    value={receipt.purchaseOrderNumber || ''}
-                    onChange={(e) => setReceipt(prev => ({ ...prev, purchaseOrderNumber: e.target.value }))}
-                    className="text-black-900 w-full border-b border-gray-300 text-sm px-1 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
-                  />
-                  <div
-                    className="hidden print:block text-black-900 px-1 min-h-[1.5rem]"
-                    style={{ borderBottom: '1px solid #111', wordBreak: 'break-word', whiteSpace: 'normal', fontSize: '13px' }}
-                  >
-                    {receipt.purchaseOrderNumber || '\u00A0'}
+              {/* TIN — aligns with ADDRESS (top: 82px) */}
+              <div className="absolute left-0 right-0" style={{ top: '82px' }}>
+                <div className="flex items-start">
+                  <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '60px' }}>TIN:</span>
+                  <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
+                    {receipt.companyTin}
                   </div>
                 </div>
               </div>
+
+              {/* TERMS OF PAYMENT — aligns with BUSINESS STYLE (top: 132px) */}
+              <div className="absolute left-0 right-0" style={{ top: '132px' }}>
+                <div className="flex items-start">
+                  <span className="font-bold text-gray-900 text-sm whitespace-nowrap flex-shrink-0" style={{ width: '145px' }}>
+                    TERMS OF PAYMENT:
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <input
+                      type="text"
+                      value={receipt.termsOfPayment || ''}
+                      onChange={(e) => setReceipt(prev => ({ ...prev, termsOfPayment: e.target.value }))}
+                      className="text-black-900 w-full border-b border-gray-300 text-sm px-1 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
+                    />
+                    <div className="hidden print:block text-black-900 text-sm px-1 border-b border-gray-900 min-h-[1.5rem]">
+                      {receipt.termsOfPayment || '\u00A0'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* P.O. NUMBER — below TERMS OF PAYMENT */}
+              <div className="absolute right-0" style={{ top: '155px', left: '20px' }}>
+                <div className="flex items-start">
+                  <span className="font-bold text-gray-900 text-sm whitespace-nowrap flex-shrink-0" style={{ width: '100px' }}>
+                    P.O. NUMBER:
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <input
+                      type="text"
+                      value={receipt.purchaseOrderNumber || ''}
+                      onChange={(e) => setReceipt(prev => ({ ...prev, purchaseOrderNumber: e.target.value }))}
+                      className="text-black-900 w-full border-b border-gray-300 text-sm px-1 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
+                    />
+                    <div
+                      className="hidden print:block text-black-900 text-sm px-1 min-h-[1.5rem]"
+                      style={{ borderBottom: '1px solid #111', wordBreak: 'break-word', whiteSpace: 'normal' }}
+                    >
+                      {receipt.purchaseOrderNumber || '\u00A0'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
+            {/* ── END RIGHT COLUMN ─────────────────────────────────────── */}
           </div>
 
           {/* Items Table */}
-          <div className="-mt-8 leading-none">
+          <div className="-mt-20 leading-none">
             <table className="w-full border-collapse">
               <colgroup>
                 <col style={{ width: '7%' }} />
@@ -219,21 +231,22 @@ const DeliveryReceiptModal = ({
               </colgroup>
               <thead>
                 <tr className="border-b border-gray-900">
-                  <th className="text-left px-2 py-0.5 font-bold text-gray-900 text-xs uppercase tracking-wider">
+                  {/* CHANGED: header text bumped from text-xs → text-[12px] */}
+                  <th className="text-left px-2 py-0.5 font-bold text-gray-900 text-[12px] uppercase tracking-wider">
                     Quantity
                   </th>
-                  <th className="text-left px-1 py-0.5 font-bold text-gray-900 text-xs uppercase tracking-wider">
+                  <th className="text-left px-1 py-0.5 font-bold text-gray-900 text-[12px] uppercase tracking-wider">
                     Unit
                   </th>
-                  <th className="text-left px-3 py-0.5 font-bold text-gray-900 text-xs uppercase tracking-wider">
+                  <th className="text-left px-3 py-0.5 font-bold text-gray-900 text-[12px] uppercase tracking-wider">
                     Particulars
                   </th>
-                  <th className="text-left px-3 py-0.5 font-bold text-gray-900 text-xs uppercase tracking-wider">
+                  <th className="text-left px-3 py-0.5 font-bold text-gray-900 text-[12px] uppercase tracking-wider">
                     <input
                       type="text"
                       value={receipt.extraHeader || 'EXTRA'}
                       onChange={(e) => setReceipt(prev => ({ ...prev, extraHeader: e.target.value }))}
-                      className="w-full bg-transparent font-bold text-xs uppercase px-0 py-0.5 border-none focus:outline-none print:hidden"
+                      className="w-full bg-transparent font-bold text-[12px] uppercase px-0 py-0.5 border-none focus:outline-none print:hidden"
                     />
                     {receipt.items?.some(item => item.extra) && (
                       <span className="hidden print:inline extra-header-print">
@@ -247,13 +260,14 @@ const DeliveryReceiptModal = ({
                 {receipt.items?.length > 0 ? (
                   receipt.items.map((item, i) => (
                     <tr key={i} className="align-middle">
-                      <td className="px-2 py-0.5 text-xs font-medium text-gray-900 whitespace-nowrap text-center">
+                      {/* CHANGED: data cells text-xs → text-[12px] */}
+                      <td className="px-2 py-0.5 text-[12px] font-medium text-gray-900 whitespace-nowrap text-center">
                         {item.deliveredQty || item.preparedQty || item.quantity || 0}
                       </td>
-                      <td className="px-1 py-0.5 text-xs font-medium text-gray-900 whitespace-nowrap">
+                      <td className="px-1 py-0.5 text-[12px] font-medium text-gray-900 whitespace-nowrap">
                         {item.uom || item.unit || 'pcs'}
                       </td>
-                      <td className="px-3 py-0.5 text-xs text-gray-900 leading-tight" colSpan={1}>
+                      <td className="px-3 py-0.5 text-[12px] text-gray-900 leading-tight" colSpan={1}>
                         <div className="font-semibold">
                           {[
                             item.companySku || null,
@@ -262,12 +276,12 @@ const DeliveryReceiptModal = ({
                           ].filter(Boolean).join(' - ')}
                         </div>
                         {item.particular && (
-                          <div className="text-[10px] text-black-600 -mt-0.5">
+                          <div className="text-[11px] text-black-600 -mt-0.5">
                             {item.particular}
                           </div>
                         )}
                       </td>
-                      <td className="px-3 py-1 text-xs">
+                      <td className="px-3 py-1 text-[12px]">
                         <input
                           type="text"
                           value={item.extra || ''}
@@ -279,7 +293,7 @@ const DeliveryReceiptModal = ({
                               return { ...prev, items: newItems };
                             });
                           }}
-                          className="w-full bg-transparent border-b border-black-300 text-xs px-0 py-0.5 focus:outline-none focus:border-blue-500 print:hidden"
+                          className="w-full bg-transparent border-b border-black-300 text-[12px] px-0 py-0.5 focus:outline-none focus:border-blue-500 print:hidden"
                         />
                         <span className="hidden print:inline">{item.extra || ''}</span>
                       </td>
@@ -287,7 +301,7 @@ const DeliveryReceiptModal = ({
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="4" className="py-8 text-center text-gray-400 italic text-xs">
+                    <td colSpan="4" className="py-8 text-center text-gray-400 italic text-[12px]">
                       No items
                     </td>
                   </tr>
@@ -295,10 +309,10 @@ const DeliveryReceiptModal = ({
 
                 {Array.from({ length: Math.max(0, 16 - (receipt.items?.length || 0)) }).map((_, i) => (
                   <tr key={`empty-${i}`} style={{ height: '18px' }}>
-                    <td className="px-2 text-xs">&nbsp;</td>
-                    <td className="px-1 text-xs">&nbsp;</td>
-                    <td className="px-3 text-xs">&nbsp;</td>
-                    <td className="px-3 text-xs">&nbsp;</td>
+                    <td className="px-2 text-[12px]">&nbsp;</td>
+                    <td className="px-1 text-[12px]">&nbsp;</td>
+                    <td className="px-3 text-[12px]">&nbsp;</td>
+                    <td className="px-3 text-[12px]">&nbsp;</td>
                   </tr>
                 ))}
               </tbody>
