@@ -65,33 +65,33 @@ const ProductRow = ({
     // Helper function to get unique suppliers from product
     const getProductSuppliers = () => {
         let supplierList = [];
-        
+
         // Check if product has suppliers array (from API)
         if (product.suppliers && Array.isArray(product.suppliers)) {
             supplierList = product.suppliers;
         }
-        
+
         // Check if product has supplierIds (from form data)
         if (product.supplierIds && Array.isArray(product.supplierIds)) {
             const suppliersFromIds = product.supplierIds
                 .map(id => suppliers.find(s => s.id === id))
                 .filter(Boolean);
-            
+
             // Merge with existing suppliers, avoiding duplicates by ID
             supplierList = [...supplierList, ...suppliersFromIds];
         }
-        
+
         // Remove duplicates based on supplier ID
         const uniqueSuppliers = [];
         const seenIds = new Set();
-        
+
         supplierList.forEach(supplier => {
             if (supplier && supplier.id && !seenIds.has(supplier.id)) {
                 seenIds.add(supplier.id);
                 uniqueSuppliers.push(supplier);
             }
         });
-        
+
         return uniqueSuppliers;
     };
 
@@ -230,6 +230,15 @@ const ProductRow = ({
                     )}
                 </td>
 
+                <td className="px-6 py-4 text-sm text-gray-600">
+                    {!hasVariations
+                        ? (product.upc
+                            ? <span className="font-mono">{product.upc}</span>
+                            : <span className="text-gray-400">—</span>)
+                        : <span className="text-gray-400 text-xs italic">See variations</span>
+                    }
+                </td>
+
                 <td className="px-6 py-4">
                     {product.createdAt ? (
                         <div className="flex flex-col">
@@ -275,7 +284,7 @@ const ProductRow = ({
             {/* Expanded Variations */}
             {isExpanded && hasVariations && (
                 <tr>
-                    <td colSpan="7" className="bg-gray-50 px-6 py-4">
+                    <td colSpan="8" className="bg-gray-50 px-6 py-4">
                         <div className="pl-12">
                             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                                 <table className="w-full">

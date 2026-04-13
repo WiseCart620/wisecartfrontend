@@ -389,6 +389,8 @@ const ProductManagement = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variations</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">UPC</th>
+
                 <th
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 transition"
                   onClick={() => handleSort('createdAt')}
@@ -406,7 +408,7 @@ const ProductManagement = () => {
             <tbody className="divide-y divide-gray-200">
               {currentProducts.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan="8" className="px-6 py-8 text-center text-gray-500">
                     {filteredProducts.length === 0 ? 'No products found' : 'No products on this page'}
                   </td>
                 </tr>
