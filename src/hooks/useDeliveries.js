@@ -119,6 +119,10 @@ export const useDeliveries = () => {
 
   const updateDelivery = async (id, deliveryData) => {
     try {
+      const currentDelivery = deliveries.find(d => d.id === id);
+      if (currentDelivery?.status === 'CANCELLED') {
+        return { success: false, error: 'Cannot edit a cancelled delivery.' };
+      }
       const response = await api.put(`/deliveries/${id}`, deliveryData);
       if (response.success) {
         await loadData();
