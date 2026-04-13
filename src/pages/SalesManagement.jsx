@@ -48,6 +48,15 @@ const formatDate = (dateString) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// FIX 1: Stable stock key — does NOT depend on array index.
+// Using index caused "No stock / Load failed" whenever an item was removed
+// because all items after the removed one shifted down by 1, making their
+// previously-loaded keys unreachable.
+// ─────────────────────────────────────────────────────────────────────────────
+const makeStockKey = (productId, variationId, branchId) =>
+  `${productId}_${variationId ?? 'base'}_${branchId}`;
+
 // Searchable Dropdown Component
 const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey, valueKey, required = false }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -142,9 +151,6 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
 };
 
 
-
-
-
 const SalesManagement = () => {
   const [sales, setSales] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -196,8 +202,6 @@ const SalesManagement = () => {
     variationId: '',
     productName: ''
   });
-
-
 
 
   const loadData = useCallback(async (background = false) => {
@@ -272,11 +276,11 @@ const SalesManagement = () => {
       es = new EventSource('https://erp.wisecart.ph/api/sales/stream');
 
       es.addEventListener('connected', () => {
-        retryDelay = 3000; // reset on successful connection
+        retryDelay = 3000;
       });
 
       es.addEventListener('delivery-update', () => {
-        loadData(true); // background refresh — no loading overlay
+        loadData(true);
       });
 
       es.onerror = () => {
@@ -295,7 +299,6 @@ const SalesManagement = () => {
       if (es) es.close();
     };
   }, [loadData]);
-
 
 
   const loadProductPricesForCompany = async (companyId) => {
@@ -363,15 +366,11 @@ const SalesManagement = () => {
           const stockMap = {};
           const errors = {};
 
-          // Load stock for each item with proper index
-          for (let index = 0; index < sale.items.length; index++) {
-            const item = sale.items[index];
+          // FIX 1: Use stable makeStockKey (no index)
+          for (const item of sale.items) {
+            const variationId = item.variation?.id || null;
+            const stockKey = makeStockKey(item.product.id, variationId, sale.branch.id);
             try {
-              const variationId = item.variation?.id || null;
-              const stockKey = variationId
-                ? `${index}_${item.product.id}_${variationId}_${sale.branch.id}`
-                : `${index}_${item.product.id}_${sale.branch.id}`;
-
               const endpoint = variationId
                 ? `/stocks/branches/${sale.branch.id}/products/${item.product.id}/variations/${variationId}`
                 : `/stocks/branches/${sale.branch.id}/products/${item.product.id}`;
@@ -379,13 +378,10 @@ const SalesManagement = () => {
               const stock = await api.get(endpoint);
               if (stock.success) {
                 stockMap[stockKey] = stock.data;
+              } else {
+                stockMap[stockKey] = { quantity: 0, availableQuantity: 0 };
               }
             } catch (error) {
-              const variationId = item.variation?.id || null;
-              const stockKey = variationId
-                ? `${index}_${item.product.id}_${variationId}_${sale.branch.id}`
-                : `${index}_${item.product.id}_${sale.branch.id}`;
-
               stockMap[stockKey] = { quantity: 0, availableQuantity: 0 };
               errors[stockKey] = 'Failed to load stock';
             }
@@ -429,7 +425,7 @@ const SalesManagement = () => {
   };
 
   const handleBranchChange = async (branchId) => {
-    setFormData({ ...formData, branchId, items: [] }); // Clear items when branch changes
+    setFormData({ ...formData, branchId, items: [] });
     if (branchId) {
       const loadingToast = toast.loading('Loading branch information...');
 
@@ -438,11 +434,8 @@ const SalesManagement = () => {
         if (info.success) {
           setBranchInfo(info.data);
           await loadProductPricesForCompany(info.data?.companyId);
-
-          // Don't pre-load all product stocks - load only when products are added
           setBranchStocks({});
           setStockErrors({});
-
           toast.success('Branch information loaded successfully!', { id: loadingToast });
         }
       } catch (error) {
@@ -456,12 +449,11 @@ const SalesManagement = () => {
   };
 
 
-  const loadProductStock = async (productId, branchId, variationId, itemIndex) => {
+  // FIX 1: Removed `itemIndex` parameter — key is now stable (product+variation+branch)
+  const loadProductStock = async (productId, branchId, variationId) => {
     if (!branchId || !productId) return;
 
-    const stockKey = variationId
-      ? `${itemIndex}_${productId}_${variationId}_${branchId}`
-      : `${itemIndex}_${productId}_${branchId}`;
+    const stockKey = makeStockKey(productId, variationId, branchId);
 
     setLoadingStocks(prev => ({ ...prev, [stockKey]: true }));
     setStockErrors(prev => ({ ...prev, [stockKey]: null }));
@@ -476,23 +468,24 @@ const SalesManagement = () => {
 
       setBranchStocks(prev => ({
         ...prev,
-        [stockKey]: stockData || { quantity: 0, availableQuantity: 0 }
+        [stockKey]: stockData || { quantity: 0, availableQuantity: 0 },
       }));
     } catch (error) {
       console.error('Failed to load stock for product:', productId, 'variation:', variationId);
       setBranchStocks(prev => ({
         ...prev,
-        [stockKey]: { quantity: 0, availableQuantity: 0 }
+        [stockKey]: { quantity: 0, availableQuantity: 0 },
       }));
       setStockErrors(prev => ({
         ...prev,
-        [stockKey]: 'Failed to load stock'
+        [stockKey]: 'Failed to load stock',
       }));
     } finally {
       setLoadingStocks(prev => ({ ...prev, [stockKey]: false }));
     }
   };
 
+  // FIX 1: No index passed to loadProductStock
   const handleAddProductToTable = async () => {
     if (!selectedProductForAdd) {
       toast.error('Please select a product first');
@@ -510,7 +503,6 @@ const SalesManagement = () => {
       return;
     }
 
-    // Check if product already exists in items
     const exists = formData.items.some(item =>
       item.productId === selectedOption.parentProductId &&
       item.variationId === (selectedOption.variationId || null)
@@ -521,26 +513,21 @@ const SalesManagement = () => {
       return;
     }
 
-    // Add the product to items
     const newItem = {
       productId: selectedOption.parentProductId,
       variationId: selectedOption.variationId || null,
       quantity: 1
     };
 
-    const newItems = [...formData.items, newItem];
-    setFormData({ ...formData, items: newItems });
+    setFormData(prev => ({ ...prev, items: [...prev.items, newItem] }));
 
-    // Load stock for the new product
-    const newIndex = newItems.length - 1;
+    // FIX 1: No index — key is stable
     await loadProductStock(
       selectedOption.parentProductId,
       formData.branchId,
       selectedOption.variationId || null,
-      newIndex
     );
 
-    // Clear selection
     setSelectedProductForAdd('');
     toast.success('Product added to list');
   };
@@ -548,8 +535,11 @@ const SalesManagement = () => {
 
   const handleRemoveItem = (index) => {
     setFormData({ ...formData, items: formData.items.filter((_, i) => i !== index) });
+    // Stock data in branchStocks stays (keyed by product+variation+branch, not index)
+    // so remaining items still find their stock info correctly after removal.
   };
 
+  // FIX 1: No index passed to loadProductStock
   const handleItemChange = async (index, field, value) => {
     const newItems = [...formData.items];
 
@@ -559,26 +549,16 @@ const SalesManagement = () => {
       const selectedProduct = productOptions.find(p => p.id === value);
 
       if (selectedProduct) {
-        if (selectedProduct.isVariation && selectedProduct.hasVariations) {
-          newItems[index].productId = selectedProduct.parentProductId;
-          newItems[index].variationId = selectedProduct.id;
-        } else {
-          newItems[index].productId = selectedProduct.id;
-          newItems[index].variationId = null;
-        }
+        const productId  = selectedProduct.parentProductId;
+        const variationId = selectedProduct.variationId || null;
+
+        newItems[index].productId  = productId;
+        newItems[index].variationId = variationId;
 
         setFormData({ ...formData, items: newItems });
 
-        const stockProductId = selectedProduct.isVariation
-          ? selectedProduct.parentProductId
-          : selectedProduct.id;
-
-        const stockVariationId = selectedProduct.isVariation
-          ? selectedProduct.id
-          : null;
-
         if (formData.branchId) {
-          await loadProductStock(stockProductId, formData.branchId, stockVariationId, index);
+          await loadProductStock(productId, formData.branchId, variationId);
         }
         return;
       }
@@ -588,7 +568,6 @@ const SalesManagement = () => {
 
     setFormData({ ...formData, items: newItems });
   };
-
 
 
   const handleGenerateSalesMemo = async () => {
@@ -636,7 +615,6 @@ const SalesManagement = () => {
         if (typeof error.response.data === 'string') {
           errorMessage = error.response.data;
 
-          // Check if error is about no sales found
           if (errorMessage.includes('No CONFIRMED or INVOICED sales found')) {
             const selectedCompany = companies.find(c => c.id === filterData.companyId);
             const selectedBranch = filterData.branchId ? branches.find(b => b.id === filterData.branchId) : null;
@@ -721,7 +699,6 @@ const SalesManagement = () => {
       setActionLoading(true);
       setLoadingMessage('Filtering sales...');
 
-      // Build query params
       const params = new URLSearchParams();
       if (filterData.companyId) params.append('companyId', filterData.companyId);
       if (filterData.branchId) params.append('branchId', filterData.branchId);
@@ -746,7 +723,6 @@ const SalesManagement = () => {
       setLoadingMessage('');
     }
   };
-
 
 
   const handleGenerateInvoice = async () => {
@@ -839,7 +815,6 @@ const SalesManagement = () => {
         if (typeof error.response.data === 'string') {
           errorMessage = error.response.data;
 
-          // Check if error is about no sales found
           if (errorMessage.includes('No CONFIRMED or INVOICED sales found') ||
             errorMessage.includes('No sales found')) {
             const selectedCompany = companies.find(c => c.id === filterData.companyId);
@@ -865,7 +840,6 @@ const SalesManagement = () => {
       toast.error(errorMessage, { duration: 5000 });
     }
   };
-
 
 
   const handleUpdateStatus = async (saleId, newStatus) => {
@@ -905,7 +879,6 @@ const SalesManagement = () => {
       setLoadingMessage('');
     }
   };
-
 
 
   const handleDelete = async (saleId) => {
@@ -961,7 +934,6 @@ const SalesManagement = () => {
   const handleCompanyFilterChange = (value) => {
     setFilterData({ ...filterData, companyId: value });
 
-
     if (value && filterData.branchId) {
       const selectedBranch = branches.find(b => b.id === filterData.branchId);
       if (selectedBranch && selectedBranch.company?.id !== value) {
@@ -994,7 +966,6 @@ const SalesManagement = () => {
 
     if (!matchesSearch) return false;
 
-
     if (filterData.companyId && sale.company?.id !== filterData.companyId) {
       return false;
     }
@@ -1003,14 +974,11 @@ const SalesManagement = () => {
       return false;
     }
 
-
     if (statusFilter !== 'ALL' && sale.status !== statusFilter) {
       return false;
     }
 
-
     if (filterData.startDate || filterData.endDate) {
-
       const saleDate = new Date(sale.year, sale.month - 1, 15);
 
       if (filterData.startDate) {
@@ -1042,15 +1010,13 @@ const SalesManagement = () => {
   const currentSales = filteredSales.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredSales.length / itemsPerPage);
 
-
-
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const monthsFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   const branchOptions = branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
   const companyOptions = companies.map(c => ({
     id: c.id,
-    name: c.companyName || c.companyName || c.name
+    name: c.companyName || c.name
   }));
 
   const filteredBranchOptions = filterData.companyId
@@ -1087,14 +1053,17 @@ const SalesManagement = () => {
     }];
   }), [products]);
 
+  // FIX 2: productPrices API returns string keys (e.g. "123"), but p.id is a
+  // number. String(p.id) ensures the lookup actually finds the price instead
+  // of silently returning 0 / undefined for all non-variation products.
   const productOptions = useMemo(() => products.flatMap(p => {
     const hasVariations = p.variations && p.variations.length > 0;
 
     if (hasVariations) {
       return p.variations.map(v => {
         const companyMatch = v.companyPrices?.find(cp => cp.company?.id === branchInfo?.companyId);
-        const companyPrice = companyMatch?.price || 0;
-        const companySku = companyMatch?.companySku || null;
+        const companyPrice = companyMatch?.price ?? 0;
+        const companySku = companyMatch?.companySku ?? null;
 
         const variationLabel = v.combinationDisplay ||
           (v.variationType && v.variationValue ? `${v.variationType}: ${v.variationValue}` : 'Variation');
@@ -1119,8 +1088,13 @@ const SalesManagement = () => {
       const companyBaseMatch = p.companyBasePrices?.find(
         cbp => cbp.company?.id === branchInfo?.companyId
       );
-      const companyBasePrice = companyBaseMatch?.basePrice || productPrices[p.id] || 0;
-      const companySku = companyBaseMatch?.companySku || null;
+      // FIX 2: coerce p.id to String because productPrices keys are strings from the API
+      const companyBasePrice =
+        companyBaseMatch?.basePrice ??
+        productPrices[String(p.id)] ??
+        productPrices[p.id] ??
+        0;
+      const companySku = companyBaseMatch?.companySku ?? null;
 
       return [{
         id: `prod_${p.id}`,
@@ -1377,7 +1351,6 @@ const SalesManagement = () => {
                             <Eye size={18} />
                           </button>
 
-                          {/* Show different buttons based on status */}
                           {sale.status === 'PENDING' && (
                             <>
                               <button
@@ -1403,7 +1376,6 @@ const SalesManagement = () => {
                                 <FileText size={18} />
                                 <span className="text-xs">Invoice</span>
                               </button>
-                              {/* ONLY ONE DELETE BUTTON */}
                               <button
                                 onClick={() => handleDelete(sale.id)}
                                 className="flex items-center gap-2 px-3 py-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition"
@@ -1581,17 +1553,20 @@ const SalesManagement = () => {
                           </thead>
                           <tbody className="divide-y divide-gray-200 bg-white">
                             {formData.items.map((item, i) => {
+                              // FIX 3: Use strict === null check for variationId so 0/false/undefined
+                              // don't accidentally match non-variation products.
                               const selectedOption = productOptions.find(opt =>
                                 opt.parentProductId === item.productId &&
-                                (item.variationId ? opt.variationId === item.variationId : !opt.variationId)
+                                (item.variationId !== null
+                                  ? opt.variationId === item.variationId
+                                  : opt.variationId === null)
                               );
 
-                              const stockKey = item.variationId
-                                ? `${i}_${item.productId}_${item.variationId}_${formData.branchId}`
-                                : `${i}_${item.productId}_${formData.branchId}`;
-
+                              // FIX 1: Stable key — not index-dependent
+                              const stockKey = makeStockKey(item.productId, item.variationId, formData.branchId);
                               const stockInfo = branchStocks[stockKey];
                               const isLoadingStock = loadingStocks[stockKey];
+
                               const oldItem = modalMode === 'edit' && originalSaleItems
                                 ? originalSaleItems.find(oi =>
                                   oi.productId === item.productId &&
@@ -1600,10 +1575,10 @@ const SalesManagement = () => {
                                 : null;
 
                               const maxAllowed = getMaxAllowedQuantity(item, stockInfo, oldItem);
-                              const hasEnoughStock = maxAllowed >= item.quantity;
+                              const hasEnoughStock = maxAllowed === undefined || maxAllowed >= item.quantity;
 
                               return (
-                                <tr key={i} className="hover:bg-gray-50">
+                                <tr key={`${item.productId}_${item.variationId ?? 'base'}`} className="hover:bg-gray-50">
                                   <td className="px-4 py-3 text-center text-sm text-gray-400 font-medium">{i + 1}</td>
                                   {/* Product Name */}
                                   <td className="px-4 py-3">
@@ -1637,6 +1612,7 @@ const SalesManagement = () => {
                                     <span className="text-sm text-gray-900">{selectedOption?.upc || 'N/A'}</span>
                                   </td>
 
+                                  {/* Company SKU */}
                                   <td className="px-4 py-3">
                                     {selectedOption?.companySku
                                       ? <span className="text-sm font-medium text-gray-900">{selectedOption.companySku}</span>
@@ -1678,9 +1654,19 @@ const SalesManagement = () => {
                                         )}
                                       </div>
                                     ) : (
+                                      // FIX 1: Show a retry button instead of a hard "Load failed" error.
+                                      // Stock may simply not have loaded yet (e.g. branch just selected).
                                       <div className="text-xs">
-                                        <div className="text-red-500 font-medium">No stock</div>
-                                        <div className="text-gray-400 italic">Load failed</div>
+                                        <button
+                                          type="button"
+                                          onClick={() => loadProductStock(item.productId, formData.branchId, item.variationId)}
+                                          className="text-blue-600 hover:underline font-medium"
+                                        >
+                                          Load stock
+                                        </button>
+                                        {stockErrors[stockKey] && (
+                                          <div className="text-red-500 mt-0.5">Retry failed</div>
+                                        )}
                                       </div>
                                     )}
                                   </td>
@@ -1749,7 +1735,9 @@ const SalesManagement = () => {
                                 ₱{formData.items.reduce((sum, item) => {
                                   const opt = productOptions.find(o =>
                                     o.parentProductId === item.productId &&
-                                    (item.variationId ? o.variationId === item.variationId : !o.variationId)
+                                    (item.variationId !== null
+                                      ? o.variationId === item.variationId
+                                      : o.variationId === null)
                                   );
                                   return sum + ((opt?.price ?? 0) * (item.quantity || 0));
                                 }, 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -1783,7 +1771,7 @@ const SalesManagement = () => {
           </div>
         )}
 
-        {/* View Modal - Same as before */}
+        {/* View Modal */}
         {showModal && modalMode === 'view' && selectedSale && (
           <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-6">
             <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
@@ -2072,12 +2060,9 @@ const SalesManagement = () => {
                 {/* Header Section */}
                 <div className="flex justify-between items-start mb-5 pb-4 border-gray-900">
                   <div className="text-left leading-none space-y-0">
-                    {/* Company Name – big and bold */}
                     <div className="text-[34px] font-bold text-gray-900 -mb-0 font-serif tracking-tight">
                       WISECART MERCHANTS CORP.
                     </div>
-
-                    {/* Address lines – ultra-tight spacing */}
                     <div className="text-[18px] text-gray-900 font-medium space-y-[1px] tracking-tight">
                       <div>407B 4F Tower One Plaza Magellan The Mactan Newtown</div>
                       <div>Mactan 6015 City of Lapu-lapu Cebu, Phils.</div>
@@ -2145,7 +2130,6 @@ const SalesManagement = () => {
                       <div className="font-bold text-black-900 pt-1 self-start">
                         BUSINESS ADDRESS:
                       </div>
-
                       <div className="text-black-900 -mt-1 leading-[1.1] tracking-tight print-visible">
                         {invoiceReport.businessAddress || 'N/A'}
                       </div>
@@ -2158,28 +2142,16 @@ const SalesManagement = () => {
                   <table className="w-full" style={{ minHeight: '150mm' }}>
                     <thead>
                       <tr className="border-b border-gray-900">
-                        <th
-                          className="text-left px-4 font-bold text-gray-900 text-sm leading-tight"
-                          style={{ width: '60%' }}
-                        >
+                        <th className="text-left px-4 font-bold text-gray-900 text-sm leading-tight" style={{ width: '60%' }}>
                           ITEM DESCRIPTION / NATURE OF SERVICE
                         </th>
-                        <th
-                          className="text-right px-4 font-bold text-gray-900 text-sm leading-tight"
-                          style={{ width: '12%' }}
-                        >
+                        <th className="text-right px-4 font-bold text-gray-900 text-sm leading-tight" style={{ width: '12%' }}>
                           QTY.
                         </th>
-                        <th
-                          className="text-right px-4 text-gray-900 text-xs text-[11px] leading-tight"
-                          style={{ width: '12%' }}
-                        >
+                        <th className="text-right px-4 text-gray-900 text-xs text-[11px] leading-tight" style={{ width: '12%' }}>
                           UNIT COST / PRICE
                         </th>
-                        <th
-                          className="text-right px-4 font-bold text-gray-900 text-sm leading-tight"
-                          style={{ width: '15%' }}
-                        >
+                        <th className="text-right px-4 font-bold text-gray-900 text-sm leading-tight" style={{ width: '15%' }}>
                           AMOUNT
                         </th>
                       </tr>
@@ -2304,7 +2276,6 @@ const SalesManagement = () => {
                       <input readOnly value={formatCurrency(invoiceReport.vatExemptSales || 0)} className="w-full text-right pb-0" />
                     </div>
                   </div>
-                  {/* BOX 3 — SC/PWD Labels */}
                   <div className="border-r-1 border-gray-900 px-3 py-3 flex flex-col justify-center text-[11px]">
                     <div className="font-medium leading-tight">
                       SC/PWD/NAAC/MOV/<br />SOLO PARENT ID No.:
@@ -2313,21 +2284,18 @@ const SalesManagement = () => {
                       SC/PWD/NAAC/MOV/<br />Signature:
                     </div>
                   </div>
-                  {/* BOX 4 — SC/PWD Input Fields */}
                   <div className="border-r-1 border-gray-900 px-3 py-3 flex flex-col justify-center text-[13px]">
                     <input type="text" className="w-full pb-0 text-sm -mt-1" />
                     <input type="text" className="w-full pb-0 text-sm mt-5" />
                   </div>
 
                   <div className="col-span-2 grid grid-cols-2">
-                    {/* Labels */}
                     <div className=" border-l-0 border-1  border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
                       <div className="mb-2 text-[9px]">TOTAL SALES (VAT Inclusive)</div>
                       <div className="mb-2">Less: VAT</div>
                       <div className="mb-2">Amount: Net of VAT</div>
                       <div className="">Less: Discount<br /><span className="text-[10px]">(SC/PWD/NAAC/MOV/SP)</span></div>
                     </div>
-                    {/* Calculated Amounts */}
                     <div className="px-4 border-1 flex flex-col justify-start border-t-0 border-l-0 border-r-0 pt-2">
                       <input readOnly value={formatCurrency(
                         (() => {
@@ -2354,9 +2322,7 @@ const SalesManagement = () => {
                 </div>
 
 
-                {/* New Box Below - Spans 6 columns - UPDATED WITH REAL CALCULATIONS */}
                 <div className="grid grid-cols-6  border-t-0 border-gray-900 text-sm">
-                  {/* Left section with checkbox - spans 4 columns */}
                   <div className="col-span-4 border-r-1 border-gray-900 px-4  ">
                     <label className="flex items-start gap-2 text-sm font-medium text-gray-700">
                       <input type="checkbox" className="w-6 h-6  mt-8" />
@@ -2367,15 +2333,12 @@ const SalesManagement = () => {
                     </label>
                   </div>
 
-                  {/* Right section with labels and amounts - spans 2 columns */}
                   <div className="col-span-2 grid grid-cols-2">
-                    {/* Labels */}
                     <div className=" border-l-0 border-1 border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
                       <div className="mb-2">Add: VAT</div>
                       <div className="mb-2">Less: Withholding Tax</div>
                       <div className="" >Total Amount Due:</div>
                     </div>
-                    {/* Calculated Amounts */}
                     <div className="px-4 border-1 flex flex-col justify-start border-t-0 border-l-0 pt-2">
                       <input readOnly value={formatCurrency(
                         (() => {
@@ -2405,13 +2368,10 @@ const SalesManagement = () => {
                 </div>
 
                 <div className="grid grid-cols-2 border-1 border-t-1 border-gray-900 text-sm mt-6">
-                  {/* Left section - Permit Info */}
                   <div className="border-gray-900 px-4 py-2">
                     <div className="font-medium  text-m text-[16px]">PERMIT TO USE LOOSE LEAF No. : LLSI-080-1024-00002</div>
                     <div className="font-medium text-m text-[16px]" >DATE ISSUED: OCT. 11, 2024</div>
                   </div>
-
-                  {/* Right section - BIR Authority Info */}
                   <div className="px-4 py-2 pb-4">
                     <div className="font-medium  text-[16px] text-m ">BIR AUTHORITY TO PRINT No. 080AU20240000016398</div>
                     <div className="font-medium  text-[16px] text-m">DATE ISSUED: OCT. 23, 2024</div>
