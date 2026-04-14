@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
-import PesoIcon from '../../components/common/PesoIcon';
 import {
   ShoppingCart, Users, TrendingUpIcon,
   TrendingUp, Calendar, Building, UserIcon, Package, Clock, X, ChevronDown, Target, AlertTriangle,
@@ -211,31 +210,13 @@ const Dashboard = () => {
       setActionLoading(true);
       setLoadingMessage('Loading alerts...');
       const alertsRes = await api.get('/alerts');
-
       if (alertsRes.success && alertsRes.data) {
-        const allAlerts = alertsRes.data || [];
-        setAlerts(allAlerts);
-        setActionLoading(false);
-        setLoadingMessage('');
-        return;
+        setAlerts(alertsRes.data || []);
+      } else {
+        setAlerts([]);
       }
     } catch (err) {
-      console.error('Failed to load from /alerts, trying separate endpoints...', err);
-    }
-
-    try {
-      const [activeRes, resolvedRes] = await Promise.all([
-        api.get('/alerts').catch(() => ({ success: false, data: [] })),
-        api.get('/alerts/resolved').catch(() => ({ success: false, data: [] }))
-      ]);
-
-      const activeAlerts = (activeRes.success ? activeRes.data || [] : []);
-      const resolvedAlerts = (resolvedRes.success ? resolvedRes.data || [] : []);
-      const allAlerts = [...activeAlerts, ...resolvedAlerts];
-
-      setAlerts(allAlerts);
-    } catch (separateErr) {
-      console.error('Failed to load alerts from all endpoints', separateErr);
+      console.error('Failed to load alerts', err);
       setAlerts([]);
     } finally {
       setActionLoading(false);

@@ -1,14 +1,14 @@
 import React from 'react';
 import { Info, Bell, RefreshCw } from 'lucide-react';
 
-const DashboardHeader = ({ 
-  showInsights, 
-  setShowInsights, 
-  showNotifications, 
-  setShowNotifications, 
-  businessInsights, 
-  alerts, 
-  loadStats 
+const DashboardHeader = ({
+  showInsights,
+  setShowInsights,
+  showNotifications,
+  setShowNotifications,
+  businessInsights,
+  alerts,
+  loadStats
 }) => {
   return (
     <>
@@ -40,10 +40,10 @@ const DashboardHeader = ({
         >
           <Bell size={18} />
           Alerts
-          {alerts.length > 0 && (
+          {alerts.filter(a => !a.isResolved).length > 0 && (
             <>
               <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
-                {alerts.length}
+                {alerts.filter(a => !a.isResolved).length}
               </span>
               <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
             </>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import PesoIcon from '../common/PesoIcon';
-const DashboardCards = ({ stats, alerts }) => {
+const DashboardCards = ({ stats, totalAlerts }) => {
     const cards = [
         {
             title: 'Active Sales',
