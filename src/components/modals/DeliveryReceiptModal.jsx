@@ -91,137 +91,112 @@ const DeliveryReceiptModal = ({
             </div>
           </div>
 
-          <div className="grid -mt-4" style={{ gridTemplateColumns: '60% 40%', gap: '1rem', marginBottom: '52px' }}>
-
-            {/* ── LEFT COLUMN ──────────────────────────────────────────────
-                CHANGED: top offsets shifted down by ~20px each so the
-                fields sit lower underneath the DELIVERY RECEIPT title.    */}
-            <div className="relative" style={{ height: '185px' }}>
-
-              {/* DELIVERED TO */}
-              <div className="absolute left-0 right-0" style={{ top: '24px' }}>
-                <div className="flex items-start">
-                  <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>
-                    DELIVERED TO:
-                  </span>
-                  <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
-                    {`${receipt.branchName} - ${receipt.companyName}`}
-                  </div>
+          <div className="grid" style={{ gridTemplateColumns: '60% 40%', gap: '0.5rem 1rem', marginBottom: '16px', alignItems: 'start' }}>
+            {/* Row 1 left */}
+            <div>
+              <div className="flex items-start">
+                <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>
+                  DELIVERED TO:
+                </span>
+                <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
+                  {`${receipt.branchName} - ${receipt.companyName}`}
                 </div>
               </div>
-
-              {/* ADDRESS — lowered further to top: 82px */}
-              <div className="absolute left-0 right-0" style={{ top: '82px' }}>
-                <div className="flex items-start">
-                  <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>
-                    ADDRESS:
-                  </span>
-                  <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
-                    {receipt.branchAddress}
-                  </div>
-                </div>
-              </div>
-
-              {/* BUSINESS STYLE — moved up slightly to top: 132px */}
-              <div className="absolute left-0 right-0" style={{ top: '132px' }}>
-                <div className="flex items-start">
-                  <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>
-                    BUSINESS STYLE:
-                  </span>
-                  <div className="flex-1">
-                    <textarea
-                      value={receipt.businessStyle || receipt.companyName || ''}
-                      onChange={(e) => setReceipt(prev => ({ ...prev, businessStyle: e.target.value }))}
-                      rows={1}
-                      className="text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-blue-500 bg-transparent break-words resize-none overflow-hidden"
-                      style={{ minHeight: '1.5rem' }}
-                      onInput={(e) => {
-                        e.target.style.height = 'auto';
-                        e.target.style.height = e.target.scrollHeight + 'px';
-                      }}
-                    />
-                    <div className="hidden print:block text-black-900 text-sm break-words px-2">
-                      {receipt.businessStyle || ''}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
             </div>
-            {/* ── END LEFT COLUMN ──────────────────────────────────────── */}
 
-            {/* ── RIGHT COLUMN — absolutely positioned to mirror left column ── */}
-            <div className="relative" style={{ height: '220px' }}>
-
-              {/* DATE — aligns with DELIVERED TO (top: 24px) */}
-              <div className="absolute left-0 right-0" style={{ top: '24px' }}>
-                <div className="flex items-start">
-                  <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '60px' }}>DATE:</span>
-                  <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
-                    {receipt.date}
-                  </div>
-                </div>
+            <div className="flex items-start">
+              <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '60px' }}>DATE:</span>
+              <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
+                {receipt.date}
               </div>
-
-              {/* TIN — aligns with ADDRESS (top: 82px) */}
-              <div className="absolute left-0 right-0" style={{ top: '82px' }}>
-                <div className="flex items-start">
-                  <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '60px' }}>TIN:</span>
-                  <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
-                    {receipt.companyTin}
-                  </div>
-                </div>
-              </div>
-
-              {/* TERMS OF PAYMENT — aligns with BUSINESS STYLE (top: 132px) */}
-              <div className="absolute left-0 right-0" style={{ top: '132px' }}>
-                <div className="flex items-start">
-                  <span className="font-bold text-gray-900 text-sm whitespace-nowrap flex-shrink-0" style={{ width: '145px' }}>
-                    TERMS OF PAYMENT:
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <input
-                      type="text"
-                      value={receipt.termsOfPayment || ''}
-                      onChange={(e) => setReceipt(prev => ({ ...prev, termsOfPayment: e.target.value }))}
-                      className="text-black-900 w-full border-b border-gray-300 text-sm px-1 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
-                    />
-                    <div className="hidden print:block text-black-900 text-sm px-1 border-b border-gray-900 min-h-[1.5rem]">
-                      {receipt.termsOfPayment || '\u00A0'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* P.O. NUMBER — below TERMS OF PAYMENT */}
-              <div className="absolute right-0" style={{ top: '155px', left: '20px' }}>
-                <div className="flex items-start">
-                  <span className="font-bold text-gray-900 text-sm whitespace-nowrap flex-shrink-0" style={{ width: '100px' }}>
-                    P.O. NUMBER:
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <input
-                      type="text"
-                      value={receipt.purchaseOrderNumber || ''}
-                      onChange={(e) => setReceipt(prev => ({ ...prev, purchaseOrderNumber: e.target.value }))}
-                      className="text-black-900 w-full border-b border-gray-300 text-sm px-1 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
-                    />
-                    <div
-                      className="hidden print:block text-black-900 text-sm px-1 min-h-[1.5rem]"
-                      style={{ borderBottom: '1px solid #111', wordBreak: 'break-word', whiteSpace: 'normal' }}
-                    >
-                      {receipt.purchaseOrderNumber || '\u00A0'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
             </div>
-            {/* ── END RIGHT COLUMN ─────────────────────────────────────── */}
+
+            {/* Row 2 left */}
+            <div>
+              <div className="flex items-start">
+                <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>
+                  ADDRESS:
+                </span>
+                <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
+                  {receipt.branchAddress}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-start">
+              <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '60px' }}>TIN:</span>
+              <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
+                {receipt.companyTin}
+              </div>
+            </div>
+
+            {/* Row 3 left */}
+            <div>
+              <div className="flex items-start">
+                <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>
+                  BUSINESS STYLE:
+                </span>
+                <div className="flex-1">
+                  <textarea
+                    value={receipt.businessStyle || receipt.companyName || ''}
+                    onChange={(e) => setReceipt(prev => ({ ...prev, businessStyle: e.target.value }))}
+                    rows={1}
+                    className="text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-blue-500 bg-transparent break-words resize-none overflow-hidden"
+                    style={{ minHeight: '1.5rem' }}
+                    onInput={(e) => {
+                      e.target.style.height = 'auto';
+                      e.target.style.height = e.target.scrollHeight + 'px';
+                    }}
+                  />
+                  <div className="hidden print:block text-black-900 text-sm break-words px-2">
+                    {receipt.businessStyle || ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Row 3 right: TERMS + PO */}
+            <div className="flex flex-col gap-1">
+              <div className="flex items-start">
+                <span className="font-bold text-gray-900 text-sm whitespace-nowrap flex-shrink-0" style={{ width: '120px' }}>
+                  TERMS OF PAYMENT:
+                </span>
+                <div className="flex-1 min-w-0">
+                  <input
+                    type="text"
+                    value={receipt.termsOfPayment || ''}
+                    onChange={(e) => setReceipt(prev => ({ ...prev, termsOfPayment: e.target.value }))}
+                    className="text-black-900 w-full border-b border-gray-300 text-sm px-1 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
+                  />
+                  <div className="hidden print:block text-black-900 text-sm px-1 border-b border-gray-900 min-h-[1.5rem]">
+                    {receipt.termsOfPayment || '\u00A0'}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-start">
+                <span className="font-bold text-gray-900 text-sm whitespace-nowrap flex-shrink-0" style={{ width: '100px' }}>
+                  P.O. NUMBER:
+                </span>
+                <div className="flex-1 min-w-0">
+                  <input
+                    type="text"
+                    value={receipt.purchaseOrderNumber || ''}
+                    onChange={(e) => setReceipt(prev => ({ ...prev, purchaseOrderNumber: e.target.value }))}
+                    className="text-black-900 w-full border-b border-gray-300 text-sm px-1 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
+                  />
+                  <div
+                    className="hidden print:block text-black-900 text-sm px-1 min-h-[1.5rem]"
+                    style={{ borderBottom: '1px solid #111', wordBreak: 'break-word', whiteSpace: 'normal' }}
+                  >
+                    {receipt.purchaseOrderNumber || '\u00A0'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
 
-          {/* Items Table */}
-          <div className="-mt-20 leading-none">
+          <div className="leading-none" style={{ marginTop: '-16px' }}>
             <table className="w-full border-collapse">
               <colgroup>
                 <col style={{ width: '7%' }} />
@@ -325,7 +300,7 @@ const DeliveryReceiptModal = ({
 
           <div className="grid grid-cols-2 gap-8 mt-4" style={{ marginTop: 'auto', alignItems: 'flex-end' }}>
             <div>
-              <div className="mb-3" style={{ marginTop: '48px' }}>
+              <div className="mb-3" style={{ marginTop: '64px' }}>
                 <div className="flex items-center mb-0">
                   <span id="prepared-by-label" className="font-bold text-sm print:text-xs" style={{ width: '90px', flexShrink: 0 }}>Prepared by:</span>
                   <div className="relative flex-1">
