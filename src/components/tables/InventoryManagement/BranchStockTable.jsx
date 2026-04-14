@@ -139,13 +139,12 @@ const BranchStockTable = ({
                   <td className="px-3 py-3 text-center">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                       <Clock size={12} />
-                     {(stock.pendingSales || 0).toLocaleString('en-US')}
+                      {(stock.pendingSales || 0).toLocaleString('en-US')}
                     </span>
                   </td>
                   <td className="px-3 py-3 text-center">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {(stock.availableQuantity || 0).toLocaleString('en-US')}
-                    </span>
+                      {(stock.availableQuantity != null ? stock.availableQuantity : Math.max(0, (stock.quantity || 0) - (stock.reservedQuantity || 0))).toLocaleString('en-US')}                    </span>
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-500">
                     {(() => {
