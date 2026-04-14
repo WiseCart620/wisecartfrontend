@@ -942,22 +942,8 @@ const SalesManagement = () => {
     }
   };
 
-  const sortByStatus = (sales) => {
-    const statusOrder = {
-      'PENDING': 1,
-      'CONFIRMED': 2,
-      'INVOICED': 3
-    };
 
-    return [...sales].sort((a, b) => {
-      const orderA = statusOrder[a.status] || 999;
-      const orderB = statusOrder[b.status] || 999;
-      return orderA - orderB;
-    });
-  };
-
-  const filteredSales = sortByStatus(sales.filter(sale => {
-
+  const filteredSales = sales.filter(sale => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = !searchTerm ||
       sale.branch?.branchName?.toLowerCase().includes(searchLower) ||
@@ -1003,7 +989,11 @@ const SalesManagement = () => {
     }
 
     return true;
-  }));
+  }).sort((a, b) => {
+    if (a.year !== b.year) return a.year - b.year;
+    return a.month - b.month;
+  });
+
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
