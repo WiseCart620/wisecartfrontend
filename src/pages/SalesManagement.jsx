@@ -279,7 +279,7 @@ const SalesManagement = () => {
         retryDelay = 3000;
       });
 
-      es.addEventListener('delivery-update', () => {
+      es.addEventListener('sales-update', () => {
         loadData(true);
       });
 

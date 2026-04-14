@@ -12,9 +12,9 @@ export const useDeliveries = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (background = false) => {
     try {
-      setLoading(true);
+      if (!background) setLoading(true);
       setError(null);
 
       const [deliveriesRes, branchesRes, productsRes, warehousesRes, companiesRes] = await Promise.all([
@@ -84,7 +84,7 @@ export const useDeliveries = () => {
       });
 
       es.addEventListener('delivery-update', () => {
-        loadData();
+        loadData(true);
       });
 
       es.onerror = () => {

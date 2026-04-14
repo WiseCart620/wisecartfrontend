@@ -77,6 +77,39 @@ const DeliveryManagement = () => {
 
   useEffect(() => { loadData(); }, []);
 
+  useEffect(() => {
+    let es;
+    let retryDelay = 3000;
+    let retryTimeout;
+
+    const connect = () => {
+      es = new EventSource('https://erp.wisecart.ph/api/deliveries/stream');
+
+      es.addEventListener('connected', () => {
+        retryDelay = 3000;
+      });
+
+      es.addEventListener('delivery-update', () => {
+        loadData(true);
+      });
+
+      es.onerror = () => {
+        es.close();
+        retryTimeout = setTimeout(() => {
+          retryDelay = Math.min(retryDelay * 2, 30000);
+          connect();
+        }, retryDelay);
+      };
+    };
+
+    connect();
+
+    return () => {
+      clearTimeout(retryTimeout);
+      if (es) es.close();
+    };
+  }, [loadData]);
+
   const filteredDeliveries = sortDeliveriesByStatus(
     filterDeliveries(deliveries, filterData),
     sortMode
@@ -104,7 +137,7 @@ const DeliveryManagement = () => {
       alert('Cannot edit a delivery that has been CANCELLED.');
       return;
     }
-    
+
     if (mode === 'create') {
       setModalState({ show: true, mode: 'create', delivery: null });
     } else if (mode === 'edit' && delivery) {
@@ -193,14 +226,10 @@ const DeliveryManagement = () => {
       if (result.success) {
         alert(`Delivery ${modalState.mode === 'create' ? 'created' : 'updated'} successfully!`);
         handleCloseModal();
-        // Fetch fresh data from the server
         await loadData();
-        // On create → go to page 1 so the new record is visible.
-        // On edit (e.g. status change) → stay on the same page.
         if (modalState.mode === 'create') {
           setCurrentPage(1);
         }
-        // For edit, currentPage is left untouched — user stays where they were.
       } else {
         alert(result.error || 'Failed to save delivery');
       }
@@ -341,7 +370,7 @@ const DeliveryManagement = () => {
     setCurrentPage(1);
   };
 
-  if (loading) {
+  if (loading && !deliveries.length) {
     return (
       <div className="flex items-center justify-center h-screen">
         <LoadingOverlay show={true} message="Loading deliveries..." />
