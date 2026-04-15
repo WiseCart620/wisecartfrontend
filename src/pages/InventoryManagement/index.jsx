@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, BarChart3, Building, Store, Package } from 'lucide-react';
+import { Search, BarChart3, Building, Store, Package, RefreshCw } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 // Hooks
@@ -228,6 +228,27 @@ const InventoryManagement = () => {
     }
   };
 
+  const handleRefresh = async () => {
+    setActionLoading(true);
+    setLoadingMessage('Refreshing...');
+    try {
+      if (activeTab === 'products') {
+        const res = await api.get('/transactions/products/summary/variations');
+        if (res.success) setProductSummaries(res.data || []);
+      } else if (activeTab === 'warehouse-stocks' || activeTab === 'branch-stocks') {
+        await loadData(inventoryPage, inventoryPageSize);
+      } else if (activeTab === 'transactions') {
+        await loadData(inventoryPage, inventoryPageSize);
+      }
+      toast.success('Refreshed');
+    } catch (err) {
+      toast.error('Refresh failed');
+    } finally {
+      setActionLoading(false);
+      setLoadingMessage('');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -292,6 +313,16 @@ const InventoryManagement = () => {
                 Transactions
               </button>
             </nav>
+          </div>
+          <div className="mt-3 flex justify-end">
+            <button
+              onClick={handleRefresh}
+              disabled={actionLoading}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              <RefreshCw size={14} className={actionLoading ? 'animate-spin' : ''} />
+              Refresh
+            </button>
           </div>
         </div>
 
