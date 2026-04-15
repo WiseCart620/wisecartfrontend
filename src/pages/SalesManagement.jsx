@@ -935,7 +935,7 @@ const SalesManagement = () => {
 
   const handleCompanyFilterChange = (value) => {
     setFilterData({ ...filterData, companyId: value });
-
+    setCurrentPage(1);
     if (value && filterData.branchId) {
       const selectedBranch = branches.find(b => b.id === filterData.branchId);
       if (selectedBranch && selectedBranch.company?.id !== value) {
@@ -1157,7 +1157,7 @@ const SalesManagement = () => {
                   type="text"
                   placeholder="Search branch/company..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                   className="pl-12 pr-4 py-3 border border-gray-300 rounded-lg w-80 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
@@ -1182,7 +1182,7 @@ const SalesManagement = () => {
                 <SearchableDropdown
                   options={filteredBranchOptions}
                   value={filterData.branchId}
-                  onChange={(value) => setFilterData({ ...filterData, branchId: value })}
+                  onChange={(value) => { setFilterData({ ...filterData, branchId: value }); setCurrentPage(1); }}
                   placeholder="All Branches"
                   displayKey="name"
                   valueKey="id"
@@ -1196,7 +1196,7 @@ const SalesManagement = () => {
                 <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
                 <select
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="ALL">All Status</option>
@@ -1211,7 +1211,7 @@ const SalesManagement = () => {
                 <input
                   type="date"
                   value={filterData.startDate}
-                  onChange={(e) => setFilterData({ ...filterData, startDate: e.target.value })}
+                  onChange={(e) => { setFilterData({ ...filterData, startDate: e.target.value }); setCurrentPage(1); }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
@@ -1221,7 +1221,7 @@ const SalesManagement = () => {
                 <input
                   type="date"
                   value={filterData.endDate}
-                  onChange={(e) => setFilterData({ ...filterData, endDate: e.target.value })}
+                  onChange={(e) => { setFilterData({ ...filterData, endDate: e.target.value }); setCurrentPage(1); }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
