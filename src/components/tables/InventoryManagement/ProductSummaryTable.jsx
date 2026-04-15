@@ -10,7 +10,8 @@ const ProductSummaryTable = ({
   handleViewTransactions,
   productCurrentPage,
   productTotalPages,
-  setProductCurrentPage
+  setProductCurrentPage,
+  isLoading
 }) => {
   return (
     <div className="bg-white rounded-xl shadow overflow-hidden mb-6">
@@ -59,7 +60,16 @@ const ProductSummaryTable = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {currentProductSummaries.length === 0 ? (
+            {isLoading ? (
+              <tr>
+                <td colSpan="11" className="px-6 py-16 text-center">
+                  <div className="flex flex-col items-center gap-3 text-gray-400">
+                    <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin" />
+                    <span className="text-sm">Loading products...</span>
+                  </div>
+                </td>
+              </tr>
+            ) : currentProductSummaries.length === 0 ? (
               <tr>
                 <td colSpan="11" className="px-6 py-8 text-center text-gray-500">
                   {filteredProductSummaries.length === 0 ? 'No products found' : 'No products on this page'}

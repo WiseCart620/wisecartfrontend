@@ -14,7 +14,8 @@ const TransactionTable = ({
   viewingId,
   deletingId,
   handleViewTransaction,
-  calculateTotalQuantity
+  calculateTotalQuantity,
+  isLoading
 }) => {
   return (
     <div className="bg-white rounded-xl shadow overflow-hidden">
@@ -36,7 +37,16 @@ const TransactionTable = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {currentInventories.length === 0 ? (
+            {isLoading ? (
+              <tr>
+                <td colSpan="7" className="px-6 py-16 text-center">
+                  <div className="flex flex-col items-center gap-3 text-gray-400">
+                    <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin" />
+                    <span className="text-sm">Loading transactions...</span>
+                  </div>
+                </td>
+              </tr>
+            ) : currentInventories.length === 0 ? (
               <tr>
                 <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
                   {filteredInventories.length === 0 ? 'No transactions found' : 'No transactions on this page'}

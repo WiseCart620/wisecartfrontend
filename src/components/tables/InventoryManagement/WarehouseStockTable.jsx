@@ -11,7 +11,8 @@ const WarehouseStockTable = ({
   handleViewStockTransactions,
   stockCurrentPage,
   warehouseStockTotalPages,
-  setStockCurrentPage
+  setStockCurrentPage,
+  isLoading
 }) => {
   return (
     <div className="bg-white rounded-xl shadow overflow-hidden">
@@ -48,7 +49,16 @@ const WarehouseStockTable = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {currentWarehouseStocks.length === 0 ? (
+            {isLoading ? (
+              <tr>
+                <td colSpan="9" className="px-6 py-16 text-center">
+                  <div className="flex flex-col items-center gap-3 text-gray-400">
+                    <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin" />
+                    <span className="text-sm">Loading warehouse stocks...</span>
+                  </div>
+                </td>
+              </tr>
+            ) : currentWarehouseStocks.length === 0 ? (
               <tr>
                 <td colSpan="9" className="px-6 py-8 text-center text-gray-500">
                   No warehouse stock records found
