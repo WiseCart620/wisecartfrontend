@@ -1298,7 +1298,7 @@ const SalesManagement = () => {
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>  {/* ← ADD */}
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Encoded By</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -1508,7 +1508,7 @@ const SalesManagement = () => {
                   </div>
                   <div className="mt-4">
                     <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Created By <span className="text-xs text-gray-500">(Optional - defaults to current user)</span>
+                      Encoded By <span className="text-xs text-gray-500">(Optional - defaults to current user)</span>
                     </label>
                     <input
                       type="text"
@@ -1845,7 +1845,7 @@ const SalesManagement = () => {
                     )}
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <h3 className="font-semibold text-gray-700 mb-2">Created By</h3>
+                    <h3 className="font-semibold text-gray-700 mb-2">Encoded By</h3>
                     <p className="text-gray-900 text-lg">{selectedSale.createdBy || selectedSale.generatedBy || 'System'}</p>
                     <p className="text-xs text-gray-500 mt-1">Created: {new Date(selectedSale.createdAt).toLocaleString()}</p>
                   </div>
