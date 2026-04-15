@@ -342,18 +342,22 @@ const SalesManagement = () => {
         branchId: sale.branch.id,
         month: sale.month,
         year: sale.year,
-        items: sale.items.map(item => ({
+        items: [...sale.items]
+          .sort((a, b) => a.id - b.id)
+          .map(item => ({
+            productId: item.product.id,
+            variationId: item.variation?.id || null,
+            quantity: item.quantity || 1
+          }))
+      });
+
+      setOriginalSaleItems([...sale.items]
+        .sort((a, b) => a.id - b.id)
+        .map(item => ({
           productId: item.product.id,
           variationId: item.variation?.id || null,
           quantity: item.quantity || 1
-        }))
-      });
-
-      setOriginalSaleItems(sale.items.map(item => ({
-        productId: item.product.id,
-        variationId: item.variation?.id || null,
-        quantity: item.quantity || 1
-      })));
+        })));
 
       const loadingToast = toast.loading('Loading sale data and stock information...');
 
