@@ -2,6 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 
+let cachedProducts = null;
+let cachedWarehouses = null;
+let cachedBranches = null;
+let cachedCompanies = null;
+
 export const useInventoryData = () => {
   const [inventories, setInventories] = useState([]);
   const [products, setProducts] = useState([]);
@@ -25,25 +30,45 @@ export const useInventoryData = () => {
     try {
       setLoading(true);
       setLoadingMessage('Loading inventory data...');
-      const [
-        invRes,
-        prodRes,
-        warehousesRes,
-        branchesRes,
-        warehouseStocksRes,
-        branchStocksRes,
-        salesRes,
-        companiesRes,
-        productVariationSummariesRes
-      ] = await Promise.all([
-        api.get(`/inventories?page=${page}&size=${size}`),
-        api.get('/products'),
-        api.get('/warehouse'),
-        api.get('/branches'),
-        api.get('/stocks/warehouses'),
-        api.get('/stocks/branches'),
-        api.get('/sales'),
-        api.get('/companies'),
+
+      // Load reference data only once (cached)
+      let productsData = cachedProducts;
+      let warehousesData = cachedWarehouses;
+      let branchesData = cachedBranches;
+      let companiesData = cachedCompanies;
+
+      if (!productsData) {
+        const prodRes = await api.get('/products?limit=100');
+        productsData = prodRes.success ? prodRes.data || [] : [];
+        cachedProducts = productsData;
+      }
+
+      if (!warehousesData) {
+        const warehousesRes = await api.get('/warehouse');
+        warehousesData = warehousesRes.success ? warehousesRes.data || [] : [];
+        cachedWarehouses = warehousesData;
+      }
+
+      if (!branchesData) {
+        const branchesRes = await api.get('/branches');
+        branchesData = branchesRes.success ? branchesRes.data || [] : [];
+        cachedBranches = branchesData;
+      }
+
+      if (!companiesData) {
+        const companiesRes = await api.get('/companies');
+        companiesData = companiesRes.success ? companiesRes.data || [] : [];
+        cachedCompanies = companiesData;
+      }
+
+      // Load inventories with pagination
+      const invRes = await api.get(`/inventories?page=${page}&size=${size}`);
+
+      // Load other dynamic data with limits
+      const [warehouseStocksRes, branchStocksRes, salesRes, productVariationSummariesRes] = await Promise.all([
+        api.get('/stocks/warehouses?limit=100'),
+        api.get('/stocks/branches?limit=100'),
+        api.get('/sales?limit=100'),
         api.get('/transactions/products/summary/variations')
       ]);
 
@@ -52,25 +77,25 @@ export const useInventoryData = () => {
       }
 
       const inventoriesData = invRes.success ? (invRes.data.content || invRes.data || []) : [];
-      const safeInventoriesData = Array.isArray(inventoriesData) ? inventoriesData : []; const inventoriesTotal = invRes.success ? (invRes.data.totalElements || inventoriesData.length) : 0;
+      const inventoriesTotal = invRes.success ? (invRes.data.totalElements || inventoriesData.length) : 0;
       setTotalInventories(inventoriesTotal);
-      const productsData = prodRes.success ? prodRes.data || [] : [];
-      const warehousesData = warehousesRes.success ? warehousesRes.data || [] : [];
-      const branchesData = branchesRes.success ? branchesRes.data || [] : [];
-      const warehouseStocksData = warehouseStocksRes.success ? warehouseStocksRes.data || [] : [];
-      const branchStocksData = branchStocksRes.success ? branchStocksRes.data || [] : [];
-      const salesData = salesRes.success ? salesRes.data || [] : [];
-      const companiesData = companiesRes.success ? companiesRes.data || [] : [];
 
+      // Set all data
       setInventories(inventoriesData);
       setProducts(productsData);
       setWarehouses(warehousesData);
       setBranches(branchesData);
+      setCompanies(companiesData);
+
+      const warehouseStocksData = warehouseStocksRes.success ? warehouseStocksRes.data || [] : [];
+      const branchStocksData = branchStocksRes.success ? branchStocksRes.data || [] : [];
+      const salesData = salesRes.success ? salesRes.data || [] : [];
+
       setWarehouseStocks(warehouseStocksData);
       setBranchStocks(branchStocksData);
       setSales(salesData);
-      setCompanies(companiesData);
 
+      // Clean up duplicate sales in inventories
       const cleanedInventories = [];
       const seenSaleIds = new Set();
 
@@ -83,7 +108,6 @@ export const useInventoryData = () => {
           if (seenSaleIds.has(saleId) || saleId <= 0 || isNaN(saleId)) {
             continue;
           }
-
           seenSaleIds.add(saleId);
           cleanedInventories.push(inv);
         } else {

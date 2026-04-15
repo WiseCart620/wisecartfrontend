@@ -3,10 +3,11 @@ import { Search, BarChart3, Building, Store, Package } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 // Hooks
-import { useInventoryData } from '../../hooks/data/useInventoryData';
+import useInventory from '../../hooks/data/useInventory';
 import { useTransactionHandlers } from '../../hooks/useTransactionHandlers';
 import { useFilters } from '../../hooks/ui/useFilters';
 import { usePaginationControl } from '../../hooks/ui/usePaginationControl';
+import { api } from '../../services/api';
 
 // Components
 import { LoadingOverlay } from '../../components/common/LoadingOverlay';
@@ -41,35 +42,55 @@ const InventoryManagement = () => {
   const [showTransactionFilter, setShowTransactionFilter] = useState(true);
   const [inventoryPage, setInventoryPage] = useState(0);
   const [inventoryPageSize] = useState(50);
-  const [totalInventories, setTotalInventories] = useState(0);
   const [isLoadingPage, setIsLoadingPage] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [companies, setCompanies] = useState([]);
+  const [productSummaries, setProductSummaries] = useState([]);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
+  const [viewingId, setViewingId] = useState(null);
 
-  // Custom Hooks
+
+  useEffect(() => {
+    const loadReferenceData = async () => {
+      const [productsRes, warehousesRes, branchesRes, companiesRes, productSummariesRes] = await Promise.all([
+        api.get('/products?limit=100'),
+        api.get('/warehouse'),
+        api.get('/branches'),
+        api.get('/companies'),
+        api.get('/transactions/products/summary/variations')
+      ]);
+      if (productsRes.success) setProducts(productsRes.data || []);
+      if (warehousesRes.success) setWarehouses(warehousesRes.data || []);
+      if (branchesRes.success) setBranches(branchesRes.data || []);
+      if (companiesRes.success) setCompanies(companiesRes.data || []);
+      if (productSummariesRes.success) setProductSummaries(productSummariesRes.data || []);
+    };
+    loadReferenceData();
+  }, []);
+
+
   const {
     inventories,
-    products,
-    productSummaries,
-    warehouses,
-    branches,
+    loading,
+    canModifyStatus,
     warehouseStocks,
     branchStocks,
-    sales,
-    companies,
-    loading,
-    actionLoading,
-    loadingMessage,
-    deletingId,
-    viewingId,
-    setInventories,
-    setWarehouseStocks,
-    setBranchStocks,
-    setProductSummaries,
-    setActionLoading,
-    setLoadingMessage,
-    setViewingId,
+    loadingStocks,
+    totalInventories,
     loadData,
-    handleDelete
-  } = useInventoryData();
+    loadLocationStock,
+    checkCanModify,
+    confirmInventory,
+    deleteInventory,
+    updateInventory,
+    createInventory,
+    setWarehouseStocks,
+    setBranchStocks
+  } = useInventory();
 
   const transactionHandlers = useTransactionHandlers();
 
@@ -131,14 +152,8 @@ const InventoryManagement = () => {
     };
   }, [loadData, inventoryPage, inventoryPageSize]);
 
-  // Handler functions
   const handleViewTransaction = (transaction) => {
-    transactionHandlers.handleViewTransaction(
-      transaction,
-      setActionLoading,
-      setLoadingMessage,
-      setViewingId
-    );
+    setViewingId(transaction.id);
   };
 
   const handleViewTransactions = (product, showStock = false) => {
@@ -158,16 +173,32 @@ const InventoryManagement = () => {
       setLoadingMessage
     );
   };
+  const handleDeleteTransaction = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this record? This cannot be undone.')) return;
 
-  const handleDeleteTransaction = (id) => {
-    handleDelete(
-      id,
-      inventories,
-      setInventories,
-      setWarehouseStocks,
-      setBranchStocks,
-      setProductSummaries
-    );
+    try {
+      setDeletingId(id);
+      setActionLoading(true);
+      setLoadingMessage('Deleting transaction...');
+
+      const result = await deleteInventory(id);
+
+      if (result && result.success === false) {
+        toast.error(result.error || 'Failed to delete inventory');
+        return;
+      }
+
+      toast.success('Inventory deleted successfully');
+      await loadData(inventoryPage, inventoryPageSize);
+
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error(error.message || 'Failed to delete inventory');
+    } finally {
+      setDeletingId(null);
+      setActionLoading(false);
+      setLoadingMessage('');
+    }
   };
 
   if (loading) {
