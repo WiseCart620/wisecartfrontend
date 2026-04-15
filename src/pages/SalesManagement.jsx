@@ -179,7 +179,8 @@ const SalesManagement = () => {
     branchId: '',
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
-    items: []
+    items: [],
+    createdBy: ''
   });
 
   const [filterData, setFilterData] = useState({
@@ -331,11 +332,16 @@ const SalesManagement = () => {
 
     if (mode === 'create') {
       setSelectedSale(null);
-      setFormData({ branchId: '', month: new Date().getMonth() + 1, year: new Date().getFullYear(), items: [] });
+      setFormData({
+        branchId: '',
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear(),
+        items: [],
+        createdBy: ''
+      });
       setBranchInfo(null);
       setBranchStocks({});
       setSelectedProductForAdd('');
-
     } else if (mode === 'edit' && sale) {
       setSelectedSale(sale);
       setFormData({
@@ -348,7 +354,8 @@ const SalesManagement = () => {
             productId: item.product.id,
             variationId: item.variation?.id || null,
             quantity: item.quantity || 1
-          }))
+          })),
+        createdBy: sale.createdBy || ''
       });
 
       setOriginalSaleItems([...sale.items]
@@ -1291,6 +1298,7 @@ const SalesManagement = () => {
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>  {/* ← ADD */}
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -1320,6 +1328,9 @@ const SalesManagement = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {months[sale.month - 1]} {sale.year}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {sale.createdBy || sale.generatedBy || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                         {formatCurrency(sale.totalAmount)}
@@ -1494,6 +1505,18 @@ const SalesManagement = () => {
                         required
                       />
                     </div>
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Created By <span className="text-xs text-gray-500">(Optional - defaults to current user)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.createdBy}
+                      onChange={(e) => setFormData({ ...formData, createdBy: e.target.value })}
+                      placeholder="Enter name or leave empty for current user"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                    />
                   </div>
 
                   <div>
@@ -1821,73 +1844,77 @@ const SalesManagement = () => {
                       </p>
                     )}
                   </div>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-gray-700 mb-4 text-lg">Items</h3>
-                  <div className="overflow-x-auto rounded-lg border border-gray-200">
-                    <table className="w-full">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-4 text-center text-sm font-medium text-gray-700 w-10">Number</th>
-                          <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Product</th>
-                          <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">SKU</th>
-                          <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">UPC</th>
-                          <th className="px-6 py-4 text-right text-sm font-medium text-gray-700">Quantity</th>
-                          <th className="px-6 py-4 text-right text-sm font-medium text-gray-700">Unit Price</th>
-                          <th className="px-6 py-4 text-right text-sm font-medium text-gray-700">Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {selectedSale?.items && selectedSale.items.length > 0 ? (
-                          selectedSale.items.map((item, i) => (
-                            <tr key={item.id || i} className="hover:bg-gray-50 transition">
-                              <td className="px-6 py-4 text-center text-sm text-gray-400 font-medium">{i + 1}</td>
-                              <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                                {item.product.productName}
-                                {item.variation && (
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    {item.variation.combinationDisplay ||
-                                      (item.variation.variationType && item.variation.variationValue
-                                        ? `${item.variation.variationType}: ${item.variation.variationValue}`
-                                        : 'Variation')}
-                                  </div>
-                                )}
-                              </td>
-                              <td className="px-6 py-4 text-sm text-gray-500">
-                                {item.variation ? (item.variation.sku || '—') : (item.product.sku || '—')}
-                              </td>
-                              <td className="px-6 py-4 text-sm text-gray-500">
-                                {item.variation ? (item.variation.upc || '—') : (item.product.upc || '—')}
-                              </td>
-                              <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900">
-                                {item.quantity.toLocaleString()}
-                              </td>
-                              <td className="px-6 py-4 text-sm text-right text-gray-900">
-                                {formatCurrency(item.unitPrice)}
-                              </td>
-                              <td className="px-6 py-4 text-sm text-right font-bold text-blue-600">
-                                {formatCurrency(item.amount)}
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan="7" className="px-6 py-12 text-center text-gray-500 italic">
-                              No items in this sale
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <h3 className="font-semibold text-gray-700 mb-2">Created By</h3>
+                    <p className="text-gray-900 text-lg">{selectedSale.createdBy || selectedSale.generatedBy || 'System'}</p>
+                    <p className="text-xs text-gray-500 mt-1">Created: {new Date(selectedSale.createdAt).toLocaleString()}</p>
                   </div>
                 </div>
+              </div>
 
-                <div className="mt-8 pt-6 border-t border-gray-200 text-right">
-                  <p className="text-3xl font-bold text-gray-900">
-                    Total: {formatCurrency(selectedSale.totalAmount)}
-                  </p>
+              <div>
+                <h3 className="font-semibold text-gray-700 mb-4 text-lg">Items</h3>
+                <div className="overflow-x-auto rounded-lg border border-gray-200">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-4 text-center text-sm font-medium text-gray-700 w-10">Number</th>
+                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Product</th>
+                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">SKU</th>
+                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">UPC</th>
+                        <th className="px-6 py-4 text-right text-sm font-medium text-gray-700">Quantity</th>
+                        <th className="px-6 py-4 text-right text-sm font-medium text-gray-700">Unit Price</th>
+                        <th className="px-6 py-4 text-right text-sm font-medium text-gray-700">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {selectedSale?.items && selectedSale.items.length > 0 ? (
+                        selectedSale.items.map((item, i) => (
+                          <tr key={item.id || i} className="hover:bg-gray-50 transition">
+                            <td className="px-6 py-4 text-center text-sm text-gray-400 font-medium">{i + 1}</td>
+                            <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                              {item.product.productName}
+                              {item.variation && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {item.variation.combinationDisplay ||
+                                    (item.variation.variationType && item.variation.variationValue
+                                      ? `${item.variation.variationType}: ${item.variation.variationValue}`
+                                      : 'Variation')}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-500">
+                              {item.variation ? (item.variation.sku || '—') : (item.product.sku || '—')}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-500">
+                              {item.variation ? (item.variation.upc || '—') : (item.product.upc || '—')}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900">
+                              {item.quantity.toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-right text-gray-900">
+                              {formatCurrency(item.unitPrice)}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-right font-bold text-blue-600">
+                              {formatCurrency(item.amount)}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="7" className="px-6 py-12 text-center text-gray-500 italic">
+                            No items in this sale
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
+              </div>
+              <div className="mt-8 pt-6 border-t border-gray-200 text-right">
+                <p className="text-3xl font-bold text-gray-900">
+                  Total: {formatCurrency(selectedSale.totalAmount)}
+                </p>
               </div>
 
               <div className="p-8 border-t border-gray-200 flex justify-end">
@@ -1901,7 +1928,6 @@ const SalesManagement = () => {
             </div>
           </div>
         )}
-
 
 
         {/* Invoice Generation Modal */}
@@ -2608,114 +2634,116 @@ const SalesManagement = () => {
           </div>
         )}
       </div>
-      {showSalesMemoModal && (
-        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6">
-          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl">
-            <div className="p-8 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-900">Generate Sales Memo</h2>
-              <button
-                onClick={() => setShowSalesMemoModal(false)}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            <div className="p-8 space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Company *</label>
-                <SearchableDropdown
-                  options={companyOptions}
-                  value={filterData.companyId}
-                  onChange={(value) => setFilterData({ ...filterData, companyId: value, branchId: '' })}
-                  placeholder="Select Company"
-                  displayKey="name"
-                  valueKey="id"
-                  required
-                />
+      {
+        showSalesMemoModal && (
+          <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6">
+            <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl">
+              <div className="p-8 border-b border-gray-200 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-900">Generate Sales Memo</h2>
+                <button
+                  onClick={() => setShowSalesMemoModal(false)}
+                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                >
+                  <X size={24} />
+                </button>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Branch (Optional - Leave empty for all branches)
-                </label>
-                <SearchableDropdown
-                  options={filteredBranchOptions}
-                  value={filterData.branchId}
-                  onChange={(value) => setFilterData({ ...filterData, branchId: value })}
-                  placeholder="All Branches"
-                  displayKey="name"
-                  valueKey="id"
-                />
-                {filterData.companyId && filteredBranchOptions.length === 0 && (
-                  <p className="text-xs text-orange-600 mt-1">No branches for selected company</p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-6">
+              <div className="p-8 space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">Start Month</label>
-                  <select
-                    value={filterData.startMonth}
-                    onChange={(e) => setFilterData({ ...filterData, startMonth: parseInt(e.target.value) })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
-                  >
-                    {monthsFull.map((m, i) => (
-                      <option key={i} value={i + 1}>{m}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">End Month</label>
-                  <select
-                    value={filterData.endMonth}
-                    onChange={(e) => setFilterData({ ...filterData, endMonth: parseInt(e.target.value) })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
-                  >
-                    {monthsFull.map((m, i) => (
-                      <option key={i} value={i + 1}>{m}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">Start Year</label>
-                  <input
-                    type="number"
-                    value={filterData.startYear}
-                    onChange={(e) => setFilterData({ ...filterData, startYear: parseInt(e.target.value) })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Company *</label>
+                  <SearchableDropdown
+                    options={companyOptions}
+                    value={filterData.companyId}
+                    onChange={(value) => setFilterData({ ...filterData, companyId: value, branchId: '' })}
+                    placeholder="Select Company"
+                    displayKey="name"
+                    valueKey="id"
+                    required
                   />
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">End Year</label>
-                  <input
-                    type="number"
-                    value={filterData.endYear}
-                    onChange={(e) => setFilterData({ ...filterData, endYear: parseInt(e.target.value) })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Branch (Optional - Leave empty for all branches)
+                  </label>
+                  <SearchableDropdown
+                    options={filteredBranchOptions}
+                    value={filterData.branchId}
+                    onChange={(value) => setFilterData({ ...filterData, branchId: value })}
+                    placeholder="All Branches"
+                    displayKey="name"
+                    valueKey="id"
                   />
+                  {filterData.companyId && filteredBranchOptions.length === 0 && (
+                    <p className="text-xs text-orange-600 mt-1">No branches for selected company</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">Start Month</label>
+                    <select
+                      value={filterData.startMonth}
+                      onChange={(e) => setFilterData({ ...filterData, startMonth: parseInt(e.target.value) })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+                    >
+                      {monthsFull.map((m, i) => (
+                        <option key={i} value={i + 1}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">End Month</label>
+                    <select
+                      value={filterData.endMonth}
+                      onChange={(e) => setFilterData({ ...filterData, endMonth: parseInt(e.target.value) })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+                    >
+                      {monthsFull.map((m, i) => (
+                        <option key={i} value={i + 1}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">Start Year</label>
+                    <input
+                      type="number"
+                      value={filterData.startYear}
+                      onChange={(e) => setFilterData({ ...filterData, startYear: parseInt(e.target.value) })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">End Year</label>
+                    <input
+                      type="number"
+                      value={filterData.endYear}
+                      onChange={(e) => setFilterData({ ...filterData, endYear: parseInt(e.target.value) })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="p-8 border-t border-gray-200 flex justify-end gap-4">
-              <button
-                onClick={() => setShowSalesMemoModal(false)}
-                className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleGenerateSalesMemo}
-                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium shadow-md"
-              >
-                Generate Sales Memo
-              </button>
+              <div className="p-8 border-t border-gray-200 flex justify-end gap-4">
+                <button
+                  onClick={() => setShowSalesMemoModal(false)}
+                  className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleGenerateSalesMemo}
+                  className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium shadow-md"
+                >
+                  Generate Sales Memo
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 };
 
