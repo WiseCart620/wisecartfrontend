@@ -147,13 +147,13 @@ const ProductSummaryTable = ({
                     <td className="px-2 py-3 text-center">
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                         <Truck size={12} />
-                        {(product.warehousePendingDelivery || 0).toLocaleString('en-US')}
+                        {(product.totalPendingDelivery || 0).toLocaleString('en-US')}
                       </span>
                     </td>
                     <td className="px-2 py-3 text-center">
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                         <Clock size={12} />
-                        {(product.branchPendingDelivery || 0).toLocaleString('en-US')}
+                        {(product.totalConfirmedSales || 0).toLocaleString('en-US')}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-right">
