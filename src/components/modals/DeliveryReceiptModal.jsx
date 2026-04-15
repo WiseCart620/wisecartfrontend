@@ -169,7 +169,7 @@ const DeliveryReceiptModal = ({
                 </div>
               </div>
               <div className="flex items-start">
-                <span className="font-bold text-gray-900 text-sm whitespace-nowrap flex-shrink-0" style={{ width: '100px' }}>
+                <span className="font-bold text-gray-900 text-sm whitespace-nowrap flex-shrink-0" style={{ width: '100px', marginLeft: '-8px' }}>
                   P.O. NUMBER:
                 </span>
                 <div className="flex-1 min-w-0">
