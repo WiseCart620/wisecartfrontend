@@ -92,6 +92,7 @@ const InventoryManagement = () => {
     setBranchStocks
   } = useInventory();
 
+
   const transactionHandlers = useTransactionHandlers();
 
   // Filter hooks
@@ -125,11 +126,37 @@ const InventoryManagement = () => {
   const stockPagination = usePaginationControl(10);
   const transactionPagination = usePaginationControl(10);
 
-  // Filtered data
-  const filteredProductSummaries = filterProductSummaries(productSummaries, productSearchTerm, showVariationFilter);
-  const filteredWarehouseStocks = filterWarehouseStocks(warehouseStocks, stockSearchTerm, warehouseFilters.filters);
-  const filteredBranchStocks = filterBranchStocks(branchStocks, stockSearchTerm, branchFilters.filters);
-  const filteredInventories = filterInventories(inventories, searchTerm, transactionFilters.filters, warehouses, branches);
+  // Filtered data with safety checks
+  const filteredProductSummaries = filterProductSummaries(
+    Array.isArray(productSummaries) ? productSummaries : [],
+    productSearchTerm,
+    showVariationFilter
+  );
+
+  // Convert warehouseStocks from object to array (it's an object in useInventory)
+  const warehouseStocksArray = Array.isArray(warehouseStocks) ? warehouseStocks : Object.values(warehouseStocks || {});
+  const filteredWarehouseStocks = filterWarehouseStocks(
+    warehouseStocksArray,
+    stockSearchTerm,
+    warehouseFilters.filters
+  );
+
+  // Convert branchStocks from object to array
+  const branchStocksArray = Array.isArray(branchStocks) ? branchStocks : Object.values(branchStocks || {});
+  const filteredBranchStocks = filterBranchStocks(
+    branchStocksArray,
+    stockSearchTerm,
+    branchFilters.filters
+  );
+
+  // Inventories safety check
+  const filteredInventories = filterInventories(
+    Array.isArray(inventories) ? inventories : [],
+    searchTerm,
+    transactionFilters.filters,
+    warehouses,
+    branches
+  );
 
   // Paginated data
   const currentProductSummaries = productPagination.getPageItems(filteredProductSummaries);
