@@ -52,22 +52,26 @@ const InventoryManagement = () => {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [deletingId, setDeletingId] = useState(null);
   const [viewingId, setViewingId] = useState(null);
-
+  const [refDataLoading, setRefDataLoading] = useState(true);
 
   useEffect(() => {
     const loadReferenceData = async () => {
-      const [productsRes, warehousesRes, branchesRes, companiesRes, productSummariesRes] = await Promise.all([
-        api.get('/products?limit=100'),
-        api.get('/warehouse'),
-        api.get('/branches'),
-        api.get('/companies'),
-        api.get('/transactions/products/summary/variations')
-      ]);
-      if (productsRes.success) setProducts(productsRes.data || []);
-      if (warehousesRes.success) setWarehouses(warehousesRes.data || []);
-      if (branchesRes.success) setBranches(branchesRes.data || []);
-      if (companiesRes.success) setCompanies(companiesRes.data || []);
-      if (productSummariesRes.success) setProductSummaries(productSummariesRes.data || []);
+      try {
+        const [productsRes, warehousesRes, branchesRes, companiesRes, productSummariesRes] = await Promise.all([
+          api.get('/products?limit=100'),
+          api.get('/warehouse'),
+          api.get('/branches'),
+          api.get('/companies'),
+          api.get('/transactions/products/summary/variations')
+        ]);
+        if (productsRes.success) setProducts(productsRes.data || []);
+        if (warehousesRes.success) setWarehouses(warehousesRes.data || []);
+        if (branchesRes.success) setBranches(branchesRes.data || []);
+        if (companiesRes.success) setCompanies(companiesRes.data || []);
+        if (productSummariesRes.success) setProductSummaries(productSummariesRes.data || []);
+      } finally {
+        setRefDataLoading(false);
+      }
     };
     loadReferenceData();
   }, []);
@@ -249,17 +253,17 @@ const InventoryManagement = () => {
     }
   };
 
-  if (loading) {
+  if (loading || refDataLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <LoadingOverlay show={true} message="Loading" />
+        <LoadingOverlay show={true} message="Loading inventory data..." />
       </div>
     );
   }
 
   return (
     <>
-      <LoadingOverlay show={loading || actionLoading} message={loadingMessage || 'Loading...'} />
+      <LoadingOverlay show={loading || refDataLoading || actionLoading} message={loadingMessage || 'Loading...'} />
       <div className="p-6 max-w-full mx-auto">
         <Toaster position="top-right" />
 
