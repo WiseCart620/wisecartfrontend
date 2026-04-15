@@ -6,32 +6,33 @@ const useInventory = () => {
   const [inventories, setInventories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [canModifyStatus, setCanModifyStatus] = useState({});
-  const [warehouseStocks, setWarehouseStocks] = useState({});
-  const [branchStocks, setBranchStocks] = useState({});
+  const [warehouseStocks, setWarehouseStocks] = useState([]); // ← was {}, now []
+  const [branchStocks, setBranchStocks] = useState([]);       // ← was {}, now []
   const [loadingStocks, setLoadingStocks] = useState({});
   const [totalInventories, setTotalInventories] = useState(0);
 
   const loadData = useCallback(async (page = 0, size = 50) => {
     try {
       setLoading(true);
-      const [inventoriesRes] = await Promise.all([
+
+      // FIX: fetch inventories + both stock lists in parallel
+      const [inventoriesRes, warehouseStocksRes, branchStocksRes] = await Promise.all([
         api.get(`/inventories?page=${page}&size=${size}`),
+        api.get('/stocks/warehouses?limit=200'),
+        api.get('/stocks/branches?limit=200'),
       ]);
 
-      // Handle both array response and paginated response
+      // Handle paginated or array inventory response
       let inventoriesData = [];
       let totalElements = 0;
 
       if (inventoriesRes.success) {
-        if (inventoriesRes.data && inventoriesRes.data.content) {
-          // Paginated response
+        if (inventoriesRes.data?.content) {
           inventoriesData = inventoriesRes.data.content || [];
           totalElements = inventoriesRes.data.totalElements || 0;
         } else if (Array.isArray(inventoriesRes.data)) {
-          // Array response
           inventoriesData = inventoriesRes.data;
-        } else {
-          inventoriesData = [];
+          totalElements = inventoriesData.length;
         }
       }
 
@@ -39,9 +40,18 @@ const useInventory = () => {
         inv.inventoryType &&
         ['STOCK_IN', 'TRANSFER', 'RETURN', 'DAMAGE'].includes(inv.inventoryType)
       );
+
       setInventories(actualInventories);
       setTotalInventories(totalElements);
-      
+
+      // FIX: set flat arrays for the summary tables
+      if (warehouseStocksRes.success) {
+        setWarehouseStocks(warehouseStocksRes.data || []);
+      }
+      if (branchStocksRes.success) {
+        setBranchStocks(branchStocksRes.data || []);
+      }
+
     } catch (error) {
       console.error('Failed to load inventory data', error);
       throw error;
@@ -50,26 +60,19 @@ const useInventory = () => {
     }
   }, []);
 
+  // loadLocationStock: per-product stock lookup (used in modal, keyed by index)
   const loadLocationStock = useCallback(async (productId, variationId, itemIndex, locationId, locationType) => {
     const loadingKey = `${itemIndex}_${productId}_${variationId}`;
     setLoadingStocks(prev => ({ ...prev, [loadingKey]: true }));
 
     try {
-      if (!locationId || !productId || !locationType) {
-        return;
-      }
+      if (!locationId || !productId || !locationType) return;
 
       const stockKey = variationId
         ? `${itemIndex}_${productId}_${variationId}_${locationId}`
         : `${itemIndex}_${productId}_${locationId}`;
 
-      if (locationType === 'warehouse' && warehouseStocks[stockKey]) {
-        return;
-      }
-      if (locationType === 'branch' && branchStocks[stockKey]) {
-        return;
-      }
-
+      // Use a ref-like per-product cache stored separately so we don't clobber the flat arrays
       let endpoint = '';
       if (locationType === 'warehouse') {
         endpoint = variationId
@@ -86,16 +89,23 @@ const useInventory = () => {
       if (stockRes?.success || stockRes?.data) {
         const stockData = stockRes.data || stockRes;
 
+        // Store per-product lookups in a separate key namespace on the arrays
+        // by attaching them as a side-cache object; the flat arrays stay intact
         if (locationType === 'warehouse') {
-          setWarehouseStocks(prev => ({
-            ...prev,
-            [stockKey]: stockData
-          }));
+          setWarehouseStocks(prev => {
+            const arr = Array.isArray(prev) ? prev : [];
+            // Attach per-product cache as a non-enumerable property clone trick:
+            const clone = [...arr];
+            clone.__cache = { ...(arr.__cache || {}), [stockKey]: stockData };
+            return clone;
+          });
         } else {
-          setBranchStocks(prev => ({
-            ...prev,
-            [stockKey]: stockData
-          }));
+          setBranchStocks(prev => {
+            const arr = Array.isArray(prev) ? prev : [];
+            const clone = [...arr];
+            clone.__cache = { ...(arr.__cache || {}), [stockKey]: stockData };
+            return clone;
+          });
         }
       }
     } catch (error) {
@@ -107,19 +117,15 @@ const useInventory = () => {
         return newState;
       });
     }
-  }, [warehouseStocks, branchStocks]);
+  }, []);
 
   const checkCanModify = useCallback(async (inventoryId) => {
     try {
       const response = await api.get(`/inventories/${inventoryId}/can-modify`);
       const responseData = response.data?.data || response.data;
-
       if (response.success && responseData) {
         const canModify = responseData.canModify ?? false;
-        setCanModifyStatus(prev => ({
-          ...prev,
-          [inventoryId]: canModify
-        }));
+        setCanModifyStatus(prev => ({ ...prev, [inventoryId]: canModify }));
         return canModify;
       }
       return false;
@@ -131,10 +137,7 @@ const useInventory = () => {
 
   const confirmInventory = useCallback(async (inventoryId, confirmedBy) => {
     try {
-      const response = await api.patch(`/inventories/${inventoryId}/confirm`, {
-        confirmedBy
-      });
-      return response;
+      return await api.patch(`/inventories/${inventoryId}/confirm`, { confirmedBy });
     } catch (error) {
       console.error('Failed to confirm inventory:', error);
       throw error;
@@ -144,8 +147,7 @@ const useInventory = () => {
   const deleteInventory = useCallback(async (inventoryId) => {
     try {
       const userRole = localStorage.getItem('userRole') || 'USER';
-      const response = await api.delete(`/inventories/${inventoryId}?userRole=${userRole}`);
-      return response;
+      return await api.delete(`/inventories/${inventoryId}?userRole=${userRole}`);
     } catch (error) {
       console.error('Failed to delete inventory:', error);
       throw error;
@@ -155,8 +157,7 @@ const useInventory = () => {
   const updateInventory = useCallback(async (inventoryId, payload) => {
     try {
       const userRole = localStorage.getItem('userRole') || 'USER';
-      const response = await api.put(`/inventories/${inventoryId}?userRole=${userRole}`, payload);
-      return response;
+      return await api.put(`/inventories/${inventoryId}?userRole=${userRole}`, payload);
     } catch (error) {
       console.error('Failed to update inventory:', error);
       throw error;
@@ -165,8 +166,7 @@ const useInventory = () => {
 
   const createInventory = useCallback(async (payload) => {
     try {
-      const response = await api.post('/inventories', payload);
-      return response;
+      return await api.post('/inventories', payload);
     } catch (error) {
       console.error('Failed to create inventory:', error);
       throw error;

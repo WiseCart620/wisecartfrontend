@@ -133,16 +133,16 @@ const InventoryManagement = () => {
     showVariationFilter
   );
 
-  // Convert warehouseStocks from object to array (it's an object in useInventory)
-  const warehouseStocksArray = Array.isArray(warehouseStocks) ? warehouseStocks : Object.values(warehouseStocks || {});
+  // Convert warehouseStocks to array (hook now returns a flat array directly)
+  const warehouseStocksArray = Array.isArray(warehouseStocks) ? warehouseStocks : [];
   const filteredWarehouseStocks = filterWarehouseStocks(
     warehouseStocksArray,
     stockSearchTerm,
     warehouseFilters.filters
   );
 
-  // Convert branchStocks from object to array
-  const branchStocksArray = Array.isArray(branchStocks) ? branchStocks : Object.values(branchStocks || {});
+  // Convert branchStocks to array (hook now returns a flat array directly)
+  const branchStocksArray = Array.isArray(branchStocks) ? branchStocks : [];
   const filteredBranchStocks = filterBranchStocks(
     branchStocksArray,
     stockSearchTerm,
