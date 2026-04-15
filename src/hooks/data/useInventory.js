@@ -6,8 +6,8 @@ const useInventory = () => {
   const [inventories, setInventories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [canModifyStatus, setCanModifyStatus] = useState({});
-  const [warehouseStocks, setWarehouseStocks] = useState([]); // ← was {}, now []
-  const [branchStocks, setBranchStocks] = useState([]);       // ← was {}, now []
+  const [warehouseStocks, setWarehouseStocks] = useState([]);
+  const [branchStocks, setBranchStocks] = useState([]);
   const [loadingStocks, setLoadingStocks] = useState({});
   const [totalInventories, setTotalInventories] = useState(0);
 

@@ -253,17 +253,9 @@ const InventoryManagement = () => {
     }
   };
 
-  if (loading || refDataLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <LoadingOverlay show={true} message="Loading inventory data..." />
-      </div>
-    );
-  }
 
   return (
     <>
-      <LoadingOverlay show={loading || refDataLoading || actionLoading} message={loadingMessage || 'Loading...'} />
       <div className="p-6 max-w-full mx-auto">
         <Toaster position="top-right" />
 
@@ -361,6 +353,7 @@ const InventoryManagement = () => {
               productCurrentPage={productPagination.currentPage}
               productTotalPages={productTotalPages}
               setProductCurrentPage={productPagination.setCurrentPage}
+              isLoading={refDataLoading}
             />
           </div>
         )}
@@ -397,6 +390,7 @@ const InventoryManagement = () => {
               stockCurrentPage={stockPagination.currentPage}
               warehouseStockTotalPages={warehouseStockTotalPages}
               setStockCurrentPage={stockPagination.setCurrentPage}
+              isLoading={loading}
             />
           </div>
         )}
@@ -433,6 +427,7 @@ const InventoryManagement = () => {
               stockCurrentPage={stockPagination.currentPage}
               branchStockTotalPages={branchStockTotalPages}
               setStockCurrentPage={stockPagination.setCurrentPage}
+              isLoading={loading}
             />
           </div>
         )}
@@ -472,6 +467,7 @@ const InventoryManagement = () => {
               handleViewTransaction={handleViewTransaction}
               handleDelete={handleDeleteTransaction}
               calculateTotalQuantity={calculateTotalQuantity}
+              isLoading={loading}
             />
             {totalInventories > inventoryPageSize && (
               <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
