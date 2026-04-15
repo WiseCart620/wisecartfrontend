@@ -17,8 +17,9 @@ export const useInventoryData = () => {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [deletingId, setDeletingId] = useState(null);
   const [viewingId, setViewingId] = useState(null);
+  const [totalInventories, setTotalInventories] = useState(0);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (page = 0, size = 50) => {
     try {
       setLoading(true);
       setLoadingMessage('Loading inventory data...');
@@ -33,7 +34,7 @@ export const useInventoryData = () => {
         companiesRes,
         productVariationSummariesRes
       ] = await Promise.all([
-        api.get('/inventories'),
+        api.get(`/inventories?page=${page}&size=${size}`),
         api.get('/products'),
         api.get('/warehouse'),
         api.get('/branches'),
@@ -43,12 +44,14 @@ export const useInventoryData = () => {
         api.get('/companies'),
         api.get('/transactions/products/summary/variations')
       ]);
-      
+
       if (productVariationSummariesRes.success) {
         setProductSummaries(productVariationSummariesRes.data || []);
       }
 
-      const inventoriesData = invRes.success ? invRes.data || [] : [];
+      const inventoriesData = invRes.success ? (invRes.data.content || invRes.data || []) : [];
+      const inventoriesTotal = invRes.success ? (invRes.data.totalElements || inventoriesData.length) : 0;
+      setTotalInventories(inventoriesTotal);
       const productsData = prodRes.success ? prodRes.data || [] : [];
       const warehousesData = warehousesRes.success ? warehousesRes.data || [] : [];
       const branchesData = branchesRes.success ? branchesRes.data || [] : [];
@@ -180,7 +183,6 @@ export const useInventoryData = () => {
   }, []);
 
   return {
-    // State
     inventories,
     products,
     productSummaries,
@@ -195,7 +197,8 @@ export const useInventoryData = () => {
     loadingMessage,
     deletingId,
     viewingId,
-    
+    totalInventories,
+
     // Setters
     setInventories,
     setWarehouseStocks,
@@ -204,7 +207,7 @@ export const useInventoryData = () => {
     setActionLoading,
     setLoadingMessage,
     setViewingId,
-    
+
     // Actions
     loadData,
     handleDelete,

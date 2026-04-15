@@ -39,6 +39,10 @@ const InventoryManagement = () => {
   const [showWarehouseFilter, setShowWarehouseFilter] = useState(true);
   const [showBranchFilter, setShowBranchFilter] = useState(true);
   const [showTransactionFilter, setShowTransactionFilter] = useState(true);
+  const [inventoryPage, setInventoryPage] = useState(0);
+  const [inventoryPageSize] = useState(50);
+  const [totalInventories, setTotalInventories] = useState(0);
+  const [isLoadingPage, setIsLoadingPage] = useState(false);
 
   // Custom Hooks
   const {
@@ -119,13 +123,13 @@ const InventoryManagement = () => {
   const transactionTotalPages = transactionPagination.getTotalPages(filteredInventories.length);
 
   useEffect(() => {
-    loadData();
-    window.loadData = loadData;
+    loadData(inventoryPage, inventoryPageSize);
+    window.loadData = () => loadData(inventoryPage, inventoryPageSize);
 
     return () => {
       delete window.loadData;
     };
-  }, [loadData]);
+  }, [loadData, inventoryPage, inventoryPageSize]);
 
   // Handler functions
   const handleViewTransaction = (transaction) => {
@@ -376,6 +380,48 @@ const InventoryManagement = () => {
               handleDelete={handleDeleteTransaction}
               calculateTotalQuantity={calculateTotalQuantity}
             />
+
+            {totalInventories > inventoryPageSize && (
+              <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
+                <div className="text-sm text-gray-500">
+                  Showing {inventoryPage * inventoryPageSize + 1} to{' '}
+                  {Math.min((inventoryPage + 1) * inventoryPageSize, totalInventories)} of {totalInventories} transactions
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      setIsLoadingPage(true);
+                      setInventoryPage(p => Math.max(0, p - 1));
+                      setTimeout(() => setIsLoadingPage(false), 100);
+                    }}
+                    disabled={inventoryPage === 0 || isLoadingPage}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
+                  >
+                    {isLoadingPage ? (
+                      <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
+                    ) : null}
+                    Previous
+                  </button>
+                  <span className="px-4 py-2 text-sm text-gray-600">
+                    Page {inventoryPage + 1} of {Math.ceil(totalInventories / inventoryPageSize)}
+                  </span>
+                  <button
+                    onClick={async () => {
+                      setIsLoadingPage(true);
+                      setInventoryPage(p => p + 1);
+                      setTimeout(() => setIsLoadingPage(false), 100);
+                    }}
+                    disabled={(inventoryPage + 1) * inventoryPageSize >= totalInventories || isLoadingPage}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
+                  >
+                    Next
+                    {isLoadingPage ? (
+                      <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
+                    ) : null}
+                  </button>
+                </div>
+              </div>
+            )}
           </>
         )}
 
