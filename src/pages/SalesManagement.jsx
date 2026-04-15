@@ -48,16 +48,10 @@ const formatDate = (dateString) => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// FIX 1: Stable stock key — does NOT depend on array index.
-// Using index caused "No stock / Load failed" whenever an item was removed
-// because all items after the removed one shifted down by 1, making their
-// previously-loaded keys unreachable.
-// ─────────────────────────────────────────────────────────────────────────────
+
 const makeStockKey = (productId, variationId, branchId) =>
   `${productId}_${variationId ?? 'base'}_${branchId}`;
 
-// Searchable Dropdown Component
 const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey, valueKey, required = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -280,7 +274,13 @@ const SalesManagement = () => {
       });
 
       es.addEventListener('sales-update', () => {
-        loadData(true);
+        api.get('/sales').then(res => {
+          if (res?.success) {
+            setSales(res.data || []);
+          }
+        }).catch(err => {
+          console.error('Failed to refresh sales:', err);
+        });
       });
 
       es.onerror = () => {
@@ -400,6 +400,10 @@ const SalesManagement = () => {
         toast.error('Failed to load sale data', { id: loadingToast });
       }
     } else if (mode === 'view' && sale) {
+      setShowModal(true);
+      setSelectedSale(sale);
+
+      // Load fresh data in background
       try {
         const freshSale = await api.get(`/sales/${sale.id}`);
         if (freshSale.success) {
@@ -407,7 +411,6 @@ const SalesManagement = () => {
         }
       } catch (error) {
         console.error('Failed to load fresh sale data:', error);
-        setSelectedSale(sale);
       }
     }
 
@@ -650,12 +653,10 @@ const SalesManagement = () => {
       toast.error('Please select a branch');
       return;
     }
-
     if (!formData.items || formData.items.length === 0) {
       toast.error('Please add at least one item');
       return;
     }
-
     for (const item of formData.items) {
       if (!item.productId || !item.quantity || item.quantity <= 0) {
         toast.error('All items must have a product and quantity greater than 0');
@@ -663,36 +664,32 @@ const SalesManagement = () => {
       }
     }
 
-    setActionLoading(true);
-    setLoadingMessage(modalMode === 'create' ? 'Creating sale...' : 'Updating sale...');
+    // ✅ CLOSE MODAL IMMEDIATELY - Don't make user wait
+    handleCloseModal();
+
+    const toastId = toast.loading(modalMode === 'create' ? 'Creating sale...' : 'Updating sale...');
 
     try {
       if (modalMode === 'create') {
         const response = await api.post('/sales', formData);
         if (response.success) {
-          toast.success('Sale created successfully!');
-          handleCloseModal();
-          loadData();
+          toast.success('Sale created successfully!', { id: toastId });
+          loadData(true); // Background refresh
         } else {
-          toast.error(response.message || 'Failed to create sale');
+          toast.error(response.message || 'Failed to create sale', { id: toastId });
         }
       } else if (modalMode === 'edit') {
         const response = await api.put(`/sales/${selectedSale.id}`, formData);
         if (response.success) {
-          toast.success('Sale updated successfully!');
-          handleCloseModal();
-          loadData();
+          toast.success('Sale updated successfully!', { id: toastId });
+          loadData(true);
         } else {
-          toast.error(response.message || 'Failed to update sale');
+          toast.error(response.message || 'Failed to update sale', { id: toastId });
         }
       }
     } catch (error) {
-      console.error('Error saving sale:', error);
       const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to save sale';
-      toast.error(errorMessage);
-    } finally {
-      setActionLoading(false);
-      setLoadingMessage('');
+      toast.error(errorMessage, { id: toastId });
     }
   };
 

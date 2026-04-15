@@ -1,18 +1,13 @@
-// src/services/transmittalApi.js
-// Mirrors the pattern used in src/services/api.js for deliveries.
-// Replace BASE_URL with your actual backend base if different.
+
 
 import { api } from './api';
 
 export const transmittalApi = {
 
-  /** Fetch all transmittals (newest first) */
   getAll: () => api.get('/transmittals'),
 
-  /** Fetch a single transmittal with full item details */
   getById: (id) => api.get(`/transmittals/${id}`),
 
-  /** Get the next auto-generated control number from the server */
   getNextControlNumber: () => api.get('/transmittals/next-control-number'),
 
   /**
@@ -32,10 +27,6 @@ export const transmittalApi = {
   delete: (id) => api.delete(`/transmittals/${id}`),
 };
 
-/**
- * Convert the frontend formData shape into the TransmittalRequest DTO shape
- * expected by the Spring Boot backend.
- */
 export const toTransmittalRequest = (formData) => ({
   controlNumber: formData.controlNumber || null,
   date: formData.date ? new Date(formData.date).toISOString() : new Date().toISOString(),
