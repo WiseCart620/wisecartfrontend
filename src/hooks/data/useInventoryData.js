@@ -18,6 +18,8 @@ export const useInventoryData = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [viewingId, setViewingId] = useState(null);
   const [totalInventories, setTotalInventories] = useState(0);
+  const [inventoryPage, setInventoryPage] = useState(0);
+  const [inventoryPageSize] = useState(50);
 
   const loadData = useCallback(async (page = 0, size = 50) => {
     try {
@@ -198,8 +200,10 @@ export const useInventoryData = () => {
     deletingId,
     viewingId,
     totalInventories,
+    inventoryPage,
+    setInventoryPage,
+    inventoryPageSize,
 
-    // Setters
     setInventories,
     setWarehouseStocks,
     setBranchStocks,
@@ -208,7 +212,6 @@ export const useInventoryData = () => {
     setLoadingMessage,
     setViewingId,
 
-    // Actions
     loadData,
     handleDelete,
   };

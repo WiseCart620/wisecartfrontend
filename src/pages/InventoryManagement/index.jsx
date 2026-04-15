@@ -380,7 +380,6 @@ const InventoryManagement = () => {
               handleDelete={handleDeleteTransaction}
               calculateTotalQuantity={calculateTotalQuantity}
             />
-
             {totalInventories > inventoryPageSize && (
               <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
                 <div className="text-sm text-gray-500">
@@ -392,7 +391,7 @@ const InventoryManagement = () => {
                     onClick={async () => {
                       setIsLoadingPage(true);
                       setInventoryPage(p => Math.max(0, p - 1));
-                      setTimeout(() => setIsLoadingPage(false), 100);
+                      setTimeout(() => setIsLoadingPage(false), 500);
                     }}
                     disabled={inventoryPage === 0 || isLoadingPage}
                     className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
@@ -409,7 +408,7 @@ const InventoryManagement = () => {
                     onClick={async () => {
                       setIsLoadingPage(true);
                       setInventoryPage(p => p + 1);
-                      setTimeout(() => setIsLoadingPage(false), 100);
+                      setTimeout(() => setIsLoadingPage(false), 500);
                     }}
                     disabled={(inventoryPage + 1) * inventoryPageSize >= totalInventories || isLoadingPage}
                     className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
