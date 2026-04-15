@@ -519,7 +519,7 @@ const SalesManagement = () => {
       quantity: 1
     };
 
-    setFormData(prev => ({ ...prev, items: [...prev.items, newItem] }));
+    setFormData(prev => ({ ...prev, items: [newItem, ...prev.items] }));
 
     // FIX 1: No index — key is stable
     await loadProductStock(
