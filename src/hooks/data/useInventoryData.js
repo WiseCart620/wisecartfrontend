@@ -50,7 +50,7 @@ export const useInventoryData = () => {
       }
 
       const inventoriesData = invRes.success ? (invRes.data.content || invRes.data || []) : [];
-      const inventoriesTotal = invRes.success ? (invRes.data.totalElements || inventoriesData.length) : 0;
+      const safeInventoriesData = Array.isArray(inventoriesData) ? inventoriesData : []; const inventoriesTotal = invRes.success ? (invRes.data.totalElements || inventoriesData.length) : 0;
       setTotalInventories(inventoriesTotal);
       const productsData = prodRes.success ? prodRes.data || [] : [];
       const warehousesData = warehousesRes.success ? warehousesRes.data || [] : [];

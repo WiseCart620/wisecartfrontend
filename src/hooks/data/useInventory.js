@@ -9,21 +9,39 @@ const useInventory = () => {
   const [warehouseStocks, setWarehouseStocks] = useState({});
   const [branchStocks, setBranchStocks] = useState({});
   const [loadingStocks, setLoadingStocks] = useState({});
+  const [totalInventories, setTotalInventories] = useState(0);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (page = 0, size = 50) => {
     try {
       setLoading(true);
       const [inventoriesRes] = await Promise.all([
-        api.get('/inventories'),
+        api.get(`/inventories?page=${page}&size=${size}`),
       ]);
 
-      const inventoriesData = inventoriesRes.success ? inventoriesRes.data || [] : [];
+      // Handle both array response and paginated response
+      let inventoriesData = [];
+      let totalElements = 0;
+
+      if (inventoriesRes.success) {
+        if (inventoriesRes.data && inventoriesRes.data.content) {
+          // Paginated response
+          inventoriesData = inventoriesRes.data.content || [];
+          totalElements = inventoriesRes.data.totalElements || 0;
+        } else if (Array.isArray(inventoriesRes.data)) {
+          // Array response
+          inventoriesData = inventoriesRes.data;
+        } else {
+          inventoriesData = [];
+        }
+      }
+
       const actualInventories = inventoriesData.filter(inv =>
         inv.inventoryType &&
         ['STOCK_IN', 'TRANSFER', 'RETURN', 'DAMAGE'].includes(inv.inventoryType)
       );
-
       setInventories(actualInventories);
+      setTotalInventories(totalElements);
+      
     } catch (error) {
       console.error('Failed to load inventory data', error);
       throw error;
@@ -162,6 +180,7 @@ const useInventory = () => {
     warehouseStocks,
     branchStocks,
     loadingStocks,
+    totalInventories,
     loadData,
     loadLocationStock,
     checkCanModify,

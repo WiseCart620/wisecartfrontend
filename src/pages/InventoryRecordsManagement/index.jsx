@@ -480,7 +480,7 @@ const InventoryRecordsManagement = () => {
         setProducts(productsRes.success ? productsRes.data || [] : []);
         setWarehouses(warehousesRes.success ? warehousesRes.data || [] : []);
         setBranches(branchesRes.success ? branchesRes.data || [] : []);
-        await loadData();
+        await loadData(0, 50);
       } catch (error) {
         console.error('Failed to load initial data', error);
         alert('Failed to load data: ' + error.message);
@@ -528,7 +528,7 @@ const InventoryRecordsManagement = () => {
     });
   }, [products]);
 
-  const filteredInventories = inventories.filter(inventory => {
+  const filteredInventories = (Array.isArray(inventories) ? inventories : []).filter(inventory => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = inventory.processedBy?.toLowerCase().includes(searchLower) || inventory.remarks?.toLowerCase().includes(searchLower);
     const matchesStatus = statusFilter === 'ALL' || inventory.status === statusFilter;
@@ -776,7 +776,7 @@ const InventoryRecordsManagement = () => {
       if (modalMode === 'create') { await createInventory(payload); alert('Inventory record created successfully as PENDING!'); }
       else { await updateInventory(selectedInventory.id, payload); alert('Inventory record updated successfully!'); }
       handleCloseModal();
-      await loadData();
+      await loadData(0, 50);
       setCurrentPage(1);
     } catch (error) {
       console.error('Failed to save inventory:', error);
@@ -802,7 +802,7 @@ const InventoryRecordsManagement = () => {
       setLoadingMessage('Confirming inventory...');
       await confirmInventory(inventory.id, currentUser);
       alert(`✅ Inventory confirmed successfully!\n\n${inventory.inventoryType} record has been processed and stock levels have been updated.`);
-      await loadData();
+      await loadData(0, 50);
     } catch (error) {
       console.error('Failed to confirm inventory:', error);
       const errorMsg = error.response?.data?.error || error.message || 'Unknown error';
@@ -828,7 +828,7 @@ const InventoryRecordsManagement = () => {
       const result = await deleteInventory(id);
       if (result && result.success === false) { setDeleteErrorMessage(result.error || 'Failed to delete inventory'); return; }
       alert('✅ Inventory deleted successfully');
-      await loadData();
+      await loadData(0, 50);
       if (filteredInventories.length % 10 === 1 && currentPage > 1) setCurrentPage(currentPage - 1);
     } catch (error) {
       console.error('❌ Delete error:', error);
@@ -893,8 +893,8 @@ const InventoryRecordsManagement = () => {
   const selectedProductFilterOptionId = productFilter.variationId
     ? productOptions.find(o => o.variationId === productFilter.variationId)?.id ?? ''
     : productFilter.productId
-    ? productOptions.find(o => !o.variationId && o.parentProductId === productFilter.productId)?.id ?? ''
-    : '';
+      ? productOptions.find(o => !o.variationId && o.parentProductId === productFilter.productId)?.id ?? ''
+      : '';
 
   const handleProductFilterChange = (value) => {
     if (!value) {
