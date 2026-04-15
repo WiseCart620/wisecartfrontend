@@ -91,28 +91,25 @@ const DeliveryReceiptModal = ({
             </div>
           </div>
 
-          <div className="grid" style={{ gridTemplateColumns: '60% 40%', gap: '0.5rem 1rem', marginBottom: '16px', alignItems: 'start' }}>
-            {/* Row 1 left */}
-            <div>
-              <div className="flex items-start">
-                <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>
-                  DELIVERED TO:
-                </span>
-                <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
-                  {`${receipt.branchName} - ${receipt.companyName}`}
-                </div>
+          <div className="grid" style={{ gridTemplateColumns: '60% 40%', gap: '0.2rem 1rem', marginBottom: '8px', marginTop: '-8px', alignItems: 'start', paddingLeft: '0px' }}>            <div>
+            <div className="flex items-start">
+              <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>
+                DELIVERED TO:
+              </span>
+              <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
+                {`${receipt.branchName} - ${receipt.companyName}`}
               </div>
             </div>
+          </div>
 
-            <div className="flex items-start">
+            <div className="flex items-start" style={{ paddingLeft: '36px' }}>
               <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '60px' }}>DATE:</span>
               <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
                 {receipt.date}
               </div>
             </div>
 
-            {/* Row 2 left */}
-            <div>
+            <div style={{ marginTop: '4px' }}>
               <div className="flex items-start">
                 <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>
                   ADDRESS:
@@ -123,15 +120,14 @@ const DeliveryReceiptModal = ({
               </div>
             </div>
 
-            <div className="flex items-start">
+            <div className="flex items-start" style={{ paddingLeft: '36px', marginTop: '4px' }}>
               <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '60px' }}>TIN:</span>
               <div className="text-black-900 text-sm flex-1 border-b border-gray-300 px-2 print:border-0 print:p-0 bg-transparent break-words min-h-[1.5rem]">
                 {receipt.companyTin}
               </div>
             </div>
 
-            {/* Row 3 left */}
-            <div>
+            <div style={{ marginTop: '4px' }}>
               <div className="flex items-start">
                 <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>
                   BUSINESS STYLE:
@@ -155,8 +151,7 @@ const DeliveryReceiptModal = ({
               </div>
             </div>
 
-            {/* Row 3 right: TERMS + PO */}
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1" style={{ paddingLeft: '28px', marginTop: '8px' }}>
               <div className="flex items-start">
                 <span className="font-bold text-gray-900 text-sm whitespace-nowrap flex-shrink-0" style={{ width: '120px' }}>
                   TERMS OF PAYMENT:
@@ -196,7 +191,7 @@ const DeliveryReceiptModal = ({
 
           </div>
 
-          <div className="leading-none" style={{ marginTop: '-16px' }}>
+          <div className="leading-none" style={{ marginTop: '-8px' }}>
             <table className="w-full border-collapse">
               <colgroup>
                 <col style={{ width: '7%' }} />
@@ -206,17 +201,16 @@ const DeliveryReceiptModal = ({
               </colgroup>
               <thead>
                 <tr className="border-b border-gray-900">
-                  {/* CHANGED: header text bumped from text-xs → text-[12px] */}
-                  <th className="text-left px-2 py-0.5 font-bold text-gray-900 text-[12px] uppercase tracking-wider">
+                  <th className="text-left px-2 py-0 font-bold text-gray-900 text-[12px] uppercase tracking-wider">
                     Quantity
                   </th>
-                  <th className="text-left px-1 py-0.5 font-bold text-gray-900 text-[12px] uppercase tracking-wider">
+                  <th className="text-left px-1 py-0 font-bold text-gray-900 text-[12px] uppercase tracking-wider">
                     Unit
                   </th>
-                  <th className="text-left px-3 py-0.5 font-bold text-gray-900 text-[12px] uppercase tracking-wider">
+                  <th className="text-left px-3 py-0 font-bold text-gray-900 text-[12px] uppercase tracking-wider">
                     Particulars
                   </th>
-                  <th className="text-left px-3 py-0.5 font-bold text-gray-900 text-[12px] uppercase tracking-wider">
+                  <th className="text-left px-3 py-0 font-bold text-gray-900 text-[12px] uppercase tracking-wider" style={{ paddingBottom: '6px' }}>
                     <input
                       type="text"
                       value={receipt.extraHeader || 'EXTRA'}
@@ -294,13 +288,13 @@ const DeliveryReceiptModal = ({
             </table>
           </div>
 
-          <div className="text-xs text-black-900 text-[11px] mr-29 text-right mt-0 font-bold leading-tight">
+          <div className="text-xs text-black-900 text-[11px] mr-29 text-right mt-4 font-bold leading-tight">
             Receive the above goods in good order and condition
           </div>
 
           <div className="grid grid-cols-2 gap-8 mt-4" style={{ marginTop: 'auto', alignItems: 'flex-end' }}>
             <div>
-              <div className="mb-3" style={{ marginTop: '64px' }}>
+              <div className="mb-3" style={{ marginTop: '96px' }}>
                 <div className="flex items-center mb-0">
                   <span id="prepared-by-label" className="font-bold text-sm print:text-xs" style={{ width: '90px', flexShrink: 0 }}>Prepared by:</span>
                   <div className="relative flex-1">

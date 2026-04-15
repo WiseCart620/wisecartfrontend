@@ -233,6 +233,11 @@
     padding: 0 !important;
   }
 
+  #delivery-receipt #prepared-by-label,
+  #delivery-receipt #prepared-by-value {
+    margin-top: 40px !important;
+  }
+
   #delivery-receipt .mb-5 {
     margin-bottom: 10px !important;
   }
