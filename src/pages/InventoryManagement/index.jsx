@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, BarChart3, Building, Store, Package, RefreshCw } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -54,27 +54,40 @@ const InventoryManagement = () => {
   const [viewingId, setViewingId] = useState(null);
   const [refDataLoading, setRefDataLoading] = useState(true);
 
+  // FIX: extract into a reusable callback so both initial load AND refresh call the same logic
+  const loadProductSummaries = useCallback(async () => {
+    try {
+      const res = await api.get('/transactions/products/summary/variations');
+      if (res.success) {
+        setProductSummaries(res.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to load product summaries', err);
+    }
+  }, []);
+
   useEffect(() => {
     const loadReferenceData = async () => {
       try {
-        const [productsRes, warehousesRes, branchesRes, companiesRes, productSummariesRes] = await Promise.all([
+        const [productsRes, warehousesRes, branchesRes, companiesRes] = await Promise.all([
           api.get('/products?limit=100'),
           api.get('/warehouse'),
           api.get('/branches'),
           api.get('/companies'),
-          api.get('/transactions/products/summary/variations')
         ]);
         if (productsRes.success) setProducts(productsRes.data || []);
         if (warehousesRes.success) setWarehouses(warehousesRes.data || []);
         if (branchesRes.success) setBranches(branchesRes.data || []);
         if (companiesRes.success) setCompanies(companiesRes.data || []);
-        if (productSummariesRes.success) setProductSummaries(productSummariesRes.data || []);
+
+        // FIX: load product summaries separately via the shared callback
+        await loadProductSummaries();
       } finally {
         setRefDataLoading(false);
       }
     };
     loadReferenceData();
-  }, []);
+  }, [loadProductSummaries]);
 
 
   const {
@@ -137,7 +150,6 @@ const InventoryManagement = () => {
     showVariationFilter
   );
 
-  // Convert warehouseStocks to array (hook now returns a flat array directly)
   const warehouseStocksArray = Array.isArray(warehouseStocks) ? warehouseStocks : [];
   const filteredWarehouseStocks = filterWarehouseStocks(
     warehouseStocksArray,
@@ -145,7 +157,6 @@ const InventoryManagement = () => {
     warehouseFilters.filters
   );
 
-  // Convert branchStocks to array (hook now returns a flat array directly)
   const branchStocksArray = Array.isArray(branchStocks) ? branchStocks : [];
   const filteredBranchStocks = filterBranchStocks(
     branchStocksArray,
@@ -153,7 +164,6 @@ const InventoryManagement = () => {
     branchFilters.filters
   );
 
-  // Inventories safety check
   const filteredInventories = filterInventories(
     Array.isArray(inventories) ? inventories : [],
     searchTerm,
@@ -204,6 +214,7 @@ const InventoryManagement = () => {
       setLoadingMessage
     );
   };
+
   const handleDeleteTransaction = async (id) => {
     if (!window.confirm('Are you sure you want to delete this record? This cannot be undone.')) return;
 
@@ -220,7 +231,11 @@ const InventoryManagement = () => {
       }
 
       toast.success('Inventory deleted successfully');
-      await loadData(inventoryPage, inventoryPageSize);
+      // FIX: reload both inventories AND product summaries after a delete
+      await Promise.all([
+        loadData(inventoryPage, inventoryPageSize),
+        loadProductSummaries(),
+      ]);
 
     } catch (error) {
       console.error('Delete error:', error);
@@ -232,16 +247,19 @@ const InventoryManagement = () => {
     }
   };
 
+  // FIX: handleRefresh now correctly refreshes ALL relevant data for every tab,
+  // and specifically re-fetches the summary endpoint for the products tab.
   const handleRefresh = async () => {
     setActionLoading(true);
     setLoadingMessage('Refreshing...');
     try {
       if (activeTab === 'products') {
-        const res = await api.get('/transactions/products/summary/variations');
-        if (res.success) setProductSummaries(res.data || []);
-      } else if (activeTab === 'warehouse-stocks' || activeTab === 'branch-stocks') {
-        await loadData(inventoryPage, inventoryPageSize);
-      } else if (activeTab === 'transactions') {
+        await loadProductSummaries();
+      } else if (
+        activeTab === 'warehouse-stocks' ||
+        activeTab === 'branch-stocks' ||
+        activeTab === 'transactions'
+      ) {
         await loadData(inventoryPage, inventoryPageSize);
       }
       toast.success('Refreshed');

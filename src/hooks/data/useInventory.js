@@ -15,14 +15,12 @@ const useInventory = () => {
     try {
       setLoading(true);
 
-      // FIX: fetch inventories + both stock lists in parallel
       const [inventoriesRes, warehouseStocksRes, branchStocksRes] = await Promise.all([
         api.get(`/inventories?page=${page}&size=${size}`),
         api.get('/stocks/warehouses?limit=200'),
         api.get('/stocks/branches?limit=200'),
       ]);
 
-      // Handle paginated or array inventory response
       let inventoriesData = [];
       let totalElements = 0;
 
@@ -36,15 +34,12 @@ const useInventory = () => {
         }
       }
 
-      const actualInventories = inventoriesData.filter(inv =>
-        inv.inventoryType &&
-        ['STOCK_IN', 'TRANSFER', 'RETURN', 'DAMAGE'].includes(inv.inventoryType)
-      );
-
-      setInventories(actualInventories);
+      // FIX: Do NOT filter out DELIVERY/SALE — keep all transaction types
+      // so the Transactions tab shows the full picture. Filtering by type
+      // is handled at the UI layer (TransactionFilterPanel / filterInventories).
+      setInventories(inventoriesData);
       setTotalInventories(totalElements);
 
-      // FIX: set flat arrays for the summary tables
       if (warehouseStocksRes.success) {
         setWarehouseStocks(warehouseStocksRes.data || []);
       }
@@ -60,7 +55,6 @@ const useInventory = () => {
     }
   }, []);
 
-  // loadLocationStock: per-product stock lookup (used in modal, keyed by index)
   const loadLocationStock = useCallback(async (productId, variationId, itemIndex, locationId, locationType) => {
     const loadingKey = `${itemIndex}_${productId}_${variationId}`;
     setLoadingStocks(prev => ({ ...prev, [loadingKey]: true }));
@@ -72,7 +66,6 @@ const useInventory = () => {
         ? `${itemIndex}_${productId}_${variationId}_${locationId}`
         : `${itemIndex}_${productId}_${locationId}`;
 
-      // Use a ref-like per-product cache stored separately so we don't clobber the flat arrays
       let endpoint = '';
       if (locationType === 'warehouse') {
         endpoint = variationId
@@ -89,12 +82,9 @@ const useInventory = () => {
       if (stockRes?.success || stockRes?.data) {
         const stockData = stockRes.data || stockRes;
 
-        // Store per-product lookups in a separate key namespace on the arrays
-        // by attaching them as a side-cache object; the flat arrays stay intact
         if (locationType === 'warehouse') {
           setWarehouseStocks(prev => {
             const arr = Array.isArray(prev) ? prev : [];
-            // Attach per-product cache as a non-enumerable property clone trick:
             const clone = [...arr];
             clone.__cache = { ...(arr.__cache || {}), [stockKey]: stockData };
             return clone;
