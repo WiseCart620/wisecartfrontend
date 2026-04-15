@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, BarChart3, Building, Store, Package, RefreshCw } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -29,9 +29,9 @@ import {
   filterBranchStocks,
   filterInventories
 } from '../../utils/inventoryFilters';
-import { buildProductSummaries } from '../../utils/buildProductSummaries';
 
 const InventoryManagement = () => {
+  // State
   const [searchTerm, setSearchTerm] = useState('');
   const [productSearchTerm, setProductSearchTerm] = useState('');
   const [stockSearchTerm, setStockSearchTerm] = useState('');
@@ -47,10 +47,7 @@ const InventoryManagement = () => {
   const [warehouses, setWarehouses] = useState([]);
   const [branches, setBranches] = useState([]);
   const [companies, setCompanies] = useState([]);
-
-  // Raw backend summaries — used only for product metadata (names, SKUs, UPCs)
-  const [backendSummaries, setBackendSummaries] = useState([]);
-
+  const [productSummaries, setProductSummaries] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [deletingId, setDeletingId] = useState(null);
@@ -59,10 +56,16 @@ const InventoryManagement = () => {
 
   const loadProductSummaries = useCallback(async () => {
     try {
-      const res = await api.get('/transactions/products/summary/variations');
-      if (res.success) setBackendSummaries(res.data || []);
+      const res = await api.get('/inventories/products/summary');
+      if (res.success) {
+        setProductSummaries(res.data || []);
+      } else {
+        console.warn('Product summaries API returned:', res);
+        setProductSummaries([]);
+      }
     } catch (err) {
       console.error('Failed to load product summaries', err);
+      setProductSummaries([]);
     }
   }, []);
 
@@ -79,6 +82,8 @@ const InventoryManagement = () => {
         if (warehousesRes.success) setWarehouses(warehousesRes.data || []);
         if (branchesRes.success) setBranches(branchesRes.data || []);
         if (companiesRes.success) setCompanies(companiesRes.data || []);
+
+        // FIX: load product summaries separately via the shared callback
         await loadProductSummaries();
       } finally {
         setRefDataLoading(false);
@@ -86,6 +91,7 @@ const InventoryManagement = () => {
     };
     loadReferenceData();
   }, [loadProductSummaries]);
+
 
   const {
     inventories,
@@ -106,69 +112,76 @@ const InventoryManagement = () => {
     setBranchStocks
   } = useInventory();
 
+
   const transactionHandlers = useTransactionHandlers();
 
+  // Filter hooks
   const warehouseFilters = useFilters({
-    warehouse: '', minQty: '', maxQty: '', startDate: '', endDate: ''
-  });
-  const branchFilters = useFilters({
-    branch: '', minQty: '', maxQty: '', startDate: '', endDate: ''
-  });
-  const transactionFilters = useFilters({
-    type: 'ALL', verifiedBy: '', startDate: '', endDate: '', minItems: '', maxItems: ''
+    warehouse: '',
+    minQty: '',
+    maxQty: '',
+    startDate: '',
+    endDate: ''
   });
 
+  const branchFilters = useFilters({
+    branch: '',
+    minQty: '',
+    maxQty: '',
+    startDate: '',
+    endDate: ''
+  });
+
+  const transactionFilters = useFilters({
+    type: 'ALL',
+    verifiedBy: '',
+    startDate: '',
+    endDate: '',
+    minItems: '',
+    maxItems: ''
+  });
+
+  // Pagination hooks
   const productPagination = usePaginationControl(10);
   const stockPagination = usePaginationControl(10);
   const transactionPagination = usePaginationControl(10);
 
-  // ── CORE FIX: build accurate product summaries client-side from raw transactions.
-  // This corrects two backend bugs:
-  //   1. All variations sharing the same Stock-In total (grouped by product, not variation)
-  //   2. Delivered items still appearing as "Pending Delivery"
-  const productSummaries = useMemo(() => {
-    const safeInventories = Array.isArray(inventories) ? inventories : [];
-    const safeWarehouse = Array.isArray(warehouseStocks) ? warehouseStocks : [];
-    const safeBranch = Array.isArray(branchStocks) ? branchStocks : [];
-
-    // If transactions haven't loaded yet, show backend summaries as-is
-    // so the table isn't blank on first render
-    if (safeInventories.length === 0 && backendSummaries.length > 0) {
-      return backendSummaries;
-    }
-
-    return buildProductSummaries(
-      safeInventories,
-      safeWarehouse,
-      safeBranch,
-      backendSummaries
-    );
-  }, [inventories, warehouseStocks, branchStocks, backendSummaries]);
-
+  // Filtered data with safety checks
   const filteredProductSummaries = filterProductSummaries(
-    productSummaries, productSearchTerm, showVariationFilter
+    Array.isArray(productSummaries) ? productSummaries : [],
+    productSearchTerm,
+    showVariationFilter
   );
 
   const warehouseStocksArray = Array.isArray(warehouseStocks) ? warehouseStocks : [];
   const filteredWarehouseStocks = filterWarehouseStocks(
-    warehouseStocksArray, stockSearchTerm, warehouseFilters.filters
+    warehouseStocksArray,
+    stockSearchTerm,
+    warehouseFilters.filters
   );
 
   const branchStocksArray = Array.isArray(branchStocks) ? branchStocks : [];
   const filteredBranchStocks = filterBranchStocks(
-    branchStocksArray, stockSearchTerm, branchFilters.filters
+    branchStocksArray,
+    stockSearchTerm,
+    branchFilters.filters
   );
 
   const filteredInventories = filterInventories(
     Array.isArray(inventories) ? inventories : [],
-    searchTerm, transactionFilters.filters, warehouses, branches
+    searchTerm,
+    transactionFilters.filters,
+    warehouses,
+    branches
   );
 
+  // Paginated data
   const currentProductSummaries = productPagination.getPageItems(filteredProductSummaries);
   const currentWarehouseStocks = stockPagination.getPageItems(filteredWarehouseStocks);
   const currentBranchStocks = stockPagination.getPageItems(filteredBranchStocks);
   const currentInventories = transactionPagination.getPageItems(filteredInventories);
 
+  // Total pages
   const productTotalPages = productPagination.getTotalPages(filteredProductSummaries.length);
   const warehouseStockTotalPages = stockPagination.getTotalPages(filteredWarehouseStocks.length);
   const branchStockTotalPages = stockPagination.getTotalPages(filteredBranchStocks.length);
@@ -177,39 +190,56 @@ const InventoryManagement = () => {
   useEffect(() => {
     loadData(inventoryPage, inventoryPageSize);
     window.loadData = () => loadData(inventoryPage, inventoryPageSize);
-    return () => { delete window.loadData; };
+
+    return () => {
+      delete window.loadData;
+    };
   }, [loadData, inventoryPage, inventoryPageSize]);
 
-  const handleViewTransaction = (transaction) => setViewingId(transaction.id);
+  const handleViewTransaction = (transaction) => {
+    setViewingId(transaction.id);
+  };
 
   const handleViewTransactions = (product, showStock = false) => {
     transactionHandlers.handleViewTransactions(
-      product, showStock, setActionLoading, setLoadingMessage
+      product,
+      showStock,
+      setActionLoading,
+      setLoadingMessage
     );
   };
 
   const handleViewStockTransactions = (stock, locationType) => {
     transactionHandlers.handleViewStockTransactions(
-      stock, locationType, setActionLoading, setLoadingMessage
+      stock,
+      locationType,
+      setActionLoading,
+      setLoadingMessage
     );
   };
 
   const handleDeleteTransaction = async (id) => {
     if (!window.confirm('Are you sure you want to delete this record? This cannot be undone.')) return;
+
     try {
       setDeletingId(id);
       setActionLoading(true);
       setLoadingMessage('Deleting transaction...');
+
       const result = await deleteInventory(id);
+
       if (result && result.success === false) {
         toast.error(result.error || 'Failed to delete inventory');
         return;
       }
+
       toast.success('Inventory deleted successfully');
+      // FIX: reload both inventories AND product summaries after a delete
       await Promise.all([
         loadData(inventoryPage, inventoryPageSize),
         loadProductSummaries(),
       ]);
+
     } catch (error) {
       console.error('Delete error:', error);
       toast.error(error.message || 'Failed to delete inventory');
@@ -224,10 +254,15 @@ const InventoryManagement = () => {
     setActionLoading(true);
     setLoadingMessage('Refreshing...');
     try {
-      await Promise.all([
-        loadData(inventoryPage, inventoryPageSize),
-        loadProductSummaries(),
-      ]);
+      if (activeTab === 'products') {
+        await loadProductSummaries();
+      } else if (
+        activeTab === 'warehouse-stocks' ||
+        activeTab === 'branch-stocks' ||
+        activeTab === 'transactions'
+      ) {
+        await loadData(inventoryPage, inventoryPageSize);
+      }
       toast.success('Refreshed');
     } catch (err) {
       toast.error('Refresh failed');
@@ -236,6 +271,7 @@ const InventoryManagement = () => {
       setLoadingMessage('');
     }
   };
+
 
   return (
     <>
@@ -247,27 +283,50 @@ const InventoryManagement = () => {
           <p className="text-gray-600">Track stock movements across warehouses and branches with delivery integration</p>
         </div>
 
+        {/* Navigation Tabs */}
         <div className="mb-6">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8">
-              {[
-                { id: 'products', icon: BarChart3, label: 'Product Summary' },
-                { id: 'warehouse-stocks', icon: Building, label: 'Warehouse Stocks' },
-                { id: 'branch-stocks', icon: Store, label: 'Branch Stocks' },
-                { id: 'transactions', icon: Package, label: 'Transactions' },
-              ].map(({ id, icon: Icon, label }) => (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                >
-                  <Icon className="inline w-4 h-4 mr-2" />
-                  {label}
-                </button>
-              ))}
+              <button
+                onClick={() => setActiveTab('products')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'products'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+              >
+                <BarChart3 className="inline w-4 h-4 mr-2" />
+                Product Summary
+              </button>
+              <button
+                onClick={() => setActiveTab('warehouse-stocks')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'warehouse-stocks'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+              >
+                <Building className="inline w-4 h-4 mr-2" />
+                Warehouse Stocks
+              </button>
+              <button
+                onClick={() => setActiveTab('branch-stocks')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'branch-stocks'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+              >
+                <Store className="inline w-4 h-4 mr-2" />
+                Branch Stocks
+              </button>
+              <button
+                onClick={() => setActiveTab('transactions')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'transactions'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+              >
+                <Package className="inline w-4 h-4 mr-2" />
+                Transactions
+              </button>
             </nav>
           </div>
           <div className="mt-3 flex justify-end">
@@ -296,12 +355,14 @@ const InventoryManagement = () => {
                 />
               </div>
             </div>
+
             <ProductFilterPanel
               productSearchTerm={productSearchTerm}
               setProductSearchTerm={setProductSearchTerm}
               showVariationFilter={showVariationFilter}
               setShowVariationFilter={setShowVariationFilter}
             />
+
             <ProductSummaryTable
               currentProductSummaries={currentProductSummaries}
               filteredProductSummaries={filteredProductSummaries}
@@ -311,7 +372,7 @@ const InventoryManagement = () => {
               productCurrentPage={productPagination.currentPage}
               productTotalPages={productTotalPages}
               setProductCurrentPage={productPagination.setCurrentPage}
-              isLoading={refDataLoading || loading}
+              isLoading={refDataLoading}
             />
           </div>
         )}
@@ -330,6 +391,7 @@ const InventoryManagement = () => {
                 />
               </div>
             </div>
+
             <WarehouseFilterPanel
               showWarehouseFilter={showWarehouseFilter}
               warehouses={warehouses}
@@ -337,6 +399,7 @@ const InventoryManagement = () => {
               updateFilter={warehouseFilters.updateFilter}
               clearFilters={warehouseFilters.clearFilters}
             />
+
             <WarehouseStockTable
               currentWarehouseStocks={currentWarehouseStocks}
               filteredWarehouseStocks={filteredWarehouseStocks}
@@ -365,6 +428,7 @@ const InventoryManagement = () => {
                 />
               </div>
             </div>
+
             <BranchFilterPanel
               showBranchFilter={showBranchFilter}
               branches={branches}
@@ -372,6 +436,7 @@ const InventoryManagement = () => {
               updateFilter={branchFilters.updateFilter}
               clearFilters={branchFilters.clearFilters}
             />
+
             <BranchStockTable
               currentBranchStocks={currentBranchStocks}
               filteredBranchStocks={filteredBranchStocks}
@@ -400,12 +465,14 @@ const InventoryManagement = () => {
                 />
               </div>
             </div>
+
             <TransactionFilterPanel
               showTransactionFilter={showTransactionFilter}
               filters={transactionFilters.filters}
               updateFilter={transactionFilters.updateFilter}
               clearFilters={transactionFilters.clearFilters}
             />
+
             <TransactionTable
               currentInventories={currentInventories}
               filteredInventories={filteredInventories}
@@ -437,7 +504,9 @@ const InventoryManagement = () => {
                     disabled={inventoryPage === 0 || isLoadingPage}
                     className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
                   >
-                    {isLoadingPage && <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />}
+                    {isLoadingPage ? (
+                      <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
+                    ) : null}
                     Previous
                   </button>
                   <span className="px-4 py-2 text-sm text-gray-600">
@@ -453,7 +522,9 @@ const InventoryManagement = () => {
                     className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
                   >
                     Next
-                    {isLoadingPage && <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />}
+                    {isLoadingPage ? (
+                      <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
+                    ) : null}
                   </button>
                 </div>
               </div>
