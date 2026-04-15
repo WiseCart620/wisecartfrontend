@@ -990,8 +990,8 @@ const SalesManagement = () => {
 
     return true;
   }).sort((a, b) => {
-    if (a.year !== b.year) return a.year - b.year;
-    return a.month - b.month;
+    if (a.year !== b.year) return b.year - a.year;
+    return b.month - a.month;
   });
 
 
