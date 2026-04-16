@@ -1141,14 +1141,14 @@ const SalesManagement = () => {
                 </button>
                 <button
                   onClick={() => setShowInvoiceModal(true)}
-                  className="flex items-center gap-3 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-md"
+                  className="flex items-center gap-3 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md"
                 >
                   <FileText size={20} />
                   <span>Generate Invoice</span>
                 </button>
                 <button
                   onClick={() => setShowSalesMemoModal(true)}
-                  className="flex items-center gap-3 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-md"
+                  className="flex items-center gap-3 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md"
                 >
                   <FileText size={20} />
                   <span>Generate Sales Memo</span>
@@ -1979,7 +1979,7 @@ const SalesManagement = () => {
                     <select
                       value={filterData.startMonth}
                       onChange={(e) => setFilterData({ ...filterData, startMonth: parseInt(e.target.value) })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                     >
                       {monthsFull.map((m, i) => (
                         <option key={i} value={i + 1}>{m}</option>
@@ -1991,7 +1991,7 @@ const SalesManagement = () => {
                     <select
                       value={filterData.endMonth}
                       onChange={(e) => setFilterData({ ...filterData, endMonth: parseInt(e.target.value) })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                     >
                       {monthsFull.map((m, i) => (
                         <option key={i} value={i + 1}>{m}</option>
@@ -2041,7 +2041,7 @@ const SalesManagement = () => {
                 </button>
                 <button
                   onClick={handleGenerateInvoice}
-                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium shadow-md"
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
                 >
                   Generate Invoice
                 </button>
@@ -2062,7 +2062,7 @@ const SalesManagement = () => {
                       const newAdjustments = [...(invoiceReport.adjustments || []), { description: '', quantity: 1, unitCost: 0, amount: 0 }];
                       setInvoiceReport({ ...invoiceReport, adjustments: newAdjustments });
                     }}
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                   >
                     <Plus size={18} />
                     Add Adjustment
@@ -2684,7 +2684,7 @@ const SalesManagement = () => {
                     <select
                       value={filterData.startMonth}
                       onChange={(e) => setFilterData({ ...filterData, startMonth: parseInt(e.target.value) })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                     >
                       {monthsFull.map((m, i) => (
                         <option key={i} value={i + 1}>{m}</option>
@@ -2696,7 +2696,7 @@ const SalesManagement = () => {
                     <select
                       value={filterData.endMonth}
                       onChange={(e) => setFilterData({ ...filterData, endMonth: parseInt(e.target.value) })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                     >
                       {monthsFull.map((m, i) => (
                         <option key={i} value={i + 1}>{m}</option>
@@ -2734,7 +2734,7 @@ const SalesManagement = () => {
                 </button>
                 <button
                   onClick={handleGenerateSalesMemo}
-                  className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium shadow-md"
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
                 >
                   Generate Sales Memo
                 </button>
