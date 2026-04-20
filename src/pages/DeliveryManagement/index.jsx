@@ -382,13 +382,13 @@ const DeliveryManagement = () => {
     <>
       <LoadingOverlay show={actionLoading} message={loadingMessage || 'Loading...'} />
 
-      <div className="p-2 sm:p-4 md:p-6 max-w-[1640px] mx-auto">
+      <div className="p-2 sm:p-3 lg:p-4 max-w-full mx-auto overflow-x-hidden">
         {/* Sliding Navigation Bar */}
-        <div className="mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 inline-flex">
+        <div className="mb-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 inline-flex overflow-x-auto max-w-full">
             <button
               onClick={() => navigate('/deliveries')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200 font-medium ${location.pathname === '/deliveries'
+              className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-lg transition-all duration-200 font-medium text-sm whitespace-nowrap ${location.pathname === '/deliveries'
                 ? 'bg-blue-600 text-white shadow-md'
                 : 'text-gray-600 hover:bg-gray-100'
                 }`}
@@ -398,8 +398,7 @@ const DeliveryManagement = () => {
             </button>
             <button
               onClick={() => navigate('/transmittals')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200 font-medium ${location.pathname === '/transmittals'
-                ? 'bg-blue-600 text-white shadow-md'
+              className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-lg transition-all duration-200 font-medium text-sm whitespace-nowrap ${location.pathname === '/transmittals' ? 'bg-blue-600 text-white shadow-md'
                 : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
@@ -409,33 +408,29 @@ const DeliveryManagement = () => {
           </div>
         </div>
 
-        <div className="mb-4 sm:mb-6">
-          <h1 className="text-xl sm:text-3xl font-bold text-gray-900">Delivery Management</h1>
-          <p className="text-sm sm:text-base text-gray-600">Track and manage product deliveries to branches</p>
+        <div className="mb-3">
+          <h1 className="text-lg lg:text-2xl font-bold text-gray-900">Delivery Management</h1>
+          <p className="text-xs sm:text-sm text-gray-600">Track and manage product deliveries to branches</p>
         </div>
 
-        {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-between sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
-          {/* Left: action buttons */}
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* New Delivery */}
+        <div className="flex flex-wrap justify-between items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => handleOpenModal('create')}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
+              className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium text-sm"
             >
-              <Plus size={18} />
+              <Plus size={16} />
               <span>New Delivery</span>
             </button>
           </div>
 
-          {/* Right: Sort control */}
-          <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
-            <ArrowUpDown size={16} className="text-gray-500 flex-shrink-0" />
-            <span className="text-xs text-gray-500 font-medium whitespace-nowrap">Sort by:</span>
+          <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2 py-1.5 shadow-sm">
+            <ArrowUpDown size={14} className="text-gray-500 flex-shrink-0" />
+            <span className="text-xs text-gray-500 font-medium whitespace-nowrap hidden sm:inline">Sort by:</span>
             <select
               value={sortMode}
               onChange={e => { setSortMode(e.target.value); setCurrentPage(1); }}
-              className="text-sm text-gray-700 bg-transparent border-none outline-none cursor-pointer pr-1"
+              className="text-xs text-gray-700 bg-transparent border-none outline-none cursor-pointer pr-1"
             >
               {SORT_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>

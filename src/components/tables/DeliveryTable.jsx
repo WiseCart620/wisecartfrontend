@@ -56,34 +56,34 @@ const DeliveryTable = ({
 
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full">
-      <div className="overflow-x-auto">
-        <table className="w-full table-fixed min-w-[900px]">
+      <div className="overflow-x-auto w-full">
+        <table className="table-fixed min-w-[860px] w-full">
           <colgroup>
-            <col className="w-[60px]" />
+            <col className="w-[50px]" />
+            <col className="w-[100px]" />
+            <col className="w-[160px]" />
+            <col className="w-[200px]" />
             <col className="w-[110px]" />
-            <col className="w-[180px]" />
-            <col className="w-[250px]" />
-            <col className="w-[130px]" />
-            <col className="w-[130px]" />
-            <col className="w-[90px]" />
-            <col className="w-[90px]" />
             <col className="w-[110px]" />
-            <col className="w-[220px]" />
+            <col className="w-[70px]" />
+            <col className="w-[70px]" />
+            <col className="w-[100px]" />
+            <col className="w-[190px]" />
           </colgroup>
 
           {/* ── HEAD ── */}
           <thead className="bg-gray-50 border-b-2 border-gray-200">
             <tr>
-              <th className="px-2 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-20 border-r border-gray-200">Number</th>
-              <th className="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider sticky left-[60px] bg-gray-50 z-20 border-r border-gray-200">Receipt #</th>
-              <th className="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">From (Warehouse)</th>
-              <th className="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">To (Branch)</th>
-              <th className="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date Prepared</th>
-              <th className="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date Delivered</th>
-              <th className="px-2 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">SKU</th>
-              <th className="px-2 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Qty</th>
-              <th className="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+              <th className="px-2 py-2.5 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-20 border-r border-gray-200">No.</th>
+              <th className="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider sticky left-[50px] bg-gray-50 z-20 border-r border-gray-200">DR #</th>
+              <th className="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">Warehouse</th>
+              <th className="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">Branch</th>
+              <th className="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">Prepared</th>
+              <th className="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">Delivered</th>
+              <th className="px-2 py-2.5 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wider">SKU</th>
+              <th className="px-2 py-2.5 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wider">Qty</th>
+              <th className="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
 
@@ -107,14 +107,11 @@ const DeliveryTable = ({
               return (
                 <tr key={delivery.id} className="hover:bg-blue-50/30 transition-colors">
 
-                  {/* Row Number - Sticky */}
-                  <td className="px-2 py-3 text-center sticky left-0 bg-white z-10 border-r border-gray-200">
-                    <span className="text-sm font-medium text-gray-500">{rowNumber}</span>
+                  <td className="px-2 py-2.5 text-center sticky left-0 bg-white z-10 border-r border-gray-200">
+                    <span className="text-xs font-medium text-gray-500">{rowNumber}</span>
                   </td>
-
-                  {/* Receipt # - Sticky */}
-                  <td className="px-2 py-3 sticky left-[60px] bg-white z-10 border-r border-gray-200">
-                    <div className="text-sm font-bold text-gray-900 truncate">{delivery.deliveryReceiptNumber}</div>
+                  <td className="px-2 py-2.5 sticky left-[50px] bg-white z-10 border-r border-gray-200">
+                    <div className="text-xs font-bold text-gray-900 truncate">{delivery.deliveryReceiptNumber}</div>
                   </td>
 
                   {/* From Warehouse */}
@@ -124,7 +121,7 @@ const DeliveryTable = ({
                         {delivery.warehouses.slice(0, 1).map((wh, idx) => (
                           <div key={idx} className="flex items-center gap-1 truncate">
                             <Package size={12} className="text-blue-400 flex-shrink-0" />
-                            <span className="text-sm font-medium text-gray-800 truncate">{wh.warehouseName}</span>
+                            <span className="text-xs font-medium text-gray-800 truncate">{wh.warehouseName}</span>
                           </div>
                         ))}
                         {delivery.warehouses.length > 1 && (
@@ -140,12 +137,12 @@ const DeliveryTable = ({
                   <td className="px-2 py-3">
                     <div className="flex items-center gap-1 whitespace-normal break-words">
                       <Truck size={12} className="text-green-500 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm font-semibold text-gray-800">{delivery.branchName}</span>
+                      <span className="text-xs font-semibold text-gray-800">{delivery.branchName}</span>
                     </div>
                   </td>
 
                   {/* Date Prepared */}
-                  <td className="px-2 py-3 text-sm text-gray-600">
+                  <td className="px-2 py-2.5 text-xs text-gray-600">
                     {delivery.datePrepared
                       ? new Date(delivery.datePrepared).toLocaleDateString('en-US', {
                         year: 'numeric',
@@ -156,7 +153,7 @@ const DeliveryTable = ({
                   </td>
 
                   {/* Date Delivered */}
-                  <td className="px-2 py-3 text-sm text-gray-600">
+                  <td className="px-2 py-2.5 text-xs text-gray-600">
                     {delivery.dateDelivered
                       ? new Date(delivery.dateDelivered).toLocaleDateString('en-US', {
                         year: 'numeric',
@@ -167,7 +164,7 @@ const DeliveryTable = ({
                   </td>
 
                   {/* SKU (Item Count) */}
-                  <td className="px-2 py-3 text-center">
+                  <td className="px-2 py-2.5 text-center">
                     <span className="inline-flex items-center gap-1">
                       <Package size={13} className="text-gray-400" />
                       <span className="text-sm font-bold text-gray-800">{delivery.itemCount}</span>
@@ -175,7 +172,7 @@ const DeliveryTable = ({
                   </td>
 
                   {/* Qty (Prepared Qty) */}
-                  <td className="px-2 py-3 text-right">
+                  <td className="px-2 py-2.5 text-right">
                     {drTotalPrepared > 0 ? (
                       <span className="text-sm font-bold text-blue-700">
                         {drTotalPrepared.toLocaleString('en-US')}
@@ -186,15 +183,15 @@ const DeliveryTable = ({
                   </td>
 
                   {/* Status */}
-                  <td className="px-2 py-3">
-                    <span className={`px-2 py-1 inline-flex text-xs font-bold rounded-full ${getStatusColor(delivery.status)}`}>
+                  <td className="px-2 py-2.5">
+                    <span className={`px-1.5 py-0.5 inline-flex text-[11px] font-bold rounded-full ${getStatusColor(delivery.status)}`}>
                       {delivery.customStatus || delivery.status}
                     </span>
                   </td>
 
                   {/* Actions */}
-                  <td className="px-2 py-3">
-                    <div className="flex items-center gap-1">
+                  <td className="px-2 py-2.5">
+                    <div className="flex items-center gap-0.5">
                       {/* View */}
                       <button
                         onClick={() => onView(delivery)}
@@ -257,7 +254,7 @@ const DeliveryTable = ({
           {/* ── FOOTER totals ── */}
           <tfoot>
             <tr className="bg-gray-100 border-t-2 border-gray-300">
-              <td colSpan={2} className="px-2 py-2 sticky left-0 bg-gray-100 z-10 border-r border-gray-300">
+              <td colSpan={2} className="px-2 py-2 sticky left-0 bg-gray-100 z-10 border-r border-gray-300 text-[11px]">
                 <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
                   Page Totals ({deliveries.length})
                 </span>

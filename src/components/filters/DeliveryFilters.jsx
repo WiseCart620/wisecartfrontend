@@ -14,42 +14,42 @@ const DeliveryFilters = ({
   products = [],
   statusOptions = ['PREPARING', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'PENDING', 'RETURNED']
 }) => {
-  const companyOptions   = companies.map(c => ({ id: c.id, name: c.companyName }));
-  const branchOptions    = branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
+  const companyOptions = companies.map(c => ({ id: c.id, name: c.companyName }));
+  const branchOptions = branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
   const warehouseOptions = warehouses.map(w => ({ id: w.id, name: `${w.warehouseName} (${w.warehouseCode})` }));
 
   const productOptions = products.flatMap(product => {
     if (product.variations && product.variations.length > 0) {
       return product.variations.map(variation => ({
-        id:              `${product.id}_${variation.id}`,
+        id: `${product.id}_${variation.id}`,
         parentProductId: product.id,
-        variationId:     variation.id,
-        name:            product.productName,
-        fullName:        product.productName,
-        subLabel:        variation.combinationDisplay || 'Variation',
-        upc:             variation.upc  || product.upc  || '',
-        sku:             variation.sku  || product.sku  || '',
-        isVariation:     true,
+        variationId: variation.id,
+        name: product.productName,
+        fullName: product.productName,
+        subLabel: variation.combinationDisplay || 'Variation',
+        upc: variation.upc || product.upc || '',
+        sku: variation.sku || product.sku || '',
+        isVariation: true,
       }));
     }
 
     return [{
-      id:              `prod_${product.id}`,
+      id: `prod_${product.id}`,
       parentProductId: product.id,
-      variationId:     null,
-      name:            product.productName,
-      fullName:        product.productName,
-      subLabel:        'No variations',
-      upc:             product.upc || '',
-      sku:             product.sku || '',
-      isVariation:     false,
+      variationId: null,
+      name: product.productName,
+      fullName: product.productName,
+      subLabel: 'No variations',
+      upc: product.upc || '',
+      sku: product.sku || '',
+      isVariation: false,
     }];
   });
 
   const filteredBranchOptions = filterData.companyId
     ? branches
-        .filter(b => b.company?.id === filterData.companyId)
-        .map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }))
+      .filter(b => b.company?.id === filterData.companyId)
+      .map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }))
     : branchOptions;
 
   const hasActiveFilters = Object.values(filterData).some(
@@ -59,8 +59,8 @@ const DeliveryFilters = ({
   const selectedProductOptionId = filterData.variationId
     ? productOptions.find(o => String(o.variationId) === String(filterData.variationId))?.id ?? ''
     : filterData.productId
-    ? productOptions.find(o => !o.variationId && String(o.parentProductId) === String(filterData.productId))?.id ?? ''
-    : '';
+      ? productOptions.find(o => !o.variationId && String(o.parentProductId) === String(filterData.productId))?.id ?? ''
+      : '';
 
   const handleProductChange = (value) => {
     if (!value) {
@@ -70,7 +70,7 @@ const DeliveryFilters = ({
     const option = productOptions.find(o => o.id === value);
     if (option) {
       onFilterChange({
-        productId:   option.parentProductId,
+        productId: option.parentProductId,
         variationId: option.variationId,
         productName: option.subLabel !== 'No variations'
           ? `${option.fullName} — ${option.subLabel}`
@@ -80,12 +80,10 @@ const DeliveryFilters = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-      <div className="flex flex-col gap-4">
-
-        {/* Header */}
-        <div className="flex flex-wrap gap-3 items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Filter Deliveries</h3>
+    <div className="bg-white rounded-xl shadow-sm p-3 lg:p-4 mb-4">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap gap-2 items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-900">Filter Deliveries</h3>
           {hasActiveFilters && (
             <button
               onClick={onReset}
@@ -98,9 +96,9 @@ const DeliveryFilters = ({
         </div>
 
         {/* Row 1 — Company / Branch / Warehouse / Status */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t border-gray-200">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 pt-3 border-t border-gray-200">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Company</label>
+            <label className="block text-[11px] font-medium text-gray-700 mb-1">Company</label>
             <SearchableDropdown
               options={companyOptions}
               value={filterData.companyId}
@@ -151,8 +149,7 @@ const DeliveryFilters = ({
             <select
               value={filterData.status}
               onChange={(e) => onFilterChange({ status: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
               <option value="">All Status</option>
               {statusOptions.map(status => (
                 <option key={status} value={status}>{status}</option>
@@ -162,7 +159,7 @@ const DeliveryFilters = ({
         </div>
 
         {/* Row 2 — Product (UPC / SKU) + Date range */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           <div className="lg:col-span-2">
             <label className="block text-xs font-medium text-gray-700 mb-1">
               Product / UPC / SKU
@@ -187,8 +184,7 @@ const DeliveryFilters = ({
               type="date"
               value={filterData.startDate}
               onChange={(e) => onFilterChange({ startDate: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
           </div>
 
           <div>
@@ -197,8 +193,7 @@ const DeliveryFilters = ({
               type="date"
               value={filterData.endDate}
               onChange={(e) => onFilterChange({ endDate: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
           </div>
         </div>
 
@@ -213,7 +208,7 @@ const DeliveryFilters = ({
               placeholder="Enter receipt number..."
               value={filterData.receiptNumber || ''}
               onChange={(e) => onFilterChange({ receiptNumber: e.target.value })}
-              className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-3 pr-8 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
             {filterData.receiptNumber && (
               <button

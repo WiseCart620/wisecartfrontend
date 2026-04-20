@@ -275,21 +275,21 @@ const InventoryManagement = () => {
 
   return (
     <>
-      <div className="p-6 max-w-full mx-auto">
+      <div className="p-2 sm:p-3 lg:p-4 max-w-full mx-auto">
         <Toaster position="top-right" />
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Inventory Management</h1>
-          <p className="text-gray-600">Track stock movements across warehouses and branches with delivery integration</p>
+        <div className="mb-4">
+          <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Inventory Management</h1>
+          <p className="text-sm text-gray-600">Track stock movements across warehouses and branches</p>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
+        <div className="mb-4">
+          <div className="border-b border-gray-200 overflow-x-auto">
+            <nav className="-mb-px flex space-x-4 min-w-max">
               <button
                 onClick={() => setActiveTab('products')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'products'
+                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${activeTab === 'products'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
@@ -351,8 +351,7 @@ const InventoryManagement = () => {
                   placeholder="Search products by name, SKU, or UPC..."
                   value={productSearchTerm}
                   onChange={(e) => setProductSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
+                  className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
 
@@ -381,7 +380,7 @@ const InventoryManagement = () => {
           <div className="mb-8">
             <div className="flex flex-col md:flex-row gap-4 mb-6">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                 <input
                   type="text"
                   placeholder="Search warehouse stocks by product name, warehouse, or SKU..."
@@ -416,7 +415,7 @@ const InventoryManagement = () => {
 
         {activeTab === 'branch-stocks' && (
           <div className="mb-8">
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="flex flex-col md:flex-row gap-3 mb-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                 <input
@@ -489,8 +488,8 @@ const InventoryManagement = () => {
               isLoading={loading}
             />
             {totalInventories > inventoryPageSize && (
-              <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
-                <div className="text-sm text-gray-500">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mt-4 pt-4 border-t border-gray-200">
+                <div className="text-xs sm:text-sm text-gray-500">
                   Showing {inventoryPage * inventoryPageSize + 1} to{' '}
                   {Math.min((inventoryPage + 1) * inventoryPageSize, totalInventories)} of {totalInventories} transactions
                 </div>
