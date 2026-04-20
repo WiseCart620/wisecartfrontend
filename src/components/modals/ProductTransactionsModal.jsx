@@ -6,6 +6,7 @@ import {
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { parseDate } from '../../utils/dateUtils';
+import Pagination from '../../components/common/Pagination'; // Add this import
 
 const ProductTransactionsModal = ({
     product,
@@ -28,7 +29,7 @@ const ProductTransactionsModal = ({
     const [deletingAll, setDeletingAll] = useState(false);
 
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(20); // Changed to 20
 
     const getTransactionDates = (transaction) => {
         const userEnteredDate = transaction.transactionDate
@@ -236,16 +237,33 @@ const ProductTransactionsModal = ({
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex);
+    
     React.useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, filterType, showDeletedFilter, startDate, endDate]);
 
     if (!isOpen) return null;
 
-
     const deletedTransactionsCount = filteredTransactions.filter(t =>
         t.isDeleted === true || t.action === 'DELETED'
     ).length;
+
+    // Pagination handlers
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+    };
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
+
+    const handlePrevPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
 
     // Row expansion
     const toggleRowExpansion = (transactionId) => {
@@ -299,7 +317,7 @@ const ProductTransactionsModal = ({
 
     const handlePageSizeChange = (newSize) => {
         setPageSize(newSize);
-        setCurrentPage(1); // Reset to first page when changing page size
+        setCurrentPage(1);
     };
 
     return (
@@ -400,6 +418,25 @@ const ProductTransactionsModal = ({
                                 )}
                             </div>
                         )}
+                    </div>
+
+                    {/* Page Size Selector */}
+                    <div className="mb-4 flex justify-end">
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-600">Show:</span>
+                            <select
+                                value={pageSize}
+                                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                                className="px-2 py-1 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value={5}>5</option>
+                                <option value={10}>10</option>
+                                <option value={20}>20</option>
+                                <option value={50}>50</option>
+                                <option value={100}>100</option>
+                            </select>
+                            <span className="text-sm text-gray-600">per page</span>
+                        </div>
                     </div>
 
                     {/* Transactions Table */}
@@ -684,93 +721,19 @@ const ProductTransactionsModal = ({
                         </div>
                     </div>
 
-                    {/* Pagination Controls */}
-                    <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-600">Show:</span>
-                            <select
-                                value={pageSize}
-                                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                                className="px-2 py-1 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                            >
-                                <option value={5}>5</option>
-                                <option value={10}>10</option>
-                                <option value={20}>20</option>
-                                <option value={50}>50</option>
-                                <option value={100}>100</option>
-                            </select>
-                            <span className="text-sm text-gray-600">per page</span>
-                        </div>
-
-                        <div className="text-sm text-gray-600">
-                            Showing {startIndex + 1} to {Math.min(endIndex, filteredTransactions.length)} of {filteredTransactions.length} transactions
-                            {deletedTransactionsCount > 0 && (
-                                <span className="ml-2 text-red-600 font-medium">({deletedTransactionsCount} deleted)</span>
-                            )}
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setCurrentPage(1)}
-                                disabled={currentPage === 1}
-                                className="px-3 py-1 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                            >
-                                First
-                            </button>
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                disabled={currentPage === 1}
-                                className="px-3 py-1 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-1"
-                            >
-                                <ChevronLeft size={16} />
-                                Previous
-                            </button>
-                            <div className="flex items-center gap-1">
-                                {(() => {
-                                    const maxButtons = 5;
-                                    let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
-                                    let endPage = Math.min(totalPages, startPage + maxButtons - 1);
-
-                                    if (endPage - startPage + 1 < maxButtons) {
-                                        startPage = Math.max(1, endPage - maxButtons + 1);
-                                    }
-
-                                    const pages = [];
-                                    for (let i = startPage; i <= endPage; i++) {
-                                        pages.push(i);
-                                    }
-
-                                    return pages.map(page => (
-                                        <button
-                                            key={page}
-                                            onClick={() => setCurrentPage(page)}
-                                            className={`px-3 py-1 rounded-lg text-sm font-medium transition ${currentPage === page
-                                                ? 'bg-blue-600 text-white'
-                                                : 'text-gray-700 hover:bg-gray-50'
-                                                }`}
-                                        >
-                                            {page}
-                                        </button>
-                                    ));
-                                })()}
-                            </div>
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                disabled={currentPage === totalPages || totalPages === 0}
-                                className="px-3 py-1 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-1"
-                            >
-                                Next
-                                <ChevronRight size={16} />
-                            </button>
-                            <button
-                                onClick={() => setCurrentPage(totalPages)}
-                                disabled={currentPage === totalPages || totalPages === 0}
-                                className="px-3 py-1 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                            >
-                                Last
-                            </button>
-                        </div>
-                    </div>
+                    {/* Pagination Component */}
+                    {filteredTransactions.length > 0 && (
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={handlePageChange}
+                            onNextPage={handleNextPage}
+                            onPrevPage={handlePrevPage}
+                            showingStart={startIndex + 1}
+                            showingEnd={Math.min(endIndex, filteredTransactions.length)}
+                            totalItems={filteredTransactions.length}
+                        />
+                    )}
                 </div>
             </div>
         </div>
