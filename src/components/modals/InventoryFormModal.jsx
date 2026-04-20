@@ -34,10 +34,10 @@ const InventoryFormModal = ({
   const totalQuantity = formData.items.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
 
   return (
-    <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-2xl max-w-7xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
-        <div className="p-8 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl">
-          <h2 className="text-2xl font-bold text-gray-900">
+    <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white rounded-xl sm:rounded-2xl max-w-7xl w-full max-h-[98vh] sm:max-h-[95vh] overflow-y-auto shadow-2xl">
+        <div className="p-4 sm:p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-xl sm:rounded-t-2xl z-10">
+          <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
             {modalMode === 'create' ? 'Create New Inventory Record' : 'Edit Inventory Record'}
           </h2>
           <button
@@ -71,7 +71,7 @@ const InventoryFormModal = ({
         />
 
 
-        <div className="mt-8 flex justify-between items-center pt-6 border-t border-gray-200 p-8">
+        <div className="mt-4 flex flex-wrap justify-between items-center gap-3 pt-4 border-t border-gray-200 px-4 sm:px-6 pb-4 sm:pb-6">
           <div className="flex items-center gap-4">
             {modalMode === 'edit' && selectedInventory && selectedInventory.status === 'PENDING' && (
               <button
@@ -100,18 +100,18 @@ const InventoryFormModal = ({
             )}
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex gap-2 sm:gap-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+              className="px-4 sm:px-6 py-2 sm:py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={onSubmit}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
+              className="px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md text-sm"
             >
               {modalMode === 'create' ? 'Create Record' : 'Update Record'}
             </button>

@@ -23,18 +23,18 @@ const InventoryTable = ({
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full min-w-[800px]">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Number</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">From → To</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Total Qty</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Timestamp</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th className="px-3 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase">No.</th>
+              <th className="px-3 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase">Type</th>
+              <th className="px-3 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase">From → To</th>
+              <th className="px-3 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase">Date</th>
+              <th className="px-3 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase">Items</th>
+              <th className="px-3 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase">Qty</th>
+              <th className="px-3 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase">Status</th>
+              <th className="px-3 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase">Timestamp</th>
+              <th className="px-3 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -51,16 +51,16 @@ const InventoryTable = ({
 
                 return (
                   <tr key={inventory.id} className="hover:bg-gray-50 transition">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">
+                    <td className="px-3 py-2.5 whitespace-nowrap text-xs text-gray-500 font-medium">
                       {indexOfFirstItem + inventories.indexOf(inventory) + 1}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTypeColor(inventory.inventoryType)}`}>
+                    <td className="px-3 py-2.5 whitespace-nowrap">
+                      <span className={`px-2 py-1 inline-flex text-[11px] leading-5 font-semibold rounded-full ${getTypeColor(inventory.inventoryType)}`}>
                         {inventory.inventoryType?.replace('_', ' ') || 'UNKNOWN'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="flex items-center gap-2">
+                    <td className="px-3 py-2.5 whitespace-nowrap text-xs text-gray-900">
+                      <div className="flex items-center gap-1 flex-wrap">
                         {(inventory.fromWarehouse || inventory.fromBranch) && (
                           <>
                             {inventory.fromWarehouse && (
@@ -92,28 +92,28 @@ const InventoryTable = ({
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-3 py-2.5 whitespace-nowrap text-xs text-gray-900">
                       {new Date(inventory.dateProcessed).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'short',
                         day: 'numeric'
                       })}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <Package size={16} className="text-gray-400" />
-                        <span className="text-sm font-semibold text-gray-900">{(inventory.items?.length || 0).toLocaleString('en-US')}</span>
+                    <td className="px-3 py-2.5 whitespace-nowrap">
+                      <div className="flex items-center gap-1">
+                        <Package size={13} className="text-gray-400" />
+                        <span className="text-xs font-semibold text-gray-900">{(inventory.items?.length || 0).toLocaleString('en-US')}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-bold text-blue-700">
+                    <td className="px-3 py-2.5 whitespace-nowrap">
+                      <span className="text-xs font-bold text-blue-700">
                         {(inventory.items?.reduce((s, item) => s + (item.quantity || 0), 0) || 0).toLocaleString()}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <span className={`px-3 py-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(inventory.status)}`}>
+                    <td className="px-3 py-2.5 whitespace-nowrap">
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1">
+                          <span className={`px-2 py-0.5 inline-flex text-[11px] leading-5 font-semibold rounded-full ${getStatusColor(inventory.status)}`}>
                             {inventory.status || 'PENDING'}
                           </span>
                           {inventory.status === 'CONFIRMED' && (
@@ -127,10 +127,10 @@ const InventoryTable = ({
                     </td>
 
                     {/* ── Timestamp column ── */}
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-2.5 whitespace-nowrap">
                       {tsDate ? (
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-xs font-medium text-gray-700">
+                          <span className="text-[11px] font-medium text-gray-700">
                             {tsDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                           </span>
                           <span className="text-xs text-gray-400">
@@ -142,12 +142,12 @@ const InventoryTable = ({
                       )}
                     </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center gap-3">
+                    <td className="px-3 py-2.5 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center gap-1">
                         <button
                           onClick={() => onView(inventory)}
                           disabled={actionLoading}
-                          className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex items-center gap-1 px-2 py-1.5 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                           title="View"
                         >
                           {actionLoading ? (
@@ -189,19 +189,19 @@ const InventoryTable = ({
           </tbody>
           <tfoot>
             <tr className="bg-gray-100 border-t-2 border-gray-300">
-              <td colSpan={4} className="px-6 py-3">
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+              <td colSpan={4} className="px-3 py-2">
+                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">
                   Page Totals ({inventories.length} record{inventories.length !== 1 ? 's' : ''})
                 </span>
               </td>
-              <td className="px-6 py-3 whitespace-nowrap">
-                <div className="flex items-center gap-2">
-                  <Package size={16} className="text-gray-500" />
-                  <span className="text-sm font-bold text-gray-800">{grandTotalItems.toLocaleString('en-US')}</span>
+              <td className="px-3 py-2 whitespace-nowrap">
+                <div className="flex items-center gap-1">
+                  <Package size={13} className="text-gray-500" />
+                  <span className="text-xs font-bold text-gray-800">{grandTotalItems.toLocaleString('en-US')}</span>
                 </div>
               </td>
-              <td className="px-6 py-3 whitespace-nowrap">
-                <span className="px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-sm font-bold text-blue-700">
+              <td className="px-3 py-2 whitespace-nowrap">
+                <span className="px-2 py-1 bg-blue-50 border border-blue-200 rounded-lg text-xs font-bold text-blue-700">
                   {grandTotalQty.toLocaleString()}
                 </span>
               </td>
