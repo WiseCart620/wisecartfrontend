@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     Search, X, Package, Calendar, Clock, CheckCircle, Truck,
-    Check, FileText, Trash2, ChevronDown, ShoppingCart
+    Check, FileText, Trash2, ChevronDown, ShoppingCart, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
@@ -26,6 +26,10 @@ const ProductTransactionsModal = ({
     const [expandedRows, setExpandedRows] = useState({});
     const [deletingTransactionId, setDeletingTransactionId] = useState(null);
     const [deletingAll, setDeletingAll] = useState(false);
+    
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     if (!isOpen) return null;
 
@@ -40,8 +44,6 @@ const ProductTransactionsModal = ({
 
         return { userEnteredDate, systemDate };
     };
-
-
 
     const getUserDateLabel = (transaction) => {
         const type = transaction.inventoryType || transaction.transactionType;
@@ -184,50 +186,66 @@ const ProductTransactionsModal = ({
         }
     };
 
-    // Filtering
-    const groupedTransactions = groupTransactionsByReference(transactions);
-    const latestTransactions = Object.values(groupedTransactions).map(group => group[0]);
+    // Memoized filtering to prevent recalculation on every render
+    const filteredTransactions = useMemo(() => {
+        // Group transactions first
+        const groupedTransactions = groupTransactionsByReference(transactions);
+        const latestTransactions = Object.values(groupedTransactions).map(group => group[0]);
+        
+        // Apply filters
+        return latestTransactions.filter(transaction => {
+            const searchLower = searchTerm.toLowerCase();
+            const type = transaction.inventoryType || transaction.transactionType;
+            const { userEnteredDate } = getTransactionDates(transaction);
 
-    const filteredTransactions = latestTransactions.filter(transaction => {
-        const searchLower = searchTerm.toLowerCase();
-        const type = transaction.inventoryType || transaction.transactionType;
-        const { userEnteredDate } = getTransactionDates(transaction);
+            const matchesSearch = !searchTerm ||
+                transaction.productName?.toLowerCase().includes(searchLower) ||
+                transaction.referenceNumber?.toLowerCase().includes(searchLower) ||
+                transaction.remarks?.toLowerCase().includes(searchLower) ||
+                type?.toLowerCase().includes(searchLower);
 
-        const matchesSearch = !searchTerm ||
-            transaction.productName?.toLowerCase().includes(searchLower) ||
-            transaction.referenceNumber?.toLowerCase().includes(searchLower) ||
-            transaction.remarks?.toLowerCase().includes(searchLower) ||
-            type?.toLowerCase().includes(searchLower);
+            const matchesType = filterType === 'ALL' || (() => {
+                if (type === 'TRANSFER') {
+                    if (filterType === 'TRANSFER_IN') return transaction.toWarehouse || transaction.toBranch;
+                    if (filterType === 'TRANSFER_OUT') return transaction.fromWarehouse || transaction.fromBranch;
+                    if (filterType === 'TRANSFER') return true;
+                }
+                return type === filterType;
+            })();
 
-        const matchesType = filterType === 'ALL' || (() => {
-            if (type === 'TRANSFER') {
-                if (filterType === 'TRANSFER_IN') return transaction.toWarehouse || transaction.toBranch;
-                if (filterType === 'TRANSFER_OUT') return transaction.fromWarehouse || transaction.fromBranch;
-                if (filterType === 'TRANSFER') return true;
-            }
-            return type === filterType;
-        })();
+            const isDeleted = transaction.isDeleted === true || transaction.action === 'DELETED';
+            const matchesDeletedFilter = showDeletedFilter === 'ALL' ||
+                (showDeletedFilter === 'ACTIVE' && !isDeleted) ||
+                (showDeletedFilter === 'DELETED' && isDeleted);
 
-        const isDeleted = transaction.isDeleted === true || transaction.action === 'DELETED';
-        const matchesDeletedFilter = showDeletedFilter === 'ALL' ||
-            (showDeletedFilter === 'ACTIVE' && !isDeleted) ||
-            (showDeletedFilter === 'DELETED' && isDeleted);
+            const matchesStartDate = !startDate || !userEnteredDate || userEnteredDate >= new Date(startDate);
+            const matchesEndDate = !endDate || !userEnteredDate || userEnteredDate <= new Date(endDate + 'T23:59:59');
 
-        const matchesStartDate = !startDate || !userEnteredDate || userEnteredDate >= new Date(startDate);
-        const matchesEndDate = !endDate || !userEnteredDate || userEnteredDate <= new Date(endDate + 'T23:59:59');
+            return matchesSearch && matchesType && matchesDeletedFilter && matchesStartDate && matchesEndDate;
+        }).sort((a, b) => {
+            const aDeleted = a.isDeleted === true || a.action === 'DELETED';
+            const bDeleted = b.isDeleted === true || b.action === 'DELETED';
+            if (aDeleted && !bDeleted) return 1;
+            if (!aDeleted && bDeleted) return -1;
+            const { userEnteredDate: dateA } = getTransactionDates(a);
+            const { userEnteredDate: dateB } = getTransactionDates(b);
+            return (dateB || 0) - (dateA || 0);
+        });
+    }, [transactions, searchTerm, filterType, showDeletedFilter, startDate, endDate]);
 
-        return matchesSearch && matchesType && matchesDeletedFilter && matchesStartDate && matchesEndDate;
-    });
+    // Memoize grouped transactions for history lookups
+    const groupedTransactionsRef = useMemo(() => groupTransactionsByReference(transactions), [transactions]);
 
-    const sortedFilteredTransactions = [...filteredTransactions].sort((a, b) => {
-        const aDeleted = a.isDeleted === true || a.action === 'DELETED';
-        const bDeleted = b.isDeleted === true || b.action === 'DELETED';
-        if (aDeleted && !bDeleted) return 1;
-        if (!aDeleted && bDeleted) return -1;
-        const { userEnteredDate: dateA } = getTransactionDates(a);
-        const { userEnteredDate: dateB } = getTransactionDates(b);
-        return (dateB || 0) - (dateA || 0);
-    });
+    // Pagination calculations
+    const totalPages = Math.ceil(filteredTransactions.length / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex);
+
+    // Reset to first page when filters change
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterType, showDeletedFilter, startDate, endDate]);
 
     const deletedTransactionsCount = filteredTransactions.filter(t =>
         t.isDeleted === true || t.action === 'DELETED'
@@ -283,6 +301,11 @@ const ProductTransactionsModal = ({
         }
     };
 
+    const handlePageSizeChange = (newSize) => {
+        setPageSize(newSize);
+        setCurrentPage(1); // Reset to first page when changing page size
+    };
+
     return (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-2xl max-w-[1600px] w-full max-h-[95vh] overflow-hidden flex flex-col">
@@ -292,9 +315,9 @@ const ProductTransactionsModal = ({
                     <div className="flex-1">
                         <h2 className="text-2xl font-bold">Product Movement History</h2>
                         <p className="text-gray-600">
-                            {product.productName} - {product.sku}
-                            {product.warehouseName && <span className="ml-2 text-blue-600 font-semibold">@ {product.warehouseName}</span>}
-                            {product.branchName && <span className="ml-2 text-blue-600 font-semibold">@ {product.branchName}</span>}
+                            {product?.productName} - {product?.sku}
+                            {product?.warehouseName && <span className="ml-2 text-blue-600 font-semibold">@ {product.warehouseName}</span>}
+                            {product?.branchName && <span className="ml-2 text-blue-600 font-semibold">@ {product.branchName}</span>}
                         </p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded ml-4 flex-shrink-0">
@@ -387,7 +410,7 @@ const ProductTransactionsModal = ({
                     <div className="bg-white rounded-lg border overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full">
-                                <thead className="bg-gray-50">
+                                <thead className="bg-gray-50 sticky top-0">
                                     <tr>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User-Entered Date</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">System Timestamp</th>
@@ -400,7 +423,7 @@ const ProductTransactionsModal = ({
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {sortedFilteredTransactions.length === 0 ? (
+                                    {paginatedTransactions.length === 0 ? (
                                         <tr>
                                             <td colSpan="8" className="px-6 py-8 text-center text-gray-500">
                                                 {transactions.length === 0
@@ -409,7 +432,7 @@ const ProductTransactionsModal = ({
                                             </td>
                                         </tr>
                                     ) : (
-                                        sortedFilteredTransactions.map((transaction, idx) => {
+                                        paginatedTransactions.map((transaction, idx) => {
                                             const { userEnteredDate, systemDate } = getTransactionDates(transaction);
                                             const quantityInfo = getQuantityDisplayLocal(transaction);
                                             const userDateLabel = getUserDateLabel(transaction);
@@ -421,7 +444,7 @@ const ProductTransactionsModal = ({
                                             const isDeliveryAdd = transactionType === 'DELIVERY' && transaction.action === 'ADD';
                                             const isDeleted = transaction.isDeleted === true || transaction.action === 'DELETED';
                                             const refKey = transaction.referenceNumber || `REF-${transaction.referenceId || transaction.id}`;
-                                            const transactionHistory = groupedTransactions[refKey] || [];
+                                            const transactionHistory = groupedTransactionsRef[refKey] || [];
                                             const hasHistory = transactionHistory.length > 1;
                                             const isExpanded = expandedRows[transaction.id];
 
@@ -665,11 +688,93 @@ const ProductTransactionsModal = ({
                         </div>
                     </div>
 
-                    <div className="mt-4 text-sm text-gray-600 text-center">
-                        Showing {sortedFilteredTransactions.length} of {transactions.length} transactions
-                        {deletedTransactionsCount > 0 && (
-                            <span className="ml-2 text-red-600 font-medium">({deletedTransactionsCount} deleted)</span>
-                        )}
+                    {/* Pagination Controls */}
+                    <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-600">Show:</span>
+                            <select
+                                value={pageSize}
+                                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                                className="px-2 py-1 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value={5}>5</option>
+                                <option value={10}>10</option>
+                                <option value={20}>20</option>
+                                <option value={50}>50</option>
+                                <option value={100}>100</option>
+                            </select>
+                            <span className="text-sm text-gray-600">per page</span>
+                        </div>
+
+                        <div className="text-sm text-gray-600">
+                            Showing {startIndex + 1} to {Math.min(endIndex, filteredTransactions.length)} of {filteredTransactions.length} transactions
+                            {deletedTransactionsCount > 0 && (
+                                <span className="ml-2 text-red-600 font-medium">({deletedTransactionsCount} deleted)</span>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage(1)}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                            >
+                                First
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-1"
+                            >
+                                <ChevronLeft size={16} />
+                                Previous
+                            </button>
+                            <div className="flex items-center gap-1">
+                                {(() => {
+                                    const maxButtons = 5;
+                                    let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+                                    let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+                                    
+                                    if (endPage - startPage + 1 < maxButtons) {
+                                        startPage = Math.max(1, endPage - maxButtons + 1);
+                                    }
+                                    
+                                    const pages = [];
+                                    for (let i = startPage; i <= endPage; i++) {
+                                        pages.push(i);
+                                    }
+                                    
+                                    return pages.map(page => (
+                                        <button
+                                            key={page}
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
+                                                currentPage === page
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'text-gray-700 hover:bg-gray-50'
+                                            }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ));
+                                })()}
+                            </div>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages || totalPages === 0}
+                                className="px-3 py-1 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-1"
+                            >
+                                Next
+                                <ChevronRight size={16} />
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(totalPages)}
+                                disabled={currentPage === totalPages || totalPages === 0}
+                                className="px-3 py-1 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                            >
+                                Last
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
