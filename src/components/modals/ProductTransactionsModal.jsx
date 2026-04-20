@@ -26,12 +26,9 @@ const ProductTransactionsModal = ({
     const [expandedRows, setExpandedRows] = useState({});
     const [deletingTransactionId, setDeletingTransactionId] = useState(null);
     const [deletingAll, setDeletingAll] = useState(false);
-    
-    // Pagination state
+
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-
-    if (!isOpen) return null;
 
     const getTransactionDates = (transaction) => {
         const userEnteredDate = transaction.transactionDate
@@ -186,13 +183,10 @@ const ProductTransactionsModal = ({
         }
     };
 
-    // Memoized filtering to prevent recalculation on every render
     const filteredTransactions = useMemo(() => {
-        // Group transactions first
+        if (!transactions || transactions.length === 0) return [];
         const groupedTransactions = groupTransactionsByReference(transactions);
         const latestTransactions = Object.values(groupedTransactions).map(group => group[0]);
-        
-        // Apply filters
         return latestTransactions.filter(transaction => {
             const searchLower = searchTerm.toLowerCase();
             const type = transaction.inventoryType || transaction.transactionType;
@@ -233,19 +227,21 @@ const ProductTransactionsModal = ({
         });
     }, [transactions, searchTerm, filterType, showDeletedFilter, startDate, endDate]);
 
-    // Memoize grouped transactions for history lookups
-    const groupedTransactionsRef = useMemo(() => groupTransactionsByReference(transactions), [transactions]);
+    const groupedTransactionsRef = useMemo(() => {
+        if (!transactions || transactions.length === 0) return {};
+        return groupTransactionsByReference(transactions);
+    }, [transactions]);
 
-    // Pagination calculations
     const totalPages = Math.ceil(filteredTransactions.length / pageSize);
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex);
-
-    // Reset to first page when filters change
     React.useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, filterType, showDeletedFilter, startDate, endDate]);
+
+    if (!isOpen) return null;
+
 
     const deletedTransactionsCount = filteredTransactions.filter(t =>
         t.isDeleted === true || t.action === 'DELETED'
@@ -734,25 +730,24 @@ const ProductTransactionsModal = ({
                                     const maxButtons = 5;
                                     let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
                                     let endPage = Math.min(totalPages, startPage + maxButtons - 1);
-                                    
+
                                     if (endPage - startPage + 1 < maxButtons) {
                                         startPage = Math.max(1, endPage - maxButtons + 1);
                                     }
-                                    
+
                                     const pages = [];
                                     for (let i = startPage; i <= endPage; i++) {
                                         pages.push(i);
                                     }
-                                    
+
                                     return pages.map(page => (
                                         <button
                                             key={page}
                                             onClick={() => setCurrentPage(page)}
-                                            className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
-                                                currentPage === page
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'text-gray-700 hover:bg-gray-50'
-                                            }`}
+                                            className={`px-3 py-1 rounded-lg text-sm font-medium transition ${currentPage === page
+                                                ? 'bg-blue-600 text-white'
+                                                : 'text-gray-700 hover:bg-gray-50'
+                                                }`}
                                         >
                                             {page}
                                         </button>
