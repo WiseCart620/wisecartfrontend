@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, memo } from 'react';
-import { Bell, X, Download, CheckCheck, Trash2, RefreshCw, AlertCircle, AlertTriangle, Info, CheckCircle, Database, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
-import StatusBadge from '../common/StatusBadge';
+import { Bell, X, Download, CheckCheck, Trash2, RefreshCw, AlertCircle, AlertTriangle, Info, CheckCircle, Database, Loader2, Filter, XCircle } from 'lucide-react';
 import { api } from '../../services/api';
+import Pagination from '../common/Pagination';
 
 const PAGE_SIZE = 15;
 
@@ -38,9 +38,7 @@ const AlertRow = memo(({ alertItem, index, isThisResolving, bulkLoading, onResol
   }, [alertItem.resolvedAt]);
 
   return (
-    <div
-      className={`p-6 transition-colors ${alertConfig.bgColor} border-b ${alertConfig.borderColor} ${isThisResolving ? 'opacity-60' : ''}`}
-    >
+    <div className={`p-6 transition-colors ${alertConfig.bgColor} border-b ${alertConfig.borderColor} ${isThisResolving ? 'opacity-60' : ''}`}>
       <div className="flex gap-4">
         <div className={`p-3 rounded-xl ${alertConfig.bgColor} ${alertConfig.iconColor} flex-shrink-0`}>
           <Icon size={24} />
@@ -155,182 +153,133 @@ const AlertRow = memo(({ alertItem, index, isThisResolving, bulkLoading, onResol
 
 AlertRow.displayName = 'AlertRow';
 
-// ── Pagination controls ───────────────────────────────────────────────────────
-const Pagination = memo(({ currentPage, totalPages, onPageChange, totalItems, pageSize }) => {
-  if (totalPages <= 1) return null;
-
-  const startItem = (currentPage - 1) * pageSize + 1;
-  const endItem = Math.min(currentPage * pageSize, totalItems);
-
-  return (
-    <div className="flex items-center justify-between px-6 py-3 bg-gray-50 border-t border-gray-200">
-      <span className="text-sm text-gray-500">
-        Showing {startItem}–{endItem} of {totalItems} alerts
-      </span>
-      <div className="flex items-center gap-1">
-        <button
-          onClick={() => onPageChange(1)}
-          disabled={currentPage === 1}
-          className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          «
-        </button>
-        <button
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-          className="p-1 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <ChevronLeft size={16} />
-        </button>
-
-        {/* Page number pills */}
-        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-          let page;
-          if (totalPages <= 5) {
-            page = i + 1;
-          } else if (currentPage <= 3) {
-            page = i + 1;
-          } else if (currentPage >= totalPages - 2) {
-            page = totalPages - 4 + i;
-          } else {
-            page = currentPage - 2 + i;
-          }
-          return (
-            <button
-              key={page}
-              onClick={() => onPageChange(page)}
-              className={`w-8 h-8 text-xs rounded border transition-colors ${
-                page === currentPage
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'border-gray-300 hover:bg-gray-100'
-              }`}
-            >
-              {page}
-            </button>
-          );
-        })}
-
-        <button
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          className="p-1 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <ChevronRight size={16} />
-        </button>
-        <button
-          onClick={() => onPageChange(totalPages)}
-          disabled={currentPage === totalPages}
-          className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          »
-        </button>
-      </div>
-    </div>
-  );
-});
-
-Pagination.displayName = 'Pagination';
-
 // ── Main component ────────────────────────────────────────────────────────────
 const AlertManagement = ({ showNotifications, setShowNotifications, alerts, loadAlerts }) => {
-  const [activeTab, setActiveTab] = useState('active');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab]           = useState('active');
+  const [searchQuery, setSearchQuery]       = useState('');
   const [filterSeverity, setFilterSeverity] = useState('all');
-  const [filterType, setFilterType] = useState('all');
+  const [filterType, setFilterType]         = useState('all');
+  const [filterBranch, setFilterBranch]     = useState('all');
+  const [filterCompany, setFilterCompany]   = useState('all');
   const [loadingAlertIds, setLoadingAlertIds] = useState(new Set());
-  const [bulkLoading, setBulkLoading] = useState(false);
-  const [toast, setToast] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [bulkLoading, setBulkLoading]       = useState(false);
+  const [toast, setToast]                   = useState(null);
+  const [currentPage, setCurrentPage]       = useState(1);
+
+  const resetPage = useCallback(() => setCurrentPage(1), []);
+
+  // ── Dropdown options derived from the alerts data ─────────────────────────
+  // Branch: built from the actual branch objects attached to alerts
+  const branchOptions = useMemo(() => {
+    const map = new Map();
+    alerts.forEach(a => {
+      if (a.branch?.id) map.set(a.branch.id, a.branch.branchName);
+    });
+    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [alerts]);
+
+  // Company: extracted from the message text your backend writes
+  // e.g. "Company: Acme Corp" or "companies 'Acme Corp'"
+  const companyOptions = useMemo(() => {
+    const set = new Set();
+    alerts.forEach(a => {
+      const m = a.message?.match(/(?:Company:|companies\s+')([^,']+)/i);
+      if (m) set.add(m[1].trim());
+    });
+    return [...set].sort();
+  }, [alerts]);
 
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
   }, []);
 
-  // Reset to page 1 whenever filters/tab change
-  const handleTabChange = useCallback((tab) => {
-    setActiveTab(tab);
-    setCurrentPage(1);
-  }, []);
+  const handleTabChange = useCallback((tab) => { setActiveTab(tab); resetPage(); }, [resetPage]);
 
-  const handleSearchChange = useCallback((e) => {
-    setSearchQuery(e.target.value);
-    setCurrentPage(1);
-  }, []);
+  // ── Active filter count (for the clear-button badge) ─────────────────────
+  const activeFilterCount = [
+    searchQuery,
+    filterSeverity !== 'all' ? filterSeverity : '',
+    filterType     !== 'all' ? filterType     : '',
+    filterBranch   !== 'all' ? filterBranch   : '',
+    filterCompany  !== 'all' ? filterCompany  : '',
+  ].filter(Boolean).length;
 
-  const handleSeverityChange = useCallback((e) => {
-    setFilterSeverity(e.target.value);
-    setCurrentPage(1);
-  }, []);
+  const clearAllFilters = useCallback(() => {
+    setSearchQuery('');
+    setFilterSeverity('all');
+    setFilterType('all');
+    setFilterBranch('all');
+    setFilterCompany('all');
+    resetPage();
+  }, [resetPage]);
 
-  const handleTypeChange = useCallback((e) => {
-    setFilterType(e.target.value);
-    setCurrentPage(1);
-  }, []);
-
-  // 1️⃣  Full filtered list (NOT paginated yet)
+  // ── Filtered list ─────────────────────────────────────────────────────────
   const filteredAlerts = useMemo(() => {
-    let filtered = alerts;
+    let result = alerts;
 
-    if (activeTab === 'active') {
-      filtered = filtered.filter(a => !a.isResolved);
-    } else if (activeTab === 'resolved') {
-      filtered = filtered.filter(a => a.isResolved);
-    }
+    if (activeTab === 'active')   result = result.filter(a => !a.isResolved);
+    if (activeTab === 'resolved') result = result.filter(a =>  a.isResolved);
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(a =>
-        (a.title && a.title.toLowerCase().includes(q)) ||
-        (a.message && a.message.toLowerCase().includes(q)) ||
-        (a.branch?.branchName && a.branch.branchName.toLowerCase().includes(q)) ||
-        (a.product?.productName && a.product.productName.toLowerCase().includes(q)) ||
-        (a.severity && a.severity.toLowerCase().includes(q)) ||
-        (a.alertType && a.alertType.toLowerCase().includes(q))
+      result = result.filter(a =>
+        a.title?.toLowerCase().includes(q)              ||
+        a.message?.toLowerCase().includes(q)            ||
+        a.branch?.branchName?.toLowerCase().includes(q) ||
+        a.product?.productName?.toLowerCase().includes(q) ||
+        a.severity?.toLowerCase().includes(q)           ||
+        a.alertType?.toLowerCase().includes(q)
       );
     }
 
-    if (filterSeverity !== 'all') filtered = filtered.filter(a => a.severity === filterSeverity);
-    if (filterType !== 'all') filtered = filtered.filter(a => a.alertType === filterType);
+    if (filterSeverity !== 'all')
+      result = result.filter(a => a.severity === filterSeverity);
 
-    return filtered;
-  }, [alerts, activeTab, searchQuery, filterSeverity, filterType]);
+    if (filterType !== 'all')
+      result = result.filter(a => a.alertType === filterType);
 
-  // 2️⃣  Pagination slice — only PAGE_SIZE items go into the DOM
-  const totalPages = Math.max(1, Math.ceil(filteredAlerts.length / PAGE_SIZE));
-  const safePage = Math.min(currentPage, totalPages);
+    // Branch: match by branch id
+    if (filterBranch !== 'all')
+      result = result.filter(a => String(a.branch?.id) === filterBranch);
+
+    // Company: match company name substring inside the message text
+    if (filterCompany !== 'all') {
+      const cLower = filterCompany.toLowerCase();
+      result = result.filter(a => a.message?.toLowerCase().includes(cLower));
+    }
+
+    return result;
+  }, [alerts, activeTab, searchQuery, filterSeverity, filterType, filterBranch, filterCompany]);
+
+  // ── Pagination ────────────────────────────────────────────────────────────
+  const totalPages   = Math.max(1, Math.ceil(filteredAlerts.length / PAGE_SIZE));
+  const safePage     = Math.min(currentPage, totalPages);
+  const showingStart = filteredAlerts.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const showingEnd   = Math.min(safePage * PAGE_SIZE, filteredAlerts.length);
 
   const pageAlerts = useMemo(() => {
     const start = (safePage - 1) * PAGE_SIZE;
     return filteredAlerts.slice(start, start + PAGE_SIZE);
   }, [filteredAlerts, safePage]);
 
-  // Derived counts (computed once from source array)
-  const activeCount = useMemo(() => alerts.filter(a => !a.isResolved).length, [alerts]);
-  const resolvedCount = useMemo(() => alerts.filter(a => a.isResolved).length, [alerts]);
+  // ── Derived counts ────────────────────────────────────────────────────────
+  const activeCount   = useMemo(() => alerts.filter(a => !a.isResolved).length, [alerts]);
+  const resolvedCount = useMemo(() => alerts.filter(a =>  a.isResolved).length, [alerts]);
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
+  // ── Action handlers ───────────────────────────────────────────────────────
   const handleResolveOne = useCallback(async (alertItem) => {
     setLoadingAlertIds(prev => new Set(prev).add(alertItem.id));
     try {
       const response = await api.put(`/alerts/${alertItem.id}/resolve`, {
-        resolvedBy: 'admin',
-        notes: 'Resolved manually'
+        resolvedBy: 'admin', notes: 'Resolved manually'
       });
-      if (response.success) {
-        await loadAlerts();
-        showToast('Alert resolved successfully');
-      } else {
-        showToast('Failed to resolve alert', 'error');
-      }
+      if (response.success) { await loadAlerts(); showToast('Alert resolved successfully'); }
+      else showToast('Failed to resolve alert', 'error');
     } catch (err) {
       showToast('Failed to resolve alert: ' + err.message, 'error');
     } finally {
-      setLoadingAlertIds(prev => {
-        const next = new Set(prev);
-        next.delete(alertItem.id);
-        return next;
-      });
+      setLoadingAlertIds(prev => { const n = new Set(prev); n.delete(alertItem.id); return n; });
     }
   }, [loadAlerts, showToast]);
 
@@ -339,20 +288,13 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
     setBulkLoading(true);
     try {
       const response = await api.put('/alerts/resolve-all', {
-        resolvedBy: 'admin',
-        notes: 'Resolved all via dashboard'
+        resolvedBy: 'admin', notes: 'Resolved all via dashboard'
       });
-      if (response.success) {
-        await loadAlerts();
-        showToast(`Resolved ${activeCount} alerts successfully`);
-      } else {
-        showToast('Failed to resolve all alerts', 'error');
-      }
+      if (response.success) { await loadAlerts(); showToast(`Resolved ${activeCount} alerts successfully`); }
+      else showToast('Failed to resolve all alerts', 'error');
     } catch (err) {
       showToast('Failed to resolve alerts: ' + err.message, 'error');
-    } finally {
-      setBulkLoading(false);
-    }
+    } finally { setBulkLoading(false); }
   }, [activeCount, loadAlerts, showToast]);
 
   const handleDownloadAndClear = useCallback(async () => {
@@ -361,26 +303,18 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
       const response = await api.get('/alerts/export');
       if (response.success && response.data) {
         const blob = new Blob([response.data], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const url  = window.URL.createObjectURL(blob);
+        const a    = document.createElement('a');
         a.href = url;
         a.download = `resolved-alerts-${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-
-        const deleteResponse = await api.delete('/alerts/resolved');
-        if (deleteResponse.success) {
-          await loadAlerts();
-          showToast(`Downloaded and cleared ${deleteResponse.data || 0} resolved alerts`);
-        }
+        document.body.appendChild(a); a.click();
+        window.URL.revokeObjectURL(url); document.body.removeChild(a);
+        const del = await api.delete('/alerts/resolved');
+        if (del.success) { await loadAlerts(); showToast(`Downloaded and cleared ${del.data || 0} resolved alerts`); }
       }
     } catch (err) {
       showToast('Failed to process resolved alerts: ' + err.message, 'error');
-    } finally {
-      setBulkLoading(false);
-    }
+    } finally { setBulkLoading(false); }
   }, [loadAlerts, showToast]);
 
   const handleDeleteAllResolved = useCallback(async () => {
@@ -388,15 +322,10 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
     setBulkLoading(true);
     try {
       const response = await api.delete('/alerts/resolved');
-      if (response.success) {
-        await loadAlerts();
-        showToast(`Deleted ${resolvedCount} resolved alerts`);
-      }
+      if (response.success) { await loadAlerts(); showToast(`Deleted ${resolvedCount} resolved alerts`); }
     } catch (err) {
       showToast('Failed to delete resolved alerts: ' + err.message, 'error');
-    } finally {
-      setBulkLoading(false);
-    }
+    } finally { setBulkLoading(false); }
   }, [resolvedCount, loadAlerts, showToast]);
 
   if (!showNotifications) return null;
@@ -405,7 +334,7 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
     <>
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-6 right-6 z-[9999] flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl text-white text-sm font-medium transition-all
+        <div className={`fixed top-6 right-6 z-[9999] flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl text-white text-sm font-medium
           ${toast.type === 'error' ? 'bg-red-600' : 'bg-green-600'}`}>
           {toast.type === 'error' ? <AlertCircle size={18} /> : <CheckCircle size={18} />}
           {toast.message}
@@ -429,7 +358,7 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
           </div>
         )}
 
-        {/* Header */}
+        {/* ── Header ─────────────────────────────────────────────────────── */}
         <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-red-50 to-orange-50 flex-shrink-0">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
             <div className="flex items-center gap-3">
@@ -455,21 +384,17 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
                 disabled={bulkLoading || resolvedCount === 0}
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Download size={18} />
-                Download & Clear Resolved
+                <Download size={18} /> Download & Clear Resolved
               </button>
-
               {activeCount > 0 && (
                 <button
                   onClick={handleResolveAll}
                   disabled={bulkLoading}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <CheckCheck size={18} />
-                  Resolve All
+                  <CheckCheck size={18} /> Resolve All
                 </button>
               )}
-
               <button
                 onClick={() => setShowNotifications(false)}
                 disabled={bulkLoading}
@@ -480,46 +405,87 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
             </div>
           </div>
 
-          {/* Search & Filters */}
-          <div className="flex flex-col sm:flex-row gap-2 mt-2">
-            <input
-              type="text"
-              placeholder="Search alerts..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
-            />
-            <select
-              value={filterSeverity}
-              onChange={handleSeverityChange}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
-            >
-              <option value="all">All Severities</option>
-              <option value="CRITICAL">Critical</option>
-              <option value="HIGH">High</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="LOW">Low</option>
-            </select>
-            <select
-              value={filterType}
-              onChange={handleTypeChange}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
-            >
-              <option value="all">All Types</option>
-              <option value="LOW_STOCK">Low Stock</option>
-              <option value="PENDING_SALE">Pending Sale</option>
-              <option value="REPLENISHMENT_NEEDED">Replenishment</option>
-              <option value="UNDERPERFORMING_BRANCH">Underperforming Branch</option>
-              <option value="UNDERPERFORMING_PRODUCT">Underperforming Product</option>
-              <option value="UNSOLD_PRODUCT">Unsold Product</option>
-              <option value="HIGH_VALUE_PENDING">High Value Pending</option>
-              <option value="TOP_COMPANY_INACTIVE">Company Inactive</option>
-              <option value="LOW_SALES">Low Sales</option>
-            </select>
+          {/* ── Filter row 1: keyword search + severity + type ─────────── */}
+          <div className="flex flex-col gap-2 mt-2">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                placeholder="Search by title, message, product…"
+                value={searchQuery}
+                onChange={e => { setSearchQuery(e.target.value); resetPage(); }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
+              />
+              <select
+                value={filterSeverity}
+                onChange={e => { setFilterSeverity(e.target.value); resetPage(); }}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+              >
+                <option value="all">All Severities</option>
+                <option value="CRITICAL">Critical</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
+              </select>
+              <select
+                value={filterType}
+                onChange={e => { setFilterType(e.target.value); resetPage(); }}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+              >
+                <option value="all">All Types</option>
+                <option value="LOW_STOCK">Low Stock</option>
+                <option value="PENDING_SALE">Pending Sale</option>
+                <option value="REPLENISHMENT_NEEDED">Replenishment</option>
+                <option value="UNDERPERFORMING_BRANCH">Underperforming Branch</option>
+                <option value="UNDERPERFORMING_PRODUCT">Underperforming Product</option>
+                <option value="UNSOLD_PRODUCT">Unsold Product</option>
+                <option value="HIGH_VALUE_PENDING">High Value Pending</option>
+                <option value="TOP_COMPANY_INACTIVE">Company Inactive</option>
+                <option value="LOW_SALES">Low Sales</option>
+              </select>
+            </div>
+
+            {/* ── Filter row 2: branch + company + clear button ──────────── */}
+            <div className="flex flex-col sm:flex-row gap-2 items-center">
+              <select
+                value={filterBranch}
+                onChange={e => { setFilterBranch(e.target.value); resetPage(); }}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+              >
+                <option value="all">All Branches</option>
+                {branchOptions.map(([id, name]) => (
+                  <option key={id} value={String(id)}>{name}</option>
+                ))}
+              </select>
+
+              <select
+                value={filterCompany}
+                onChange={e => { setFilterCompany(e.target.value); resetPage(); }}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+              >
+                <option value="all">All Companies</option>
+                {companyOptions.map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+
+              {/* Clear button — only visible when at least one filter is active */}
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={clearAllFilters}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm transition-colors whitespace-nowrap border border-gray-300"
+                >
+                  <XCircle size={15} />
+                  Clear filters
+                  <span className="ml-0.5 bg-blue-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                    {activeFilterCount}
+                  </span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* ── Tabs ───────────────────────────────────────────────────────── */}
         <div className="flex border-b border-gray-200 bg-gray-50 flex-shrink-0">
           <button
             className={`px-6 py-3 font-medium text-sm transition-colors ${activeTab === 'active' ? 'bg-white border-t border-l border-r border-gray-200 text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
@@ -535,11 +501,23 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
           </button>
         </div>
 
-        {/* Alert list */}
+        {/* ── Alert list ─────────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto">
           {filteredAlerts.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center p-8">
-              {activeTab === 'active' ? (
+              {activeFilterCount > 0 ? (
+                <>
+                  <Filter className="text-gray-400 mb-4" size={80} />
+                  <p className="text-2xl font-semibold text-gray-700">No alerts match your filters</p>
+                  <p className="text-gray-500 text-lg mt-2">Try adjusting or clearing your filters</p>
+                  <button
+                    onClick={clearAllFilters}
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Clear all filters
+                  </button>
+                </>
+              ) : activeTab === 'active' ? (
                 <>
                   <CheckCircle className="text-green-500 mb-4" size={80} />
                   <p className="text-2xl font-semibold text-gray-700">No Active Alerts</p>
@@ -564,36 +542,36 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
               )}
             </div>
           ) : (
-            <>
-              <div className="px-6 py-3 bg-gray-50 border-b border-gray-200 text-sm text-gray-500">
-                Showing {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filteredAlerts.length)} of {filteredAlerts.length} {activeTab === 'active' ? 'active' : 'resolved'} alert{filteredAlerts.length !== 1 ? 's' : ''}
-              </div>
-              <div className="divide-y divide-gray-100">
-                {pageAlerts.map((alertItem, index) => (
-                  <AlertRow
-                    key={alertItem.id ?? index}
-                    alertItem={alertItem}
-                    index={(safePage - 1) * PAGE_SIZE + index}
-                    isThisResolving={loadingAlertIds.has(alertItem.id)}
-                    bulkLoading={bulkLoading}
-                    onResolve={handleResolveOne}
-                  />
-                ))}
-              </div>
-            </>
+            <div className="divide-y divide-gray-100">
+              {pageAlerts.map((alertItem, index) => (
+                <AlertRow
+                  key={alertItem.id ?? index}
+                  alertItem={alertItem}
+                  index={(safePage - 1) * PAGE_SIZE + index}
+                  isThisResolving={loadingAlertIds.has(alertItem.id)}
+                  bulkLoading={bulkLoading}
+                  onResolve={handleResolveOne}
+                />
+              ))}
+            </div>
           )}
         </div>
 
-        {/* Pagination */}
-        <Pagination
-          currentPage={safePage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          totalItems={filteredAlerts.length}
-          pageSize={PAGE_SIZE}
-        />
+        {/* ── Your existing Pagination component ─────────────────────────── */}
+        {filteredAlerts.length > 0 && (
+          <Pagination
+            currentPage={safePage}
+            totalPages={totalPages}
+            onPageChange={page => setCurrentPage(page)}
+            onNextPage={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+            onPrevPage={() => setCurrentPage(p => Math.max(p - 1, 1))}
+            showingStart={showingStart}
+            showingEnd={showingEnd}
+            totalItems={filteredAlerts.length}
+          />
+        )}
 
-        {/* Footer */}
+        {/* ── Footer ─────────────────────────────────────────────────────── */}
         <div className="p-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-600">
@@ -607,8 +585,7 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
                 disabled={bulkLoading}
                 className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm disabled:opacity-50"
               >
-                <RefreshCw size={16} />
-                Refresh
+                <RefreshCw size={16} /> Refresh
               </button>
               {resolvedCount > 0 && (
                 <button
@@ -616,8 +593,7 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
                   disabled={bulkLoading}
                   className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Trash2 size={16} />
-                  Delete All Resolved
+                  <Trash2 size={16} /> Delete All Resolved
                 </button>
               )}
             </div>
