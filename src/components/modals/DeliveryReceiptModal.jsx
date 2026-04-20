@@ -29,11 +29,11 @@ const DeliveryReceiptModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[95vh] overflow-y-auto shadow-2xl print:shadow-none print:max-h-none print:rounded-none">
-        <div className="p-8 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl z-10 print:hidden">
-          <h2 className="text-2xl font-bold text-gray-900">Delivery Receipt</h2>
-          <div className="flex gap-3">
+    <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-6">
+      <div className="bg-white rounded-xl sm:rounded-2xl max-w-6xl w-full max-h-[98vh] sm:max-h-[95vh] overflow-y-auto shadow-2xl print:shadow-none print:max-h-none print:rounded-none">
+        <div className="p-4 sm:p-8 border-b border-gray-200 flex flex-wrap justify-between items-center gap-2 sticky top-0 bg-white rounded-t-xl sm:rounded-t-2xl z-10 print:hidden">
+          <h2 className="text-lg sm:text-2xl font-bold text-gray-900">Delivery Receipt</h2>
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             <button
               onClick={handleSave}
               disabled={isSaving}
@@ -58,7 +58,7 @@ const DeliveryReceiptModal = ({
           </div>
         </div>
 
-        <div id="delivery-receipt" className="p-8 print:p-0" style={{ display: 'flex', flexDirection: 'column' }}>
+        <div id="delivery-receipt" className="p-4 sm:p-8 print:p-0" style={{ display: 'flex', flexDirection: 'column' }}>
           {/* Header Section */}
           <div className="mb-5 pb-4">
             <div className="text-left leading-none space-y-0">
@@ -347,7 +347,7 @@ const DeliveryReceiptModal = ({
           </div>
         </div>
 
-        <div className="p-8 border-t border-gray-200 flex justify-end gap-4 print:hidden">
+        <div className="p-4 sm:p-8 border-t border-gray-200 flex flex-wrap justify-end gap-2 sm:gap-4 print:hidden">
           <button
             onClick={handleSave}
             disabled={isSaving}

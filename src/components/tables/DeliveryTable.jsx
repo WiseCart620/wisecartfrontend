@@ -56,8 +56,8 @@ const DeliveryTable = ({
 
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full">
-      <div className="overflow-visible">
-        <table className="w-full table-fixed">
+      <div className="overflow-x-auto">
+        <table className="w-full table-fixed min-w-[900px]">
           <colgroup>
             <col className="w-[60px]" />
             <col className="w-[110px]" />

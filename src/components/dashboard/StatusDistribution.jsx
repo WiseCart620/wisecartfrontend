@@ -110,7 +110,7 @@ const StatusDistribution = ({ stats, sales, navigate }) => {
             })}
           </div>
 
-          <div className="grid grid-cols-3 gap-3 pt-4 border-t border-gray-200">
+          <div className="grid grid-cols-3 gap-2 pt-4 border-t border-gray-200">
             <div className="text-center">
               <p className="text-xs text-gray-500">Total Sales</p>
               <p className="text-lg font-bold text-gray-900">{formatNumber(stats.totalSales)}</p>

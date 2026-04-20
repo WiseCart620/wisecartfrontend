@@ -183,7 +183,7 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
 
         {/* Header */}
         <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-red-50 to-orange-50 flex-shrink-0">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
             <div className="flex items-center gap-3">
               <Bell className="text-red-600" size={24} />
               <div>
@@ -201,7 +201,7 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
               )}
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={handleDownloadAndClear}
                 disabled={bulkLoading || alerts.filter(a => a.isResolved).length === 0}
@@ -234,7 +234,7 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
           </div>
 
           {/* Search & Filters */}
-          <div className="flex gap-3 mt-2">
+          <div className="flex flex-col sm:flex-row gap-2 mt-2">
             <input
               type="text"
               placeholder="Search alerts..."

@@ -252,16 +252,15 @@ const ProductAnalysis = ({
   return (
     <div className="grid grid-cols-1 gap-4">
       <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
-        <div className="grid grid-cols-12 gap-4">
-          {/* Top Performing Products */}
-          <div className="col-span-4">
-            <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-4">
+          <div className="lg:col-span-4">
+            <div className="flex flex-col gap-2 mb-3">
               <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
                 <Target className="text-green-600" size={18} />
                 Top Performing Products
               </h3>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
                   <button
                     onClick={() => setPerformanceView('overall')}
@@ -515,7 +514,7 @@ const ProductAnalysis = ({
           </div>
 
           {/* Product Analysis Detail */}
-          <div className="col-span-8 border-l border-gray-200 pl-4">
+          <div className="lg:col-span-8 border-t lg:border-t-0 lg:border-l border-gray-200 pt-4 lg:pt-0 lg:pl-4">
             <div className="flex justify-between items-center mb-3">
               <div>
                 <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
@@ -777,7 +776,7 @@ const ProductAnalysis = ({
             )}
             {/* Top Companies & Branches Section */}
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Top Companies */}
                 <div>
                   <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">

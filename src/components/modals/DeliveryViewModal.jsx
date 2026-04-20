@@ -40,10 +40,10 @@ const DeliveryViewModal = ({
   const hasVariance = isDelivered && totalPrepared !== totalDelivered;
 
   return (
-    <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
-        <div className="p-8 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl z-10">
-          <h2 className="text-2xl font-bold text-gray-900">Delivery Details</h2>
+    <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-2 sm:p-6">
+      <div className="bg-white rounded-xl sm:rounded-2xl max-w-5xl w-full max-h-[98vh] sm:max-h-[95vh] overflow-y-auto shadow-2xl">
+        <div className="p-4 sm:p-8 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-xl sm:rounded-t-2xl z-10">
+          <h2 className="text-lg sm:text-2xl font-bold text-gray-900">Delivery Details</h2>
           <button
             onClick={onClose}
             className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
@@ -53,11 +53,11 @@ const DeliveryViewModal = ({
           </button>
         </div>
 
-        <div className="p-8">
-          <div className="space-y-6">
+        <div className="p-4 sm:p-8">
+          <div className="space-y-4 sm:space-y-6">
 
             {/* Header Info */}
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-500 mb-1">Delivery Receipt #</label>
                 <p className="text-lg font-semibold text-gray-900">{delivery.deliveryReceiptNumber}</p>
@@ -100,7 +100,7 @@ const DeliveryViewModal = ({
 
             {/* Branch and Company Info */}
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-sm font-medium text-blue-700 mb-1">Delivered To (Branch)</label>
                   <p className="text-base font-semibold text-blue-900">{delivery.branch?.branchName}</p>
@@ -201,8 +201,8 @@ const DeliveryViewModal = ({
                 )}
               </div>
 
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <table className="w-full">
+              <div className="border border-gray-200 rounded-lg overflow-x-auto">
+                <table className="w-full min-w-[600px]">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-10">Number</th>
@@ -324,7 +324,7 @@ const DeliveryViewModal = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="mt-8 flex justify-end gap-4 pt-6 border-t border-gray-200">
+          <div className="mt-6 sm:mt-8 flex flex-wrap justify-end gap-2 sm:gap-4 pt-4 sm:pt-6 border-t border-gray-200">
             <button
               onClick={() => onPrint(delivery)}
               className="flex items-center gap-3 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium shadow-md"

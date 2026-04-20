@@ -382,7 +382,7 @@ const DeliveryManagement = () => {
     <>
       <LoadingOverlay show={actionLoading} message={loadingMessage || 'Loading...'} />
 
-      <div className="p-6 max-w-[1640px] mx-auto">
+      <div className="p-2 sm:p-4 md:p-6 max-w-[1640px] mx-auto">
         {/* Sliding Navigation Bar */}
         <div className="mb-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 inline-flex">
@@ -409,13 +409,13 @@ const DeliveryManagement = () => {
           </div>
         </div>
 
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Delivery Management</h1>
-          <p className="text-gray-600">Track and manage product deliveries to branches</p>
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-3xl font-bold text-gray-900">Delivery Management</h1>
+          <p className="text-sm sm:text-base text-gray-600">Track and manage product deliveries to branches</p>
         </div>
 
         {/* Toolbar */}
-        <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-between sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
           {/* Left: action buttons */}
           <div className="flex items-center gap-3 flex-wrap">
             {/* New Delivery */}
@@ -501,8 +501,8 @@ const DeliveryManagement = () => {
 
         {/* Cancel modal (unchanged) */}
         {cancelModal.show && cancelModal.delivery && (
-          <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6">
-            <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl">
+          <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-2 sm:p-6">
+            <div className="bg-white rounded-xl sm:rounded-2xl max-w-lg w-full shadow-2xl max-h-[95vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200 flex items-center gap-3">
                 <div className="p-2 bg-orange-100 rounded-lg"><XCircle size={22} className="text-orange-600" /></div>
                 <div>

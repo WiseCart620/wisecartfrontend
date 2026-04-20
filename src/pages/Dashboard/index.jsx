@@ -6,6 +6,7 @@ import {
   TrendingUp, Calendar, Building, UserIcon, Package, Clock, X, ChevronDown, Target, AlertTriangle,
 } from 'lucide-react';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler } from 'chart.js';
+
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler);
 
 // Components
@@ -198,7 +199,6 @@ const Dashboard = () => {
       });
     } catch (err) {
       console.error('Failed to load dashboard data', err);
-      // Handle error appropriately
     } finally {
       setActionLoading(false);
       setLoadingMessage('');
@@ -281,7 +281,6 @@ const Dashboard = () => {
   const monthlySalesData = getMonthlySalesData();
   const totalAlerts = alerts.length;
 
-
   const loadPerformance = () => {
     try {
       const filteredSales = sales.filter(sale => {
@@ -300,7 +299,6 @@ const Dashboard = () => {
         return yearMatch && monthMatch && statusMatch;
       });
 
-      // Calculate product performance with variations
       const productPerformance = {};
       filteredSales.forEach(sale => {
         if (sale.status === 'CONFIRMED' || sale.status === 'INVOICED') {
@@ -341,7 +339,6 @@ const Dashboard = () => {
         .sort((a, b) => b.quantity - a.quantity)
         .slice(0, 10);
 
-      // Calculate branch performance
       const branchPerformance = {};
       filteredSales.forEach(sale => {
         if (sale.status === 'CONFIRMED' || sale.status === 'INVOICED') {
@@ -419,7 +416,6 @@ const Dashboard = () => {
         .sort((a, b) => b.revenue - a.revenue)
         .slice(0, 10);
 
-      // Calculate top companies
       const companyPerformance = {};
       filteredSales.forEach(sale => {
         if (sale.status === 'CONFIRMED' || sale.status === 'INVOICED') {
@@ -569,7 +565,6 @@ const Dashboard = () => {
         product.totalQuantity += item.quantity || 0;
         product.salesCount += 1;
 
-        // Monthly analysis
         if (!product.byMonth[monthYear]) {
           product.byMonth[monthYear] = {
             revenue: 0,
@@ -581,7 +576,6 @@ const Dashboard = () => {
         product.byMonth[monthYear].quantity += item.quantity || 0;
         product.byMonth[monthYear].count += 1;
 
-        // Branch analysis
         if (!product.byBranch[branchName]) {
           product.byBranch[branchName] = {
             revenue: 0,
@@ -593,7 +587,6 @@ const Dashboard = () => {
         product.byBranch[branchName].quantity += item.quantity || 0;
         product.byBranch[branchName].count += 1;
 
-        // Company analysis
         if (!product.byCompany[companyName]) {
           product.byCompany[companyName] = {
             revenue: 0,
@@ -676,7 +669,6 @@ const Dashboard = () => {
     setBusinessInsights(insights);
   };
 
-
   useEffect(() => {
     if (selectedCompany === 'all') {
       setAvailableBranches(branches);
@@ -710,504 +702,488 @@ const Dashboard = () => {
     }
   }, [products]);
 
-
-
   return (
     <>
       <LoadingOverlay show={actionLoading} message={loadingMessage || 'Loading...'} />
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6">
-        <div className="max-w-[1920px] mx-auto space-y-6">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 mt-1">Overview of your business performance</p>
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-x-hidden">
+        <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-6">
+          <div className="space-y-4 sm:space-y-6">
+            {/* Header Section */}
+            <div className="mb-3 sm:mb-6">
+              <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900">Dashboard</h1>
+              <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">Overview of your business performance</p>
+            </div>
 
-          <DashboardHeader
-            showInsights={showInsights}
-            setShowInsights={setShowInsights}
-            businessInsights={businessInsights}
-            loadStats={loadStats}
-            showNotifications={showNotifications}
-            setShowNotifications={setShowNotifications}
-            alerts={alerts}
-          />
+            {/* Dashboard Header with Actions */}
+            <DashboardHeader
+              showInsights={showInsights}
+              setShowInsights={setShowInsights}
+              businessInsights={businessInsights}
+              loadStats={loadStats}
+              showNotifications={showNotifications}
+              setShowNotifications={setShowNotifications}
+              alerts={alerts}
+            />
 
-          <DashboardCards stats={stats} totalAlerts={totalAlerts} />
+            {/* Stats Cards */}
+            <DashboardCards stats={stats} totalAlerts={totalAlerts} />
 
-          <BusinessInsights
-            insights={businessInsights}
-            showInsights={showInsights}
-            setShowInsights={setShowInsights}
-          />
+            {/* Business Insights */}
+            <BusinessInsights
+              insights={businessInsights}
+              showInsights={showInsights}
+              setShowInsights={setShowInsights}
+            />
 
-          <ProductAnalysis
-            performanceData={performanceData}
-            productSalesData={productSalesData}
-            selectedProductId={selectedProductId}
-            setSelectedProductId={setSelectedProductId}
-            selectedCategory={selectedCategory}
-            setSelectedCategory={setSelectedCategory}
-            productCategories={productCategories}
-            performanceYear={performanceYear}
-            setPerformanceYear={setPerformanceYear}
-            performanceView={performanceView}
-            setPerformanceView={setPerformanceView}
-            performanceMonth={performanceMonth}
-            setPerformanceMonth={setPerformanceMonth}
-            availableYears={[...new Set(sales.map(s => s.year || new Date(s.createdAt || s.date).getFullYear()))]}
-            products={products}
-            sales={sales}
-            selectedCompanyForBranches={selectedCompanyForBranches}
-            setSelectedCompanyForBranches={setSelectedCompanyForBranches}
-            selectedCompanyForTopBranches={selectedCompanyForTopBranches}
-            setSelectedCompanyForTopBranches={setSelectedCompanyForTopBranches}
-          />
+            {/* Product Analysis Section */}
+            <ProductAnalysis
+              performanceData={performanceData}
+              productSalesData={productSalesData}
+              selectedProductId={selectedProductId}
+              setSelectedProductId={setSelectedProductId}
+              selectedCategory={selectedCategory}
+              setSelectedCategory={setSelectedCategory}
+              productCategories={productCategories}
+              performanceYear={performanceYear}
+              setPerformanceYear={setPerformanceYear}
+              performanceView={performanceView}
+              setPerformanceView={setPerformanceView}
+              performanceMonth={performanceMonth}
+              setPerformanceMonth={setPerformanceMonth}
+              availableYears={[...new Set(sales.map(s => s.year || new Date(s.createdAt || s.date).getFullYear()))]}
+              products={products}
+              sales={sales}
+              selectedCompanyForBranches={selectedCompanyForBranches}
+              setSelectedCompanyForBranches={setSelectedCompanyForBranches}
+              selectedCompanyForTopBranches={selectedCompanyForTopBranches}
+              setSelectedCompanyForTopBranches={setSelectedCompanyForTopBranches}
+            />
 
-          {/* Sales Trend Section */}
-          <div className="lg:col-span-3 bg-white rounded-2xl shadow-md p-6 border border-gray-200">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2 mb-1">
-                  <TrendingUp className="text-blue-600" size={24} />
-                  Active Sales Trend ({selectedYear})
-                </h3>
-                <p className="text-sm text-gray-500">Confirmed & Invoiced sales combined</p>
-                {(selectedCompany !== 'all' || selectedBranch !== 'all') && (
-                  <div className="flex flex-wrap items-center gap-2 mt-2">
-                    {selectedCompany !== 'all' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-                        <Users size={12} />
-                        {selectedCompany}
-                      </span>
+            {/* Sales Trend Section */}
+            <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-x-auto">
+              <div className="min-w-[300px] p-3 sm:p-4 md:p-6">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-4 sm:mb-6 gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-gray-900 flex items-center gap-2">
+                      <TrendingUp className="text-blue-600" size={16} />
+                      Active Sales Trend ({selectedYear})
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Confirmed & Invoiced sales combined</p>
+                    {(selectedCompany !== 'all' || selectedBranch !== 'all') && (
+                      <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                        {selectedCompany !== 'all' && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[10px] rounded-full">
+                            <Users size={10} />
+                            <span className="max-w-[100px] truncate">{selectedCompany}</span>
+                          </span>
+                        )}
+                        {selectedBranch !== 'all' && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] rounded-full">
+                            <Building size={10} />
+                            <span className="max-w-[100px] truncate">{selectedBranch}</span>
+                          </span>
+                        )}
+                      </div>
                     )}
-                    {selectedBranch !== 'all' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                        <Building size={12} />
-                        {selectedBranch}
-                      </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-green-500 rounded-full"></div>
+                      <span className="text-[10px] sm:text-xs font-medium text-gray-700">Active Sales</span>
+                    </div>
+
+                    {(selectedCompany !== 'all' || selectedBranch !== 'all') && (
+                      <button
+                        onClick={() => {
+                          setSelectedCompany('all');
+                          setSelectedBranch('all');
+                        }}
+                        className="px-2 py-1 text-[10px] bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors whitespace-nowrap flex items-center gap-1"
+                      >
+                        <X size={10} />
+                        <span className="hidden sm:inline">Clear</span>
+                      </button>
                     )}
+                  </div>
+                </div>
+
+                {/* Chart Filters - Responsive */}
+                <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 sm:gap-3 mb-4 p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex items-center gap-1.5">
+                    <Calendar size={12} className="text-gray-400 flex-shrink-0" />
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                      className="px-1.5 py-1 text-xs border border-gray-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {[...new Set(sales.map(s => s.year || new Date(s.createdAt || s.date).getFullYear()))].map(year => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex-1 min-w-[140px]">
+                    <div className="flex items-center gap-1.5">
+                      <UserIcon size={12} className="text-gray-400 flex-shrink-0" />
+                      <div className="flex-1">
+                        <SearchableSelect
+                          value={selectedCompany}
+                          onChange={setSelectedCompany}
+                          options={[
+                            { value: 'all', label: 'All Companies' },
+                            ...companies.map(company => ({
+                              value: company.companyName,
+                              label: company.companyName
+                            }))
+                          ]}
+                          placeholder="Filter by Company"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 min-w-[140px]">
+                    <div className="flex items-center gap-1.5">
+                      <Building size={12} className="text-gray-400 flex-shrink-0" />
+                      <div className="flex-1">
+                        <SearchableSelect
+                          value={selectedBranch}
+                          onChange={setSelectedBranch}
+                          options={[
+                            { value: 'all', label: selectedCompany === 'all' ? 'All Branches' : 'All Branches' },
+                            ...availableBranches.map(branch => ({
+                              value: branch.branchName,
+                              label: branch.branchName
+                            }))
+                          ]}
+                          placeholder="Filter by Branch"
+                          disabled={selectedCompany === 'all' && availableBranches.length === 0}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chart Container */}
+                <div className="w-full h-[280px] sm:h-[350px] md:h-[400px]">
+                  <SalesTrendChart chartData={chartData} sales={sales} selectedYear={selectedYear} />
+                </div>
+
+                {/* Summary Stats - 2 columns on tablet/desktop, 1 column on mobile */}
+                {sales.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Total Sales */}
+                      <div className="bg-blue-50 p-2 sm:p-3 rounded-lg border border-blue-200">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[9px] sm:text-[10px] font-medium text-blue-600 uppercase">Total Sales</p>
+                            <p className="text-xs sm:text-sm font-bold text-blue-800 truncate">
+                              {formatCurrency(monthlySalesData.reduce((sum, month) => sum + month.activeRevenue, 0))}
+                            </p>
+                            <p className="text-[8px] sm:text-[9px] text-blue-400">For {selectedYear}</p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-[8px] sm:text-[9px] text-blue-500">Revenue</p>
+                            <p className="text-[10px] sm:text-xs font-bold text-blue-700 truncate">
+                              {formatCurrency(monthlySalesData.reduce((sum, month) => sum + month.activeRevenue, 0))}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Avg Monthly */}
+                      <div className="bg-blue-50 p-2 sm:p-3 rounded-lg border border-blue-200">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[9px] sm:text-[10px] font-medium text-blue-600 uppercase">Average Monthly</p>
+                            <p className="text-xs sm:text-sm font-bold text-blue-800 truncate">
+                              {formatCurrency(
+                                monthlySalesData.reduce((sum, month) => sum + month.activeRevenue, 0) /
+                                Math.max(monthlySalesData.filter(m => m.activeRevenue > 0).length, 1)
+                              )}
+                            </p>
+                            <p className="text-[8px] sm:text-[9px] text-blue-400">Per month avg</p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-[8px] sm:text-[9px] text-blue-500">Monthly</p>
+                            <p className="text-[10px] sm:text-xs font-bold text-blue-700 truncate">
+                              {formatCurrency(
+                                monthlySalesData.reduce((sum, month) => sum + month.activeRevenue, 0) /
+                                Math.max(monthlySalesData.filter(m => m.activeRevenue > 0).length, 1)
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Transactions */}
+                      <div className="bg-blue-50 p-2 sm:p-3 rounded-lg border border-blue-200">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[9px] sm:text-[10px] font-medium text-blue-600 uppercase">Transactions</p>
+                            <p className="text-xs sm:text-sm font-bold text-blue-800">
+                              {formatNumber(monthlySalesData.reduce((sum, month) => sum + month.count, 0))}
+                            </p>
+                            <p className="text-[8px] sm:text-[9px] text-blue-400">Total orders</p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-[8px] sm:text-[9px] text-blue-500">Orders</p>
+                            <p className="text-[10px] sm:text-xs font-bold text-blue-700">
+                              {formatNumber(monthlySalesData.reduce((sum, month) => sum + month.count, 0))}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Best Month */}
+                      <div className="bg-blue-50 p-2 sm:p-3 rounded-lg border border-blue-200">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[9px] sm:text-[10px] font-medium text-blue-600 uppercase">Best Month</p>
+                            <p className="text-xs sm:text-sm font-bold text-blue-800">
+                              {(() => {
+                                const bestMonth = monthlySalesData.reduce((prev, current) =>
+                                  (prev.activeRevenue > current.activeRevenue) ? prev : current
+                                );
+                                return bestMonth.month;
+                              })()}
+                            </p>
+                            <p className="text-[8px] sm:text-[9px] text-blue-400 truncate">
+                              {formatCurrency(monthlySalesData.reduce((prev, current) =>
+                                (prev.activeRevenue > current.activeRevenue) ? prev : current
+                              ).activeRevenue)}
+                            </p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-[8px] sm:text-[9px] text-blue-500">Peak</p>
+                            <p className="text-[10px] sm:text-xs font-bold text-blue-700">
+                              {(() => {
+                                const bestMonth = monthlySalesData.reduce((prev, current) =>
+                                  (prev.activeRevenue > current.activeRevenue) ? prev : current
+                                );
+                                return bestMonth.month;
+                              })()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
-
-              <div className="flex items-center gap-4 flex-shrink-0">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                  <span className="text-sm font-medium text-gray-700">Active Sales</span>
-                </div>
-
-                {selectedCompany !== 'all' || selectedBranch !== 'all' ? (
-                  <button
-                    onClick={() => {
-                      setSelectedCompany('all');
-                      setSelectedBranch('all');
-                    }}
-                    className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap flex items-center gap-2"
-                  >
-                    <X size={14} />
-                    Clear Filters
-                  </button>
-                ) : null}
-              </div>
             </div>
 
-            {/* Chart Filters */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="flex flex-wrap items-center gap-3 flex-1">
-                <div className="flex items-center gap-2">
-                  <Calendar size={16} className="text-gray-400" />
-                  <select
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[140px]"
-                  >
-                    {[...new Set(sales.map(s => s.year || new Date(s.createdAt || s.date).getFullYear()))].map(year => (
-                      <option key={year} value={year}>{year}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <UserIcon size={16} className="text-gray-400" />
-                  <div className="min-w-[200px]">
-                    <SearchableSelect
-                      value={selectedCompany}
-                      onChange={setSelectedCompany}
-                      options={[
-                        { value: 'all', label: 'All Companies' },
-                        ...companies.map(company => ({
-                          value: company.companyName,
-                          label: company.companyName
-                        }))
-                      ]}
-                      placeholder="Filter by Company"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Building size={16} className="text-gray-400" />
-                  <div className="min-w-[200px]">
-                    <SearchableSelect
-                      value={selectedBranch}
-                      onChange={setSelectedBranch}
-                      options={[
-                        {
-                          value: 'all',
-                          label: selectedCompany === 'all' ? 'All Branches' : 'All Branches'
-                        },
-                        ...availableBranches.map(branch => ({
-                          value: branch.branchName,
-                          label: branch.branchName
-                        }))
-                      ]}
-                      placeholder="Filter by Branch"
-                      disabled={selectedCompany === 'all' && availableBranches.length === 0}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <SalesTrendChart chartData={chartData} sales={sales} selectedYear={selectedYear} />
-
-            {/* Enhanced Summary Stats */}
-            {sales.length > 0 && (
-              <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-6 border-t border-gray-200">
-                <div className="bg-blue-50 bg-opacity-60 p-4 rounded-lg border border-blue-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-blue-600 font-bold text-lg leading-none">₱</span>
-                    <p className="text-xs font-medium text-blue-600 uppercase">Total Sales</p>
-                  </div>
-                  <p className="text-2xl font-bold text-blue-800">
-                    {formatCurrency(monthlySalesData.reduce((sum, month) => sum + month.activeRevenue, 0))}
-                  </p>
-                  <p className="text-xs text-blue-400 mt-1">For {selectedYear}</p>
-                </div>
-
-                <div className="bg-blue-50 bg-opacity-60 p-4 rounded-lg border border-blue-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingUpIcon size={20} className="text-blue-500" />
-                    <p className="text-xs font-medium text-blue-600 uppercase">Avg Monthly</p>
-                  </div>
-                  <p className="text-2xl font-bold text-blue-800">
-                    {formatCurrency(
-                      monthlySalesData.reduce((sum, month) => sum + month.activeRevenue, 0) /
-                      Math.max(monthlySalesData.filter(m => m.activeRevenue > 0).length, 1)
-                    )}
-                  </p>
-                  <p className="text-xs text-blue-400 mt-1">Per month average</p>
-                </div>
-
-                <div className="bg-blue-50 bg-opacity-60 p-4 rounded-lg border border-blue-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <ShoppingCart size={20} className="text-blue-500" />
-                    <p className="text-xs font-medium text-blue-600 uppercase">Transactions</p>
-                  </div>
-                  <p className="text-2xl font-bold text-blue-800">
-                    {formatNumber(monthlySalesData.reduce((sum, month) => sum + month.count, 0))}
-                  </p>
-                  <p className="text-xs text-blue-400 mt-1">Total orders</p>
-                </div>
-
-                <div className="bg-blue-50 bg-opacity-60 p-4 rounded-lg border border-blue-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Calendar size={20} className="text-blue-500" />
-                    <p className="text-xs font-medium text-blue-600 uppercase">Best Month</p>
-                  </div>
-                  <p className="text-2xl font-bold text-blue-800">
-                    {(() => {
-                      const bestMonth = monthlySalesData.reduce((prev, current) =>
-                        (prev.activeRevenue > current.activeRevenue) ? prev : current
-                      );
-                      return bestMonth.month;
-                    })()}
-                  </p>
-                  <p className="text-xs text-blue-400 mt-1">
-                    {formatCurrency(monthlySalesData.reduce((prev, current) =>
-                      (prev.activeRevenue > current.activeRevenue) ? prev : current
-                    ).activeRevenue)}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-            <div className="lg:col-span-2 bg-white rounded-2xl shadow-md p-6 border border-gray-200">
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <Package className="text-purple-600" size={20} />
-                    Product Sales by Month ({selectedYear})
-                  </h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {selectedCompany !== 'all' && selectedBranch !== 'all'
-                      ? `${selectedCompany} - ${selectedBranch}`
-                      : selectedCompany !== 'all' && selectedBranch === 'all'
-                        ? `${selectedCompany} - All Branches`
-                        : selectedBranch !== 'all'
-                          ? `All Companies - ${selectedBranch}`
-                          : 'All Companies - All Branches'
-                    }
-                  </p>
-                </div>
-              </div>
-
-              {(() => {
-                const getProductMonthlySales = () => {
-                  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                  const productMonthlyData = {};
-                  const productQuantityData = {};
-                  const productSalesCount = {};
-
-                  const filteredSales = sales.filter(sale => {
-                    const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
-                    const yearMatch = saleYear === selectedYear;
-                    const statusMatch = (sale.status === 'CONFIRMED' || sale.status === 'INVOICED');
-                    const companyMatch = selectedCompany === 'all' || sale.company?.companyName === selectedCompany;
-                    const branchMatch = selectedBranch === 'all' || sale.branch?.branchName === selectedBranch;
-
-                    return yearMatch && statusMatch && companyMatch && branchMatch;
-                  });
-
-                  filteredSales.forEach(sale => {
-                    const monthIndex = sale.month ? sale.month - 1 : new Date(sale.createdAt || sale.date).getMonth();
-
-                    sale.items?.forEach(item => {
-                      const variationId = item.variation?.id || 'base';
-                      const uniqueKey = `${item.product?.id}_${variationId}`;
-
-                      if (!productMonthlyData[uniqueKey]) {
-                        productMonthlyData[uniqueKey] = months.map(() => 0);
-                        productQuantityData[uniqueKey] = 0;
-                        productSalesCount[uniqueKey] = 0;
-                      }
-                      productMonthlyData[uniqueKey][monthIndex] += item.amount || 0;
-                      productQuantityData[uniqueKey] += item.quantity || 0;
-                    });
-                  });
-
-                  // Count unique transactions per product
-                  filteredSales.forEach(sale => {
-                    const productsInSale = new Set();
-                    sale.items?.forEach(item => {
-                      const variationId = item.variation?.id || 'base';
-                      const uniqueKey = `${item.product?.id}_${variationId}`;
-                      productsInSale.add(uniqueKey);
-                    });
-                    productsInSale.forEach(uniqueKey => {
-                      if (productSalesCount[uniqueKey] !== undefined) {
-                        productSalesCount[uniqueKey] += 1;
-                      }
-                    });
-                  });
-
-                  return {
-                    months,
-                    products: productMonthlyData,
-                    quantities: productQuantityData,
-                    salesCounts: productSalesCount
-                  };
-                };
-
-                const productData = getProductMonthlySales();
-
-                // Build ALL product stats FIRST (before filtering or slicing)
-                const allProductStats = Object.entries(productData.products)
-                  .map(([uniqueKey, monthlyData]) => {
-                    const [productId, variationIdStr] = uniqueKey.split('_');
-                    const variationId = variationIdStr !== 'base' ? variationIdStr : null;
-
-                    const product = products.find(p => p.id == productId);
-                    const productName = product?.productName || 'Unknown Product';
-
-                    let variationName = null;
-                    let displayName = productName;
-
-                    if (variationId && product) {
-                      const variation = product.variations?.find(v => v.id == variationId);
-                      variationName = variation?.combinationDisplay || variation?.variationValue || 'Default Variation';
-                      displayName = `${productName} (${variationName})`;
-                    }
-
-                    const totalSales = monthlyData.reduce((sum, val) => sum + val, 0);
-                    const quantity = productData.quantities[uniqueKey] || 0;
-                    const salesCount = productData.salesCounts[uniqueKey] || 0;
-
-                    const category = product?.category || 'Uncategorized';
-
-                    return {
-                      id: uniqueKey,
-                      uniqueKey,
-                      productId,
-                      variationId,
-                      name: displayName,
-                      baseProductName: productName,
-                      variationName,
-                      totalSales,
-                      quantity,
-                      salesCount,
-                      category,
-                      monthlyData
-                    };
-                  })
-                  .sort((a, b) => b.totalSales - a.totalSales);
-
-                const productStats = selectedCategoryForMonthly === 'all'
-                  ? allProductStats
-                  : allProductStats.filter(product => product.category === selectedCategoryForMonthly);
-
-
-                if (productStats.length === 0) {
-                  return (
-                    <div className="h-64 flex flex-col items-center justify-center text-gray-400">
-                      <Package size={48} className="mb-4 opacity-50" />
-                      <p className="text-lg">
-                        {selectedCategoryForMonthly === 'all'
-                          ? 'No product sales data for selected filters'
-                          : `No products found in "${selectedCategoryForMonthly}" category`}
+            {/* Product Sales and Status Sections */}
+            <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 sm:gap-6">
+              {/* Product Sales by Month */}
+              <div className="lg:col-span-2 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                <div className="p-3 sm:p-4 md:p-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
+                    <div>
+                      <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <Package className="text-purple-600" size={16} />
+                        Product Sales ({selectedYear})
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-1 max-w-[250px] sm:max-w-none truncate">
+                        {selectedCompany !== 'all' && selectedBranch !== 'all'
+                          ? `${selectedCompany} - ${selectedBranch}`
+                          : selectedCompany !== 'all' && selectedBranch === 'all'
+                            ? `${selectedCompany} - All Branches`
+                            : selectedBranch !== 'all'
+                              ? `All Companies - ${selectedBranch}`
+                              : 'All Companies - All Branches'
+                        }
                       </p>
-                      {selectedCategoryForMonthly !== 'all' && (
-                        <button
-                          onClick={() => setSelectedCategoryForMonthly('all')}
-                          className="mt-3 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
-                        >
-                          View All Categories
-                        </button>
-                      )}
                     </div>
-                  );
-                }
+                  </div>
 
-                // Take top 5 from FILTERED results for the chart
-                const topProductsForChart = productStats.slice(0, 5);
+                  {(() => {
+                    const getProductMonthlySales = () => {
+                      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                      const productMonthlyData = {};
+                      const productQuantityData = {};
+                      const productSalesCount = {};
 
-                const colors = [
-                  { border: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.1)' },
-                  { border: '#EC4899', bg: 'rgba(236, 72, 153, 0.1)' },
-                  { border: '#F59E0B', bg: 'rgba(245, 158, 11, 0.1)' },
-                  { border: '#10B981', bg: 'rgba(16, 185, 129, 0.1)' },
-                  { border: '#3B82F6', bg: 'rgba(59, 130, 246, 0.1)' },
-                ];
+                      const filteredSales = sales.filter(sale => {
+                        const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
+                        const yearMatch = saleYear === selectedYear;
+                        const statusMatch = (sale.status === 'CONFIRMED' || sale.status === 'INVOICED');
+                        const companyMatch = selectedCompany === 'all' || sale.company?.companyName === selectedCompany;
+                        const branchMatch = selectedBranch === 'all' || sale.branch?.branchName === selectedBranch;
 
-                const productChartData = {
-                  labels: productData.months,
-                  datasets: topProductsForChart.map((product, idx) => {
-                    return {
-                      label: product.name,
-                      data: product.monthlyData,
-                      borderColor: colors[idx % colors.length].border,
-                      backgroundColor: colors[idx % colors.length].bg,
-                      borderWidth: 2,
-                      tension: 0.4,
-                      fill: true,
+                        return yearMatch && statusMatch && companyMatch && branchMatch;
+                      });
+
+                      filteredSales.forEach(sale => {
+                        const monthIndex = sale.month ? sale.month - 1 : new Date(sale.createdAt || sale.date).getMonth();
+
+                        sale.items?.forEach(item => {
+                          const variationId = item.variation?.id || 'base';
+                          const uniqueKey = `${item.product?.id}_${variationId}`;
+
+                          if (!productMonthlyData[uniqueKey]) {
+                            productMonthlyData[uniqueKey] = months.map(() => 0);
+                            productQuantityData[uniqueKey] = 0;
+                            productSalesCount[uniqueKey] = 0;
+                          }
+                          productMonthlyData[uniqueKey][monthIndex] += item.amount || 0;
+                          productQuantityData[uniqueKey] += item.quantity || 0;
+                        });
+                      });
+
+                      filteredSales.forEach(sale => {
+                        const productsInSale = new Set();
+                        sale.items?.forEach(item => {
+                          const variationId = item.variation?.id || 'base';
+                          const uniqueKey = `${item.product?.id}_${variationId}`;
+                          productsInSale.add(uniqueKey);
+                        });
+                        productsInSale.forEach(uniqueKey => {
+                          if (productSalesCount[uniqueKey] !== undefined) {
+                            productSalesCount[uniqueKey] += 1;
+                          }
+                        });
+                      });
+
+                      return {
+                        months,
+                        products: productMonthlyData,
+                        quantities: productQuantityData,
+                        salesCounts: productSalesCount
+                      };
                     };
-                  })
-                };
 
-                return (
-                  <>
-                    <ProductSalesChart productChartData={productChartData} />
+                    const productData = getProductMonthlySales();
 
-                    <div className="mt-6 pt-6 border-t border-gray-200">
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                          <Target size={16} className="text-purple-600" />
-                          Top Products (Ranked by Sales)
+                    const allProductStats = Object.entries(productData.products)
+                      .map(([uniqueKey, monthlyData]) => {
+                        const [productId, variationIdStr] = uniqueKey.split('_');
+                        const variationId = variationIdStr !== 'base' ? variationIdStr : null;
+
+                        const product = products.find(p => p.id == productId);
+                        const productName = product?.productName || 'Unknown Product';
+
+                        let variationName = null;
+                        let displayName = productName;
+
+                        if (variationId && product) {
+                          const variation = product.variations?.find(v => v.id == variationId);
+                          variationName = variation?.combinationDisplay || variation?.variationValue || 'Default Variation';
+                          displayName = `${productName} (${variationName})`;
+                        }
+
+                        const totalSales = monthlyData.reduce((sum, val) => sum + val, 0);
+                        const quantity = productData.quantities[uniqueKey] || 0;
+                        const salesCount = productData.salesCounts[uniqueKey] || 0;
+
+                        const category = product?.category || 'Uncategorized';
+
+                        return {
+                          id: uniqueKey,
+                          uniqueKey,
+                          productId,
+                          variationId,
+                          name: displayName,
+                          baseProductName: productName,
+                          variationName,
+                          totalSales,
+                          quantity,
+                          salesCount,
+                          category,
+                          monthlyData
+                        };
+                      })
+                      .sort((a, b) => b.totalSales - a.totalSales);
+
+                    const productStats = selectedCategoryForMonthly === 'all'
+                      ? allProductStats
+                      : allProductStats.filter(product => product.category === selectedCategoryForMonthly);
+
+                    if (productStats.length === 0) {
+                      return (
+                        <div className="h-48 sm:h-64 flex flex-col items-center justify-center text-gray-400">
+                          <Package size={32} className="mb-3 opacity-50" />
+                          <p className="text-xs sm:text-sm text-center px-4">
+                            {selectedCategoryForMonthly === 'all'
+                              ? 'No product sales data for selected filters'
+                              : `No products found in "${selectedCategoryForMonthly}" category`}
+                          </p>
                           {selectedCategoryForMonthly !== 'all' && (
-                            <span className="text-xs font-normal text-purple-600">- {selectedCategoryForMonthly}</span>
+                            <button
+                              onClick={() => setSelectedCategoryForMonthly('all')}
+                              className="mt-3 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-xs"
+                            >
+                              View All Categories
+                            </button>
                           )}
-                        </h4>
+                        </div>
+                      );
+                    }
 
-                        {productCategories.length > 0 && (
-                          <div className="relative">
-                            <select
-                              value={selectedCategoryForMonthly}
-                              onChange={(e) => {
-                                setSelectedCategoryForMonthly(e.target.value);
-                              }}
-                              className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 appearance-none pr-8"
-                            >
-                              <option value="all">All Categories</option>
-                              {productCategories.map((category, idx) => (
-                                <option key={idx} value={category}>
-                                  {category}
-                                </option>
-                              ))}
-                            </select>
-                            <ChevronDown size={12} className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    const topProductsForChart = productStats.slice(0, 5);
+
+                    const colors = [
+                      { border: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.1)' },
+                      { border: '#EC4899', bg: 'rgba(236, 72, 153, 0.1)' },
+                      { border: '#F59E0B', bg: 'rgba(245, 158, 11, 0.1)' },
+                      { border: '#10B981', bg: 'rgba(16, 185, 129, 0.1)' },
+                      { border: '#3B82F6', bg: 'rgba(59, 130, 246, 0.1)' },
+                    ];
+
+                    const productChartData = {
+                      labels: productData.months,
+                      datasets: topProductsForChart.map((product, idx) => {
+                        return {
+                          label: product.name.length > 20 ? product.name.substring(0, 20) + '...' : product.name,
+                          data: product.monthlyData,
+                          borderColor: colors[idx % colors.length].border,
+                          backgroundColor: colors[idx % colors.length].bg,
+                          borderWidth: 2,
+                          tension: 0.4,
+                          fill: true,
+                        };
+                      })
+                    };
+
+                    return (
+                      <>
+                        <div className="w-full h-[250px] sm:h-[300px] md:h-[350px]">
+                          <ProductSalesChart productChartData={productChartData} />
+                        </div>
+
+                        <div className="mt-6 pt-6 border-t border-gray-200">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
+                            <h4 className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center gap-2">
+                              <Target size={14} className="text-purple-600" />
+                              Top Products
+                              {selectedCategoryForMonthly !== 'all' && (
+                                <span className="text-xs font-normal text-purple-600">- {selectedCategoryForMonthly}</span>
+                              )}
+                            </h4>
+
+                            {productCategories.length > 0 && (
+                              <div className="relative w-full sm:w-auto">
+                                <select
+                                  value={selectedCategoryForMonthly}
+                                  onChange={(e) => setSelectedCategoryForMonthly(e.target.value)}
+                                  className="w-full sm:w-auto px-3 py-1.5 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 appearance-none pr-8"
+                                >
+                                  <option value="all">All Categories</option>
+                                  {productCategories.map((category, idx) => (
+                                    <option key={idx} value={category}>
+                                      {category}
+                                    </option>
+                                  ))}
+                                </select>
+                                <ChevronDown size={12} className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                        {productStats.slice(0, 3).map((product, idx) => {
-                          const percentage = productStats[0].totalSales > 0
-                            ? (product.totalSales / productStats[0].totalSales * 100)
-                            : 0;
 
-                          return (
-                            <div
-                              key={product.id}
-                              className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all"
-                            >
-                              <div className="flex-shrink-0">
-                                <span className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${idx === 0 ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-400' :
-                                  idx === 1 ? 'bg-gray-200 text-gray-600 border-2 border-gray-400' :
-                                    idx === 2 ? 'bg-orange-100 text-orange-700 border-2 border-orange-400' :
-                                      'bg-gray-100 text-gray-500'
-                                  }`}>
-                                  #{idx + 1}
-                                </span>
-                              </div>
-
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-gray-900 truncate">{product.name}</p>
-                                <p className="text-xs text-gray-500">{product.salesCount} transactions</p>
-                                {product.category && product.category !== 'Uncategorized' && (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 mt-1 rounded text-xs bg-purple-100 text-purple-600">
-                                    {product.category}
-                                  </span>
-                                )}
-                              </div>
-
-                              <div className="flex items-center gap-6">
-                                <div className="text-right">
-                                  <p className="text-xs text-gray-500">Sales</p>
-                                  <p className="font-bold text-green-600">{formatCurrency(product.totalSales)}</p>
-                                </div>
-
-                                <div className="text-right">
-                                  <p className="text-xs text-gray-500">Quantity</p>
-                                  <p className="font-bold text-purple-600">{formatNumber(product.quantity)} units</p>
-                                </div>
-
-                                <div className="w-24">
-                                  <div className="flex items-center justify-end gap-2 mb-1">
-                                    <span className="text-xs font-medium text-gray-600">{percentage.toFixed(0)}%</span>
-                                  </div>
-                                  <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div
-                                      className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full transition-all duration-500"
-                                      style={{ width: `${percentage}%` }}
-                                    ></div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-
-                        {productStats.length > 3 && (
-                          <>
-                            <div className="my-3 border-t border-gray-200 pt-3">
-                              <p className="text-xs text-gray-500 text-center mb-2">
-                                +{productStats.length - 3} more products (scroll to view)
-                              </p>
-                            </div>
-                            {productStats.slice(3).map((product, idx) => {
-                              const actualIdx = idx + 3;
+                          <div className="space-y-2 sm:space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                            {productStats.slice(0, 3).map((product, idx) => {
                               const percentage = productStats[0].totalSales > 0
                                 ? (product.totalSales / productStats[0].totalSales * 100)
                                 : 0;
@@ -1215,16 +1191,20 @@ const Dashboard = () => {
                               return (
                                 <div
                                   key={product.id}
-                                  className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all"
+                                  className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all"
                                 >
                                   <div className="flex-shrink-0">
-                                    <span className="flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm bg-gray-100 text-gray-500">
-                                      #{actualIdx + 1}
+                                    <span className={`flex items-center justify-center w-7 h-7 rounded-full font-bold text-xs ${idx === 0 ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-400' :
+                                      idx === 1 ? 'bg-gray-200 text-gray-600 border-2 border-gray-400' :
+                                        idx === 2 ? 'bg-orange-100 text-orange-700 border-2 border-orange-400' :
+                                          'bg-gray-100 text-gray-500'
+                                      }`}>
+                                      #{idx + 1}
                                     </span>
                                   </div>
 
                                   <div className="flex-1 min-w-0">
-                                    <p className="font-semibold text-gray-900 truncate">{product.name}</p>
+                                    <p className="font-semibold text-gray-900 text-sm truncate">{product.name}</p>
                                     <p className="text-xs text-gray-500">{product.salesCount} transactions</p>
                                     {product.category && product.category !== 'Uncategorized' && (
                                       <span className="inline-flex items-center px-1.5 py-0.5 mt-1 rounded text-xs bg-purple-100 text-purple-600">
@@ -1233,24 +1213,24 @@ const Dashboard = () => {
                                     )}
                                   </div>
 
-                                  <div className="flex items-center gap-6">
-                                    <div className="text-right">
+                                  <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                                    <div className="text-left sm:text-right">
                                       <p className="text-xs text-gray-500">Sales</p>
-                                      <p className="font-bold text-green-600">{formatCurrency(product.totalSales)}</p>
+                                      <p className="font-bold text-green-600 text-sm">{formatCurrency(product.totalSales)}</p>
                                     </div>
 
-                                    <div className="text-right">
-                                      <p className="text-xs text-gray-500">Quantity</p>
-                                      <p className="font-bold text-purple-600">{formatNumber(product.quantity)} units</p>
+                                    <div className="text-left sm:text-right">
+                                      <p className="text-xs text-gray-500">Qty</p>
+                                      <p className="font-bold text-purple-600 text-sm">{formatNumber(product.quantity)}</p>
                                     </div>
 
-                                    <div className="w-24">
-                                      <div className="flex items-center justify-end gap-2 mb-1">
+                                    <div className="flex-1 sm:w-24">
+                                      <div className="flex items-center justify-between gap-2 mb-1">
                                         <span className="text-xs font-medium text-gray-600">{percentage.toFixed(0)}%</span>
                                       </div>
-                                      <div className="w-full bg-gray-200 rounded-full h-2">
+                                      <div className="w-full bg-gray-200 rounded-full h-1.5">
                                         <div
-                                          className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full transition-all duration-500"
+                                          className="bg-gradient-to-r from-purple-500 to-purple-600 h-1.5 rounded-full transition-all duration-500"
                                           style={{ width: `${percentage}%` }}
                                         ></div>
                                       </div>
@@ -1259,52 +1239,119 @@ const Dashboard = () => {
                                 </div>
                               );
                             })}
-                          </>
-                        )}
-                      </div>
 
-                      {productStats.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-gray-200 bg-purple-50 rounded-lg p-4">
-                          {selectedCategoryForMonthly !== 'all' && (
-                            <div className="mb-2 text-center">
-                              <span className="text-xs font-semibold text-purple-700">
-                                Showing: {selectedCategoryForMonthly}
-                              </span>
+                            {productStats.length > 3 && (
+                              <>
+                                <div className="my-2 border-t border-gray-200 pt-2">
+                                  <p className="text-xs text-gray-500 text-center">
+                                    +{productStats.length - 3} more products
+                                  </p>
+                                </div>
+                                <div className="hidden sm:block">
+                                  {productStats.slice(3).map((product, idx) => {
+                                    const actualIdx = idx + 3;
+                                    const percentage = productStats[0].totalSales > 0
+                                      ? (product.totalSales / productStats[0].totalSales * 100)
+                                      : 0;
+
+                                    return (
+                                      <div
+                                        key={product.id}
+                                        className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all"
+                                      >
+                                        <div className="flex-shrink-0">
+                                          <span className="flex items-center justify-center w-7 h-7 rounded-full font-bold text-xs bg-gray-100 text-gray-500">
+                                            #{actualIdx + 1}
+                                          </span>
+                                        </div>
+
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-semibold text-gray-900 text-sm truncate">{product.name}</p>
+                                          <p className="text-xs text-gray-500">{product.salesCount} transactions</p>
+                                          {product.category && product.category !== 'Uncategorized' && (
+                                            <span className="inline-flex items-center px-1.5 py-0.5 mt-1 rounded text-xs bg-purple-100 text-purple-600">
+                                              {product.category}
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                                          <div className="text-left sm:text-right">
+                                            <p className="text-xs text-gray-500">Sales</p>
+                                            <p className="font-bold text-green-600 text-sm">{formatCurrency(product.totalSales)}</p>
+                                          </div>
+
+                                          <div className="text-left sm:text-right">
+                                            <p className="text-xs text-gray-500">Qty</p>
+                                            <p className="font-bold text-purple-600 text-sm">{formatNumber(product.quantity)}</p>
+                                          </div>
+
+                                          <div className="flex-1 sm:w-24">
+                                            <div className="flex items-center justify-between gap-2 mb-1">
+                                              <span className="text-xs font-medium text-gray-600">{percentage.toFixed(0)}%</span>
+                                            </div>
+                                            <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                              <div
+                                                className="bg-gradient-to-r from-purple-500 to-purple-600 h-1.5 rounded-full transition-all duration-500"
+                                                style={{ width: `${percentage}%` }}
+                                              ></div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          {productStats.length > 0 && (
+                            <div className="mt-4 pt-4 border-t border-gray-200 bg-purple-50 rounded-lg p-3 sm:p-4">
+                              {selectedCategoryForMonthly !== 'all' && (
+                                <div className="mb-2 text-center">
+                                  <span className="text-xs font-semibold text-purple-700">
+                                    Showing: {selectedCategoryForMonthly}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
+                                <div>
+                                  <p className="text-xs text-gray-600">Products</p>
+                                  <p className="text-sm sm:text-base md:text-lg font-bold text-purple-700">{productStats.length}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-600">Sales</p>
+                                  <p className="text-sm sm:text-base md:text-lg font-bold text-green-700">
+                                    {formatCurrency(productStats.reduce((sum, p) => sum + p.totalSales, 0))}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-600">Units</p>
+                                  <p className="text-sm sm:text-base md:text-lg font-bold text-blue-700">
+                                    {formatNumber(productStats.reduce((sum, p) => sum + p.quantity, 0))}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
                           )}
-                          <div className="grid grid-cols-3 gap-4 text-center">
-                            <div>
-                              <p className="text-xs text-gray-600">Total Products</p>
-                              <p className="text-lg font-bold text-purple-700">{productStats.length}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-600">Total Sales</p>
-                              <p className="text-lg font-bold text-green-700">
-                                {formatCurrency(productStats.reduce((sum, p) => sum + p.totalSales, 0))}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-600">Total Units Sold</p>
-                              <p className="text-lg font-bold text-blue-700">
-                                {formatNumber(productStats.reduce((sum, p) => sum + p.quantity, 0))}
-                              </p>
-                            </div>
-                          </div>
                         </div>
-                      )}
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
 
-            <div className="space-y-6">
-              <StatusDistribution stats={stats} sales={sales} navigate={navigate} />
-              <RecentSales recentSales={recentSales} sales={sales} />
+              {/* Status Distribution and Recent Sales */}
+              <div className="space-y-4 sm:space-y-6">
+                <StatusDistribution stats={stats} sales={sales} navigate={navigate} />
+                <RecentSales recentSales={recentSales} sales={sales} />
+              </div>
             </div>
           </div>
         </div>
 
+        {/* Alert Management Modal */}
         <AlertManagement
           showNotifications={showNotifications}
           setShowNotifications={setShowNotifications}

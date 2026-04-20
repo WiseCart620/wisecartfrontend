@@ -1,88 +1,94 @@
 import React from 'react';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import PesoIcon from '../common/PesoIcon';
+
 const DashboardCards = ({ stats, totalAlerts }) => {
+    const formatCurrency = (amount) => {
+        if (amount === null || amount === undefined) return '₱0';
+        if (amount >= 1000000) {
+            return `₱${(amount / 1000000).toFixed(1)}M`;
+        }
+        if (amount >= 1000) {
+            return `₱${(amount / 1000).toFixed(1)}K`;
+        }
+        return `₱${Math.round(amount).toLocaleString('en-PH')}`;
+    };
+
+    const formatNumber = (num) => {
+        if (num === null || num === undefined) return '0';
+        if (num >= 1000000) {
+            return `${(num / 1000000).toFixed(1)}M`;
+        }
+        if (num >= 1000) {
+            return `${(num / 1000).toFixed(1)}K`;
+        }
+        return num.toLocaleString('en-PH');
+    };
+
+    const formatVelocity = (velocity) => {
+        if (velocity === null || velocity === undefined) return '0.0';
+        return velocity.toFixed(1);
+    };
+
     const cards = [
         {
             title: 'Active Sales',
-            value: formatNumber(stats?.activeSales),
-            color: 'blue',
+            mainValue: formatNumber(stats?.activeSales),
+            subValue: `${formatVelocity(stats?.salesVelocity)}/day`,
             description: `Total: ${formatNumber(stats?.totalSales)} sales`,
-            trend: stats?.salesVelocity,
-            trendLabel: 'sales/day'
+            trend: stats?.salesVelocity
         },
         {
             title: 'Active Revenue',
-            value: formatCurrency(stats?.activeRevenue),
-            color: 'blue',
+            mainValue: formatCurrency(stats?.activeRevenue),
             description: `Growth: ${stats?.revenueGrowth > 0 ? '+' : ''}${stats?.revenueGrowth || 0}%`,
             trend: stats?.revenueGrowth
         },
         {
-            title: 'Avg. Order Value',
-            value: formatCurrency(stats?.averageOrderValue),
-            color: 'blue',
+            title: 'Avg Order Value',
+            mainValue: formatCurrency(stats?.averageOrderValue),
             description: 'Based on active sales'
         },
         {
             title: 'Sales Velocity',
-            value: `${stats?.salesVelocity?.toFixed(1) || '0.0'}/day`,
-            color: 'blue',
-            description: 'Last 30 days average'
+            mainValue: `${formatVelocity(stats?.salesVelocity)}/day`,
+            description: 'Last 30 days'
         },
     ];
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 w-full overflow-hidden">
             {cards.map((card, i) => {
-                const bgColor = {
-                    blue: 'bg-blue-500',
-                    yellow: 'bg-yellow-500',
-                    red: 'bg-red-500',
-                    green: 'bg-green-500',
-                    orange: 'bg-orange-500',
-                    purple: 'bg-purple-500',
-                }[card.color];
-
                 const trendIcon = card.trend > 0 ?
-                    <ArrowUpRight className="text-green-500" size={16} /> :
-                    card.trend < 0 ? <ArrowDownRight className="text-red-500" size={16} /> : null;
+                    <ArrowUpRight className="text-green-500" size={10} /> :
+                    card.trend < 0 ? <ArrowDownRight className="text-red-500" size={10} /> : null;
 
                 return (
-                    <div key={i} className="bg-blue-50 bg-opacity-60 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 p-5 border border-blue-200">
-                        <div className="flex-1">
-                            <div className="flex items-center justify-between mb-2">
-                                <p className="text-sm text-blue-600 font-medium">{card.title}</p>
-                                {card.trend !== undefined && trendIcon && (
-                                    <div className="flex items-center gap-1">
-                                        {trendIcon}
-                                        <span className={`text-xs font-medium ${card.trend > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                                            {card.trendLabel ? `${Math.abs(card.trend)} ${card.trendLabel}` : `${Math.abs(card.trend)}%`}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                            <p className="text-2xl font-bold text-blue-800">{card.value}</p>
-                            <p className="text-xs text-blue-400 mt-2">{card.description}</p>
+                    <div key={i} className="bg-blue-50 bg-opacity-60 rounded-lg shadow-sm p-2 border border-blue-200 w-full min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                            <p className="text-[9px] sm:text-xs text-blue-600 font-medium uppercase tracking-wide truncate">{card.title}</p>
+                            {card.trend !== undefined && trendIcon && (
+                                <div className="flex items-center gap-0.5 flex-shrink-0">
+                                    {trendIcon}
+                                    <span className={`text-[9px] sm:text-[10px] font-medium ${card.trend > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                        {Math.abs(card.trend).toFixed(0)}%
+                                    </span>
+                                </div>
+                            )}
                         </div>
-                        <div className="mt-4 h-1 rounded-full bg-blue-100">
-                            <div className="h-full rounded-full bg-blue-400" style={{ width: '100%' }}></div>
+
+                        <div className="mb-0.5">
+                            <p className="text-sm sm:text-lg md:text-xl font-bold text-blue-800 truncate">{card.mainValue}</p>
+                            {card.subValue && (
+                                <p className="text-[8px] sm:text-[10px] text-blue-600 mt-0.5 truncate">≈ {card.subValue}</p>
+                            )}
                         </div>
+
+                        <p className="text-[8px] sm:text-[10px] text-blue-400 truncate leading-tight">{card.description}</p>
                     </div>
                 );
             })}
         </div>
     );
-};
-
-const formatCurrency = (amount) => {
-    if (amount === null || amount === undefined) return '₱0.00';
-    return `₱${Number(amount).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-};
-
-const formatNumber = (num) => {
-    if (num === null || num === undefined) return '0';
-    return Number(num).toLocaleString('en-PH');
 };
 
 export default DashboardCards;

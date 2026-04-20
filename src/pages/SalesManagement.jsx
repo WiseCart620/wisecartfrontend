@@ -1118,59 +1118,58 @@ const SalesManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-3 lg:p-4">
       <LoadingOverlay show={actionLoading} message={loadingMessage} />
-      <div className="p-6 max-w-full mx-auto px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Sales Management</h1>
-          <p className="text-gray-600">Manage sales orders, generate invoices, and track revenue</p>
+      <div className="max-w-full mx-auto">
+        <div className="mb-4">
+          <h1 className="text-xl lg:text-2xl font-bold text-gray-900 mb-1">Sales Management</h1>
+          <p className="text-sm text-gray-600">Manage sales orders, generate invoices, and track revenue</p>
         </div>
 
         {/* Action Bar */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <div className="flex flex-col gap-4">
-            {/* First Row: Action Buttons and Search */}
-            <div className="flex flex-wrap gap-4 items-center justify-between">
-              <div className="flex gap-3 flex-wrap">
+        <div className="bg-white rounded-xl shadow-sm p-3 lg:p-4 mb-4">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => handleOpenModal('create')}
-                  className="flex items-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
+                  className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium text-sm"
                 >
-                  <Plus size={20} />
+                  <Plus size={16} />
                   <span>New Sale</span>
                 </button>
                 <button
                   onClick={() => setShowInvoiceModal(true)}
-                  className="flex items-center gap-3 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md"
+                  className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md text-sm"
                 >
-                  <FileText size={20} />
-                  <span>Generate Invoice</span>
+                  <FileText size={16} />
+                  <span>Invoice</span>
                 </button>
                 <button
                   onClick={() => setShowSalesMemoModal(true)}
-                  className="flex items-center gap-3 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md"
+                  className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md text-sm"
                 >
-                  <FileText size={20} />
-                  <span>Generate Sales Memo</span>
+                  <FileText size={16} />
+                  <span>Sales Memo</span>
                 </button>
               </div>
 
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+              <div className="relative w-full sm:w-56 lg:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                 <input
                   type="text"
                   placeholder="Search branch/company..."
                   value={searchTerm}
                   onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                  className="pl-12 pr-4 py-3 border border-gray-300 rounded-lg w-80 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="pl-9 pr-3 py-2 border border-gray-300 rounded-lg w-full text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
 
             {/* Second Row: Advanced Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 pt-4 border-t border-gray-200">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 pt-3 border-t border-gray-200">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Company</label>
+                <label className="block text-[11px] font-medium text-gray-700 mb-1">Company</label>
                 <SearchableDropdown
                   options={companyOptions}
                   value={filterData.companyId}
@@ -1201,8 +1200,7 @@ const SalesManagement = () => {
                 <select
                   value={statusFilter}
                   onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                   <option value="ALL">All Status</option>
                   <option value="PENDING">Pending</option>
                   <option value="CONFIRMED">Confirmed</option>
@@ -1232,7 +1230,7 @@ const SalesManagement = () => {
             </div>
 
             {/* Third Row: Product Search */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-gray-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2 border-t border-gray-100">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
                   Filter by Product / UPC / SKU
@@ -1288,20 +1286,19 @@ const SalesManagement = () => {
           </div>
         </div>
 
-        {/* Sales Table */}
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[680px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12">#</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Encoded By</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-3 py-3 text-center text-[11px] font-medium text-gray-500 uppercase tracking-wider w-10">#</th>
+                  <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Branch</th>
+                  <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                  <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Period</th>
+                  <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Encoded By</th>
+                  <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                  <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -1314,29 +1311,29 @@ const SalesManagement = () => {
                 ) : (
                   currentSales.map((sale) => (
                     <tr key={sale.id} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-400 font-medium">
+                      <td className="px-3 py-3 whitespace-nowrap text-center text-xs text-gray-400 font-medium">
                         {indexOfFirstItem + currentSales.indexOf(sale) + 1}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-3 whitespace-nowrap">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{sale.branch.branchName}</div>
-                          <div className="text-sm text-gray-500">{sale.branch.branchCode}</div>
+                          <div className="text-xs font-medium text-gray-900">{sale.branch.branchName}</div>
+                          <div className="text-xs text-gray-500">{sale.branch.branchCode}</div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">
                         {sale.company.companyName}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">
                         {months[sale.month - 1]} {sale.year}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">
                         {sale.createdBy || sale.generatedBy || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                      <td className="px-3 py-3 whitespace-nowrap text-xs font-semibold text-gray-900">
                         {formatCurrency(sale.totalAmount)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-3 py-2 inline-flex text-xs leading-5 font-semibold rounded-full ${sale.status === 'INVOICED'
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        <span className={`px-2 py-1 inline-flex text-[11px] leading-5 font-semibold rounded-full ${sale.status === 'INVOICED'
                           ? 'bg-green-100 text-green-800'
                           : sale.status === 'CONFIRMED'
                             ? 'bg-blue-100 text-blue-800'
@@ -1345,11 +1342,11 @@ const SalesManagement = () => {
                           {sale.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center gap-3">
+                      <td className="px-3 py-3 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center gap-1 flex-wrap">
                           <button
                             onClick={() => handleOpenModal('view', sale)}
-                            className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition"
+                            className="flex items-center gap-1 px-2 py-1.5 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition"
                             title="View"
                           >
                             <Eye size={18} />
@@ -1443,10 +1440,10 @@ const SalesManagement = () => {
 
         {/* Create/Edit Modal */}
         {showModal && (modalMode === 'create' || modalMode === 'edit') && (
-          <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6">
-            <div className="bg-white rounded-2xl max-w-7xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
-              <div className="p-8 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl z-10">
-                <h2 className="text-2xl font-bold text-gray-900">
+          <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-2 sm:p-6">
+            <div className="bg-white rounded-xl sm:rounded-2xl max-w-7xl w-full max-h-[98vh] sm:max-h-[95vh] overflow-y-auto shadow-2xl">
+              <div className="p-4 sm:p-8 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-xl sm:rounded-t-2xl z-10">
+                <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
                   {modalMode === 'create' ? 'Create New Sale' : 'Edit Sale'}
                 </h2>
                 <button
@@ -1457,7 +1454,7 @@ const SalesManagement = () => {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-8">
+              <form onSubmit={handleSubmit} className="p-4 sm:p-8">
                 <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">Branch *</label>
@@ -1481,7 +1478,7 @@ const SalesManagement = () => {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-3">Month *</label>
                       <select
@@ -1802,7 +1799,7 @@ const SalesManagement = () => {
               </div>
 
               <div className="p-8">
-                <div className="grid grid-cols-2 gap-8 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 mb-8">
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <h3 className="font-semibold text-gray-700 mb-2">Branch</h3>
                     <p className="text-gray-900 text-lg">{selectedSale.branch.branchName}</p>
@@ -1932,10 +1929,10 @@ const SalesManagement = () => {
 
         {/* Invoice Generation Modal */}
         {showInvoiceModal && (
-          <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6">
-            <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl">
-              <div className="p-8 border-b border-gray-200 flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900">Generate Invoice Report</h2>
+          <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-2 sm:p-6">
+            <div className="bg-white rounded-xl sm:rounded-2xl max-w-2xl w-full shadow-2xl max-h-[98vh] overflow-y-auto">
+              <div className="p-4 sm:p-8 border-b border-gray-200 flex justify-between items-center">
+                <h2 className="text-lg sm:text-2xl font-bold text-gray-900">Generate Invoice Report</h2>
                 <button
                   onClick={() => setShowInvoiceModal(false)}
                   className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
@@ -2638,8 +2635,8 @@ const SalesManagement = () => {
         showSalesMemoModal && (
           <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6">
             <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl">
-              <div className="p-8 border-b border-gray-200 flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900">Generate Sales Memo</h2>
+              <div className="p-4 sm:p-8 border-b border-gray-200 flex justify-between items-center">
+                <h2 className="text-lg sm:text-2xl font-bold text-gray-900">Generate Sales Memo</h2>
                 <button
                   onClick={() => setShowSalesMemoModal(false)}
                   className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"

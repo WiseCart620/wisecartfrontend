@@ -342,10 +342,10 @@ const DeliveryFormModal = ({
     const lockedTimeInputClass = 'w-36 px-4 py-3 border border-gray-200 rounded-lg bg-gray-100 cursor-not-allowed';
 
     return (
-        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6">
-            <div className="bg-white rounded-2xl max-w-[65vw] w-full max-h-[95vh] overflow-y-auto shadow-2xl">
-                <div className="p-8 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl z-10">
-                    <h2 className="text-2xl font-bold text-gray-900">
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-2 sm:p-6">
+            <div className="bg-white rounded-xl sm:rounded-2xl w-full sm:max-w-[65vw] max-h-[98vh] sm:max-h-[95vh] overflow-y-auto shadow-2xl">
+                <div className="p-4 sm:p-8 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-xl sm:rounded-t-2xl z-10">
+                    <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
                         {mode === 'create' ? 'Create New Delivery' : 'Edit Delivery'}
                     </h2>
                     <button onClick={onClose} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition" disabled={isLoading}>
@@ -353,11 +353,10 @@ const DeliveryFormModal = ({
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} onKeyDown={handleFormArrowNav} className="p-8">
+                <form onSubmit={handleSubmit} onKeyDown={handleFormArrowNav} className="p-4 sm:p-8">
                     <div className="space-y-6">
 
-                        {/* Row 1: Branch and Warehouse */}
-                        <div className="grid grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">
                                     Branch *
@@ -428,8 +427,7 @@ const DeliveryFormModal = ({
                             </div>
                         </div>
 
-                        {/* Row 2: DR#, PO#, Transmittal */}
-                        <div className="grid grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">Delivery Receipt # *</label>
                                 <input type="text" value={formData.deliveryReceiptNumber} onChange={(e) => setFormData({ ...formData, deliveryReceiptNumber: e.target.value.replace(/[^0-9]/g, '') })} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" required placeholder="Enter numbers only" />
@@ -496,8 +494,8 @@ const DeliveryFormModal = ({
                                 </div>
                             ) : (
                                 <>
-                                    <div className="overflow-x-auto rounded-lg border border-gray-200">
-                                        <table className="w-full">
+                                    <div className="overflow-x-auto rounded-lg border border-gray-200 -mx-2 sm:mx-0">
+                                        <table className="w-full min-w-[750px]">
                                             <thead className="bg-gray-50 border-b border-gray-200">
                                                 <tr>
                                                     <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase w-10">#</th>
@@ -647,8 +645,7 @@ const DeliveryFormModal = ({
                             )}
                         </div>
 
-                        {/* Row 4: Prepared By + Date Prepared */}
-                        <div className="grid grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">Prepared By *</label>
                                 <input type="text" value={formData.preparedBy} onChange={(e) => setFormData({ ...formData, preparedBy: e.target.value })} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" required />
