@@ -1342,47 +1342,45 @@ const SalesManagement = () => {
                           {sale.status}
                         </span>
                       </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center gap-1 flex-wrap">
+                      <td className="px-2 py-3 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center gap-0.5 flex-nowrap">
                           <button
                             onClick={() => handleOpenModal('view', sale)}
-                            className="flex items-center gap-1 px-2 py-1.5 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-blue-600 hover:bg-blue-50 transition"
                             title="View"
                           >
-                            <Eye size={18} />
+                            <Eye size={15} />
                           </button>
 
                           {sale.status === 'PENDING' && (
                             <>
                               <button
                                 onClick={() => handleOpenModal('edit', sale)}
-                                className="flex items-center gap-2 px-3 py-2 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-lg transition"
+                                className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-indigo-600 hover:bg-indigo-50 transition"
                                 title="Edit"
                               >
-                                <Edit2 size={18} />
+                                <Edit2 size={15} />
                               </button>
                               <button
                                 onClick={() => handleUpdateStatus(sale.id, 'CONFIRMED')}
-                                className="flex items-center gap-2 px-3 py-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-lg transition"
+                                className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-green-600 hover:bg-green-50 transition"
                                 title="Confirm Sale (Deducts Stock)"
                               >
-                                <Check size={18} />
-                                <span className="text-xs">Confirm</span>
+                                <Check size={15} />
                               </button>
                               <button
                                 onClick={() => handleUpdateStatus(sale.id, 'INVOICED')}
-                                className="flex items-center gap-2 px-3 py-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded-lg transition font-medium"
+                                className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-purple-600 hover:bg-purple-50 transition"
                                 title="Mark as Invoiced (Deducts Stock)"
                               >
-                                <FileText size={18} />
-                                <span className="text-xs">Invoice</span>
+                                <FileText size={15} />
                               </button>
                               <button
                                 onClick={() => handleDelete(sale.id)}
-                                className="flex items-center gap-2 px-3 py-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition"
+                                className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 hover:bg-red-50 transition"
                                 title="Delete (Releases Reserved Stock)"
                               >
-                                <Trash2 size={18} />
+                                <Trash2 size={15} />
                               </button>
                             </>
                           )}
@@ -1391,18 +1389,17 @@ const SalesManagement = () => {
                             <>
                               <button
                                 onClick={() => handleUpdateStatus(sale.id, 'INVOICED')}
-                                className="flex items-center gap-2 px-3 py-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded-lg transition font-medium"
+                                className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-purple-600 hover:bg-purple-50 transition"
                                 title="Mark as Invoiced (No Stock Change)"
                               >
-                                <FileText size={18} />
-                                <span className="text-xs">Invoice</span>
+                                <FileText size={15} />
                               </button>
                               <button
                                 onClick={() => handleDelete(sale.id)}
-                                className="flex items-center gap-2 px-3 py-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition"
+                                className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 hover:bg-red-50 transition"
                                 title="Delete (Returns Stock)"
                               >
-                                <Trash2 size={18} />
+                                <Trash2 size={15} />
                               </button>
                             </>
                           )}
@@ -1410,10 +1407,10 @@ const SalesManagement = () => {
                           {sale.status === 'INVOICED' && (
                             <button
                               onClick={() => handleDelete(sale.id)}
-                              className="flex items-center gap-2 px-3 py-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition"
+                              className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 hover:bg-red-50 transition"
                               title="Delete (Returns Stock)"
                             >
-                              <Trash2 size={18} />
+                              <Trash2 size={15} />
                             </button>
                           )}
                         </div>

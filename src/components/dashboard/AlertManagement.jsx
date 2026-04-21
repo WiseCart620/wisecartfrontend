@@ -155,16 +155,16 @@ AlertRow.displayName = 'AlertRow';
 
 // ── Main component ────────────────────────────────────────────────────────────
 const AlertManagement = ({ showNotifications, setShowNotifications, alerts, loadAlerts }) => {
-  const [activeTab, setActiveTab]           = useState('active');
-  const [searchQuery, setSearchQuery]       = useState('');
+  const [activeTab, setActiveTab] = useState('active');
+  const [searchQuery, setSearchQuery] = useState('');
   const [filterSeverity, setFilterSeverity] = useState('all');
-  const [filterType, setFilterType]         = useState('all');
-  const [filterBranch, setFilterBranch]     = useState('all');
-  const [filterCompany, setFilterCompany]   = useState('all');
+  const [filterType, setFilterType] = useState('all');
+  const [filterBranch, setFilterBranch] = useState('all');
+  const [filterCompany, setFilterCompany] = useState('all');
   const [loadingAlertIds, setLoadingAlertIds] = useState(new Set());
-  const [bulkLoading, setBulkLoading]       = useState(false);
-  const [toast, setToast]                   = useState(null);
-  const [currentPage, setCurrentPage]       = useState(1);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const resetPage = useCallback(() => setCurrentPage(1), []);
 
@@ -200,9 +200,9 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
   const activeFilterCount = [
     searchQuery,
     filterSeverity !== 'all' ? filterSeverity : '',
-    filterType     !== 'all' ? filterType     : '',
-    filterBranch   !== 'all' ? filterBranch   : '',
-    filterCompany  !== 'all' ? filterCompany  : '',
+    filterType !== 'all' ? filterType : '',
+    filterBranch !== 'all' ? filterBranch : '',
+    filterCompany !== 'all' ? filterCompany : '',
   ].filter(Boolean).length;
 
   const clearAllFilters = useCallback(() => {
@@ -218,17 +218,17 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
   const filteredAlerts = useMemo(() => {
     let result = alerts;
 
-    if (activeTab === 'active')   result = result.filter(a => !a.isResolved);
-    if (activeTab === 'resolved') result = result.filter(a =>  a.isResolved);
+    if (activeTab === 'active') result = result.filter(a => !a.isResolved);
+    if (activeTab === 'resolved') result = result.filter(a => a.isResolved);
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(a =>
-        a.title?.toLowerCase().includes(q)              ||
-        a.message?.toLowerCase().includes(q)            ||
+        a.title?.toLowerCase().includes(q) ||
+        a.message?.toLowerCase().includes(q) ||
         a.branch?.branchName?.toLowerCase().includes(q) ||
         a.product?.productName?.toLowerCase().includes(q) ||
-        a.severity?.toLowerCase().includes(q)           ||
+        a.severity?.toLowerCase().includes(q) ||
         a.alertType?.toLowerCase().includes(q)
       );
     }
@@ -253,10 +253,10 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
   }, [alerts, activeTab, searchQuery, filterSeverity, filterType, filterBranch, filterCompany]);
 
   // ── Pagination ────────────────────────────────────────────────────────────
-  const totalPages   = Math.max(1, Math.ceil(filteredAlerts.length / PAGE_SIZE));
-  const safePage     = Math.min(currentPage, totalPages);
+  const totalPages = Math.max(1, Math.ceil(filteredAlerts.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
   const showingStart = filteredAlerts.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
-  const showingEnd   = Math.min(safePage * PAGE_SIZE, filteredAlerts.length);
+  const showingEnd = Math.min(safePage * PAGE_SIZE, filteredAlerts.length);
 
   const pageAlerts = useMemo(() => {
     const start = (safePage - 1) * PAGE_SIZE;
@@ -264,8 +264,8 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
   }, [filteredAlerts, safePage]);
 
   // ── Derived counts ────────────────────────────────────────────────────────
-  const activeCount   = useMemo(() => alerts.filter(a => !a.isResolved).length, [alerts]);
-  const resolvedCount = useMemo(() => alerts.filter(a =>  a.isResolved).length, [alerts]);
+  const activeCount = useMemo(() => alerts.filter(a => !a.isResolved).length, [alerts]);
+  const resolvedCount = useMemo(() => alerts.filter(a => a.isResolved).length, [alerts]);
 
   // ── Action handlers ───────────────────────────────────────────────────────
   const handleResolveOne = useCallback(async (alertItem) => {
@@ -303,8 +303,8 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
       const response = await api.get('/alerts/export');
       if (response.success && response.data) {
         const blob = new Blob([response.data], { type: 'text/csv' });
-        const url  = window.URL.createObjectURL(blob);
-        const a    = document.createElement('a');
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
         a.href = url;
         a.download = `resolved-alerts-${new Date().toISOString().split('T')[0]}.csv`;
         document.body.appendChild(a); a.click();
@@ -348,7 +348,8 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
       />
 
       {/* Modal */}
-      <div className="fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-6xl h-5/6 bg-white rounded-2xl shadow-2xl z-50 border border-gray-200 overflow-hidden flex flex-col">
+      <div className="fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-6xl bg-white rounded-2xl shadow-2xl z-50 border border-gray-200 overflow-hidden flex flex-col"
+        style={{ height: 'min(90vh, 900px)', minHeight: '500px' }}>
 
         {bulkLoading && (
           <div className="absolute inset-0 bg-white/80 z-10 flex flex-col items-center justify-center gap-3 rounded-2xl">
@@ -359,8 +360,8 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
         )}
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
-        <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-red-50 to-orange-50 flex-shrink-0">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+        <div className="p-3 sm:p-6 border-b border-gray-200 bg-gradient-to-r from-red-50 to-orange-50 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 sm:mb-4 gap-2">
             <div className="flex items-center gap-3">
               <Bell className="text-red-600" size={24} />
               <div>

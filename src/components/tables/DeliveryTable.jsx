@@ -68,7 +68,7 @@ const DeliveryTable = ({
             <col className="w-[70px]" />
             <col className="w-[70px]" />
             <col className="w-[100px]" />
-            <col className="w-[190px]" />
+            <col className="w-[130px]" />
           </colgroup>
 
           {/* ── HEAD ── */}
@@ -183,15 +183,15 @@ const DeliveryTable = ({
                   </td>
 
                   {/* Status */}
-                  <td className="px-2 py-2.5">
+                  <td className="px-1 py-2.5">
                     <span className={`px-1.5 py-0.5 inline-flex text-[11px] font-bold rounded-full ${getStatusColor(delivery.status)}`}>
                       {delivery.customStatus || delivery.status}
                     </span>
                   </td>
 
                   {/* Actions */}
-                  <td className="px-2 py-2.5">
-                    <div className="flex items-center gap-0.5">
+                  <td className="pl-0 pr-1 py-2.5">
+                    <div className="flex items-center gap-0">
                       {/* View */}
                       <button
                         onClick={() => onView(delivery)}
@@ -228,10 +228,9 @@ const DeliveryTable = ({
                         <button
                           onClick={() => onCancel(delivery)}
                           title="Cancel delivery"
-                          className="inline-flex items-center gap-1 px-2 h-7 rounded-lg text-orange-600 hover:bg-orange-100 transition-colors font-semibold text-xs"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-orange-600 hover:bg-orange-100 transition-colors"
                         >
-                          <XCircle size={14} />
-                          Cancel
+                          <XCircle size={15} />
                         </button>
                       )}
 
