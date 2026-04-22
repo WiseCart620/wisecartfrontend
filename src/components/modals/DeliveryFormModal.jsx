@@ -303,12 +303,28 @@ const DeliveryFormModal = ({
         }
     };
 
-    const handleSubmit = (e) => { e.preventDefault(); onSave(formData); };
 
-    const getStatusDropdownBgColor = (status) => {
-        const colors = { PREPARING: 'bg-yellow-50 border-yellow-200', IN_TRANSIT: 'bg-purple-50 border-purple-200', DELIVERED: 'bg-green-50 border-green-200', CANCELLED: 'bg-red-50 border-red-200' };
-        return colors[status] || 'bg-gray-50 border-gray-200';
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (mode === 'edit' && delivery) {
+            if (delivery.status !== formData.status) {
+                const validTransitions = {
+                    'PREPARING': ['IN_TRANSIT'],
+                    'IN_TRANSIT': ['DELIVERED', 'CANCELLED'],
+                    'DELIVERED': [],
+                    'CANCELLED': []
+                };
+
+                if (!validTransitions[delivery.status].includes(formData.status)) {
+                    alert(`Invalid status transition! Cannot change from ${delivery.status} to ${formData.status}.`);
+                    return;
+                }
+            }
+        }
+
+        onSave(formData);
     };
+
 
     const totalPrepared = formData.items.reduce((s, it) => s + (parseInt(it.preparedQty) || 0), 0);
     const totalDelivered = formData.items.reduce((s, it) => s + (parseInt(it.deliveredQty) || 0), 0);
@@ -442,28 +458,139 @@ const DeliveryFormModal = ({
                             </div>
                         </div>
 
-                        {/* Status (edit only) */}
-                        {mode === 'edit' && delivery && (
+                        {/* Status Management - Different UI for create vs edit */}
+                        {mode === 'create' ? (
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">Status</label>
-                                <select value={formData.status} onChange={(e) => {
-                                    const newStatus = e.target.value;
-                                    if (newStatus === 'PREPARING') {
-                                        setFormData({ ...formData, status: newStatus, dateDelivered: '' });
-                                    } else if (newStatus === 'IN_TRANSIT') {
-                                        setFormData({ ...formData, status: newStatus, dateDelivered: '' });
-                                    } else if (newStatus === 'DELIVERED') {
-                                        const updatedItems = formData.items.map(item => ({ ...item, deliveredQty: item.deliveredQty || item.preparedQty }));
-                                        setFormData({ ...formData, status: newStatus, dateDelivered: formData.dateDelivered || nowDatetime(), items: updatedItems });
-                                    } else if (newStatus === 'CANCELLED') {
-                                        setFormData({ ...formData, status: newStatus, dateDelivered: '' });
-                                    }
-                                }} className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${getStatusDropdownBgColor(formData.status)}`}>
-                                    {(delivery.status === 'PREPARING' || !delivery.status) && (<><option value="PREPARING">PREPARING</option><option value="IN_TRANSIT">IN_TRANSIT</option></>)}
-                                    {delivery.status === 'IN_TRANSIT' && (<><option value="IN_TRANSIT">IN_TRANSIT</option><option value="DELIVERED">DELIVERED</option><option value="CANCELLED">CANCELLED</option></>)}
-                                    {(delivery.status === 'DELIVERED' || delivery.status === 'CANCELLED') && (<option value={delivery.status}>{delivery.status}</option>)}
-                                </select>
+                                <label className="block text-sm font-medium text-gray-700 mb-3">Initial Status</label>
+                                <div className="flex flex-wrap gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, status: 'PREPARING' })}
+                                        className={`px-6 py-3 rounded-lg font-medium transition-all ${formData.status === 'PREPARING'
+                                            ? 'bg-yellow-500 text-white shadow-lg ring-2 ring-yellow-300'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-yellow-100 border border-gray-200'
+                                            }`}
+                                    >
+                                        PREPARING
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled
+                                        className="px-6 py-3 rounded-lg font-medium bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50"
+                                        title="Must go through PREPARING first"
+                                    >
+                                        IN_TRANSIT
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled
+                                        className="px-6 py-3 rounded-lg font-medium bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50"
+                                        title="Must go through PREPARING first"
+                                    >
+                                        DELIVERED
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled
+                                        className="px-6 py-3 rounded-lg font-medium bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50"
+                                        title="Must go through PREPARING first"
+                                    >
+                                        CANCELLED
+                                    </button>
+                                </div>
                             </div>
+                        ) : (
+                            mode === 'edit' && delivery && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                                        Status
+                                        {delivery.status === 'PREPARING' && <span className="ml-2 text-xs text-blue-600">(Can move to IN_TRANSIT)</span>}
+                                        {delivery.status === 'IN_TRANSIT' && <span className="ml-2 text-xs text-purple-600">(Can move to DELIVERED or CANCELLED)</span>}
+                                        {(delivery.status === 'DELIVERED' || delivery.status === 'CANCELLED') && (
+                                            <span className="ml-2 text-xs text-red-600">(Final - No changes)</span>
+                                        )}
+                                    </label>
+
+                                    <div className="flex flex-wrap gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, status: 'PREPARING', dateDelivered: '' })}
+                                            className={`px-6 py-3 rounded-lg font-medium transition-all ${formData.status === 'PREPARING'
+                                                    ? 'bg-yellow-500 text-white shadow-lg ring-2 ring-yellow-300'
+                                                    : delivery.status === 'PREPARING'
+                                                        ? 'bg-gray-100 text-gray-700 hover:bg-yellow-100 border border-gray-200 cursor-pointer'
+                                                        : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50'
+                                                }`}
+                                        >
+                                            PREPARING
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (delivery.status === 'PREPARING') {
+                                                    setFormData({ ...formData, status: 'IN_TRANSIT', dateDelivered: '' });
+                                                }
+                                            }}
+                                            className={`px-6 py-3 rounded-lg font-medium transition-all ${formData.status === 'IN_TRANSIT'
+                                                    ? 'bg-purple-500 text-white shadow-lg ring-2 ring-purple-300'
+                                                    : delivery.status === 'PREPARING'
+                                                        ? 'bg-gray-100 text-gray-700 hover:bg-purple-100 border border-gray-200 cursor-pointer'
+                                                        : delivery.status === 'IN_TRANSIT'
+                                                            ? 'bg-gray-100 text-gray-700 hover:bg-purple-100 border border-gray-200 cursor-pointer'
+                                                            : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50'
+                                                }`}
+                                        >
+                                            IN_TRANSIT
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (delivery.status === 'IN_TRANSIT') {
+                                                    const updatedItems = formData.items.map(item => ({
+                                                        ...item,
+                                                        deliveredQty: item.deliveredQty || item.preparedQty
+                                                    }));
+                                                    setFormData({
+                                                        ...formData,
+                                                        status: 'DELIVERED',
+                                                        dateDelivered: formData.dateDelivered || nowDatetime(),
+                                                        items: updatedItems
+                                                    });
+                                                }
+                                            }}
+                                            className={`px-6 py-3 rounded-lg font-medium transition-all ${formData.status === 'DELIVERED'
+                                                    ? 'bg-green-500 text-white shadow-lg ring-2 ring-green-300'
+                                                    : delivery.status === 'IN_TRANSIT'
+                                                        ? 'bg-gray-100 text-gray-700 hover:bg-green-100 border border-gray-200 cursor-pointer'
+                                                        : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50'
+                                                }`}
+                                        >
+                                            DELIVERED
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (delivery.status === 'IN_TRANSIT') {
+                                                    if (window.confirm('Cancel this delivery? This will revert all stock.')) {
+                                                        setFormData({ ...formData, status: 'CANCELLED', dateDelivered: '' });
+                                                    }
+                                                }
+                                            }}
+                                            className={`px-6 py-3 rounded-lg font-medium transition-all ${formData.status === 'CANCELLED'
+                                                    ? 'bg-red-500 text-white shadow-lg ring-2 ring-red-300'
+                                                    : delivery.status === 'IN_TRANSIT'
+                                                        ? 'bg-gray-100 text-gray-700 hover:bg-red-100 border border-gray-200 cursor-pointer'
+                                                        : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50'
+                                                }`}
+                                        >
+                                            CANCELLED
+                                        </button>
+                                    </div>
+                                </div>
+                            )
                         )}
 
                         {/* Product add row */}
