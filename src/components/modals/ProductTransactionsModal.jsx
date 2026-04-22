@@ -6,7 +6,7 @@ import {
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { parseDate } from '../../utils/dateUtils';
-import Pagination from '../../components/common/Pagination'; // Add this import
+import Pagination from '../../components/common/Pagination';
 
 const ProductTransactionsModal = ({
     product,
