@@ -197,27 +197,52 @@ const DeliveryFilters = ({
           </div>
         </div>
 
-        {/* Row 3 — Receipt number search */}
-        <div className="pt-2">
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            Search by Receipt Number
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Enter receipt number..."
-              value={filterData.receiptNumber || ''}
-              onChange={(e) => onFilterChange({ receiptNumber: e.target.value })}
-              className="w-full pl-3 pr-8 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-            {filterData.receiptNumber && (
-              <button
-                onClick={() => onFilterChange({ receiptNumber: '' })}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <X size={16} />
-              </button>
-            )}
+        {/* Row 3 — Receipt number + PO number search */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 pt-2">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Search by Receipt Number
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Enter receipt number..."
+                value={filterData.receiptNumber || ''}
+                onChange={(e) => onFilterChange({ receiptNumber: e.target.value })}
+                className="w-full pl-3 pr-8 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {filterData.receiptNumber && (
+                <button
+                  onClick={() => onFilterChange({ receiptNumber: '' })}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Search by PO Number
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Enter PO number..."
+                value={filterData.poNumber || ''}
+                onChange={(e) => onFilterChange({ poNumber: e.target.value })}
+                className="w-full pl-3 pr-8 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {filterData.poNumber && (
+                <button
+                  onClick={() => onFilterChange({ poNumber: '' })}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

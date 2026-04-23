@@ -436,10 +436,14 @@ export const useDeliveries = () => {
         }
       }
 
-      // Receipt number (case-insensitive partial match)
       if (filters.receiptNumber) {
         const search = filters.receiptNumber.toLowerCase();
         if (!delivery.deliveryReceiptNumber?.toLowerCase().includes(search)) return false;
+      }
+
+      if (filters.poNumber) {
+        const search = filters.poNumber.toLowerCase();
+        if (!delivery.purchaseOrderNumber?.toLowerCase().includes(search)) return false;
       }
 
       return true;

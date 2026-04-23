@@ -72,7 +72,8 @@ const DeliveryManagement = () => {
     productName: '',
     startDate: '',
     endDate: '',
-    receiptNumber: ''
+    receiptNumber: '',
+    poNumber: ''
   });
 
   useEffect(() => { loadData(); }, []);
@@ -374,7 +375,7 @@ const DeliveryManagement = () => {
   };
 
   const handleResetFilter = () => {
-    setFilterData({ companyId: '', branchId: '', warehouseId: '', status: '', productId: '', variationId: '', productName: '', startDate: '', endDate: '', receiptNumber: '' });
+    setFilterData({ companyId: '', branchId: '', warehouseId: '', status: '', productId: '', variationId: '', productName: '', startDate: '', endDate: '', receiptNumber: '', poNumber: '' });
     setCurrentPage(1);
   };
 
