@@ -87,6 +87,14 @@ export const useDeliveries = () => {
         loadData(true);
       });
 
+      es.addEventListener('deliveries-update', () => {
+        loadData(true);
+      });
+
+      es.addEventListener('refresh', () => {
+        loadData(true);
+      });
+
       es.onerror = () => {
         es.close();
         retryTimeout = setTimeout(() => {
