@@ -157,21 +157,17 @@ const InventoryForm = ({
         };
 
         if (formData.fromWarehouseId) {
-            locationId = formData.fromWarehouseId;
-            const warehouseKey = createStockKey(locationId);
-            return warehouseStocks[warehouseKey];
+            const key = createStockKey(formData.fromWarehouseId);
+            return (warehouseStocks && !Array.isArray(warehouseStocks)) ? warehouseStocks[key] : warehouseStocks?.__cache?.[key];
         } else if (formData.fromBranchId) {
-            locationId = formData.fromBranchId;
-            const branchKey = createStockKey(locationId);
-            return branchStocks[branchKey];
+            const key = createStockKey(formData.fromBranchId);
+            return (branchStocks && !Array.isArray(branchStocks)) ? branchStocks[key] : branchStocks?.__cache?.[key];
         } else if (formData.toWarehouseId) {
-            locationId = formData.toWarehouseId;
-            const warehouseKey = createStockKey(locationId);
-            return warehouseStocks[warehouseKey];
+            const key = createStockKey(formData.toWarehouseId);
+            return (warehouseStocks && !Array.isArray(warehouseStocks)) ? warehouseStocks[key] : warehouseStocks?.__cache?.[key];
         } else if (formData.toBranchId) {
-            locationId = formData.toBranchId;
-            const branchKey = createStockKey(locationId);
-            return branchStocks[branchKey];
+            const key = createStockKey(formData.toBranchId);
+            return (branchStocks && !Array.isArray(branchStocks)) ? branchStocks[key] : branchStocks?.__cache?.[key];
         }
 
         return null;
@@ -324,7 +320,7 @@ const InventoryForm = ({
                             </div>
                         )}
 
-                        
+
                         {/* Product Selection Row */}
                         <div className="mb-4">
                             <VariationSearchableDropdown

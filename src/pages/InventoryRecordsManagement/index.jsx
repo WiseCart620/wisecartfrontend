@@ -780,7 +780,7 @@ const InventoryRecordsManagement = () => {
       setCurrentPage(1);
     } catch (error) {
       console.error('Failed to save inventory:', error);
-      alert('Failed to save inventory: ' + error.message);
+      showToast(error?.response?.data?.error || error.message || 'Failed to save inventory record.', 'error');
     } finally {
       setActionLoading(false);
       setLoadingMessage('');
@@ -805,8 +805,8 @@ const InventoryRecordsManagement = () => {
       await loadData(0, 50);
     } catch (error) {
       console.error('Failed to confirm inventory:', error);
-      const errorMsg = error.response?.data?.error || error.message || 'Unknown error';
-      alert(`❌ Failed to confirm inventory:\n\n${errorMsg}\n\nPlease check stock availability and try again.`);
+      const errorMsg = error?.response?.data?.error || error.message || 'Unknown error';
+      showToast(`Failed to confirm: ${errorMsg}`, 'error', 6000);
     } finally {
       setActionLoading(false);
       setLoadingMessage('');
@@ -875,10 +875,12 @@ const InventoryRecordsManagement = () => {
 
   const getItemStockInfo = (itemIndex, productId, variationId) => {
     const createStockKey = (locId) => variationId ? `${itemIndex}_${productId}_${variationId}_${locId}` : `${itemIndex}_${productId}_${locId}`;
-    if (formData.fromWarehouseId) return warehouseStocks[createStockKey(formData.fromWarehouseId)];
-    if (formData.fromBranchId) return branchStocks[createStockKey(formData.fromBranchId)];
-    if (formData.toWarehouseId) return warehouseStocks[createStockKey(formData.toWarehouseId)];
-    if (formData.toBranchId) return branchStocks[createStockKey(formData.toBranchId)];
+    const ws = (warehouseStocks && !Array.isArray(warehouseStocks)) ? warehouseStocks : (warehouseStocks?.__cache || {});
+    const bs = (branchStocks && !Array.isArray(branchStocks)) ? branchStocks : (branchStocks?.__cache || {});
+    if (formData.fromWarehouseId) return ws[createStockKey(formData.fromWarehouseId)];
+    if (formData.fromBranchId) return bs[createStockKey(formData.fromBranchId)];
+    if (formData.toWarehouseId) return ws[createStockKey(formData.toWarehouseId)];
+    if (formData.toBranchId) return bs[createStockKey(formData.toBranchId)];
     return null;
   };
 

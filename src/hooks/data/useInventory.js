@@ -6,8 +6,8 @@ const useInventory = () => {
   const [inventories, setInventories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [canModifyStatus, setCanModifyStatus] = useState({});
-  const [warehouseStocks, setWarehouseStocks] = useState([]);
-  const [branchStocks, setBranchStocks] = useState([]);
+  const [warehouseStocks, setWarehouseStocks] = useState({});
+  const [branchStocks, setBranchStocks] = useState({});
   const [loadingStocks, setLoadingStocks] = useState({});
   const [totalInventories, setTotalInventories] = useState(0);
 
@@ -83,19 +83,9 @@ const useInventory = () => {
         const stockData = stockRes.data || stockRes;
 
         if (locationType === 'warehouse') {
-          setWarehouseStocks(prev => {
-            const arr = Array.isArray(prev) ? prev : [];
-            const clone = [...arr];
-            clone.__cache = { ...(arr.__cache || {}), [stockKey]: stockData };
-            return clone;
-          });
+          setWarehouseStocks(prev => ({ ...prev, [stockKey]: stockData }));
         } else {
-          setBranchStocks(prev => {
-            const arr = Array.isArray(prev) ? prev : [];
-            const clone = [...arr];
-            clone.__cache = { ...(arr.__cache || {}), [stockKey]: stockData };
-            return clone;
-          });
+          setBranchStocks(prev => ({ ...prev, [stockKey]: stockData }));
         }
       }
     } catch (error) {
