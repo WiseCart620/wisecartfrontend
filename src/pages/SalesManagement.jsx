@@ -995,9 +995,12 @@ const SalesManagement = () => {
     }
 
     return true;
+
   }).sort((a, b) => {
-    if (a.year !== b.year) return b.year - a.year;
-    return b.month - a.month;
+    // Most recently created first
+    const dateA = new Date(a.createdAt || 0);
+    const dateB = new Date(b.createdAt || 0);
+    return dateB - dateA;
   });
 
 
