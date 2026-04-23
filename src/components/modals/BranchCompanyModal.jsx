@@ -71,6 +71,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
         companyCity: company?.city || '',
         companyProvince: company?.province || '',
         existingCompanyId: company?.id || '',
+        transferToCompanyId: '',
       });
     }
   }, [companies, editingData]);
@@ -228,7 +229,17 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
 
         let result;
         if (editingData && editingData.branch.id !== 'company-only-edit') {
-          if (companyMode === 'view') {
+          if (companyMode === 'transfer') {
+            if (!formData.transferToCompanyId) {
+              toast.error('Please select a company to transfer to');
+              setLoading(false);
+              return;
+            }
+            result = await api.put(`/branches/${editingData.branch.id}`, payload);
+            if (result.success) {
+              result = await api.patch(`/branches/${editingData.branch.id}/transfer-company?companyId=${formData.transferToCompanyId}`);
+            }
+          } else if (companyMode === 'view') {
             result = await api.put(`/branches/${editingData.branch.id}`, payload);
           } else if (companyMode === 'edit') {
             payload.useExistingCompany = false;
@@ -451,7 +462,48 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
               </div>
             )}
 
-            {/* Info messages */}
+            {/* Show transfer option when editing a branch */}
+            {editingData && editingData.branch.id !== 'company-only-edit' && (
+              <div className="mb-4 flex gap-4 flex-wrap">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="editCompanyMode"
+                    checked={companyMode === 'view'}
+                    onChange={() => handleCompanyModeChange('view')}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Keep Current Company</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="editCompanyMode"
+                    checked={companyMode === 'transfer'}
+                    onChange={() => handleCompanyModeChange('transfer')}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Transfer to Different Company</span>
+                </label>
+              </div>
+            )}
+
+            {companyMode === 'transfer' && editingData && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Select New Company <span className="text-red-500">*</span>
+                </label>
+                <SearchableDropdown
+                  options={availableCompanies.filter(c => c.id !== formData.existingCompanyId)}
+                  value={formData.transferToCompanyId || ''}
+                  onChange={(value) => setFormData(prev => ({ ...prev, transferToCompanyId: value }))}
+                  placeholder="Select company to transfer to"
+                  displayKey="name"
+                  valueKey="id"
+                />
+              </div>
+            )}
+
             {companyMode === 'view' && editingData && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800">
@@ -598,9 +650,11 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
             >
               {loading ? 'Saving...' : companyMode === 'edit-company-only'
                 ? 'Update Company'
-                : editingData
-                  ? (companyMode === 'edit' ? 'Update Branch & Company' : 'Update Branch')
-                  : 'Create Branch & Company'}
+                : companyMode === 'transfer'
+                  ? 'Transfer & Update Branch'
+                  : editingData
+                    ? (companyMode === 'edit' ? 'Update Branch & Company' : 'Update Branch')
+                    : 'Create Branch & Company'}
             </button>
           </div>
         </form>
