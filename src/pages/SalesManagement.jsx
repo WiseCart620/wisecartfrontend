@@ -1112,6 +1112,13 @@ const SalesManagement = () => {
     }
   }), [products, branchInfo, productPrices]);
 
+  const encodedByOptions = useMemo(() => {
+    const names = sales
+      .map(s => s.createdBy || s.generatedBy)
+      .filter(Boolean);
+    return [...new Set(names)].sort();
+  }, [sales]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
@@ -1509,11 +1516,22 @@ const SalesManagement = () => {
                     </label>
                     <input
                       type="text"
+                      list="encodedByList"
                       value={formData.createdBy}
                       onChange={(e) => setFormData({ ...formData, createdBy: e.target.value })}
-                      placeholder="Enter name or leave empty for current user"
+                      placeholder="Select existing or type a custom name..."
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                     />
+                    <datalist id="encodedByList">
+                      {encodedByOptions.map((name) => (
+                        <option key={name} value={name} />
+                      ))}
+                    </datalist>
+                    {encodedByOptions.length > 0 && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        {encodedByOptions.length} existing name{encodedByOptions.length > 1 ? 's' : ''} available — type to filter or enter a new one
+                      </p>
+                    )}
                   </div>
 
                   <div>
