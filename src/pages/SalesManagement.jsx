@@ -1112,6 +1112,8 @@ const SalesManagement = () => {
     }
   }), [products, branchInfo, productPrices]);
 
+  const [showEncodedByDropdown, setShowEncodedByDropdown] = useState(false);
+
   const encodedByOptions = useMemo(() => {
     const names = sales
       .map(s => s.createdBy || s.generatedBy)
@@ -1510,28 +1512,42 @@ const SalesManagement = () => {
                       />
                     </div>
                   </div>
-                  <div className="mt-4">
+                  <div className="mt-4 relative">
                     <label className="block text-sm font-medium text-gray-700 mb-3">
                       Encoded By <span className="text-xs text-gray-500">(Optional - defaults to current user)</span>
                     </label>
                     <input
                       type="text"
-                      list="encodedByList"
                       value={formData.createdBy}
-                      onChange={(e) => setFormData({ ...formData, createdBy: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, createdBy: e.target.value });
+                      }}
+                      onFocus={() => setShowEncodedByDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowEncodedByDropdown(false), 150)}
                       placeholder="Select existing or type a custom name..."
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                     />
-                    <datalist id="encodedByList">
-                      {encodedByOptions.map((name) => (
-                        <option key={name} value={name} />
-                      ))}
-                    </datalist>
-                    {encodedByOptions.length > 0 && (
-                      <p className="text-xs text-gray-400 mt-1">
-                        {encodedByOptions.length} existing name{encodedByOptions.length > 1 ? 's' : ''} available — type to filter or enter a new one
-                      </p>
-                    )}
+                    {showEncodedByDropdown && encodedByOptions.filter(name =>
+                      name.toLowerCase().includes(formData.createdBy.toLowerCase())
+                    ).length > 0 && (
+                        <div className="absolute z-50 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                          {encodedByOptions
+                            .filter(name => name.toLowerCase().includes(formData.createdBy.toLowerCase()))
+                            .map((name) => (
+                              <button
+                                key={name}
+                                type="button"
+                                onMouseDown={() => {
+                                  setFormData({ ...formData, createdBy: name });
+                                  setShowEncodedByDropdown(false);
+                                }}
+                                className={`w-full px-4 py-2 text-left text-sm hover:bg-blue-50 transition ${formData.createdBy === name ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'}`}
+                              >
+                                {name}
+                              </button>
+                            ))}
+                        </div>
+                      )}
                   </div>
 
                   <div>
