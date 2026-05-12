@@ -202,7 +202,8 @@ const DeliveryManagement = () => {
           { status: formData.status }
         );
         if (result.success) {
-          alert('Delivery status updated successfully!');
+          // Instantly reflect the new status in the table without waiting for SSE
+          loadData(true);
           handleCloseModal();
         } else {
           alert(result.error || 'Failed to update status');
