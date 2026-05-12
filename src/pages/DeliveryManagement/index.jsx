@@ -203,9 +203,9 @@ const DeliveryManagement = () => {
         );
         if (result.success) {
           handleCloseModal();
-          await loadData(true);
           setActionLoading(false);
           setLoadingMessage('');
+          toast.success('Delivery status updated successfully!');
         } else {
           alert(result.error || 'Failed to update status');
         }
