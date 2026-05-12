@@ -268,7 +268,7 @@ const SalesManagement = () => {
     let retryTimeout;
 
     const connect = () => {
-      es = new EventSource('https://erp.wisecart.ph/api/sales/stream');
+      es = new EventSource('https://backend.wisecart.ph/api/sales/stream');
 
       es.addEventListener('connected', () => {
         retryDelay = 3000;

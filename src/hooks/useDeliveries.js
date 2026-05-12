@@ -77,7 +77,7 @@ export const useDeliveries = () => {
     let retryDelay = 3000;
 
     const connect = () => {
-      es = new EventSource('https://erp.wisecart.ph/api/deliveries/stream');
+      es = new EventSource('https://backend.wisecart.ph/api/deliveries/stream');
 
       es.addEventListener('connected', () => {
         retryDelay = 3000;
