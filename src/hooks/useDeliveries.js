@@ -3,6 +3,33 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 import { formatDateForInput } from '../utils/dateUtils';
 
+const normalizeDeliveries = (data) =>
+  data.map(d => ({
+    ...d,
+    branchId: d.branch?.id ?? d.branchId,
+    branchName: d.branch?.branchName ?? d.branchName,
+    companyId: d.company?.id ?? d.companyId,
+    companyName: d.company?.companyName ?? d.companyName,
+    warehouses: d.items
+      ? [...new Map(
+        d.items
+          .filter(item => item.warehouse)
+          .map(item => [item.warehouse.id, {
+            id: item.warehouse.id,
+            warehouseName: item.warehouse.warehouseName,
+            warehouseCode: item.warehouse.warehouseCode
+          }])
+      ).values()]
+      : d.warehouses || [],
+    totalPreparedQty: d.items
+      ? d.items.reduce((sum, item) => sum + (item.preparedQty || 0), 0)
+      : d.totalPreparedQty || 0,
+    totalDeliveredQty: d.items
+      ? d.items.reduce((sum, item) => sum + (item.deliveredQty || 0), 0)
+      : d.totalDeliveredQty || 0,
+    itemCount: d.items?.length ?? d.itemCount ?? 0
+  }));
+
 export const useDeliveries = () => {
   const [deliveries, setDeliveries] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -25,39 +52,7 @@ export const useDeliveries = () => {
         api.get('/companies')
       ]);
 
-      if (deliveriesRes.success) {
-        const normalized = (deliveriesRes.data || []).map(d => ({
-          ...d,
-          branchId: d.branch?.id ?? d.branchId,
-          branchName: d.branch?.branchName ?? d.branchName,
-          companyId: d.company?.id ?? d.companyId,
-          companyName: d.company?.companyName ?? d.companyName,
-          warehouses: d.items
-            ? [
-              ...new Map(
-                d.items
-                  .filter(item => item.warehouse)
-                  .map(item => [
-                    item.warehouse.id,
-                    {
-                      id: item.warehouse.id,
-                      warehouseName: item.warehouse.warehouseName,
-                      warehouseCode: item.warehouse.warehouseCode
-                    }
-                  ])
-              ).values()
-            ]
-            : d.warehouses || [],
-          totalPreparedQty: d.items
-            ? d.items.reduce((sum, item) => sum + (item.preparedQty || 0), 0)
-            : d.totalPreparedQty || 0,
-          totalDeliveredQty: d.items
-            ? d.items.reduce((sum, item) => sum + (item.deliveredQty || 0), 0)
-            : d.totalDeliveredQty || 0,
-          itemCount: d.items?.length ?? d.itemCount ?? 0
-        }));
-        setDeliveries(normalized);
-      }
+      if (deliveriesRes.success) setDeliveries(normalizeDeliveries(deliveriesRes.data || []));
       if (branchesRes.success) setBranches(branchesRes.data || []);
       if (productsRes.success) setProducts(productsRes.data || []);
       if (warehousesRes.success) setWarehouses(warehousesRes.data || []);
@@ -70,11 +65,20 @@ export const useDeliveries = () => {
     }
   }, []);
 
+  const refreshDeliveries = useCallback(async () => {
+    try {
+      const res = await api.get('/deliveries');
+      if (res.success) setDeliveries(normalizeDeliveries(res.data || []));
+    } catch (err) {
+      console.error('Failed to refresh deliveries', err);
+    }
+  }, []);
 
   useEffect(() => {
     let es;
     let retryTimeout;
     let retryDelay = 3000;
+    let debounceTimer;
 
     const connect = () => {
       es = new EventSource('https://backend.wisecart.ph/api/deliveries/stream');
@@ -83,17 +87,14 @@ export const useDeliveries = () => {
         retryDelay = 3000;
       });
 
-      es.addEventListener('delivery-update', () => {
-        loadData(true);
-      });
+      const debouncedRefresh = () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => refreshDeliveries(), 600);
+      };
 
-      es.addEventListener('deliveries-update', () => {
-        loadData(true);
-      });
-
-      es.addEventListener('refresh', () => {
-        loadData(true);
-      });
+      es.addEventListener('delivery-update', debouncedRefresh);
+      es.addEventListener('deliveries-update', debouncedRefresh);
+      es.addEventListener('refresh', debouncedRefresh);
 
       es.onerror = () => {
         es.close();
@@ -108,15 +109,15 @@ export const useDeliveries = () => {
 
     return () => {
       clearTimeout(retryTimeout);
+      clearTimeout(debounceTimer);
       if (es) es.close();
     };
-  }, [loadData]);
+  }, [refreshDeliveries]);
 
   const createDelivery = async (deliveryData) => {
     try {
       const response = await api.post('/deliveries', deliveryData);
       if (response.success) {
-        await loadData();
         return { success: true, data: response.data };
       }
       return { success: false, error: response.error };
@@ -133,7 +134,6 @@ export const useDeliveries = () => {
       }
       const response = await api.put(`/deliveries/${id}`, deliveryData);
       if (response.success) {
-        await loadData();
         return { success: true, data: response.data };
       }
       return { success: false, error: response.error };
@@ -147,7 +147,6 @@ export const useDeliveries = () => {
       const userRole = localStorage.getItem('userRole') || 'USER';
       const response = await api.delete(`/deliveries/${id}?userRole=${userRole}`);
       if (response.success) {
-        await loadData();
         return { success: true };
       }
       return { success: false, error: response.error };
@@ -178,7 +177,6 @@ export const useDeliveries = () => {
         params: { status }
       });
       if (response.success) {
-        await loadData();
         return { success: true, data: response.data };
       }
       return { success: false, error: response.error };
@@ -459,6 +457,7 @@ export const useDeliveries = () => {
     loading,
     error,
     loadData,
+    refreshDeliveries,
     createDelivery,
     updateDelivery,
     deleteDelivery,

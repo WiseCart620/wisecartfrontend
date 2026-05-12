@@ -34,6 +34,7 @@ const DeliveryManagement = () => {
     companies,
     loading,
     loadData,
+    refreshDeliveries,
     createDelivery,
     updateDelivery,
     deleteDelivery,
@@ -78,44 +79,6 @@ const DeliveryManagement = () => {
   });
 
   useEffect(() => { loadData(); }, []);
-
-  useEffect(() => {
-    let es;
-    let retryDelay = 3000;
-    let retryTimeout;
-
-    const connect = () => {
-      es = new EventSource('https://backend.wisecart.ph/api/deliveries/stream');
-
-      es.addEventListener('connected', () => {
-        retryDelay = 3000;
-      });
-
-      const debouncedLoad = (() => {
-        let t;
-        return () => { clearTimeout(t); t = setTimeout(() => loadData(true), 800); };
-      })();
-
-      es.addEventListener('delivery-update', debouncedLoad);
-      es.addEventListener('deliveries-update', debouncedLoad);
-      es.addEventListener('refresh', debouncedLoad);
-
-      es.onerror = () => {
-        es.close();
-        retryTimeout = setTimeout(() => {
-          retryDelay = Math.min(retryDelay * 2, 30000);
-          connect();
-        }, retryDelay);
-      };
-    };
-
-    connect();
-
-    return () => {
-      clearTimeout(retryTimeout);
-      if (es) es.close();
-    };
-  }, [loadData]);
 
   const filteredDeliveries = sortDeliveriesByStatus(
     filterDeliveries(deliveries, filterData),
@@ -220,34 +183,8 @@ const DeliveryManagement = () => {
         datePrepared: formData.datePrepared || null,
         dateDelivered: formData.status === 'DELIVERED' && formData.dateDelivered ? formData.dateDelivered : null
       };
-      if (formData.status !== 'DELIVERED') delete deliveryData.dateDelivered;
-      const stockChecks = await Promise.all(
-        formData.items.map(item =>
-          item.variationId
-            ? api.get(`/stocks/warehouses/${item.warehouseId}/products/${item.productId}/variations/${item.variationId}`)
-            : api.get(`/stocks/warehouses/${item.warehouseId}/products/${item.productId}`)
-        )
-      );
-      for (let idx = 0; idx < formData.items.length; idx++) {
-        const item = formData.items[idx];
-        const stockResponse = stockChecks[idx];
-        const quantityNeeded = item.preparedQty || 0;
-        const originalReserved = item.originalPreparedQty || 0;
-        const effectiveAvailableStock = (stockResponse.data?.availableQuantity || 0) + originalReserved;
-        if (!stockResponse.success || effectiveAvailableStock < quantityNeeded) {
-          const product = products.find(p => p.id === item.productId);
-          const warehouse = warehouses.find(w => w.id === item.warehouseId);
-          let productName = product?.productName || 'Unknown Product';
-          if (item.variationId && product?.variations) {
-            const variation = product.variations.find(v => v.id === item.variationId);
-            if (variation) productName = `${productName} (${variation.combinationDisplay || 'Variation'})`;
-          }
-          alert(`Insufficient stock for product "${productName}" in warehouse "${warehouse?.warehouseName}".\n\nAvailable (including reserved): ${effectiveAvailableStock}\nRequested: ${quantityNeeded}`);
-          setActionLoading(false);
-          setLoadingMessage('');
-          return;
-        }
-      }
+
+
       let result;
       if (modalState.mode === 'create') {
         result = await createDelivery(deliveryData);
@@ -257,9 +194,8 @@ const DeliveryManagement = () => {
       if (result.success) {
         alert(`Delivery ${modalState.mode === 'create' ? 'created' : 'updated'} successfully!`);
         handleCloseModal();
-        if (modalState.mode === 'create') {
-          setCurrentPage(1);
-        }
+        if (modalState.mode === 'create') setCurrentPage(1);
+        await refreshDeliveries();
       } else {
         alert(result.error || 'Failed to save delivery');
       }
@@ -284,8 +220,7 @@ const DeliveryManagement = () => {
       const result = await deleteDelivery(id);
       if (result.success) {
         alert('Delivery deleted successfully');
-        await loadData();
-        // If we deleted the last item on a non-first page, step back one page
+        await refreshDeliveries();
         const newFilteredCount = filteredDeliveries.length - 1;
         const newTotalPages = Math.max(1, Math.ceil(newFilteredCount / itemsPerPage));
         if (currentPage > newTotalPages) {
@@ -317,7 +252,7 @@ const DeliveryManagement = () => {
       if (result.success) {
         alert('Delivery cancelled successfully. All stocks have been reverted.');
         setCancelModal({ show: false, delivery: null, remarks: '' });
-        await loadData();
+        await refreshDeliveries();
       } else {
         // Show the full backend error — includes the item-by-item breakdown
         alert(result.error || 'Failed to cancel delivery');
@@ -381,7 +316,7 @@ const DeliveryManagement = () => {
       const result = await saveReceiptDetails(receiptData.id, receiptData);
       if (result.success) {
         alert('Receipt details saved successfully!');
-        await loadData();
+        await refreshDeliveries();
       } else {
         alert(result.error || 'Failed to save receipt details');
       }
