@@ -35,6 +35,7 @@ const DeliveryManagement = () => {
     loading,
     loadData,
     refreshDeliveries,
+    updateDeliveryLocally,
     createDelivery,
     updateDelivery,
     deleteDelivery,
@@ -166,10 +167,13 @@ const DeliveryManagement = () => {
           { status: formData.status }
         );
         if (result.success) {
+          alert(`Delivery ${modalState.mode === 'create' ? 'created' : 'updated'} successfully!`);
+          if (modalState.mode === 'edit' && modalState.delivery?.id) {
+            updateDeliveryLocally(modalState.delivery.id, { status: formData.status });
+          }
           handleCloseModal();
-          setActionLoading(false);
-          setLoadingMessage('');
-          toast.success('Delivery status updated successfully!');
+          if (modalState.mode === 'create') setCurrentPage(1);
+          refreshDeliveries();
         } else {
           alert(result.error || 'Failed to update status');
         }

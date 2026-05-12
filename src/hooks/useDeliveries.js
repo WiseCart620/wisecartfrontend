@@ -74,6 +74,12 @@ export const useDeliveries = () => {
     }
   }, []);
 
+  const updateDeliveryLocally = useCallback((id, changes) => {
+    setDeliveries(prev =>
+      prev.map(d => d.id === id ? { ...d, ...changes } : d)
+    );
+  }, []);
+
   useEffect(() => {
     let es;
     let retryTimeout;
@@ -458,6 +464,7 @@ export const useDeliveries = () => {
     error,
     loadData,
     refreshDeliveries,
+    updateDeliveryLocally,
     createDelivery,
     updateDelivery,
     deleteDelivery,
