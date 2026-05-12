@@ -319,10 +319,18 @@ const DeliveryFormModal = ({
                     alert(`Invalid status transition! Cannot change from ${delivery.status} to ${formData.status}.`);
                     return;
                 }
+
+                const lightweightTransitions = ['PREPARING→IN_TRANSIT'];
+                const transitionKey = `${delivery.status}→${formData.status}`;
+                console.log('transition:', transitionKey);
+                if (lightweightTransitions.includes(transitionKey)) {
+                    onSave(formData, true);
+                    return;
+                }
             }
         }
 
-        onSave(formData);
+        onSave(formData, false);
     };
 
 
@@ -516,10 +524,10 @@ const DeliveryFormModal = ({
                                             type="button"
                                             onClick={() => setFormData({ ...formData, status: 'PREPARING', dateDelivered: '' })}
                                             className={`px-6 py-3 rounded-lg font-medium transition-all ${formData.status === 'PREPARING'
-                                                    ? 'bg-yellow-500 text-white shadow-lg ring-2 ring-yellow-300'
-                                                    : delivery.status === 'PREPARING'
-                                                        ? 'bg-gray-100 text-gray-700 hover:bg-yellow-100 border border-gray-200 cursor-pointer'
-                                                        : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50'
+                                                ? 'bg-yellow-500 text-white shadow-lg ring-2 ring-yellow-300'
+                                                : delivery.status === 'PREPARING'
+                                                    ? 'bg-gray-100 text-gray-700 hover:bg-yellow-100 border border-gray-200 cursor-pointer'
+                                                    : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50'
                                                 }`}
                                         >
                                             PREPARING
@@ -533,12 +541,12 @@ const DeliveryFormModal = ({
                                                 }
                                             }}
                                             className={`px-6 py-3 rounded-lg font-medium transition-all ${formData.status === 'IN_TRANSIT'
-                                                    ? 'bg-purple-500 text-white shadow-lg ring-2 ring-purple-300'
-                                                    : delivery.status === 'PREPARING'
+                                                ? 'bg-purple-500 text-white shadow-lg ring-2 ring-purple-300'
+                                                : delivery.status === 'PREPARING'
+                                                    ? 'bg-gray-100 text-gray-700 hover:bg-purple-100 border border-gray-200 cursor-pointer'
+                                                    : delivery.status === 'IN_TRANSIT'
                                                         ? 'bg-gray-100 text-gray-700 hover:bg-purple-100 border border-gray-200 cursor-pointer'
-                                                        : delivery.status === 'IN_TRANSIT'
-                                                            ? 'bg-gray-100 text-gray-700 hover:bg-purple-100 border border-gray-200 cursor-pointer'
-                                                            : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50'
+                                                        : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50'
                                                 }`}
                                         >
                                             IN_TRANSIT
@@ -561,10 +569,10 @@ const DeliveryFormModal = ({
                                                 }
                                             }}
                                             className={`px-6 py-3 rounded-lg font-medium transition-all ${formData.status === 'DELIVERED'
-                                                    ? 'bg-green-500 text-white shadow-lg ring-2 ring-green-300'
-                                                    : delivery.status === 'IN_TRANSIT'
-                                                        ? 'bg-gray-100 text-gray-700 hover:bg-green-100 border border-gray-200 cursor-pointer'
-                                                        : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50'
+                                                ? 'bg-green-500 text-white shadow-lg ring-2 ring-green-300'
+                                                : delivery.status === 'IN_TRANSIT'
+                                                    ? 'bg-gray-100 text-gray-700 hover:bg-green-100 border border-gray-200 cursor-pointer'
+                                                    : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50'
                                                 }`}
                                         >
                                             DELIVERED
@@ -580,10 +588,10 @@ const DeliveryFormModal = ({
                                                 }
                                             }}
                                             className={`px-6 py-3 rounded-lg font-medium transition-all ${formData.status === 'CANCELLED'
-                                                    ? 'bg-red-500 text-white shadow-lg ring-2 ring-red-300'
-                                                    : delivery.status === 'IN_TRANSIT'
-                                                        ? 'bg-gray-100 text-gray-700 hover:bg-red-100 border border-gray-200 cursor-pointer'
-                                                        : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50'
+                                                ? 'bg-red-500 text-white shadow-lg ring-2 ring-red-300'
+                                                : delivery.status === 'IN_TRANSIT'
+                                                    ? 'bg-gray-100 text-gray-700 hover:bg-red-100 border border-gray-200 cursor-pointer'
+                                                    : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50'
                                                 }`}
                                         >
                                             CANCELLED

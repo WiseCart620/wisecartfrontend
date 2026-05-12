@@ -189,11 +189,27 @@ const DeliveryManagement = () => {
     }
   };
 
-  const handleSaveDelivery = async (formData) => {
+  const handleSaveDelivery = async (formData, statusOnly = false) => {
     const errors = validateDeliveryForm(formData, products, warehouses);
     if (errors.length > 0) { alert(errors.join('\n')); return; }
     try {
       setActionLoading(true);
+
+      if (statusOnly && modalState.mode === 'edit' && modalState.delivery?.id) {
+        setLoadingMessage('Updating status...');
+        const result = await api.patch(
+          `/deliveries/${modalState.delivery.id}/status`,
+          { status: formData.status }
+        );
+        if (result.success) {
+          alert('Delivery status updated successfully!');
+          handleCloseModal();
+        } else {
+          alert(result.error || 'Failed to update status');
+        }
+        return;
+      }
+
       setLoadingMessage(modalState.mode === 'create' ? 'Creating delivery...' : 'Updating delivery...');
       const deliveryData = {
         ...formData,
