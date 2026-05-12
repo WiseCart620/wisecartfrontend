@@ -32,8 +32,46 @@ const DeliveryTable = ({
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
-  const grandTotalPrepared = deliveries.reduce((s, d) => s + (d.totalPreparedQty || 0), 0);
-  const grandTotalSKU = deliveries.reduce((s, d) => s + (d.itemCount || 0), 0);
+  const getStatusGroup = (status) => {
+    // Define status groups for ordering
+    // Lower group number = appears earlier
+    const groups = {
+      PENDING: 1,
+      PREPARING: 2,
+      IN_TRANSIT: 3,
+      DELIVERED: 4,
+      RETURNED: 5,
+      CANCELLED: 999, // Cancelled always last
+    };
+    return groups[status] || 99;
+  };
+
+  // Sort deliveries: by status group first, then by creation date (newest first) within each group
+  const sortedDeliveries = [...deliveries].sort((a, b) => {
+    const groupA = getStatusGroup(a.status);
+    const groupB = getStatusGroup(b.status);
+    
+    // If different status groups, sort by group order
+    if (groupA !== groupB) {
+      return groupA - groupB;
+    }
+    
+    // Same status group - sort by creation date (newest first)
+    // Use createdAt field, fallback to datePrepared, then date, then id
+    const dateA = a.createdAt || a.datePrepared || a.date || a.id;
+    const dateB = b.createdAt || b.datePrepared || b.date || b.id;
+    
+    // If both have date objects/strings, compare them
+    if (dateA && dateB) {
+      return new Date(dateB) - new Date(dateA);
+    }
+    
+    // Fallback to ID comparison (assuming higher ID = newer)
+    return (b.id || 0) - (a.id || 0);
+  });
+
+  const grandTotalPrepared = sortedDeliveries.reduce((s, d) => s + (d.totalPreparedQty || 0), 0);
+  const grandTotalSKU = sortedDeliveries.reduce((s, d) => s + (d.itemCount || 0), 0);
 
   if (isLoading) {
     return (
@@ -46,7 +84,7 @@ const DeliveryTable = ({
     );
   }
 
-  if (deliveries.length === 0) {
+  if (sortedDeliveries.length === 0) {
     return (
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         <div className="px-6 py-16 text-center text-gray-500">No deliveries found</div>
@@ -89,7 +127,7 @@ const DeliveryTable = ({
 
           {/* ── BODY ── */}
           <tbody className="bg-white divide-y divide-gray-100">
-            {deliveries.map((delivery, index) => {
+            {sortedDeliveries.map((delivery, index) => {
               const drTotalPrepared = delivery.totalPreparedQty || 0;
 
               const isDelivered = delivery.status === 'DELIVERED';
@@ -106,7 +144,6 @@ const DeliveryTable = ({
 
               return (
                 <tr key={delivery.id} className="hover:bg-blue-50/30 transition-colors">
-
                   <td className="px-2 py-2.5 text-center sticky left-0 bg-white z-10 border-r border-gray-200">
                     <span className="text-xs font-medium text-gray-500">{rowNumber}</span>
                   </td>
@@ -244,7 +281,6 @@ const DeliveryTable = ({
                       </button>
                     </div>
                   </td>
-
                 </tr>
               );
             })}
@@ -255,7 +291,7 @@ const DeliveryTable = ({
             <tr className="bg-gray-100 border-t-2 border-gray-300">
               <td colSpan={2} className="px-2 py-2 sticky left-0 bg-gray-100 z-10 border-r border-gray-300 text-[11px]">
                 <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                  Page Totals ({deliveries.length})
+                  Page Totals ({sortedDeliveries.length})
                 </span>
               </td>
               <td colSpan={4} className="px-2 py-2 text-right">
@@ -270,7 +306,6 @@ const DeliveryTable = ({
               <td colSpan={2} />
             </tr>
           </tfoot>
-
         </table>
       </div>
 

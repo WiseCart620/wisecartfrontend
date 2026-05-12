@@ -168,11 +168,11 @@ const DeliveryManagement = () => {
         );
         if (result.success) {
           updateDeliveryLocally(modalState.delivery.id, { status: formData.status });
-          setActionLoading(false);   // ← hide overlay immediately
+          setActionLoading(false);
           setLoadingMessage('');
           handleCloseModal();
           toast.success('Status updated successfully!');
-          refreshDeliveries();       // fire-and-forget after UI already updated
+          refreshDeliveries();
         } else {
           alert(result.error || 'Failed to update status');
         }
