@@ -1,6 +1,6 @@
 import { toast } from 'react-hot-toast';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://152.42.235.205/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://backend.wisecart.ph/api';
 
 // ─── Inactivity logout (8 hours) ─────────────────────────────────
 const INACTIVITY_LIMIT = 8 * 60 * 60 * 1000;
