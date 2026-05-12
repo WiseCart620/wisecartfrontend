@@ -90,17 +90,14 @@ const DeliveryManagement = () => {
         retryDelay = 3000;
       });
 
-      es.addEventListener('delivery-update', () => {
-        loadData(true);
-      });
+      const debouncedLoad = (() => {
+        let t;
+        return () => { clearTimeout(t); t = setTimeout(() => loadData(true), 800); };
+      })();
 
-      es.addEventListener('deliveries-update', () => {
-        loadData(true);
-      });
-
-      es.addEventListener('refresh', () => {
-        loadData(true);
-      });
+      es.addEventListener('delivery-update', debouncedLoad);
+      es.addEventListener('deliveries-update', debouncedLoad);
+      es.addEventListener('refresh', debouncedLoad);
 
       es.onerror = () => {
         es.close();
@@ -205,12 +202,16 @@ const DeliveryManagement = () => {
         dateDelivered: formData.status === 'DELIVERED' && formData.dateDelivered ? formData.dateDelivered : null
       };
       if (formData.status !== 'DELIVERED') delete deliveryData.dateDelivered;
-      for (const item of formData.items) {
-        const stockResponse = await api.get(
+      const stockChecks = await Promise.all(
+        formData.items.map(item =>
           item.variationId
-            ? `/stocks/warehouses/${item.warehouseId}/products/${item.productId}/variations/${item.variationId}`
-            : `/stocks/warehouses/${item.warehouseId}/products/${item.productId}`
-        );
+            ? api.get(`/stocks/warehouses/${item.warehouseId}/products/${item.productId}/variations/${item.variationId}`)
+            : api.get(`/stocks/warehouses/${item.warehouseId}/products/${item.productId}`)
+        )
+      );
+      for (let idx = 0; idx < formData.items.length; idx++) {
+        const item = formData.items[idx];
+        const stockResponse = stockChecks[idx];
         const quantityNeeded = item.preparedQty || 0;
         const originalReserved = item.originalPreparedQty || 0;
         const effectiveAvailableStock = (stockResponse.data?.availableQuantity || 0) + originalReserved;
@@ -223,6 +224,8 @@ const DeliveryManagement = () => {
             if (variation) productName = `${productName} (${variation.combinationDisplay || 'Variation'})`;
           }
           alert(`Insufficient stock for product "${productName}" in warehouse "${warehouse?.warehouseName}".\n\nAvailable (including reserved): ${effectiveAvailableStock}\nRequested: ${quantityNeeded}`);
+          setActionLoading(false);
+          setLoadingMessage('');
           return;
         }
       }
@@ -235,7 +238,6 @@ const DeliveryManagement = () => {
       if (result.success) {
         alert(`Delivery ${modalState.mode === 'create' ? 'created' : 'updated'} successfully!`);
         handleCloseModal();
-        await loadData();
         if (modalState.mode === 'create') {
           setCurrentPage(1);
         }
