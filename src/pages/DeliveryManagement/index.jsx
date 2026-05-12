@@ -167,13 +167,12 @@ const DeliveryManagement = () => {
           { status: formData.status }
         );
         if (result.success) {
-          alert(`Delivery ${modalState.mode === 'create' ? 'created' : 'updated'} successfully!`);
-          if (modalState.mode === 'edit' && modalState.delivery?.id) {
-            updateDeliveryLocally(modalState.delivery.id, { status: formData.status });
-          }
+          updateDeliveryLocally(modalState.delivery.id, { status: formData.status });
+          setActionLoading(false);   // ← hide overlay immediately
+          setLoadingMessage('');
           handleCloseModal();
-          if (modalState.mode === 'create') setCurrentPage(1);
-          refreshDeliveries();
+          toast.success('Status updated successfully!');
+          refreshDeliveries();       // fire-and-forget after UI already updated
         } else {
           alert(result.error || 'Failed to update status');
         }
