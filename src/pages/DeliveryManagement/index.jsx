@@ -10,6 +10,7 @@ import DeliveryFormModal from '../../components/modals/DeliveryFormModal';
 import DeliveryViewModal from '../../components/modals/DeliveryViewModal';
 import DeliveryReceiptModal from '../../components/modals/DeliveryReceiptModal';
 import { useDeliveries } from '../../hooks/useDeliveries';
+import { toast } from 'react-hot-toast';
 import { api } from '../../services/api';
 import '../../styles/deliveryReceipt.css';
 
@@ -84,7 +85,7 @@ const DeliveryManagement = () => {
     let retryTimeout;
 
     const connect = () => {
-      es = new EventSource('https://erp.wisecart.ph/api/deliveries/stream');
+      es = new EventSource('https://backend.wisecart.ph/api/deliveries/stream');
 
       es.addEventListener('connected', () => {
         retryDelay = 3000;
