@@ -14,32 +14,44 @@ const ProofImage = ({ filePath, fileName }) => {
 
     useEffect(() => {
         if (!filePath) return;
+
         let objectUrl = null;
         setLoading(true);
         setError(false);
 
-        // Try all common token key names
+        // Extract filename from path
+        const filename = filePath.split('/').pop();
+
+        // ✅ USE THE CORRECT ENDPOINT - THIS IS THE FIX
+        const fileUrl = `${API_BASE}/api/files/serve?path=payment-proofs/${filename}`;
+
         const token = localStorage.getItem('token')
             || localStorage.getItem('authToken')
             || localStorage.getItem('jwt')
             || localStorage.getItem('accessToken')
             || sessionStorage.getItem('token')
-            || sessionStorage.getItem('authToken')
-            || '';
+            || sessionStorage.getItem('authToken');
 
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-        const filename = filePath.split('/').pop();
-        fetch(`${API_BASE}/api/files/payment-proofs/${filename}`, { headers })
-            .then(r => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.blob();
+        fetch(fileUrl, { headers })
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('File not found');
+                    }
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.blob();
             })
             .then(blob => {
                 objectUrl = URL.createObjectURL(blob);
                 setBlobUrl(objectUrl);
             })
-            .catch(() => setError(true))
+            .catch(err => {
+                console.error('Error loading proof:', err);
+                setError(true);
+            })
             .finally(() => setLoading(false));
 
         return () => {
@@ -48,26 +60,42 @@ const ProofImage = ({ filePath, fileName }) => {
     }, [filePath]);
 
     if (!filePath) return null;
-    if (loading) return <div className="text-xs text-gray-400 italic animate-pulse">Loading proof...</div>;
-    if (error) return (
-        <a
-            href={`${API_BASE}${filePath}`}
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs text-blue-500 hover:underline italic"
-        >
-            📎 View proof ({fileName})
-        </a>
+
+    if (loading) return (
+        <div className="text-xs text-gray-400 italic animate-pulse">
+            Loading proof...
+        </div>
     );
+
+    if (error) return (
+        <div className="mt-1">
+            <a
+                href={`${API_BASE}/api/files/serve?path=payment-proofs/${filePath.split('/').pop()}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-blue-500 hover:text-blue-700 underline flex items-center gap-1"
+            >
+                📎 View proof {fileName && `(${fileName})`}
+            </a>
+            <div className="text-[10px] text-red-400 mt-0.5">
+                Preview unavailable - click to download
+            </div>
+        </div>
+    );
+
     if (!blobUrl) return null;
 
     const isPdf = fileName?.toLowerCase().endsWith('.pdf');
 
     if (isPdf) {
         return (
-            <a href={blobUrl} target="_blank" rel="noreferrer"
-                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 underline mt-1">
-                📄 {fileName}
+            <a
+                href={blobUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 underline mt-1"
+            >
+                📄 {fileName || 'View PDF'}
             </a>
         );
     }
@@ -77,11 +105,17 @@ const ProofImage = ({ filePath, fileName }) => {
             <img
                 src={blobUrl}
                 alt={fileName || 'Proof of payment'}
-                className="rounded-lg border border-gray-200 max-h-48 max-w-full object-contain cursor-pointer hover:opacity-90 transition"
+                className="rounded-lg border border-gray-200 max-h-32 max-w-full object-contain cursor-pointer hover:opacity-90 transition"
                 onClick={() => window.open(blobUrl, '_blank')}
+                onError={() => {
+                    console.error('Image failed to load');
+                    setError(true);
+                }}
                 title="Click to open full size"
             />
-            <div className="text-[10px] text-gray-400 mt-1">{fileName} · Click to enlarge</div>
+            <div className="text-[10px] text-gray-400 mt-1">
+                {fileName || 'Proof'} · Click to enlarge
+            </div>
         </div>
     );
 };
