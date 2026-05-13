@@ -346,6 +346,21 @@ const PaymentModal = ({ profile, onClose, onSaved }) => {
             toast.error('Enter a valid payment amount');
             return;
         }
+        if (proofFile) {
+            const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
+            const maxSize = 5 * 1024 * 1024; // 5MB
+
+            if (!allowedTypes.includes(proofFile.type)) {
+                toast.error('Only PNG, JPG, JPEG, or PDF files are allowed');
+                return;
+            }
+
+            if (proofFile.size > maxSize) {
+                toast.error('File size must be less than 5MB');
+                return;
+            }
+        }
+
         setSaving(true);
         try {
             const formData = new FormData();
