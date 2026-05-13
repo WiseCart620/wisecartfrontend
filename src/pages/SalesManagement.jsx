@@ -1609,6 +1609,7 @@ const SalesManagement = () => {
                         branchStocks={branchStocks}
                         loadingStocks={loadingStocks}
                         onAddProduct={formData.branchId ? handleAddProductToTable : undefined}
+                        activeCompanyId={branchInfo?.companyId ?? null}
                       />
                     </div>
 

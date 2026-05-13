@@ -14,7 +14,8 @@ const VariationSearchableDropdown = ({
   branchStocks = {},
   loadingStocks = {},
   onAddProduct,
-  hideLocationHint = false
+  hideLocationHint = false,
+  activeCompanyId = null
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,11 +35,18 @@ const VariationSearchableDropdown = ({
 
   const filteredOptions = options.filter(option => {
     const searchLower = searchTerm.toLowerCase();
-    const companySkuMatch = option.companySkus
-      ? Object.values(option.companySkus).some(
-        sku => sku && sku.toLowerCase().includes(searchLower)
-      )
-      : false;
+    let companySkuMatch = false;
+    if (option.companySkus) {
+      if (activeCompanyId != null) {
+        const sku = option.companySkus[activeCompanyId];
+        companySkuMatch = sku != null && sku.toLowerCase().includes(searchLower);
+      } else {
+        companySkuMatch = Object.values(option.companySkus).some(
+          sku => sku && sku.toLowerCase().includes(searchLower)
+        );
+      }
+    }
+
     return (
       option.name?.toLowerCase().includes(searchLower) ||
       option.subLabel?.toLowerCase().includes(searchLower) ||

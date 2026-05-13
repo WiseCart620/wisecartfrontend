@@ -656,6 +656,7 @@ const DeliveryFormModal = ({
                                 branchStocks={branchStocks}
                                 loadingStocks={loadingStocks}
                                 onAddProduct={handleAddProductToTable}
+                                activeCompanyId={branchInfo?.companyId ?? null}
                             />
                         </div>
 
