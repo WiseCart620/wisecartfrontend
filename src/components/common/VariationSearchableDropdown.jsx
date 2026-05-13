@@ -38,8 +38,8 @@ const VariationSearchableDropdown = ({
     let companySkuMatch = false;
     if (option.companySkus) {
       if (activeCompanyId != null) {
-        const sku = option.companySkus[activeCompanyId];
-        companySkuMatch = sku != null && sku.toLowerCase().includes(searchLower);
+        const sku = option.companySkus[activeCompanyId] ?? option.companySkus[String(activeCompanyId)] ?? option.companySkus[Number(activeCompanyId)];
+        companySkuMatch = sku != null && sku !== '' && sku.toLowerCase().includes(searchLower);
       } else {
         companySkuMatch = Object.values(option.companySkus).some(
           sku => sku && sku.toLowerCase().includes(searchLower)
