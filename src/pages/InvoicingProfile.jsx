@@ -129,6 +129,17 @@ const BalanceTooltip = ({ profile, onClick }) => {
     const paid = (profile.payments || []).reduce((s, p) => s + Number(p.amount), 0);
     const bal = Number(profile.openBalance);
     const isPaid = bal <= 0;
+    const payments = profile.payments || [];
+
+    const tooltipWidth = payments.length === 0 ? 320 : Math.min(320 + payments.length * 170, window.innerWidth - 32);
+
+    const getLeft = (mouseX) => {
+        const rightAlign = mouseX - tooltipWidth + 20;
+        const leftAlign = mouseX - 16;
+        if (rightAlign < 8) return 8;
+        if (leftAlign + tooltipWidth > window.innerWidth - 8) return rightAlign;
+        return rightAlign;
+    };
 
     return (
         <div
@@ -137,7 +148,6 @@ const BalanceTooltip = ({ profile, onClick }) => {
             onMouseMove={(e) => setPos({ x: e.clientX, y: e.clientY })}
             onMouseLeave={() => setHovered(false)}
         >
-            {/* Balance value */}
             <button
                 onClick={onClick}
                 className={`text-right w-full font-semibold text-sm underline decoration-dashed underline-offset-2 cursor-pointer ${isPaid ? 'text-green-600' : 'text-red-600'
@@ -145,55 +155,147 @@ const BalanceTooltip = ({ profile, onClick }) => {
             >
                 {isPaid ? '✓ Fully paid' : '₱' + fmt(bal)}
             </button>
-            {(profile.payments || []).length > 0 && (
+            {payments.length > 0 && (
                 <div className="text-xs text-gray-400 text-right mt-0.5">
-                    {profile.payments.length} payment{profile.payments.length > 1 ? 's' : ''} · ₱{fmt(paid)}
+                    {payments.length} payment{payments.length > 1 ? 's' : ''} · ₱{fmt(paid)}
                 </div>
             )}
 
-            {/* Hover tooltip */}
             {hovered && (
-                <div className="fixed w-64 bg-white border border-gray-200 rounded-xl shadow-xl p-3 pointer-events-none" style={{ zIndex: 99999, left: pos.x - 256, top: pos.y - 20, transform: 'translateY(-100%)' }}>
-                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                <div
+                    className="fixed bg-white border border-gray-200 rounded-xl shadow-xl p-4 pointer-events-none"
+                    style={{
+                        zIndex: 99999,
+                        left: getLeft(pos.x),
+                        top: pos.y - 20,
+                        transform: 'translateY(-100%)',
+                        width: tooltipWidth,
+                        maxWidth: 'calc(100vw - 16px)',
+                    }}
+                >
+                    <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-3">
                         Payment summary
                     </div>
-                    <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-500">Amount due</span>
-                        <span className="font-medium">₱{fmt(profile.totalAmountDue)}</span>
-                    </div>
-                    <div className="border-t border-gray-100 my-2" />
-                    {(profile.payments || []).length === 0 ? (
-                        <div className="text-xs text-gray-400 italic">No payments yet</div>
-                    ) : (
-                        profile.payments.map((p, idx) => (
-                            <div key={p.id} className="mb-2">
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="text-gray-500 flex items-center gap-1">
-                                        <span className="inline-flex w-4 h-4 rounded-full bg-blue-100 text-blue-700 items-center justify-center text-[9px] font-bold">
-                                            {idx + 1}
-                                        </span>
-                                        {fmtDate(p.paymentDate)}
-                                    </span>
-                                    <span className="font-medium text-green-700">
-                                        ₱{fmt(p.amount)}
-                                    </span>
-                                </div>
-                                {p.proofFilePath && (
-                                    <ProofImage filePath={p.proofFilePath} fileName={p.proofFileName} />
-                                )}
+
+                    <div className="flex gap-2 items-stretch">
+
+                        {/* Amount due */}
+                        <div className="flex-shrink-0 bg-gray-50 border border-gray-100 rounded-lg p-3 flex flex-col gap-1 min-w-[130px]">
+                            <div className="text-[10px] text-gray-400 uppercase tracking-wide">Amount due</div>
+                            <div className="text-sm font-bold text-gray-800">₱{fmt(profile.totalAmountDue)}</div>
+                        </div>
+
+                        {/* Separator */}
+                        {payments.length > 0 && (
+                            <div className="flex items-center px-1">
+                                <div className="w-px h-full bg-gray-100" />
                             </div>
-                        ))
-                    )}
-                    <div className="border-t border-gray-100 my-2" />
-                    <div className="flex justify-between text-xs font-semibold">
-                        <span>Open balance</span>
-                        <span className={isPaid ? 'text-green-600' : 'text-red-600'}>
-                            {isPaid ? '✓ Fully paid' : '₱' + fmt(bal)}
-                        </span>
+                        )}
+
+                        {/* Payments */}
+                        {payments.length === 0 ? (
+                            <div className="flex items-center text-xs text-gray-400 italic px-2 flex-1">
+                                No payments yet
+                            </div>
+                        ) : (
+                            <div className="flex gap-2 flex-1" style={{ overflowX: 'auto', scrollbarWidth: 'none' }}>
+                                {payments.map((p, idx) => (
+                                    <div
+                                        key={p.id}
+                                        className="flex-shrink-0 bg-green-50 border border-green-100 rounded-lg p-3 flex flex-col gap-1.5 min-w-[145px]"
+                                    >
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="inline-flex w-4 h-4 rounded-full bg-blue-100 text-blue-700 items-center justify-center text-[9px] font-bold flex-shrink-0">
+                                                {idx + 1}
+                                            </span>
+                                            <span className="text-xs font-bold text-green-700">₱{fmt(p.amount)}</span>
+                                        </div>
+                                        <div className="text-[10px] text-gray-500">{fmtDate(p.paymentDate)}</div>
+                                        {p.referenceNumber && (
+                                            <div className="text-[10px] font-mono bg-white border border-gray-200 text-gray-600 px-1.5 py-0.5 rounded w-fit">
+                                                {p.referenceNumber}
+                                            </div>
+                                        )}
+                                        {p.proofFilePath && (
+                                            <div className="text-[10px] text-blue-500 flex items-center gap-1 mt-0.5">
+                                                <CreditCard size={10} />
+                                                Has proof
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Separator */}
+                        <div className="flex items-center px-1">
+                            <div className="w-px h-full bg-gray-100" />
+                        </div>
+
+                        {/* Open balance */}
+                        <div className={`flex-shrink-0 rounded-lg p-3 flex flex-col gap-1 min-w-[130px] border ${isPaid ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'
+                            }`}>
+                            <div className={`text-[10px] uppercase tracking-wide ${isPaid ? 'text-green-500' : 'text-red-400'}`}>
+                                Open balance
+                            </div>
+                            <div className={`text-sm font-bold ${isPaid ? 'text-green-700' : 'text-red-600'}`}>
+                                {isPaid ? '✓ Fully paid' : '₱' + fmt(bal)}
+                            </div>
+                            {payments.length > 0 && (
+                                <div className={`text-[10px] ${isPaid ? 'text-green-500' : 'text-red-400'}`}>
+                                    {payments.length} of ₱{fmt(profile.totalAmountDue)}
+                                </div>
+                            )}
+                        </div>
                     </div>
-                    {(profile.payments || []).length > 0 && (
-                        <div className="text-[10px] text-gray-400 text-right mt-1">Click to view full detail</div>
+
+                    {payments.length > 0 && (
+                        <div className="text-[10px] text-gray-300 text-right mt-2">
+                            Click to view full detail
+                        </div>
                     )}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const PaymentEntry = ({ p, idx }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+        <div className="bg-gray-50 rounded-xl overflow-hidden">
+            <div
+                className="flex items-start justify-between p-3 cursor-pointer hover:bg-gray-100 transition"
+                onClick={() => setIsOpen(!isOpen)}
+            >
+                <div className="flex items-start gap-3 flex-1">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                        {idx + 1}
+                    </div>
+                    <div className="flex-1">
+                        <div className="text-sm font-semibold text-green-700">₱{fmt(p.amount)}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">
+                            {fmtDate(p.paymentDate)}
+                            {p.referenceNumber && (
+                                <span className="ml-1 font-mono text-[10px] bg-gray-200 px-1 rounded">
+                                    {p.referenceNumber}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+                <div className="text-gray-400">
+                    {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </div>
+            </div>
+            {isOpen && p.proofFilePath && (
+                <div className="px-3 pb-3 pt-0 border-t border-gray-200 mt-2">
+                    <ProofImage filePath={p.proofFilePath} fileName={p.proofFileName} />
+                </div>
+            )}
+            {isOpen && !p.proofFilePath && (
+                <div className="px-3 pb-3 pt-0 text-xs text-gray-400 italic">
+                    No proof of payment uploaded
                 </div>
             )}
         </div>
@@ -240,55 +342,9 @@ const DetailModal = ({ profile, onClose, onAddPayment }) => {
                         <div className="text-sm text-gray-400 italic mb-4">No payments recorded yet.</div>
                     ) : (
                         <div className="space-y-2 mb-4">
-                            {profile.payments.map((p, idx) => {
-                                // State for this payment's dropdown
-                                const [isOpen, setIsOpen] = React.useState(false);
-
-                                return (
-                                    <div key={p.id} className="bg-gray-50 rounded-xl overflow-hidden">
-                                        {/* Clickable header */}
-                                        <div
-                                            className="flex items-start justify-between p-3 cursor-pointer hover:bg-gray-100 transition"
-                                            onClick={() => setIsOpen(!isOpen)}
-                                        >
-                                            <div className="flex items-start gap-3 flex-1">
-                                                <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
-                                                    {idx + 1}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <div className="text-sm font-semibold text-green-700">₱{fmt(p.amount)}</div>
-                                                    <div className="text-xs text-gray-500 mt-0.5">
-                                                        {fmtDate(p.paymentDate)}
-                                                        {p.referenceNumber && (
-                                                            <span className="ml-1 font-mono text-[10px] bg-gray-200 px-1 rounded">
-                                                                {p.referenceNumber}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            {/* Dropdown indicator */}
-                                            <div className="text-gray-400">
-                                                {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                            </div>
-                                        </div>
-
-                                        {/* Dropdown content - proof image */}
-                                        {isOpen && p.proofFilePath && (
-                                            <div className="px-3 pb-3 pt-0 border-t border-gray-200 mt-2">
-                                                <ProofImage filePath={p.proofFilePath} fileName={p.proofFileName} />
-                                            </div>
-                                        )}
-
-                                        {/* Show "No proof" message when no proof but dropdown opened */}
-                                        {isOpen && !p.proofFilePath && (
-                                            <div className="px-3 pb-3 pt-0 text-xs text-gray-400 italic">
-                                                No proof of payment uploaded
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
+                            {profile.payments.map((p, idx) => (
+                                <PaymentEntry key={p.id} p={p} idx={idx} />
+                            ))}
                         </div>
                     )}
 
