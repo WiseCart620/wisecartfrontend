@@ -240,33 +240,55 @@ const DetailModal = ({ profile, onClose, onAddPayment }) => {
                         <div className="text-sm text-gray-400 italic mb-4">No payments recorded yet.</div>
                     ) : (
                         <div className="space-y-2 mb-4">
-                            {profile.payments.map((p, idx) => (
-                                <div key={p.id} className="flex items-start gap-3 bg-gray-50 rounded-xl p-3">
-                                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
-                                        {idx + 1}
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="flex justify-between items-baseline gap-2">
-                                            <div>
-                                                <div className="text-sm font-semibold text-green-700">₱{fmt(p.amount)}</div>
-                                                <div className="text-xs text-gray-500 mt-0.5">
-                                                    {fmtDate(p.paymentDate)}
-                                                    {p.referenceNumber && (
-                                                        <span className="ml-1 font-mono text-[10px] bg-gray-200 px-1 rounded">
-                                                            {p.referenceNumber}
-                                                        </span>
-                                                    )}
+                            {profile.payments.map((p, idx) => {
+                                // State for this payment's dropdown
+                                const [isOpen, setIsOpen] = React.useState(false);
+
+                                return (
+                                    <div key={p.id} className="bg-gray-50 rounded-xl overflow-hidden">
+                                        {/* Clickable header */}
+                                        <div
+                                            className="flex items-start justify-between p-3 cursor-pointer hover:bg-gray-100 transition"
+                                            onClick={() => setIsOpen(!isOpen)}
+                                        >
+                                            <div className="flex items-start gap-3 flex-1">
+                                                <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                                                    {idx + 1}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-semibold text-green-700">₱{fmt(p.amount)}</div>
+                                                    <div className="text-xs text-gray-500 mt-0.5">
+                                                        {fmtDate(p.paymentDate)}
+                                                        {p.referenceNumber && (
+                                                            <span className="ml-1 font-mono text-[10px] bg-gray-200 px-1 rounded">
+                                                                {p.referenceNumber}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                            {p.proofFilePath ? (
-                                                <ProofImage filePath={p.proofFilePath} fileName={p.proofFileName} />
-                                            ) : (
-                                                <span className="text-xs text-gray-400 italic">No proof</span>
-                                            )}
+                                            {/* Dropdown indicator */}
+                                            <div className="text-gray-400">
+                                                {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                            </div>
                                         </div>
+
+                                        {/* Dropdown content - proof image */}
+                                        {isOpen && p.proofFilePath && (
+                                            <div className="px-3 pb-3 pt-0 border-t border-gray-200 mt-2">
+                                                <ProofImage filePath={p.proofFilePath} fileName={p.proofFileName} />
+                                            </div>
+                                        )}
+
+                                        {/* Show "No proof" message when no proof but dropdown opened */}
+                                        {isOpen && !p.proofFilePath && (
+                                            <div className="px-3 pb-3 pt-0 text-xs text-gray-400 italic">
+                                                No proof of payment uploaded
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
 
