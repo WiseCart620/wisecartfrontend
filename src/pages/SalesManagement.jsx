@@ -2,11 +2,14 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import '../styles/invoice-print.css';
 import { api } from '../services/api';
 import toast, { Toaster } from 'react-hot-toast';
-import { Search, Plus, Edit2, Trash2, Eye, FileText, Check, X, Printer, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Eye, FileText, Check, X, Printer, ChevronDown, ChevronLeft, ChevronRight, Receipt } from 'lucide-react';
+import InvoicingProfile from './InvoicingProfile';
 import '../styles/sales-memo-print.css';
 import { LoadingOverlay } from '../components/common/LoadingOverlay';
 import VariationSearchableDropdown from '../components/common/VariationSearchableDropdown';
 import Pagination from '../components/common/Pagination';
+
+
 
 const formatCurrency = (amount) => {
   if (amount === null || amount === undefined) return '0.00';
@@ -168,6 +171,7 @@ const SalesManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [showSalesMemoModal, setShowSalesMemoModal] = useState(false);
+  const [showInvoicingProfile, setShowInvoicingProfile] = useState(false);
   const [salesMemo, setSalesMemo] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
@@ -581,6 +585,38 @@ const SalesManagement = () => {
     setFormData({ ...formData, items: newItems });
   };
 
+
+  const handleGenerateToProfile = async () => {
+    if (!invoiceReport) return;
+    const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+    const vatableSales = (invoiceReport.vatableSales || 0) + adjustmentTotal;
+    const vat = vatableSales * 0.12;
+    const totalVatIncl = (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
+    const wht = vatableSales * 0.01;
+    const totalAmountDue = totalVatIncl - wht;
+    const payload = {
+      companyId: filterData.companyId || null,
+      branchId: filterData.branchId || null,
+      soldTo: invoiceReport.soldTo || '',
+      registeredName: invoiceReport.registeredName || invoiceReport.soldTo || '',
+      tin: invoiceReport.tin || '',
+      businessAddress: invoiceReport.businessAddress || '',
+      vatableSales, vat, withholdingTax: wht, totalAmountDue,
+      transactionType: 'Sales Invoice',
+    };
+    try {
+      const res = await api.post('/invoice-profiles', payload);
+      if (res.success) {
+        toast.success('Invoice saved to invoicing profile!');
+        setInvoiceReport(null);
+        setShowInvoicingProfile(true);
+      } else {
+        toast.error(res.error || 'Failed to save to invoicing profile');
+      }
+    } catch (e) {
+      toast.error('Failed to save to invoicing profile');
+    }
+  };
 
   const handleGenerateSalesMemo = async () => {
     if (!filterData.companyId) {
@@ -1167,6 +1203,10 @@ const SalesManagement = () => {
     );
   }
 
+  if (showInvoicingProfile) {
+    return <InvoicingProfile onBack={() => setShowInvoicingProfile(false)} />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-2 sm:p-3 lg:p-4">
       <LoadingOverlay show={actionLoading} message={loadingMessage} />
@@ -1193,7 +1233,7 @@ const SalesManagement = () => {
                   className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md text-sm"
                 >
                   <FileText size={16} />
-                  <span>Invoice</span>
+                  <span>Invoicing</span>
                 </button>
                 <button
                   onClick={() => setShowSalesMemoModal(true)}
@@ -1201,6 +1241,12 @@ const SalesManagement = () => {
                 >
                   <FileText size={16} />
                   <span>Sales Memo</span>
+                </button>
+                <button
+                  onClick={() => setShowInvoicingProfile(true)}
+                  className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-md text-sm font-medium"
+                >
+                  Invoicing Profile
                 </button>
               </div>
 
@@ -2113,7 +2159,7 @@ const SalesManagement = () => {
                   onClick={handleGenerateInvoice}
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
                 >
-                  Generate Invoice
+                  Preview Invoice
                 </button>
               </div>
             </div>
@@ -2470,7 +2516,13 @@ const SalesManagement = () => {
 
               </div>
 
-              <div className="p-8 border-t border-gray-200 flex justify-end gap-4 print:hidden sticky bottom-0 bg-white rounded-b-2xl">
+              <div className="p-8 border-t border-gray-200 flex justify-end gap-3 print:hidden sticky bottom-0 bg-white rounded-b-2xl">
+                <button
+                  onClick={handleGenerateToProfile}
+                  className="flex items-center gap-2 px-5 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium shadow-md"
+                >
+                  <span>Generate</span>
+                </button>
                 <button
                   onClick={() => window.print()}
                   className="flex items-center gap-3 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
