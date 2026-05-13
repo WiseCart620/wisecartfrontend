@@ -34,14 +34,18 @@ const VariationSearchableDropdown = ({
 
   const filteredOptions = options.filter(option => {
     const searchLower = searchTerm.toLowerCase();
+    const companySkuMatch = option.companySkus
+      ? Object.values(option.companySkus).some(
+        sku => sku && sku.toLowerCase().includes(searchLower)
+      )
+      : false;
     return (
       option.name?.toLowerCase().includes(searchLower) ||
       option.subLabel?.toLowerCase().includes(searchLower) ||
       option.fullName?.toLowerCase().includes(searchLower) ||
       option.upc?.toLowerCase().includes(searchLower) ||
       option.sku?.toLowerCase().includes(searchLower) ||
-      (option.upc && option.upc.toLowerCase().includes(searchLower)) ||
-      (option.sku && option.sku.toLowerCase().includes(searchLower))
+      companySkuMatch
     );
   });
 
@@ -167,7 +171,7 @@ const VariationSearchableDropdown = ({
                   }
                 }}
                 type="text"
-                placeholder="Search by name, UPC, SKU, or variation..."
+                placeholder="Search by name, UPC, SKU, variation, or company SKU..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);

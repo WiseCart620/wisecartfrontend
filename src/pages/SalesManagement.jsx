@@ -5,7 +5,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { Search, Plus, Edit2, Trash2, Eye, FileText, Check, X, Printer, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import '../styles/sales-memo-print.css';
 import { LoadingOverlay } from '../components/common/LoadingOverlay';
-import VariationSearchableDropdown from '../components/common/VariationSearchableDropdown';
+import VariationSearchableDropdown from '../components/common/';
 import Pagination from '../components/common/Pagination';
 
 const formatCurrency = (amount) => {
