@@ -1027,17 +1027,36 @@ const SalesManagement = () => {
 
   const allProductOptions = useMemo(() => products.flatMap(p => {
     if (p.variations && p.variations.length > 0) {
-      return p.variations.map(v => ({
-        id: `${p.id}_${v.id}`,
-        parentProductId: p.id,
-        variationId: v.id,
-        name: p.productName,
-        fullName: p.productName,
-        subLabel: v.combinationDisplay || 'Variation',
-        upc: v.upc || '',
-        sku: v.sku || '',
-        isVariation: true,
-      }));
+      return p.variations.map(v => {
+        const companySkus = {};
+        if (v.companyPrices) {
+          v.companyPrices.forEach(cp => {
+            if (cp.company?.id != null) {
+              companySkus[cp.company.id] = cp.companySku ?? '';
+            }
+          });
+        }
+        return {
+          id: `${p.id}_${v.id}`,
+          parentProductId: p.id,
+          variationId: v.id,
+          name: p.productName,
+          fullName: p.productName,
+          subLabel: v.combinationDisplay || 'Variation',
+          upc: v.upc || '',
+          sku: v.sku || '',
+          isVariation: true,
+          companySkus,
+        };
+      });
+    }
+    const companySkus = {};
+    if (p.companyBasePrices) {
+      p.companyBasePrices.forEach(cbp => {
+        if (cbp.company?.id != null) {
+          companySkus[cbp.company.id] = cbp.companySku ?? '';
+        }
+      });
     }
     return [{
       id: `prod_${p.id}`,
@@ -1049,12 +1068,11 @@ const SalesManagement = () => {
       upc: p.upc || '',
       sku: p.sku || '',
       isVariation: false,
+      companySkus,
     }];
   }), [products]);
 
-  // FIX 2: productPrices API returns string keys (e.g. "123"), but p.id is a
-  // number. String(p.id) ensures the lookup actually finds the price instead
-  // of silently returning 0 / undefined for all non-variation products.
+
   const productOptions = useMemo(() => products.flatMap(p => {
     const hasVariations = p.variations && p.variations.length > 0;
 
@@ -1067,6 +1085,15 @@ const SalesManagement = () => {
         const variationLabel = v.combinationDisplay ||
           (v.variationType && v.variationValue ? `${v.variationType}: ${v.variationValue}` : 'Variation');
 
+        const companySkusMap = {};
+        if (v.companyPrices) {
+          v.companyPrices.forEach(cp => {
+            if (cp.company?.id != null) {
+              companySkusMap[cp.company.id] = cp.companySku ?? '';
+            }
+          });
+        }
+
         return {
           id: `${p.id}_${v.id}`,
           parentProductId: p.id,
@@ -1078,6 +1105,7 @@ const SalesManagement = () => {
           sku: v.sku,
           price: companyPrice,
           companySku: companySku,
+          companySkus: companySkusMap,
           variationLabel: variationLabel,
           isVariation: true,
           hasVariations: true
@@ -1095,6 +1123,15 @@ const SalesManagement = () => {
         0;
       const companySku = companyBaseMatch?.companySku ?? null;
 
+      const companySkusMap = {};
+      if (p.companyBasePrices) {
+        p.companyBasePrices.forEach(cbp => {
+          if (cbp.company?.id != null) {
+            companySkusMap[cbp.company.id] = cbp.companySku ?? '';
+          }
+        });
+      }
+
       return [{
         id: `prod_${p.id}`,
         parentProductId: p.id,
@@ -1106,6 +1143,7 @@ const SalesManagement = () => {
         sku: p.sku,
         price: companyBasePrice,
         companySku: companySku,
+        companySkus: companySkusMap,
         isVariation: false,
         hasVariations: false
       }];

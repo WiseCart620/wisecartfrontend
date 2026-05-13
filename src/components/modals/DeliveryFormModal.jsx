@@ -179,23 +179,61 @@ const DeliveryFormModal = ({
     const branchOptions = branches ? branches.map(b => ({ id: b.id, name: `${b.branchName || 'Unknown'} (${b.branchCode || 'N/A'})` })) : [];
     const warehouseOptions = warehouses ? warehouses.map(w => ({ id: w.id, name: `${w.warehouseName || 'Unknown'} (${w.warehouseCode || 'N/A'})` })) : [];
 
+    // Resolve the company ID from the selected branch
+    const selectedBranchCompanyId = (() => {
+        if (!formData.branchId) return null;
+        const branch = branches?.find(b => b.id === formData.branchId);
+        return branch?.company?.id ?? null;
+    })();
+
     const productOptions = products ? products.flatMap(p => {
         if (!p) return [];
         if (p.variations && p.variations.length > 0) {
-            return p.variations.map(v => ({
-                id: `${p.id}_${v.id}`,
-                parentProductId: p.id,
-                variationId: v.id,
-                name: `${p.productName || 'Unknown'}`,
-                subLabel: v.combinationDisplay || 'Variation',
-                fullName: p.productName || 'Unknown Product',
-                upc: v.upc,
-                sku: v.sku,
-                price: v.price || p.price || 0,
-                uom: p.uom || '',
-                isVariation: true
-            }));
+            return p.variations.map(v => {
+                // Build the full companySkus map for search
+                const companySkus = {};
+                if (v.companyPrices) {
+                    v.companyPrices.forEach(cp => {
+                        if (cp.company?.id != null) {
+                            companySkus[cp.company.id] = cp.companySku ?? '';
+                        }
+                    });
+                }
+                // Resolve the single companySku for the selected branch's company
+                const companySku = selectedBranchCompanyId != null
+                    ? (companySkus[selectedBranchCompanyId] ?? null)
+                    : null;
+
+                return {
+                    id: `${p.id}_${v.id}`,
+                    parentProductId: p.id,
+                    variationId: v.id,
+                    name: `${p.productName || 'Unknown'}`,
+                    subLabel: v.combinationDisplay || 'Variation',
+                    fullName: p.productName || 'Unknown Product',
+                    upc: v.upc,
+                    sku: v.sku,
+                    price: v.price || p.price || 0,
+                    uom: p.uom || '',
+                    isVariation: true,
+                    companySkus,   // ← full map, used by dropdown search
+                    companySku     // ← single value for the active company
+                };
+            });
         } else {
+            // Build companySkus map from companyBasePrices for base products
+            const companySkus = {};
+            if (p.companyBasePrices) {
+                p.companyBasePrices.forEach(cbp => {
+                    if (cbp.company?.id != null) {
+                        companySkus[cbp.company.id] = cbp.companySku ?? '';
+                    }
+                });
+            }
+            const companySku = selectedBranchCompanyId != null
+                ? (companySkus[selectedBranchCompanyId] ?? null)
+                : null;
+
             return [{
                 id: `prod_${p.id}`,
                 parentProductId: p.id,
@@ -207,7 +245,9 @@ const DeliveryFormModal = ({
                 sku: p.sku,
                 price: p.price || 0,
                 uom: p.uom || '',
-                isVariation: false
+                isVariation: false,
+                companySkus,
+                companySku
             }];
         }
     }) : [];
