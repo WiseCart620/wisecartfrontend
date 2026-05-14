@@ -25,6 +25,14 @@ import StatusDistribution from '../../components/dashboard/StatusDistribution';
 // Utils
 import { formatCurrency, formatNumber } from '../../utils/currencyUtils';
 
+const extractArray = (res) => {
+  if (Array.isArray(res)) return res;
+  if (Array.isArray(res?.data)) return res.data;
+  if (Array.isArray(res?.data?.content)) return res.data.content;
+  if (Array.isArray(res?.content)) return res.content;
+  return [];
+};
+
 const Dashboard = () => {
   const [stats, setStats] = useState({
     totalSales: 0,
@@ -97,18 +105,17 @@ const Dashboard = () => {
     try {
       setDashboardLoading(true);
       const [salesRes, deliveriesRes, productsRes, companiesRes, branchesRes] = await Promise.all([
-        api.get('/sales'),
+        api.get('/sales/all'),
         api.get('/deliveries'),
         api.get('/products'),
         api.get('/companies'),
         api.get('/branches'),
       ]);
-
-      const salesData = salesRes.success ? salesRes.data || [] : [];
-      const deliveriesData = deliveriesRes.success ? deliveriesRes.data || [] : [];
-      const productsData = productsRes.success ? productsRes.data || [] : [];
-      const companiesData = companiesRes.success ? companiesRes.data || [] : [];
-      const branchesData = branchesRes.success ? branchesRes.data || [] : [];
+      const salesData = extractArray(salesRes);
+      const deliveriesData = extractArray(deliveriesRes);
+      const productsData = extractArray(productsRes);
+      const companiesData = extractArray(companiesRes);
+      const branchesData = extractArray(branchesRes);
 
       setSales(salesData);
       setCompanies(companiesData);
