@@ -8,7 +8,8 @@ const DashboardHeader = ({
   setShowNotifications,
   businessInsights,
   alerts,
-  loadStats
+  loadStats,
+  isLoading = false
 }) => {
   return (
     <>
@@ -28,10 +29,11 @@ const DashboardHeader = ({
         </button>
         <button
           onClick={() => loadStats()}
-          className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          disabled={isLoading}
+          className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-60"
         >
-          <RefreshCw size={18} />
-          Refresh Data
+          <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
+          {isLoading ? 'Refreshing...' : 'Refresh Data'}
         </button>
 
         <button

@@ -3,7 +3,7 @@ import { Clock, ShoppingCart } from 'lucide-react';
 import StatusBadge from '../common/StatusBadge';
 import { formatCurrency } from '../../utils/currencyUtils';
 
-const RecentSales = ({ recentSales, sales }) => {
+const RecentSales = ({ recentSales, sales, isLoading = false }) => {
   return (
     <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
       <div className="flex justify-between items-center mb-4">
@@ -16,7 +16,22 @@ const RecentSales = ({ recentSales, sales }) => {
         </span>
       </div>
       <div className="space-y-3 max-h-80 overflow-y-auto">
-        {recentSales.length > 0 ? (
+        {isLoading ? (
+          <>
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="animate-pulse flex items-center justify-between p-3 border border-gray-100 rounded-lg">
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 bg-gray-200 rounded w-1/2" />
+                  <div className="h-2 bg-gray-100 rounded w-1/3" />
+                </div>
+                <div className="ml-4 space-y-2 text-right">
+                  <div className="h-3 bg-gray-200 rounded w-16" />
+                  <div className="h-2 bg-gray-100 rounded w-10" />
+                </div>
+              </div>
+            ))}
+          </>
+        ) : recentSales.length > 0 ? (
           recentSales.map((sale, index) => {
             let dateStr = 'No date';
             try {

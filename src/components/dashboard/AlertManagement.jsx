@@ -504,7 +504,20 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
 
         {/* ── Alert list ─────────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto">
-          {filteredAlerts.length === 0 ? (
+          {alerts.length === 0 && activeTab === 'active' ? (
+            <div className="p-6 space-y-4 animate-pulse">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  <div className="w-12 h-12 bg-gray-200 rounded-xl flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-1/3" />
+                    <div className="h-3 bg-gray-100 rounded w-2/3" />
+                    <div className="h-3 bg-gray-100 rounded w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredAlerts.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center p-8">
               {activeFilterCount > 0 ? (
                 <>

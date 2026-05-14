@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
-const DashboardCards = ({ stats, totalAlerts }) => {
+const DashboardCards = ({ stats, totalAlerts, isLoading = false }) => {
     const formatCurrency = (amount) => {
         if (amount === null || amount === undefined) return '₱0';
         if (amount >= 1000000) {
@@ -54,6 +54,20 @@ const DashboardCards = ({ stats, totalAlerts }) => {
             description: 'Last 30 days'
         },
     ];
+
+    if (isLoading) {
+        return (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 w-full overflow-hidden">
+                {[...Array(4)].map((_, i) => (
+                    <div key={i} className="bg-blue-50 bg-opacity-60 rounded-lg shadow-sm p-2 border border-blue-200 animate-pulse">
+                        <div className="h-3 bg-blue-200 rounded w-2/3 mb-2" />
+                        <div className="h-6 bg-blue-200 rounded w-3/4 mb-1" />
+                        <div className="h-2 bg-blue-100 rounded w-1/2" />
+                    </div>
+                ))}
+            </div>
+        );
+    }
 
     return (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 w-full overflow-hidden">

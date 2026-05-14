@@ -3,7 +3,7 @@ import { PieChart, CheckCheck, Clock, AlertCircle, ShoppingCart, Users, Database
 import StatusBadge from '../common/StatusBadge';
 import { formatCurrency, formatNumber } from '../../utils/currencyUtils';
 
-const StatusDistribution = ({ stats, sales, navigate }) => {
+const StatusDistribution = ({ stats, sales, navigate, isLoading = false }) => {
   const getSalesByStatus = () => {
     const normalizedSales = sales.map(sale => ({
       ...sale,
@@ -35,7 +35,19 @@ const StatusDistribution = ({ stats, sales, navigate }) => {
         <PieChart className="text-blue-600" size={20} />
         Sales Status Overview
       </h3>
-      {Object.keys(salesByStatus.counts).length > 0 ? (
+      {isLoading ? (
+        <div className="space-y-3 animate-pulse">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex justify-between mb-3">
+                <div className="h-4 bg-gray-200 rounded w-1/3" />
+                <div className="h-6 bg-gray-200 rounded w-8" />
+              </div>
+              <div className="h-2 bg-gray-200 rounded w-full" />
+            </div>
+          ))}
+        </div>
+      ) : Object.keys(salesByStatus.counts).length > 0 ? (
         <>
           <div className="space-y-3 mb-6">
             {Object.entries(salesByStatus.counts).map(([status, count]) => {

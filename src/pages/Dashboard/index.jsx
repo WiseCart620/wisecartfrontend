@@ -697,7 +697,7 @@ const Dashboard = () => {
   }, [products]);
 
   return (
-    <>  
+    <>
       <LoadingOverlay show={actionLoading && !!loadingMessage} message={loadingMessage} />
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-x-hidden">
         <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-6">
@@ -716,7 +716,6 @@ const Dashboard = () => {
               )}
             </div>
 
-            {/* Dashboard Header with Actions */}
             <DashboardHeader
               showInsights={showInsights}
               setShowInsights={setShowInsights}
@@ -725,10 +724,11 @@ const Dashboard = () => {
               showNotifications={showNotifications}
               setShowNotifications={setShowNotifications}
               alerts={alerts}
+              isLoading={dashboardLoading}
             />
 
             {/* Stats Cards */}
-            <DashboardCards stats={stats} totalAlerts={totalAlerts} />
+            <DashboardCards stats={stats} totalAlerts={totalAlerts} isLoading={dashboardLoading} />
 
             {/* Business Insights */}
             <BusinessInsights
@@ -1346,8 +1346,8 @@ const Dashboard = () => {
 
               {/* Status Distribution and Recent Sales */}
               <div className="space-y-4 sm:space-y-6">
-                <StatusDistribution stats={stats} sales={sales} navigate={navigate} />
-                <RecentSales recentSales={recentSales} sales={sales} />
+                <StatusDistribution stats={stats} sales={sales} navigate={navigate} isLoading={dashboardLoading} />
+                <RecentSales recentSales={recentSales} sales={sales} isLoading={dashboardLoading} />
               </div>
             </div>
           </div>
