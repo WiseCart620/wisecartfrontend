@@ -204,60 +204,53 @@ const SalesManagement = () => {
 
 
   const loadData = useCallback(async (background = false) => {
-    if (!background) {
-      setLoading(true);
-    }
-    try {
-      const [invRes, prodRes, warehousesRes, branchesRes, warehouseStocksRes, salesRes, companiesRes] =
-        await Promise.allSettled([
-          api.get('/inventories'),
-          api.get('/products'),
-          api.get('/warehouse'),
-          api.get('/branches'),
-          api.get('/stocks/warehouses'),
-          api.get('/sales'),
-          api.get('/companies')
-        ]);
+    if (!background) setLoading(true);
 
-      const extract = (result, name) => {
-        if (result.status === 'fulfilled' && result.value?.success) return result.value.data || [];
-        const reason = result.reason?.response?.data?.message
-          || result.reason?.response?.data
-          || result.reason?.message
-          || result.value?.message
-          || 'Unknown error';
-        toast.error(`Failed to load ${name}: ${reason}`, { duration: 4000 });
-        return null;
-      };
+    // Fire ALL requests simultaneously
+    const salesPromise = api.get('/sales');
+    const branchesPromise = api.get('/branches');
+    const companiesPromise = api.get('/companies');
+    const productsPromise = api.get('/products');
+    const invPromise = api.get('/inventories');
+    const warehousesPromise = api.get('/warehouse');
+    const warehouseStocksPromise = api.get('/stocks/warehouses');
+    const summaryPromise = api.get('/inventories/products/summary');
 
-      const inv = extract(invRes, 'inventories');
-      const prod = extract(prodRes, 'products');
-      const wh = extract(warehousesRes, 'warehouses');
-      const br = extract(branchesRes, 'branches');
-      const whStocks = extract(warehouseStocksRes, 'warehouse stocks');
-      const sales = extract(salesRes, 'sales');
-      const comp = extract(companiesRes, 'companies');
+    // Show sales + branches + companies FIRST (most critical for table)
+    salesPromise.then(res => {
+      if (res?.success) setSales(res.data || []);
+      setLoading(false); // table appears immediately
+    }).catch(() => setLoading(false));
 
-      if (inv !== null) setInventories(inv);
-      if (prod !== null) setProducts(prod);
-      if (wh !== null) setWarehouses(wh);
-      if (br !== null) setBranches(br);
-      if (whStocks !== null) setWarehouseStocks(whStocks);
-      if (sales !== null) setSales(sales);
-      if (comp !== null) setCompanies(comp);
+    branchesPromise.then(res => {
+      if (res?.success) setBranches(res.data || []);
+    }).catch(() => { });
 
-      try {
-        const summaryRes = await api.get('/inventories/products/summary');
-        if (summaryRes.success) setProductSummaries(summaryRes.data || []);
-      } catch (summaryErr) {
-        console.warn('Could not load product summaries:', summaryErr);
-      }
-    } catch (err) {
-      toast.error(`Unexpected error: ${err.message || 'Unknown'}`);
-    } finally {
-      setLoading(false);
-      setLoadingMessage('');
-    }
+    companiesPromise.then(res => {
+      if (res?.success) setCompanies(res.data || []);
+    }).catch(() => { });
+
+    // Rest loads silently in background
+    productsPromise.then(res => {
+      if (res?.success) setProducts(res.data || []);
+    }).catch(() => { });
+
+    invPromise.then(res => {
+      if (res?.success) setInventories(res.data || []);
+    }).catch(() => { });
+
+    warehousesPromise.then(res => {
+      if (res?.success) setWarehouses(res.data || []);
+    }).catch(() => { });
+
+    warehouseStocksPromise.then(res => {
+      if (res?.success) setWarehouseStocks(res.data || []);
+    }).catch(() => { });
+
+    summaryPromise.then(res => {
+      if (res?.success) setProductSummaries(res.data || []);
+    }).catch(() => { });
+
   }, []);
 
 
