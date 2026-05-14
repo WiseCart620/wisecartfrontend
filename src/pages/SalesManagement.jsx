@@ -63,6 +63,27 @@ const extractArray = (res) => {
   return [];
 };
 
+let salesCache = null;
+let salesCacheTime = 0;
+const SALES_CACHE_TTL = 30_000;
+let sseRefreshTimer = null;
+
+const fetchSales = async () => {
+  const now = Date.now();
+  if (salesCache && (now - salesCacheTime) < SALES_CACHE_TTL) {
+    return salesCache;
+  }
+  const res = await api.get('/sales/all');
+  salesCache = extractArray(res);
+  salesCacheTime = now;
+  return salesCache;
+};
+
+const invalidateSalesCache = () => {
+  salesCache = null;
+  salesCacheTime = 0;
+};
+
 const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey, valueKey, required = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -215,7 +236,7 @@ const SalesManagement = () => {
     if (!background) setLoading(true);
 
 
-    const salesPromise = api.get('/sales/all');
+    const salesPromise = fetchSales();
     const branchesPromise = api.get('/branches');
     const companiesPromise = api.get('/companies');
     const productsPromise = api.get('/products');
@@ -266,7 +287,7 @@ const SalesManagement = () => {
 
   useEffect(() => {
     let es;
-    let retryDelay = 3000;
+    let retryDelay = 5000;
     let retryTimeout;
 
     const connect = () => {
@@ -277,17 +298,17 @@ const SalesManagement = () => {
       });
 
       es.addEventListener('sales-update', () => {
-        api.get('/sales/all').then(res => {
-          setSales(extractArray(res));
-        }).catch(err => {
-          console.error('Failed to refresh sales:', err);
-        });
+        invalidateSalesCache();
+        if (sseRefreshTimer) clearTimeout(sseRefreshTimer);
+        sseRefreshTimer = setTimeout(() => {
+          fetchSales().then(data => setSales(data)).catch(() => { });
+        }, 800);
       });
 
       es.onerror = () => {
         es.close();
         retryTimeout = setTimeout(() => {
-          retryDelay = Math.min(retryDelay * 2, 30000);
+          retryDelay = Math.min(retryDelay * 2, 60000);
           connect();
         }, retryDelay);
       };
@@ -713,7 +734,8 @@ const SalesManagement = () => {
         const response = await api.post('/sales', formData);
         if (response.success) {
           toast.success('Sale created successfully!', { id: toastId });
-          loadData(true); // Background refresh
+          invalidateSalesCache();
+          loadData(true);
         } else {
           toast.error(response.message || 'Failed to create sale', { id: toastId });
         }
@@ -721,6 +743,7 @@ const SalesManagement = () => {
         const response = await api.put(`/sales/${selectedSale.id}`, formData);
         if (response.success) {
           toast.success('Sale updated successfully!', { id: toastId });
+          invalidateSalesCache();
           loadData(true);
         } else {
           toast.error(response.message || 'Failed to update sale', { id: toastId });
@@ -897,6 +920,7 @@ const SalesManagement = () => {
 
       if (response.success || response.data) {
         toast.success(`Sale ${action}ed successfully!`);
+        invalidateSalesCache();
         loadData();
       } else {
         toast.error(`Failed to ${action} sale`);
@@ -929,6 +953,7 @@ const SalesManagement = () => {
 
       if (response.success || response.data?.message) {
         toast.success('Sale deleted successfully!');
+        invalidateSalesCache();
         loadData();
       } else {
         toast.error('Failed to delete sale');
