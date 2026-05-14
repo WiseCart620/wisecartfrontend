@@ -104,18 +104,28 @@ const Dashboard = () => {
   const loadStats = async () => {
     try {
       setDashboardLoading(true);
-      const [salesRes, deliveriesRes, productsRes, companiesRes, branchesRes] = await Promise.all([
-        api.get('/sales/all'),
+
+      // Step 1 — load fast endpoints first (all under 500ms)
+      // Cards, filters, and dropdowns render immediately
+      const [deliveriesRes, productsRes, companiesRes, branchesRes] = await Promise.all([
         api.get('/deliveries'),
         api.get('/products'),
         api.get('/companies'),
         api.get('/branches'),
       ]);
-      const salesData = extractArray(salesRes);
+
       const deliveriesData = extractArray(deliveriesRes);
       const productsData = extractArray(productsRes);
       const companiesData = extractArray(companiesRes);
       const branchesData = extractArray(branchesRes);
+
+      setDeliveries(deliveriesData);
+      setProducts(productsData);
+      setCompanies(companiesData);
+      setBranches(branchesData);
+      setDashboardLoading(false);
+      const salesRes = await api.get('/sales/all');
+      const salesData = extractArray(salesRes);
 
       setSales(salesData);
       setCompanies(companiesData);

@@ -82,7 +82,7 @@ export const useDeliveries = () => {
   useEffect(() => {
     let es;
     let retryTimeout;
-    let retryDelay = 3000;
+    let retryDelay = 5000;
     let debounceTimer;
 
     const connect = () => {
@@ -94,7 +94,7 @@ export const useDeliveries = () => {
 
       const debouncedRefresh = () => {
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => refreshDeliveries(), 600);
+        debounceTimer = setTimeout(() => refreshDeliveries(), 800);
       };
 
       es.addEventListener('delivery-update', debouncedRefresh);
@@ -104,7 +104,7 @@ export const useDeliveries = () => {
       es.onerror = () => {
         es.close();
         retryTimeout = setTimeout(() => {
-          retryDelay = Math.min(retryDelay * 1.5, 15000);
+          retryDelay = Math.min(retryDelay * 2, 60000);
           connect();
         }, retryDelay);
       };
