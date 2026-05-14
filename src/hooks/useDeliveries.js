@@ -341,17 +341,25 @@ export const useDeliveries = () => {
     return digits.length > 0 ? parseInt(digits, 10) : 0;
   };
 
-  /**
-   * Sort deliveries.
-   *
-   * sortMode:
-   *   'receipt_desc'   — highest DR number first (default)
-   *   'receipt_asc'    — lowest DR number first
-   *   'timestamp_desc' — most recently created first
-   *   'timestamp_asc'  — oldest created first
-   */
+  const getStatusGroup = (status) => {
+    const groups = {
+      PREPARING: 1,
+      IN_TRANSIT: 2,
+      DELIVERED: 3,
+      PENDING: 4,
+      RETURNED: 5,
+      CANCELLED: 999,
+    };
+    return groups[status] || 99;
+  };
+
   const sortDeliveriesByStatus = (deliveriesList, sortMode = 'receipt_desc') => {
     return [...deliveriesList].sort((a, b) => {
+      // Always sort by status group first
+      const groupDiff = getStatusGroup(a.status) - getStatusGroup(b.status);
+      if (groupDiff !== 0) return groupDiff;
+
+      // Then sort within same status group by selected sort mode
       switch (sortMode) {
         case 'receipt_asc': {
           const numA = extractReceiptNumber(a.deliveryReceiptNumber);
@@ -403,12 +411,8 @@ export const useDeliveries = () => {
         if (!hasWarehouse) return false;
       }
 
-      if (filters.status) {
-        if (filters.status === 'HIDE_CANCELLED') {
-          if (delivery.status === 'CANCELLED') return false;
-        } else if (delivery.status !== filters.status) {
-          return false;
-        }
+      if (filters.status && delivery.status !== filters.status) {
+        return false;
       }
 
       if (filters.variationId || filters.productId) {

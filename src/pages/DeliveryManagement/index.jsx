@@ -69,7 +69,7 @@ const DeliveryManagement = () => {
     companyId: '',
     branchId: '',
     warehouseId: '',
-    status: 'HIDE_CANCELLED',
+    status: '',
     productId: '',
     variationId: '',
     productName: '',
