@@ -41,9 +41,7 @@ export const useDeliveries = () => {
 
   const loadData = useCallback(async (background = false) => {
     try {
-      if (!background && !deliveries.length) setLoading(true);
       setError(null);
-
       const [deliveriesRes, branchesRes, productsRes, warehousesRes, companiesRes] = await Promise.all([
         api.get('/deliveries'),
         api.get('/branches'),
@@ -51,7 +49,6 @@ export const useDeliveries = () => {
         api.get('/warehouse'),
         api.get('/companies')
       ]);
-
       if (deliveriesRes.success) setDeliveries(normalizeDeliveries(deliveriesRes.data || []));
       if (branchesRes.success) setBranches(branchesRes.data || []);
       if (productsRes.success) setProducts(productsRes.data || []);
@@ -60,8 +57,6 @@ export const useDeliveries = () => {
     } catch (err) {
       console.error('Failed to load data', err);
       setError(err.message || 'Failed to load data');
-    } finally {
-      setLoading(false);
     }
   }, []);
 

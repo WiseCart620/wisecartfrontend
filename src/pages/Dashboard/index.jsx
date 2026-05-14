@@ -94,8 +94,6 @@ const Dashboard = () => {
 
   const loadStats = async () => {
     try {
-      if (!sales.length) setActionLoading(true);
-      setLoadingMessage('Loading stats...');
       const [salesRes, deliveriesRes, productsRes, companiesRes, branchesRes] = await Promise.all([
         api.get('/sales'),
         api.get('/deliveries'),

@@ -74,9 +74,17 @@ const DeliveryTable = ({
   if (isLoading) {
     return (
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="px-6 py-16 text-center">
-          <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
-          <p className="mt-3 text-gray-500">Loading deliveries...</p>
+        <div className="p-4 space-y-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="animate-pulse flex gap-3 items-center">
+              <div className="h-8 w-12 bg-gray-100 rounded" />
+              <div className="h-8 w-24 bg-gray-100 rounded" />
+              <div className="h-8 flex-1 bg-gray-100 rounded" />
+              <div className="h-8 w-20 bg-gray-100 rounded" />
+              <div className="h-8 w-20 bg-gray-100 rounded" />
+              <div className="h-8 w-16 bg-gray-100 rounded" />
+            </div>
+          ))}
         </div>
       </div>
     );

@@ -206,7 +206,6 @@ const SalesManagement = () => {
   const loadData = useCallback(async (background = false) => {
     if (!background && !sales.length) {
       setLoading(true);
-      setLoadingMessage('Loading sales data...');
     }
     try {
       const [invRes, prodRes, warehousesRes, branchesRes, warehouseStocksRes, salesRes, companiesRes] =

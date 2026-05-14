@@ -339,13 +339,6 @@ const DeliveryManagement = () => {
     setCurrentPage(1);
   };
 
-  if (loading && !deliveries.length) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <LoadingOverlay show={true} message="Loading deliveries..." />
-      </div>
-    );
-  }
 
   return (
     <>
@@ -429,7 +422,7 @@ const DeliveryManagement = () => {
           currentPage={currentPage}
           itemsPerPage={itemsPerPage}
           totalItems={filteredDeliveries.length}
-          isLoading={loading}
+          isLoading={false}
         />
 
         {/* Delivery modals (unchanged) */}
