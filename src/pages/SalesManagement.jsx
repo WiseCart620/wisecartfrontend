@@ -55,6 +55,14 @@ const formatDate = (dateString) => {
 const makeStockKey = (productId, variationId, branchId) =>
   `${productId}_${variationId ?? 'base'}_${branchId}`;
 
+const extractArray = (res) => {
+  if (Array.isArray(res)) return res;
+  if (Array.isArray(res?.data)) return res.data;
+  if (Array.isArray(res?.data?.content)) return res.data.content;
+  if (Array.isArray(res?.content)) return res.content;
+  return [];
+};
+
 const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey, valueKey, required = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -217,44 +225,36 @@ const SalesManagement = () => {
     const summaryPromise = api.get('/inventories/products/summary');
 
     salesPromise.then(res => {
-      const data = Array.isArray(res) ? res : (res?.data || []);
-      setSales(data);
+      setSales(extractArray(res));
       setLoading(false);
     }).catch(() => setLoading(false));
 
     branchesPromise.then(res => {
-      const data = Array.isArray(res) ? res : (res?.data || []);
-      setBranches(data);
+      setBranches(extractArray(res));
     }).catch(() => { });
 
     companiesPromise.then(res => {
-      const data = Array.isArray(res) ? res : (res?.data || []);
-      setCompanies(data);
+      setCompanies(extractArray(res));
     }).catch(() => { });
 
     productsPromise.then(res => {
-      const data = Array.isArray(res) ? res : (res?.data || []);
-      setProducts(data);
+      setProducts(extractArray(res));
     }).catch(() => { });
 
     invPromise.then(res => {
-      const data = Array.isArray(res) ? res : (res?.data || []);
-      setInventories(data);
+      setInventories(extractArray(res));
     }).catch(() => { });
 
     warehousesPromise.then(res => {
-      const data = Array.isArray(res) ? res : (res?.data || []);
-      setWarehouses(data);
+      setWarehouses(extractArray(res));
     }).catch(() => { });
 
     warehouseStocksPromise.then(res => {
-      const data = Array.isArray(res) ? res : (res?.data || []);
-      setWarehouseStocks(data);
+      setWarehouseStocks(extractArray(res));
     }).catch(() => { });
 
     summaryPromise.then(res => {
-      const data = Array.isArray(res) ? res : (res?.data || []);
-      setProductSummaries(data);
+      setProductSummaries(extractArray(res));
     }).catch(() => { });
 
   }, []);
@@ -278,9 +278,7 @@ const SalesManagement = () => {
 
       es.addEventListener('sales-update', () => {
         api.get('/sales?page=0&size=20').then(res => {
-          if (res?.success) {
-            setSales(res.data || []);
-          }
+          setSales(extractArray(res));
         }).catch(err => {
           console.error('Failed to refresh sales:', err);
         });
@@ -748,7 +746,7 @@ const SalesManagement = () => {
 
       const response = await api.get(`/sales?page=0&size=100&${params.toString()}`);
       if (response.success) {
-        const data = Array.isArray(response) ? response : (response?.data || []);
+        const data = extractArray(response);
         setSales(data);
         toast.success(`Found ${data.length} sales`);
         setCurrentPage(1);
