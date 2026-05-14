@@ -215,7 +215,7 @@ const SalesManagement = () => {
     if (!background) setLoading(true);
 
 
-    const salesPromise = api.get('/sales?page=0&size=20');
+    const salesPromise = api.get('/sales/all');
     const branchesPromise = api.get('/branches');
     const companiesPromise = api.get('/companies');
     const productsPromise = api.get('/products');
@@ -277,7 +277,7 @@ const SalesManagement = () => {
       });
 
       es.addEventListener('sales-update', () => {
-        api.get('/sales?page=0&size=20').then(res => {
+        api.get('/sales/all').then(res => {
           setSales(extractArray(res));
         }).catch(err => {
           console.error('Failed to refresh sales:', err);
@@ -744,15 +744,11 @@ const SalesManagement = () => {
       if (filterData.startDate) params.append('startDate', filterData.startDate);
       if (filterData.endDate) params.append('endDate', filterData.endDate);
 
-      const response = await api.get(`/sales?page=0&size=100&${params.toString()}`);
-      if (response.success) {
-        const data = extractArray(response);
-        setSales(data);
-        toast.success(`Found ${data.length} sales`);
-        setCurrentPage(1);
-      } else {
-        toast.error('Failed to filter sales');
-      }
+      const response = await api.get('/sales/all');
+      const allData = extractArray(response);
+      setSales(allData);
+      toast.success(`Loaded ${allData.length} sales`);
+      setCurrentPage(1);
     } catch (error) {
       console.error('Error filtering sales:', error);
       const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to filter sales';
