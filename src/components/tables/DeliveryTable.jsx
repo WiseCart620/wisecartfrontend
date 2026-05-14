@@ -33,15 +33,13 @@ const DeliveryTable = ({
   };
 
   const getStatusGroup = (status) => {
-    // Define status groups for ordering
-    // Lower group number = appears earlier
     const groups = {
-      PENDING: 1,
-      PREPARING: 2,
-      IN_TRANSIT: 3,
-      DELIVERED: 4,
+      PREPARING: 1,
+      IN_TRANSIT: 2,
+      DELIVERED: 3,
+      PENDING: 4,
       RETURNED: 5,
-      CANCELLED: 999, // Cancelled always last
+      CANCELLED: 999,
     };
     return groups[status] || 99;
   };
@@ -50,22 +48,22 @@ const DeliveryTable = ({
   const sortedDeliveries = [...deliveries].sort((a, b) => {
     const groupA = getStatusGroup(a.status);
     const groupB = getStatusGroup(b.status);
-    
+
     // If different status groups, sort by group order
     if (groupA !== groupB) {
       return groupA - groupB;
     }
-    
+
     // Same status group - sort by creation date (newest first)
     // Use createdAt field, fallback to datePrepared, then date, then id
     const dateA = a.createdAt || a.datePrepared || a.date || a.id;
     const dateB = b.createdAt || b.datePrepared || b.date || b.id;
-    
+
     // If both have date objects/strings, compare them
     if (dateA && dateB) {
       return new Date(dateB) - new Date(dateA);
     }
-    
+
     // Fallback to ID comparison (assuming higher ID = newer)
     return (b.id || 0) - (a.id || 0);
   });

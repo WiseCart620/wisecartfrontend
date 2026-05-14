@@ -52,8 +52,8 @@ const DeliveryFilters = ({
       .map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }))
     : branchOptions;
 
-  const hasActiveFilters = Object.values(filterData).some(
-    v => v !== '' && v !== null && v !== undefined
+  const hasActiveFilters = Object.entries(filterData).some(
+    ([k, v]) => v !== '' && v !== null && v !== undefined && !(k === 'status' && v === 'HIDE_CANCELLED')
   );
 
   const selectedProductOptionId = filterData.variationId
@@ -150,7 +150,8 @@ const DeliveryFilters = ({
               value={filterData.status}
               onChange={(e) => onFilterChange({ status: e.target.value })}
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-              <option value="">All Status</option>
+              <option value="HIDE_CANCELLED">All (Hide Cancelled)</option>
+              <option value="">All Statuses</option>
               {statusOptions.map(status => (
                 <option key={status} value={status}>{status}</option>
               ))}

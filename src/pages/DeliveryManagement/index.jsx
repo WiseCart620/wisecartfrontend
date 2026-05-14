@@ -69,7 +69,7 @@ const DeliveryManagement = () => {
     companyId: '',
     branchId: '',
     warehouseId: '',
-    status: '',
+    status: 'HIDE_CANCELLED',
     productId: '',
     variationId: '',
     productName: '',
@@ -82,7 +82,9 @@ const DeliveryManagement = () => {
   useEffect(() => { loadData(); }, []);
 
   const filteredDeliveries = sortDeliveriesByStatus(
-    filterDeliveries(deliveries, filterData),
+    filterDeliveries(deliveries, filterData).filter(d =>
+      filterData.status === 'HIDE_CANCELLED' ? d.status !== 'CANCELLED' : true
+    ),
     sortMode
   );
 
@@ -334,7 +336,7 @@ const DeliveryManagement = () => {
   };
 
   const handleResetFilter = () => {
-    setFilterData({ companyId: '', branchId: '', warehouseId: '', status: '', productId: '', variationId: '', productName: '', startDate: '', endDate: '', receiptNumber: '', poNumber: '' });
+    setFilterData({ companyId: '', branchId: '', warehouseId: '', status: 'HIDE_CANCELLED', productId: '', variationId: '', productName: '', startDate: '', endDate: '', receiptNumber: '', poNumber: '' });
     setCurrentPage(1);
   };
 
