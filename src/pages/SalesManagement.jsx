@@ -206,8 +206,8 @@ const SalesManagement = () => {
   const loadData = useCallback(async (background = false) => {
     if (!background) setLoading(true);
 
-    // Fire ALL requests simultaneously
-    const salesPromise = api.get('/sales');
+
+    const salesPromise = api.get('/sales?page=0&size=20');
     const branchesPromise = api.get('/branches');
     const companiesPromise = api.get('/companies');
     const productsPromise = api.get('/products');
@@ -216,39 +216,45 @@ const SalesManagement = () => {
     const warehouseStocksPromise = api.get('/stocks/warehouses');
     const summaryPromise = api.get('/inventories/products/summary');
 
-    // Show sales + branches + companies FIRST (most critical for table)
     salesPromise.then(res => {
-      if (res?.success) setSales(res.data || []);
-      setLoading(false); // table appears immediately
+      const data = Array.isArray(res) ? res : (res?.data || []);
+      setSales(data);
+      setLoading(false);
     }).catch(() => setLoading(false));
 
     branchesPromise.then(res => {
-      if (res?.success) setBranches(res.data || []);
+      const data = Array.isArray(res) ? res : (res?.data || []);
+      setBranches(data);
     }).catch(() => { });
 
     companiesPromise.then(res => {
-      if (res?.success) setCompanies(res.data || []);
+      const data = Array.isArray(res) ? res : (res?.data || []);
+      setCompanies(data);
     }).catch(() => { });
 
-    // Rest loads silently in background
     productsPromise.then(res => {
-      if (res?.success) setProducts(res.data || []);
+      const data = Array.isArray(res) ? res : (res?.data || []);
+      setProducts(data);
     }).catch(() => { });
 
     invPromise.then(res => {
-      if (res?.success) setInventories(res.data || []);
+      const data = Array.isArray(res) ? res : (res?.data || []);
+      setInventories(data);
     }).catch(() => { });
 
     warehousesPromise.then(res => {
-      if (res?.success) setWarehouses(res.data || []);
+      const data = Array.isArray(res) ? res : (res?.data || []);
+      setWarehouses(data);
     }).catch(() => { });
 
     warehouseStocksPromise.then(res => {
-      if (res?.success) setWarehouseStocks(res.data || []);
+      const data = Array.isArray(res) ? res : (res?.data || []);
+      setWarehouseStocks(data);
     }).catch(() => { });
 
     summaryPromise.then(res => {
-      if (res?.success) setProductSummaries(res.data || []);
+      const data = Array.isArray(res) ? res : (res?.data || []);
+      setProductSummaries(data);
     }).catch(() => { });
 
   }, []);
@@ -271,7 +277,7 @@ const SalesManagement = () => {
       });
 
       es.addEventListener('sales-update', () => {
-        api.get('/sales').then(res => {
+        api.get('/sales?page=0&size=20').then(res => {
           if (res?.success) {
             setSales(res.data || []);
           }
@@ -740,10 +746,11 @@ const SalesManagement = () => {
       if (filterData.startDate) params.append('startDate', filterData.startDate);
       if (filterData.endDate) params.append('endDate', filterData.endDate);
 
-      const response = await api.get(`/sales?${params.toString()}`);
+      const response = await api.get(`/sales?page=0&size=100&${params.toString()}`);
       if (response.success) {
-        setSales(response.data || []);
-        toast.success(`Found ${response.data.length} sales`);
+        const data = Array.isArray(response) ? response : (response?.data || []);
+        setSales(data);
+        toast.success(`Found ${data.length} sales`);
         setCurrentPage(1);
       } else {
         toast.error('Failed to filter sales');
