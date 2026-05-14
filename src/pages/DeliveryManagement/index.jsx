@@ -82,9 +82,7 @@ const DeliveryManagement = () => {
   useEffect(() => { loadData(); }, []);
 
   const filteredDeliveries = sortDeliveriesByStatus(
-    filterDeliveries(deliveries, filterData).filter(d =>
-      filterData.status === 'HIDE_CANCELLED' ? d.status !== 'CANCELLED' : true
-    ),
+    filterDeliveries(deliveries, filterData),
     sortMode
   );
 
@@ -93,10 +91,9 @@ const DeliveryManagement = () => {
   const currentDeliveries = filteredDeliveries.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredDeliveries.length / itemsPerPage);
 
-  // ── Helper: reload data and clamp page if it no longer exists ─────────────
   const reloadAndClampPage = async (pageToKeep) => {
     await loadData();
-    const newTotal = filteredDeliveries.length; // will update after re-render, so use a safe clamp
+    const newTotal = filteredDeliveries.length;
     const newTotalPages = Math.max(1, Math.ceil(newTotal / itemsPerPage));
     setCurrentPage(prev => Math.min(prev, Math.max(1, pageToKeep ?? prev)));
   };
