@@ -1,5 +1,4 @@
 // src/pages/DeliveryManagement/index.jsx
-// ── CHANGES: Added sliding navbar navigation between Delivery and Transmittal ───
 import React, { useState, useEffect } from 'react';
 import { Plus, ArrowUpDown, Hash, Clock, XCircle, FileText, ClipboardList, Package } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -14,7 +13,6 @@ import { toast } from 'react-hot-toast';
 import { api } from '../../services/api';
 import '../../styles/deliveryReceipt.css';
 
-// Sort option definitions
 const SORT_OPTIONS = [
   { value: 'receipt_desc', label: 'DR # — Highest first', icon: Hash },
   { value: 'receipt_asc', label: 'DR # — Lowest first', icon: Hash },
@@ -32,7 +30,7 @@ const DeliveryManagement = () => {
     products,
     warehouses,
     companies,
-    loading,
+    loading,                // ← now wired up properly from the hook
     loadData,
     refreshDeliveries,
     updateDeliveryLocally,
@@ -48,16 +46,8 @@ const DeliveryManagement = () => {
     filterDeliveries
   } = useDeliveries();
 
-  const [modalState, setModalState] = useState({
-    show: false,
-    mode: null,
-    delivery: null
-  });
-  const [receiptModalState, setReceiptModalState] = useState({
-    show: false,
-    receiptData: null
-  });
-
+  const [modalState, setModalState] = useState({ show: false, mode: null, delivery: null });
+  const [receiptModalState, setReceiptModalState] = useState({ show: false, receiptData: null });
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -92,13 +82,6 @@ const DeliveryManagement = () => {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentDeliveries = filteredDeliveries.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredDeliveries.length / itemsPerPage);
-
-  const reloadAndClampPage = async (pageToKeep) => {
-    await loadData();
-    const newTotal = filteredDeliveries.length;
-    const newTotalPages = Math.max(1, Math.ceil(newTotal / itemsPerPage));
-    setCurrentPage(prev => Math.min(prev, Math.max(1, pageToKeep ?? prev)));
-  };
 
   const handleOpenModal = async (mode, delivery = null) => {
     if (mode === 'edit' && delivery?.status === 'DELIVERED') {
@@ -188,7 +171,6 @@ const DeliveryManagement = () => {
         dateDelivered: formData.status === 'DELIVERED' && formData.dateDelivered ? formData.dateDelivered : null
       };
 
-
       let result;
       if (modalState.mode === 'create') {
         result = await createDelivery(deliveryData);
@@ -227,10 +209,7 @@ const DeliveryManagement = () => {
         await refreshDeliveries();
         const newFilteredCount = filteredDeliveries.length - 1;
         const newTotalPages = Math.max(1, Math.ceil(newFilteredCount / itemsPerPage));
-        if (currentPage > newTotalPages) {
-          setCurrentPage(newTotalPages);
-        }
-        // Otherwise stay on the same page
+        if (currentPage > newTotalPages) setCurrentPage(newTotalPages);
       } else {
         alert(result.error || 'Failed to delete delivery');
       }
@@ -242,7 +221,9 @@ const DeliveryManagement = () => {
     }
   };
 
-  const handleOpenCancelModal = (delivery) => { setCancelModal({ show: true, delivery, remarks: '' }); };
+  const handleOpenCancelModal = (delivery) => {
+    setCancelModal({ show: true, delivery, remarks: '' });
+  };
 
   const handleConfirmCancel = async () => {
     if (!cancelModal.remarks.trim()) {
@@ -258,11 +239,9 @@ const DeliveryManagement = () => {
         setCancelModal({ show: false, delivery: null, remarks: '' });
         await refreshDeliveries();
       } else {
-        // Show the full backend error — includes the item-by-item breakdown
         alert(result.error || 'Failed to cancel delivery');
       }
     } catch (error) {
-      // error.message may be truncated by the hook — extract from response if possible
       const msg = error?.response?.data?.error
         || error?.response?.data?.message
         || error?.message
@@ -335,10 +314,13 @@ const DeliveryManagement = () => {
   };
 
   const handleResetFilter = () => {
-    setFilterData({ companyId: '', branchId: '', warehouseId: '', status: 'HIDE_CANCELLED', productId: '', variationId: '', productName: '', startDate: '', endDate: '', receiptNumber: '', poNumber: '' });
+    setFilterData({
+      companyId: '', branchId: '', warehouseId: '', status: 'HIDE_CANCELLED',
+      productId: '', variationId: '', productName: '',
+      startDate: '', endDate: '', receiptNumber: '', poNumber: ''
+    });
     setCurrentPage(1);
   };
-
 
   return (
     <>
@@ -350,19 +332,22 @@ const DeliveryManagement = () => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 inline-flex overflow-x-auto max-w-full">
             <button
               onClick={() => navigate('/deliveries')}
-              className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-lg transition-all duration-200 font-medium text-sm whitespace-nowrap ${location.pathname === '/deliveries'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-gray-600 hover:bg-gray-100'
-                }`}
+              className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-lg transition-all duration-200 font-medium text-sm whitespace-nowrap ${
+                location.pathname === '/deliveries'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
             >
               <ClipboardList size={18} />
               <span>Delivery Management</span>
             </button>
             <button
               onClick={() => navigate('/transmittals')}
-              className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-lg transition-all duration-200 font-medium text-sm whitespace-nowrap ${location.pathname === '/transmittals' ? 'bg-blue-600 text-white shadow-md'
-                : 'text-gray-600 hover:bg-gray-100'
-                }`}
+              className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-lg transition-all duration-200 font-medium text-sm whitespace-nowrap ${
+                location.pathname === '/transmittals'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
             >
               <FileText size={18} />
               <span>Transmittal Forms</span>
@@ -375,12 +360,6 @@ const DeliveryManagement = () => {
             <h1 className="text-lg lg:text-2xl font-bold text-gray-900">Delivery Management</h1>
             <p className="text-xs sm:text-sm text-gray-600">Track and manage product deliveries to branches</p>
           </div>
-          {deliveries.length === 0 && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-              <span className="text-xs text-blue-600 font-medium">Loading deliveries...</span>
-            </div>
-          )}
         </div>
 
         <div className="flex flex-wrap justify-between items-center gap-2 mb-3">
@@ -419,6 +398,7 @@ const DeliveryManagement = () => {
           products={products}
         />
 
+        {/* ↓ Pass the real loading state from the hook instead of false */}
         <DeliveryTable
           deliveries={currentDeliveries}
           onView={handleViewDelivery}
@@ -430,10 +410,9 @@ const DeliveryManagement = () => {
           currentPage={currentPage}
           itemsPerPage={itemsPerPage}
           totalItems={filteredDeliveries.length}
-          isLoading={false}
+          isLoading={loading}
         />
 
-        {/* Delivery modals (unchanged) */}
         {modalState.show && modalState.mode === 'view' && modalState.delivery && (
           <DeliveryViewModal
             delivery={modalState.delivery}
@@ -464,7 +443,6 @@ const DeliveryManagement = () => {
           />
         )}
 
-        {/* Cancel modal (unchanged) */}
         {cancelModal.show && cancelModal.delivery && (
           <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-2 sm:p-6">
             <div className="bg-white rounded-xl sm:rounded-2xl max-w-lg w-full shadow-2xl max-h-[95vh] overflow-y-auto">
@@ -487,7 +465,9 @@ const DeliveryManagement = () => {
                   <p className="mt-2 text-amber-700">This can only proceed if <strong>none</strong> of the delivered items have been sold.</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Reason for Cancellation <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Reason for Cancellation <span className="text-red-500">*</span>
+                  </label>
                   <textarea
                     value={cancelModal.remarks}
                     onChange={(e) => setCancelModal(prev => ({ ...prev, remarks: e.target.value }))}
@@ -499,8 +479,17 @@ const DeliveryManagement = () => {
                 </div>
               </div>
               <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
-                <button onClick={() => setCancelModal({ show: false, delivery: null, remarks: '' })} className="px-5 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm">Keep Delivery</button>
-                <button onClick={handleConfirmCancel} disabled={!cancelModal.remarks.trim()} className="px-5 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                <button
+                  onClick={() => setCancelModal({ show: false, delivery: null, remarks: '' })}
+                  className="px-5 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+                >
+                  Keep Delivery
+                </button>
+                <button
+                  onClick={handleConfirmCancel}
+                  disabled={!cancelModal.remarks.trim()}
+                  className="px-5 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
                   <XCircle size={16} />Confirm Cancellation
                 </button>
               </div>

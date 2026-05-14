@@ -40,6 +40,8 @@ export const useDeliveries = () => {
   const [error, setError] = useState(null);
 
   const loadData = useCallback(async (background = false) => {
+    // Only show the skeleton on the initial / foreground load
+    if (!background) setLoading(true);
     try {
       setError(null);
       const [deliveriesRes, branchesRes, productsRes, warehousesRes, companiesRes] = await Promise.all([
@@ -57,6 +59,8 @@ export const useDeliveries = () => {
     } catch (err) {
       console.error('Failed to load data', err);
       setError(err.message || 'Failed to load data');
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -325,11 +329,6 @@ export const useDeliveries = () => {
     });
   };
 
-  /**
-   * Extract the numeric portion of a delivery receipt number for proper numeric sorting.
-   * e.g. "DR-00123" → 123, "DR-00045" → 45, "00099" → 99
-   * Falls back to string comparison if no numeric part is found.
-   */
   const extractReceiptNumber = (receiptStr) => {
     if (!receiptStr) return 0;
     const digits = receiptStr.replace(/\D/g, '');
@@ -350,11 +349,9 @@ export const useDeliveries = () => {
 
   const sortDeliveriesByStatus = (deliveriesList, sortMode = 'receipt_desc') => {
     return [...deliveriesList].sort((a, b) => {
-      // Always sort by status group first
       const groupDiff = getStatusGroup(a.status) - getStatusGroup(b.status);
       if (groupDiff !== 0) return groupDiff;
 
-      // Then sort within same status group by selected sort mode
       switch (sortMode) {
         case 'receipt_asc': {
           const numA = extractReceiptNumber(a.deliveryReceiptNumber);
@@ -385,20 +382,16 @@ export const useDeliveries = () => {
 
   const filterDeliveries = (deliveries, filters) => {
     return deliveries.filter(delivery => {
-
-      // Company — handle both nested object and flat id
       if (filters.companyId) {
         const id = delivery.company?.id ?? delivery.companyId;
         if (id !== filters.companyId) return false;
       }
 
-      // Branch — handle both nested object and flat id
       if (filters.branchId) {
         const id = delivery.branch?.id ?? delivery.branchId;
         if (id !== filters.branchId) return false;
       }
 
-      // Warehouse — warehouses live inside items, not on the delivery root
       if (filters.warehouseId) {
         const hasWarehouse = delivery.items?.some(item =>
           (item.warehouse?.id ?? item.warehouseId) === filters.warehouseId
@@ -425,7 +418,6 @@ export const useDeliveries = () => {
         if (!hasProduct) return false;
       }
 
-      // Date range
       if (filters.startDate || filters.endDate) {
         const deliveryDate = new Date(delivery.datePrepared || delivery.date);
 
