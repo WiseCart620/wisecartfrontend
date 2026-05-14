@@ -41,7 +41,7 @@ export const useDeliveries = () => {
 
   const loadData = useCallback(async (background = false) => {
     try {
-      if (!background) setLoading(true);
+      if (!background && !deliveries.length) setLoading(true);
       setError(null);
 
       const [deliveriesRes, branchesRes, productsRes, warehousesRes, companiesRes] = await Promise.all([
@@ -105,7 +105,7 @@ export const useDeliveries = () => {
       es.onerror = () => {
         es.close();
         retryTimeout = setTimeout(() => {
-          retryDelay = Math.min(retryDelay * 2, 30000);
+          retryDelay = Math.min(retryDelay * 1.5, 15000);
           connect();
         }, retryDelay);
       };

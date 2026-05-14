@@ -204,7 +204,7 @@ const SalesManagement = () => {
 
 
   const loadData = useCallback(async (background = false) => {
-    if (!background) {
+    if (!background && !sales.length) {
       setLoading(true);
       setLoadingMessage('Loading sales data...');
     }
@@ -1195,13 +1195,6 @@ const SalesManagement = () => {
     return [...new Set(names)].sort();
   }, [sales]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <LoadingOverlay show={true} message="Loading sales data..." />
-      </div>
-    );
-  }
 
   if (showInvoicingProfile) {
     return <InvoicingProfile onBack={() => setShowInvoicingProfile(false)} />;
@@ -1209,7 +1202,7 @@ const SalesManagement = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-2 sm:p-3 lg:p-4">
-      <LoadingOverlay show={actionLoading} message={loadingMessage} />
+      <LoadingOverlay show={actionLoading && !!loadingMessage} message={loadingMessage} />
       <div className="max-w-full mx-auto">
         <div className="mb-4">
           <h1 className="text-xl lg:text-2xl font-bold text-gray-900 mb-1">Sales Management</h1>

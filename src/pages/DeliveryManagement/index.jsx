@@ -79,7 +79,9 @@ const DeliveryManagement = () => {
     poNumber: ''
   });
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const filteredDeliveries = sortDeliveriesByStatus(
     filterDeliveries(deliveries, filterData),

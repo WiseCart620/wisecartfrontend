@@ -94,7 +94,7 @@ const Dashboard = () => {
 
   const loadStats = async () => {
     try {
-      setActionLoading(true);
+      if (!sales.length) setActionLoading(true);
       setLoadingMessage('Loading stats...');
       const [salesRes, deliveriesRes, productsRes, companiesRes, branchesRes] = await Promise.all([
         api.get('/sales'),
@@ -199,16 +199,11 @@ const Dashboard = () => {
       });
     } catch (err) {
       console.error('Failed to load dashboard data', err);
-    } finally {
-      setActionLoading(false);
-      setLoadingMessage('');
     }
   };
 
   const loadAlerts = async () => {
     try {
-      setActionLoading(true);
-      setLoadingMessage('Loading alerts...');
       const alertsRes = await api.get('/alerts');
       if (alertsRes.success && alertsRes.data) {
         setAlerts(alertsRes.data || []);
@@ -218,9 +213,6 @@ const Dashboard = () => {
     } catch (err) {
       console.error('Failed to load alerts', err);
       setAlerts([]);
-    } finally {
-      setActionLoading(false);
-      setLoadingMessage('');
     }
   };
 
