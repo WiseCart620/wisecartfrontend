@@ -66,6 +66,7 @@ const Dashboard = () => {
   const [availableBranches, setAvailableBranches] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
+  const [dashboardLoading, setDashboardLoading] = useState(true);
   const [selectedCompanyForBranches, setSelectedCompanyForBranches] = useState(null);
   const [selectedCompanyForTopBranches, setSelectedCompanyForTopBranches] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -94,6 +95,7 @@ const Dashboard = () => {
 
   const loadStats = async () => {
     try {
+      setDashboardLoading(true);
       const [salesRes, deliveriesRes, productsRes, companiesRes, branchesRes] = await Promise.all([
         api.get('/sales'),
         api.get('/deliveries'),
@@ -197,6 +199,8 @@ const Dashboard = () => {
       });
     } catch (err) {
       console.error('Failed to load dashboard data', err);
+    } finally {
+      setDashboardLoading(false);
     }
   };
 
@@ -693,15 +697,23 @@ const Dashboard = () => {
   }, [products]);
 
   return (
-    <>
-      <LoadingOverlay show={actionLoading} message={loadingMessage || 'Loading...'} />
+    <>  
+      <LoadingOverlay show={actionLoading && !!loadingMessage} message={loadingMessage} />
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-x-hidden">
         <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-6">
           <div className="space-y-4 sm:space-y-6">
             {/* Header Section */}
-            <div className="mb-3 sm:mb-6">
-              <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">Overview of your business performance</p>
+            <div className="mb-3 sm:mb-6 flex items-center justify-between">
+              <div>
+                <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900">Dashboard</h1>
+                <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">Overview of your business performance</p>
+              </div>
+              {dashboardLoading && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs text-blue-600 font-medium">Loading data...</span>
+                </div>
+              )}
             </div>
 
             {/* Dashboard Header with Actions */}

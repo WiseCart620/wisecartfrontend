@@ -370,9 +370,17 @@ const DeliveryManagement = () => {
           </div>
         </div>
 
-        <div className="mb-3">
-          <h1 className="text-lg lg:text-2xl font-bold text-gray-900">Delivery Management</h1>
-          <p className="text-xs sm:text-sm text-gray-600">Track and manage product deliveries to branches</p>
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h1 className="text-lg lg:text-2xl font-bold text-gray-900">Delivery Management</h1>
+            <p className="text-xs sm:text-sm text-gray-600">Track and manage product deliveries to branches</p>
+          </div>
+          {deliveries.length === 0 && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs text-blue-600 font-medium">Loading deliveries...</span>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap justify-between items-center gap-2 mb-3">

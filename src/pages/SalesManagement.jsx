@@ -153,7 +153,7 @@ const SalesManagement = () => {
   const [branches, setBranches] = useState([]);
   const [products, setProducts] = useState([]);
   const [companies, setCompanies] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [modalMode, setModalMode] = useState('create');
@@ -204,7 +204,7 @@ const SalesManagement = () => {
 
 
   const loadData = useCallback(async (background = false) => {
-    if (!background && !sales.length) {
+    if (!background) {
       setLoading(true);
     }
     try {
@@ -1390,9 +1390,24 @@ const SalesManagement = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {currentSales.length === 0 ? (
+                {loading ? (
+                  <>
+                    {[...Array(5)].map((_, i) => (
+                      <tr key={i} className="animate-pulse">
+                        <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-6 mx-auto" /></td>
+                        <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-28" /></td>
+                        <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-24" /></td>
+                        <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-16" /></td>
+                        <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-20" /></td>
+                        <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-20" /></td>
+                        <td className="px-3 py-3"><div className="h-6 bg-gray-100 rounded-full w-16" /></td>
+                        <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-20" /></td>
+                      </tr>
+                    ))}
+                  </>
+                ) : currentSales.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
                       {filteredSales.length === 0 ? 'No sales found' : 'No sales on this page'}
                     </td>
                   </tr>
