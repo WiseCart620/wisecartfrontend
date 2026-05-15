@@ -23,6 +23,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
     companyCity: '',
     companyProvince: '',
     existingCompanyId: '',
+    companyTerms: '30 days',
   });
 
   // Format TIN: 000-000-000-00000
@@ -70,6 +71,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
         companyAddress: company?.address || '',
         companyCity: company?.city || '',
         companyProvince: company?.province || '',
+        companyTerms: company?.terms || '30 days',
         existingCompanyId: company?.id || '',
         transferToCompanyId: '',
       });
@@ -86,6 +88,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
         companyAddress: '',
         companyCity: '',
         companyProvince: '',
+        companyTerms: '',
       }));
     } else if (mode === 'new') {
       setFormData(prev => ({
@@ -108,6 +111,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
           companyAddress: selectedCompany.address || '',
           companyCity: selectedCompany.city || '',
           companyProvince: selectedCompany.province || '',
+          companyTerms: selectedCompany.terms || '',
         }));
       }
     }
@@ -205,7 +209,8 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
           tin: formData.companyTin?.trim() || null,
           address: formData.companyAddress.trim(),
           city: formData.companyCity.trim(),
-          province: formData.companyProvince.trim()
+          province: formData.companyProvince.trim(),
+          terms: formData.companyTerms?.trim() || null
         };
 
         const result = await api.put(`/companies/${formData.existingCompanyId}`, companyPayload);
@@ -248,6 +253,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
             payload.companyAddress = formData.companyAddress.trim();
             payload.companyCity = formData.companyCity.trim();
             payload.companyProvince = formData.companyProvince.trim();
+            payload.companyTerms = formData.companyTerms?.trim() || null;
             result = await api.put(`/branches/${editingData.branch.id}/with-company`, payload);
           }
         } else {
@@ -262,6 +268,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
             payload.companyAddress = formData.companyAddress.trim();
             payload.companyCity = formData.companyCity.trim();
             payload.companyProvince = formData.companyProvince.trim();
+            payload.companyTerms = formData.companyTerms?.trim() || null;
           }
 
           result = await api.post('/branches/with-company', payload);
@@ -628,6 +635,22 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
                       className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId) ? 'bg-gray-100 cursor-not-allowed' : ''
                         }`}
                       placeholder="Enter province"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Terms (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      name="companyTerms"
+                      value={formData.companyTerms}
+                      onChange={handleInputChange}
+                      disabled={companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId)}
+                      className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                        }`}
+                      placeholder="e.g. NET 30, COD"
                     />
                   </div>
                 </div>

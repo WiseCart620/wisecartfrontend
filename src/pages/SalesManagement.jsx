@@ -201,6 +201,8 @@ const SalesManagement = () => {
   const [itemsPerPage] = useState(10);
   const [showSalesMemoModal, setShowSalesMemoModal] = useState(false);
   const [showInvoicingProfile, setShowInvoicingProfile] = useState(false);
+  const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
   const [salesMemo, setSalesMemo] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
@@ -611,15 +613,46 @@ const SalesManagement = () => {
     const totalVatIncl = (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
     const wht = vatableSales * 0.01;
     const totalAmountDue = totalVatIncl - wht;
+
+    const productItems = (invoiceReport.products || []).map(product => ({
+      productName: product.productName,
+      variationDisplay: product.variation
+        ? (product.variation.combinationDisplay ||
+          `${product.variation.variationType}: ${product.variation.variationValue}`)
+        : null,
+      upc: product.variation ? (product.variation.upc || null) : null,
+      totalQuantity: product.totalQuantity,
+      unitCost: product.totalAmount / product.totalQuantity,
+      totalAmount: product.totalAmount,
+    }));
+
+    const adjustmentItems = (invoiceReport.adjustments || [])
+      .filter(adj => adj.description && adj.amount)
+      .map(adj => ({
+        productName: adj.description,
+        variationDisplay: 'Adjustment',
+        upc: null,
+        totalQuantity: adj.quantity || 1,
+        unitCost: adj.unitCost || 0,
+        totalAmount: adj.amount || 0,
+      }));
+
     const payload = {
       companyId: filterData.companyId || null,
       branchId: filterData.branchId || null,
+      startMonth: filterData.startMonth || null,
+      endMonth: filterData.endMonth || null,
+      startYear: filterData.startYear || null,
+      endYear: filterData.endYear || null,
       soldTo: invoiceReport.soldTo || '',
       registeredName: invoiceReport.registeredName || invoiceReport.soldTo || '',
       tin: invoiceReport.tin || '',
       businessAddress: invoiceReport.businessAddress || '',
       vatableSales, vat, withholdingTax: wht, totalAmountDue,
       transactionType: 'Sales Invoice',
+      invoiceNumber: invoiceNumber || null,
+      invoiceDate: invoiceDate || new Date().toISOString().split('T')[0],
+      items: [...productItems, ...adjustmentItems],
     };
     try {
       const res = await api.post('/invoice-profiles', payload);
@@ -2173,6 +2206,35 @@ const SalesManagement = () => {
                     <option value="INVOICED">Invoiced Only</option>
                   </select>
                 </div>
+                <div className="pt-4 border-t border-gray-200">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                    Invoice details
+                  </p>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        Invoice Number
+                        <span className="ml-1 text-xs text-gray-400">(optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={invoiceNumber}
+                        onChange={(e) => setInvoiceNumber(e.target.value)}
+                        placeholder="e.g. SI-2025-0001"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">Invoice Date</label>
+                      <input
+                        type="date"
+                        value={invoiceDate}
+                        onChange={(e) => setInvoiceDate(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="p-8 border-t border-gray-200 flex justify-end gap-4">
                 <button
@@ -2239,8 +2301,15 @@ const SalesManagement = () => {
                         INVOICE
                       </div>
                     </div>
-                    <div className="text-lg font-semibold">
-                      NO. _____________
+                    <div className="text-lg font-semibold flex items-center gap-1">
+                      NO.
+                      <input
+                        type="text"
+                        value={invoiceNumber}
+                        onChange={(e) => setInvoiceNumber(e.target.value)}
+                        placeholder="_____________"
+                        className="border-b border-gray-500 w-36 text-center focus:outline-none bg-transparent print:border-0"
+                      />
                     </div>
                   </div>
                 </div>
@@ -2260,9 +2329,14 @@ const SalesManagement = () => {
                     </label>
                   </div>
                   <div className="text-right">
-                    <div className="text-black-900">
-                      <span className="print-hidden">DATE: </span>
-                      <span className="print-visible">{formatDate(invoiceReport.generatedAt)}</span>
+                    <div className="flex items-center gap-2 justify-end text-black-900">
+                      <span className="font-medium">DATE:</span>
+                      <input
+                        type="date"
+                        value={invoiceDate}
+                        onChange={(e) => setInvoiceDate(e.target.value)}
+                        className="border-b border-gray-500 text-sm focus:outline-none bg-transparent print:border-0"
+                      />
                     </div>
                   </div>
                 </div>

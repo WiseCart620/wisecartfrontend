@@ -30,6 +30,7 @@ const CompanyTable = ({ companies, searchTerm, onView, onEdit, onDelete }) => {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">TIN</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Terms</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Branch</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
@@ -37,7 +38,7 @@ const CompanyTable = ({ companies, searchTerm, onView, onEdit, onDelete }) => {
           <tbody className="divide-y divide-gray-200">
             {currentCompanies.length === 0 ? (
               <tr>
-                <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
                   {filteredCompanies.length === 0 ? 'No Companies found' : 'No companies on this page'}
                 </td>
               </tr>
@@ -56,6 +57,15 @@ const CompanyTable = ({ companies, searchTerm, onView, onEdit, onDelete }) => {
                   <td className="px-6 py-4 text-sm text-gray-600">
                     <div>{company.city}, {company.province}</div>
                     <div className="text-xs text-gray-500">{company.address}</div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    {company.terms ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {company.terms}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 italic">—</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
                     {company.branches && company.branches.length > 0 ? (

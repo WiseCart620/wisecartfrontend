@@ -73,6 +73,11 @@ const BranchTable = ({ branches, searchTerm, onView, onEdit, onDelete }) => {
                         {branch.company.tin && (
                           <div className="text-xs text-gray-500">TIN: {branch.company.tin}</div>
                         )}
+                        {(branch.company.terms || branch.companyTerms) && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mt-1">
+                            {branch.company.terms || branch.companyTerms}
+                          </span>
+                        )}
                       </div>
                     ) : '-'}
                   </td>

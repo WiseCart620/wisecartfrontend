@@ -82,9 +82,19 @@ const BranchViewModal = ({ branch, onClose, onEdit }) => {
                   <label className="block text-sm font-medium text-gray-500 mb-1">City</label>
                   <p className="text-gray-900">{branch.company.city || 'N/A'}</p>
                 </div>
-                <div>
+<div>
                   <label className="block text-sm font-medium text-gray-500 mb-1">Province</label>
                   <p className="text-gray-900">{branch.company.province || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Terms</label>
+                  <p className="text-gray-900">
+                    {(branch.company?.terms || branch.companyTerms) ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {branch.company?.terms || branch.companyTerms}
+                      </span>
+                    ) : 'N/A'}
+                  </p>
                 </div>
               </div>
             ) : (

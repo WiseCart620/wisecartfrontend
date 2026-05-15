@@ -69,6 +69,16 @@ const CompanyViewModal = ({ company, branches, onClose }) => {
                 <label className="block text-sm font-medium text-gray-500 mb-1">Province</label>
                 <p className="text-gray-900">{company.province}</p>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-1">Terms</label>
+                <p className="text-gray-900">
+                  {company.terms ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {company.terms}
+                    </span>
+                  ) : 'N/A'}
+                </p>
+              </div>
             </div>
           </div>
 
