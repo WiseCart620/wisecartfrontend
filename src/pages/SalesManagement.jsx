@@ -2213,16 +2213,20 @@ const SalesManagement = () => {
                   <div className="grid grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-3">
-                        Invoice Number
-                        <span className="ml-1 text-xs text-gray-400">(optional)</span>
+                        Invoice Number <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         value={invoiceNumber}
                         onChange={(e) => setInvoiceNumber(e.target.value)}
                         placeholder="e.g. SI-2025-0001"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                        required
+                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${!invoiceNumber.trim() ? 'border-red-400 bg-red-50' : 'border-gray-300'
+                          }`}
                       />
+                      {!invoiceNumber.trim() && (
+                        <p className="text-xs text-red-500 mt-1">Invoice number is required before saving to profile or printing.</p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-3">Invoice Date</label>
@@ -2618,14 +2622,32 @@ const SalesManagement = () => {
 
               <div className="p-8 border-t border-gray-200 flex justify-end gap-3 print:hidden sticky bottom-0 bg-white rounded-b-2xl">
                 <button
-                  onClick={handleGenerateToProfile}
-                  className="flex items-center gap-2 px-5 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium shadow-md"
+                  onClick={() => {
+                    if (!invoiceNumber.trim()) {
+                      toast.error('Please enter an invoice number before saving.');
+                      return;
+                    }
+                    handleGenerateToProfile();
+                  }}
+                  className={`flex items-center gap-2 px-5 py-3 rounded-lg transition font-medium shadow-md ${!invoiceNumber.trim()
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-green-600 text-white hover:bg-green-700'
+                    }`}
                 >
                   <span>Generate</span>
                 </button>
                 <button
-                  onClick={() => window.print()}
-                  className="flex items-center gap-3 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
+                  onClick={() => {
+                    if (!invoiceNumber.trim()) {
+                      toast.error('Please enter an invoice number before printing.');
+                      return;
+                    }
+                    window.print();
+                  }}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg transition font-medium shadow-md ${!invoiceNumber.trim()
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
                 >
                   <Printer size={20} />
                   <span>Print Report</span>
