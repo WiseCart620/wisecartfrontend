@@ -657,14 +657,14 @@ const SalesManagement = () => {
     try {
       const res = await api.post('/invoice-profiles', payload);
       if (res.success) {
-        toast.success('Invoice saved to invoicing profile!');
+        toast.success('Invoice saved to Sales Journal!');
         setInvoiceReport(null);
         setShowInvoicingProfile(true);
       } else {
-        toast.error(res.error || 'Failed to save to invoicing profile');
+        toast.error(res.error || 'Failed to save to Sales Journal');
       }
     } catch (e) {
-      toast.error('Failed to save to invoicing profile');
+      toast.error('Failed to save to Sales Journal');
     }
   };
 
@@ -1290,7 +1290,7 @@ const SalesManagement = () => {
                   onClick={() => setShowInvoicingProfile(true)}
                   className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-md text-sm font-medium"
                 >
-                  Invoicing Profile
+                  Sales Journal
                 </button>
               </div>
 

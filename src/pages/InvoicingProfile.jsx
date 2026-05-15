@@ -560,7 +560,7 @@ const InvoicingProfile = ({ onBack }) => {
             const res = await api.get('/invoice-profiles');
             if (res.success) setProfiles(res.data?.data || res.data || []);
         } catch {
-            toast.error('Failed to load invoicing profiles');
+            toast.error('Failed to load Sales Journal');
         } finally {
             setLoading(false);
         }
@@ -655,7 +655,7 @@ const InvoicingProfile = ({ onBack }) => {
                         <ArrowLeft size={15} />
                         Back to Sales
                     </button>
-                    <h1 className="text-xl font-bold text-gray-900">Invoicing Profile</h1>
+                    <h1 className="text-xl font-bold text-gray-900">Sales Journal</h1>
                     <p className="text-xs text-gray-500 mt-0.5">
                         Hover open balance to preview · Click to view full detail
                     </p>
@@ -729,7 +729,7 @@ const InvoicingProfile = ({ onBack }) => {
                                 <tr>
                                     <td colSpan={14} className="px-4 py-10 text-center text-gray-400 text-sm italic">
                                         {profiles.length === 0
-                                            ? 'No invoices yet. Generate an invoice and click "Generate to invoicing profile".'
+                                            ? 'No invoices yet. Generate an invoice and click "Generate to Sales Journal".'
                                             : 'No results match your filter.'}
                                     </td>
                                 </tr>
