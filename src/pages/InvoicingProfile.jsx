@@ -704,6 +704,7 @@ const InvoicingProfile = ({ onBack }) => {
                                     { label: 'Less W/H Tax', align: 'right' },
                                     { label: 'Due', align: 'right' },
                                     { label: 'Terms', align: 'center' },
+                                    { label: 'Days Overdue', align: 'center' },
                                     { label: 'Amount Paid', align: 'right' },
                                     { label: 'Balance', align: 'right' },
                                     { label: 'Status', align: 'center' },
@@ -721,13 +722,13 @@ const InvoicingProfile = ({ onBack }) => {
                         <tbody className="divide-y divide-gray-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={14} className="px-4 py-10 text-center text-gray-400 text-sm">
+                                    <td colSpan={15} className="px-4 py-10 text-center text-gray-400 text-sm">
                                         Loading...
                                     </td>
                                 </tr>
                             ) : filtered.length === 0 ? (
                                 <tr>
-                                    <td colSpan={14} className="px-4 py-10 text-center text-gray-400 text-sm italic">
+                                    <td colSpan={15} className="px-4 py-10 text-center text-gray-400 text-sm italic">
                                         {profiles.length === 0
                                             ? 'No invoices yet. Generate an invoice and click "Generate to Sales Journal".'
                                             : 'No results match your filter.'}
@@ -828,29 +829,23 @@ const InvoicingProfile = ({ onBack }) => {
                                             <td className="px-4 py-3 text-xs text-right font-semibold whitespace-nowrap">
                                                 ₱{fmt(p.totalAmountDue)}
                                             </td>
+                                            {/* Terms */}
+                                            <td className="px-4 py-3 text-center text-xs text-gray-600 whitespace-nowrap">
+                                                {termsDays !== null ? p.companyTerms : <span className="text-gray-300">—</span>}
+                                            </td>
 
-                                            {/* Terms overdue */}
-                                            {/* Terms overdue */}
-                                            <td className="px-2 py-3 text-center whitespace-nowrap max-w-[80px]">
+                                            {/* Days Overdue */}
+                                            <td className="px-4 py-3 text-center whitespace-nowrap">
                                                 {termsDays !== null ? (
-                                                    <div className="flex flex-col items-center gap-0.5">
-                                                        <span className="text-[10px] text-gray-400">{p.companyTerms}</span>
-                                                        {overdueDays === null ? (
-                                                            <span className="text-[10px] text-gray-300">—</span>
-                                                        ) : overdueDays === 0 ? (
-                                                            <span className="text-[10px] font-semibold text-green-600">
-                                                                Due today
-                                                            </span>
-                                                        ) : overdueDays < 0 ? (
-                                                            <span className="text-[10px] font-semibold text-yellow-600">
-                                                                {Math.abs(overdueDays)}d
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-[10px] font-semibold text-red-600">
-                                                                +{overdueDays}d
-                                                            </span>
-                                                        )}
-                                                    </div>
+                                                    overdueDays === null ? (
+                                                        <span className="text-[10px] text-gray-300">—</span>
+                                                    ) : overdueDays === 0 ? (
+                                                        <span className="text-[10px] font-semibold text-green-600">Due today</span>
+                                                    ) : overdueDays < 0 ? (
+                                                        <span className="text-[10px] font-semibold text-yellow-600">{Math.abs(overdueDays)}d</span>
+                                                    ) : (
+                                                        <span className="text-[10px] font-semibold text-red-600">+{overdueDays}d</span>
+                                                    )
                                                 ) : (
                                                     <span className="text-[10px] text-gray-300">—</span>
                                                 )}
