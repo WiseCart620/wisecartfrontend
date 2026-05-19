@@ -844,8 +844,7 @@ const InvoicingProfile = ({ onBack }) => {
                                                     ) : overdueDays < 0 ? (
                                                         <span className="text-[10px] font-semibold text-yellow-600">{Math.abs(overdueDays)}d</span>
                                                     ) : (
-                                                        <span className="text-[10px] font-semibold text-red-600">+{overdueDays}d</span>
-                                                    )
+                                                        <span className="text-[10px] font-semibold text-red-600">{overdueDays}d</span>)
                                                 ) : (
                                                     <span className="text-[10px] text-gray-300">—</span>
                                                 )}
@@ -977,7 +976,7 @@ const InvoicingProfile = ({ onBack }) => {
                                             className="border-b border-gray-500 text-sm focus:outline-none bg-transparent print:border-0"
                                         />
                                     </div>
-                                </div>
+                                </div>ssh
                             </div>
 
                             {/* Sold To */}
