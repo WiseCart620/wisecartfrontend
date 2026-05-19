@@ -830,6 +830,7 @@ const InvoicingProfile = ({ onBack }) => {
                                             </td>
 
                                             {/* Terms overdue */}
+                                            {/* Terms overdue */}
                                             <td className="px-2 py-3 text-center whitespace-nowrap max-w-[80px]">
                                                 {termsDays !== null ? (
                                                     <div className="flex flex-col items-center gap-0.5">
@@ -837,16 +838,16 @@ const InvoicingProfile = ({ onBack }) => {
                                                         {overdueDays === null ? (
                                                             <span className="text-[10px] text-gray-300">—</span>
                                                         ) : overdueDays === 0 ? (
-                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700">
+                                                            <span className="text-[10px] font-semibold text-green-600">
                                                                 Due today
                                                             </span>
                                                         ) : overdueDays < 0 ? (
-                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-100 text-yellow-700">
-                                                                {Math.abs(overdueDays)}d left
+                                                            <span className="text-[10px] font-semibold text-yellow-600">
+                                                                {Math.abs(overdueDays)}d
                                                             </span>
                                                         ) : (
-                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-700">
-                                                                +{overdueDays}d overdue
+                                                            <span className="text-[10px] font-semibold text-red-600">
+                                                                +{overdueDays}d
                                                             </span>
                                                         )}
                                                     </div>
