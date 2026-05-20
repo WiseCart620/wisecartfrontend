@@ -699,7 +699,7 @@ const InvoicingProfile = ({ onBack }) => {
                                     { label: 'Invoice Date', align: 'left' },
                                     { label: 'Period', align: 'left' },
                                     { label: 'Customer', align: 'left' },
-                                    { label: 'Vatable Sales/Gross Sales (PT)', align: 'right' },
+                                    { label: 'vatableSalesHeader', align: 'right' },
                                     { label: 'VAT/PT', align: 'right' },
                                     { label: 'Less: EWT', align: 'right' },
                                     { label: 'Due', align: 'right' },
@@ -712,9 +712,14 @@ const InvoicingProfile = ({ onBack }) => {
                                 ].map(({ label, align }) => (
                                     <th
                                         key={label}
-                                        className={`px-4 py-3 text-[11px] font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap text-${align}`}
+                                        className={`px-4 py-3 text-[11px] font-medium text-gray-500 uppercase tracking-wide text-${align}`}
                                     >
-                                        {label}
+                                        {label === 'vatableSalesHeader' ? (
+                                            <span className="flex flex-col items-end leading-tight">
+                                                <span>Vatable Sales /</span>
+                                                <span>Gross Sales (PT)</span>
+                                            </span>
+                                        ) : label}
                                     </th>
                                 ))}
                             </tr>
