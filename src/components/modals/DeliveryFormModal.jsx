@@ -16,7 +16,6 @@ const DeliveryFormModal = ({
     warehouses,
     companies,
     isLoading = false
-    //
 }) => {
     const [formData, setFormData] = useState({
         branchId: '',

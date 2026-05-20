@@ -202,6 +202,7 @@ const SalesManagement = () => {
   const [showSalesMemoModal, setShowSalesMemoModal] = useState(false);
   const [showInvoicingProfile, setShowInvoicingProfile] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [taxType, setTaxType] = useState('VAT');
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
   const [salesMemo, setSalesMemo] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -608,11 +609,23 @@ const SalesManagement = () => {
   const handleGenerateToProfile = async () => {
     if (!invoiceReport) return;
     const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-    const vatableSales = (invoiceReport.vatableSales || 0) + adjustmentTotal;
-    const vat = vatableSales * 0.12;
-    const totalVatIncl = (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
-    const wht = vatableSales * 0.01;
-    const totalAmountDue = totalVatIncl - wht;
+
+    let vatableSales, vat, wht, totalAmountDue;
+
+    if (taxType === 'VAT') {
+      vatableSales = (invoiceReport.vatableSales || 0) + adjustmentTotal;
+      vat = vatableSales * 0.12;
+      const totalVatIncl = (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
+      wht = vatableSales * 0.01;
+      totalAmountDue = totalVatIncl - wht;
+    } else {
+      // PT mode
+      const grossSales = (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
+      vatableSales = grossSales;
+      vat = grossSales * 0.03;
+      wht = (grossSales / 1.12) * 0.01;
+      totalAmountDue = grossSales - wht;
+    }
 
     const productItems = (invoiceReport.products || []).map(product => ({
       productName: product.productName,
@@ -649,7 +662,7 @@ const SalesManagement = () => {
       tin: invoiceReport.tin || '',
       businessAddress: invoiceReport.businessAddress || '',
       vatableSales, vat, withholdingTax: wht, totalAmountDue,
-      transactionType: 'Sales Invoice',
+      transactionType: taxType === 'PT' ? 'Sales Invoice (PT)' : 'Sales Invoice',
       invoiceNumber: invoiceNumber || null,
       invoiceDate: invoiceDate || new Date().toISOString().split('T')[0],
       items: [...productItems, ...adjustmentItems],
@@ -2207,6 +2220,33 @@ const SalesManagement = () => {
                   </select>
                 </div>
                 <div className="pt-4 border-t border-gray-200">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Tax Computation Type *</label>
+                  <div className="flex gap-3 mb-6">
+                    <button
+                      type="button"
+                      onClick={() => setTaxType('VAT')}
+                      className={`flex-1 py-3 px-4 rounded-lg border-2 text-sm font-medium transition ${taxType === 'VAT'
+                        ? 'border-blue-600 bg-blue-50 text-blue-700'
+                        : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                        }`}
+                    >
+                      <div className="font-semibold">VAT</div>
+                      <div className="text-xs mt-0.5 font-normal opacity-75">Standard VAT computation</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTaxType('PT')}
+                      className={`flex-1 py-3 px-4 rounded-lg border-2 text-sm font-medium transition ${taxType === 'PT'
+                        ? 'border-purple-600 bg-purple-50 text-purple-700'
+                        : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                        }`}
+                    >
+                      <div className="font-semibold">Percentage Tax (PT)</div>
+                      <div className="text-xs mt-0.5 font-normal opacity-75">Gross sales × 3%, EWT</div>
+                    </button>
+                  </div>
+                </div>
+                <div className="pt-4 border-t border-gray-200">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                     Invoice details
                   </p>
@@ -2489,76 +2529,141 @@ const SalesManagement = () => {
                   </table>
                 </div>
 
-                <div className="grid grid-cols-6 border-1 border-gray-900 text-sm">
-                  <div className="col-span-2 grid grid-cols-2">
-                    <div className=" border-l-0 border-1  border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[13px]">
-                      <div className="mb-2">Vatable Sales:</div>
-                      <div className="mb-2">VAT:</div>
-                      <div className="mb-2">Zero-Rated Sales:</div>
-                      <div className="">VAT-Exempt Sales:</div>
+                {taxType === 'VAT' ? (
+                  <div className="grid grid-cols-6 border-1 border-gray-900 text-sm">
+                    <div className="col-span-2 grid grid-cols-2">
+                      <div className=" border-l-0 border-1  border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[13px]">
+                        <div className="mb-2">Vatable Sales:</div>
+                        <div className="mb-2">VAT:</div>
+                        <div className="mb-2">Zero-Rated Sales:</div>
+                        <div className="">VAT-Exempt Sales:</div>
+                      </div>
+                      <div className="border-r-1 border-gray-900 px-4 py-3 flex flex-col justify-start text-[15px]">
+                        <input readOnly value={formatCurrency(
+                          (() => {
+                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                            return ((invoiceReport.vatableSales || 0) + adjustmentTotal);
+                          })()
+                        )} className="w-full text-right pb-0 mb-2" />
+                        <input readOnly value={formatCurrency(
+                          (() => {
+                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                            const vatableSales = (invoiceReport.vatableSales || 0) + adjustmentTotal;
+                            return vatableSales * 0.12;
+                          })()
+                        )} className="w-full text-right pb-0 mb-2" />
+                        <input readOnly value={formatCurrency(invoiceReport.zeroRatedSales || 0)} className="w-full text-right pb-0 mb-2" />
+                        <input readOnly value={formatCurrency(invoiceReport.vatExemptSales || 0)} className="w-full text-right pb-0" />
+                      </div>
                     </div>
-                    <div className="border-r-1 border-gray-900 px-4 py-3 flex flex-col justify-start text-[15px]">
-                      <input readOnly value={formatCurrency(
-                        (() => {
-                          const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                          return ((invoiceReport.vatableSales || 0) + adjustmentTotal);
-                        })()
-                      )} className="w-full text-right pb-0 mb-2" />
-                      <input readOnly value={formatCurrency(
-                        (() => {
-                          const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                          const vatableSales = (invoiceReport.vatableSales || 0) + adjustmentTotal;
-                          return vatableSales * 0.12;
-                        })()
-                      )} className="w-full text-right pb-0 mb-2" />
-                      <input readOnly value={formatCurrency(invoiceReport.zeroRatedSales || 0)} className="w-full text-right pb-0 mb-2" />
-                      <input readOnly value={formatCurrency(invoiceReport.vatExemptSales || 0)} className="w-full text-right pb-0" />
+                    <div className="border-r-1 border-gray-900 px-3 py-3 flex flex-col justify-center text-[11px]">
+                      <div className="font-medium leading-tight">
+                        SC/PWD/NAAC/MOV/<br />SOLO PARENT ID No.:
+                      </div>
+                      <div className="font-medium leading-tight mt-9">
+                        SC/PWD/NAAC/MOV/<br />Signature:
+                      </div>
+                    </div>
+                    <div className="border-r-1 border-gray-900 px-3 py-3 flex flex-col justify-center text-[13px]">
+                      <input type="text" className="w-full pb-0 text-sm -mt-1" />
+                      <input type="text" className="w-full pb-0 text-sm mt-5" />
+                    </div>
+                    <div className="col-span-2 grid grid-cols-2">
+                      <div className=" border-l-0 border-1  border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
+                        <div className="mb-2 text-[9px]">TOTAL SALES (VAT Inclusive)</div>
+                        <div className="mb-2">Less: VAT</div>
+                        <div className="mb-2">Amount: Net of VAT</div>
+                        <div className="">Less: Discount<br /><span className="text-[10px]">(SC/PWD/NAAC/MOV/SP)</span></div>
+                      </div>
+                      <div className="px-4 border-1 flex flex-col justify-start border-t-0 border-l-0 border-r-0 pt-2">
+                        <input readOnly value={formatCurrency(
+                          (() => {
+                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                            return (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
+                          })()
+                        )} className="w-full text-right pb-0 mb-2 text-[15px]" />
+                        <input readOnly value={formatCurrency(
+                          (() => {
+                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                            const vatableSales = (invoiceReport.vatableSales || 0) + adjustmentTotal;
+                            return vatableSales * 0.12;
+                          })()
+                        )} className="w-full text-right pb-0 mb-2 text-[15px]" />
+                        <input readOnly value={formatCurrency(
+                          (() => {
+                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                            return (invoiceReport.netOfVat || 0) + adjustmentTotal;
+                          })()
+                        )} className="w-full text-right pb-0 mb-2 text-[15px]" />
+                        <input readOnly value={formatCurrency(invoiceReport.discount || 0)} className="w-full text-right pb-0 text-[15px]" />
+                      </div>
                     </div>
                   </div>
-                  <div className="border-r-1 border-gray-900 px-3 py-3 flex flex-col justify-center text-[11px]">
-                    <div className="font-medium leading-tight">
-                      SC/PWD/NAAC/MOV/<br />SOLO PARENT ID No.:
+                ) : (
+                  <div className="grid grid-cols-6 border-1 border-gray-900 text-sm">
+                    <div className="col-span-2 grid grid-cols-2">
+                      <div className=" border-l-0 border-1  border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[13px]">
+                        <div className="mb-2" style={{ fontSize: '11px' }}>Vatable Sales/Gross Sales (PT):</div>
+                        <div className="mb-2">VAT/PT:</div>
+                        <div className="mb-2">Zero-Rated Sales:</div>
+                        <div className="">VAT-Exempt Sales:</div>
+                      </div>
+                      <div className="border-r-1 border-gray-900 px-4 py-3 flex flex-col justify-start text-[15px]">
+                        <input readOnly value={formatCurrency(
+                          (() => {
+                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                            return (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
+                          })()
+                        )} className="w-full text-right pb-0 mb-2" />
+                        <input readOnly value={formatCurrency(
+                          (() => {
+                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                            const grossSales = (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
+                            return grossSales * 0.03;
+                          })()
+                        )} className="w-full text-right pb-0 mb-2" />
+                        <input readOnly value={formatCurrency(0)} className="w-full text-right pb-0 mb-2" />
+                        <input readOnly value={formatCurrency(0)} className="w-full text-right pb-0" />
+                      </div>
                     </div>
-                    <div className="font-medium leading-tight mt-9">
-                      SC/PWD/NAAC/MOV/<br />Signature:
+                    <div className="border-r-1 border-gray-900 px-3 py-3 flex flex-col justify-center text-[11px]">
+                      <div className="font-medium leading-tight">
+                        SC/PWD/NAAC/MOV/<br />SOLO PARENT ID No.:
+                      </div>
+                      <div className="font-medium leading-tight mt-9">
+                        SC/PWD/NAAC/MOV/<br />Signature:
+                      </div>
+                    </div>
+                    <div className="border-r-1 border-gray-900 px-3 py-3 flex flex-col justify-center text-[13px]">
+                      <input type="text" className="w-full pb-0 text-sm -mt-1" />
+                      <input type="text" className="w-full pb-0 text-sm mt-5" />
+                    </div>
+                    <div className="col-span-2 grid grid-cols-2">
+                      <div className=" border-l-0 border-1  border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
+                        <div className="mb-2 text-[9px]">TOTAL SALES (Gross Sales)</div>
+                        <div className="mb-2">Less: VAT</div>
+                        <div className="mb-2">Amount: Net of VAT</div>
+                        <div className="">Less: Discount<br /><span className="text-[10px]">(SC/PWD/NAAC/MOV/SP)</span></div>
+                      </div>
+                      <div className="px-4 border-1 flex flex-col justify-start border-t-0 border-l-0 border-r-0 pt-2">
+                        <input readOnly value={formatCurrency(
+                          (() => {
+                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                            return (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
+                          })()
+                        )} className="w-full text-right pb-0 mb-2 text-[15px]" />
+                        <input readOnly value={formatCurrency(0)} className="w-full text-right pb-0 mb-2 text-[15px]" />
+                        <input readOnly value={formatCurrency(
+                          (() => {
+                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                            return (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
+                          })()
+                        )} className="w-full text-right pb-0 mb-2 text-[15px]" />
+                        <input readOnly value={formatCurrency(0)} className="w-full text-right pb-0 text-[15px]" />
+                      </div>
                     </div>
                   </div>
-                  <div className="border-r-1 border-gray-900 px-3 py-3 flex flex-col justify-center text-[13px]">
-                    <input type="text" className="w-full pb-0 text-sm -mt-1" />
-                    <input type="text" className="w-full pb-0 text-sm mt-5" />
-                  </div>
-
-                  <div className="col-span-2 grid grid-cols-2">
-                    <div className=" border-l-0 border-1  border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
-                      <div className="mb-2 text-[9px]">TOTAL SALES (VAT Inclusive)</div>
-                      <div className="mb-2">Less: VAT</div>
-                      <div className="mb-2">Amount: Net of VAT</div>
-                      <div className="">Less: Discount<br /><span className="text-[10px]">(SC/PWD/NAAC/MOV/SP)</span></div>
-                    </div>
-                    <div className="px-4 border-1 flex flex-col justify-start border-t-0 border-l-0 border-r-0 pt-2">
-                      <input readOnly value={formatCurrency(
-                        (() => {
-                          const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                          return (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
-                        })()
-                      )} className="w-full text-right pb-0 mb-2 text-[15px]" />
-                      <input readOnly value={formatCurrency(
-                        (() => {
-                          const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                          const vatableSales = (invoiceReport.vatableSales || 0) + adjustmentTotal;
-                          return vatableSales * 0.12;
-                        })()
-                      )} className="w-full text-right pb-0 mb-2 text-[15px]" />
-                      <input readOnly value={formatCurrency(
-                        (() => {
-                          const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                          return (invoiceReport.netOfVat || 0) + adjustmentTotal;
-                        })()
-                      )} className="w-full text-right pb-0 mb-2 text-[15px]" />
-                      <input readOnly value={formatCurrency(invoiceReport.discount || 0)} className="w-full text-right pb-0 text-[15px]" />
-                    </div>
-                  </div>
-                </div>
+                )}
 
 
                 <div className="grid grid-cols-6  border-t-0 border-gray-900 text-sm">
@@ -2572,38 +2677,72 @@ const SalesManagement = () => {
                     </label>
                   </div>
 
-                  <div className="col-span-2 grid grid-cols-2">
-                    <div className=" border-l-0 border-1 border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
-                      <div className="mb-2">Add: VAT</div>
-                      <div className="mb-2">Less: Withholding Tax</div>
-                      <div className="" >Total Amount Due:</div>
+                  {taxType === 'VAT' ? (
+                    <div className="col-span-2 grid grid-cols-2">
+                      <div className=" border-l-0 border-1 border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
+                        <div className="mb-2">Add: VAT</div>
+                        <div className="mb-2">Less: Withholding Tax</div>
+                        <div className="" >Total Amount Due:</div>
+                      </div>
+                      <div className="px-4 border-1 flex flex-col justify-start border-t-0 border-l-0 pt-2">
+                        <input readOnly value={formatCurrency(
+                          (() => {
+                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                            const vatableSales = (invoiceReport.vatableSales || 0) + adjustmentTotal;
+                            return vatableSales * 0.12;
+                          })()
+                        )} className="w-full text-right pb-0 mb-2 text-[15px]" />
+                        <input readOnly value={formatCurrency(
+                          (() => {
+                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                            const netOfVat = (invoiceReport.netOfVat || 0) + adjustmentTotal;
+                            return netOfVat * 0.01;
+                          })()
+                        )} className="w-full text-right pb-0 mb-2 text-[15px]" />
+                        <input readOnly value={formatCurrency(
+                          (() => {
+                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                            const totalSales = (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
+                            const netOfVat = (invoiceReport.netOfVat || 0) + adjustmentTotal;
+                            const withholdingTax = netOfVat * 0.01;
+                            return totalSales - withholdingTax;
+                          })()
+                        )} className="w-full text-right font-bold pb-0 text-[16px]" />
+                      </div>
                     </div>
-                    <div className="px-4 border-1 flex flex-col justify-start border-t-0 border-l-0 pt-2">
-                      <input readOnly value={formatCurrency(
-                        (() => {
-                          const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                          const vatableSales = (invoiceReport.vatableSales || 0) + adjustmentTotal;
-                          return vatableSales * 0.12;
-                        })()
-                      )} className="w-full text-right pb-0 mb-2 text-[15px]" />
-                      <input readOnly value={formatCurrency(
-                        (() => {
-                          const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                          const netOfVat = (invoiceReport.netOfVat || 0) + adjustmentTotal;
-                          return netOfVat * 0.01;
-                        })()
-                      )} className="w-full text-right pb-0 mb-2 text-[15px]" />
-                      <input readOnly value={formatCurrency(
-                        (() => {
-                          const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                          const totalSales = (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
-                          const netOfVat = (invoiceReport.netOfVat || 0) + adjustmentTotal;
-                          const withholdingTax = netOfVat * 0.01;
-                          return totalSales - withholdingTax;
-                        })()
-                      )} className="w-full text-right font-bold pb-0 text-[16px]" />
+                  ) : (
+                    <div className="col-span-2 grid grid-cols-2">
+                      <div className=" border-l-0 border-1 border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
+                        <div className="mb-2">VAT/PT (3%)</div>
+                        <div className="mb-2">Less: EWT</div>
+                        <div className="">Total Amount Due:</div>
+                      </div>
+                      <div className="px-4 border-1 flex flex-col justify-start border-t-0 border-l-0 pt-2">
+                        <input readOnly value={formatCurrency(
+                          (() => {
+                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                            const grossSales = (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
+                            return grossSales * 0.03;
+                          })()
+                        )} className="w-full text-right pb-0 mb-2 text-[15px]" />
+                        <input readOnly value={formatCurrency(
+                          (() => {
+                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                            const grossSales = (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
+                            return (grossSales / 1.12) * 0.01;
+                          })()
+                        )} className="w-full text-right pb-0 mb-2 text-[15px]" />
+                        <input readOnly value={formatCurrency(
+                          (() => {
+                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                            const grossSales = (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
+                            const ewt = (grossSales / 1.12) * 0.01;
+                            return grossSales - ewt;
+                          })()
+                        )} className="w-full text-right font-bold pb-0 text-[16px]" />
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 border-1 border-t-1 border-gray-900 text-sm mt-6">
@@ -2630,8 +2769,8 @@ const SalesManagement = () => {
                     handleGenerateToProfile();
                   }}
                   className={`flex items-center gap-2 px-5 py-3 rounded-lg transition font-medium shadow-md ${!invoiceNumber.trim()
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-green-600 text-white hover:bg-green-700'
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-green-600 text-white hover:bg-green-700'
                     }`}
                 >
                   <span>Generate</span>
@@ -2645,8 +2784,8 @@ const SalesManagement = () => {
                     window.print();
                   }}
                   className={`flex items-center gap-2 px-6 py-3 rounded-lg transition font-medium shadow-md ${!invoiceNumber.trim()
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
                     }`}
                 >
                   <Printer size={20} />
