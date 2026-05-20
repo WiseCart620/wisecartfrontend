@@ -202,6 +202,7 @@ const SalesManagement = () => {
   const [showSalesMemoModal, setShowSalesMemoModal] = useState(false);
   const [showInvoicingProfile, setShowInvoicingProfile] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [invoiceSubmitted, setInvoiceSubmitted] = useState(false);
   const [taxType, setTaxType] = useState('VAT');
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
   const [salesMemo, setSalesMemo] = useState(null);
@@ -2125,10 +2126,10 @@ const SalesManagement = () => {
               <div className="p-4 sm:p-8 border-b border-gray-200 flex justify-between items-center">
                 <h2 className="text-lg sm:text-2xl font-bold text-gray-900">Generate Invoice Report</h2>
                 <button
-                  onClick={() => setShowInvoiceModal(false)}
-                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                  onClick={() => { setShowInvoiceModal(false); setInvoiceSubmitted(false); }}
+                  className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
                 >
-                  <X size={24} />
+                  Cancel
                 </button>
               </div>
               <div className="p-8 space-y-6">
@@ -2260,9 +2261,16 @@ const SalesManagement = () => {
                         value={invoiceNumber}
                         onChange={(e) => setInvoiceNumber(e.target.value)}
                         placeholder="e.g. SI-2025-0001"
-                        required
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${invoiceSubmitted && !invoiceNumber.trim()
+                          ? 'border-red-400 bg-red-50'
+                          : 'border-gray-300'
+                          }`}
                       />
+                      {invoiceSubmitted && !invoiceNumber.trim() && (
+                        <p className="text-xs text-red-500 mt-1">
+                          Invoice number is required before previewing.
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-3">Invoice Date</label>
@@ -2278,13 +2286,17 @@ const SalesManagement = () => {
               </div>
               <div className="p-8 border-t border-gray-200 flex justify-end gap-4">
                 <button
-                  onClick={() => setShowInvoiceModal(false)}
-                  className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+                  onClick={() => { setShowInvoiceModal(false); setInvoiceSubmitted(false); }}
+                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
                 >
-                  Cancel
+                  <X size={24} />
                 </button>
                 <button
-                  onClick={handleGenerateInvoice}
+                  onClick={() => {
+                    setInvoiceSubmitted(true);
+                    if (!invoiceNumber.trim()) return;
+                    handleGenerateInvoice();
+                  }}
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
                 >
                   Preview Invoice
@@ -2599,12 +2611,12 @@ const SalesManagement = () => {
                   <div className="grid grid-cols-6 border-1 border-gray-900 text-sm">
                     <div className="col-span-2 grid grid-cols-2">
                       <div className=" border-l-0 border-1  border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[13px]">
-                        <div style={{ fontSize: '11px' }}>Vatable Sales:</div>
-                        <div style={{ fontSize: '11px' }}>Gross Sales (PT):</div>
+                        <div className="mb-2" style={{ fontSize: '11px' }}>Total Sales:</div>
                         <div className="mb-2" style={{ fontSize: '11px' }}>&nbsp;</div>
-                        <div className="mb-2">VAT/PT:</div>
-                        <div className="mb-2">Zero-Rated Sales:</div>
-                        <div className="">VAT-Exempt Sales:</div>
+                        <div className="mb-2" style={{ fontSize: '11px' }}>&nbsp;</div>
+                        <div className="mb-2">&nbsp;</div>
+                        <div className="mb-2">&nbsp;</div>
+                        <div>&nbsp;</div>
                       </div>
                       <div className="border-r-1 border-gray-900 px-4 py-3 flex flex-col justify-start text-[15px]">
                         <input readOnly value={formatCurrency(
@@ -2613,15 +2625,9 @@ const SalesManagement = () => {
                             return (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
                           })()
                         )} className="w-full text-right pb-0 mb-2" />
-                        <input readOnly value={formatCurrency(
-                          (() => {
-                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                            const grossSales = (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
-                            return grossSales * 0.03;
-                          })()
-                        )} className="w-full text-right pb-0 mb-2" />
-                        <input readOnly value={formatCurrency(0)} className="w-full text-right pb-0 mb-2" />
-                        <input readOnly value={formatCurrency(0)} className="w-full text-right pb-0" />
+                        <input readOnly value="" className="w-full text-right pb-0 mb-2" />
+                        <input readOnly value="" className="w-full text-right pb-0 mb-2" />
+                        <input readOnly value="" className="w-full text-right pb-0" />
                       </div>
                     </div>
                     <div className="border-r-1 border-gray-900 px-3 py-3 flex flex-col justify-center text-[11px]">
@@ -2639,9 +2645,9 @@ const SalesManagement = () => {
                     <div className="col-span-2 grid grid-cols-2">
                       <div className=" border-l-0 border-1  border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
                         <div className="mb-2 text-[9px]">TOTAL SALES (Gross Sales)</div>
-                        <div className="mb-2">Less: VAT</div>
-                        <div className="mb-2">Amount: Net of VAT</div>
-                        <div className="">Less: Discount<br /><span className="text-[10px]">(SC/PWD/NAAC/MOV/SP)</span></div>
+                        <div className="mb-2">&nbsp;</div>
+                        <div className="mb-2">&nbsp;</div>
+                        <div>&nbsp;</div>
                       </div>
                       <div className="px-4 border-1 flex flex-col justify-start border-t-0 border-l-0 border-r-0 pt-2">
                         <input readOnly value={formatCurrency(
@@ -2650,14 +2656,9 @@ const SalesManagement = () => {
                             return (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
                           })()
                         )} className="w-full text-right pb-0 mb-2 text-[15px]" />
-                        <input readOnly value={formatCurrency(0)} className="w-full text-right pb-0 mb-2 text-[15px]" />
-                        <input readOnly value={formatCurrency(
-                          (() => {
-                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                            return (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
-                          })()
-                        )} className="w-full text-right pb-0 mb-2 text-[15px]" />
-                        <input readOnly value={formatCurrency(0)} className="w-full text-right pb-0 text-[15px]" />
+                        <input readOnly value="" className="w-full text-right pb-0 mb-2 text-[15px]" />
+                        <input readOnly value="" className="w-full text-right pb-0 mb-2 text-[15px]" />
+                        <input readOnly value="" className="w-full text-right pb-0 text-[15px]" />
                       </div>
                     </div>
                   </div>
