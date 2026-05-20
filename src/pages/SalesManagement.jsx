@@ -65,7 +65,7 @@ const extractArray = (res) => {
 
 let salesCache = null;
 let salesCacheTime = 0;
-const SALES_CACHE_TTL = 30_000;
+const SALES_CACHE_TTL = 60_000;
 let sseRefreshTimer = null;
 
 const fetchSales = async () => {
@@ -235,53 +235,28 @@ const SalesManagement = () => {
     productName: ''
   });
 
-
+  const staticDataLoaded = useRef(false);
   const loadData = useCallback(async (background = false) => {
     if (!background) setLoading(true);
 
-
     const salesPromise = fetchSales();
-    const branchesPromise = api.get('/branches');
-    const companiesPromise = api.get('/companies');
-    const productsPromise = api.get('/products');
-    const invPromise = api.get('/inventories');
-    const warehousesPromise = api.get('/warehouse');
-    const warehouseStocksPromise = api.get('/stocks/warehouses');
-    const summaryPromise = api.get('/inventories/products/summary');
-
     salesPromise.then(res => {
       setSales(extractArray(res));
       setLoading(false);
     }).catch(() => setLoading(false));
 
-    branchesPromise.then(res => {
-      setBranches(extractArray(res));
-    }).catch(() => { });
+    // Only fetch static data once per session
+    if (!staticDataLoaded.current) {
+      staticDataLoaded.current = true;
 
-    companiesPromise.then(res => {
-      setCompanies(extractArray(res));
-    }).catch(() => { });
-
-    productsPromise.then(res => {
-      setProducts(extractArray(res));
-    }).catch(() => { });
-
-    invPromise.then(res => {
-      setInventories(extractArray(res));
-    }).catch(() => { });
-
-    warehousesPromise.then(res => {
-      setWarehouses(extractArray(res));
-    }).catch(() => { });
-
-    warehouseStocksPromise.then(res => {
-      setWarehouseStocks(extractArray(res));
-    }).catch(() => { });
-
-    summaryPromise.then(res => {
-      setProductSummaries(extractArray(res));
-    }).catch(() => { });
-
+      api.get('/branches').then(res => setBranches(extractArray(res))).catch(() => { });
+      api.get('/companies').then(res => setCompanies(extractArray(res))).catch(() => { });
+      api.get('/products').then(res => setProducts(extractArray(res))).catch(() => { });
+      api.get('/inventories').then(res => setInventories(extractArray(res))).catch(() => { });
+      api.get('/warehouse').then(res => setWarehouses(extractArray(res))).catch(() => { });
+      api.get('/stocks/warehouses').then(res => setWarehouseStocks(extractArray(res))).catch(() => { });
+      api.get('/inventories/products/summary').then(res => setProductSummaries(extractArray(res))).catch(() => { });
+    }
   }, []);
 
 
@@ -397,31 +372,35 @@ const SalesManagement = () => {
         const info = await api.get(`/sales/branch-info/${sale.branch.id}`);
         if (info.success) {
           setBranchInfo(info.data);
-          await loadProductPricesForCompany(info.data?.companyId);
 
           const stockMap = {};
           const errors = {};
 
-          // FIX 1: Use stable makeStockKey (no index)
-          for (const item of sale.items) {
-            const variationId = item.variation?.id || null;
-            const stockKey = makeStockKey(item.product.id, variationId, sale.branch.id);
-            try {
-              const endpoint = variationId
-                ? `/stocks/branches/${sale.branch.id}/products/${item.product.id}/variations/${variationId}`
-                : `/stocks/branches/${sale.branch.id}/products/${item.product.id}`;
+          // Run product prices + all stock fetches in parallel
+          const [stockResults] = await Promise.all([
+            Promise.all(
+              sale.items.map(async (item) => {
+                const variationId = item.variation?.id || null;
+                const stockKey = makeStockKey(item.product.id, variationId, sale.branch.id);
+                const endpoint = variationId
+                  ? `/stocks/branches/${sale.branch.id}/products/${item.product.id}/variations/${variationId}`
+                  : `/stocks/branches/${sale.branch.id}/products/${item.product.id}`;
+                try {
+                  const stock = await api.get(endpoint);
+                  return { stockKey, data: stock.success ? stock.data : { quantity: 0, availableQuantity: 0 }, error: null };
+                } catch {
+                  return { stockKey, data: { quantity: 0, availableQuantity: 0 }, error: 'Failed to load stock' };
+                }
+              })
+            ),
+            loadProductPricesForCompany(info.data?.companyId),
+          ]);
 
-              const stock = await api.get(endpoint);
-              if (stock.success) {
-                stockMap[stockKey] = stock.data;
-              } else {
-                stockMap[stockKey] = { quantity: 0, availableQuantity: 0 };
-              }
-            } catch (error) {
-              stockMap[stockKey] = { quantity: 0, availableQuantity: 0 };
-              errors[stockKey] = 'Failed to load stock';
-            }
-          }
+          stockResults.forEach(({ stockKey, data, error }) => {
+            stockMap[stockKey] = data;
+            if (error) errors[stockKey] = error;
+          });
+
 
           setBranchStocks(stockMap);
           setStockErrors(errors);
@@ -432,18 +411,8 @@ const SalesManagement = () => {
         toast.error('Failed to load sale data', { id: loadingToast });
       }
     } else if (mode === 'view' && sale) {
-      setShowModal(true);
       setSelectedSale(sale);
-
-      // Load fresh data in background
-      try {
-        const freshSale = await api.get(`/sales/${sale.id}`);
-        if (freshSale.success) {
-          setSelectedSale(freshSale.data);
-        }
-      } catch (error) {
-        console.error('Failed to load fresh sale data:', error);
-      }
+      setShowModal(true);
     }
 
     setShowModal(true);
@@ -906,7 +875,8 @@ const SalesManagement = () => {
           { duration: 4000 }
         );
 
-        loadData();
+        invalidateSalesCache();
+        fetchSales().then(data => setSales(data)).catch(() => { });
       } else {
         toast.error('Failed to generate invoice', { duration: 5000 });
       }
