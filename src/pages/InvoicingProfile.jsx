@@ -1051,8 +1051,17 @@ const InvoicingProfile = ({ onBack }) => {
                             <div className="grid grid-cols-6 border-1 border-gray-900 text-sm">
                                 <div className="col-span-2 grid grid-cols-2">
                                     <div className="border-l-0 border-1 border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[13px]">
-                                        <div className="mb-2">Vatable Sales:</div>
-                                        <div className="mb-2">VAT:</div>
+                                        {receiptProfile.transactionType === 'Sales Invoice (PT)' ? (
+                                            <>
+                                                <div className="mb-2" style={{ fontSize: '10px' }}>Vatable Sales/Gross Sales (PT):</div>
+                                                <div className="mb-2" style={{ fontSize: '10px' }}>VAT/PT:</div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="mb-2">Vatable Sales:</div>
+                                                <div className="mb-2">VAT:</div>
+                                            </>
+                                        )}
                                         <div className="mb-2">Zero-Rated Sales:</div>
                                         <div>VAT-Exempt Sales:</div>
                                     </div>
@@ -1100,8 +1109,17 @@ const InvoicingProfile = ({ onBack }) => {
                                 </div>
                                 <div className="col-span-2 grid grid-cols-2">
                                     <div className="border-l-0 border-1 border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
-                                        <div className="mb-2">Add: VAT</div>
-                                        <div className="mb-2">Less: Withholding Tax</div>
+                                        {receiptProfile.transactionType === 'Sales Invoice (PT)' ? (
+                                            <>
+                                                <div className="mb-2">VAT/PT (3%)</div>
+                                                <div className="mb-2">Less: EWT</div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="mb-2">Add: VAT</div>
+                                                <div className="mb-2">Less: Withholding Tax</div>
+                                            </>
+                                        )}
                                         <div>Total Amount Due:</div>
                                     </div>
                                     <div className="px-4 border-1 flex flex-col justify-start border-t-0 border-l-0 pt-2">
