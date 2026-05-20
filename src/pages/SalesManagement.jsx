@@ -2261,12 +2261,8 @@ const SalesManagement = () => {
                         onChange={(e) => setInvoiceNumber(e.target.value)}
                         placeholder="e.g. SI-2025-0001"
                         required
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${!invoiceNumber.trim() ? 'border-red-400 bg-red-50' : 'border-gray-300'
-                          }`}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                       />
-                      {!invoiceNumber.trim() && (
-                        <p className="text-xs text-red-500 mt-1">Invoice number is required before saving to profile or printing.</p>
-                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-3">Invoice Date</label>
