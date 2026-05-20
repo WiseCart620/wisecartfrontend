@@ -699,7 +699,7 @@ const InvoicingProfile = ({ onBack }) => {
                                     { label: 'Invoice Date', align: 'left' },
                                     { label: 'Period', align: 'left' },
                                     { label: 'Customer', align: 'left' },
-                                    { label: 'Vatable Sales/Gross Sales (PT)', align: 'right' },
+                                    { label: 'Gross Sales (PT)', align: 'right' },
                                     { label: 'VAT/PT', align: 'right' },
                                     { label: 'Less: EWT', align: 'right' },
                                     { label: 'Due', align: 'right' },

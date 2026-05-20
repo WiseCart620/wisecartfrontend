@@ -2603,7 +2603,9 @@ const SalesManagement = () => {
                   <div className="grid grid-cols-6 border-1 border-gray-900 text-sm">
                     <div className="col-span-2 grid grid-cols-2">
                       <div className=" border-l-0 border-1  border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[13px]">
-                        <div className="mb-2" style={{ fontSize: '11px' }}>Vatable Sales/Gross Sales (PT):</div>
+                        <div style={{ fontSize: '11px' }}>Vatable Sales:</div>
+                        <div style={{ fontSize: '11px' }}>Gross Sales (PT):</div>
+                        <div className="mb-2" style={{ fontSize: '11px' }}>&nbsp;</div>
                         <div className="mb-2">VAT/PT:</div>
                         <div className="mb-2">Zero-Rated Sales:</div>
                         <div className="">VAT-Exempt Sales:</div>
