@@ -752,8 +752,8 @@ const SalesManagement = () => {
       if (filterData.startDate) params.append('startDate', filterData.startDate);
       if (filterData.endDate) params.append('endDate', filterData.endDate);
 
-      invalidateSalesCache();
-      const allData = await fetchSales();
+      const response = await api.get('/sales/all');
+      const allData = extractArray(response);
       setSales(allData);
       toast.success(`Loaded ${allData.length} sales`);
       setCurrentPage(1);
