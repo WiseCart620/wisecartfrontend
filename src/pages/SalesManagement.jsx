@@ -413,8 +413,7 @@ const SalesManagement = () => {
     } else if (mode === 'view' && sale) {
       setSelectedSale(sale);
       setShowModal(true);
-    }
-
+    }   
     setShowModal(true);
   };
 
@@ -457,7 +456,6 @@ const SalesManagement = () => {
   };
 
 
-  // FIX 1: Removed `itemIndex` parameter — key is now stable (product+variation+branch)
   const loadProductStock = async (productId, branchId, variationId) => {
     if (!branchId || !productId) return;
 
@@ -493,7 +491,6 @@ const SalesManagement = () => {
     }
   };
 
-  // FIX 1: No index passed to loadProductStock
   const handleAddProductToTable = async () => {
     if (!selectedProductForAdd) {
       toast.error('Please select a product first');
@@ -541,11 +538,8 @@ const SalesManagement = () => {
 
   const handleRemoveItem = (index) => {
     setFormData({ ...formData, items: formData.items.filter((_, i) => i !== index) });
-    // Stock data in branchStocks stays (keyed by product+variation+branch, not index)
-    // so remaining items still find their stock info correctly after removal.
   };
 
-  // FIX 1: No index passed to loadProductStock
   const handleItemChange = async (index, field, value) => {
     const newItems = [...formData.items];
 
@@ -1728,8 +1722,7 @@ const SalesManagement = () => {
                           </thead>
                           <tbody className="divide-y divide-gray-200 bg-white">
                             {formData.items.map((item, i) => {
-                              // FIX 3: Use strict === null check for variationId so 0/false/undefined
-                              // don't accidentally match non-variation products.
+
                               const selectedOption = productOptions.find(opt =>
                                 opt.parentProductId === item.productId &&
                                 (item.variationId !== null
@@ -1829,8 +1822,6 @@ const SalesManagement = () => {
                                         )}
                                       </div>
                                     ) : (
-                                      // FIX 1: Show a retry button instead of a hard "Load failed" error.
-                                      // Stock may simply not have loaded yet (e.g. branch just selected).
                                       <div className="text-xs">
                                         <button
                                           type="button"

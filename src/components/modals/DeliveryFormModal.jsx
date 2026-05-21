@@ -505,142 +505,7 @@ const DeliveryFormModal = ({
                             </div>
                         </div>
 
-                        {/* Status Management - Different UI for create vs edit */}
-                        {mode === 'create' ? (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">Initial Status</label>
-                                <div className="flex flex-wrap gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setFormData({ ...formData, status: 'PREPARING' })}
-                                        className={`px-6 py-3 rounded-lg font-medium transition-all ${formData.status === 'PREPARING'
-                                            ? 'bg-yellow-500 text-white shadow-lg ring-2 ring-yellow-300'
-                                            : 'bg-gray-100 text-gray-700 hover:bg-yellow-100 border border-gray-200'
-                                            }`}
-                                    >
-                                        PREPARING
-                                    </button>
-                                    <button
-                                        type="button"
-                                        disabled
-                                        className="px-6 py-3 rounded-lg font-medium bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50"
-                                        title="Must go through PREPARING first"
-                                    >
-                                        IN_TRANSIT
-                                    </button>
-                                    <button
-                                        type="button"
-                                        disabled
-                                        className="px-6 py-3 rounded-lg font-medium bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50"
-                                        title="Must go through PREPARING first"
-                                    >
-                                        DELIVERED
-                                    </button>
-                                    <button
-                                        type="button"
-                                        disabled
-                                        className="px-6 py-3 rounded-lg font-medium bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50"
-                                        title="Must go through PREPARING first"
-                                    >
-                                        CANCELLED
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            mode === 'edit' && delivery && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                                        Status
-                                        {delivery.status === 'PREPARING' && <span className="ml-2 text-xs text-blue-600">(Can move to IN_TRANSIT)</span>}
-                                        {delivery.status === 'IN_TRANSIT' && <span className="ml-2 text-xs text-purple-600">(Can move to DELIVERED or CANCELLED)</span>}
-                                        {(delivery.status === 'DELIVERED' || delivery.status === 'CANCELLED') && (
-                                            <span className="ml-2 text-xs text-red-600">(Final - No changes)</span>
-                                        )}
-                                    </label>
 
-                                    <div className="flex flex-wrap gap-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => setFormData({ ...formData, status: 'PREPARING', dateDelivered: '' })}
-                                            className={`px-6 py-3 rounded-lg font-medium transition-all ${formData.status === 'PREPARING'
-                                                ? 'bg-yellow-500 text-white shadow-lg ring-2 ring-yellow-300'
-                                                : delivery.status === 'PREPARING'
-                                                    ? 'bg-gray-100 text-gray-700 hover:bg-yellow-100 border border-gray-200 cursor-pointer'
-                                                    : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50'
-                                                }`}
-                                        >
-                                            PREPARING
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                if (delivery.status === 'PREPARING') {
-                                                    setFormData({ ...formData, status: 'IN_TRANSIT', dateDelivered: '' });
-                                                }
-                                            }}
-                                            className={`px-6 py-3 rounded-lg font-medium transition-all ${formData.status === 'IN_TRANSIT'
-                                                ? 'bg-purple-500 text-white shadow-lg ring-2 ring-purple-300'
-                                                : delivery.status === 'PREPARING'
-                                                    ? 'bg-gray-100 text-gray-700 hover:bg-purple-100 border border-gray-200 cursor-pointer'
-                                                    : delivery.status === 'IN_TRANSIT'
-                                                        ? 'bg-gray-100 text-gray-700 hover:bg-purple-100 border border-gray-200 cursor-pointer'
-                                                        : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50'
-                                                }`}
-                                        >
-                                            IN_TRANSIT
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                if (delivery.status === 'IN_TRANSIT') {
-                                                    const updatedItems = formData.items.map(item => ({
-                                                        ...item,
-                                                        deliveredQty: item.deliveredQty || item.preparedQty
-                                                    }));
-                                                    setFormData({
-                                                        ...formData,
-                                                        status: 'DELIVERED',
-                                                        dateDelivered: formData.dateDelivered || nowDatetime(),
-                                                        items: updatedItems
-                                                    });
-                                                }
-                                            }}
-                                            className={`px-6 py-3 rounded-lg font-medium transition-all ${formData.status === 'DELIVERED'
-                                                ? 'bg-green-500 text-white shadow-lg ring-2 ring-green-300'
-                                                : delivery.status === 'IN_TRANSIT'
-                                                    ? 'bg-gray-100 text-gray-700 hover:bg-green-100 border border-gray-200 cursor-pointer'
-                                                    : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50'
-                                                }`}
-                                        >
-                                            DELIVERED
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                if (delivery.status === 'IN_TRANSIT') {
-                                                    if (window.confirm('Cancel this delivery? This will revert all stock.')) {
-                                                        setFormData({ ...formData, status: 'CANCELLED', dateDelivered: '' });
-                                                    }
-                                                }
-                                            }}
-                                            className={`px-6 py-3 rounded-lg font-medium transition-all ${formData.status === 'CANCELLED'
-                                                ? 'bg-red-500 text-white shadow-lg ring-2 ring-red-300'
-                                                : delivery.status === 'IN_TRANSIT'
-                                                    ? 'bg-gray-100 text-gray-700 hover:bg-red-100 border border-gray-200 cursor-pointer'
-                                                    : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-50'
-                                                }`}
-                                        >
-                                            CANCELLED
-                                        </button>
-                                    </div>
-                                </div>
-                            )
-                        )}
-
-                        {/* Product add row */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-3">Add Products *</label>
                             <VariationSearchableDropdown
@@ -819,6 +684,91 @@ const DeliveryFormModal = ({
                                 </>
                             )}
                         </div>
+
+                        {/* Status — simplified, below items */}
+                        {mode === 'create' ? (
+                            <div className="flex items-center gap-3">
+                                <label className="text-sm font-medium text-gray-700">Status:</label>
+                                <span className="inline-flex items-center px-4 py-2 rounded-lg bg-yellow-100 text-yellow-800 font-semibold text-sm">
+                                    PREPARING
+                                </span>
+                                <span className="text-xs text-gray-400">New deliveries always start in PREPARING.</span>
+                            </div>
+                        ) : mode === 'edit' && delivery && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className={`inline-flex items-center px-4 py-2 rounded-lg font-semibold text-sm ${delivery.status === 'PREPARING' ? 'bg-yellow-100 text-yellow-800' :
+                                            delivery.status === 'IN_TRANSIT' ? 'bg-purple-100 text-purple-800' :
+                                                delivery.status === 'DELIVERED' ? 'bg-green-100 text-green-800' :
+                                                    'bg-red-100 text-red-800'
+                                        }`}>
+                                        {delivery.status}
+                                    </span>
+
+                                    {delivery.status === 'PREPARING' && (
+                                        <>
+                                            <span className="text-gray-400 text-lg">→</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, status: 'IN_TRANSIT', dateDelivered: '' })}
+                                                className={`px-4 py-2 rounded-lg font-semibold text-sm border transition-all ${formData.status === 'IN_TRANSIT'
+                                                        ? 'bg-purple-500 text-white border-purple-500 ring-2 ring-purple-300'
+                                                        : 'bg-white text-purple-700 border-purple-300 hover:bg-purple-50'
+                                                    }`}
+                                            >
+                                                IN_TRANSIT
+                                            </button>
+                                        </>
+                                    )}
+
+                                    {delivery.status === 'IN_TRANSIT' && (
+                                        <>
+                                            <span className="text-gray-400 text-lg">→</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const updatedItems = formData.items.map(item => ({
+                                                        ...item,
+                                                        deliveredQty: item.deliveredQty || item.preparedQty
+                                                    }));
+                                                    setFormData({
+                                                        ...formData,
+                                                        status: 'DELIVERED',
+                                                        dateDelivered: formData.dateDelivered || nowDatetime(),
+                                                        items: updatedItems
+                                                    });
+                                                }}
+                                                className={`px-4 py-2 rounded-lg font-semibold text-sm border transition-all ${formData.status === 'DELIVERED'
+                                                        ? 'bg-green-500 text-white border-green-500 ring-2 ring-green-300'
+                                                        : 'bg-white text-green-700 border-green-300 hover:bg-green-50'
+                                                    }`}
+                                            >
+                                                DELIVERED
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (window.confirm('Cancel this delivery? This will revert all stock.')) {
+                                                        setFormData({ ...formData, status: 'CANCELLED', dateDelivered: '' });
+                                                    }
+                                                }}
+                                                className={`px-4 py-2 rounded-lg font-semibold text-sm border transition-all ${formData.status === 'CANCELLED'
+                                                        ? 'bg-red-500 text-white border-red-500 ring-2 ring-red-300'
+                                                        : 'bg-white text-red-700 border-red-300 hover:bg-red-50'
+                                                    }`}
+                                            >
+                                                CANCELLED
+                                            </button>
+                                        </>
+                                    )}
+
+                                    {(delivery.status === 'DELIVERED' || delivery.status === 'CANCELLED') && (
+                                        <span className="text-xs text-gray-400 italic ml-1">No further changes allowed.</span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                             <div>
