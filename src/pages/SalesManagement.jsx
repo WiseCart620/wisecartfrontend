@@ -267,15 +267,16 @@ const SalesManagement = () => {
   }, []);
 
   useEffect(() => {
-    // Poll every 30 seconds instead of SSE (avoids ERR_QUIC_PROTOCOL_ERROR on Cloudflare Free)
-    const interval = setInterval(() => {
-      invalidateSalesCache();
-      fetchSales().then(data => setSales(data)).catch(() => { });
-    }, 30000);
+    const timeout = setTimeout(() => {
+      const interval = setInterval(() => {
+        invalidateSalesCache();
+        fetchSales().then(data => setSales(data)).catch(() => { });
+      }, 30000);
+      return () => clearInterval(interval);
+    }, 35000);
 
-    return () => clearInterval(interval);
+    return () => clearTimeout(timeout);
   }, []);
-
 
   const loadProductPricesForCompany = async (companyId) => {
     if (!companyId) {
@@ -752,8 +753,8 @@ const SalesManagement = () => {
       if (filterData.startDate) params.append('startDate', filterData.startDate);
       if (filterData.endDate) params.append('endDate', filterData.endDate);
 
-      const response = await api.get('/sales/all');
-      const allData = extractArray(response);
+      invalidateSalesCache();
+      const allData = await fetchSales();
       setSales(allData);
       toast.success(`Loaded ${allData.length} sales`);
       setCurrentPage(1);
