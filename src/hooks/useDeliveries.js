@@ -80,45 +80,12 @@ export const useDeliveries = () => {
   }, []);
 
   useEffect(() => {
-    let es;
-    let retryTimeout;
-    let retryDelay = 5000;
-    let debounceTimer;
+    const interval = setInterval(() => {
+      refreshDeliveries();
+    }, 30000);
 
-    const connect = () => {
-      es = new EventSource('https://backend.wisecart.ph/api/deliveries/stream');
-
-      es.addEventListener('connected', () => {
-        retryDelay = 3000;
-      });
-
-      const debouncedRefresh = () => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => refreshDeliveries(), 800);
-      };
-
-      es.addEventListener('delivery-update', debouncedRefresh);
-      es.addEventListener('deliveries-update', debouncedRefresh);
-      es.addEventListener('refresh', debouncedRefresh);
-
-      es.onerror = () => {
-        es.close();
-        retryTimeout = setTimeout(() => {
-          retryDelay = Math.min(retryDelay * 2, 60000);
-          connect();
-        }, retryDelay);
-      };
-    };
-
-    connect();
-
-    return () => {
-      clearTimeout(retryTimeout);
-      clearTimeout(debounceTimer);
-      if (es) es.close();
-    };
+    return () => clearInterval(interval);
   }, [refreshDeliveries]);
-
   const createDelivery = async (deliveryData) => {
     try {
       const response = await api.post('/deliveries', deliveryData);
