@@ -267,16 +267,15 @@ const SalesManagement = () => {
   }, []);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      const interval = setInterval(() => {
-        invalidateSalesCache();
-        fetchSales().then(data => setSales(data)).catch(() => { });
-      }, 30000);
-      return () => clearInterval(interval);
-    }, 35000);
+    // Poll every 30 seconds instead of SSE (avoids ERR_QUIC_PROTOCOL_ERROR on Cloudflare Free)
+    const interval = setInterval(() => {
+      invalidateSalesCache();
+      fetchSales().then(data => setSales(data)).catch(() => { });
+    }, 30000);
 
-    return () => clearTimeout(timeout);
+    return () => clearInterval(interval);
   }, []);
+
 
   const loadProductPricesForCompany = async (companyId) => {
     if (!companyId) {
