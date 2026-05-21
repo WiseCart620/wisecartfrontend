@@ -20,7 +20,7 @@ const ProofImage = ({ filePath, fileName }) => {
         setLoading(true);
         setError(false);
 
-        // Extract filename from path
+        // Extract filename from path           
         const filename = filePath.split('/').pop();
 
         // ✅ USE THE CORRECT ENDPOINT - THIS IS THE FIX
