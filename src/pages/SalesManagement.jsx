@@ -73,7 +73,7 @@ const fetchSales = async () => {
   if (salesCache && (now - salesCacheTime) < SALES_CACHE_TTL) {
     return salesCache;
   }
-  const res = await api.get('/sales/all');
+  const res = await api.get('/sales/list'); // lighter endpoint if available, else keep /sales/all
   salesCache = extractArray(res);
   salesCacheTime = now;
   return salesCache;
@@ -244,62 +244,37 @@ const SalesManagement = () => {
       setSales(extractArray(res));
       setLoading(false);
     }).catch(() => setLoading(false));
+  }, []);
 
-    // Only fetch static data once per session
+  useEffect(() => {
+    // Load sales immediately
+    loadData();
+
+    // Load static data after 500ms so sales table renders first
     if (!staticDataLoaded.current) {
       staticDataLoaded.current = true;
-
-      api.get('/branches').then(res => setBranches(extractArray(res))).catch(() => { });
-      api.get('/companies').then(res => setCompanies(extractArray(res))).catch(() => { });
-      api.get('/products').then(res => setProducts(extractArray(res))).catch(() => { });
-      api.get('/inventories').then(res => setInventories(extractArray(res))).catch(() => { });
-      api.get('/warehouse').then(res => setWarehouses(extractArray(res))).catch(() => { });
-      api.get('/stocks/warehouses').then(res => setWarehouseStocks(extractArray(res))).catch(() => { });
-      api.get('/inventories/products/summary').then(res => setProductSummaries(extractArray(res))).catch(() => { });
+      const timer = setTimeout(() => {
+        api.get('/branches').then(res => setBranches(extractArray(res))).catch(() => { });
+        api.get('/companies').then(res => setCompanies(extractArray(res))).catch(() => { });
+        api.get('/products').then(res => setProducts(extractArray(res))).catch(() => { });
+        api.get('/inventories').then(res => setInventories(extractArray(res))).catch(() => { });
+        api.get('/warehouse').then(res => setWarehouses(extractArray(res))).catch(() => { });
+        api.get('/stocks/warehouses').then(res => setWarehouseStocks(extractArray(res))).catch(() => { });
+        api.get('/inventories/products/summary').then(res => setProductSummaries(extractArray(res))).catch(() => { });
+      }, 500);
+      return () => clearTimeout(timer);
     }
   }, []);
 
-
   useEffect(() => {
-    loadData();
+    // Poll every 30 seconds instead of SSE (avoids ERR_QUIC_PROTOCOL_ERROR on Cloudflare Free)
+    const interval = setInterval(() => {
+      invalidateSalesCache();
+      fetchSales().then(data => setSales(data)).catch(() => { });
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    let es;
-    let retryDelay = 5000;
-    let retryTimeout;
-
-    const connect = () => {
-      es = new EventSource('https://backend.wisecart.ph/api/sales/stream');
-
-      es.addEventListener('connected', () => {
-        retryDelay = 3000;
-      });
-
-      es.addEventListener('sales-update', () => {
-        invalidateSalesCache();
-        if (sseRefreshTimer) clearTimeout(sseRefreshTimer);
-        sseRefreshTimer = setTimeout(() => {
-          fetchSales().then(data => setSales(data)).catch(() => { });
-        }, 800);
-      });
-
-      es.onerror = () => {
-        es.close();
-        retryTimeout = setTimeout(() => {
-          retryDelay = Math.min(retryDelay * 2, 60000);
-          connect();
-        }, retryDelay);
-      };
-    };
-
-    connect();
-
-    return () => {
-      clearTimeout(retryTimeout);
-      if (es) es.close();
-    };
-  }, [loadData]);
 
 
   const loadProductPricesForCompany = async (companyId) => {
@@ -413,7 +388,7 @@ const SalesManagement = () => {
     } else if (mode === 'view' && sale) {
       setSelectedSale(sale);
       setShowModal(true);
-    }   
+    }
     setShowModal(true);
   };
 
