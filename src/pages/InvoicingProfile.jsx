@@ -927,9 +927,8 @@ const InvoicingProfile = ({ onBack }) => {
                                                                             <td className="py-1.5 text-right font-bold text-blue-800 relative group">
                                                                                 <span className="cursor-default underline decoration-dashed underline-offset-2">₱{fmt(item.itemTotal)}</span>
                                                                                 <div className="absolute right-0 bottom-full mb-1 z-50 hidden group-hover:block w-56 bg-white border border-gray-200 rounded-lg shadow-xl p-3 text-xs">
-                                                                                    <div className="flex justify-between mb-1 text-gray-600"><span>Product Cost</span><span className="font-medium text-gray-800">₱{fmt(item.itemProductCost)}</span></div>
-                                                                                    <div className="flex justify-between mb-1 text-gray-600"><span>Shipping Cost</span><span className="font-medium text-blue-700">₱{fmt(item.itemShipping)}</span></div>
-                                                                                    <div className="flex justify-between mb-2 text-gray-600"><span>Other Charges</span><span className="font-medium text-orange-700">₱{fmt(item.itemOthers)}</span></div>
+                                                                                    <div className="flex justify-between mb-1 text-gray-600"><span>Unit Cost</span><span className="font-medium text-gray-800">₱{fmt(item.unitCost)}</span></div>
+                                                                                    <div className="flex justify-between mb-2 text-gray-600"><span>Quantity</span><span className="font-medium text-gray-800">×{Number(item.qty).toLocaleString()}</span></div>
                                                                                     <div className="flex justify-between border-t border-gray-100 pt-2 font-bold text-blue-800"><span>Total</span><span>₱{fmt(item.itemTotal)}</span></div>
                                                                                 </div>
                                                                             </td>
@@ -942,10 +941,7 @@ const InvoicingProfile = ({ onBack }) => {
                                                                         <td className="py-2 text-right text-sm font-bold text-blue-900 relative group">
                                                                             <span className="cursor-default underline decoration-dashed underline-offset-2">₱{fmt(grandTotal)}</span>
                                                                             <div className="absolute right-0 bottom-full mb-1 z-50 hidden group-hover:block w-56 bg-white border border-gray-200 rounded-lg shadow-xl p-3 text-xs">
-                                                                                <div className="flex justify-between mb-1 text-gray-600"><span>Product Cost</span><span className="font-medium text-gray-800">₱{fmt(totalProductCost)}</span></div>
-                                                                                <div className="flex justify-between mb-1 text-gray-600"><span>Shipping Cost</span><span className="font-medium text-blue-700">₱{fmt(totalShippingDisplay)}</span></div>
-                                                                                <div className="flex justify-between mb-2 text-gray-600"><span>Other Charges</span><span className="font-medium text-orange-700">₱{fmt(totalOthersDisplay)}</span></div>
-                                                                                <div className="flex justify-between border-t border-gray-100 pt-2 font-bold text-blue-800"><span>Grand Total</span><span>₱{fmt(grandTotal)}</span></div>
+                                                                                <div className="flex justify-between border-t border-gray-100 pt-2 font-bold text-blue-800"><span>Grand Total (Unit Cost × Qty)</span><span>₱{fmt(grandTotal)}</span></div>
                                                                             </div>
                                                                         </td>
                                                                     </tr>
