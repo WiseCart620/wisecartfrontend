@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
     Eye, Edit2, Search, X, Upload, Download,
-    FileText, Loader2, CreditCard, Package, Calendar, User, Mail, ChevronDown, ChevronRight, Building2, Phone, AlertTriangle
+    FileText, Loader2, CreditCard, Package, Calendar, User, Mail, ChevronDown, ChevronRight, Building2, Phone, AlertTriangle, Ship, MoreHorizontal, Banknote
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { api } from '../services/api';
 import LoadingOverlay from '../components/common/LoadingOverlay';
 import { getFileUrl, getPlaceholderImage, getFileDownloadUrl } from '../utils/fileUtils';
 import { philippineBanks } from '../utils/philippineBanks';
+import ShippingModal from '../components/modals/ProcurementModals/ShippingModal';
+import OthersModal from '../components/modals/ProcurementModals/OthersModal';
 
 
 
@@ -65,6 +67,10 @@ const UploadPaymentManagement = () => {
     const [selectedFilePreview, setSelectedFilePreview] = useState(null);
     const [expandedPORows, setExpandedPORows] = useState({});
     const [viewingProducts, setViewingProducts] = useState(null);
+    const [shippingPO, setShippingPO] = useState(null);
+    const [showShippingModal, setShowShippingModal] = useState(false);
+    const [othersPO, setOthersPO] = useState(null);
+    const [showOthersModal, setShowOthersModal] = useState(false);
     const [poFormData, setPoFormData] = useState({
         date: '',
         items: []
@@ -517,7 +523,7 @@ const UploadPaymentManagement = () => {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Balance</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Percentage</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Payments</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
@@ -562,23 +568,36 @@ const UploadPaymentManagement = () => {
                                                     <div className="flex items-center justify-end gap-2">
                                                         <button
                                                             onClick={() => handleViewPayments(po)}
-                                                            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
                                                             title="View Payments"
                                                         >
                                                             <FileText size={18} />
                                                         </button>
                                                         <button
+                                                            onClick={() => { setShippingPO(po); setShowShippingModal(true); }}
+                                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                                            title="Shipping Cost"
+                                                        >
+                                                            <Ship size={18} />
+                                                        </button>
+                                                        <button
                                                             onClick={() => handlePayNow(po)}
                                                             disabled={isLoadingOverlay || po.paymentStatus === 'FULL_PAID'}
-                                                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                                                            title={po.paymentStatus === 'FULL_PAID' ? 'Order is fully paid' : 'Upload Payment'}
+                                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            title={po.paymentStatus === 'FULL_PAID' ? 'Order is fully paid' : 'Product Cost'}
                                                         >
                                                             {isLoadingOverlay ? (
                                                                 <Loader2 className="animate-spin" size={18} />
                                                             ) : (
-                                                                <Upload size={18} />
+                                                                <Banknote size={18} />
                                                             )}
-                                                            {po.paymentStatus === 'FULL_PAID' ? 'Fully Paid' : (isLoadingOverlay ? 'Loading...' : 'Upload Payment')}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => { setOthersPO(po); setShowOthersModal(true); }}
+                                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                                            title="Other Charges"
+                                                        >
+                                                            <MoreHorizontal size={18} />
                                                         </button>
                                                     </div>
                                                 </td>
@@ -653,6 +672,22 @@ const UploadPaymentManagement = () => {
                     <ProductDetailsModal
                         products={viewingProducts}
                         onClose={() => setViewingProducts(null)}
+                    />
+                )}
+
+                {showShippingModal && shippingPO && (
+                    <ShippingModal
+                        purchaseOrder={shippingPO}
+                        onClose={() => { setShowShippingModal(false); setShippingPO(null); }}
+                        onSuccess={() => { setShowShippingModal(false); setShippingPO(null); loadInitialData(); }}
+                    />
+                )}
+
+                {showOthersModal && othersPO && (
+                    <OthersModal
+                        purchaseOrder={othersPO}
+                        onClose={() => { setShowOthersModal(false); setOthersPO(null); }}
+                        onSuccess={() => { setShowOthersModal(false); setOthersPO(null); loadInitialData(); }}
                     />
                 )}
             </div>
@@ -2003,165 +2038,96 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
 
 
 const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge }) => {
-    const calculateTotalPercentage = () => {
-        return data.payments.reduce((sum, p) => sum + (parseFloat(p.percentageOfTotal) || 0), 0).toFixed(2);
-    };
+    const [shippingData, setShippingData] = useState(null);
+    const [othersData, setOthersData] = useState(null);
+
+    useEffect(() => {
+        const fetchExtra = async () => {
+            try {
+                const [shipRes, otherRes] = await Promise.all([
+                    api.get(`/shipping-costs/purchase-order/${data.po.id}`),
+                    api.get(`/other-charges/purchase-order/${data.po.id}`)
+                ]);
+                if (shipRes.success && shipRes.data?.data) setShippingData(shipRes.data.data);
+                if (otherRes.success && otherRes.data?.data) setOthersData(otherRes.data.data);
+            } catch (e) { }
+        };
+        fetchExtra();
+    }, [data.po.id]);
 
     return (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="border-b px-6 py-4 flex items-center justify-between sticky top-0 bg-white">
                     <h2 className="text-xl font-bold text-gray-900">Payment History</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
-                        <X size={20} />
-                    </button>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
                 </div>
 
                 <div className="p-6 space-y-6">
+
+                    {/* PO Summary */}
                     <div className="p-4 bg-blue-50 rounded-lg">
                         <div className="grid grid-cols-3 gap-3 text-sm">
-                            <div>
-                                <span className="text-gray-600">PO Number:</span>
-                                <p className="font-medium text-gray-900">{data.po.controlNumber}</p>
-                            </div>
-                            <div>
-                                <span className="text-gray-600">Total Amount:</span>
-                                <p className="font-medium text-gray-900">${formatNumberWithCommas(data.po.totalAmount?.toFixed(2))}</p>
-                            </div>
-                            <div>
-                                <span className="text-gray-600">Total Paid:</span>
-                                <p className="font-medium text-gray-900">${formatNumberWithCommas(data.po.totalPaid?.toFixed(2) || '0.00')}</p>
-                            </div>
-                            <div>
-                                <span className="text-gray-600">Remaining:</span>
-                                <p className="font-medium text-gray-900">${formatNumberWithCommas(data.po.remainingBalance?.toFixed(2) || '0.00')}</p>
-                            </div>
+                            <div><span className="text-gray-600">PO Number:</span><p className="font-medium text-gray-900">{data.po.controlNumber}</p></div>
+                            <div><span className="text-gray-600">Total Amount:</span><p className="font-medium text-gray-900">${formatNumberWithCommas(data.po.totalAmount?.toFixed(2))}</p></div>
+                            <div><span className="text-gray-600">Total Paid:</span><p className="font-medium text-gray-900">${formatNumberWithCommas(data.po.totalPaid?.toFixed(2) || '0.00')}</p></div>
+                            <div><span className="text-gray-600">Remaining:</span><p className="font-medium text-gray-900">${formatNumberWithCommas(data.po.remainingBalance?.toFixed(2) || '0.00')}</p></div>
+                            <div><span className="text-gray-600">Status:</span><div className="mt-1">{getPaymentStatusBadge(data.po.paymentStatus)}</div></div>
                         </div>
                     </div>
 
+                    {/* ── 1. PRODUCT PAYMENTS ── */}
                     <div>
-                        <h3 className="font-semibold text-gray-900 mb-3">Payment Records</h3>
+                        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">1</span>
+                            Product Payments
+                        </h3>
                         {!data.payments || data.payments.length === 0 ? (
-                            <p className="text-center text-gray-500 py-8">No payments recorded yet</p>
+                            <p className="text-sm text-gray-400 italic">No product payments recorded.</p>
                         ) : (
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                                 {data.payments.map((payment) => (
-                                    <div key={payment.id} className="p-4 bg-gray-50 rounded-lg border">
-                                        {/* Header Row */}
-                                        <div className="flex justify-between items-start mb-4 pb-3 border-b">
-                                            <div className="flex-1">
-                                                <div className="flex items-baseline gap-4">
-                                                    <span className="font-bold text-lg text-gray-900">
-                                                        Payment #{payment.paymentNumber}
-                                                    </span>
-                                                    <div className="flex items-baseline gap-3 ml-auto">
-                                                        <span className="font-semibold text-xl text-blue-600">
-                                                            ${formatNumberWithCommas(payment.productDollarAmount?.toFixed(2) || '0.00')}
-                                                        </span>
-                                                        <span className="text-sm text-gray-600 bg-blue-100 px-2 py-1 rounded font-medium">
-                                                            {payment.percentageOfTotal?.toFixed(2) || '0.00'}%
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div className="mt-2 space-y-1 text-sm text-gray-700">
-                                                    <div>
-                                                        <span className="font-medium">Reference #:</span>
-                                                        <span className="ml-2">{payment.referenceNumber || 'N/A'}</span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="font-medium">Date:</span>
-                                                        <span className="ml-2">
-                                                            {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : 'No date'}
-                                                        </span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="font-medium">Bank:</span>
-                                                        <span className="ml-2">{payment.bank || 'N/A'}</span>
-                                                    </div>
-                                                </div>
+                                    <div key={payment.id} className="border border-gray-200 rounded-lg p-4">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="font-semibold text-gray-900">Payment #{payment.paymentNumber}</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-blue-600 font-bold">${formatNumberWithCommas(payment.productDollarAmount?.toFixed(2) || '0.00')}</span>
+                                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{payment.percentageOfTotal?.toFixed(2) || '0.00'}%</span>
                                             </div>
                                         </div>
-
-                                        {/* Payment Breakdown */}
-                                        <div className="space-y-2">
-                                            {/* Column Headers */}
-                                            <div className="grid grid-cols-3 gap-4 pb-2 border-b border-gray-300">
-                                                <div></div>
-                                                <div className="text-center text-xs font-bold text-gray-600 uppercase">USD</div>
-                                                <div className="text-center text-xs font-bold text-gray-600 uppercase">PHP</div>
+                                        <div className="grid grid-cols-3 gap-2 text-xs text-gray-600 mb-3">
+                                            <div><span className="text-gray-400">Bank:</span> {payment.bank || 'N/A'}</div>
+                                            <div><span className="text-gray-400">Ref #:</span> {payment.referenceNumber || 'N/A'}</div>
+                                            <div><span className="text-gray-400">Date:</span> {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : 'N/A'}</div>
+                                        </div>
+                                        <div className="bg-gray-50 rounded p-3 text-sm">
+                                            <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-gray-500 uppercase mb-1">
+                                                <div></div><div className="text-center">USD</div><div className="text-center">PHP</div>
                                             </div>
-
-                                            {/* Product Cost */}
-                                            <div className="grid grid-cols-3 gap-4 items-center">
-                                                <div className="text-sm font-medium text-gray-700">Product Cost:</div>
-                                                <div className="text-sm text-center font-semibold text-gray-900">
-                                                    ${formatNumberWithCommas(payment.productDollarAmount?.toFixed(2) || '0.00')}
-                                                </div>
-                                                <div className="text-sm text-center font-semibold text-gray-900">
-                                                    ₱{formatNumberWithCommas(payment.productPesoAmount?.toFixed(2) || '0.00')}
-                                                </div>
+                                            <div className="grid grid-cols-3 gap-2 text-sm">
+                                                <div className="text-gray-600">Product Cost</div>
+                                                <div className="text-center">${formatNumberWithCommas(payment.productDollarAmount?.toFixed(2) || '0.00')}</div>
+                                                <div className="text-center">₱{formatNumberWithCommas(payment.productPesoAmount?.toFixed(2) || '0.00')}</div>
                                             </div>
-
-                                            {/* Processing Fee */}
                                             {(payment.processingFeeDollar > 0 || payment.processingFeePeso > 0) && (
-                                                <div className="grid grid-cols-3 gap-4 items-center">
-                                                    <div className="text-sm font-medium text-gray-700">Processing Fee:</div>
-                                                    <div className="text-sm text-center text-gray-900">
-                                                        ${formatNumberWithCommas(payment.processingFeeDollar?.toFixed(2) || '0.00')}
-                                                    </div>
-                                                    <div className="text-sm text-center text-gray-900">
-                                                        ₱{formatNumberWithCommas(payment.processingFeePeso?.toFixed(2) || '0.00')}
-                                                    </div>
+                                                <div className="grid grid-cols-3 gap-2 text-sm mt-1">
+                                                    <div className="text-gray-600">Processing Fee</div>
+                                                    <div className="text-center">${formatNumberWithCommas(payment.processingFeeDollar?.toFixed(2) || '0.00')}</div>
+                                                    <div className="text-center">₱{formatNumberWithCommas(payment.processingFeePeso?.toFixed(2) || '0.00')}</div>
                                                 </div>
                                             )}
-
-                                            {/* Total */}
-                                            <div className="grid grid-cols-3 gap-4 items-center pt-2 border-t border-gray-300">
-                                                <div className="text-sm font-bold text-gray-900">Total:</div>
-                                                <div className="text-sm text-center font-bold text-gray-900">
-                                                    ${formatNumberWithCommas(payment.totalDollar?.toFixed(2) || '0.00')}
-                                                </div>
-                                                <div className="text-sm text-center font-bold text-gray-900">
-                                                    ₱{formatNumberWithCommas(payment.totalPeso?.toFixed(2) || '0.00')}
-                                                </div>
+                                            <div className="grid grid-cols-3 gap-2 text-sm font-bold border-t border-gray-200 mt-1 pt-1">
+                                                <div>Total</div>
+                                                <div className="text-center">${formatNumberWithCommas(payment.totalDollar?.toFixed(2) || '0.00')}</div>
+                                                <div className="text-center">₱{formatNumberWithCommas(payment.totalPeso?.toFixed(2) || '0.00')}</div>
                                             </div>
                                         </div>
-
-                                        {/* Payment Proof */}
                                         {payment.paymentProofUrl && (
-                                            <div className="mt-4 pt-4 border-t">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <FileText size={16} className="text-purple-600" />
-                                                    <span className="text-sm font-medium text-gray-700">Payment Proof:</span>
-                                                </div>
-                                                {payment.paymentProofUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                                                    <img
-                                                        src={getFileUrl(payment.paymentProofUrl)}
-                                                        alt="Payment Proof"
-                                                        className="w-full max-h-48 object-contain bg-white rounded border cursor-pointer"
-                                                        onClick={() => window.open(getFileUrl(payment.paymentProofUrl), '_blank')}
-                                                        onError={(e) => e.target.src = getPlaceholderImage()}
-                                                    />
-                                                ) : (
-                                                    <div className="flex gap-2">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => window.open(getFileUrl(payment.paymentProofUrl), '_blank')}
-                                                            className="flex items-center gap-2 text-blue-600 hover:bg-blue-50 p-2 rounded text-sm"
-                                                        >
-                                                            <Eye size={16} />
-                                                            View Document
-                                                        </button>
-                                                        <a
-                                                            href={getFileDownloadUrl(payment.paymentProofUrl)}
-                                                            download
-                                                            className="flex items-center gap-2 text-green-600 hover:bg-green-50 p-2 rounded text-sm"
-                                                        >
-                                                            <Download size={16} />
-                                                            Download
-                                                        </a>
-                                                    </div>
-                                                )}
+                                            <div className="mt-2 flex items-center gap-2 text-xs">
+                                                <FileText size={12} className="text-purple-500" />
+                                                <span className="text-gray-500">Proof:</span>
+                                                <a href={getFileUrl(payment.paymentProofUrl)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1"><Eye size={12} /> View</a>
+                                                <a href={getFileDownloadUrl(payment.paymentProofUrl)} download className="text-green-600 hover:underline flex items-center gap-1"><Download size={12} /> Download</a>
                                             </div>
                                         )}
                                     </div>
@@ -2170,68 +2136,109 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge }) => {
                         )}
                     </div>
 
-                    {/* Payment Summary */}
-                    <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200">
-                        <div className="flex justify-between items-center mb-3">
-                            <h3 className="font-bold text-gray-900">Payment Summary</h3>
-                            <span className="text-xl font-bold text-amber-700">
-                                {((data.po.totalPaid / data.po.totalAmount) * 100).toFixed(2)}%
-                            </span>
-                        </div>
-                        <div className="space-y-2">
-                            {/* Column Headers */}
-                            <div className="grid grid-cols-3 gap-4 pb-2 border-b border-amber-300">
-                                <div></div>
-                                <div className="text-center text-xs font-bold text-gray-700 uppercase">USD</div>
-                                <div className="text-center text-xs font-bold text-gray-700 uppercase">PHP</div>
-                            </div>
+                    {/* ── 2. SHIPPING COST ── */}
+                    <div>
+                        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-full bg-teal-100 text-teal-700 text-xs flex items-center justify-center font-bold">2</span>
+                            Shipping Cost
+                        </h3>
+                        {!shippingData ? (
+                            <p className="text-sm text-gray-400 italic">No shipping cost recorded.</p>
+                        ) : (
+                            <div className="border border-gray-200 rounded-lg p-4">
+                                <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+                                    <div><span className="text-gray-400 text-xs">Forwarding Agent:</span><p className="font-medium text-gray-900">{shippingData.forwarderName || `ID: ${shippingData.forwarderId}` || '-'}</p></div>
+                                    <div className="flex gap-4">
+                                        <div><span className="text-gray-400 text-xs">USD</span><p className="font-bold text-gray-900">${formatNumberWithCommas(parseFloat(shippingData.usdAmount || 0).toFixed(2))}</p></div>
+                                        <div><span className="text-gray-400 text-xs">PHP</span><p className="font-bold text-gray-900">₱{formatNumberWithCommas(parseFloat(shippingData.phpAmount || 0).toFixed(2))}</p></div>
+                                    </div>
+                                </div>
 
-                            {/* Product Cost Total */}
-                            <div className="grid grid-cols-3 gap-4 items-center">
-                                <div className="text-sm font-medium text-gray-800">Product Cost:</div>
-                                <div className="text-sm text-center font-semibold text-gray-900">
-                                    ${formatNumberWithCommas(
-                                        data.payments.reduce((sum, p) => sum + (parseFloat(p.productDollarAmount) || 0), 0).toFixed(2)
-                                    )}
-                                </div>
-                                <div className="text-sm text-center font-semibold text-gray-900">
-                                    ₱{formatNumberWithCommas(
-                                        data.payments.reduce((sum, p) => sum + (parseFloat(p.productPesoAmount) || 0), 0).toFixed(2)
-                                    )}
-                                </div>
-                            </div>
+                                {shippingData.items && shippingData.items.length > 0 && (
+                                    <div className="border rounded overflow-hidden mb-3">
+                                        <table className="w-full text-xs">
+                                            <thead className="bg-gray-50 border-b">
+                                                <tr>
+                                                    <th className="px-3 py-2 text-left text-gray-500">Product</th>
+                                                    <th className="px-3 py-2 text-left text-gray-500">Qty</th>
+                                                    <th className="px-3 py-2 text-left text-gray-500">CBM</th>
+                                                    <th className="px-3 py-2 text-left text-gray-500">%</th>
+                                                    <th className="px-3 py-2 text-right text-gray-500">PHP Cost</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y">
+                                                {shippingData.items.map((item, idx) => (
+                                                    <tr key={idx}>
+                                                        <td className="px-3 py-2 font-medium text-gray-900">{item.productName}{item.variation && <span className="text-gray-400 ml-1">({item.variation})</span>}</td>
+                                                        <td className="px-3 py-2 text-gray-600">{item.qty}</td>
+                                                        <td className="px-3 py-2 text-gray-600">{item.cbm}</td>
+                                                        <td className="px-3 py-2 text-gray-600">{item.allocationPercent}%</td>
+                                                        <td className="px-3 py-2 text-right font-medium">₱{formatNumberWithCommas(parseFloat(item.allocatedPhpCost || 0).toFixed(2))}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
 
-                            {/* Processing Fee Total */}
-                            <div className="grid grid-cols-3 gap-4 items-center">
-                                <div className="text-sm font-medium text-gray-800">Processing Fee:</div>
-                                <div className="text-sm text-center text-gray-900">
-                                    ${formatNumberWithCommas(
-                                        data.payments.reduce((sum, p) => sum + (parseFloat(p.processingFeeDollar) || 0), 0).toFixed(2)
-                                    )}
-                                </div>
-                                <div className="text-sm text-center text-gray-900">
-                                    ₱{formatNumberWithCommas(
-                                        data.payments.reduce((sum, p) => sum + (parseFloat(p.processingFeePeso) || 0), 0).toFixed(2)
-                                    )}
+                                <div className="flex gap-4 text-xs">
+                                    {shippingData.commercialInvoiceUrl && <a href={getFileUrl(shippingData.commercialInvoiceUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline"><Eye size={12} /> Commercial Invoice</a>}
+                                    {shippingData.proofOfPaymentUrl && <a href={getFileUrl(shippingData.proofOfPaymentUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline"><Eye size={12} /> Proof of Payment</a>}
+                                    {shippingData.packingListUrl && <a href={getFileUrl(shippingData.packingListUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline"><Eye size={12} /> Packing List</a>}
                                 </div>
                             </div>
-
-                            {/* Grand Total */}
-                            <div className="grid grid-cols-3 gap-4 items-center pt-2 border-t-2 border-amber-400">
-                                <div className="text-base font-bold text-gray-900">Total:</div>
-                                <div className="text-base text-center font-bold text-gray-900">
-                                    ${formatNumberWithCommas(
-                                        data.payments.reduce((sum, p) => sum + (parseFloat(p.totalDollar) || 0), 0).toFixed(2)
-                                    )}
-                                </div>
-                                <div className="text-base text-center font-bold text-gray-900">
-                                    ₱{formatNumberWithCommas(
-                                        data.payments.reduce((sum, p) => sum + (parseFloat(p.totalPeso) || 0), 0).toFixed(2)
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+                        )}
                     </div>
+
+                    {/* ── 3. OTHER CHARGES ── */}
+                    <div>
+                        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-full bg-orange-100 text-orange-700 text-xs flex items-center justify-center font-bold">3</span>
+                            Other Charges
+                        </h3>
+                        {!othersData || !othersData.items || othersData.items.length === 0 ? (
+                            <p className="text-sm text-gray-400 italic">No other charges recorded.</p>
+                        ) : (
+                            <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-gray-50 border-b">
+                                        <tr>
+                                            <th className="px-3 py-2 text-left text-xs text-gray-500">No.</th>
+                                            <th className="px-3 py-2 text-left text-xs text-gray-500">Particulars</th>
+                                            <th className="px-3 py-2 text-right text-xs text-gray-500">Cost (PHP)</th>
+                                            <th className="px-3 py-2 text-center text-xs text-gray-500">Docs</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y">
+                                        {othersData.items.map((item, idx) => (
+                                            <tr key={idx}>
+                                                <td className="px-3 py-2 text-gray-500">{idx + 1}</td>
+                                                <td className="px-3 py-2 font-medium text-gray-900">
+                                                    {item.particulars === 'Others' && item.customLabel ? item.customLabel : item.particulars}
+                                                </td>
+                                                <td className="px-3 py-2 text-right font-medium text-gray-900">₱{formatNumberWithCommas(parseFloat(item.cost || 0).toFixed(2))}</td>
+                                                <td className="px-3 py-2 text-center">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        {item.commercialInvoiceUrl && <a href={getFileUrl(item.commercialInvoiceUrl)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs flex items-center gap-0.5"><Eye size={11} /> CI</a>}
+                                                        {item.proofOfPaymentUrl && <a href={getFileUrl(item.proofOfPaymentUrl)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs flex items-center gap-0.5"><Eye size={11} /> POP</a>}
+                                                        {!item.commercialInvoiceUrl && !item.proofOfPaymentUrl && <span className="text-gray-300">—</span>}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot className="bg-gray-50 border-t">
+                                        <tr>
+                                            <td colSpan="2" className="px-3 py-2 text-right text-sm font-bold text-gray-900">Total</td>
+                                            <td className="px-3 py-2 text-right text-sm font-bold text-gray-900">₱{formatNumberWithCommas(parseFloat(othersData.totalCost || 0).toFixed(2))}</td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+
                 </div>
             </div>
         </div>

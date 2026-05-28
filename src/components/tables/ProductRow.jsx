@@ -11,7 +11,8 @@ const ProductRow = ({
     product,
     onEdit,
     onDelete,
-    suppliers = []
+    suppliers = [],
+    unitCosts = []
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [imageError, setImageError] = useState(false);
@@ -297,7 +298,7 @@ const ProductRow = ({
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Weight</th>
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Dimensions</th>
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Company Prices</th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Unit Price</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Unit Cost (WAC)</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
@@ -345,8 +346,19 @@ const ProductRow = ({
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                                                    {variation.unitPrice ? `₱${Number(variation.unitPrice).toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '-'}
+                                                <td className="px-4 py-3">
+                                                    {(() => {
+                                                        const match = unitCosts.find(uc =>
+                                                            uc.variationId && variation.id && uc.variationId === variation.id
+                                                        );
+                                                        return match ? (
+                                                            <span className="text-sm font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded">
+                                                                ₱{parseFloat(match.unitCost).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-xs text-gray-400">—</span>
+                                                        );
+                                                    })()}
                                                 </td>
                                             </tr>
                                         ))}

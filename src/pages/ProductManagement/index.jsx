@@ -40,7 +40,8 @@ const ProductManagement = () => {
     setVariationTypes,
     setVariationCombinations,
     setUploadingImage,
-    setUploadingVariationImage
+    setUploadingVariationImage,
+    unitCosts
   } = useProductManagement(api);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -184,7 +185,15 @@ const ProductManagement = () => {
       materials: product.materials || '',
       brand: product.brand || '',
       shelfLife: product.shelfLife || '',
-      unitCost: product.unitCost || '',
+      unitCost: (() => {
+        const matchedUnitCost = unitCosts.find(uc =>
+          !uc.variationId && uc.productId != null && product.id != null &&
+          Number(uc.productId) === Number(product.id)
+        );
+        return matchedUnitCost
+          ? parseFloat(matchedUnitCost.unitCost)
+          : product.unitCost || '';
+      })(),
       uom: product.uom || '',
       imageUrl: product.imageUrl || '',
       variations: []
@@ -215,7 +224,6 @@ const ProductManagement = () => {
 
       setVariationTypes(Array.from(typeMap.values()));
 
-      // Build combos with company prices and SKUs fully mapped
       const combos = product.variations.map(v => {
         let attrs = {};
         try {
@@ -226,7 +234,6 @@ const ProductManagement = () => {
 
         const dims = v.dimensions ? v.dimensions.split('×') : ['', '', ''];
 
-        // Key fix: always populate companySkus even when companySku is empty string
         const companyPricesMap = {};
         const companySkusMap = {};
         if (v.companyPrices && v.companyPrices.length > 0) {
@@ -237,6 +244,11 @@ const ProductManagement = () => {
             }
           });
         }
+
+        const matchedUnitCost = (unitCosts || []).find(uc =>
+          uc.variationId != null && v.id != null &&
+          Number(uc.variationId) === Number(v.id)
+        );
 
         return {
           id: v.id,
@@ -250,15 +262,12 @@ const ProductManagement = () => {
           height: dims[2] || '',
           imageUrl: v.imageUrl || '',
           unitPrice: v.unitPrice || null,
+          unitCost: matchedUnitCost ? parseFloat(matchedUnitCost.unitCost) : null,
           companyPrices: companyPricesMap,
           companySkus: companySkusMap
         };
       });
 
-      // CRITICAL: Set combos BEFORE showing the modal.
-      // ProductModal's seeding effect runs on mount — if combos are already
-      // populated when the modal mounts, selectedPriceCompanyIds is seeded
-      // correctly on the very first render. No setTimeout needed.
       setVariationCombinations(combos);
     } else {
       setVariationTypes([]);
@@ -420,6 +429,7 @@ const ProductManagement = () => {
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     API_BASE_URL={API_BASE_URL}
+                    unitCosts={unitCosts}
                   />
                 ))
               )}

@@ -493,8 +493,7 @@ const DeliveryFormModal = ({
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">Delivery Receipt # *</label>
-                                <input type="text" value={formData.deliveryReceiptNumber} onChange={(e) => setFormData({ ...formData, deliveryReceiptNumber: e.target.value.replace(/[^0-9]/g, '') })} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" required placeholder="Enter numbers only" />
-                            </div>
+                                <input type="text" value={formData.deliveryReceiptNumber} onChange={(e) => setFormData({ ...formData, deliveryReceiptNumber: e.target.value })} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" required placeholder="Enter delivery receipt number" />                            </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">Purchase Order #</label>
                                 <input type="text" value={formData.purchaseOrderNumber} onChange={(e) => setFormData({ ...formData, purchaseOrderNumber: e.target.value })} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
@@ -699,9 +698,9 @@ const DeliveryFormModal = ({
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className={`inline-flex items-center px-4 py-2 rounded-lg font-semibold text-sm ${delivery.status === 'PREPARING' ? 'bg-yellow-100 text-yellow-800' :
-                                            delivery.status === 'IN_TRANSIT' ? 'bg-purple-100 text-purple-800' :
-                                                delivery.status === 'DELIVERED' ? 'bg-green-100 text-green-800' :
-                                                    'bg-red-100 text-red-800'
+                                        delivery.status === 'IN_TRANSIT' ? 'bg-purple-100 text-purple-800' :
+                                            delivery.status === 'DELIVERED' ? 'bg-green-100 text-green-800' :
+                                                'bg-red-100 text-red-800'
                                         }`}>
                                         {delivery.status}
                                     </span>
@@ -713,8 +712,8 @@ const DeliveryFormModal = ({
                                                 type="button"
                                                 onClick={() => setFormData({ ...formData, status: 'IN_TRANSIT', dateDelivered: '' })}
                                                 className={`px-4 py-2 rounded-lg font-semibold text-sm border transition-all ${formData.status === 'IN_TRANSIT'
-                                                        ? 'bg-purple-500 text-white border-purple-500 ring-2 ring-purple-300'
-                                                        : 'bg-white text-purple-700 border-purple-300 hover:bg-purple-50'
+                                                    ? 'bg-purple-500 text-white border-purple-500 ring-2 ring-purple-300'
+                                                    : 'bg-white text-purple-700 border-purple-300 hover:bg-purple-50'
                                                     }`}
                                             >
                                                 IN_TRANSIT
@@ -740,8 +739,8 @@ const DeliveryFormModal = ({
                                                     });
                                                 }}
                                                 className={`px-4 py-2 rounded-lg font-semibold text-sm border transition-all ${formData.status === 'DELIVERED'
-                                                        ? 'bg-green-500 text-white border-green-500 ring-2 ring-green-300'
-                                                        : 'bg-white text-green-700 border-green-300 hover:bg-green-50'
+                                                    ? 'bg-green-500 text-white border-green-500 ring-2 ring-green-300'
+                                                    : 'bg-white text-green-700 border-green-300 hover:bg-green-50'
                                                     }`}
                                             >
                                                 DELIVERED
@@ -754,8 +753,8 @@ const DeliveryFormModal = ({
                                                     }
                                                 }}
                                                 className={`px-4 py-2 rounded-lg font-semibold text-sm border transition-all ${formData.status === 'CANCELLED'
-                                                        ? 'bg-red-500 text-white border-red-500 ring-2 ring-red-300'
-                                                        : 'bg-white text-red-700 border-red-300 hover:bg-red-50'
+                                                    ? 'bg-red-500 text-white border-red-500 ring-2 ring-red-300'
+                                                    : 'bg-white text-red-700 border-red-300 hover:bg-red-50'
                                                     }`}
                                             >
                                                 CANCELLED

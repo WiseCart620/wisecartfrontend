@@ -690,15 +690,15 @@ const ProductModal = ({
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Unit Cost (₱)</label>
                                     <input
-                                        type="number"
-                                        value={formData.unitCost || ''}
+                                        type="text"
+                                        value={formData.unitCost ? `₱${parseFloat(formData.unitCost).toFixed(2)}` : ''}
                                         disabled
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed text-gray-900"
                                         placeholder="Set via Purchase Orders"
                                     />
-                                    <p className="text-xs text-gray-500 mt-1">
+                                    <p className={`text-xs mt-1 ${formData.unitCost ? 'text-green-600' : 'text-gray-500'}`}>
                                         {formData.unitCost
-                                            ? `Current unit cost: ₱${parseFloat(formData.unitCost).toFixed(2)}`
+                                            ? `WAC from latest PO: ₱${parseFloat(formData.unitCost).toFixed(2)}`
                                             : 'Set unit price in Purchase Orders to update this value'}
                                     </p>
                                 </div>
@@ -1157,12 +1157,13 @@ const ProductModal = ({
                                                             <td className="px-4 py-3 w-32">
                                                                 <input
                                                                     type="text"
-                                                                    value={combo.unitPrice ? `₱${parseFloat(combo.unitPrice).toFixed(2)}` : ''}
+                                                                    value={combo.unitCost ? `₱${parseFloat(combo.unitCost).toFixed(2)}` : ''}
                                                                     disabled
                                                                     className="w-full min-w-[120px] px-3 py-2 text-sm border border-gray-300 rounded bg-gray-100 cursor-not-allowed text-gray-900"
                                                                     placeholder="Set via PO"
                                                                 />
-                                                                {!combo.unitPrice && <p className="text-xs text-gray-500 mt-1">Set in Purchase Orders</p>}
+                                                                {!combo.unitCost && <p className="text-xs text-gray-500 mt-1">Set in Purchase Orders</p>}
+                                                                {combo.unitCost && <p className="text-xs text-green-600 mt-1">WAC from latest PO</p>}
                                                             </td>
 
                                                             {/* ── Company Prices ── */}

@@ -12,6 +12,7 @@ const useProductManagement = (api) => {
     const [variationCombinations, setVariationCombinations] = useState([]);
     const [uploadingImage, setUploadingImage] = useState(false);
     const [uploadingVariationImage, setUploadingVariationImage] = useState({});
+    const [unitCosts, setUnitCosts] = useState([]);
 
     const variationInputRefs = useRef({});
 
@@ -19,10 +20,11 @@ const useProductManagement = (api) => {
         setLoading(true);
         setLoadingMessage('Loading products...');
         try {
-            const [productsResponse, companiesResponse, suppliersResponse] = await Promise.all([
+            const [productsResponse, companiesResponse, suppliersResponse, unitCostsResponse] = await Promise.all([
                 api.get('/products'),
                 api.get('/companies'),
-                api.get('/suppliers')
+                api.get('/suppliers'),
+                api.get('/unit-costs')
             ]);
 
             if (productsResponse.success) {
@@ -41,6 +43,11 @@ const useProductManagement = (api) => {
                 setSuppliers(suppliersResponse.data || []);
             } else {
                 toast.error(suppliersResponse.error || 'Failed to load suppliers');
+            }
+
+            if (unitCostsResponse.success) {
+                const unitCostData = unitCostsResponse.data?.data || unitCostsResponse.data || [];
+                setUnitCosts(Array.isArray(unitCostData) ? unitCostData : []);
             }
         } catch (error) {
             toast.error('Failed to load data');
@@ -168,7 +175,9 @@ const useProductManagement = (api) => {
                     height: combo.height || '',
                     companyPrices: clonedPrices,
                     companySkus: combo.companySkus ? { ...combo.companySkus } : {},
-                    attributes: combo.attributes
+                    attributes: combo.attributes,
+                    unitCost: combo.unitCost ?? null,
+                    id: combo.id ?? null
                 });
             });
 
@@ -202,7 +211,9 @@ const useProductManagement = (api) => {
                         width: preserved.width,
                         height: preserved.height,
                         companyPrices: { ...preserved.companyPrices },
-                        companySkus: { ...preserved.companySkus }
+                        companySkus: { ...preserved.companySkus },
+                        unitCost: preserved.unitCost ?? null,
+                        id: preserved.id ?? null
                     };
                 }
 
@@ -229,7 +240,7 @@ const useProductManagement = (api) => {
         } else if (variationTypes.length === 0) {
             setVariationCombinations([]);
         }
-    }, [variationTypes, generateVariationCombinations]);
+    }, [variationTypes]);
 
     const updateVariationCombination = (index, field, value) => {
         setVariationCombinations(prev => {
@@ -455,7 +466,7 @@ const useProductManagement = (api) => {
         setVariationCombinations,
         setUploadingImage,
         setUploadingVariationImage,
-
+        unitCosts,
         // Functions
         loadData,
         handleImageUpload,

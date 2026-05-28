@@ -3,6 +3,7 @@ import { api } from '../services/api';
 import toast from 'react-hot-toast';
 import { ArrowLeft, CreditCard, X, Trash2, Eye, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import '../styles/invoice-print.css';
+
 const fmt = (n) =>
     Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -20,10 +21,7 @@ const ProofImage = ({ filePath, fileName }) => {
         setLoading(true);
         setError(false);
 
-        // Extract filename from path           
         const filename = filePath.split('/').pop();
-
-        // ✅ USE THE CORRECT ENDPOINT - THIS IS THE FIX
         const fileUrl = `${API_BASE}/api/files/serve?path=payment-proofs/${filename}`;
 
         const token = localStorage.getItem('token')
@@ -145,7 +143,7 @@ const BalanceTooltip = ({ profile, onClick }) => {
                 className={`text-right w-full font-semibold text-sm underline decoration-dashed underline-offset-2 cursor-pointer transition-colors ${isPaid ? 'text-emerald-600 hover:text-emerald-700' : 'text-red-500 hover:text-red-600'
                     }`}
             >
-                {isPaid ? '✓ Paid' : '−₱' + fmt(bal)}
+                {isPaid ? '✓ Paid' : '₱' + fmt(bal)}
             </button>
             {payments.length > 0 && (
                 <div className="text-[10px] text-gray-400 text-right mt-0.5 tabular-nums">
@@ -165,7 +163,6 @@ const BalanceTooltip = ({ profile, onClick }) => {
                         pointerEvents: 'none',
                     }}
                 >
-                    {/* Header */}
                     <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
                         <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Payment Summary</span>
                         <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${isPaid ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
@@ -174,13 +171,11 @@ const BalanceTooltip = ({ profile, onClick }) => {
                         </span>
                     </div>
 
-                    {/* Amount due row */}
                     <div className="px-4 py-3 flex items-center justify-between border-b border-gray-50">
                         <span className="text-xs text-gray-500">Invoice amount</span>
                         <span className="text-sm font-semibold text-gray-800 tabular-nums">₱{fmt(profile.totalAmountDue)}</span>
                     </div>
 
-                    {/* Payments list */}
                     {payments.length === 0 ? (
                         <div className="px-4 py-4 text-center">
                             <div className="text-xs text-gray-400 italic">No payments recorded</div>
@@ -208,7 +203,6 @@ const BalanceTooltip = ({ profile, onClick }) => {
                         </div>
                     )}
 
-                    {/* Footer: total paid + balance */}
                     {payments.length > 0 && (
                         <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 space-y-1.5">
                             <div className="flex items-center justify-between">
@@ -224,7 +218,6 @@ const BalanceTooltip = ({ profile, onClick }) => {
                         </div>
                     )}
 
-                    {/* Click hint */}
                     <div className="px-4 py-2 border-t border-gray-50">
                         <p className="text-[10px] text-gray-300 text-center">Click to manage payments</p>
                     </div>
@@ -276,7 +269,6 @@ const PaymentEntry = ({ p, idx }) => {
     );
 };
 
-// ── Detail modal (click open balance) ───────────────────────────────────────
 const DetailModal = ({ profile, onClose, onAddPayment }) => {
     const totalPaid = (profile.payments || []).reduce((s, p) => s + Number(p.amount), 0);
     const bal = Number(profile.openBalance);
@@ -296,13 +288,11 @@ const DetailModal = ({ profile, onClose, onAddPayment }) => {
                 </div>
 
                 <div className="p-5">
-                    {/* Amount due header */}
                     <div className="bg-gray-50 rounded-xl p-4 mb-4 flex justify-between items-center">
                         <span className="text-sm text-gray-500">Amount due</span>
                         <span className="text-lg font-bold text-gray-900">₱{fmt(profile.totalAmountDue)}</span>
                     </div>
 
-                    {/* Payment history */}
                     <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
                         Payment history
                         {(profile.payments || []).length > 0 && (
@@ -322,7 +312,6 @@ const DetailModal = ({ profile, onClose, onAddPayment }) => {
                         </div>
                     )}
 
-                    {/* Balance banner */}
                     <div
                         className={`rounded-xl p-4 flex justify-between items-center mb-4 ${isPaid
                             ? 'bg-green-50 border border-green-200'
@@ -359,7 +348,6 @@ const DetailModal = ({ profile, onClose, onAddPayment }) => {
     );
 };
 
-// ── Payment modal ────────────────────────────────────────────────────────────
 const PaymentModal = ({ profile, onClose, onSaved }) => {
     const [amount, setAmount] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -378,7 +366,7 @@ const PaymentModal = ({ profile, onClose, onSaved }) => {
         }
         if (proofFile) {
             const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
-            const maxSize = 5 * 1024 * 1024; // 5MB
+            const maxSize = 5 * 1024 * 1024;
 
             if (!allowedTypes.includes(proofFile.type)) {
                 toast.error('Only PNG, JPG, JPEG, or PDF files are allowed');
@@ -428,7 +416,6 @@ const PaymentModal = ({ profile, onClose, onSaved }) => {
                 </div>
 
                 <div className="p-5">
-                    {/* Summary */}
                     <div className="grid grid-cols-3 gap-2 mb-5">
                         {[
                             ['Total due', '₱' + fmt(profile.totalAmountDue), ''],
@@ -519,7 +506,6 @@ const PaymentModal = ({ profile, onClose, onSaved }) => {
     );
 };
 
-// ── Main InvoicingProfile page ───────────────────────────────────────────────
 const InvoicingProfile = ({ onBack }) => {
     const [profiles, setProfiles] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -530,6 +516,8 @@ const InvoicingProfile = ({ onBack }) => {
     const [editingDateId, setEditingDateId] = useState(null);
     const [editingDateValue, setEditingDateValue] = useState('');
     const [receiptProfile, setReceiptProfile] = useState(null);
+    const [expandedRows, setExpandedRows] = useState({});
+    const [cosData, setCosData] = useState({});
 
     const saveDate = async (profileId) => {
         if (!editingDateValue) {
@@ -594,7 +582,6 @@ const InvoicingProfile = ({ onBack }) => {
         return matchSearch;
     });
 
-
     const parseTermsDays = (terms) => {
         if (!terms) return null;
         const match = String(terms).match(/(\d+)/);
@@ -621,6 +608,27 @@ const InvoicingProfile = ({ onBack }) => {
         return { label: 'Unpaid', cls: 'bg-red-100 text-red-800' };
     };
 
+    useEffect(() => {
+        if (profiles && profiles.length > 0) {
+            profiles.forEach(p => loadCosData(p.id));
+        }
+    }, [profiles]);
+
+    const loadCosData = async (profileId) => {
+        if (cosData[profileId] !== undefined) return;
+        setCosData(prev => ({ ...prev, [profileId]: null }));
+        try {
+            const res = await api.get(`/invoice-profiles/${profileId}/cos-summary`).catch(() => ({ success: false }));
+            if (res.success && res.data) {
+                setCosData(prev => ({ ...prev, [profileId]: res.data?.data || res.data }));
+            } else {
+                setCosData(prev => ({ ...prev, [profileId]: { items: [], productCost: 0, shipping: 0, others: 0, totalCos: 0 } }));
+            }
+        } catch {
+            setCosData(prev => ({ ...prev, [profileId]: { items: [], productCost: 0, shipping: 0, others: 0, totalCos: 0 } }));
+        }
+    };
+
     const fmtPeriod = (profile) => {
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         const sm = profile.startMonth;
@@ -643,8 +651,6 @@ const InvoicingProfile = ({ onBack }) => {
 
     return (
         <div className="min-h-screen bg-gray-50 p-3 lg:p-5">
-
-
             {/* Header */}
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
                 <div>
@@ -667,7 +673,6 @@ const InvoicingProfile = ({ onBack }) => {
                     ↻ Refresh
                 </button>
             </div>
-
 
             {/* Filters */}
             <div className="bg-white rounded-xl border border-gray-200 p-3 mb-3 flex flex-wrap gap-3 items-center">
@@ -695,7 +700,6 @@ const InvoicingProfile = ({ onBack }) => {
                             <tr>
                                 {[
                                     { label: 'Invoice #', align: 'left' },
-                                    { label: 'Invoice', align: 'center' },
                                     { label: 'Invoice Date', align: 'left' },
                                     { label: 'Period', align: 'left' },
                                     { label: 'Customer', align: 'left' },
@@ -707,7 +711,7 @@ const InvoicingProfile = ({ onBack }) => {
                                     { label: 'Days Overdue', align: 'center' },
                                     { label: 'Amount Paid', align: 'right' },
                                     { label: 'Balance', align: 'right' },
-                                    { label: 'Status', align: 'center' },
+                                    { label: 'Cost of Sales', align: 'right' },
                                     { label: 'Actions', align: 'center' },
                                 ].map(({ label, align }) => (
                                     <th
@@ -727,13 +731,13 @@ const InvoicingProfile = ({ onBack }) => {
                         <tbody className="divide-y divide-gray-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={15} className="px-4 py-10 text-center text-gray-400 text-sm">
+                                    <td colSpan={14} className="px-4 py-10 text-center text-gray-400 text-sm">
                                         Loading...
                                     </td>
                                 </tr>
                             ) : filtered.length === 0 ? (
                                 <tr>
-                                    <td colSpan={15} className="px-4 py-10 text-center text-gray-400 text-sm italic">
+                                    <td colSpan={14} className="px-4 py-10 text-center text-gray-400 text-sm italic">
                                         {profiles.length === 0
                                             ? 'No invoices yet. Generate an invoice and click "Generate to Sales Journal".'
                                             : 'No results match your filter.'}
@@ -742,161 +746,216 @@ const InvoicingProfile = ({ onBack }) => {
                             ) : (
                                 filtered.map((p) => {
                                     const totalPaid = (p.payments || []).reduce((s, pay) => s + Number(pay.amount), 0);
-                                    const balance = Number(p.openBalance);
-                                    const status = getStatus(p);
                                     const overdueDays = calcOverdueDays(p.invoiceDate || p.createdAt, p.companyTerms);
                                     const termsDays = parseTermsDays(p.companyTerms);
+                                    const isPaid = Number(p.openBalance) <= 0;
+                                    const hasPartialPayments = totalPaid > 0 && !isPaid;
+
+                                    const rowBg = isPaid
+                                        ? 'bg-green-50 hover:bg-green-100'
+                                        : hasPartialPayments
+                                            ? 'bg-yellow-50 hover:bg-yellow-100'
+                                            : 'bg-red-50 hover:bg-red-100';
 
                                     return (
-                                        <tr key={p.id} className="hover:bg-gray-50 transition">
-
-                                            {/* Invoice Number */}
-                                            <td className="px-4 py-3 text-xs font-mono text-gray-700 whitespace-nowrap">
-                                                {p.invoiceNumber || (
-                                                    <span className="text-gray-300 italic">—</span>
-                                                )}
-                                            </td>
-
-                                            {/* Invoice icon */}
-                                            <td className="px-4 py-3 text-center">
-                                                <button
-                                                    onClick={() => setReceiptProfile(p)}
-                                                    title="View invoice receipt"
-                                                    className="w-8 h-8 rounded-lg flex items-center justify-center mx-auto bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
-                                                >
-                                                    <FileText size={15} />
-                                                </button>
-                                            </td>
-
-                                            {/* Invoice Date */}
-                                            <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">
-                                                {editingDateId === p.id ? (
-                                                    <input
-                                                        type="date"
-                                                        autoFocus
-                                                        value={editingDateValue}
-                                                        onChange={(e) => setEditingDateValue(e.target.value)}
-                                                        onBlur={() => saveDate(p.id)}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') saveDate(p.id);
-                                                            if (e.key === 'Escape') { setEditingDateId(null); setEditingDateValue(''); }
-                                                        }}
-                                                        className="border border-blue-400 rounded px-1 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                                    />
-                                                ) : (
+                                        <React.Fragment key={p.id}>
+                                            <tr className={`${rowBg} transition`}>
+                                                <td className="px-4 py-3 text-xs font-mono whitespace-nowrap">
+                                                    {p.invoiceNumber ? (
+                                                        <button
+                                                            onClick={() => setReceiptProfile(p)}
+                                                            className="text-blue-600 hover:underline font-mono font-semibold"
+                                                            title="View Invoice Receipt"
+                                                        >
+                                                            {p.invoiceNumber}
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-gray-300 italic">—</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">
+                                                    {editingDateId === p.id ? (
+                                                        <input
+                                                            type="date"
+                                                            autoFocus
+                                                            value={editingDateValue}
+                                                            onChange={(e) => setEditingDateValue(e.target.value)}
+                                                            onBlur={() => saveDate(p.id)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') saveDate(p.id);
+                                                                if (e.key === 'Escape') { setEditingDateId(null); setEditingDateValue(''); }
+                                                            }}
+                                                            className="border border-blue-400 rounded px-1 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                        />
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingDateId(p.id);
+                                                                const d = p.invoiceDate || (p.createdAt ? new Date(p.createdAt).toISOString().split('T')[0] : '');
+                                                                setEditingDateValue(d);
+                                                            }}
+                                                            className="text-left hover:text-blue-600 hover:underline decoration-dashed underline-offset-2 transition"
+                                                            title="Click to edit date"
+                                                        >
+                                                            {fmtDate(p.invoiceDate || p.createdAt)}
+                                                        </button>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">{fmtPeriod(p)}</td>
+                                                <td className="px-4 py-3 text-sm font-medium text-gray-900 max-w-[160px] truncate">
+                                                    {p.soldTo}
+                                                    {p.companyName && p.companyName !== p.soldTo && (
+                                                        <div className="text-[10px] text-gray-400 font-normal">{p.companyName}</div>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-xs text-right whitespace-nowrap">₱{fmt(p.vatableSales)}</td>
+                                                <td className="px-4 py-3 text-xs text-right whitespace-nowrap">₱{fmt(p.vat)}</td>
+                                                <td className="px-4 py-3 text-xs text-right text-red-600 whitespace-nowrap">−₱{fmt(p.withholdingTax)}</td>
+                                                <td className="px-4 py-3 text-xs text-right font-semibold whitespace-nowrap">₱{fmt(p.totalAmountDue)}</td>
+                                                <td className="px-4 py-3 text-center text-xs text-gray-600 whitespace-nowrap">
+                                                    {termsDays !== null ? p.companyTerms : <span className="text-gray-300">—</span>}
+                                                </td>
+                                                <td className="px-4 py-3 text-center whitespace-nowrap">
+                                                    {termsDays !== null ? (
+                                                        overdueDays === null ? <span className="text-[10px] text-gray-300">—</span>
+                                                            : overdueDays === 0 ? <span className="text-[10px] font-semibold text-green-600">Due today</span>
+                                                                : overdueDays < 0 ? <span className="text-[10px] font-semibold text-yellow-600">{Math.abs(overdueDays)}d</span>
+                                                                    : <span className="text-[10px] font-semibold text-red-600">{overdueDays}d</span>
+                                                    ) : <span className="text-[10px] text-gray-300">—</span>}
+                                                </td>
+                                                <td className="px-4 py-3 text-xs text-right font-medium text-green-700 whitespace-nowrap">
+                                                    {totalPaid > 0 ? `₱${fmt(totalPaid)}` : <span className="text-gray-300">—</span>}
+                                                </td>
+                                                <td className="px-4 py-3 text-xs text-right font-semibold whitespace-nowrap" style={{ overflow: 'visible', position: 'relative' }}>
+                                                    <BalanceTooltip profile={p} onClick={() => setDetailProfile(p)} />
+                                                </td>
+                                                {/* Cost of Sales */}
+                                                <td className="px-4 py-3 text-xs text-right whitespace-nowrap">
                                                     <button
                                                         onClick={() => {
-                                                            setEditingDateId(p.id);
-                                                            const d = p.invoiceDate
-                                                                ? p.invoiceDate
-                                                                : p.createdAt
-                                                                    ? new Date(p.createdAt).toISOString().split('T')[0]
-                                                                    : '';
-                                                            setEditingDateValue(d);
+                                                            const nowExpanded = !expandedRows[p.id];
+                                                            setExpandedRows(prev => ({ ...prev, [p.id]: nowExpanded }));
+                                                            if (nowExpanded && cosData[p.id] === undefined) {
+                                                                loadCosData(p.id);
+                                                            }
                                                         }}
-                                                        className="text-left hover:text-blue-600 hover:underline decoration-dashed underline-offset-2 transition"
-                                                        title="Click to edit date"
+                                                        className="text-blue-700 font-semibold hover:underline inline-flex items-center gap-1"
                                                     >
-                                                        {fmtDate(p.invoiceDate || p.createdAt)}
+                                                        {expandedRows[p.id] ? (
+                                                            <ChevronUp size={12} className="text-blue-500" />
+                                                        ) : (
+                                                            <ChevronDown size={12} className="text-blue-500" />
+                                                        )}
+                                                        {cosData[p.id] === undefined ? '—' :
+                                                            cosData[p.id] === null ? '...' :
+                                                                `₱${fmt(cosData[p.id].totalCos || 0)}`}
                                                     </button>
-                                                )}
-                                            </td>
+                                                </td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <div className="flex items-center justify-center gap-1">
+                                                        <button onClick={() => setPaymentProfile(p)} title="Record payment" className="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-50 text-amber-600 hover:bg-amber-100 transition">
+                                                            <CreditCard size={15} />
+                                                        </button>
+                                                        <button onClick={() => handleDelete(p.id)} title="Delete" className="w-8 h-8 rounded-lg flex items-center justify-center bg-red-50 text-red-600 hover:bg-red-100 transition">
+                                                            <Trash2 size={15} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {expandedRows[p.id] && cosData[p.id] && cosData[p.id] !== null && (() => {
+                                                const rawItems = cosData[p.id].items || p.items || [];
+                                                const totalShipping = Number(cosData[p.id].shipping || 0);
+                                                const totalOthers = Number(cosData[p.id].others || 0);
+                                                const n = rawItems.length || 1;
+                                                const itemsWithBreakdown = rawItems.map(item => {
+                                                    const qty = item.qty || item.totalQuantity || 1;
+                                                    const unitCost = item.unitCost || 0;
+                                                    const itemShipping = Number(item.itemShipping || 0);
+                                                    const itemOthers = Number(item.itemOthers || 0);
+                                                    const itemProductCost = Number(item.itemProductCost || 0);
+                                                    const itemTotal = Number(item.totalCost || (unitCost * qty));
+                                                    return {
+                                                        ...item,
+                                                        qty,
+                                                        itemProductCost,
+                                                        productName: item.productName || item.description || '—',
+                                                        variationDisplay: item.variationDisplay || item.variation?.combinationDisplay || null,
+                                                        itemShipping,
+                                                        itemOthers,
+                                                        itemTotal,
+                                                    };
+                                                });
 
-                                            {/* Period */}
-                                            <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">
-                                                {fmtPeriod(p)}
-                                            </td>
+                                                const totalProductCost = itemsWithBreakdown.reduce((s, i) => s + i.itemProductCost, 0);
+                                                const totalShippingDisplay = Number(cosData[p.id].shipping || 0);
+                                                const totalOthersDisplay = Number(cosData[p.id].others || 0);
+                                                const grandTotal = itemsWithBreakdown.reduce((s, i) => s + i.itemTotal, 0);
 
-                                            {/* Customer */}
-                                            <td className="px-4 py-3 text-sm font-medium text-gray-900 max-w-[160px] truncate">
-                                                {p.soldTo}
-                                                {p.companyName && p.companyName !== p.soldTo && (
-                                                    <div className="text-[10px] text-gray-400 font-normal">{p.companyName}</div>
-                                                )}
-                                            </td>
-
-                                            {/* Vatable Sales */}
-                                            <td className="px-4 py-3 text-xs text-right whitespace-nowrap">
-                                                ₱{fmt(p.vatableSales)}
-                                            </td>
-
-                                            {/* VAT */}
-                                            <td className="px-4 py-3 text-xs text-right whitespace-nowrap">
-                                                ₱{fmt(p.vat)}
-                                            </td>
-
-                                            {/* Less W/H Tax */}
-                                            <td className="px-4 py-3 text-xs text-right text-red-600 whitespace-nowrap">
-                                                −₱{fmt(p.withholdingTax)}
-                                            </td>
-
-                                            {/* Due */}
-                                            <td className="px-4 py-3 text-xs text-right font-semibold whitespace-nowrap">
-                                                ₱{fmt(p.totalAmountDue)}
-                                            </td>
-                                            {/* Terms */}
-                                            <td className="px-4 py-3 text-center text-xs text-gray-600 whitespace-nowrap">
-                                                {termsDays !== null ? p.companyTerms : <span className="text-gray-300">—</span>}
-                                            </td>
-
-                                            {/* Days Overdue */}
-                                            <td className="px-4 py-3 text-center whitespace-nowrap">
-                                                {termsDays !== null ? (
-                                                    overdueDays === null ? (
-                                                        <span className="text-[10px] text-gray-300">—</span>
-                                                    ) : overdueDays === 0 ? (
-                                                        <span className="text-[10px] font-semibold text-green-600">Due today</span>
-                                                    ) : overdueDays < 0 ? (
-                                                        <span className="text-[10px] font-semibold text-yellow-600">{Math.abs(overdueDays)}d</span>
-                                                    ) : (
-                                                        <span className="text-[10px] font-semibold text-red-600">{overdueDays}d</span>)
-                                                ) : (
-                                                    <span className="text-[10px] text-gray-300">—</span>
-                                                )}
-                                            </td>
-
-                                            {/* Amount Paid */}
-                                            <td className="px-4 py-3 text-xs text-right font-medium text-green-700 whitespace-nowrap">
-                                                {totalPaid > 0 ? `₱${fmt(totalPaid)}` : (
-                                                    <span className="text-gray-300">—</span>
-                                                )}
-                                            </td>
-
-                                            {/* Balance */}
-                                            <td className="px-4 py-3 text-xs text-right font-semibold whitespace-nowrap" style={{ overflow: 'visible', position: 'relative' }}>
-                                                <BalanceTooltip
-                                                    profile={p}
-                                                    onClick={() => setDetailProfile(p)}
-                                                />
-                                            </td>
-
-                                            {/* Status */}
-                                            <td className="px-4 py-3 text-center">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${status.cls}`}>
-                                                    {status.label}
-                                                </span>
-                                            </td>
-
-                                            {/* Actions */}
-                                            <td className="px-4 py-3 text-center">
-                                                <div className="flex items-center justify-center gap-1">
-                                                    <button
-                                                        onClick={() => setPaymentProfile(p)}
-                                                        title="Record payment"
-                                                        className="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-50 text-amber-600 hover:bg-amber-100 transition"
-                                                    >
-                                                        <CreditCard size={15} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(p.id)}
-                                                        title="Delete"
-                                                        className="w-8 h-8 rounded-lg flex items-center justify-center bg-red-50 text-red-600 hover:bg-red-100 transition"
-                                                    >
-                                                        <Trash2 size={15} />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
+                                                return (
+                                                    <tr key={`cos-${p.id}`} className="bg-blue-50">
+                                                        <td colSpan={14} className="px-6 py-4">
+                                                            <div className="text-xs font-semibold text-blue-700 mb-2 uppercase tracking-wide">Cost of Sales Breakdown</div>
+                                                            <table className="w-full text-xs mb-2">
+                                                                <thead>
+                                                                    <tr className="text-gray-500 border-b border-blue-200">
+                                                                        <th className="text-left pb-1">SKU</th>
+                                                                        <th className="text-left pb-1">UPC</th>
+                                                                        <th className="text-left pb-1">Description</th>
+                                                                        <th className="text-right pb-1">Qty</th>
+                                                                        <th className="text-right pb-1">Unit Cost</th>
+                                                                        <th className="text-right pb-1 text-blue-700 font-bold">Total Cost</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-blue-100">
+                                                                    {itemsWithBreakdown.map((item, i) => (
+                                                                        <tr key={i} className="hover:bg-blue-100 transition">
+                                                                            <td className="py-1.5 text-gray-500 font-mono text-[10px]">{item.sku || '—'}</td>
+                                                                            <td className="py-1.5 text-gray-500 font-mono text-[10px]">{item.upc || '—'}</td>
+                                                                            <td className="py-1.5 text-gray-800 font-medium">
+                                                                                {item.productName}
+                                                                                {item.variationDisplay && item.variationDisplay !== 'Adjustment' && (
+                                                                                    <span className="text-xs text-gray-500 ml-1">({item.variationDisplay})</span>
+                                                                                )}
+                                                                                {item.variationDisplay === 'Adjustment' && (
+                                                                                    <span className="ml-2 text-xs text-blue-600 italic">(Adjustment)</span>
+                                                                                )}
+                                                                            </td>
+                                                                            <td className="py-1.5 text-right text-gray-700 font-medium">{Number(item.qty).toLocaleString()}</td>
+                                                                            <td className="py-1.5 text-right text-gray-600">
+                                                                                ₱{fmt(item.unitCost || 0)}
+                                                                            </td>
+                                                                            <td className="py-1.5 text-right font-bold text-blue-800 relative group">
+                                                                                <span className="cursor-default underline decoration-dashed underline-offset-2">₱{fmt(item.itemTotal)}</span>
+                                                                                <div className="absolute right-0 bottom-full mb-1 z-50 hidden group-hover:block w-56 bg-white border border-gray-200 rounded-lg shadow-xl p-3 text-xs">
+                                                                                    <div className="flex justify-between mb-1 text-gray-600"><span>Product Cost</span><span className="font-medium text-gray-800">₱{fmt(item.itemProductCost)}</span></div>
+                                                                                    <div className="flex justify-between mb-1 text-gray-600"><span>Shipping Cost</span><span className="font-medium text-blue-700">₱{fmt(item.itemShipping)}</span></div>
+                                                                                    <div className="flex justify-between mb-2 text-gray-600"><span>Other Charges</span><span className="font-medium text-orange-700">₱{fmt(item.itemOthers)}</span></div>
+                                                                                    <div className="flex justify-between border-t border-gray-100 pt-2 font-bold text-blue-800"><span>Total</span><span>₱{fmt(item.itemTotal)}</span></div>
+                                                                                </div>
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                                <tfoot>
+                                                                    <tr className="border-t-2 border-blue-300 bg-blue-100">
+                                                                        <td colSpan={5} className="py-2 text-xs font-semibold text-blue-700 uppercase tracking-wide">Totals</td>
+                                                                        <td className="py-2 text-right text-sm font-bold text-blue-900 relative group">
+                                                                            <span className="cursor-default underline decoration-dashed underline-offset-2">₱{fmt(grandTotal)}</span>
+                                                                            <div className="absolute right-0 bottom-full mb-1 z-50 hidden group-hover:block w-56 bg-white border border-gray-200 rounded-lg shadow-xl p-3 text-xs">
+                                                                                <div className="flex justify-between mb-1 text-gray-600"><span>Product Cost</span><span className="font-medium text-gray-800">₱{fmt(totalProductCost)}</span></div>
+                                                                                <div className="flex justify-between mb-1 text-gray-600"><span>Shipping Cost</span><span className="font-medium text-blue-700">₱{fmt(totalShippingDisplay)}</span></div>
+                                                                                <div className="flex justify-between mb-2 text-gray-600"><span>Other Charges</span><span className="font-medium text-orange-700">₱{fmt(totalOthersDisplay)}</span></div>
+                                                                                <div className="flex justify-between border-t border-gray-100 pt-2 font-bold text-blue-800"><span>Grand Total</span><span>₱{fmt(grandTotal)}</span></div>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                </tfoot>
+                                                            </table>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })()}
+                                        </React.Fragment>
                                     );
                                 })
                             )}
@@ -905,31 +964,18 @@ const InvoicingProfile = ({ onBack }) => {
                 </div>
             </div>
 
-            {/* Invoice Receipt Modal */}
+            {/* Modals */}
             {receiptProfile && (
                 <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-6">
                     <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
                         <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl z-10 print:hidden">
                             <h2 className="text-xl font-bold text-gray-900">Invoice Report</h2>
                             <div className="flex gap-3">
-                                <button
-                                    onClick={() => window.print()}
-                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
-                                >
-                                    🖨️ Print
-                                </button>
-                                <button
-                                    onClick={() => setReceiptProfile(null)}
-                                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                                >
-                                    <X size={24} />
-                                </button>
+                                <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">🖨️ Print</button>
+                                <button onClick={() => setReceiptProfile(null)} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"><X size={24} /></button>
                             </div>
                         </div>
-
                         <div className="p-8" id="invoice-report">
-
-                            {/* Header */}
                             <div className="flex justify-between items-start mb-5 pb-4 border-gray-900">
                                 <div className="text-left leading-none space-y-0">
                                     <div className="text-[34px] font-bold text-gray-900 -mb-0 font-serif tracking-tight">WISECART MERCHANTS CORP.</div>
@@ -946,214 +992,57 @@ const InvoicingProfile = ({ onBack }) => {
                                     </div>
                                     <div className="text-lg font-semibold flex items-center gap-1">
                                         NO.
-                                        <input
-                                            type="text"
-                                            readOnly
-                                            value={receiptProfile.invoiceNumber || ''}
-                                            placeholder="_____________"
-                                            className="border-b border-gray-500 w-36 text-center focus:outline-none bg-transparent print:border-0"
-                                        />
+                                        <input type="text" readOnly value={receiptProfile.invoiceNumber || ''} placeholder="_____________" className="border-b border-gray-500 w-36 text-center focus:outline-none bg-transparent print:border-0" />
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Checkboxes + Date */}
                             <div className="flex justify-between items-center mb-2 mt-11">
                                 <div className="flex gap-6">
-                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                                        <input type="checkbox" className="w-6 h-6 border-2 border-gray-900" /> CASH SALES
-                                    </label>
-                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                                        <input type="checkbox" className="w-6 h-6 border-2 border-gray-900" /> CHARGE SALES
-                                    </label>
+                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700"><input type="checkbox" className="w-6 h-6 border-2 border-gray-900" /> CASH SALES</label>
+                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700"><input type="checkbox" className="w-6 h-6 border-2 border-gray-900" /> CHARGE SALES</label>
                                 </div>
                                 <div className="text-right">
                                     <div className="flex items-center gap-2 justify-end text-gray-900">
                                         <span className="font-medium">DATE:</span>
-                                        <input
-                                            type="text"
-                                            readOnly
-                                            value={receiptProfile.invoiceDate
-                                                ? new Date(receiptProfile.invoiceDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
-                                                : receiptProfile.createdAt
-                                                    ? new Date(receiptProfile.createdAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
-                                                    : ''}
-                                            className="border-b border-gray-500 text-sm focus:outline-none bg-transparent print:border-0"
-                                        />
-                                    </div>
-                                </div>ssh
-                            </div>
-
-                            {/* Sold To */}
-                            <div className="border-1 border-gray-900 p-3 mb-1.5" style={{ height: '165px' }}>
-                                <div className="flex flex-col gap-2">
-                                    <div className="flex items-center mb-1.5">
-                                        <span className="font-bold text-gray-900 w-48">SOLD TO:</span>
-                                        <span className="text-black-900 flex-1 print-visible">{receiptProfile.soldTo || 'N/A'}</span>
-                                    </div>
-                                    <div className="flex items-center mb-1.5">
-                                        <span className="font-bold text-gray-900 w-48">REGISTERED NAME:</span>
-                                        <span className="text-black-900 flex-1 print-visible">{receiptProfile.registeredName || 'N/A'}</span>
-                                    </div>
-                                    <div className="flex items-center mb-1.5">
-                                        <span className="font-bold text-gray-900 w-48">TIN:</span>
-                                        <span className="text-black-900 flex-1 print-visible">{receiptProfile.tin || 'N/A'}</span>
-                                    </div>
-                                    <div className="grid grid-cols-[180px_1fr] items-start gap-3">
-                                        <div className="font-bold text-gray-900 pt-1 self-start">BUSINESS ADDRESS:</div>
-                                        <div className="text-black-900 -mt-1 leading-[1.1] tracking-tight print-visible">{receiptProfile.businessAddress || 'N/A'}</div>
+                                        <input type="text" readOnly value={receiptProfile.invoiceDate ? new Date(receiptProfile.invoiceDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : receiptProfile.createdAt ? new Date(receiptProfile.createdAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : ''} className="border-b border-gray-500 text-sm focus:outline-none bg-transparent print:border-0" />
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Items Table */}
-                            <div className="border-1 border-b-0 border-gray-900">
+                            <div className="border border-gray-900 p-3 mb-1.5" style={{ height: '165px' }}>
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-center mb-1.5"><span className="font-bold text-gray-900 w-48">SOLD TO:</span><span className="text-black-900 flex-1 print-visible">{receiptProfile.soldTo || 'N/A'}</span></div>
+                                    <div className="flex items-center mb-1.5"><span className="font-bold text-gray-900 w-48">REGISTERED NAME:</span><span className="text-black-900 flex-1 print-visible">{receiptProfile.registeredName || 'N/A'}</span></div>
+                                    <div className="flex items-center mb-1.5"><span className="font-bold text-gray-900 w-48">TIN:</span><span className="text-black-900 flex-1 print-visible">{receiptProfile.tin || 'N/A'}</span></div>
+                                    <div className="grid grid-cols-[180px_1fr] items-start gap-3"><div className="font-bold text-gray-900 pt-1 self-start">BUSINESS ADDRESS:</div><div className="text-black-900 -mt-1 leading-[1.1] tracking-tight print-visible">{receiptProfile.businessAddress || 'N/A'}</div></div>
+                                </div>
+                            </div>
+                            <div className="border border-b-0 border-gray-900">
                                 <table className="w-full" style={{ minHeight: '150mm' }}>
-                                    <thead>
-                                        <tr className="border-b border-gray-900">
-                                            <th className="text-left px-4 font-bold text-gray-900 text-sm leading-tight" style={{ width: '60%' }}>ITEM DESCRIPTION / NATURE OF SERVICE</th>
-                                            <th className="text-right px-4 font-bold text-gray-900 text-sm leading-tight" style={{ width: '12%' }}>QTY.</th>
-                                            <th className="text-right px-4 text-gray-900 text-xs text-[11px] leading-tight" style={{ width: '12%' }}>UNIT COST / PRICE</th>
-                                            <th className="text-right px-4 font-bold text-gray-900 text-sm leading-tight" style={{ width: '15%' }}>AMOUNT</th>
-                                        </tr>
-                                    </thead>
+                                    <thead><tr className="border-b border-gray-900"><th className="text-left px-4 font-bold text-gray-900 text-sm leading-tight" style={{ width: '60%' }}>ITEM DESCRIPTION / NATURE OF SERVICE</th><th className="text-right px-4 font-bold text-gray-900 text-sm leading-tight" style={{ width: '12%' }}>QTY.</th><th className="text-right px-4 text-gray-900 text-xs text-[11px] leading-tight" style={{ width: '12%' }}>UNIT COST / PRICE</th><th className="text-right px-4 font-bold text-gray-900 text-sm leading-tight" style={{ width: '15%' }}>AMOUNT</th></tr></thead>
                                     <tbody>
                                         {(receiptProfile.items || []).map((item, i) => (
                                             <tr key={i} className="align-top">
-                                                <td className="py-2 px-4 text-sm text-gray-900">
-                                                    {item.productName}
-                                                    {item.variationDisplay && item.variationDisplay !== 'Adjustment' && (
-                                                        <span> {item.variationDisplay}{item.upc ? ` - ${item.upc}` : ''}</span>
-                                                    )}
-                                                    {item.variationDisplay === 'Adjustment' && (
-                                                        <span className="ml-2 text-xs text-blue-600 italic">(Adjustment)</span>
-                                                    )}
-                                                </td>
-                                                <td className="py-2 px-4 text-right text-sm text-gray-900">
-                                                    {Number(item.totalQuantity).toLocaleString()}
-                                                </td>
-                                                <td className="py-2 px-4 text-right text-sm text-gray-900">
-                                                    {fmt(item.unitCost)}
-                                                </td>
-                                                <td className="py-2 px-4 text-right text-sm text-gray-900">
-                                                    {fmt(item.totalAmount)}
-                                                </td>
+                                                <td className="py-2 px-4 text-sm text-gray-900">{item.productName}{item.variationDisplay && item.variationDisplay !== 'Adjustment' && <span> {item.variationDisplay}{item.upc ? ` - ${item.upc}` : ''}</span>}{item.variationDisplay === 'Adjustment' && <span className="ml-2 text-xs text-blue-600 italic">(Adjustment)</span>}</td>
+                                                <td className="py-2 px-4 text-right text-sm text-gray-900">{Number(item.totalQuantity).toLocaleString()}</td>
+                                                <td className="py-2 px-4 text-right text-sm text-gray-900">{fmt(item.unitCost)}</td>
+                                                <td className="py-2 px-4 text-right text-sm text-gray-900">{fmt(item.totalAmount)}</td>
                                             </tr>
                                         ))}
-                                        {(!receiptProfile.items || receiptProfile.items.length === 0) && (
-                                            <tr>
-                                                <td colSpan={4} className="py-8 text-center text-gray-400 italic text-sm">
-                                                    No item data saved for this invoice.
-                                                </td>
-                                            </tr>
-                                        )}
-                                        <tr className="h-full"><td colSpan={4} className="p-0"></td></tr>
+                                        {(!receiptProfile.items || receiptProfile.items.length === 0) && (<tr><td colSpan={4} className="py-8 text-center text-gray-400 italic text-sm">No item data saved for this invoice.</td></tr>)}
                                     </tbody>
                                 </table>
                             </div>
-
-                            {/* Tax Summary */}
-                            <div className="grid grid-cols-6 border-1 border-gray-900 text-sm">
-                                <div className="col-span-2 grid grid-cols-2">
-                                    <div className="border-l-0 border-1 border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[13px]">
-                                        <div className="mb-2">Vatable Sales:</div>
-                                        <div className="mb-2">VAT:</div>
-                                        <div className="mb-2">Zero-Rated Sales:</div>
-                                        <div>VAT-Exempt Sales:</div>
-                                    </div>
-                                    <div className="border-r-1 border-gray-900 px-4 py-3 flex flex-col justify-start text-[15px]">
-                                        <input readOnly value={fmt(receiptProfile.vatableSales)} className="w-full text-right pb-0 mb-2" />
-                                        <input readOnly value={fmt(receiptProfile.vat)} className="w-full text-right pb-0 mb-2" />
-                                        <input readOnly value={fmt(0)} className="w-full text-right pb-0 mb-2" />
-                                        <input readOnly value={fmt(0)} className="w-full text-right pb-0" />
-                                    </div>
-                                </div>
-                                <div className="border-r-1 border-gray-900 px-3 py-3 flex flex-col justify-center text-[11px]">
-                                    <div className="font-medium leading-tight">SC/PWD/NAAC/MOV/<br />SOLO PARENT ID No.:</div>
-                                    <div className="font-medium leading-tight mt-9">SC/PWD/NAAC/MOV/<br />Signature:</div>
-                                </div>
-                                <div className="border-r-1 border-gray-900 px-3 py-3 flex flex-col justify-center text-[13px]">
-                                    <input type="text" className="w-full pb-0 text-sm -mt-1" />
-                                    <input type="text" className="w-full pb-0 text-sm mt-5" />
-                                </div>
-                                <div className="col-span-2 grid grid-cols-2">
-                                    <div className="border-l-0 border-1 border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
-                                        <div className="mb-2 text-[9px]">TOTAL SALES (VAT Inclusive)</div>
-                                        <div className="mb-2">Less: VAT</div>
-                                        <div className="mb-2">Amount: Net of VAT</div>
-                                        <div>Less: Discount<br /><span className="text-[10px]">(SC/PWD/NAAC/MOV/SP)</span></div>
-                                    </div>
-                                    <div className="px-4 border-1 flex flex-col justify-start border-t-0 border-l-0 border-r-0 pt-2">
-                                        <input readOnly value={fmt(Number(receiptProfile.vatableSales) + Number(receiptProfile.vat))} className="w-full text-right pb-0 mb-2 text-[15px]" />
-                                        <input readOnly value={fmt(receiptProfile.vat)} className="w-full text-right pb-0 mb-2 text-[15px]" />
-                                        <input readOnly value={fmt(receiptProfile.vatableSales)} className="w-full text-right pb-0 mb-2 text-[15px]" />
-                                        <input readOnly value={fmt(0)} className="w-full text-right pb-0 text-[15px]" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Bottom row */}
-                            <div className="grid grid-cols-6 border-t-0 border-gray-900 text-sm">
-                                <div className="col-span-4 border-r-1 border-gray-900 px-4">
-                                    <label className="flex items-start gap-2 text-sm font-medium text-gray-700">
-                                        <input type="checkbox" className="w-6 h-6 mt-8" />
-                                        <div>
-                                            <div className="mb-8 mt-8">Received the amount of</div>
-                                            <div className="border-b border-gray-900 mt-1 w-full"></div>
-                                        </div>
-                                    </label>
-                                </div>
-                                <div className="col-span-2 grid grid-cols-2">
-                                    <div className="border-l-0 border-1 border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
-                                        <div className="mb-2">Add: VAT</div>
-                                        <div className="mb-2">Less: Withholding Tax</div>
-                                        <div>Total Amount Due:</div>
-                                    </div>
-                                    <div className="px-4 border-1 flex flex-col justify-start border-t-0 border-l-0 pt-2">
-                                        <input readOnly value={fmt(receiptProfile.vat)} className="w-full text-right pb-0 mb-2 text-[15px]" />
-                                        <input readOnly value={fmt(receiptProfile.withholdingTax)} className="w-full text-right pb-0 mb-2 text-[15px]" />
-                                        <input readOnly value={fmt(receiptProfile.totalAmountDue)} className="w-full text-right font-bold pb-0 text-[16px]" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Footer */}
-                            <div className="grid grid-cols-2 border-1 border-t-1 border-gray-900 text-sm mt-6">
-                                <div className="border-gray-900 px-4 py-2">
-                                    <div className="font-medium text-[16px]">PERMIT TO USE LOOSE LEAF No. : LLSI-080-1024-00002</div>
-                                    <div className="font-medium text-[16px]">DATE ISSUED: OCT. 11, 2024</div>
-                                </div>
-                                <div className="px-4 py-2 pb-4">
-                                    <div className="font-medium text-[16px]">BIR AUTHORITY TO PRINT No. 080AU20240000016398</div>
-                                    <div className="font-medium text-[16px]">DATE ISSUED: OCT. 23, 2024</div>
-                                    <div className="font-medium text-[16px]">APPROVED SERIES: 0501-1500 • 20PADS (2X)</div>
-                                </div>
+                            <div className="grid grid-cols-2 border border-gray-900 text-sm mt-6">
+                                <div className="border-gray-900 px-4 py-2"><div className="font-medium text-[16px]">PERMIT TO USE LOOSE LEAF No. : LLSI-080-1024-00002</div><div className="font-medium text-[16px]">DATE ISSUED: OCT. 11, 2024</div></div>
+                                <div className="px-4 py-2 pb-4"><div className="font-medium text-[16px]">BIR AUTHORITY TO PRINT No. 080AU20240000016398</div><div className="font-medium text-[16px]">DATE ISSUED: OCT. 23, 2024</div><div className="font-medium text-[16px]">APPROVED SERIES: 0501-1500 • 20PADS (2X)</div></div>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Detail modal */}
-            {detailProfile && (
-                <DetailModal
-                    profile={detailProfile}
-                    onClose={() => setDetailProfile(null)}
-                    onAddPayment={(p) => setPaymentProfile(p)}
-                />
-            )}
-
-            {/* Payment modal */}
-            {paymentProfile && (
-                <PaymentModal
-                    profile={paymentProfile}
-                    onClose={() => setPaymentProfile(null)}
-                    onSaved={(updated) => {
-                        setProfiles((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-                        setPaymentProfile(null);
-                    }}
-                />
-            )}
+            {detailProfile && <DetailModal profile={detailProfile} onClose={() => setDetailProfile(null)} onAddPayment={(p) => setPaymentProfile(p)} />}
+            {paymentProfile && <PaymentModal profile={paymentProfile} onClose={() => setPaymentProfile(null)} onSaved={(updated) => { setProfiles((prev) => prev.map((p) => (p.id === updated.id ? updated : p))); setPaymentProfile(null); }} />}
         </div>
     );
 };

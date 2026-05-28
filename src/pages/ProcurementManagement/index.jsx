@@ -3,6 +3,7 @@ import { ShoppingCart } from 'lucide-react';
 import InventoryRequestManagement from './InventoryRequestManagement';
 import ProductQuotationManagement from './ProductQuotationManagement';
 import PurchaseOrderManagement from '../../pages/UploadPaymentManagement';
+import ProductUnitCostingTab from './ProductUnitCostingTab';
 import LoadingOverlay from '../../components/common/LoadingOverlay';
 import ProcurementTabs from './components/ProcurementTabs';
 import { api } from '../../services/api';
@@ -20,7 +21,7 @@ const ProcurementManagement = () => {
     const [irrRequests, setIrrRequests] = useState([]);
     const [rpqRequests, setRpqRequests] = useState([]);
 
-    
+
 
     useEffect(() => {
         if (activeTab === 'po') {
@@ -34,7 +35,7 @@ const ProcurementManagement = () => {
         }
     }, [activeTab]);
 
-    
+
 
     useEffect(() => {
         loadInitialData();
@@ -61,14 +62,14 @@ const ProcurementManagement = () => {
         window.addEventListener('paymentUpdated', handleUpdate);
         window.addEventListener('irrProceededToRpq', handleIrrProceededToRpq);
         window.addEventListener('rpqDeleted', handleRpqDeleted);
-        window.addEventListener('quotationConfirmed', handleUpdate); // ADD THIS LINE
+        window.addEventListener('quotationConfirmed', handleUpdate);
 
         return () => {
             window.removeEventListener('productUpdated', handleUpdate);
             window.removeEventListener('paymentUpdated', handleUpdate);
             window.removeEventListener('irrProceededToRpq', handleIrrProceededToRpq);
             window.removeEventListener('rpqDeleted', handleRpqDeleted);
-            window.removeEventListener('quotationConfirmed', handleUpdate); // ADD THIS LINE
+            window.removeEventListener('quotationConfirmed', handleUpdate);
         };
     }, []);
 
@@ -157,6 +158,11 @@ const ProcurementManagement = () => {
             icon: ShoppingCart,
             count: paymentCounts.total,
             pendingCount: paymentCounts.pending + paymentCounts.partial
+        },
+        {
+            id: 'costing',
+            label: 'Product Unit Costing',
+            icon: 'BarChart2'
         }
     ];
 
@@ -204,6 +210,12 @@ const ProcurementManagement = () => {
             {activeTab === 'po' && (
                 <div className="mt-6">
                     <PurchaseOrderManagement />
+                </div>
+            )}
+
+            {activeTab === 'costing' && (
+                <div className="mt-6">
+                    <ProductUnitCostingTab />
                 </div>
             )}
         </div>

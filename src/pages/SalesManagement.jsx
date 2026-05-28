@@ -199,13 +199,11 @@ const SalesManagement = () => {
   const [productSummaries, setProductSummaries] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  const [showSalesMemoModal, setShowSalesMemoModal] = useState(false);
   const [showInvoicingProfile, setShowInvoicingProfile] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [invoiceSubmitted, setInvoiceSubmitted] = useState(false);
   const [taxType, setTaxType] = useState('VAT');
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
-  const [salesMemo, setSalesMemo] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [loadingStocks, setLoadingStocks] = useState({});
@@ -413,7 +411,7 @@ const SalesManagement = () => {
     } else if (mode === 'view' && sale) {
       setSelectedSale(sale);
       setShowModal(true);
-    }   
+    }
     setShowModal(true);
   };
 
@@ -645,77 +643,6 @@ const SalesManagement = () => {
     }
   };
 
-  const handleGenerateSalesMemo = async () => {
-    if (!filterData.companyId) {
-      toast.error('Please select a company first', { duration: 4000 });
-      return;
-    }
-
-    toast.loading('Generating Sales Memo...', { id: 'sales-memo-loading' });
-
-    try {
-      const response = await api.post('/sales/sales-memo/generate', filterData);
-
-      toast.dismiss('sales-memo-loading');
-
-      if (response.success) {
-        const memoData = response.data?.data || response.data;
-
-        if (!memoData.products || memoData.products.length === 0) {
-          toast.error(
-            'No sales data found for the selected criteria.\n\nPlease ensure:\n• Sales exist for the selected company\n• Sales are CONFIRMED or INVOICED\n• Date range includes sales data',
-            { duration: 6000 }
-          );
-          return;
-        }
-
-        memoData.adjustments = memoData.adjustments || [];
-        setSalesMemo(memoData);
-        setShowSalesMemoModal(false);
-
-        toast.success(
-          `Sales Memo generated successfully!\n\nProducts: ${memoData.products.length}\nDate: ${formatDate(memoData.generatedAt)}`,
-          { duration: 4000 }
-        );
-      } else {
-        toast.error(response.message || 'Failed to generate sales memo', { duration: 5000 });
-      }
-    } catch (error) {
-      toast.dismiss('sales-memo-loading');
-      console.error('Sales memo generation error:', error);
-
-      let errorMessage = 'Failed to generate sales memo';
-
-      if (error.response && error.response.data) {
-        if (typeof error.response.data === 'string') {
-          errorMessage = error.response.data;
-
-          if (errorMessage.includes('No CONFIRMED or INVOICED sales found')) {
-            const selectedCompany = companies.find(c => c.id === filterData.companyId);
-            const selectedBranch = filterData.branchId ? branches.find(b => b.id === filterData.branchId) : null;
-
-            toast.error(
-              `No CONFIRMED or INVOICED sales found!\n\n` +
-              `Company: ${selectedCompany?.companyName || 'Unknown'}\n` +
-              `${selectedBranch ? `Branch: ${selectedBranch.branchName}\n` : 'All Branches\n'}` +
-              `Period: ${monthsFull[filterData.startMonth - 1]} ${filterData.startYear} - ${monthsFull[filterData.endMonth - 1]} ${filterData.endYear}\n\n` +
-              `Please ensure sales are CONFIRMED or INVOICED before generating the sales memo.`,
-              { duration: 8000 }
-            );
-            return;
-          }
-        } else if (error.response.data.message) {
-          errorMessage = error.response.data.message;
-        }
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      toast.error(errorMessage, { duration: 5000 });
-    }
-  };
-
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -734,7 +661,6 @@ const SalesManagement = () => {
       }
     }
 
-    // ✅ CLOSE MODAL IMMEDIATELY - Don't make user wait
     handleCloseModal();
 
     const toastId = toast.loading(modalMode === 'create' ? 'Creating sale...' : 'Updating sale...');
@@ -1255,14 +1181,7 @@ const SalesManagement = () => {
                   className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md text-sm"
                 >
                   <FileText size={16} />
-                  <span>Invoicing</span>
-                </button>
-                <button
-                  onClick={() => setShowSalesMemoModal(true)}
-                  className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md text-sm"
-                >
-                  <FileText size={16} />
-                  <span>Sales Memo</span>
+                  <span>Generate Invoice / COS</span>
                 </button>
                 <button
                   onClick={() => setShowInvoicingProfile(true)}
@@ -2748,331 +2667,9 @@ const SalesManagement = () => {
           </div>
         )}
 
-
-
-        {/* Sales Memo Modal */}
-        {salesMemo && (
-          <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-            <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
-              <div className="p-8 border-b border-gray-200 flex justify-between items-center print:hidden">
-                <h2 className="text-2xl font-bold text-gray-900">Sales Memo</h2>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => {
-                      const newAdj = [...(salesMemo.adjustments || []), { description: '', quantity: 1, unitCost: 0, amount: 0 }];
-                      setSalesMemo({ ...salesMemo, adjustments: newAdj });
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-                  >
-                    <Plus size={18} />
-                    Add Adjustment
-                  </button>
-                  <button
-                    onClick={() => window.print()}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                  >
-                    <Printer size={18} />
-                    Print
-                  </button>
-                  <button
-                    onClick={() => setSalesMemo(null)}
-                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                  >
-                    <X size={24} />
-                  </button>
-                </div>
-              </div>
-
-              <div id="sales-memo" className="p-8">
-                {/* Header */}
-                <div className="text-center mb-6">
-                  <h1 className="text-3xl font-bold">SALES MEMO</h1>
-                  <p className="text-sm text-gray-600">
-                    {formatDate(salesMemo.generatedAt)}
-                  </p>
-                </div>
-
-                {/* Customer Info */}
-                <div className="mb-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="font-bold">Customer:</label>
-                      <p>{salesMemo.soldTo}</p>
-                    </div>
-                    <div>
-                      <label className="font-bold">Address:</label>
-                      <p>{salesMemo.businessAddress}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Products Table */}
-                <table className="w-full border-collapse border border-gray-300 mb-6">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="border border-gray-300 px-4 py-2 text-left">Description</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right">Qty</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right">Price</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right">Unit Cost</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right">Cost of Sales</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right">Sales</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {salesMemo.products.map((product, i) => (
-                      <tr key={i}>
-                        <td className="border border-gray-300 px-4 py-2">{product.description}</td>
-                        <td className="border border-gray-300 px-4 py-2 text-right">{product.quantity}</td>
-                        <td className="border border-gray-300 px-4 py-2 text-right">₱{formatCurrency(product.price)}</td>
-                        <td className="border border-gray-300 px-4 py-2 text-right">₱{formatCurrency(product.unitCost)}</td>
-                        <td className="border border-gray-300 px-4 py-2 text-right">₱{formatCurrency(product.costOfSales)}</td>
-                        <td className="border border-gray-300 px-4 py-2 text-right">₱{formatCurrency(product.sales)}</td>
-                      </tr>
-                    ))}
-
-                    {/* Adjustments */}
-                    {salesMemo.adjustments && salesMemo.adjustments.map((adj, i) => (
-                      <tr key={`adj-${i}`}>
-                        <td className="border border-gray-300 px-4 py-2">
-                          <input
-                            type="text"
-                            value={adj.description}
-                            onChange={(e) => {
-                              const newAdj = [...salesMemo.adjustments];
-                              newAdj[i].description = e.target.value;
-                              setSalesMemo({ ...salesMemo, adjustments: newAdj });
-                            }}
-                            className="w-full print:border-0"
-                            placeholder="Adjustment..."
-                          />
-                        </td>
-                        <td className="border border-gray-300 px-4 py-2">
-                          <input
-                            type="number"
-                            value={adj.quantity}
-                            onChange={(e) => {
-                              const newAdj = [...salesMemo.adjustments];
-                              newAdj[i].quantity = parseFloat(e.target.value) || 0;
-                              newAdj[i].costOfSales = newAdj[i].quantity * newAdj[i].unitCost;
-                              newAdj[i].sales = newAdj[i].quantity * newAdj[i].price;
-                              setSalesMemo({ ...salesMemo, adjustments: newAdj });
-                            }}
-                            className="w-full text-right print:border-0"
-                          />
-                        </td>
-                        <td className="border border-gray-300 px-4 py-2">
-                          <input
-                            type="number"
-                            value={adj.price || 0}
-                            onChange={(e) => {
-                              const newAdj = [...salesMemo.adjustments];
-                              newAdj[i].price = parseFloat(e.target.value) || 0;
-                              newAdj[i].sales = newAdj[i].quantity * newAdj[i].price;
-                              setSalesMemo({ ...salesMemo, adjustments: newAdj });
-                            }}
-                            className="w-full text-right print:border-0"
-                          />
-                        </td>
-                        <td className="border border-gray-300 px-4 py-2">
-                          <input
-                            type="number"
-                            value={adj.unitCost || 0}
-                            onChange={(e) => {
-                              const newAdj = [...salesMemo.adjustments];
-                              newAdj[i].unitCost = parseFloat(e.target.value) || 0;
-                              newAdj[i].costOfSales = newAdj[i].quantity * newAdj[i].unitCost;
-                              setSalesMemo({ ...salesMemo, adjustments: newAdj });
-                            }}
-                            className="w-full text-right print:border-0"
-                          />
-                        </td>
-                        <td className="border border-gray-300 px-4 py-2 text-right">
-                          ₱{formatCurrency(adj.costOfSales || 0)}
-                        </td>
-                        <td className="border border-gray-300 px-4 py-2 text-right">
-                          ₱{formatCurrency(adj.sales || 0)}
-                          <button
-                            onClick={() => {
-                              const newAdj = salesMemo.adjustments.filter((_, idx) => idx !== i);
-                              setSalesMemo({ ...salesMemo, adjustments: newAdj });
-                            }}
-                            className="print:hidden ml-2 text-red-600"
-                          >
-                            <X size={16} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="bg-gray-50 font-bold">
-                    <tr>
-                      <td colSpan="4" className="border border-gray-300 px-4 py-2 text-right">SUBTOTAL:</td>
-                      <td className="border border-gray-300 px-4 py-2 text-right">
-                        ₱{formatCurrency(
-                          salesMemo.products.reduce((sum, p) => sum + p.costOfSales, 0) +
-                          (salesMemo.adjustments || []).reduce((sum, a) => sum + (a.costOfSales || 0), 0)
-                        )}
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2 text-right">
-                        ₱{formatCurrency(
-                          salesMemo.products.reduce((sum, p) => sum + p.sales, 0) +
-                          (salesMemo.adjustments || []).reduce((sum, a) => sum + (a.sales || 0), 0)
-                        )}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-
-                {/* Tax Calculations */}
-                <div className="grid grid-cols-2 gap-8">
-                  <div></div>
-                  <div className="space-y-2">
-                    {(() => {
-                      const subtotal = salesMemo.products.reduce((sum, p) => sum + p.sales, 0) +
-                        (salesMemo.adjustments || []).reduce((sum, a) => sum + (a.sales || 0), 0);
-                      const vatableSales = subtotal / 1.12;
-                      const vat = vatableSales * 0.12;
-                      const withholdingTax = vatableSales * 0.01;
-                      const total = subtotal - withholdingTax;
-
-                      return (
-                        <>
-                          <div className="flex justify-between">
-                            <span>Vatable Sales:</span>
-                            <span>₱{formatCurrency(vatableSales)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Value Added Tax:</span>
-                            <span>₱{formatCurrency(vat)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Creditable Withholding Tax:</span>
-                            <span>₱{formatCurrency(withholdingTax)}</span>
-                          </div>
-                          <div className="flex justify-between font-bold text-lg border-t-2 pt-2">
-                            <span>TOTAL:</span>
-                            <span>₱{formatCurrency(total)}</span>
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
-      {
-        showSalesMemoModal && (
-          <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6">
-            <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl">
-              <div className="p-4 sm:p-8 border-b border-gray-200 flex justify-between items-center">
-                <h2 className="text-lg sm:text-2xl font-bold text-gray-900">Generate Sales Memo</h2>
-                <button
-                  onClick={() => setShowSalesMemoModal(false)}
-                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-              <div className="p-8 space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">Company *</label>
-                  <SearchableDropdown
-                    options={companyOptions}
-                    value={filterData.companyId}
-                    onChange={(value) => setFilterData({ ...filterData, companyId: value, branchId: '' })}
-                    placeholder="Select Company"
-                    displayKey="name"
-                    valueKey="id"
-                    required
-                  />
-                </div>
+    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Branch (Optional - Leave empty for all branches)
-                  </label>
-                  <SearchableDropdown
-                    options={filteredBranchOptions}
-                    value={filterData.branchId}
-                    onChange={(value) => setFilterData({ ...filterData, branchId: value })}
-                    placeholder="All Branches"
-                    displayKey="name"
-                    valueKey="id"
-                  />
-                  {filterData.companyId && filteredBranchOptions.length === 0 && (
-                    <p className="text-xs text-orange-600 mt-1">No branches for selected company</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">Start Month</label>
-                    <select
-                      value={filterData.startMonth}
-                      onChange={(e) => setFilterData({ ...filterData, startMonth: parseInt(e.target.value) })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                    >
-                      {monthsFull.map((m, i) => (
-                        <option key={i} value={i + 1}>{m}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">End Month</label>
-                    <select
-                      value={filterData.endMonth}
-                      onChange={(e) => setFilterData({ ...filterData, endMonth: parseInt(e.target.value) })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                    >
-                      {monthsFull.map((m, i) => (
-                        <option key={i} value={i + 1}>{m}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">Start Year</label>
-                    <input
-                      type="number"
-                      value={filterData.startYear}
-                      onChange={(e) => setFilterData({ ...filterData, startYear: parseInt(e.target.value) })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">End Year</label>
-                    <input
-                      type="number"
-                      value={filterData.endYear}
-                      onChange={(e) => setFilterData({ ...filterData, endYear: parseInt(e.target.value) })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="p-8 border-t border-gray-200 flex justify-end gap-4">
-                <button
-                  onClick={() => setShowSalesMemoModal(false)}
-                  className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleGenerateSalesMemo}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
-                >
-                  Generate Sales Memo
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-      }
-    </div >
   );
 };
 
