@@ -55,7 +55,7 @@ const Dashboard = () => {
   const [branches, setBranches] = useState([]);
   const [products, setProducts] = useState([]);
   const [deliveries, setDeliveries] = useState([]);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear() - 1);
   const [selectedCompany, setSelectedCompany] = useState('all');
   const [selectedBranch, setSelectedBranch] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
@@ -80,7 +80,7 @@ const Dashboard = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedCategoryForMonthly, setSelectedCategoryForMonthly] = useState('all');
   const [productCategories, setProductCategories] = useState([]);
-  const [performanceYear, setPerformanceYear] = useState(new Date().getFullYear());
+  const [performanceYear, setPerformanceYear] = useState(new Date().getFullYear() - 1);
   const [performanceView, setPerformanceView] = useState('year');
   const [performanceMonth, setPerformanceMonth] = useState(new Date().getMonth() + 1);
 
@@ -188,11 +188,10 @@ const Dashboard = () => {
       }
 
       const availableYears = [...new Set(salesData.map(s => s.year || new Date(s.createdAt || s.date).getFullYear()))];
-      if (availableYears.length > 0 && !availableYears.includes(performanceYear)) {
-        setPerformanceYear(Math.max(...availableYears));
-      }
-      if (availableYears.length > 0 && !availableYears.includes(selectedYear)) {
-        setSelectedYear(Math.max(...availableYears));
+      if (availableYears.length > 0) {
+        const mostRecentYear = Math.max(...availableYears);
+        setPerformanceYear(mostRecentYear);
+        setSelectedYear(mostRecentYear);
       }
 
       setStats(prev => ({
@@ -501,7 +500,7 @@ const Dashboard = () => {
     const productAnalysis = {};
     const salesSource = salesOverride || sales;
 
-    const filteredSales = sales.filter(sale => {
+    const filteredSales = salesSource.filter(sale => {
       const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING';
 
       if (performanceView === 'overall') {
@@ -511,7 +510,7 @@ const Dashboard = () => {
       const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
       const saleMonth = sale.month || (new Date(sale.createdAt || sale.date).getMonth() + 1);
 
-      const yearMatch = performanceView === 'overall' ? true : saleYear === performanceYear;
+      const yearMatch = saleYear === performanceYear;
       const monthMatch = performanceView === 'month' ? saleMonth === performanceMonth : true;
 
       return yearMatch && monthMatch && statusMatch;
@@ -1023,7 +1022,7 @@ const Dashboard = () => {
                       const filteredSales = sales.filter(sale => {
                         const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
                         const yearMatch = saleYear === selectedYear;
-                        const statusMatch = (sale.status === 'CONFIRMED' || sale.status === 'INVOICED');
+                        const statusMatch = (sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING');
                         const companyMatch = selectedCompany === 'all' || sale.company?.companyName === selectedCompany;
                         const branchMatch = selectedBranch === 'all' || sale.branch?.branchName === selectedBranch;
 
