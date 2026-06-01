@@ -265,10 +265,8 @@ const SalesManagement = () => {
   const loadData = useCallback(async (background = false) => {
     if (!background) setLoading(true);
 
-    // Load paginated sales
-    await fetchSales(currentPage - 1); // Convert to 0-based for backend
+    await fetchSales(currentPage - 1);
 
-    // Only fetch static data once per session
     if (!staticDataLoaded.current) {
       staticDataLoaded.current = true;
 
@@ -1286,8 +1284,8 @@ const SalesManagement = () => {
                 {filterData.productFilters.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
                     {filterData.productFilters.map((pf, idx) => (
-                      <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                        {pf.label}
+                      <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium leading-none">
+                        <span className="leading-none">{pf.label}</span>
                         <button
                           type="button"
                           onClick={() => {
@@ -1297,9 +1295,9 @@ const SalesManagement = () => {
                             }));
                             setCurrentPage(1);
                           }}
-                          className="ml-1 hover:text-red-600"
+                          className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full hover:bg-blue-300 hover:text-red-600 transition-colors flex-shrink-0"
                         >
-                          <X size={10} />
+                          <X size={8} />
                         </button>
                       </span>
                     ))}
