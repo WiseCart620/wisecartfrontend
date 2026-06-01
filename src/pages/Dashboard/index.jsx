@@ -114,11 +114,10 @@ const Dashboard = () => {
         .slice(0, 10);
       setRecentSales(sortedSales);
 
-      // Step 2 — fast endpoints together (none are huge)
       const [productsRes, companiesRes, branchesRes] = await Promise.all([
         api.get('/products'),
         api.get('/companies'),
-        api.get('/branches'),
+        api.get('/branches/list'),
       ]);
 
       const productsData = extractArray(productsRes);
@@ -219,7 +218,7 @@ const Dashboard = () => {
 
   const loadAlerts = async () => {
     try {
-      const alertsRes = await api.get('/alerts');
+      const alertsRes = await api.get('/alerts?page=0&size=100&sort=createdAt,desc');
       if (alertsRes.success && alertsRes.data) {
         setAlerts(alertsRes.data || []);
       } else {
