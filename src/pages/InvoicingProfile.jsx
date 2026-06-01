@@ -1016,21 +1016,96 @@ const InvoicingProfile = ({ onBack }) => {
                                 </div>
                             </div>
                             <div className="border border-b-0 border-gray-900">
-                                <table className="w-full" style={{ minHeight: '150mm' }}>
-                                    <thead><tr className="border-b border-gray-900"><th className="text-left px-4 font-bold text-gray-900 text-sm leading-tight" style={{ width: '60%' }}>ITEM DESCRIPTION / NATURE OF SERVICE</th><th className="text-right px-4 font-bold text-gray-900 text-sm leading-tight" style={{ width: '12%' }}>QTY.</th><th className="text-right px-4 text-gray-900 text-xs text-[11px] leading-tight" style={{ width: '12%' }}>UNIT COST / PRICE</th><th className="text-right px-4 font-bold text-gray-900 text-sm leading-tight" style={{ width: '15%' }}>AMOUNT</th></tr></thead>
+                                <table className="w-full" style={{ borderCollapse: 'collapse', minHeight: '150mm' }}>
+                                    <thead>
+                                        <tr className="border-b border-gray-900">
+                                            <th className="text-left px-4 py-1 font-bold text-gray-900 text-sm leading-tight" style={{ width: '60%' }}>ITEM DESCRIPTION / NATURE OF SERVICE</th>
+                                            <th className="text-right px-4 py-1 font-bold text-gray-900 text-sm leading-tight" style={{ width: '12%' }}>QTY.</th>
+                                            <th className="text-right px-4 py-1 text-gray-900 text-xs text-[11px] leading-tight" style={{ width: '12%' }}>UNIT COST / PRICE</th>
+                                            <th className="text-right px-4 py-1 font-bold text-gray-900 text-sm leading-tight" style={{ width: '15%' }}>AMOUNT</th>
+                                        </tr>
+                                    </thead>
                                     <tbody>
                                         {(receiptProfile.items || []).map((item, i) => (
                                             <tr key={i} className="align-top">
-                                                <td className="py-2 px-4 text-sm text-gray-900">{item.productName}{item.variationDisplay && item.variationDisplay !== 'Adjustment' && <span> {item.variationDisplay}{item.upc ? ` - ${item.upc}` : ''}</span>}{item.variationDisplay === 'Adjustment' && <span className="ml-2 text-xs text-blue-600 italic">(Adjustment)</span>}</td>
-                                                <td className="py-2 px-4 text-right text-sm text-gray-900">{Number(item.totalQuantity).toLocaleString()}</td>
-                                                <td className="py-2 px-4 text-right text-sm text-gray-900">{fmt(item.unitCost)}</td>
-                                                <td className="py-2 px-4 text-right text-sm text-gray-900">{fmt(item.totalAmount)}</td>
+                                                <td className="py-1 px-4 text-sm text-gray-900 leading-tight">{item.productName}{item.variationDisplay && item.variationDisplay !== 'Adjustment' && <span> {item.variationDisplay}{item.upc ? ` - ${item.upc}` : ''}</span>}{item.variationDisplay === 'Adjustment' && <span className="ml-2 text-xs text-blue-600 italic">(Adjustment)</span>}</td>
+                                                <td className="py-1 px-4 text-right text-sm text-gray-900 leading-tight">{Number(item.totalQuantity).toLocaleString()}</td>
+                                                <td className="py-1 px-4 text-right text-sm text-gray-900 leading-tight">{fmt(item.unitCost)}</td>
+                                                <td className="py-1 px-4 text-right text-sm text-gray-900 leading-tight">{fmt(item.totalAmount)}</td>
                                             </tr>
                                         ))}
-                                        {(!receiptProfile.items || receiptProfile.items.length === 0) && (<tr><td colSpan={4} className="py-8 text-center text-gray-400 italic text-sm">No item data saved for this invoice.</td></tr>)}
+                                        {(!receiptProfile.items || receiptProfile.items.length === 0) && (
+                                            <tr><td colSpan={4} className="py-8 text-center text-gray-400 italic text-sm">No item data saved for this invoice.</td></tr>
+                                        )}
+                                        <tr className="h-full"><td colSpan={4} className="p-0"></td></tr>
                                     </tbody>
                                 </table>
                             </div>
+                            {/* VAT Summary Section */}
+                            <div className="grid grid-cols-6 border border-gray-900 text-sm">
+                                <div className="col-span-2 grid grid-cols-2">
+                                    <div className="px-2 py-3 flex flex-col justify-start font-medium text-[13px]">
+                                        <div className="mb-2">Total Sales:</div>
+                                        <div className="mb-2">VAT/PT:</div>
+                                        <div className="mb-2">Zero-Rated Sales:</div>
+                                        <div>VAT-Exempt Sales:</div>
+                                    </div>
+                                    <div className="px-4 py-3 flex flex-col justify-start text-[15px]">
+                                        <input readOnly value={fmt(receiptProfile.vatableSales || 0)} className="w-full text-right pb-0 mb-2 bg-transparent" />
+                                        <input readOnly value={fmt(receiptProfile.vat || 0)} className="w-full text-right pb-0 mb-2 bg-transparent" />
+                                        <input readOnly value={fmt(0)} className="w-full text-right pb-0 mb-2 bg-transparent" />
+                                        <input readOnly value={fmt(0)} className="w-full text-right pb-0 bg-transparent" />
+                                    </div>
+                                </div>
+                                <div className="border-l border-r border-gray-900 px-3 py-3 flex flex-col justify-center text-[11px]">
+                                    <div className="font-medium leading-tight">SC/PWD/NAAC/MOV/<br />SOLO PARENT ID No.:</div>
+                                    <div className="font-medium leading-tight mt-9">SC/PWD/NAAC/MOV/<br />Signature:</div>
+                                </div>
+                                <div className="border-r border-gray-900 px-3 py-3 flex flex-col justify-center text-[13px]">
+                                    <input type="text" readOnly className="w-full pb-0 text-sm -mt-1 bg-transparent" />
+                                    <input type="text" readOnly className="w-full pb-0 text-sm mt-5 bg-transparent" />
+                                </div>
+                                <div className="col-span-2 grid grid-cols-2">
+                                    <div className="px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
+                                        <div className="mb-2 text-[9px]">TOTAL SALES (VAT Inclusive)</div>
+                                        <div className="mb-2">Less: VAT</div>
+                                        <div className="mb-2">Amount: Net of VAT</div>
+                                        <div>Less: Discount<br /><span className="text-[10px]">(SC/PWD/NAAC/MOV/SP)</span></div>
+                                    </div>
+                                    <div className="px-4 pt-2 flex flex-col justify-start">
+                                        <input readOnly value={fmt((receiptProfile.vatableSales || 0) + (receiptProfile.vat || 0))} className="w-full text-right pb-0 mb-2 text-[15px] bg-transparent" />
+                                        <input readOnly value={fmt(receiptProfile.vat || 0)} className="w-full text-right pb-0 mb-2 text-[15px] bg-transparent" />
+                                        <input readOnly value={fmt(receiptProfile.vatableSales || 0)} className="w-full text-right pb-0 mb-2 text-[15px] bg-transparent" />
+                                        <input readOnly value={fmt(0)} className="w-full text-right pb-0 text-[15px] bg-transparent" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Total Amount Due Section */}
+                            <div className="grid grid-cols-6 border-l border-r border-b border-gray-900 text-sm">
+                                <div className="col-span-4 border-r border-gray-900 px-4">
+                                    <label className="flex items-start gap-2 text-sm font-medium text-gray-700">
+                                        <input type="checkbox" className="w-6 h-6 mt-8" />
+                                        <div>
+                                            <div className="mb-8 mt-8">Received the amount of</div>
+                                            <div className="border-b border-gray-900 mt-1 w-full"></div>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div className="col-span-2 grid grid-cols-2">
+                                    <div className="px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
+                                        <div className="mb-2">Add: VAT</div>
+                                        <div className="mb-2">Less: Withholding Tax</div>
+                                        <div>Total Amount Due:</div>
+                                    </div>
+                                    <div className="px-4 pt-2 flex flex-col justify-start">
+                                        <input readOnly value={fmt(receiptProfile.vat || 0)} className="w-full text-right pb-0 mb-2 text-[15px] bg-transparent" />
+                                        <input readOnly value={fmt(receiptProfile.withholdingTax || 0)} className="w-full text-right pb-0 mb-2 text-[15px] bg-transparent" />
+                                        <input readOnly value={fmt(receiptProfile.totalAmountDue || 0)} className="w-full text-right font-bold pb-0 text-[16px] bg-transparent" />
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-2 border border-gray-900 text-sm mt-6">
                                 <div className="border-gray-900 px-4 py-2"><div className="font-medium text-[16px]">PERMIT TO USE LOOSE LEAF No. : LLSI-080-1024-00002</div><div className="font-medium text-[16px]">DATE ISSUED: OCT. 11, 2024</div></div>
                                 <div className="px-4 py-2 pb-4"><div className="font-medium text-[16px]">BIR AUTHORITY TO PRINT No. 080AU20240000016398</div><div className="font-medium text-[16px]">DATE ISSUED: OCT. 23, 2024</div><div className="font-medium text-[16px]">APPROVED SERIES: 0501-1500 • 20PADS (2X)</div></div>
