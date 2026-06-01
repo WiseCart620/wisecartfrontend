@@ -45,7 +45,7 @@ const ProductAnalysis = ({
     if (!product) return null;
 
     const filteredSales = sales.filter(sale => {
-      const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED';
+      const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING';
 
       if (performanceView === 'overall') {
         return statusMatch;
@@ -100,7 +100,7 @@ const ProductAnalysis = ({
     const variationId = variationIdStr !== 'base' ? variationIdStr : null;
 
     const filteredSales = sales.filter(sale => {
-      const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED';
+      const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING';
 
       if (performanceView === 'overall') {
         return statusMatch;
@@ -177,7 +177,7 @@ const ProductAnalysis = ({
     const selectedVariationId = selectedVariationIdStr !== 'base' ? selectedVariationIdStr : null;
 
     const companySales = sales.filter(sale => {
-      const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED';
+      const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING';
       const companyMatch = sale.company?.companyName === companyName;
 
       const hasProduct = sale.items?.some(item => {
@@ -875,7 +875,7 @@ const ProductAnalysis = ({
                         }
 
                         const companySales = sales.filter(sale => {
-                          const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED';
+                          const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING';
                           const companyMatch = sale.company?.companyName === selectedCompanyForTopBranches;
 
                           if (selectedProductId) {

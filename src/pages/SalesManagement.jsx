@@ -73,7 +73,7 @@ const fetchSales = async () => {
   if (salesCache && (now - salesCacheTime) < SALES_CACHE_TTL) {
     return salesCache;
   }
-  const res = await api.get('/sales/all?page=0&size=50&sort=createdAt,desc');
+  const res = await api.get('/sales/all');
   salesCache = extractArray(res);
   salesCacheTime = now;
   return salesCache;
