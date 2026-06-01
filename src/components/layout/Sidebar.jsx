@@ -37,7 +37,7 @@ const Sidebar = ({ isOpen, toggle }) => {
         ${sidebarCollapsed ? 'lg:w-20' : 'lg:w-64'} 
         ${isOpen || !sidebarCollapsed ? 'w-64' : 'w-20'}
         lg:translate-x-0`}>
-        
+
         {/* Sidebar content */}
         <aside className="relative h-full bg-gray-900 text-white overflow-y-auto">
           <div className="p-6 border-b border-gray-800 flex items-center justify-between">
@@ -58,8 +58,7 @@ const Sidebar = ({ isOpen, toggle }) => {
                   to={item.to}
                   onClick={() => window.innerWidth < 1024 && toggle()}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                      isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-800 text-gray-300'
+                    `flex items-center gap-3 px-4 py-3 rounded-lg transition ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-800 text-gray-300'
                     } ${sidebarCollapsed ? 'lg:justify-center' : ''}`
                   }
                   title={sidebarCollapsed ? item.label : ''}
@@ -94,8 +93,7 @@ const Sidebar = ({ isOpen, toggle }) => {
                         to={item.to}
                         onClick={() => window.innerWidth < 1024 && toggle()}
                         className={({ isActive }) =>
-                          `flex items-center gap-3 px-4 py-2.5 rounded-lg transition text-sm ${
-                            isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-800 text-gray-400'
+                          `flex items-center gap-3 px-4 py-2.5 rounded-lg transition text-sm ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-800 text-gray-400'
                           }`
                         }
                       >
@@ -107,7 +105,7 @@ const Sidebar = ({ isOpen, toggle }) => {
                 </div>
               </div>
             </div>
-            
+
             {sidebarCollapsed && (
               <div className="hidden lg:block pt-2 space-y-1">
                 {dataEntryItems.map((item) => {
@@ -117,8 +115,7 @@ const Sidebar = ({ isOpen, toggle }) => {
                       key={item.to}
                       to={item.to}
                       className={({ isActive }) =>
-                        `flex items-center justify-center px-4 py-3 rounded-lg transition ${
-                          isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-800 text-gray-300'
+                        `flex items-center justify-center px-4 py-3 rounded-lg transition ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-800 text-gray-300'
                         }`
                       }
                       title={item.label}
@@ -137,8 +134,7 @@ const Sidebar = ({ isOpen, toggle }) => {
                   to="/users"
                   onClick={() => window.innerWidth < 1024 && toggle()}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                      isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-800 text-gray-300'
+                    `flex items-center gap-3 px-4 py-3 rounded-lg transition ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-800 text-gray-300'
                     } ${sidebarCollapsed ? 'lg:justify-center' : ''}`
                   }
                   title={sidebarCollapsed ? 'User Management' : ''}
@@ -152,11 +148,11 @@ const Sidebar = ({ isOpen, toggle }) => {
             )}
           </nav>
         </aside>
-        
+
         {/* Collapse/Expand Button - Floating outside sidebar */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="hidden lg:flex absolute right-0 top-13 translate-x-1/2 items-center justify-center w-11 h-11 rounded-full bg-white text-black transition shadow-lg z-10"
+          className="hidden lg:flex absolute right-0 top-4 translate-x-1/2 items-center justify-center w-11 h-11 rounded-full bg-white text-black transition shadow-lg z-10"
           title={sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
         >
           {sidebarCollapsed ? (
