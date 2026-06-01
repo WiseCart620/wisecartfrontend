@@ -226,7 +226,8 @@ const SalesManagement = () => {
     endDate: '',
     productId: '',
     variationId: '',
-    productName: ''
+    productName: '',
+    productFilters: []
   });
 
   const fetchSales = useCallback(async (page = 0) => {
@@ -239,9 +240,13 @@ const SalesManagement = () => {
         ...(filterData.branchId && { branchId: filterData.branchId }),
         ...(statusFilter !== 'ALL' && { status: statusFilter }),
         ...(searchTerm && { searchTerm: searchTerm }),
-        ...(filterData.productId && { productId: filterData.productId }),
-        ...(filterData.variationId && { variationId: filterData.variationId })
       });
+      if (filterData.productFilters && filterData.productFilters.length > 0) {
+        filterData.productFilters.forEach(pf => {
+          if (pf.productId) params.append('productIds', pf.productId);
+          if (pf.variationId) params.append('variationIds', pf.variationId);
+        });
+      }
 
       const response = await api.get(`/sales/all?${params}`);
       setSales(response.data.content);
@@ -938,11 +943,16 @@ const SalesManagement = () => {
       companyId: '',
       branchId: '',
       status: '',
+      startMonth: new Date().getMonth() + 1,
+      endMonth: new Date().getMonth() + 1,
+      startYear: new Date().getFullYear(),
+      endYear: new Date().getFullYear(),
       startDate: '',
       endDate: '',
       productId: '',
       variationId: '',
-      productName: ''
+      productName: '',
+      productFilters: []
     });
     setStatusFilter('ALL');
     setSearchTerm('');
@@ -962,61 +972,7 @@ const SalesManagement = () => {
   };
 
 
-  const filteredSales = sales.filter(sale => {
-    const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = !searchTerm ||
-      sale.branch?.branchName?.toLowerCase().includes(searchLower) ||
-      sale.company?.companyName?.toLowerCase().includes(searchLower) ||
-      sale.branch?.branchCode?.toLowerCase().includes(searchLower);
-
-    if (!matchesSearch) return false;
-
-    if (filterData.companyId && sale.company?.id !== filterData.companyId) {
-      return false;
-    }
-
-    if (filterData.branchId && sale.branch?.id !== filterData.branchId) {
-      return false;
-    }
-
-    if (statusFilter !== 'ALL' && sale.status !== statusFilter) {
-      return false;
-    }
-
-    if (filterData.startDate || filterData.endDate) {
-      const saleDate = new Date(sale.year, sale.month - 1, 15);
-
-      if (filterData.startDate) {
-        const startDate = new Date(filterData.startDate);
-        if (saleDate < startDate) return false;
-      }
-
-      if (filterData.endDate) {
-        const endDate = new Date(filterData.endDate);
-        if (saleDate > endDate) return false;
-      }
-    }
-
-    if (filterData.productId) {
-      const hasProduct = sale.items?.some(item => {
-        const productMatch = item.product?.id === filterData.productId;
-        if (!productMatch) return false;
-        if (filterData.variationId) return item.variation?.id === filterData.variationId;
-        return true;
-      });
-      if (!hasProduct) return false;
-    }
-
-    return true;
-
-  }).sort((a, b) => {
-    // Most recently created first
-    const dateA = new Date(a.createdAt || 0);
-    const dateB = new Date(b.createdAt || 0);
-    return dateB - dateA;
-  });
-
-  const currentSales = filteredSales;
+  const currentSales = sales;
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const monthsFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -1288,46 +1244,67 @@ const SalesManagement = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2 border-t border-gray-100">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Filter by Product / UPC / SKU
+                  Filter by Product / UPC / SKU (multiple)
                 </label>
-                <VariationSearchableDropdown
-                  options={allProductOptions}
-                  value={
-                    filterData.variationId
-                      ? allProductOptions.find(o => o.variationId === filterData.variationId)?.id ?? ''
-                      : filterData.productId
-                        ? allProductOptions.find(o => !o.variationId && o.parentProductId === filterData.productId)?.id ?? ''
-                        : ''
-                  }
-                  onChange={(value) => {
-                    if (!value) {
-                      setFilterData(prev => ({ ...prev, productId: '', variationId: '', productName: '' }));
-                      return;
-                    }
-                    const option = allProductOptions.find(o => o.id === value);
-                    if (option) {
-                      setFilterData(prev => ({
-                        ...prev,
-                        productId: option.parentProductId,
-                        variationId: option.variationId ?? '',
-                        productName: option.subLabel !== 'No variations'
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <VariationSearchableDropdown
+                      options={allProductOptions}
+                      value=""
+                      onChange={(value) => {
+                        if (!value) return;
+                        const option = allProductOptions.find(o => o.id === value);
+                        if (!option) return;
+                        const alreadyAdded = filterData.productFilters.some(pf =>
+                          pf.productId === option.parentProductId &&
+                          (pf.variationId ?? '') === (option.variationId ?? '')
+                        );
+                        if (alreadyAdded) return;
+                        const label = option.subLabel !== 'No variations'
                           ? `${option.fullName} — ${option.subLabel}`
-                          : option.fullName,
-                      }));
-                      setCurrentPage(1);
-                    }
-                  }}
-                  placeholder="Search by product name, UPC, or SKU..."
-                  hideLocationHint={true}
-                />
-                {filterData.productName && (
-                  <p className="text-xs text-blue-600 mt-1">Filtering by: {filterData.productName}</p>
+                          : option.fullName;
+                        setFilterData(prev => ({
+                          ...prev,
+                          productFilters: [...prev.productFilters, {
+                            productId: option.parentProductId,
+                            variationId: option.variationId ?? null,
+                            label
+                          }]
+                        }));
+                        setCurrentPage(1);
+                      }}
+                      placeholder="Add product filter..."
+                      hideLocationHint={true}
+                    />
+                  </div>
+                </div>
+                {filterData.productFilters.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {filterData.productFilters.map((pf, idx) => (
+                      <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                        {pf.label}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFilterData(prev => ({
+                              ...prev,
+                              productFilters: prev.productFilters.filter((_, i) => i !== idx)
+                            }));
+                            setCurrentPage(1);
+                          }}
+                          className="ml-1 hover:text-red-600"
+                        >
+                          <X size={10} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
 
             {/* Filter Actions */}
-            {(filterData.companyId || filterData.branchId || filterData.startDate || filterData.endDate || filterData.productId || searchTerm || statusFilter !== 'ALL') && (
+            {(filterData.companyId || filterData.branchId || filterData.startDate || filterData.endDate || filterData.productFilters.length > 0 || searchTerm || statusFilter !== 'ALL') && (
               <div className="flex justify-end pt-2">
                 <button
                   onClick={handleResetFilter}
