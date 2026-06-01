@@ -161,6 +161,7 @@ const AlertManagement = ({
   alertsCurrentPage = 0,
   alertsTotalPages = 1,
   alertsTotalElements = 0,
+  alertsLoading = false,
 }) => {
   const [activeTab, setActiveTab] = useState('active');
   const [searchQuery, setSearchQuery] = useState('');
@@ -497,7 +498,8 @@ const AlertManagement = ({
 
         {/* ── Alert list ─────────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto">
-          {alerts.length === 0 ? (
+          {alertsLoading ? (
+            // Show skeleton only while loading
             <div className="p-6 space-y-4 animate-pulse">
               {[...Array(5)].map((_, i) => (
                 <div key={i} className="flex gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
@@ -510,7 +512,8 @@ const AlertManagement = ({
                 </div>
               ))}
             </div>
-          ) : filteredAlerts.length === 0 ? (
+          ) : alerts.length === 0 ? (
+            // Show empty state when not loading and no alerts
             <div className="h-full flex flex-col items-center justify-center p-8">
               {activeFilterCount > 0 ? (
                 <>
@@ -524,16 +527,26 @@ const AlertManagement = ({
               ) : activeTab === 'active' ? (
                 <>
                   <CheckCircle className="text-green-500 mb-4" size={80} />
-                  <p className="text-2xl font-semibold text-gray-700">No Active Alerts on This Page</p>
-                  <p className="text-gray-500 text-lg mt-2">All alerts on this page are resolved</p>
+                  <p className="text-2xl font-semibold text-gray-700">No Active Alerts</p>
+                  <p className="text-gray-500 text-lg mt-2">All alerts have been resolved</p>
                 </>
               ) : (
                 <>
                   <Database className="text-blue-500 mb-4" size={80} />
-                  <p className="text-2xl font-semibold text-gray-700">No Resolved Alerts on This Page</p>
-                  <p className="text-gray-500 text-lg mt-2">No resolved alerts on this page</p>
+                  <p className="text-2xl font-semibold text-gray-700">No Resolved Alerts</p>
+                  <p className="text-gray-500 text-lg mt-2">No resolved alerts found</p>
                 </>
               )}
+            </div>
+          ) : filteredAlerts.length === 0 ? (
+            // Show when alerts exist but none match filters
+            <div className="h-full flex flex-col items-center justify-center p-8">
+              <Filter className="text-gray-400 mb-4" size={80} />
+              <p className="text-2xl font-semibold text-gray-700">No alerts match your filters</p>
+              <p className="text-gray-500 text-lg mt-2">Try adjusting or clearing your filters</p>
+              <button onClick={clearAllFilters} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                Clear all filters
+              </button>
             </div>
           ) : (
             <div className="divide-y divide-gray-100">

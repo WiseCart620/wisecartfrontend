@@ -217,8 +217,11 @@ const Dashboard = () => {
     }
   };
 
+  const [alertsLoading, setAlertsLoading] = useState(false);
+
   const loadAlerts = async (page = 0) => {
     try {
+      setAlertsLoading(true); // Start loading
       const alertsRes = await api.get(`/alerts?page=${page}&size=20&sort=createdAt,desc`);
       if (alertsRes.success && alertsRes.data) {
         const newAlerts = alertsRes.data?.content || alertsRes.data || [];
@@ -229,14 +232,14 @@ const Dashboard = () => {
         setAlertsTotalPages(totalPages);
         setAlertsCurrentPage(page);
         setAlertsTotalElements(totalElements);
-        setAlerts([]);
       }
     } catch (err) {
       console.error('Failed to load alerts', err);
       setAlerts([]);
+    } finally {
+      setAlertsLoading(false); // End loading
     }
   };
-
   const getMonthlySalesData = () => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const monthlyData = months.map((month, index) => ({
@@ -1380,6 +1383,7 @@ const Dashboard = () => {
           alertsCurrentPage={alertsCurrentPage}
           alertsTotalPages={alertsTotalPages}
           alertsTotalElements={alertsTotalElements}
+          alertsLoading={alertsLoading}
         />
       </div>
     </>
