@@ -105,87 +105,77 @@ const Dashboard = () => {
     try {
       setDashboardLoading(true);
 
-      // Step 1 — load fast endpoints first (all under 500ms)
-      // Cards, filters, and dropdowns render immediately
-      const [deliveriesRes, productsRes, companiesRes, branchesRes] = await Promise.all([
-        api.get('/deliveries'),
-        api.get('/products'),
-        api.get('/companies'),
-        api.get('/branches'),
-      ]);
-
-      const deliveriesData = extractArray(deliveriesRes);
-      const productsData = extractArray(productsRes);
-      const companiesData = extractArray(companiesRes);
-      const branchesData = extractArray(branchesRes);
-
-      setDeliveries(deliveriesData);
-      setProducts(productsData);
-      setCompanies(companiesData);
-      setBranches(branchesData);
-      setDashboardLoading(false);
-      const salesRes = await api.get('/sales/all');
+      // Step 1 — sales FIRST, alone, so it doesn't queue behind alerts/deliveries
+      const salesRes = await api.get('/sales/all?page=0&size=100&sort=createdAt,desc');
       const salesData = extractArray(salesRes);
-
       setSales(salesData);
-      setCompanies(companiesData);
-      const availableYears = [...new Set(
-        salesData.map(s => s.year || new Date(s.createdAt || s.date).getFullYear())
-      )];
-      if (availableYears.length > 0 && !availableYears.includes(performanceYear)) {
-        setPerformanceYear(Math.max(...availableYears));
-      }
-      if (availableYears.length > 0 && !availableYears.includes(selectedYear)) {
-        setSelectedYear(Math.max(...availableYears));
-      }
-      setBranches(branchesData);
-      setProducts(productsData);
-      setDeliveries(deliveriesData);
 
       const sortedSales = [...salesData]
         .sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0))
         .slice(0, 10);
       setRecentSales(sortedSales);
 
+      // Step 2 — fast endpoints together (none are huge)
+      const [productsRes, companiesRes, branchesRes] = await Promise.all([
+        api.get('/products'),
+        api.get('/companies'),
+        api.get('/branches'),
+      ]);
+
+      const productsData = extractArray(productsRes);
+      const companiesData = extractArray(companiesRes);
+      const branchesData = extractArray(branchesRes);
+
+      setProducts(productsData);
+      setCompanies(companiesData);
+      setBranches(branchesData);
+      setDashboardLoading(false); // UI is ready now
+
+      // Step 3 — deliveries loads in background, doesn't block UI
+      api.get('/deliveries?page=0&size=50&sort=createdAt,desc')
+        .then(res => {
+          const deliveriesData = extractArray(res);
+          setDeliveries(deliveriesData);
+          const pendingDeliveries = deliveriesData.filter(d => d.status === 'PENDING').length;
+          const deliveredOrders = deliveriesData.filter(d => d.status === 'DELIVERED').length;
+          setStats(prev => ({ ...prev, pendingDeliveries, deliveredOrders }));
+        })
+        .catch(() => { });
+
+      // Step 4 — compute stats from what we already have
       const activeSales = salesData.filter(s =>
         s.status === 'CONFIRMED' || s.status === 'INVOICED'
       );
-      const pendingDeliveries = deliveriesData.filter(d => d.status === 'PENDING').length;
-      const deliveredOrders = deliveriesData.filter(d => d.status === 'DELIVERED').length;
-
       const activeRevenue = activeSales.reduce((sum, s) => sum + (s.totalAmount || 0), 0);
-      const averageOrderValue = activeSales.length > 0
-        ? activeRevenue / activeSales.length
-        : 0;
+      const averageOrderValue = activeSales.length > 0 ? activeRevenue / activeSales.length : 0;
 
       const totalLeads = companiesData.length * 2;
       const conversionRate = salesData.length > 0
-        ? (activeSales.length / totalLeads * 100)
-        : 0;
+        ? (activeSales.length / totalLeads * 100) : 0;
 
       const currentMonth = new Date().getMonth();
-      const thisMonthSales = salesData.filter(s => {
-        const saleDate = new Date(s.createdAt || s.date);
-        return saleDate.getMonth() === currentMonth &&
-          (s.status === 'CONFIRMED' || s.status === 'INVOICED');
-      });
-      const prevMonthSales = salesData.filter(s => {
-        const saleDate = new Date(s.createdAt || s.date);
-        return saleDate.getMonth() === (currentMonth - 1 + 12) % 12 &&
-          (s.status === 'CONFIRMED' || s.status === 'INVOICED');
-      });
-      const thisMonthRevenue = thisMonthSales.reduce((sum, s) => sum + (s.totalAmount || 0), 0);
-      const prevMonthRevenue = prevMonthSales.reduce((sum, s) => sum + (s.totalAmount || 0), 0);
+      const thisMonthRevenue = salesData
+        .filter(s => {
+          const d = new Date(s.createdAt || s.date);
+          return d.getMonth() === currentMonth && (s.status === 'CONFIRMED' || s.status === 'INVOICED');
+        })
+        .reduce((sum, s) => sum + (s.totalAmount || 0), 0);
+
+      const prevMonthRevenue = salesData
+        .filter(s => {
+          const d = new Date(s.createdAt || s.date);
+          return d.getMonth() === (currentMonth - 1 + 12) % 12 && (s.status === 'CONFIRMED' || s.status === 'INVOICED');
+        })
+        .reduce((sum, s) => sum + (s.totalAmount || 0), 0);
+
       const revenueGrowth = prevMonthRevenue > 0
         ? ((thisMonthRevenue - prevMonthRevenue) / prevMonthRevenue * 100)
         : thisMonthRevenue > 0 ? 100 : 0;
 
-      const last30Days = salesData.filter(s => {
-        const saleDate = new Date(s.createdAt || s.date);
-        const daysDiff = (new Date() - saleDate) / (1000 * 60 * 60 * 24);
+      const salesVelocity = salesData.filter(s => {
+        const daysDiff = (new Date() - new Date(s.createdAt || s.date)) / (1000 * 60 * 60 * 24);
         return daysDiff <= 30 && (s.status === 'CONFIRMED' || s.status === 'INVOICED');
-      });
-      const salesVelocity = last30Days.length / 30;
+      }).length / 30;
 
       const productAnalysis = getProductSalesAnalysis();
       setProductSalesData(productAnalysis);
@@ -200,20 +190,28 @@ const Dashboard = () => {
         setSelectedProductId(productAnalysis[0].id);
       }
 
-      setStats({
+      const availableYears = [...new Set(salesData.map(s => s.year || new Date(s.createdAt || s.date).getFullYear()))];
+      if (availableYears.length > 0 && !availableYears.includes(performanceYear)) {
+        setPerformanceYear(Math.max(...availableYears));
+      }
+      if (availableYears.length > 0 && !availableYears.includes(selectedYear)) {
+        setSelectedYear(Math.max(...availableYears));
+      }
+
+      setStats(prev => ({
+        ...prev,
         totalSales: salesData.length,
         activeSales: activeSales.length,
         activeRevenue,
-        pendingDeliveries,
         lowStock: productsData.filter(p => p.quantity < 10).length,
         totalCompanies: companiesData.length,
         averageOrderValue: parseFloat(averageOrderValue.toFixed(2)),
-        deliveredOrders,
         conversionRate: parseFloat(conversionRate.toFixed(1)),
         revenueGrowth: parseFloat(revenueGrowth.toFixed(1)),
         topProduct,
         salesVelocity: parseFloat(salesVelocity.toFixed(2)),
-      });
+      }));
+
     } catch (err) {
       console.error('Failed to load dashboard data', err);
     } finally {
