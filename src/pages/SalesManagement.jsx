@@ -259,7 +259,7 @@ const SalesManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [filterData.companyId, filterData.branchId, statusFilter, searchTerm]);
+  }, [filterData.companyId, filterData.branchId, statusFilter, searchTerm, filterData.productFilters]);
 
   const staticDataLoaded = useRef(false);
   const loadData = useCallback(async (background = false) => {
@@ -294,7 +294,7 @@ const SalesManagement = () => {
   useEffect(() => {
     fetchSales(0);
     setCurrentPage(1);
-  }, [filterData.companyId, filterData.branchId, statusFilter, searchTerm, filterData.productFilters]);
+  }, [filterData.companyId, filterData.branchId, statusFilter, searchTerm, JSON.stringify(filterData.productFilters)]);
 
   useEffect(() => {
     let es;
