@@ -37,43 +37,43 @@ const AlertRow = memo(({ alertItem, index, isThisResolving, bulkLoading, onResol
   }, [alertItem.resolvedAt]);
 
   return (
-    <div className={`p-6 transition-colors ${alertConfig.bgColor} border-b ${alertConfig.borderColor} ${isThisResolving ? 'opacity-60' : ''}`}>
-      <div className="flex gap-4">
-        <div className={`p-3 rounded-xl ${alertConfig.bgColor} ${alertConfig.iconColor} flex-shrink-0`}>
-          <Icon size={24} />
+    <div className={`p-4 transition-colors ${alertConfig.bgColor} border-b ${alertConfig.borderColor} ${isThisResolving ? 'opacity-60' : ''}`}>
+      <div className="flex gap-3">
+        <div className={`p-2 rounded-lg ${alertConfig.bgColor} ${alertConfig.iconColor} flex-shrink-0`}>
+          <Icon size={18} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between mb-3">
+          <div className="flex items-start justify-between mb-2">
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2 flex-wrap">
-                <h4 className="font-bold text-gray-900 text-lg">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <h4 className="font-bold text-gray-900 text-sm">
                   {alertItem.title || `Alert #${alertItem.id || index + 1}`}
                 </h4>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${alertConfig.severityColor}`}>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${alertConfig.severityColor}`}>
                   {alertItem.severity || 'MEDIUM'}
                 </span>
                 {alertItem.alertType && (
-                  <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                  <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 text-[10px] rounded">
                     {alertItem.alertType.replace(/_/g, ' ')}
                   </span>
                 )}
                 {alertItem.isResolved && (
-                  <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded font-medium">RESOLVED</span>
+                  <span className="px-1.5 py-0.5 bg-green-100 text-green-800 text-[10px] rounded font-medium">RESOLVED</span>
                 )}
               </div>
-              <p className="text-gray-700 text-base">{alertItem.message || 'No message provided'}</p>
+              <p className="text-gray-700 text-xs">{alertItem.message || 'No message provided'}</p>
             </div>
-            <div className="text-right text-sm text-gray-500 whitespace-nowrap ml-4 flex-shrink-0">
-              <div className="font-medium">
+            <div className="text-right text-xs text-gray-500 whitespace-nowrap ml-3 flex-shrink-0">
+              <div className="font-medium text-[11px]">
                 {alertDate.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
               </div>
-              <div className="text-xs">
+              <div className="text-[10px]">
                 {alertDate.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}
               </div>
               {resolvedDate && (
-                <div className="mt-2 pt-2 border-t border-gray-200">
-                  <div className="text-xs text-gray-400">Resolved:</div>
-                  <div className="text-xs">
+                <div className="mt-1 pt-1 border-t border-gray-200">
+                  <div className="text-[9px] text-gray-400">Resolved:</div>
+                  <div className="text-[10px]">
                     {resolvedDate.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
                   </div>
                 </div>
@@ -82,39 +82,39 @@ const AlertRow = memo(({ alertItem, index, isThisResolving, bulkLoading, onResol
           </div>
 
           {(alertItem.branch || alertItem.product || alertItem.currentValue !== null) && (
-            <div className="grid grid-cols-3 gap-4 mt-4">
+            <div className="grid grid-cols-3 gap-2 mt-3">
               {alertItem.branch && (
-                <div className="bg-white p-3 rounded-lg border border-gray-200">
-                  <p className="text-xs text-gray-500">Branch</p>
-                  <p className="font-semibold text-gray-900 truncate">{alertItem.branch.branchName}</p>
-                  <p className="text-xs text-gray-500 truncate">{alertItem.branch.branchCode}</p>
+                <div className="bg-white p-2 rounded-lg border border-gray-200">
+                  <p className="text-[9px] text-gray-500">Branch</p>
+                  <p className="font-semibold text-gray-900 text-xs truncate">{alertItem.branch.branchName}</p>
+                  <p className="text-[9px] text-gray-500 truncate">{alertItem.branch.branchCode}</p>
                 </div>
               )}
               {alertItem.product && (
-                <div className="bg-white p-3 rounded-lg border border-gray-200">
-                  <p className="text-xs text-gray-500">Product</p>
-                  <p className="font-semibold text-gray-900 truncate">{alertItem.product.productName}</p>
+                <div className="bg-white p-2 rounded-lg border border-gray-200">
+                  <p className="text-[9px] text-gray-500">Product</p>
+                  <p className="font-semibold text-gray-900 text-xs truncate">{alertItem.product.productName}</p>
                   {alertItem.variationLabel && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 mt-1 rounded text-xs bg-blue-100 text-blue-700 font-medium">
+                    <span className="inline-flex items-center px-1 py-0.5 mt-1 rounded text-[9px] bg-blue-100 text-blue-700 font-medium">
                       {alertItem.variationLabel}
                     </span>
                   )}
-                  <p className="text-xs text-gray-500 truncate">{alertItem.product.sku}</p>
+                  <p className="text-[9px] text-gray-500 truncate">{alertItem.product.sku}</p>
                 </div>
               )}
               {(alertItem.currentValue !== null || alertItem.thresholdValue !== null) && (
-                <div className="bg-white p-3 rounded-lg border border-gray-200">
-                  <p className="text-xs text-gray-500">
+                <div className="bg-white p-2 rounded-lg border border-gray-200">
+                  <p className="text-[9px] text-gray-500">
                     {alertItem.currentValue !== null ? 'Current / Threshold' : 'Threshold'}
                   </p>
-                  <div className="flex items-baseline gap-2">
+                  <div className="flex items-baseline gap-1">
                     {alertItem.currentValue !== null && (
-                      <span className="font-bold text-lg">{alertItem.currentValue}</span>
+                      <span className="font-bold text-sm">{alertItem.currentValue}</span>
                     )}
                     {alertItem.thresholdValue !== null && (
                       <>
-                        {alertItem.currentValue !== null && <span className="text-gray-400">/</span>}
-                        <span className="font-semibold text-gray-700">{alertItem.thresholdValue}</span>
+                        {alertItem.currentValue !== null && <span className="text-gray-400 text-xs">/</span>}
+                        <span className="font-semibold text-gray-700 text-xs">{alertItem.thresholdValue}</span>
                       </>
                     )}
                   </div>
@@ -124,23 +124,23 @@ const AlertRow = memo(({ alertItem, index, isThisResolving, bulkLoading, onResol
           )}
 
           {!alertItem.isResolved && (
-            <div className="flex items-center justify-between mt-6">
-              <div className="flex items-center gap-2 text-sm text-gray-500">
+            <div className="flex items-center justify-between mt-3">
+              <div className="flex items-center gap-1.5 text-xs text-gray-500">
                 {alertItem.saleId && (
-                  <span className="px-2 py-1 bg-gray-100 rounded text-xs">Sale #{alertItem.saleId}</span>
+                  <span className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px]">Sale #{alertItem.saleId}</span>
                 )}
                 {alertItem.referenceId && (
-                  <span className="px-2 py-1 bg-gray-100 rounded text-xs">Ref: {alertItem.referenceId}</span>
+                  <span className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px]">Ref: {alertItem.referenceId}</span>
                 )}
               </div>
               <button
                 onClick={() => onResolve(alertItem)}
                 disabled={isThisResolving || bulkLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isThisResolving
-                  ? <><Loader2 size={16} className="animate-spin" /> Resolving...</>
-                  : <><CheckCircle size={16} /> Mark as Resolved</>}
+                  ? <><Loader2 size={12} className="animate-spin" /> Resolving...</>
+                  : <><CheckCircle size={12} /> Mark as Resolved</>}
               </button>
             </div>
           )}
@@ -361,13 +361,13 @@ const AlertManagement = ({
         )}
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
-        <div className="p-3 sm:p-6 border-b border-gray-200 bg-gradient-to-r from-red-50 to-orange-50 flex-shrink-0">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 sm:mb-4 gap-2">
-            <div className="flex items-center gap-3">
-              <Bell className="text-red-600" size={24} />
+        <div className="p-3 border-b border-gray-200 bg-gradient-to-r from-red-50 to-orange-50 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Bell className="text-red-600" size={18} />
               <div>
-                <h3 className="text-2xl font-bold text-gray-900">Alert Management</h3>
-                <p className="text-sm text-gray-600 mt-1">
+                <h3 className="text-base font-bold text-gray-900">Alert Management</h3>
+                <p className="text-[10px] text-gray-600">
                   {alertsTotalElements === 0
                     ? 'No alerts at the moment'
                     : `${alertsTotalElements} total · page ${alertsCurrentPage + 1} of ${alertsTotalPages}`}
@@ -375,47 +375,47 @@ const AlertManagement = ({
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               <button
                 onClick={handleDownloadAndClear}
                 disabled={bulkLoading || resolvedCount === 0}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-[10px]"
               >
-                <Download size={18} /> Download & Clear Resolved
+                <Download size={12} /> Download & Clear
               </button>
               {activeCount > 0 && (
                 <button
                   onClick={handleResolveAll}
                   disabled={bulkLoading}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-[10px]"
                 >
-                  <CheckCheck size={18} /> Resolve All
+                  <CheckCheck size={12} /> Resolve All
                 </button>
               )}
               <button
                 onClick={() => setShowNotifications(false)}
                 disabled={bulkLoading}
-                className="p-2 hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50"
+                className="p-1.5 hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50"
               >
-                <X size={24} />
+                <X size={16} />
               </button>
             </div>
           </div>
 
-          {/* Filters */}
-          <div className="flex flex-col gap-2 mt-2">
-            <div className="flex flex-col sm:flex-row gap-2">
+          {/* Filters - Compact version */}
+          <div className="flex flex-col gap-1.5 mt-2">
+            <div className="flex flex-col sm:flex-row gap-1.5">
               <input
                 type="text"
-                placeholder="Search by title, message, product…"
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
+                className="flex-1 px-2 py-1.5 border border-gray-300 rounded-lg text-[11px] focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
               />
               <select
                 value={filterSeverity}
                 onChange={e => setFilterSeverity(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+                className="px-2 py-1.5 border border-gray-300 rounded-lg text-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
               >
                 <option value="all">All Severities</option>
                 <option value="CRITICAL">Critical</option>
@@ -426,7 +426,7 @@ const AlertManagement = ({
               <select
                 value={filterType}
                 onChange={e => setFilterType(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+                className="px-2 py-1.5 border border-gray-300 rounded-lg text-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
               >
                 <option value="all">All Types</option>
                 <option value="LOW_STOCK">Low Stock</option>
@@ -441,11 +441,11 @@ const AlertManagement = ({
               </select>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2 items-center">
+            <div className="flex flex-col sm:flex-row gap-1.5 items-center">
               <select
                 value={filterBranch}
                 onChange={e => setFilterBranch(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+                className="flex-1 px-2 py-1.5 border border-gray-300 rounded-lg text-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
               >
                 <option value="all">All Branches</option>
                 {branchOptions.map(([id, name]) => (
@@ -456,7 +456,7 @@ const AlertManagement = ({
               <select
                 value={filterCompany}
                 onChange={e => setFilterCompany(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+                className="flex-1 px-2 py-1.5 border border-gray-300 rounded-lg text-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
               >
                 <option value="all">All Companies</option>
                 {companyOptions.map(name => (
@@ -467,13 +467,10 @@ const AlertManagement = ({
               {activeFilterCount > 0 && (
                 <button
                   onClick={clearAllFilters}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm transition-colors whitespace-nowrap border border-gray-300"
+                  className="flex items-center gap-1 px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-[11px] transition-colors whitespace-nowrap border border-gray-300"
                 >
-                  <XCircle size={15} />
-                  Clear filters
-                  <span className="ml-0.5 bg-blue-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
-                    {activeFilterCount}
-                  </span>
+                  <XCircle size={12} />
+                  Clear ({activeFilterCount})
                 </button>
               )}
             </div>
@@ -483,13 +480,13 @@ const AlertManagement = ({
         {/* ── Tabs ───────────────────────────────────────────────────────── */}
         <div className="flex border-b border-gray-200 bg-gray-50 flex-shrink-0">
           <button
-            className={`px-6 py-3 font-medium text-sm transition-colors ${activeTab === 'active' ? 'bg-white border-t border-l border-r border-gray-200 text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
+            className={`px-4 py-2 font-medium text-xs transition-colors ${activeTab === 'active' ? 'bg-white border-t border-l border-r border-gray-200 text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
             onClick={() => handleTabChange('active')}
           >
             Active Alerts
           </button>
           <button
-            className={`px-6 py-3 font-medium text-sm transition-colors ${activeTab === 'resolved' ? 'bg-white border-t border-l border-r border-gray-200 text-green-600' : 'text-gray-600 hover:text-gray-900'}`}
+            className={`px-4 py-2 font-medium text-xs transition-colors ${activeTab === 'resolved' ? 'bg-white border-t border-l border-r border-gray-200 text-green-600' : 'text-gray-600 hover:text-gray-900'}`}
             onClick={() => handleTabChange('resolved')}
           >
             Resolved
@@ -604,26 +601,27 @@ const AlertManagement = ({
           </div>
         )}
 
+
         {/* ── Footer ─────────────────────────────────────────────────────── */}
-        <div className="p-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+        <div className="px-3 py-2 border-t border-gray-200 bg-gray-50 flex-shrink-0">
           <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              {alertsTotalElements === 0 ? 'No alerts in the system' : `${alertsTotalElements} total alerts`}
+            <div className="text-[10px] text-gray-600">
+              {alertsTotalElements === 0 ? 'No alerts' : `${alertsTotalElements} total`}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => loadAlerts(alertsCurrentPage)}
                 disabled={bulkLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm disabled:opacity-50"
+                className="flex items-center gap-1 px-2 py-1 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-[10px] disabled:opacity-50"
               >
-                <RefreshCw size={16} /> Refresh
+                <RefreshCw size={12} /> Refresh
               </button>
               <button
                 onClick={handleDeleteAllResolved}
                 disabled={bulkLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1 px-2 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-[10px] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Trash2 size={16} /> Delete All Resolved
+                <Trash2 size={12} /> Clear Resolved
               </button>
             </div>
           </div>
