@@ -11,7 +11,6 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
     const [showDropdown, setShowDropdown] = useState(false);
     const [usdAmount, setUsdAmount] = useState('');
     const [phpAmount, setPhpAmount] = useState('');
-    const [loadingRate, setLoadingRate] = useState(false);
     const [items, setItems] = useState([]);
     const [uploadedFiles, setUploadedFiles] = useState({
         commercialInvoice: null,
@@ -47,11 +46,20 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
                 setUsdAmount(d.usdAmount || '');
                 setPhpAmount(d.phpAmount || '');
                 if (d.forwarderId) loadAgentInfo(d.forwarderId);
-                if (d.items) setItems(d.items.map(i => ({
-                    ...i,
-                    cbm: i.cbm || '',
-                    allocationPercent: i.allocationPercent || ''
-                })));
+                if (d.items) {
+                    const loaded = d.items.map(i => ({
+                        ...i,
+                        cbm: i.cbm != null ? String(i.cbm) : '',
+                        allocationPercent: ''
+                    }));
+                    const totalCbm = loaded.reduce((sum, i) => sum + (parseFloat(i.cbm) || 0), 0);
+                    if (totalCbm > 0) {
+                        loaded.forEach(item => {
+                            item.allocationPercent = ((parseFloat(item.cbm) || 0) / totalCbm * 100).toFixed(4);
+                        });
+                    }
+                    setItems(loaded);
+                }
                 setUploadedFiles({
                     commercialInvoice: d.commercialInvoiceUrl ? { url: d.commercialInvoiceUrl, name: 'Commercial Invoice' } : null,
                     proofOfPayment: d.proofOfPaymentUrl ? { url: d.proofOfPaymentUrl, name: 'Proof of Payment' } : null,
@@ -82,19 +90,7 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
         } catch (e) { }
     };
 
-    const fetchExchangeRate = async () => {
-        setLoadingRate(true);
-        try {
-            const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
-            const data = await res.json();
-            const rate = data?.rates?.PHP;
-            if (rate) setExchangeRate(rate);
-        } catch (e) {
-            setExchangeRate(56); // fallback
-        } finally {
-            setLoadingRate(false);
-        }
-    };
+
 
     const handleUsdChange = (val) => {
         setUsdAmount(val);
@@ -109,7 +105,19 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
     const handleItemChange = (idx, field, value) => {
         const updated = [...items];
         updated[idx][field] = value;
-        setItems(updated);
+
+        if (field === 'cbm') {
+            const totalCbm = updated.reduce((sum, i) => sum + (parseFloat(i.cbm) || 0), 0);
+            if (totalCbm > 0) {
+                updated.forEach(item => {
+                    item.allocationPercent = ((parseFloat(item.cbm) || 0) / totalCbm * 100).toFixed(4);
+                });
+            } else {
+                updated.forEach(item => { item.allocationPercent = ''; });
+            }
+        }
+
+        setItems([...updated]);
     };
 
     const totalPercent = items.reduce((sum, i) => sum + (parseFloat(i.allocationPercent) || 0), 0);
@@ -140,7 +148,7 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
         e.preventDefault();
         if (!selectedForwarderId) { toast.error('Select a forwarder'); return; }
         if (!usdAmount) { toast.error('Enter shipping cost in USD'); return; }
-        if (Math.round(totalPercent) !== 100 && items.length > 0) {
+        if (items.length > 0 && items.some(i => i.cbm) && Math.abs(totalPercent - 100) > 0.1) {
             toast.error(`Allocation must total 100%. Currently: ${totalPercent.toFixed(1)}%`);
             return;
         }
@@ -284,9 +292,6 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
                         <div>
                             <div className="flex items-center justify-between mb-2">
                                 <h3 className="text-sm font-semibold text-gray-700">Shipping Details per Product</h3>
-                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${Math.abs(totalPercent - 100) < 0.01 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                    Total: {totalPercent.toFixed(1)}% {Math.abs(totalPercent - 100) < 0.01 ? '✓' : '(must be 100%)'}
-                                </span>
                             </div>
                             <div className="border rounded-lg overflow-hidden">
                                 <table className="w-full text-sm">
@@ -324,16 +329,9 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
                                                     </td>
                                                     <td className="px-3 py-2">
                                                         <div className="flex items-center gap-1">
-                                                            <input
-                                                                type="number"
-                                                                value={item.allocationPercent}
-                                                                onChange={e => handleItemChange(idx, 'allocationPercent', e.target.value)}
-                                                                className="w-20 px-2 py-1 border border-gray-300 rounded text-xs text-right"
-                                                                placeholder="0"
-                                                                min="0"
-                                                                max="100"
-                                                                step="0.01"
-                                                            />
+                                                            <span className="w-20 px-2 py-1 bg-gray-50 border border-gray-200 rounded text-xs text-right text-gray-700 inline-block">
+                                                                {item.allocationPercent ? parseFloat(item.allocationPercent).toFixed(2) : '0.00'}
+                                                            </span>
                                                             <span className="text-xs text-gray-500">%</span>
                                                         </div>
                                                     </td>
@@ -344,6 +342,28 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
                                             );
                                         })}
                                     </tbody>
+                                    <tfoot className="bg-gray-50 border-t">
+                                        <tr>
+                                            <td className="px-3 py-2 text-xs font-semibold text-gray-700">Total</td>
+                                            <td className="px-3 py-2"></td>
+                                            <td className="px-3 py-2 text-xs font-semibold text-gray-700">
+                                                {items.reduce((s, i) => s + (parseFloat(i.cbm) || 0), 0).toFixed(4)}
+                                            </td>
+                                            <td className="px-3 py-2">
+                                                <div className="flex items-center gap-1">
+                                                    <span className={`w-20 px-2 py-1 rounded text-xs text-right font-semibold inline-block ${Math.abs(totalPercent - 100) < 0.01 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                        {totalPercent.toFixed(1)}%
+                                                    </span>
+                                                    <span className={`text-xs font-medium ${Math.abs(totalPercent - 100) < 0.01 ? 'text-green-600' : 'text-yellow-600'}`}>
+                                                        {Math.abs(totalPercent - 100) < 0.01 ? '✓' : ""}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-3 py-2 text-right text-xs font-semibold text-gray-700">
+                                                ₱{items.reduce((s, i) => s + (phpAmount && i.allocationPercent ? parseFloat(phpAmount) * parseFloat(i.allocationPercent) / 100 : 0), 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                            </td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                         </div>

@@ -2157,7 +2157,18 @@ const SalesManagement = () => {
                       <input
                         type="date"
                         value={invoiceDate}
-                        onChange={(e) => setInvoiceDate(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (!val) { setInvoiceDate(''); return; }
+                          const parts = val.split('-');
+                          if (parts[0] && parts[0].length > 4) {
+                            parts[0] = parts[0].slice(0, 4);
+                            setInvoiceDate(parts.join('-'));
+                          } else {
+                            setInvoiceDate(val);
+                          }
+                        }}
+                        max="9999-12-31"
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                       />
                     </div>

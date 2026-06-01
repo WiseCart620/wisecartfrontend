@@ -848,7 +848,13 @@ const InvoicingProfile = ({ onBack }) => {
                                                         )}
                                                         {cosData[p.id] === undefined ? '—' :
                                                             cosData[p.id] === null ? '...' :
-                                                                `₱${fmt(cosData[p.id].totalCos || 0)}`}
+                                                                `₱${fmt(
+                                                                    (cosData[p.id].items || []).reduce((s, item) => {
+                                                                        const qty = item.qty || item.totalQuantity || 1;
+                                                                        const unitCost = Number(item.unitCost || 0);
+                                                                        return s + (unitCost * qty);
+                                                                    }, 0)
+                                                                )}`}
                                                     </button>
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
@@ -873,7 +879,7 @@ const InvoicingProfile = ({ onBack }) => {
                                                     const itemShipping = Number(item.itemShipping || 0);
                                                     const itemOthers = Number(item.itemOthers || 0);
                                                     const itemProductCost = Number(item.itemProductCost || 0);
-                                                    const itemTotal = Number(item.totalCost || (unitCost * qty));
+                                                    const itemTotal = Number(item.unitCost || 0) * qty;
                                                     return {
                                                         ...item,
                                                         qty,
@@ -886,9 +892,6 @@ const InvoicingProfile = ({ onBack }) => {
                                                     };
                                                 });
 
-                                                const totalProductCost = itemsWithBreakdown.reduce((s, i) => s + i.itemProductCost, 0);
-                                                const totalShippingDisplay = Number(cosData[p.id].shipping || 0);
-                                                const totalOthersDisplay = Number(cosData[p.id].others || 0);
                                                 const grandTotal = itemsWithBreakdown.reduce((s, i) => s + i.itemTotal, 0);
 
                                                 return (
