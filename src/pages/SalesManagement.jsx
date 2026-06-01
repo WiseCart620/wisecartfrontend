@@ -238,7 +238,9 @@ const SalesManagement = () => {
         ...(filterData.companyId && { companyId: filterData.companyId }),
         ...(filterData.branchId && { branchId: filterData.branchId }),
         ...(statusFilter !== 'ALL' && { status: statusFilter }),
-        ...(searchTerm && { searchTerm: searchTerm })
+        ...(searchTerm && { searchTerm: searchTerm }),
+        ...(filterData.productId && { productId: filterData.productId }),
+        ...(filterData.variationId && { variationId: filterData.variationId })
       });
 
       const response = await api.get(`/sales/all?${params}`);
