@@ -105,7 +105,7 @@ const Dashboard = () => {
     try {
       setDashboardLoading(true);
 
-      const salesRes = await api.get('/sales/all?page=0&size=200&sort=createdAt,desc');
+      const salesRes = await api.get('/sales/all-unpaged');
       const salesData = extractArray(salesRes);
       setSales(salesData);
 

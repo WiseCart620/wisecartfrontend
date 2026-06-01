@@ -144,7 +144,7 @@ const DeliveryFilters = ({
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           <div className="lg:col-span-2">
             <label className="block text-xs font-medium text-gray-700 mb-1">
-              Filter by Product / UPC / SKU (multiple)
+              Filter by Product / UPC / SKU
             </label>
             <VariationSearchableDropdown
               options={productOptions.filter(o =>
