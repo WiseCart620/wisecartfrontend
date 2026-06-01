@@ -105,8 +105,7 @@ const Dashboard = () => {
     try {
       setDashboardLoading(true);
 
-      // Step 1 — sales FIRST, alone, so it doesn't queue behind alerts/deliveries
-      const salesRes = await api.get('/sales/all?page=0&size=100&sort=createdAt,desc');
+      const salesRes = await api.get('/sales/all?page=0&size=200&sort=createdAt,desc');
       const salesData = extractArray(salesRes);
       setSales(salesData);
 
@@ -142,9 +141,8 @@ const Dashboard = () => {
         })
         .catch(() => { });
 
-      // Step 4 — compute stats from what we already have
       const activeSales = salesData.filter(s =>
-        s.status === 'CONFIRMED' || s.status === 'INVOICED'
+        s.status === 'CONFIRMED' || s.status === 'INVOICED' || s.status === 'PENDING'
       );
       const activeRevenue = activeSales.reduce((sum, s) => sum + (s.totalAmount || 0), 0);
       const averageOrderValue = activeSales.length > 0 ? activeRevenue / activeSales.length : 0;
@@ -245,7 +243,7 @@ const Dashboard = () => {
     const filteredSales = sales.filter(sale => {
       const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
       const yearMatch = saleYear === selectedYear;
-      const statusMatch = (sale.status === 'CONFIRMED' || sale.status === 'INVOICED');
+      const statusMatch = (sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING');
       const companyMatch = selectedCompany === 'all' || sale.company?.companyName === selectedCompany;
       const branchMatch = selectedBranch === 'all' || sale.branch?.branchName === selectedBranch;
 
@@ -293,8 +291,7 @@ const Dashboard = () => {
   const loadPerformance = () => {
     try {
       const filteredSales = sales.filter(sale => {
-        const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED';
-
+        const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING';
         if (performanceView === 'overall') {
           return statusMatch;
         }
@@ -505,8 +502,8 @@ const Dashboard = () => {
     const productAnalysis = {};
     const salesSource = salesOverride || sales;
 
-    const filteredSales = salesSource.filter(sale => {
-      const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED';
+    const filteredSales = sales.filter(sale => {
+      const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING';
 
       if (performanceView === 'overall') {
         return statusMatch;

@@ -113,7 +113,7 @@ const StatusDistribution = ({ stats, sales, navigate, isLoading = false }) => {
                     {count > 0 && (
                       <div className="flex justify-between items-center text-xs text-gray-500">
                         <span>Avg: {formatCurrency(revenue / count)}</span>
-                        <span>{((revenue / stats.activeRevenue) * 100).toFixed(1)}% of active Sales</span>
+                        <span>{stats.activeRevenue > 0 ? ((revenue / stats.activeRevenue) * 100).toFixed(1) : '0.0'}% of active Sales</span>
                       </div>
                     )}
                   </div>
