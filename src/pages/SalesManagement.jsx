@@ -1352,7 +1352,7 @@ const SalesManagement = () => {
                 ) : currentSales.length === 0 ? (
                   <tr>
                     <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
-                      {filteredSales.length === 0 ? 'No sales found' : 'No sales on this page'}
+                      {'No sales found'}
                     </td>
                   </tr>
                 ) : (
