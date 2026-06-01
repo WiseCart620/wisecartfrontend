@@ -177,7 +177,7 @@ const Dashboard = () => {
         return daysDiff <= 30 && (s.status === 'CONFIRMED' || s.status === 'INVOICED');
       }).length / 30;
 
-      const productAnalysis = getProductSalesAnalysis();
+      const productAnalysis = getProductSalesAnalysis(salesData);
       setProductSalesData(productAnalysis);
 
       let topProduct = null;
@@ -501,10 +501,11 @@ const Dashboard = () => {
     }
   };
 
-  const getProductSalesAnalysis = () => {
+  const getProductSalesAnalysis = (salesOverride) => {
     const productAnalysis = {};
+    const salesSource = salesOverride || sales;
 
-    const filteredSales = sales.filter(sale => {
+    const filteredSales = salesSource.filter(sale => {
       const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED';
 
       if (performanceView === 'overall') {
