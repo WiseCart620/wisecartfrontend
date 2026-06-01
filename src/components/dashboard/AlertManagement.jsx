@@ -275,7 +275,7 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
       const response = await api.put(`/alerts/${alertItem.id}/resolve`, {
         resolvedBy: 'admin', notes: 'Resolved manually'
       });
-      if (response.success) { await loadAlerts(); showToast('Alert resolved successfully'); }
+      if (response.success) { await loadAlerts(0); showToast('Alert resolved successfully'); }
       else showToast('Failed to resolve alert', 'error');
     } catch (err) {
       showToast('Failed to resolve alert: ' + err.message, 'error');
@@ -291,7 +291,7 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
       const response = await api.put('/alerts/resolve-all', {
         resolvedBy: 'admin', notes: 'Resolved all via dashboard'
       });
-      if (response.success) { await loadAlerts(); showToast(`Resolved ${activeCount} alerts successfully`); }
+      if (response.success) { await loadAlerts(0); showToast(`Resolved ${activeCount} alerts successfully`); }
       else showToast('Failed to resolve all alerts', 'error');
     } catch (err) {
       showToast('Failed to resolve alerts: ' + err.message, 'error');
@@ -311,7 +311,7 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
         document.body.appendChild(a); a.click();
         window.URL.revokeObjectURL(url); document.body.removeChild(a);
         const del = await api.delete('/alerts/resolved');
-        if (del.success) { await loadAlerts(); showToast(`Downloaded and cleared ${del.data || 0} resolved alerts`); }
+        if (del.success) { await loadAlerts(0); showToast(`Downloaded and cleared ${del.data || 0} resolved alerts`); }
       }
     } catch (err) {
       showToast('Failed to process resolved alerts: ' + err.message, 'error');
@@ -323,7 +323,7 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
     setBulkLoading(true);
     try {
       const response = await api.delete('/alerts/resolved');
-      if (response.success) { await loadAlerts(); showToast(`Deleted ${resolvedCount} resolved alerts`); }
+      if (response.success) { await loadAlerts(0); showToast(`Deleted ${resolvedCount} resolved alerts`); }
     } catch (err) {
       showToast('Failed to delete resolved alerts: ' + err.message, 'error');
     } finally { setBulkLoading(false); }
@@ -607,7 +607,7 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={loadAlerts}
+                onClick={() => loadAlerts(0)}
                 disabled={bulkLoading}
                 className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm disabled:opacity-50"
               >
