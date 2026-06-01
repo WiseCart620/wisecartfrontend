@@ -134,15 +134,21 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
 
                 if (poResponse.success) {
                     toast.success('Product confirmed and purchase order created');
-                    window.dispatchEvent(new Event('quotationConfirmed'));
-                    window.dispatchEvent(new Event('productUpdated'));
+                    window.dispatchEvent(new CustomEvent('quotationConfirmed'));
+                    window.dispatchEvent(new CustomEvent('productUpdated'));
 
                     if (onConfirmSuccess) onConfirmSuccess();
-                    onClose();
+                } else {
+                    toast.error('Failed to create purchase order');
                 }
+            } else {
+                toast.error('Failed to confirm quotation status');
             }
         } catch (error) {
-            toast.error('Failed to confirm quotation');
+            console.error('Confirm error:', error);
+            if (!error.message?.includes('confirmed')) {
+                toast.error(`Failed to confirm quotation: ${error.response?.data?.message || error.message}`);
+            }
         } finally {
             setButtonLoading(false);
         }

@@ -18,13 +18,27 @@ const OthersModal = ({ purchaseOrder, onClose, onSuccess }) => {
     const loadExisting = async () => {
         try {
             const res = await api.get(`/other-charges/purchase-order/${purchaseOrder.id}`);
-            if (res.success && res.data?.data?.items) {
+            if (res.success && res.data?.data?.items && res.data.data.items.length > 0) {
                 setItems(res.data.data.items.map((item, idx) => ({ ...item, _key: idx })));
             } else {
-                addItem();
+                setItems([{
+                    _key: Date.now(),
+                    particulars: '',
+                    customLabel: '',
+                    cost: '',
+                    commercialInvoiceUrl: null,
+                    proofOfPaymentUrl: null
+                }]);
             }
         } catch (e) {
-            addItem();
+            setItems([{
+                _key: Date.now(),
+                particulars: '',
+                customLabel: '',
+                cost: '',
+                commercialInvoiceUrl: null,
+                proofOfPaymentUrl: null
+            }]);
         }
     };
 

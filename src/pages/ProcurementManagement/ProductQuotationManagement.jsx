@@ -174,6 +174,18 @@ const ProductQuotationManagement = ({ rpqRequests: initialRequests, onRefresh })
                     onClose={() => setViewingRpq(null)}
                     onRefresh={onRefresh}
                     formatNumber={formatNumber}
+                    onConfirmSuccess={() => {
+                        setRpqRequests(prev =>
+                            prev.map(req =>
+                                req.id === viewingRpq.id
+                                    ? { ...req, status: 'CONFIRMED' }
+                                    : req
+                            )
+                        );
+                        setViewingRpq(null);
+                        onRefresh();
+                        window.dispatchEvent(new CustomEvent('navigateToPO'));
+                    }}
                 />
             )}
         </div>

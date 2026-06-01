@@ -53,23 +53,35 @@ const ProcurementManagement = () => {
             setActiveTab('rpq');
         };
 
-
         const handleRpqDeleted = async () => {
             await loadIrrRequests();
+        };
+
+        const handleQuotationConfirmed = async () => {
+            await Promise.all([
+                loadRpqRequests(),
+                loadPaymentCounts()
+            ]);
+        };
+
+        const handleNavigateToPO = () => {
+            setActiveTab('po');
         };
 
         window.addEventListener('productUpdated', handleUpdate);
         window.addEventListener('paymentUpdated', handleUpdate);
         window.addEventListener('irrProceededToRpq', handleIrrProceededToRpq);
         window.addEventListener('rpqDeleted', handleRpqDeleted);
-        window.addEventListener('quotationConfirmed', handleUpdate);
+        window.addEventListener('quotationConfirmed', handleQuotationConfirmed);
+        window.addEventListener('navigateToPO', handleNavigateToPO);
 
         return () => {
             window.removeEventListener('productUpdated', handleUpdate);
             window.removeEventListener('paymentUpdated', handleUpdate);
             window.removeEventListener('irrProceededToRpq', handleIrrProceededToRpq);
             window.removeEventListener('rpqDeleted', handleRpqDeleted);
-            window.removeEventListener('quotationConfirmed', handleUpdate);
+            window.removeEventListener('quotationConfirmed', handleQuotationConfirmed);
+            window.removeEventListener('navigateToPO', handleNavigateToPO);
         };
     }, []);
 
