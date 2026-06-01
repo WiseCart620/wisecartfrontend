@@ -65,7 +65,7 @@ const extractArray = (res) => {
 
 let salesCache = null;
 let salesCacheTime = 0;
-const SALES_CACHE_TTL = 60_000;
+const SALES_CACHE_TTL = 300_000;
 let sseRefreshTimer = null;
 
 const fetchSales = async () => {
@@ -73,7 +73,7 @@ const fetchSales = async () => {
   if (salesCache && (now - salesCacheTime) < SALES_CACHE_TTL) {
     return salesCache;
   }
-  const res = await api.get('/sales/all');
+  const res = await api.get('/sales/all?page=0&size=50&sort=createdAt,desc');
   salesCache = extractArray(res);
   salesCacheTime = now;
   return salesCache;
@@ -703,7 +703,7 @@ const SalesManagement = () => {
       if (filterData.startDate) params.append('startDate', filterData.startDate);
       if (filterData.endDate) params.append('endDate', filterData.endDate);
 
-      const response = await api.get('/sales/all');
+      const response = await api.get('/sales/all?page=0&size=50&sort=createdAt,desc');
       const allData = extractArray(response);
       setSales(allData);
       toast.success(`Loaded ${allData.length} sales`);
@@ -795,8 +795,7 @@ const SalesManagement = () => {
           { duration: 4000 }
         );
 
-        invalidateSalesCache();
-        fetchSales().then(data => setSales(data)).catch(() => { });
+
       } else {
         toast.error('Failed to generate invoice', { duration: 5000 });
       }
@@ -923,7 +922,6 @@ const SalesManagement = () => {
     });
     setStatusFilter('ALL');
     setSearchTerm('');
-    loadData();
     setCurrentPage(1);
   };
 
