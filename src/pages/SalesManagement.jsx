@@ -68,16 +68,7 @@ let salesCacheTime = 0;
 const SALES_CACHE_TTL = 300_000;
 let sseRefreshTimer = null;
 
-const fetchSales = async () => {
-  const now = Date.now();
-  if (salesCache && (now - salesCacheTime) < SALES_CACHE_TTL) {
-    return salesCache;
-  }
-  const res = await api.get('/sales/all');
-  salesCache = extractArray(res);
-  salesCacheTime = now;
-  return salesCache;
-};
+
 
 const invalidateSalesCache = () => {
   salesCache = null;
@@ -210,6 +201,8 @@ const SalesManagement = () => {
   const [stockErrors, setStockErrors] = useState({});
   const [originalSaleItems, setOriginalSaleItems] = useState([]);
   const [selectedProductForAdd, setSelectedProductForAdd] = useState('');
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
   const [formData, setFormData] = useState({
     branchId: '',
     month: new Date().getMonth() + 1,
@@ -217,6 +210,32 @@ const SalesManagement = () => {
     items: [],
     createdBy: ''
   });
+
+
+  const fetchSales = useCallback(async (page = 0) => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: page,
+        size: 20,
+        ...(filterData.companyId && { companyId: filterData.companyId }),
+        ...(filterData.branchId && { branchId: filterData.branchId }),
+        ...(statusFilter !== 'ALL' && { status: statusFilter }),
+        ...(searchTerm && { searchTerm: searchTerm })
+      });
+
+      const response = await api.get(`/sales/all?${params}`);
+      setSales(response.data.content);
+      setTotalPages(response.data.totalPages);
+      setCurrentPage(response.data.currentPage + 1);
+      setTotalElements(response.data.totalElements);
+    } catch (error) {
+      console.error('Error fetching sales:', error);
+      toast.error('Failed to load sales');
+    } finally {
+      setLoading(false);
+    }
+  }, [filterData.companyId, filterData.branchId, statusFilter, searchTerm]);
 
   const [filterData, setFilterData] = useState({
     companyId: '',
@@ -237,25 +256,26 @@ const SalesManagement = () => {
   const loadData = useCallback(async (background = false) => {
     if (!background) setLoading(true);
 
-    const salesPromise = fetchSales();
-    salesPromise.then(res => {
-      setSales(extractArray(res));
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    // Load paginated sales
+    await fetchSales(currentPage - 1); // Convert to 0-based for backend
 
     // Only fetch static data once per session
     if (!staticDataLoaded.current) {
       staticDataLoaded.current = true;
 
-      api.get('/branches').then(res => setBranches(extractArray(res))).catch(() => { });
-      api.get('/companies').then(res => setCompanies(extractArray(res))).catch(() => { });
-      api.get('/products').then(res => setProducts(extractArray(res))).catch(() => { });
-      api.get('/inventories').then(res => setInventories(extractArray(res))).catch(() => { });
-      api.get('/warehouse').then(res => setWarehouses(extractArray(res))).catch(() => { });
-      api.get('/stocks/warehouses').then(res => setWarehouseStocks(extractArray(res))).catch(() => { });
-      api.get('/inventories/products/summary').then(res => setProductSummaries(extractArray(res))).catch(() => { });
+      Promise.all([
+        api.get('/branches').then(res => setBranches(extractArray(res))),
+        api.get('/companies').then(res => setCompanies(extractArray(res))),
+        api.get('/products').then(res => setProducts(extractArray(res))),
+        api.get('/inventories').then(res => setInventories(extractArray(res))),
+        api.get('/warehouse').then(res => setWarehouses(extractArray(res))),
+        api.get('/stocks/warehouses').then(res => setWarehouseStocks(extractArray(res))),
+        api.get('/inventories/products/summary').then(res => setProductSummaries(extractArray(res)))
+      ]).catch(() => { });
     }
-  }, []);
+
+    setLoading(false);
+  }, [currentPage, filterData, statusFilter, searchTerm]);
 
 
   useEffect(() => {
@@ -992,11 +1012,7 @@ const SalesManagement = () => {
     return dateB - dateA;
   });
 
-
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentSales = filteredSales.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredSales.length / itemsPerPage);
+  const currentSales = sales;
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const monthsFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -1362,7 +1378,7 @@ const SalesManagement = () => {
                   currentSales.map((sale) => (
                     <tr key={sale.id} className="hover:bg-gray-50 transition">
                       <td className="px-3 py-3 whitespace-nowrap text-center text-xs text-gray-400 font-medium">
-                        {indexOfFirstItem + currentSales.indexOf(sale) + 1}
+                        {((currentPage - 1) * 20) + currentSales.indexOf(sale) + 1}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap">
                         <div>
@@ -1471,16 +1487,31 @@ const SalesManagement = () => {
               </tbody>
             </table>
           </div>
-          {filteredSales.length > 0 && (
+          {totalElements > 0 && (
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              onNextPage={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              onPrevPage={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              showingStart={indexOfFirstItem + 1}
-              showingEnd={Math.min(indexOfLastItem, filteredSales.length)}
-              totalItems={filteredSales.length}
+              onPageChange={(page) => {
+                setCurrentPage(page);
+                fetchSales(page - 1); // Convert to 0-based for backend
+              }}
+              onNextPage={() => {
+                if (currentPage < totalPages) {
+                  const newPage = currentPage + 1;
+                  setCurrentPage(newPage);
+                  fetchSales(newPage - 1);
+                }
+              }}
+              onPrevPage={() => {
+                if (currentPage > 1) {
+                  const newPage = currentPage - 1;
+                  setCurrentPage(newPage);
+                  fetchSales(newPage - 1);
+                }
+              }}
+              showingStart={((currentPage - 1) * 20) + 1}
+              showingEnd={Math.min(currentPage * 20, totalElements)}
+              totalItems={totalElements}
             />
           )}
         </div>
