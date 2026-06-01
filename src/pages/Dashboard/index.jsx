@@ -93,7 +93,7 @@ const Dashboard = () => {
     if (sales.length > 0) {
       loadPerformance();
       generateInsights();
-      const productAnalysis = getProductSalesAnalysis();
+      const productAnalysis = getProductSalesAnalysis(sales);
       setProductSalesData(productAnalysis);
       if (productAnalysis.length > 0 && !selectedProductId) {
         setSelectedProductId(productAnalysis[0].id);
@@ -299,7 +299,7 @@ const Dashboard = () => {
         const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
         const saleMonth = sale.month || (new Date(sale.createdAt || sale.date).getMonth() + 1);
 
-        const yearMatch = saleYear === performanceYear;
+        const yearMatch = performanceView === 'overall' ? true : saleYear === performanceYear;
         const monthMatch = performanceView === 'month' ? saleMonth === performanceMonth : true;
 
         return yearMatch && monthMatch && statusMatch;
@@ -512,10 +512,10 @@ const Dashboard = () => {
       const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
       const saleMonth = sale.month || (new Date(sale.createdAt || sale.date).getMonth() + 1);
 
-      const yearMatch = saleYear === performanceYear;
+      const yearMatch = performanceView === 'overall' ? true : saleYear === performanceYear;
       const monthMatch = performanceView === 'month' ? saleMonth === performanceMonth : true;
 
-      return statusMatch && yearMatch && monthMatch;
+      return yearMatch && monthMatch && statusMatch;
     });
 
     filteredSales.forEach(sale => {
