@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useCallback, memo } from 'react';
-import { Bell, X, Download, CheckCheck, Trash2, RefreshCw, AlertCircle, AlertTriangle, Info, CheckCircle, Database, Loader2, Filter, XCircle } from 'lucide-react';
+import { Bell, X, Download, CheckCheck, Trash2, RefreshCw, AlertCircle, AlertTriangle, Info, CheckCircle, Database, Loader2, Filter, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '../../services/api';
-import Pagination from '../common/Pagination';
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 20;
 
 // ── Memoized individual alert row ─────────────────────────────────────────────
 const AlertRow = memo(({ alertItem, index, isThisResolving, bulkLoading, onResolve }) => {
@@ -154,8 +153,15 @@ const AlertRow = memo(({ alertItem, index, isThisResolving, bulkLoading, onResol
 AlertRow.displayName = 'AlertRow';
 
 // ── Main component ────────────────────────────────────────────────────────────
-const AlertManagement = ({ showNotifications, setShowNotifications, alerts, loadAlerts, alertsCurrentPage = 0, alertsTotalPages = 1 }) => {
-
+const AlertManagement = ({
+  showNotifications,
+  setShowNotifications,
+  alerts,
+  loadAlerts,
+  alertsCurrentPage = 0,
+  alertsTotalPages = 1,
+  alertsTotalElements = 0,
+}) => {
   const [activeTab, setActiveTab] = useState('active');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSeverity, setFilterSeverity] = useState('all');
@@ -164,13 +170,9 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
   const [filterCompany, setFilterCompany] = useState('all');
   const [loadingAlertIds, setLoadingAlertIds] = useState(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(false);
   const [toast, setToast] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const hasMorePages = alertsCurrentPage + 1 < alertsTotalPages;
-  const resetPage = useCallback(() => setCurrentPage(1), []);
 
-  // ── Dropdown options derived from the alerts data ─────────────────────────
-  // Branch: built from the actual branch objects attached to alerts
   const branchOptions = useMemo(() => {
     const map = new Map();
     alerts.forEach(a => {
@@ -179,8 +181,6 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
     return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1]));
   }, [alerts]);
 
-  // Company: extracted from the message text your backend writes
-  // e.g. "Company: Acme Corp" or "companies 'Acme Corp'"
   const companyOptions = useMemo(() => {
     const set = new Set();
     alerts.forEach(a => {
@@ -195,9 +195,8 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
     setTimeout(() => setToast(null), 3500);
   }, []);
 
-  const handleTabChange = useCallback((tab) => { setActiveTab(tab); resetPage(); }, [resetPage]);
+  const handleTabChange = useCallback((tab) => { setActiveTab(tab); }, []);
 
-  // ── Active filter count (for the clear-button badge) ─────────────────────
   const activeFilterCount = [
     searchQuery,
     filterSeverity !== 'all' ? filterSeverity : '',
@@ -212,16 +211,12 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
     setFilterType('all');
     setFilterBranch('all');
     setFilterCompany('all');
-    resetPage();
-  }, [resetPage]);
+  }, []);
 
-  // ── Filtered list ─────────────────────────────────────────────────────────
   const filteredAlerts = useMemo(() => {
     let result = alerts;
-
     if (activeTab === 'active') result = result.filter(a => !a.isResolved);
     if (activeTab === 'resolved') result = result.filter(a => a.isResolved);
-
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(a =>
@@ -233,70 +228,70 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
         a.alertType?.toLowerCase().includes(q)
       );
     }
-
-    if (filterSeverity !== 'all')
-      result = result.filter(a => a.severity === filterSeverity);
-
-    if (filterType !== 'all')
-      result = result.filter(a => a.alertType === filterType);
-
-    // Branch: match by branch id
-    if (filterBranch !== 'all')
-      result = result.filter(a => String(a.branch?.id) === filterBranch);
-
-    // Company: match company name substring inside the message text
+    if (filterSeverity !== 'all') result = result.filter(a => a.severity === filterSeverity);
+    if (filterType !== 'all') result = result.filter(a => a.alertType === filterType);
+    if (filterBranch !== 'all') result = result.filter(a => String(a.branch?.id) === filterBranch);
     if (filterCompany !== 'all') {
       const cLower = filterCompany.toLowerCase();
       result = result.filter(a => a.message?.toLowerCase().includes(cLower));
     }
-
     return result;
   }, [alerts, activeTab, searchQuery, filterSeverity, filterType, filterBranch, filterCompany]);
 
-  // ── Pagination ────────────────────────────────────────────────────────────
-  const totalPages = Math.max(1, Math.ceil(filteredAlerts.length / PAGE_SIZE));
-  const safePage = Math.min(currentPage, totalPages);
-  const showingStart = filteredAlerts.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
-  const showingEnd = Math.min(safePage * PAGE_SIZE, filteredAlerts.length);
-
-  const pageAlerts = useMemo(() => {
-    const start = (safePage - 1) * PAGE_SIZE;
-    return filteredAlerts.slice(start, start + PAGE_SIZE);
-  }, [filteredAlerts, safePage]);
-
-  // ── Derived counts ────────────────────────────────────────────────────────
   const activeCount = useMemo(() => alerts.filter(a => !a.isResolved).length, [alerts]);
   const resolvedCount = useMemo(() => alerts.filter(a => a.isResolved).length, [alerts]);
 
-  // ── Action handlers ───────────────────────────────────────────────────────
+  const goToPage = useCallback(async (page) => {
+    if (page < 0 || page >= alertsTotalPages || pageLoading) return;
+    setPageLoading(true);
+    try { await loadAlerts(page); }
+    finally { setPageLoading(false); }
+  }, [alertsTotalPages, loadAlerts, pageLoading]);
+
+  const pageButtons = useMemo(() => {
+    if (alertsTotalPages <= 1) return [];
+    const pages = [];
+    const current = alertsCurrentPage;
+    const total = alertsTotalPages;
+    const toShow = new Set(
+      [0, total - 1, current, current - 1, current + 1].filter(p => p >= 0 && p < total)
+    );
+    const sorted = [...toShow].sort((a, b) => a - b);
+    sorted.forEach((page, i) => {
+      if (i > 0 && page - sorted[i - 1] > 1) pages.push('...');
+      pages.push(page);
+    });
+    return pages;
+  }, [alertsCurrentPage, alertsTotalPages]);
+
   const handleResolveOne = useCallback(async (alertItem) => {
     setLoadingAlertIds(prev => new Set(prev).add(alertItem.id));
     try {
       const response = await api.put(`/alerts/${alertItem.id}/resolve`, {
         resolvedBy: 'admin', notes: 'Resolved manually'
       });
-      if (response.success) { await loadAlerts(0); showToast('Alert resolved successfully'); }
+      if (response.success) { await loadAlerts(alertsCurrentPage); showToast('Alert resolved successfully'); }
       else showToast('Failed to resolve alert', 'error');
     } catch (err) {
       showToast('Failed to resolve alert: ' + err.message, 'error');
     } finally {
       setLoadingAlertIds(prev => { const n = new Set(prev); n.delete(alertItem.id); return n; });
     }
-  }, [loadAlerts, showToast]);
+  }, [loadAlerts, showToast, alertsCurrentPage]);
 
   const handleResolveAll = useCallback(async () => {
-    if (!window.confirm(`Resolve all ${activeCount} active alerts?`)) return;
+    if (!window.confirm(`Resolve all active alerts?`)) return;
     setBulkLoading(true);
     try {
       const response = await api.put('/alerts/resolve-all', {
         resolvedBy: 'admin', notes: 'Resolved all via dashboard'
       });
-      if (response.success) { await loadAlerts(0); showToast(`Resolved ${activeCount} alerts successfully`); }
+      if (response.success) { await loadAlerts(0); showToast('All active alerts resolved'); }
       else showToast('Failed to resolve all alerts', 'error');
     } catch (err) {
       showToast('Failed to resolve alerts: ' + err.message, 'error');
     } finally { setBulkLoading(false); }
-  }, [activeCount, loadAlerts, showToast]);
+  }, [loadAlerts, showToast]);
 
   const handleDownloadAndClear = useCallback(async () => {
     setBulkLoading(true);
@@ -311,7 +306,7 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
         document.body.appendChild(a); a.click();
         window.URL.revokeObjectURL(url); document.body.removeChild(a);
         const del = await api.delete('/alerts/resolved');
-        if (del.success) { await loadAlerts(0); showToast(`Downloaded and cleared ${del.data || 0} resolved alerts`); }
+        if (del.success) { await loadAlerts(0); showToast(`Downloaded and cleared resolved alerts`); }
       }
     } catch (err) {
       showToast('Failed to process resolved alerts: ' + err.message, 'error');
@@ -319,15 +314,15 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
   }, [loadAlerts, showToast]);
 
   const handleDeleteAllResolved = useCallback(async () => {
-    if (!window.confirm(`Delete all ${resolvedCount} resolved alerts?`)) return;
+    if (!window.confirm(`Delete all resolved alerts?`)) return;
     setBulkLoading(true);
     try {
       const response = await api.delete('/alerts/resolved');
-      if (response.success) { await loadAlerts(0); showToast(`Deleted ${resolvedCount} resolved alerts`); }
+      if (response.success) { await loadAlerts(0); showToast('Deleted resolved alerts'); }
     } catch (err) {
       showToast('Failed to delete resolved alerts: ' + err.message, 'error');
     } finally { setBulkLoading(false); }
-  }, [resolvedCount, loadAlerts, showToast]);
+  }, [loadAlerts, showToast]);
 
   if (!showNotifications) return null;
 
@@ -349,14 +344,18 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
       />
 
       {/* Modal */}
-      <div className="fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-6xl bg-white rounded-2xl shadow-2xl z-50 border border-gray-200 overflow-hidden flex flex-col"
-        style={{ height: 'min(90vh, 900px)', minHeight: '500px' }}>
-
-        {bulkLoading && (
+      <div
+        className="fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-6xl bg-white rounded-2xl shadow-2xl z-50 border border-gray-200 overflow-hidden flex flex-col"
+        style={{ height: 'min(90vh, 900px)', minHeight: '500px' }}
+      >
+        {/* Loading overlay */}
+        {(bulkLoading || pageLoading) && (
           <div className="absolute inset-0 bg-white/80 z-10 flex flex-col items-center justify-center gap-3 rounded-2xl">
             <Loader2 className="animate-spin text-blue-600" size={40} />
-            <p className="text-gray-700 font-medium text-lg">Processing alerts...</p>
-            <p className="text-gray-500 text-sm">Please wait, do not close this window</p>
+            <p className="text-gray-700 font-medium text-lg">
+              {pageLoading ? 'Loading page...' : 'Processing alerts...'}
+            </p>
+            {!pageLoading && <p className="text-gray-500 text-sm">Please wait, do not close this window</p>}
           </div>
         )}
 
@@ -368,16 +367,11 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
               <div>
                 <h3 className="text-2xl font-bold text-gray-900">Alert Management</h3>
                 <p className="text-sm text-gray-600 mt-1">
-                  {alerts.length === 0
+                  {alertsTotalElements === 0
                     ? 'No alerts at the moment'
-                    : `${activeCount} active, ${resolvedCount} resolved alerts`}
+                    : `${alertsTotalElements} total · page ${alertsCurrentPage + 1} of ${alertsTotalPages}`}
                 </p>
               </div>
-              {activeCount > 0 && (
-                <span className="bg-red-600 text-white text-sm font-semibold rounded-full px-3 py-1">
-                  {activeCount} active
-                </span>
-              )}
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -407,19 +401,19 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
             </div>
           </div>
 
-          {/* ── Filter row 1: keyword search + severity + type ─────────── */}
+          {/* Filters */}
           <div className="flex flex-col gap-2 mt-2">
             <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 placeholder="Search by title, message, product…"
                 value={searchQuery}
-                onChange={e => { setSearchQuery(e.target.value); resetPage(); }}
+                onChange={e => setSearchQuery(e.target.value)}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
               />
               <select
                 value={filterSeverity}
-                onChange={e => { setFilterSeverity(e.target.value); resetPage(); }}
+                onChange={e => setFilterSeverity(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
               >
                 <option value="all">All Severities</option>
@@ -430,7 +424,7 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
               </select>
               <select
                 value={filterType}
-                onChange={e => { setFilterType(e.target.value); resetPage(); }}
+                onChange={e => setFilterType(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
               >
                 <option value="all">All Types</option>
@@ -446,11 +440,10 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
               </select>
             </div>
 
-            {/* ── Filter row 2: branch + company + clear button ──────────── */}
             <div className="flex flex-col sm:flex-row gap-2 items-center">
               <select
                 value={filterBranch}
-                onChange={e => { setFilterBranch(e.target.value); resetPage(); }}
+                onChange={e => setFilterBranch(e.target.value)}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
               >
                 <option value="all">All Branches</option>
@@ -461,7 +454,7 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
 
               <select
                 value={filterCompany}
-                onChange={e => { setFilterCompany(e.target.value); resetPage(); }}
+                onChange={e => setFilterCompany(e.target.value)}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
               >
                 <option value="all">All Companies</option>
@@ -470,7 +463,6 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
                 ))}
               </select>
 
-              {/* Clear button — only visible when at least one filter is active */}
               {activeFilterCount > 0 && (
                 <button
                   onClick={clearAllFilters}
@@ -493,19 +485,19 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
             className={`px-6 py-3 font-medium text-sm transition-colors ${activeTab === 'active' ? 'bg-white border-t border-l border-r border-gray-200 text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
             onClick={() => handleTabChange('active')}
           >
-            Active Alerts ({activeCount})
+            Active Alerts
           </button>
           <button
             className={`px-6 py-3 font-medium text-sm transition-colors ${activeTab === 'resolved' ? 'bg-white border-t border-l border-r border-gray-200 text-green-600' : 'text-gray-600 hover:text-gray-900'}`}
             onClick={() => handleTabChange('resolved')}
           >
-            Resolved ({resolvedCount})
+            Resolved
           </button>
         </div>
 
         {/* ── Alert list ─────────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto">
-          {alerts.length === 0 && activeTab === 'active' ? (
+          {alerts.length === 0 ? (
             <div className="p-6 space-y-4 animate-pulse">
               {[...Array(5)].map((_, i) => (
                 <div key={i} className="flex gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
@@ -525,103 +517,101 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
                   <Filter className="text-gray-400 mb-4" size={80} />
                   <p className="text-2xl font-semibold text-gray-700">No alerts match your filters</p>
                   <p className="text-gray-500 text-lg mt-2">Try adjusting or clearing your filters</p>
-                  <button
-                    onClick={clearAllFilters}
-                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
+                  <button onClick={clearAllFilters} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     Clear all filters
                   </button>
                 </>
               ) : activeTab === 'active' ? (
                 <>
                   <CheckCircle className="text-green-500 mb-4" size={80} />
-                  <p className="text-2xl font-semibold text-gray-700">No Active Alerts</p>
-                  <p className="text-gray-500 text-lg mt-2">All alerts have been addressed</p>
-                  {resolvedCount > 0 && (
-                    <button onClick={() => handleTabChange('resolved')} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                      View {resolvedCount} Resolved Alerts
-                    </button>
-                  )}
+                  <p className="text-2xl font-semibold text-gray-700">No Active Alerts on This Page</p>
+                  <p className="text-gray-500 text-lg mt-2">All alerts on this page are resolved</p>
                 </>
               ) : (
                 <>
                   <Database className="text-blue-500 mb-4" size={80} />
-                  <p className="text-2xl font-semibold text-gray-700">No Resolved Alerts</p>
-                  <p className="text-gray-500 text-lg mt-2">No alerts have been resolved yet</p>
-                  {activeCount > 0 && (
-                    <button onClick={() => handleTabChange('active')} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                      View {activeCount} Active Alerts
-                    </button>
-                  )}
+                  <p className="text-2xl font-semibold text-gray-700">No Resolved Alerts on This Page</p>
+                  <p className="text-gray-500 text-lg mt-2">No resolved alerts on this page</p>
                 </>
               )}
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {pageAlerts.map((alertItem, index) => (
+              {filteredAlerts.map((alertItem, index) => (
                 <AlertRow
                   key={alertItem.id ?? index}
                   alertItem={alertItem}
-                  index={(safePage - 1) * PAGE_SIZE + index}
+                  index={alertsCurrentPage * PAGE_SIZE + index}
                   isThisResolving={loadingAlertIds.has(alertItem.id)}
                   bulkLoading={bulkLoading}
                   onResolve={handleResolveOne}
                 />
               ))}
-              {hasMorePages && safePage === totalPages && (
-                <div className="p-4 text-center border-t border-gray-100">
-                  <button
-                    onClick={() => loadAlerts(alertsCurrentPage + 1)}
-                    disabled={bulkLoading}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors disabled:opacity-50"
-                  >
-                    Load More Alerts
-                  </button>
-                </div>
-              )}
             </div>
           )}
         </div>
 
-        {/* ── Your existing Pagination component ─────────────────────────── */}
-        {filteredAlerts.length > 0 && (
-          <Pagination
-            currentPage={safePage}
-            totalPages={totalPages}
-            onPageChange={page => setCurrentPage(page)}
-            onNextPage={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
-            onPrevPage={() => setCurrentPage(p => Math.max(p - 1, 1))}
-            showingStart={showingStart}
-            showingEnd={showingEnd}
-            totalItems={filteredAlerts.length}
-          />
+        {/* ── Pagination ─────────────────────────────────────────────────── */}
+        {alertsTotalPages > 1 && (
+          <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 flex-shrink-0 flex items-center justify-between gap-2">
+            <span className="text-xs text-gray-500 whitespace-nowrap">
+              {alertsCurrentPage * PAGE_SIZE + 1}–{Math.min((alertsCurrentPage + 1) * PAGE_SIZE, alertsTotalElements)} of {alertsTotalElements}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => goToPage(alertsCurrentPage - 1)}
+                disabled={alertsCurrentPage === 0 || pageLoading}
+                className="p-1.5 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              {pageButtons.map((item, i) =>
+                item === '...'
+                  ? <span key={`ellipsis-${i}`} className="px-1 text-gray-400 text-sm">…</span>
+                  : (
+                    <button
+                      key={item}
+                      onClick={() => goToPage(item)}
+                      disabled={pageLoading}
+                      className={`min-w-[32px] h-8 px-2 rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed
+                        ${item === alertsCurrentPage ? 'bg-blue-600 text-white' : 'hover:bg-gray-200 text-gray-700'}`}
+                    >
+                      {item + 1}
+                    </button>
+                  )
+              )}
+              <button
+                onClick={() => goToPage(alertsCurrentPage + 1)}
+                disabled={alertsCurrentPage >= alertsTotalPages - 1 || pageLoading}
+                className="p-1.5 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
         )}
 
         {/* ── Footer ─────────────────────────────────────────────────────── */}
         <div className="p-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-600">
-              {alerts.length === 0
-                ? 'No alerts in the system'
-                : `${activeCount} active, ${resolvedCount} resolved alerts`}
+              {alertsTotalElements === 0 ? 'No alerts in the system' : `${alertsTotalElements} total alerts`}
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => loadAlerts(0)}
+                onClick={() => loadAlerts(alertsCurrentPage)}
                 disabled={bulkLoading}
                 className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm disabled:opacity-50"
               >
                 <RefreshCw size={16} /> Refresh
               </button>
-              {resolvedCount > 0 && (
-                <button
-                  onClick={handleDeleteAllResolved}
-                  disabled={bulkLoading}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Trash2 size={16} /> Delete All Resolved
-                </button>
-              )}
+              <button
+                onClick={handleDeleteAllResolved}
+                disabled={bulkLoading}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Trash2 size={16} /> Delete All Resolved
+              </button>
             </div>
           </div>
         </div>

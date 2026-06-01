@@ -47,6 +47,7 @@ const Dashboard = () => {
     salesVelocity: 0,
   });
 
+  const [alertsTotalElements, setAlertsTotalElements] = useState(0);
   const navigate = useNavigate();
   const [sales, setSales] = useState([]);
   const [companies, setCompanies] = useState([]);
@@ -222,14 +223,12 @@ const Dashboard = () => {
       if (alertsRes.success && alertsRes.data) {
         const newAlerts = alertsRes.data?.content || alertsRes.data || [];
         const totalPages = alertsRes.data?.totalPages || 1;
-        if (page === 0) {
-          setAlerts(newAlerts);
-        } else {
-          setAlerts(prev => [...prev, ...newAlerts]);
-        }
+        const totalElements = alertsRes.data?.totalElements || 0;
+
+        setAlerts(newAlerts);
         setAlertsTotalPages(totalPages);
         setAlertsCurrentPage(page);
-      } else {
+        setAlertsTotalElements(totalElements);
         setAlerts([]);
       }
     } catch (err) {
@@ -1380,6 +1379,7 @@ const Dashboard = () => {
           loadAlerts={loadAlerts}
           alertsCurrentPage={alertsCurrentPage}
           alertsTotalPages={alertsTotalPages}
+          alertsTotalElements={alertsTotalElements}
         />
       </div>
     </>
