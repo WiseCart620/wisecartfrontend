@@ -1247,12 +1247,18 @@ const SalesManagement = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2 border-t border-gray-100">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Filter by Product / UPC / SKU (multiple)
+                  Filter by Product / UPC / SKU
                 </label>
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <VariationSearchableDropdown
-                      options={allProductOptions}
+                      options={allProductOptions.map(o => {
+                        const isSelected = filterData.productFilters.some(pf =>
+                          pf.productId === o.parentProductId &&
+                          (pf.variationId ?? null) === (o.variationId ?? null)
+                        );
+                        return { ...o, isAlreadySelected: isSelected };
+                      })}
                       value=""
                       onChange={(value) => {
                         if (!value) return;
@@ -1282,9 +1288,9 @@ const SalesManagement = () => {
                   </div>
                 </div>
                 {filterData.productFilters.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
+                  <div className="flex flex-wrap gap-1.5 mt-2">
                     {filterData.productFilters.map((pf, idx) => (
-                      <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium leading-none">
+                      <span key={idx} className="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
                         <span className="leading-none">{pf.label}</span>
                         <button
                           type="button"
@@ -1295,9 +1301,9 @@ const SalesManagement = () => {
                             }));
                             setCurrentPage(1);
                           }}
-                          className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full hover:bg-blue-300 hover:text-red-600 transition-colors flex-shrink-0"
+                          className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-200 hover:bg-red-200 hover:text-red-700 transition-colors flex-shrink-0"
                         >
-                          <X size={8} />
+                          <X size={9} strokeWidth={2.5} />
                         </button>
                       </span>
                     ))}
