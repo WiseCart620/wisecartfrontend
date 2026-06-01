@@ -234,7 +234,7 @@ const SalesManagement = () => {
     try {
       const params = new URLSearchParams({
         page: page,
-        size: 20,
+        size: 10,
         ...(filterData.companyId && { companyId: filterData.companyId }),
         ...(filterData.branchId && { branchId: filterData.branchId }),
         ...(statusFilter !== 'ALL' && { status: statusFilter }),
@@ -1380,7 +1380,7 @@ const SalesManagement = () => {
                   currentSales.map((sale) => (
                     <tr key={sale.id} className="hover:bg-gray-50 transition">
                       <td className="px-3 py-3 whitespace-nowrap text-center text-xs text-gray-400 font-medium">
-                        {((currentPage - 1) * 20) + currentSales.indexOf(sale) + 1}
+                        {((currentPage - 1) * 10) + currentSales.indexOf(sale) + 1}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap">
                         <div>
@@ -1511,8 +1511,8 @@ const SalesManagement = () => {
                   fetchSales(newPage - 1);
                 }
               }}
-              showingStart={((currentPage - 1) * 20) + 1}
-              showingEnd={Math.min(currentPage * 20, totalElements)}
+              showingStart={((currentPage - 1) * 10) + 1}
+              showingEnd={Math.min(currentPage * 10, totalElements)}
               totalItems={totalElements}
             />
           )}
