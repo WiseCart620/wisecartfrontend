@@ -84,22 +84,23 @@ const Dashboard = () => {
   const [performanceView, setPerformanceView] = useState('year');
   const [performanceMonth, setPerformanceMonth] = useState(new Date().getMonth() + 1);
 
+
   useEffect(() => {
     loadStats();
     loadAlerts();
   }, []);
 
   useEffect(() => {
-    if (sales.length > 0) {
-      loadPerformance();
+    if (sales.length > 0 && products.length > 0) {
+      loadPerformance(products);
       generateInsights();
-      const productAnalysis = getProductSalesAnalysis(sales);
+      const productAnalysis = getProductSalesAnalysis(sales, products);
       setProductSalesData(productAnalysis);
       if (productAnalysis.length > 0 && !selectedProductId) {
         setSelectedProductId(productAnalysis[0].id);
       }
     }
-  }, [sales, selectedYear, selectedCompany, selectedBranch, performanceYear, performanceView, performanceMonth, selectedProductId]);
+  }, [sales, products, selectedYear, selectedCompany, selectedBranch, performanceYear, performanceView, performanceMonth]);
 
   const loadStats = async () => {
     try {
@@ -174,7 +175,7 @@ const Dashboard = () => {
         return daysDiff <= 30 && (s.status === 'CONFIRMED' || s.status === 'INVOICED');
       }).length / 30;
 
-      const productAnalysis = getProductSalesAnalysis(salesData);
+      const productAnalysis = getProductSalesAnalysis(salesData, productsData);
       setProductSalesData(productAnalysis);
 
       let topProduct = null;
@@ -286,7 +287,8 @@ const Dashboard = () => {
   const monthlySalesData = getMonthlySalesData();
   const totalAlerts = alerts.length;
 
-  const loadPerformance = () => {
+  const loadPerformance = (productsOverride) => {
+    const productsList = productsOverride || products;
     try {
       const filteredSales = sales.filter(sale => {
         const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING';
@@ -319,7 +321,7 @@ const Dashboard = () => {
               : item.product?.productName || 'Unknown Product';
 
             if (!productPerformance[uniqueKey]) {
-              const fullProduct = products.find(p => p.id === item.product?.id);
+              const fullProduct = productsList.find(p => String(p.id) === String(item.product?.id));
               productPerformance[uniqueKey] = {
                 id: uniqueKey,
                 productId: item.product?.id,
@@ -340,8 +342,7 @@ const Dashboard = () => {
       });
 
       const topProducts = Object.values(productPerformance)
-        .sort((a, b) => b.quantity - a.quantity)
-        .slice(0, 10);
+        .sort((a, b) => b.quantity - a.quantity);
 
       const branchPerformance = {};
       filteredSales.forEach(sale => {
@@ -496,7 +497,7 @@ const Dashboard = () => {
     }
   };
 
-  const getProductSalesAnalysis = (salesOverride) => {
+  const getProductSalesAnalysis = (salesOverride, productsOverride) => {
     const productAnalysis = {};
     const salesSource = salesOverride || sales;
 
@@ -547,7 +548,7 @@ const Dashboard = () => {
         const monthYear = `${month} ${year}`;
 
         if (!productAnalysis[uniqueKey]) {
-          const fullProduct = products.find(p => p.id === productId);
+          const fullProduct = (productsOverride || products).find(p => String(p.id) === String(productId));
           productAnalysis[uniqueKey] = {
             id: uniqueKey,
             productId: productId,
@@ -1075,7 +1076,7 @@ const Dashboard = () => {
                         const [productId, variationIdStr] = uniqueKey.split('_');
                         const variationId = variationIdStr !== 'base' ? variationIdStr : null;
 
-                        const product = products.find(p => p.id == productId);
+                        const product = products.find(p => String(p.id) === String(productId));
                         const productName = product?.productName || 'Unknown Product';
 
                         let variationName = null;
