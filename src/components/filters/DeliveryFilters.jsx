@@ -53,31 +53,14 @@ const DeliveryFilters = ({
     : branchOptions;
 
   const hasActiveFilters = Object.entries(filterData).some(
-    ([k, v]) => v !== '' && v !== null && v !== undefined && !(k === 'status' && v === 'HIDE_CANCELLED')
+    ([k, v]) => {
+      if (k === 'status' && v === 'HIDE_CANCELLED') return false;
+      if (k === 'productFilters') return Array.isArray(v) && v.length > 0;
+      return v !== '' && v !== null && v !== undefined;
+    }
   );
 
-  const selectedProductOptionId = filterData.variationId
-    ? productOptions.find(o => String(o.variationId) === String(filterData.variationId))?.id ?? ''
-    : filterData.productId
-      ? productOptions.find(o => !o.variationId && String(o.parentProductId) === String(filterData.productId))?.id ?? ''
-      : '';
 
-  const handleProductChange = (value) => {
-    if (!value) {
-      onFilterChange({ productId: '', variationId: '', productName: '' });
-      return;
-    }
-    const option = productOptions.find(o => o.id === value);
-    if (option) {
-      onFilterChange({
-        productId: option.parentProductId,
-        variationId: option.variationId,
-        productName: option.subLabel !== 'No variations'
-          ? `${option.fullName} — ${option.subLabel}`
-          : option.fullName,
-      });
-    }
-  };
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-3 lg:p-4 mb-4">
@@ -158,26 +141,61 @@ const DeliveryFilters = ({
           </div>
         </div>
 
-        {/* Row 2 — Product (UPC / SKU) + Date range */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           <div className="lg:col-span-2">
             <label className="block text-xs font-medium text-gray-700 mb-1">
-              Product / UPC / SKU
+              Filter by Product / UPC / SKU (multiple)
             </label>
             <VariationSearchableDropdown
-              options={productOptions}
-              value={selectedProductOptionId}
-              onChange={handleProductChange}
-              placeholder="Search by name, UPC, or SKU..."
+              options={productOptions.filter(o =>
+                !(filterData.productFilters || []).some(pf =>
+                  pf.productId === o.parentProductId &&
+                  (pf.variationId ?? null) === (o.variationId ?? null)
+                )
+              )}
+              value=""
+              onChange={(value) => {
+                if (!value) return;
+                const option = productOptions.find(o => o.id === value);
+                if (!option) return;
+                const alreadyAdded = (filterData.productFilters || []).some(pf =>
+                  pf.productId === option.parentProductId &&
+                  (pf.variationId ?? '') === (option.variationId ?? '')
+                );
+                if (alreadyAdded) return;
+                const label = option.subLabel !== 'No variations'
+                  ? `${option.fullName} — ${option.subLabel}`
+                  : option.fullName;
+                onFilterChange({
+                  productFilters: [...(filterData.productFilters || []), {
+                    productId: option.parentProductId,
+                    variationId: option.variationId ?? null,
+                    label
+                  }]
+                });
+              }}
+              placeholder="Add product filter..."
               hideLocationHint={true}
             />
-            {filterData.productName && (
-              <p className="text-xs text-blue-600 mt-1">
-                Filtering by: {filterData.productName}
-              </p>
+            {(filterData.productFilters || []).length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {filterData.productFilters.map((pf, idx) => (
+                  <span key={idx} className="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                    <span className="leading-none">{pf.label}</span>
+                    <button
+                      type="button"
+                      onClick={() => onFilterChange({
+                        productFilters: filterData.productFilters.filter((_, i) => i !== idx)
+                      })}
+                      className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-200 hover:bg-red-200 hover:text-red-700 transition-colors flex-shrink-0"
+                    >
+                      <X size={9} strokeWidth={2.5} />
+                    </button>
+                  </span>
+                ))}
+              </div>
             )}
           </div>
-
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
             <input

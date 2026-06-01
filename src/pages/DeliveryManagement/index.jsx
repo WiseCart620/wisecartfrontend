@@ -63,6 +63,7 @@ const DeliveryManagement = () => {
     productId: '',
     variationId: '',
     productName: '',
+    productFilters: [],
     startDate: '',
     endDate: '',
     receiptNumber: '',
@@ -74,7 +75,20 @@ const DeliveryManagement = () => {
   }, []);
 
   const filteredDeliveries = sortDeliveriesByStatus(
-    filterDeliveries(deliveries, filterData),
+    (() => {
+      const base = filterDeliveries(deliveries, filterData);
+      if (!filterData.productFilters || filterData.productFilters.length === 0) return base;
+      return base.filter(delivery =>
+        filterData.productFilters.every(pf =>
+          (delivery.items || []).some(item => {
+            const productMatch = (item.product?.id ?? item.productId) === pf.productId;
+            if (!productMatch) return false;
+            if (pf.variationId == null) return true;
+            return (item.variation?.id ?? item.variationId) === pf.variationId;
+          })
+        )
+      );
+    })(),
     sortMode
   );
 
@@ -316,7 +330,7 @@ const DeliveryManagement = () => {
   const handleResetFilter = () => {
     setFilterData({
       companyId: '', branchId: '', warehouseId: '', status: 'HIDE_CANCELLED',
-      productId: '', variationId: '', productName: '',
+      productId: '', variationId: '', productName: '', productFilters: [],
       startDate: '', endDate: '', receiptNumber: '', poNumber: ''
     });
     setCurrentPage(1);
@@ -332,22 +346,20 @@ const DeliveryManagement = () => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 inline-flex overflow-x-auto max-w-full">
             <button
               onClick={() => navigate('/deliveries')}
-              className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-lg transition-all duration-200 font-medium text-sm whitespace-nowrap ${
-                location.pathname === '/deliveries'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+              className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-lg transition-all duration-200 font-medium text-sm whitespace-nowrap ${location.pathname === '/deliveries'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+                }`}
             >
               <ClipboardList size={18} />
               <span>Delivery Management</span>
             </button>
             <button
               onClick={() => navigate('/transmittals')}
-              className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-lg transition-all duration-200 font-medium text-sm whitespace-nowrap ${
-                location.pathname === '/transmittals'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+              className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-lg transition-all duration-200 font-medium text-sm whitespace-nowrap ${location.pathname === '/transmittals'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+                }`}
             >
               <FileText size={18} />
               <span>Transmittal Forms</span>
