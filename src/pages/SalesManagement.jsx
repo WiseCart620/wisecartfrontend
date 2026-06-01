@@ -212,6 +212,23 @@ const SalesManagement = () => {
   });
 
 
+
+
+  const [filterData, setFilterData] = useState({
+    companyId: '',
+    branchId: '',
+    status: '',
+    startMonth: new Date().getMonth() + 1,
+    endMonth: new Date().getMonth() + 1,
+    startYear: new Date().getFullYear(),
+    endYear: new Date().getFullYear(),
+    startDate: '',
+    endDate: '',
+    productId: '',
+    variationId: '',
+    productName: ''
+  });
+
   const fetchSales = useCallback(async (page = 0) => {
     setLoading(true);
     try {
@@ -236,21 +253,6 @@ const SalesManagement = () => {
       setLoading(false);
     }
   }, [filterData.companyId, filterData.branchId, statusFilter, searchTerm]);
-
-  const [filterData, setFilterData] = useState({
-    companyId: '',
-    branchId: '',
-    status: '',
-    startMonth: new Date().getMonth() + 1,
-    endMonth: new Date().getMonth() + 1,
-    startYear: new Date().getFullYear(),
-    endYear: new Date().getFullYear(),
-    startDate: '',
-    endDate: '',
-    productId: '',
-    variationId: '',
-    productName: ''
-  });
 
   const staticDataLoaded = useRef(false);
   const loadData = useCallback(async (background = false) => {
