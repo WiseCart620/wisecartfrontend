@@ -1252,13 +1252,12 @@ const SalesManagement = () => {
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <VariationSearchableDropdown
-                      options={allProductOptions.map(o => {
-                        const isSelected = filterData.productFilters.some(pf =>
+                      options={allProductOptions.filter(o =>
+                        !filterData.productFilters.some(pf =>
                           pf.productId === o.parentProductId &&
                           (pf.variationId ?? null) === (o.variationId ?? null)
-                        );
-                        return { ...o, isAlreadySelected: isSelected };
-                      })}
+                        )
+                      )}
                       value=""
                       onChange={(value) => {
                         if (!value) return;
