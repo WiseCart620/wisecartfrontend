@@ -307,7 +307,7 @@ const Dashboard = () => {
 
       const productPerformance = {};
       filteredSales.forEach(sale => {
-        if (sale.status === 'CONFIRMED' || sale.status === 'INVOICED') {
+        if (sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING') {
           sale.items?.forEach(item => {
             const variationId = item.variation?.id || 'base';
             const uniqueKey = `${item.product?.id}_${variationId}`;
@@ -347,7 +347,7 @@ const Dashboard = () => {
 
       const branchPerformance = {};
       filteredSales.forEach(sale => {
-        if (sale.status === 'CONFIRMED' || sale.status === 'INVOICED') {
+        if (sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING') {
           let hasSelectedProduct = !selectedProductId;
 
           if (selectedProductId) {
@@ -424,7 +424,7 @@ const Dashboard = () => {
 
       const companyPerformance = {};
       filteredSales.forEach(sale => {
-        if (sale.status === 'CONFIRMED' || sale.status === 'INVOICED') {
+        if (sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING') {
           let hasSelectedProduct = !selectedProductId;
 
           if (selectedProductId) {
