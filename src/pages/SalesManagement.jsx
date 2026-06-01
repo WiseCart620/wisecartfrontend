@@ -1014,7 +1014,7 @@ const SalesManagement = () => {
     return dateB - dateA;
   });
 
-  const currentSales = sales;
+  const currentSales = filteredSales;
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const monthsFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
