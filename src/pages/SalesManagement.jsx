@@ -292,6 +292,11 @@ const SalesManagement = () => {
   }, []);
 
   useEffect(() => {
+    fetchSales(0);
+    setCurrentPage(1);
+  }, [filterData.companyId, filterData.branchId, statusFilter, searchTerm, filterData.productFilters]);
+
+  useEffect(() => {
     let es;
     let retryDelay = 5000;
     let retryTimeout;
