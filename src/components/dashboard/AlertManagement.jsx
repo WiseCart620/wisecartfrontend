@@ -154,7 +154,8 @@ const AlertRow = memo(({ alertItem, index, isThisResolving, bulkLoading, onResol
 AlertRow.displayName = 'AlertRow';
 
 // ── Main component ────────────────────────────────────────────────────────────
-const AlertManagement = ({ showNotifications, setShowNotifications, alerts, loadAlerts }) => {
+const AlertManagement = ({ showNotifications, setShowNotifications, alerts, loadAlerts, alertsCurrentPage = 0, alertsTotalPages = 1 }) => {
+
   const [activeTab, setActiveTab] = useState('active');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSeverity, setFilterSeverity] = useState('all');
@@ -165,7 +166,7 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
   const [bulkLoading, setBulkLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-
+  const hasMorePages = alertsCurrentPage + 1 < alertsTotalPages;
   const resetPage = useCallback(() => setCurrentPage(1), []);
 
   // ── Dropdown options derived from the alerts data ─────────────────────────
@@ -567,6 +568,17 @@ const AlertManagement = ({ showNotifications, setShowNotifications, alerts, load
                   onResolve={handleResolveOne}
                 />
               ))}
+              {hasMorePages && safePage === totalPages && (
+                <div className="p-4 text-center border-t border-gray-100">
+                  <button
+                    onClick={() => loadAlerts(alertsCurrentPage + 1)}
+                    disabled={bulkLoading}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors disabled:opacity-50"
+                  >
+                    Load More Alerts
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -21,8 +21,6 @@ import ProductAnalysis from '../../components/dashboard/ProductAnalysis';
 import AlertManagement from '../../components/dashboard/AlertManagement';
 import RecentSales from '../../components/dashboard/RecentSales';
 import StatusDistribution from '../../components/dashboard/StatusDistribution';
-
-// Utils
 import { formatCurrency, formatNumber } from '../../utils/currencyUtils';
 
 const extractArray = (res) => {
@@ -83,6 +81,8 @@ const Dashboard = () => {
   const [performanceYear, setPerformanceYear] = useState(new Date().getFullYear() - 1);
   const [performanceView, setPerformanceView] = useState('year');
   const [performanceMonth, setPerformanceMonth] = useState(new Date().getMonth() + 1);
+  const [alertsCurrentPage, setAlertsCurrentPage] = useState(0);
+  const [alertsTotalPages, setAlertsTotalPages] = useState(1);
 
 
   useEffect(() => {
@@ -106,7 +106,7 @@ const Dashboard = () => {
     try {
       setDashboardLoading(true);
 
-      const salesRes = await api.get('/sales/all-unpaged');
+      const salesRes = await api.get('/sales/dashboard-summary');
       const salesData = extractArray(salesRes);
       setSales(salesData);
 
@@ -216,11 +216,19 @@ const Dashboard = () => {
     }
   };
 
-  const loadAlerts = async () => {
+  const loadAlerts = async (page = 0) => {
     try {
-      const alertsRes = await api.get('/alerts?page=0&size=100&sort=createdAt,desc');
+      const alertsRes = await api.get(`/alerts?page=${page}&size=20&sort=createdAt,desc`);
       if (alertsRes.success && alertsRes.data) {
-        setAlerts(alertsRes.data || []);
+        const newAlerts = alertsRes.data?.content || alertsRes.data || [];
+        const totalPages = alertsRes.data?.totalPages || 1;
+        if (page === 0) {
+          setAlerts(newAlerts);
+        } else {
+          setAlerts(prev => [...prev, ...newAlerts]);
+        }
+        setAlertsTotalPages(totalPages);
+        setAlertsCurrentPage(page);
       } else {
         setAlerts([]);
       }
@@ -1365,12 +1373,13 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Alert Management Modal */}
         <AlertManagement
           showNotifications={showNotifications}
           setShowNotifications={setShowNotifications}
           alerts={alerts}
           loadAlerts={loadAlerts}
+          alertsCurrentPage={alertsCurrentPage}
+          alertsTotalPages={alertsTotalPages}
         />
       </div>
     </>
