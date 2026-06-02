@@ -21,7 +21,10 @@ const formatCurrency = (amount) => {
 
 const formatPHDateTime = (dateString) => {
   if (!dateString) return '';
-  return new Date(dateString).toLocaleString('en-PH', {
+  const normalized = dateString.includes('+') || dateString.endsWith('Z')
+    ? dateString
+    : dateString + '+08:00';
+  return new Date(normalized).toLocaleString('en-PH', {
     timeZone: 'Asia/Manila',
     year: 'numeric',
     month: '2-digit',
