@@ -1007,7 +1007,8 @@ const SalesManagement = () => {
     : branchOptions;
 
 
-  const allProductOptions = useMemo(() => products.flatMap(p => {
+  const allProductOptions = useMemo(() => (products || []).flatMap(p => {
+    if (!p) return [];
     if (p.variations && p.variations.length > 0) {
       return p.variations.map(v => {
         const companySkus = {};
@@ -1055,11 +1056,12 @@ const SalesManagement = () => {
   }), [products]);
 
 
-  const productOptions = useMemo(() => products.flatMap(p => {
+  const productOptions = useMemo(() => (products || []).flatMap(p => {
+    if (!p) return [];
     const hasVariations = p.variations && p.variations.length > 0;
 
     if (hasVariations) {
-      return p.variations.map(v => {
+      return (p.variations || []).map(v => {
         const companyMatch = v.companyPrices?.find(cp => cp.company?.id === branchInfo?.companyId);
         const companyPrice = companyMatch?.price ?? 0;
         const companySku = companyMatch?.companySku ?? null;
@@ -1069,7 +1071,7 @@ const SalesManagement = () => {
 
         const companySkusMap = {};
         if (v.companyPrices) {
-          v.companyPrices.forEach(cp => {
+          (v.companyPrices || []).forEach(cp => {
             if (cp.company?.id != null) {
               companySkusMap[cp.company.id] = cp.companySku ?? '';
             }
@@ -1107,7 +1109,7 @@ const SalesManagement = () => {
 
       const companySkusMap = {};
       if (p.companyBasePrices) {
-        p.companyBasePrices.forEach(cbp => {
+        (p.companyBasePrices || []).forEach(cbp => {
           if (cbp.company?.id != null) {
             companySkusMap[cbp.company.id] = cbp.companySku ?? '';
           }
