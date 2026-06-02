@@ -1934,8 +1934,7 @@ const SalesManagement = () => {
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <h3 className="font-semibold text-gray-700 mb-2">Encoded By</h3>
                     <p className="text-gray-900 text-lg">{selectedSale.createdBy || selectedSale.generatedBy || 'System'}</p>
-                    <p className="text-xs text-gray-500 mt-1">Created: {new Date(selectedSale.createdAt).toLocaleString()}</p>
-                  </div>
+                    <p className="text-xs text-gray-500 mt-1">Created: {new Date(selectedSale.createdAt).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</p>                  </div>
                 </div>
               </div>
 
