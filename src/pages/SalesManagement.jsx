@@ -19,6 +19,23 @@ const formatCurrency = (amount) => {
   });
 };
 
+const formatPHDateTime = (dateString) => {
+  if (!dateString) return '';
+  const normalized = dateString.includes('+') || dateString.endsWith('Z')
+    ? dateString
+    : dateString + '+08:00';
+  return new Date(normalized).toLocaleString('en-PH', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
+  });
+};
+
 
 const formatDate = (dateString) => {
   if (!dateString) return new Date().toLocaleDateString('en-US', {
@@ -1921,29 +1938,14 @@ const SalesManagement = () => {
                     )}
                     {selectedSale.status === 'INVOICED' && selectedSale.invoicedAt && (
                       <p className="text-xs text-gray-500 mt-1">
-                        {new Date(selectedSale.invoicedAt).toLocaleString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
+                        {formatPHDateTime(selectedSale.invoicedAt)}
                       </p>
                     )}
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <h3 className="font-semibold text-gray-700 mb-2">Encoded By</h3>
                     <p className="text-gray-900 text-lg">{selectedSale.createdBy || selectedSale.generatedBy || 'System'}</p>
-                    <p className="text-xs text-gray-500 mt-1">Created: {new Date(selectedSale.createdAt).toLocaleString('en-PH', {
-                      timeZone: 'Asia/Manila',
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      second: '2-digit',
-                      hour12: true
-                    })}</p>
+                    <p className="text-xs text-gray-500 mt-1">Created: {formatPHDateTime(selectedSale.createdAt)}</p>
                   </div>
                 </div>
               </div>
