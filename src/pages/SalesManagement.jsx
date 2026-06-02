@@ -1007,53 +1007,56 @@ const SalesManagement = () => {
     : branchOptions;
 
 
-  const allProductOptions = useMemo(() => (products || []).flatMap(p => {
-    if (!p) return [];
-    if (p.variations && p.variations.length > 0) {
-      return (p.variations || []).filter(Boolean).map(v => {
-        const companySkus = {};
-        if (v.companyPrices) {
-          v.companyPrices.forEach(cp => {
-            if (cp.company?.id != null) {
-              companySkus[cp.company.id] = cp.companySku ?? '';
-            }
+  const allProductOptions = useMemo(() => {
+    try {
+      return (products || []).flatMap(p => {
+        if (!p) return [];
+        if (p.variations && p.variations.length > 0) {
+          return (p.variations || []).filter(Boolean).map(v => {
+            const companySkus = {};
+            (v.companyPrices || []).filter(Boolean).forEach(cp => {
+              if (cp.company?.id != null) {
+                companySkus[cp.company.id] = cp.companySku ?? '';
+              }
+            });
+            return {
+              id: `${p.id}_${v.id}`,
+              parentProductId: p.id,
+              variationId: v.id,
+              name: p.productName,
+              fullName: p.productName,
+              subLabel: v.combinationDisplay || 'Variation',
+              upc: v.upc || '',
+              sku: v.sku || '',
+              isVariation: true,
+              companySkus,
+            };
           });
         }
-        return {
-          id: `${p.id}_${v.id}`,
+        const companySkus = {};
+        (p.companyBasePrices || []).filter(Boolean).forEach(cbp => {
+          if (cbp.company?.id != null) {
+            companySkus[cbp.company.id] = cbp.companySku ?? '';
+          }
+        });
+        return [{
+          id: `prod_${p.id}`,
           parentProductId: p.id,
-          variationId: v.id,
+          variationId: null,
           name: p.productName,
           fullName: p.productName,
-          subLabel: v.combinationDisplay || 'Variation',
-          upc: v.upc || '',
-          sku: v.sku || '',
-          isVariation: true,
+          subLabel: 'No variations',
+          upc: p.upc || '',
+          sku: p.sku || '',
+          isVariation: false,
           companySkus,
-        };
+        }];
       });
+    } catch (e) {
+      console.error('allProductOptions error:', e);
+      return [];
     }
-    const companySkus = {};
-    if (p.companyBasePrices) {
-      p.companyBasePrices.forEach(cbp => {
-        if (cbp.company?.id != null) {
-          companySkus[cbp.company.id] = cbp.companySku ?? '';
-        }
-      });
-    }
-    return [{
-      id: `prod_${p.id}`,
-      parentProductId: p.id,
-      variationId: null,
-      name: p.productName,
-      fullName: p.productName,
-      subLabel: 'No variations',
-      upc: p.upc || '',
-      sku: p.sku || '',
-      isVariation: false,
-      companySkus,
-    }];
-  }), [products]);
+  }, [products]);
 
 
   const productOptions = useMemo(() => (products || []).flatMap(p => {
