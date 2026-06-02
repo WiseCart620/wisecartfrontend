@@ -70,10 +70,12 @@ const makeStockKey = (productId, variationId, branchId) =>
   `${productId}_${variationId ?? 'base'}_${branchId}`;
 
 const extractArray = (res) => {
+  // Always return an array, never undefined or null
+  if (!res) return [];
   if (Array.isArray(res)) return res;
-  if (Array.isArray(res?.data)) return res.data;
-  if (Array.isArray(res?.data?.content)) return res.data.content;
-  if (Array.isArray(res?.content)) return res.content;
+  if (res && Array.isArray(res.data)) return res.data;
+  if (res && res.data && Array.isArray(res.data.content)) return res.data.content;
+  if (res && Array.isArray(res.content)) return res.content;
   return [];
 };
 
@@ -276,6 +278,8 @@ const SalesManagement = () => {
   }, [filterData.companyId, filterData.branchId, statusFilter, searchTerm, filterData.productFilters]);
 
   const staticDataLoaded = useRef(false);
+
+
   const loadData = useCallback(async (background = false) => {
     if (!background) setLoading(true);
 
@@ -284,22 +288,46 @@ const SalesManagement = () => {
     if (!staticDataLoaded.current) {
       staticDataLoaded.current = true;
 
-      const results = await Promise.all([
-        api.get('/branches').catch(() => ({ success: false, data: [] })),
-        api.get('/companies').catch(() => ({ success: false, data: [] })),
-        api.get('/products').catch(() => ({ success: false, data: [] })),
-        api.get('/inventories').catch(() => ({ success: false, data: [] })),
-        api.get('/warehouse').catch(() => ({ success: false, data: [] })),
-        api.get('/stocks/warehouses').catch(() => ({ success: false, data: [] })),
-        api.get('/inventories/products/summary').catch(() => ({ success: false, data: [] }))
-      ]);
+      try {
+        const results = await Promise.all([
+          api.get('/branches').catch(() => ({ success: false, data: [] })),
+          api.get('/companies').catch(() => ({ success: false, data: [] })),
+          api.get('/products').catch(() => ({ success: false, data: [] })),
+          api.get('/inventories').catch(() => ({ success: false, data: [] })),
+          api.get('/warehouse').catch(() => ({ success: false, data: [] })),
+          api.get('/stocks/warehouses').catch(() => ({ success: false, data: [] })),
+          api.get('/inventories/products/summary').catch(() => ({ success: false, data: [] }))
+        ]);
 
-      setBranches(extractArray(results[0]));
-      setCompanies(extractArray(results[1]));
-      setProducts(extractArray(results[2]));
-      setWarehouses(extractArray(results[4]));
-      setWarehouseStocks(extractArray(results[5]));
-      setProductSummaries(extractArray(results[6]));
+        // Extract data, ensuring we always get arrays
+        const branchesData = extractArray(results[0]);
+        const companiesData = extractArray(results[1]);
+        const productsData = extractArray(results[2]);
+        const inventoriesData = extractArray(results[3]);
+        const warehousesData = extractArray(results[4]);
+        const warehouseStocksData = extractArray(results[5]);
+        const productSummariesData = extractArray(results[6]);
+
+        // Always set to arrays, never undefined
+        setBranches(Array.isArray(branchesData) ? branchesData : []);
+        setCompanies(Array.isArray(companiesData) ? companiesData : []);
+        setProducts(Array.isArray(productsData) ? productsData : []);
+        setInventories(Array.isArray(inventoriesData) ? inventoriesData : []);
+        setWarehouses(Array.isArray(warehousesData) ? warehousesData : []);
+        setWarehouseStocks(Array.isArray(warehouseStocksData) ? warehouseStocksData : []);
+        setProductSummaries(Array.isArray(productSummariesData) ? productSummariesData : []);
+
+      } catch (error) {
+        console.error('Error loading static data:', error);
+        // Set empty arrays on error to prevent crashes
+        setBranches([]);
+        setCompanies([]);
+        setProducts([]);
+        setInventories([]);
+        setWarehouses([]);
+        setWarehouseStocks([]);
+        setProductSummaries([]);
+      }
     }
 
     setLoading(false);
