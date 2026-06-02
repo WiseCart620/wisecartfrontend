@@ -334,7 +334,13 @@ const SalesManagement = () => {
     setLoading(false);
   }, [currentPage, filterData, statusFilter, searchTerm]);
 
+  useEffect(() => {
+    if (currentPage > 0) {
+      fetchSales(currentPage - 1);
+    }
+  }, [currentPage]);
 
+  
   useEffect(() => {
     loadData();
   }, []);
