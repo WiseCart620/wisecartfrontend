@@ -345,6 +345,10 @@ const SalesManagement = () => {
   }, [filterData.companyId, filterData.branchId, statusFilter, searchTerm, JSON.stringify(filterData.productFilters)]);
 
   useEffect(() => {
+    fetchSales(currentPage - 1);
+  }, [currentPage]);
+
+  useEffect(() => {
     let es;
     let retryDelay = 5000;
     let retryTimeout;
