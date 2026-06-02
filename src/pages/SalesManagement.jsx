@@ -364,7 +364,7 @@ const SalesManagement = () => {
         invalidateSalesCache();
         if (sseRefreshTimer) clearTimeout(sseRefreshTimer);
         sseRefreshTimer = setTimeout(() => {
-          fetchSales().then(data => setSales(data)).catch(() => { });
+          fetchSales(currentPage - 1);
         }, 800);
       });
 
