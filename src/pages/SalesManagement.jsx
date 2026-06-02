@@ -70,12 +70,12 @@ const makeStockKey = (productId, variationId, branchId) =>
   `${productId}_${variationId ?? 'base'}_${branchId}`;
 
 const extractArray = (res) => {
-  // Always return an array, never undefined or null
   if (!res) return [];
   if (Array.isArray(res)) return res;
   if (res && Array.isArray(res.data)) return res.data;
   if (res && res.data && Array.isArray(res.data.content)) return res.data.content;
   if (res && Array.isArray(res.content)) return res.content;
+  // If we got here, return empty array
   return [];
 };
 
@@ -303,6 +303,7 @@ const SalesManagement = () => {
         const branchesData = extractArray(results[0]);
         const companiesData = extractArray(results[1]);
         const productsData = extractArray(results[2]);
+        console.log('Products data:', productsData);
         const inventoriesData = extractArray(results[3]);
         const warehousesData = extractArray(results[4]);
         const warehouseStocksData = extractArray(results[5]);
@@ -1029,42 +1030,46 @@ const SalesManagement = () => {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const monthsFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-  const branchOptions = branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
-  const companyOptions = companies.map(c => ({
+  const branchOptions = Array.isArray(branches) ? branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` })) : [];
+  const companyOptions = Array.isArray(companies) ? companies.map(c => ({
     id: c.id,
     name: c.companyName || c.name
-  }));
+  })) : [];
 
-  const filteredBranchOptions = filterData.companyId
+  const filteredBranchOptions = filterData.companyId && Array.isArray(branches)
     ? branches
       .filter(b => b.company?.id === filterData.companyId)
       .map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }))
     : branchOptions;
 
 
+
   const allProductOptions = useMemo(() => {
     try {
-      // Guard clause - check if products exists and is an array
-      if (!products || !Array.isArray(products)) {
+      // Ultimate safety check - ensure products is an array
+      if (!products || !Array.isArray(products) || products.length === undefined) {
+        console.warn('allProductOptions: products is not a valid array', products);
         return [];
       }
 
-      return (products || []).flatMap(p => {
+      return products.flatMap(p => {
         if (!p) return [];
-        if (p.variations && p.variations.length > 0) {
-          return (p.variations || []).filter(Boolean).map(v => {
+        if (p.variations && Array.isArray(p.variations) && p.variations.length > 0) {
+          return p.variations.filter(Boolean).map(v => {
             const companySkus = {};
-            (v.companyPrices || []).filter(Boolean).forEach(cp => {
-              if (cp.company?.id != null) {
-                companySkus[cp.company.id] = cp.companySku ?? '';
-              }
-            });
+            if (v.companyPrices && Array.isArray(v.companyPrices)) {
+              v.companyPrices.filter(Boolean).forEach(cp => {
+                if (cp?.company?.id != null) {
+                  companySkus[cp.company.id] = cp.companySku ?? '';
+                }
+              });
+            }
             return {
               id: `${p.id}_${v.id}`,
               parentProductId: p.id,
               variationId: v.id,
-              name: p.productName,
-              fullName: p.productName,
+              name: p.productName || '',
+              fullName: p.productName || '',
               subLabel: v.combinationDisplay || 'Variation',
               upc: v.upc || '',
               sku: v.sku || '',
@@ -1074,17 +1079,19 @@ const SalesManagement = () => {
           });
         }
         const companySkus = {};
-        (p.companyBasePrices || []).filter(Boolean).forEach(cbp => {
-          if (cbp.company?.id != null) {
-            companySkus[cbp.company.id] = cbp.companySku ?? '';
-          }
-        });
+        if (p.companyBasePrices && Array.isArray(p.companyBasePrices)) {
+          p.companyBasePrices.filter(Boolean).forEach(cbp => {
+            if (cbp?.company?.id != null) {
+              companySkus[cbp.company.id] = cbp.companySku ?? '';
+            }
+          });
+        }
         return [{
           id: `prod_${p.id}`,
           parentProductId: p.id,
           variationId: null,
-          name: p.productName,
-          fullName: p.productName,
+          name: p.productName || '',
+          fullName: p.productName || '',
           subLabel: 'No variations',
           upc: p.upc || '',
           sku: p.sku || '',
@@ -1098,20 +1105,20 @@ const SalesManagement = () => {
     }
   }, [products]);
 
-
   const productOptions = useMemo(() => {
-    // Add this guard clause at the beginning
-    if (!products || !Array.isArray(products)) {
+    // Ultimate safety check at the beginning
+    if (!products || !Array.isArray(products) || products.length === undefined) {
+      console.warn('productOptions: products is not a valid array', products);
       return [];
     }
 
-    return (products || []).flatMap(p => {
+    return products.flatMap(p => {
       if (!p) return [];
-      const hasVariations = p.variations && p.variations.length > 0;
+      const hasVariations = p.variations && Array.isArray(p.variations) && p.variations.length > 0;
 
       if (hasVariations) {
-        return (p.variations || []).filter(Boolean).map(v => {
-          const companyMatch = v.companyPrices?.find(cp => cp.company?.id === branchInfo?.companyId);
+        return p.variations.filter(Boolean).map(v => {
+          const companyMatch = v.companyPrices?.find(cp => cp?.company?.id === branchInfo?.companyId);
           const companyPrice = companyMatch?.price ?? 0;
           const companySku = companyMatch?.companySku ?? null;
 
@@ -1119,9 +1126,9 @@ const SalesManagement = () => {
             (v.variationType && v.variationValue ? `${v.variationType}: ${v.variationValue}` : 'Variation');
 
           const companySkusMap = {};
-          if (v.companyPrices) {
-            (v.companyPrices || []).forEach(cp => {
-              if (cp.company?.id != null) {
+          if (v.companyPrices && Array.isArray(v.companyPrices)) {
+            v.companyPrices.forEach(cp => {
+              if (cp?.company?.id != null) {
                 companySkusMap[cp.company.id] = cp.companySku ?? '';
               }
             });
@@ -1131,11 +1138,11 @@ const SalesManagement = () => {
             id: `${p.id}_${v.id}`,
             parentProductId: p.id,
             variationId: v.id,
-            name: `${p.productName}`,
+            name: p.productName || '',
             subLabel: variationLabel,
-            fullName: p.productName,
-            upc: v.upc,
-            sku: v.sku,
+            fullName: p.productName || '',
+            upc: v.upc || '',
+            sku: v.sku || '',
             price: companyPrice,
             companySku: companySku,
             companySkus: companySkusMap,
@@ -1146,19 +1153,19 @@ const SalesManagement = () => {
         });
       } else {
         const companyBaseMatch = p.companyBasePrices?.find(
-          cbp => cbp.company?.id === branchInfo?.companyId
+          cbp => cbp?.company?.id === branchInfo?.companyId
         );
         const companyBasePrice =
           companyBaseMatch?.basePrice ??
-          productPrices[String(p.id)] ??
-          productPrices[p.id] ??
+          productPrices?.[String(p.id)] ??
+          productPrices?.[p.id] ??
           0;
         const companySku = companyBaseMatch?.companySku ?? null;
 
         const companySkusMap = {};
-        if (p.companyBasePrices) {
-          (p.companyBasePrices || []).forEach(cbp => {
-            if (cbp.company?.id != null) {
+        if (p.companyBasePrices && Array.isArray(p.companyBasePrices)) {
+          p.companyBasePrices.forEach(cbp => {
+            if (cbp?.company?.id != null) {
               companySkusMap[cbp.company.id] = cbp.companySku ?? '';
             }
           });
@@ -1168,11 +1175,11 @@ const SalesManagement = () => {
           id: `prod_${p.id}`,
           parentProductId: p.id,
           variationId: null,
-          name: `${p.productName}`,
+          name: p.productName || '',
           subLabel: 'No variations',
-          fullName: p.productName,
-          upc: p.upc,
-          sku: p.sku,
+          fullName: p.productName || '',
+          upc: p.upc || '',
+          sku: p.sku || '',
           price: companyBasePrice,
           companySku: companySku,
           companySkus: companySkusMap,
@@ -1186,6 +1193,7 @@ const SalesManagement = () => {
   const [showEncodedByDropdown, setShowEncodedByDropdown] = useState(false);
 
   const encodedByOptions = useMemo(() => {
+    if (!Array.isArray(sales)) return [];
     const names = sales
       .map(s => s.createdBy || s.generatedBy)
       .filter(Boolean);
@@ -1317,12 +1325,12 @@ const SalesManagement = () => {
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <VariationSearchableDropdown
-                      options={allProductOptions.filter(o =>
+                      options={Array.isArray(allProductOptions) ? allProductOptions.filter(o =>
                         !filterData.productFilters.some(pf =>
                           pf.productId === o.parentProductId &&
                           (pf.variationId ?? null) === (o.variationId ?? null)
                         )
-                      )}
+                      ) : []}
                       value=""
                       onChange={(value) => {
                         if (!value) return;
@@ -1679,7 +1687,7 @@ const SalesManagement = () => {
                     {/* Product Selector */}
                     <div className="mb-6">
                       <VariationSearchableDropdown
-                        options={productOptions}
+                        options={Array.isArray(productOptions) ? productOptions : []}
                         value={selectedProductForAdd}
                         onChange={(value) => setSelectedProductForAdd(value)}
                         placeholder="Select Product to Add..."
@@ -1725,14 +1733,13 @@ const SalesManagement = () => {
                           <tbody className="divide-y divide-gray-200 bg-white">
                             {formData.items.map((item, i) => {
 
-                              const selectedOption = productOptions.find(opt =>
+                              const selectedOption = Array.isArray(productOptions) ? productOptions.find(opt =>
                                 opt.parentProductId === item.productId &&
                                 (item.variationId !== null
                                   ? opt.variationId === item.variationId
                                   : opt.variationId === null)
-                              );
+                              ) : null;
 
-                              // FIX 1: Stable key — not index-dependent
                               const stockKey = makeStockKey(item.productId, item.variationId, formData.branchId);
                               const stockInfo = branchStocks[stockKey];
                               const isLoadingStock = loadingStocks[stockKey];
@@ -1901,6 +1908,7 @@ const SalesManagement = () => {
                               </td>
                               <td className="px-4 py-3 text-right text-sm font-bold text-blue-700">
                                 ₱{formData.items.reduce((sum, item) => {
+                                  if (!Array.isArray(productOptions)) return 0;
                                   const opt = productOptions.find(o =>
                                     o.parentProductId === item.productId &&
                                     (item.variationId !== null
