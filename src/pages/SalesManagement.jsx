@@ -334,12 +334,6 @@ const SalesManagement = () => {
     setLoading(false);
   }, [currentPage, filterData, statusFilter, searchTerm]);
 
-  useEffect(() => {
-    if (currentPage > 0) {
-      fetchSales(currentPage - 1);
-    }
-  }, [currentPage]);
-
 
   useEffect(() => {
     loadData();
@@ -759,8 +753,8 @@ const SalesManagement = () => {
         if (response.success) {
           toast.success('Sale created successfully!', { id: toastId });
           invalidateSalesCache();
-          // JUST set current page - useEffect will handle the fetch
           setCurrentPage(1);
+          await fetchSales(0);
         } else {
           toast.error(response.message || 'Failed to create sale', { id: toastId });
         }
@@ -947,8 +941,7 @@ const SalesManagement = () => {
       if (response.success || response.data) {
         toast.success(`Sale ${action}ed successfully!`);
         invalidateSalesCache();
-        // Refresh current page
-        fetchSales(currentPage - 1);
+        await fetchSales(currentPage - 1);
       } else {
         toast.error(`Failed to ${action} sale`);
       }
@@ -981,8 +974,7 @@ const SalesManagement = () => {
       if (response.success || response.data?.message) {
         toast.success('Sale deleted successfully!');
         invalidateSalesCache();
-        // Refresh current page
-        fetchSales(currentPage - 1);
+        await fetchSales(currentPage - 1);
       } else {
         toast.error('Failed to delete sale');
       }
