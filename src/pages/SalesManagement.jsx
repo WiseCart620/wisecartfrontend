@@ -340,7 +340,7 @@ const SalesManagement = () => {
     }
   }, [currentPage]);
 
-  
+
   useEffect(() => {
     loadData();
   }, []);
@@ -759,12 +759,8 @@ const SalesManagement = () => {
         if (response.success) {
           toast.success('Sale created successfully!', { id: toastId });
           invalidateSalesCache();
-          // Reset to page 1 and refresh data
+          // JUST set current page - useEffect will handle the fetch
           setCurrentPage(1);
-          // Wait for state to update then fetch
-          setTimeout(() => {
-            fetchSales(0);
-          }, 100);
         } else {
           toast.error(response.message || 'Failed to create sale', { id: toastId });
         }
@@ -773,7 +769,8 @@ const SalesManagement = () => {
         if (response.success) {
           toast.success('Sale updated successfully!', { id: toastId });
           invalidateSalesCache();
-          loadData(true);
+          // Stay on same page, just refresh
+          fetchSales(currentPage - 1);
         } else {
           toast.error(response.message || 'Failed to update sale', { id: toastId });
         }
@@ -950,7 +947,8 @@ const SalesManagement = () => {
       if (response.success || response.data) {
         toast.success(`Sale ${action}ed successfully!`);
         invalidateSalesCache();
-        loadData();
+        // Refresh current page
+        fetchSales(currentPage - 1);
       } else {
         toast.error(`Failed to ${action} sale`);
       }
@@ -983,7 +981,8 @@ const SalesManagement = () => {
       if (response.success || response.data?.message) {
         toast.success('Sale deleted successfully!');
         invalidateSalesCache();
-        loadData();
+        // Refresh current page
+        fetchSales(currentPage - 1);
       } else {
         toast.error('Failed to delete sale');
       }
@@ -1571,14 +1570,12 @@ const SalesManagement = () => {
                 if (currentPage < (totalPages || 1)) {
                   const newPage = currentPage + 1;
                   setCurrentPage(newPage);
-                  fetchSales(newPage - 1);
                 }
               }}
               onPrevPage={() => {
                 if (currentPage > 1) {
                   const newPage = currentPage - 1;
                   setCurrentPage(newPage);
-                  fetchSales(newPage - 1);
                 }
               }}
               showingStart={((currentPage - 1) * 10) + 1}
