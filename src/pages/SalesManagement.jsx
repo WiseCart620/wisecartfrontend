@@ -753,7 +753,12 @@ const SalesManagement = () => {
         if (response.success) {
           toast.success('Sale created successfully!', { id: toastId });
           invalidateSalesCache();
-          loadData(true);
+          // Reset to page 1 and refresh data
+          setCurrentPage(1);
+          // Wait for state to update then fetch
+          setTimeout(() => {
+            fetchSales(0);
+          }, 100);
         } else {
           toast.error(response.message || 'Failed to create sale', { id: toastId });
         }
@@ -1555,7 +1560,6 @@ const SalesManagement = () => {
               totalPages={totalPages || 1}
               onPageChange={(page) => {
                 setCurrentPage(page);
-                fetchSales(page - 1);
               }}
               onNextPage={() => {
                 if (currentPage < (totalPages || 1)) {
