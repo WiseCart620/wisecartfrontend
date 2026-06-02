@@ -1010,7 +1010,7 @@ const SalesManagement = () => {
   const allProductOptions = useMemo(() => (products || []).flatMap(p => {
     if (!p) return [];
     if (p.variations && p.variations.length > 0) {
-      return p.variations.map(v => {
+      return (p.variations || []).filter(Boolean).map(v => {
         const companySkus = {};
         if (v.companyPrices) {
           v.companyPrices.forEach(cp => {
@@ -1061,7 +1061,7 @@ const SalesManagement = () => {
     const hasVariations = p.variations && p.variations.length > 0;
 
     if (hasVariations) {
-      return (p.variations || []).map(v => {
+      return (p.variations || []).filter(Boolean).map(v => {
         const companyMatch = v.companyPrices?.find(cp => cp.company?.id === branchInfo?.companyId);
         const companyPrice = companyMatch?.price ?? 0;
         const companySku = companyMatch?.companySku ?? null;
