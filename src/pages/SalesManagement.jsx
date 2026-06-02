@@ -284,15 +284,22 @@ const SalesManagement = () => {
     if (!staticDataLoaded.current) {
       staticDataLoaded.current = true;
 
-      Promise.all([
-        api.get('/branches').then(res => setBranches(extractArray(res))),
-        api.get('/companies').then(res => setCompanies(extractArray(res))),
-        api.get('/products').then(res => setProducts(extractArray(res))),
-        api.get('/inventories').then(res => setInventories(extractArray(res))),
-        api.get('/warehouse').then(res => setWarehouses(extractArray(res))),
-        api.get('/stocks/warehouses').then(res => setWarehouseStocks(extractArray(res))),
-        api.get('/inventories/products/summary').then(res => setProductSummaries(extractArray(res)))
-      ]).catch(() => { });
+      const results = await Promise.all([
+        api.get('/branches').catch(() => ({ success: false, data: [] })),
+        api.get('/companies').catch(() => ({ success: false, data: [] })),
+        api.get('/products').catch(() => ({ success: false, data: [] })),
+        api.get('/inventories').catch(() => ({ success: false, data: [] })),
+        api.get('/warehouse').catch(() => ({ success: false, data: [] })),
+        api.get('/stocks/warehouses').catch(() => ({ success: false, data: [] })),
+        api.get('/inventories/products/summary').catch(() => ({ success: false, data: [] }))
+      ]);
+
+      setBranches(extractArray(results[0]));
+      setCompanies(extractArray(results[1]));
+      setProducts(extractArray(results[2]));
+      setWarehouses(extractArray(results[4]));
+      setWarehouseStocks(extractArray(results[5]));
+      setProductSummaries(extractArray(results[6]));
     }
 
     setLoading(false);
@@ -1009,12 +1016,12 @@ const SalesManagement = () => {
 
   const allProductOptions = useMemo(() => {
     try {
-      // Add this guard clause
+      // Guard clause - check if products exists and is an array
       if (!products || !Array.isArray(products)) {
         return [];
       }
 
-      return products.flatMap(p => {
+      return (products || []).flatMap(p => {
         if (!p) return [];
         if (p.variations && p.variations.length > 0) {
           return (p.variations || []).filter(Boolean).map(v => {
@@ -1070,7 +1077,7 @@ const SalesManagement = () => {
       return [];
     }
 
-    return products.flatMap(p => {
+    return (products || []).flatMap(p => {
       if (!p) return [];
       const hasVariations = p.variations && p.variations.length > 0;
 
