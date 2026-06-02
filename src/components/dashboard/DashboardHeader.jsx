@@ -38,11 +38,14 @@ const DashboardHeader = ({
 
         <button
           onClick={() => setShowNotifications(!showNotifications)}
-          className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors rounded-full hover:bg-gray-100"
+          className="relative flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
         >
-          <Bell size={20} />
-          {alerts.some(alert => !alert.isResolved) && (
-            <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-600 rounded-full ring-2 ring-white"></span>
+          <Bell size={18} className={alerts.some(a => !a.isResolved) ? 'text-red-500' : 'text-gray-600'} />
+          <span className="text-sm text-gray-700 font-medium">Alerts</span>
+          {alerts.filter(a => !a.isResolved).length > 0 && (
+            <span className="min-w-[20px] h-5 px-1 bg-red-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center">
+              {alerts.filter(a => !a.isResolved).length > 99 ? '99+' : alerts.filter(a => !a.isResolved).length}
+            </span>
           )}
         </button>
       </div>

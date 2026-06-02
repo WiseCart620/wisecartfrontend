@@ -295,8 +295,7 @@ const Dashboard = () => {
   }, [sales, selectedYear, selectedCompany, selectedBranch]);
 
   const monthlySalesData = getMonthlySalesData();
-  const totalAlerts = alerts.length;
-
+  const totalAlerts = alerts.filter(a => !a.isResolved).length;
   const loadPerformance = (productsOverride) => {
     const productsList = productsOverride || products;
     try {
