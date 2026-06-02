@@ -462,7 +462,6 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
 
                                 const missingFields = [];
                                 if (!allProductsHavePrices) missingFields.push('Unit prices for all products');
-                                if (!hasPaymentArrangement) missingFields.push('Payment arrangement (Initial & Final payment)');
                                 if (!hasProductionLeadTime) missingFields.push('Production lead time');
 
                                 return (
