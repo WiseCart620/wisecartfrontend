@@ -384,6 +384,7 @@ const UploadPaymentManagement = () => {
 
 
 
+
     const handleViewPayments = async (po) => {
         try {
             setLoadingMessage('Loading payment history...');
@@ -492,13 +493,12 @@ const UploadPaymentManagement = () => {
                                         </tr>
                                     ) : (
                                         filteredPaymentOrders.map((po) => {
-                                            const productCost = po.totalAmount || 0;
-                                            const shippingCost = po.shippingCostPhp || 0;
-                                            const otherCharges = po.otherChargesPhp || 0;
-                                            const totalAmountWAC = productCost + shippingCost + otherCharges;
-                                            const paidAmount = po.totalPaid || 0;
-                                            const balanceAmount = totalAmountWAC - paidAmount;
-                                            const percentagePaid = productCost > 0 ? Math.min((paidAmount / productCost) * 100, 100).toFixed(2) : '0.00';
+                                            const totalAmountWAC_USD = po.totalAmount || 0;
+
+                                            const productPaidPHP = po.totalPaid || 0;
+                                            const shippingCostPHP = po.shippingCostPhp || 0;
+                                            const otherChargesPHP = po.otherChargesPhp || 0;
+                                            const totalPaidPHP = productPaidPHP + shippingCostPHP + otherChargesPHP;
 
                                             return (
                                                 <tr key={po.id} className="hover:bg-gray-50">
@@ -520,27 +520,31 @@ const UploadPaymentManagement = () => {
                                                     <td className="px-6 py-4">
                                                         <div className="relative group inline-block">
                                                             <span className="font-medium text-gray-900 cursor-default">
-                                                                ₱{formatNumberWithCommas(totalAmountWAC.toFixed(2))}
+                                                                ${formatNumberWithCommas(totalAmountWAC_USD.toFixed(2))}
                                                             </span>
                                                             <div className="absolute left-0 top-full mt-1 z-50 hidden group-hover:block bg-gray-800 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
-                                                                <div>Prod: ₱{formatNumberWithCommas(productCost.toFixed(2))}</div>
-                                                                <div>Ship: ₱{formatNumberWithCommas(shippingCost.toFixed(2))}</div>
-                                                                <div>Other: ₱{formatNumberWithCommas(otherCharges.toFixed(2))}</div>
+                                                                <div>Product USD: ${formatNumberWithCommas(totalAmountWAC_USD.toFixed(2))}</div>
+                                                                <div>Paid PHP: ₱{formatNumberWithCommas(totalPaidPHP.toFixed(2))}</div>
+                                                                <div>Product PHP: ₱{formatNumberWithCommas(productPaidPHP.toFixed(2))}</div>
+                                                                <div>Shipping PHP: ₱{formatNumberWithCommas(shippingCostPHP.toFixed(2))}</div>
+                                                                <div>Other PHP: ₱{formatNumberWithCommas(otherChargesPHP.toFixed(2))}</div>
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 text-gray-900">
-                                                        ₱{formatNumberWithCommas(paidAmount.toFixed(2))}
+                                                        ₱{formatNumberWithCommas(totalPaidPHP.toFixed(2))}
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-2">
                                                             <div className="bg-gray-200 rounded-full h-2 w-16">
                                                                 <div
                                                                     className="bg-green-600 rounded-full h-2 transition-all duration-300"
-                                                                    style={{ width: `${Math.min(percentagePaid, 100)}%` }}
+                                                                    style={{ width: `${po.paymentStatus === 'FULL_PAID' ? 100 : Math.min((po.totalPaid / po.totalAmount) * 100, 100)}%` }}
                                                                 />
                                                             </div>
-                                                            <span className="text-sm text-gray-600">{percentagePaid}%</span>
+                                                            <span className="text-sm text-gray-600">
+                                                                {po.paymentStatus === 'FULL_PAID' ? '100' : po.totalAmount > 0 ? Math.min((po.totalPaid / po.totalAmount) * 100, 100).toFixed(0) : '0'}%
+                                                            </span>
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4">{getPaymentStatusBadge(po.paymentStatus)}</td>
@@ -631,7 +635,6 @@ const UploadPaymentManagement = () => {
                         formData={paymentFormData}
                         setFormData={setPaymentFormData}
                         onClose={() => setShowPaymentModal(false)}
-                        onSubmit={handlePaymentSubmit}
                         actionLoading={actionLoading}
                         setActionLoading={setActionLoading}
                         setIsLoadingOverlay={setIsLoadingOverlay}
@@ -1305,7 +1308,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
     };
 
     const handleSubmitPayment = async (e) => {
-        e?.preventDefault();
+        if (e) e.preventDefault();
         if (!po.totalAmount || po.totalAmount === 0) {
             toast.error('Purchase order total amount is not set. Please update item prices first.');
             return;
@@ -1409,35 +1412,26 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                 <p className="font-medium text-gray-900">{po.controlNumber}</p>
                             </div>
                             <div>
-                                <span className="text-gray-600">Total Amount:</span>
+                                <span className="text-gray-600">Total Amount (USD):</span>
                                 <p className="font-medium text-gray-900">${formatNumberWithCommas(po.totalAmount?.toFixed(2))}</p>
                             </div>
                             <div>
-                                <span className="text-gray-600">Total Paid:</span>
-                                <p className="font-medium text-gray-900">${formatNumberWithCommas(po.totalPaid?.toFixed(2) || '0.00')}</p>
+                                <span className="text-gray-600">Product Paid (PHP):</span>
+                                <p className="font-medium text-gray-900">₱{formatNumberWithCommas(po.totalPaid?.toFixed(2) || '0.00')}</p>
                             </div>
                             <div>
-                                <span className="text-gray-600">Remaining:</span>
-                                <p className="font-medium text-gray-900">${formatNumberWithCommas(po.remainingBalance?.toFixed(2) || '0.00')}</p>
+                                <span className="text-gray-600">Shipping Cost (PHP):</span>
+                                <p className="font-medium text-gray-900">₱{formatNumberWithCommas(po.shippingCostPhp?.toFixed(2) || '0.00')}</p>
                             </div>
                             <div>
-                                <span className="text-gray-600">Already Paid:</span>
-                                <p className="font-medium text-gray-900">
-                                    {calculateAlreadyPaidPercentage()}%
+                                <span className="text-gray-600">Other Charges (PHP):</span>
+                                <p className="font-medium text-gray-900">₱{formatNumberWithCommas(po.otherChargesPhp?.toFixed(2) || '0.00')}</p>
+                            </div>
+                            <div>
+                                <span className="text-gray-600">TOTAL PHP OUTLAY:</span>
+                                <p className="font-bold text-green-600">
+                                    ₱{formatNumberWithCommas(((po.totalPaid || 0) + (po.shippingCostPhp || 0) + (po.otherChargesPhp || 0)).toFixed(2))}
                                 </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-gray-600">Products:</span>
-                                {po.items && po.items.length > 0 && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowProductDetails(true)}
-                                        className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                        title="View Products"
-                                    >
-                                        <Package size={16} />
-                                    </button>
-                                )}
                             </div>
                         </div>
                     </div>
@@ -1768,7 +1762,8 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                             Cancel
                         </button>
                         <button
-                            type="submit"
+                            type="button"
+                            onClick={() => handleSubmitPayment()}
                             disabled={actionLoading || uploadingFile}
                             className={`flex-1 px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2 ${isOverpayment() ? 'bg-yellow-500 hover:bg-yellow-600 text-white' : 'bg-green-600 text-white'}`}
                         >
@@ -2048,14 +2043,20 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
 
                 <div className="p-6 space-y-6">
 
-                    {/* PO Summary */}
                     <div className="p-4 bg-blue-50 rounded-lg">
-                        <div className="grid grid-cols-3 gap-3 text-sm">
+                        <div className="grid grid-cols-2 gap-3 text-sm">
                             <div><span className="text-gray-600">PO Number:</span><p className="font-medium text-gray-900">{data.po.controlNumber}</p></div>
-                            <div><span className="text-gray-600">Total Amount:</span><p className="font-medium text-gray-900">${formatNumberWithCommas(data.po.totalAmount?.toFixed(2))}</p></div>
-                            <div><span className="text-gray-600">Total Paid:</span><p className="font-medium text-gray-900">${formatNumberWithCommas(data.po.totalPaid?.toFixed(2) || '0.00')}</p></div>
-                            <div><span className="text-gray-600">Remaining:</span><p className="font-medium text-gray-900">${formatNumberWithCommas(data.po.remainingBalance?.toFixed(2) || '0.00')}</p></div>
                             <div><span className="text-gray-600">Status:</span><div className="mt-1">{getPaymentStatusBadge(data.po.paymentStatus)}</div></div>
+                            <div><span className="text-gray-600">Total Amount (USD):</span><p className="font-medium text-gray-900">${formatNumberWithCommas(data.po.totalAmount?.toFixed(2))}</p></div>
+                            <div><span className="text-gray-600">Product Paid (PHP):</span><p className="font-medium text-gray-900">₱{formatNumberWithCommas(data.po.totalPaid?.toFixed(2) || '0.00')}</p></div>
+                            <div><span className="text-gray-600">Shipping Cost (PHP):</span><p className="font-medium text-gray-900">₱{formatNumberWithCommas(shippingData?.phpAmount?.toFixed(2) || '0.00')}</p></div>
+                            <div><span className="text-gray-600">Other Charges (PHP):</span><p className="font-medium text-gray-900">₱{formatNumberWithCommas(othersData?.totalCost?.toFixed(2) || '0.00')}</p></div>
+                            <div className="col-span-2">
+                                <span className="text-gray-600">TOTAL PHP OUTLAY:</span>
+                                <p className="font-bold text-green-600 text-lg">
+                                    ₱{formatNumberWithCommas(((data.po.totalPaid || 0) + (shippingData?.phpAmount || 0) + (othersData?.totalCost || 0)).toFixed(2))}
+                                </p>
+                            </div>
                         </div>
                     </div>
 
