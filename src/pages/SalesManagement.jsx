@@ -1025,7 +1025,7 @@ const SalesManagement = () => {
   };
 
 
-  const currentSales = sales;
+  const currentSales = Array.isArray(sales) ? sales : [];
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const monthsFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -1277,7 +1277,7 @@ const SalesManagement = () => {
                   displayKey="name"
                   valueKey="id"
                 />
-                {filterData.companyId && filteredBranchOptions.length === 0 && (
+                {filterData.companyId && Array.isArray(filteredBranchOptions) && filteredBranchOptions.length === 0 && (
                   <p className="text-xs text-orange-600 mt-1">No branches for selected company</p>
                 )}
               </div>
@@ -1549,16 +1549,16 @@ const SalesManagement = () => {
               </tbody>
             </table>
           </div>
-          {totalElements > 0 && (
+          {totalElements !== undefined && totalElements > 0 && (
             <Pagination
               currentPage={currentPage}
-              totalPages={totalPages}
+              totalPages={totalPages || 1}
               onPageChange={(page) => {
                 setCurrentPage(page);
-                fetchSales(page - 1); // Convert to 0-based for backend
+                fetchSales(page - 1);
               }}
               onNextPage={() => {
-                if (currentPage < totalPages) {
+                if (currentPage < (totalPages || 1)) {
                   const newPage = currentPage + 1;
                   setCurrentPage(newPage);
                   fetchSales(newPage - 1);
@@ -1572,8 +1572,8 @@ const SalesManagement = () => {
                 }
               }}
               showingStart={((currentPage - 1) * 10) + 1}
-              showingEnd={Math.min(currentPage * 10, totalElements)}
-              totalItems={totalElements}
+              showingEnd={Math.min(currentPage * 10, totalElements || 0)}
+              totalItems={totalElements || 0}
             />
           )}
         </div>
@@ -1658,7 +1658,7 @@ const SalesManagement = () => {
                       placeholder="Select existing or type a custom name..."
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                     />
-                    {showEncodedByDropdown && encodedByOptions.filter(name =>
+                    {showEncodedByDropdown && Array.isArray(encodedByOptions) && encodedByOptions.filter(name =>
                       name.toLowerCase().includes(formData.createdBy.toLowerCase())
                     ).length > 0 && (
                         <div className="absolute z-50 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
