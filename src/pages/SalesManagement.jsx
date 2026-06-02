@@ -22,7 +22,7 @@ const formatCurrency = (amount) => {
 const formatPHDateTime = (dateString) => {
   if (!dateString) return '';
   return new Date(dateString).toLocaleString('en-PH', {
-    timeZone: 'UTC',
+    timeZone: 'Asia/Manila',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
