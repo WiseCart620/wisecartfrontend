@@ -447,8 +447,11 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
                                     item.unitPrice && parseFloat(item.unitPrice) > 0
                                 );
                                 const hasPaymentArrangement =
-                                    viewingRpq.initialPaymentPercent > 0 &&
-                                    viewingRpq.finalPaymentPercent > 0;
+                                    viewingRpq.initialPaymentPercent !== null &&
+                                    viewingRpq.initialPaymentPercent !== undefined &&
+                                    viewingRpq.initialPaymentPercent !== '' &&
+                                    parseFloat(viewingRpq.initialPaymentPercent) >= 0 &&
+                                    parseFloat(viewingRpq.initialPaymentPercent) <= 100;
                                 const hasProductionLeadTime = viewingRpq.productionLeadTime && viewingRpq.productionLeadTime !== '';
 
                                 const isComplete =
