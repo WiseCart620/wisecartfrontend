@@ -382,48 +382,6 @@ const UploadPaymentManagement = () => {
         }
     };
 
-    const handlePaymentSubmit = async (e) => {
-        e.preventDefault();
-
-        // ✅ Validate that PO has totalAmount
-        if (!selectedPOForPayment.totalAmount || selectedPOForPayment.totalAmount === 0) {
-            toast.error('Purchase order total amount is not set. Please update item prices first.');
-            return;
-        }
-
-        setActionLoading(true);  // Set loading here
-        setLoadingMessage('Recording payment...');
-        setIsLoadingOverlay(true);
-
-        try {
-            const payload = {
-                purchaseOrderId: po.id,
-                bank: paymentFormData.bank,
-                referenceNumber: paymentFormData.referenceNumber,
-                paymentDate: paymentFormData.paymentDate,
-                productDollarAmount: parseFloat(paymentFormData.productDollarAmount),
-                productPesoAmount: parseFloat(paymentFormData.productPesoAmount),
-                processingFeeDollar: parseFloat(paymentFormData.processingFeeDollar || 0),
-                processingFeePeso: parseFloat(paymentFormData.processingFeePeso || 0)
-            };
-
-            const response = await api.post('/payments', payload);
-            if (response.success) {
-                toast.success('Payment recorded successfully');
-                setShowPaymentModal(false);
-                await loadInitialData();
-                window.dispatchEvent(new Event('paymentUpdated'));
-            }
-        } catch (error) {
-            console.error('Payment error:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Failed to record payment';
-            toast.error(errorMessage);
-        } finally {
-            setIsLoadingOverlay(false);
-            setActionLoading(false);
-        }
-    };
-
 
 
     const handleViewPayments = async (po) => {
@@ -518,124 +476,12 @@ const UploadPaymentManagement = () => {
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Control #</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
-                                        <tbody className="divide-y divide-gray-200">
-                                            {filteredPaymentOrders.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan="8" className="px-6 py-8 text-center text-gray-500">
-                                                        No payment orders found
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                filteredPaymentOrders.map((po) => {
-                                                    // Calculate values using WAC
-                                                    const productCost = po.totalAmount || 0;
-                                                    const shippingCost = po.shippingCostPhp || 0;
-                                                    const otherCharges = po.otherChargesPhp || 0;
-
-                                                    // TOTAL AMOUNT (WAC) = Product Cost + Shipping + Other Charges
-                                                    const totalAmountWAC = productCost + shippingCost + otherCharges;
-
-                                                    // PAID = Only product cost (payments made)
-                                                    const paidAmount = po.totalPaid || 0;
-
-                                                    // BALANCE = Total WAC - Paid
-                                                    const balanceAmount = totalAmountWAC - paidAmount;
-
-                                                    // Percentage = (Paid / Total WAC) * 100
-                                                    const percentagePaid = totalAmountWAC > 0 ? ((paidAmount / totalAmountWAC) * 100).toFixed(2) : '0.00';
-
-                                                    return (
-                                                        <tr key={po.id} className="hover:bg-gray-50">
-                                                            <td className="px-6 py-4">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="font-medium text-gray-900">{po.controlNumber}</span>
-                                                                    {po.items && po.items.length > 0 && (
-                                                                        <button
-                                                                            onClick={() => setViewingProducts(po.items)}
-                                                                            className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                                                            title="View Products"
-                                                                        >
-                                                                            <Package size={16} />
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-4 text-gray-900">{po.supplierName}</td>
-                                                            <td className="px-6 py-4 text-gray-900">
-                                                                <div className="flex flex-col">
-                                                                    <span className="font-medium">₱{formatNumberWithCommas(totalAmountWAC.toFixed(2))}</span>
-                                                                    <div className="text-xs text-gray-500 mt-1">
-                                                                        <span className="inline-block mr-2">Prod: ₱{formatNumberWithCommas(productCost.toFixed(2))}</span>
-                                                                        <span className="inline-block mr-2">Ship: ₱{formatNumberWithCommas(shippingCost.toFixed(2))}</span>
-                                                                        <span>Other: ₱{formatNumberWithCommas(otherCharges.toFixed(2))}</span>
-                                                                    </div>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-4 text-gray-900">
-                                                                ₱{formatNumberWithCommas(paidAmount.toFixed(2))}
-                                                            </td>
-                                                            <td className="px-6 py-4 text-gray-900">
-                                                                ₱{formatNumberWithCommas(balanceAmount.toFixed(2))}
-                                                            </td>
-                                                            <td className="px-6 py-4">
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="flex-1 bg-gray-200 rounded-full h-2 w-24">
-                                                                        <div
-                                                                            className="bg-green-600 rounded-full h-2 transition-all duration-300"
-                                                                            style={{ width: `${Math.min(percentagePaid, 100)}%` }}
-                                                                        />
-                                                                    </div>
-                                                                    <span className="text-sm text-gray-600">{percentagePaid}%</span>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-4">{getPaymentStatusBadge(po.paymentStatus)}</td>
-                                                            <td className="px-6 py-4 text-right">
-                                                                <div className="flex items-center justify-end gap-2">
-                                                                    <button
-                                                                        onClick={() => handleViewPayments(po)}
-                                                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                                                                        title="View Payments"
-                                                                    >
-                                                                        <FileText size={18} />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => { setShippingPO(po); setShowShippingModal(true); }}
-                                                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                                                                        title="Shipping Cost"
-                                                                    >
-                                                                        <Ship size={18} />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => handlePayNow(po)}
-                                                                        disabled={isLoadingOverlay || po.paymentStatus === 'FULL_PAID'}
-                                                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                                                                        title={po.paymentStatus === 'FULL_PAID' ? 'Order is fully paid' : 'Product Cost'}
-                                                                    >
-                                                                        {isLoadingOverlay ? (
-                                                                            <Loader2 className="animate-spin" size={18} />
-                                                                        ) : (
-                                                                            <Banknote size={18} />
-                                                                        )}
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => { setOthersPO(po); setShowOthersModal(true); }}
-                                                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                                                                        title="Other Charges"
-                                                                    >
-                                                                        <MoreHorizontal size={18} />
-                                                                    </button>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })
-                                            )}
-                                        </tbody>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Amount (WAC)</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paid</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Balance</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Percentage</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Payments</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
@@ -646,75 +492,110 @@ const UploadPaymentManagement = () => {
                                             </td>
                                         </tr>
                                     ) : (
-                                        filteredPaymentOrders.map((po) => (
-                                            <tr key={po.id} className="hover:bg-gray-50">
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-medium text-gray-900">{po.controlNumber}</span>
-                                                        {po.items && po.items.length > 0 && (
-                                                            <button
-                                                                onClick={() => setViewingProducts(po.items)}
-                                                                className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                                                title="View Products"
-                                                            >
-                                                                <Package size={16} />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-gray-900">{po.supplierName}</td>
-                                                <td className="px-6 py-4 text-gray-900">
-                                                    ${formatNumberWithCommas(po.totalAmount ? po.totalAmount.toFixed(2) : '0.00')}
-                                                </td>
-                                                <td className="px-6 py-4 text-gray-900">
-                                                    ${formatNumberWithCommas(po.totalPaid ? po.totalPaid.toFixed(2) : '0.00')}
-                                                </td>
-                                                <td className="px-6 py-4 text-gray-900">
-                                                    ${formatNumberWithCommas(po.remainingBalance ? po.remainingBalance.toFixed(2) : '0.00')}
-                                                </td>
-                                                <td className="px-6 py-4 text-gray-900">
-                                                    {po.totalAmount > 0 ? ((po.totalPaid / po.totalAmount) * 100).toFixed(2) : '0.00'}%
-                                                </td>
-                                                <td className="px-6 py-4">{getPaymentStatusBadge(po.paymentStatus)}</td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        <button
-                                                            onClick={() => handleViewPayments(po)}
-                                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                                                            title="View Payments"
-                                                        >
-                                                            <FileText size={18} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => { setShippingPO(po); setShowShippingModal(true); }}
-                                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                                                            title="Shipping Cost"
-                                                        >
-                                                            <Ship size={18} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handlePayNow(po)}
-                                                            disabled={isLoadingOverlay || po.paymentStatus === 'FULL_PAID'}
-                                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                                                            title={po.paymentStatus === 'FULL_PAID' ? 'Order is fully paid' : 'Product Cost'}
-                                                        >
-                                                            {isLoadingOverlay ? (
-                                                                <Loader2 className="animate-spin" size={18} />
-                                                            ) : (
-                                                                <Banknote size={18} />
+                                        filteredPaymentOrders.map((po) => {
+                                            // Calculate values using WAC
+                                            // Note: shippingCostPhp and otherChargesPhp need to be added to your backend DTO
+                                            const productCost = po.totalAmount || 0;
+                                            const shippingCost = po.shippingCostPhp || 0;
+                                            const otherCharges = po.otherChargesPhp || 0;
+
+                                            // TOTAL AMOUNT (WAC) = Product Cost + Shipping + Other Charges
+                                            const totalAmountWAC = productCost + shippingCost + otherCharges;
+
+                                            // PAID = Only product cost (payments made)
+                                            const paidAmount = po.totalPaid || 0;
+
+                                            // BALANCE = Total WAC - Paid
+                                            const balanceAmount = totalAmountWAC - paidAmount;
+
+                                            // Percentage = (Paid / Total WAC) * 100
+                                            const percentagePaid = totalAmountWAC > 0 ? ((paidAmount / totalAmountWAC) * 100).toFixed(2) : '0.00';
+
+                                            return (
+                                                <tr key={po.id} className="hover:bg-gray-50">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-medium text-gray-900">{po.controlNumber}</span>
+                                                            {po.items && po.items.length > 0 && (
+                                                                <button
+                                                                    onClick={() => setViewingProducts(po)}
+                                                                    className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                                    title="View Products"
+                                                                >
+                                                                    <Package size={16} />
+                                                                </button>
                                                             )}
-                                                        </button>
-                                                        <button
-                                                            onClick={() => { setOthersPO(po); setShowOthersModal(true); }}
-                                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                                                            title="Other Charges"
-                                                        >
-                                                            <MoreHorizontal size={18} />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-gray-900">{po.supplierName}</td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium text-gray-900">₱{formatNumberWithCommas(totalAmountWAC.toFixed(2))}</span>
+                                                            <div className="text-xs text-gray-500 mt-1">
+                                                                <span className="inline-block mr-2">Prod: ₱{formatNumberWithCommas(productCost.toFixed(2))}</span>
+                                                                <span className="inline-block mr-2">Ship: ₱{formatNumberWithCommas(shippingCost.toFixed(2))}</span>
+                                                                <span>Other: ₱{formatNumberWithCommas(otherCharges.toFixed(2))}</span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-gray-900">
+                                                        ₱{formatNumberWithCommas(paidAmount.toFixed(2))}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-gray-900">
+                                                        ₱{formatNumberWithCommas(balanceAmount.toFixed(2))}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="flex-1 bg-gray-200 rounded-full h-2 w-24">
+                                                                <div
+                                                                    className="bg-green-600 rounded-full h-2 transition-all duration-300"
+                                                                    style={{ width: `${Math.min(percentagePaid, 100)}%` }}
+                                                                />
+                                                            </div>
+                                                            <span className="text-sm text-gray-600">{percentagePaid}%</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">{getPaymentStatusBadge(po.paymentStatus)}</td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <button
+                                                                onClick={() => handleViewPayments(po)}
+                                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                                                title="View Payments"
+                                                            >
+                                                                <FileText size={18} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => { setShippingPO(po); setShowShippingModal(true); }}
+                                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                                                title="Shipping Cost"
+                                                            >
+                                                                <Ship size={18} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handlePayNow(po)}
+                                                                disabled={isLoadingOverlay || po.paymentStatus === 'FULL_PAID'}
+                                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                title={po.paymentStatus === 'FULL_PAID' ? 'Order is fully paid' : 'Product Cost'}
+                                                            >
+                                                                {isLoadingOverlay ? (
+                                                                    <Loader2 className="animate-spin" size={18} />
+                                                                ) : (
+                                                                    <Banknote size={18} />
+                                                                )}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => { setOthersPO(po); setShowOthersModal(true); }}
+                                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                                                title="Other Charges"
+                                                            >
+                                                                <MoreHorizontal size={18} />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
                                     )}
                                 </tbody>
                             </table>
@@ -777,12 +658,15 @@ const UploadPaymentManagement = () => {
                         data={viewingPayments}
                         onClose={() => setViewingPayments(null)}
                         getPaymentStatusBadge={getPaymentStatusBadge}
+                        getFileUrl={getFileUrl}
+                        getFileDownloadUrl={getFileDownloadUrl}
                     />
                 )}
 
                 {viewingProducts && (
                     <ProductDetailsModal
-                        products={viewingProducts}
+                        products={viewingProducts.items}
+                        po={viewingProducts}
                         onClose={() => setViewingProducts(null)}
                     />
                 )}
@@ -1433,8 +1317,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
     };
 
     const handleSubmitPayment = async (e) => {
-        e.preventDefault();
-
+        e?.preventDefault();
         if (!po.totalAmount || po.totalAmount === 0) {
             toast.error('Purchase order total amount is not set. Please update item prices first.');
             return;
@@ -1969,7 +1852,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={handleSubmitPayment}
+                                    onClick={(e) => handleSubmitPayment(e)}
                                     disabled={actionLoading}
                                     className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
                                 >
@@ -2149,7 +2032,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
 
 
 
-const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge }) => {
+const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, getFileDownloadUrl }) => {
     const [shippingData, setShippingData] = useState(null);
     const [othersData, setOthersData] = useState(null);
 
