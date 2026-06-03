@@ -25,7 +25,7 @@ const formatPHDateTime = (dateString) => {
     ? dateString
     : dateString + '+08:00';
   return new Date(normalized).toLocaleString('en-PH', {
-    timeZone: 'Asia/Manila',
+    timeZone: 'UTC',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
