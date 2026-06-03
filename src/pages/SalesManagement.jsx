@@ -259,6 +259,8 @@ const SalesManagement = () => {
         ...(filterData.branchId && { branchId: filterData.branchId }),
         ...(statusFilter !== 'ALL' && { status: statusFilter }),
         ...(searchTerm && { searchTerm: searchTerm }),
+        ...(filterData.startDate && { startDate: filterData.startDate }),
+        ...(filterData.endDate && { endDate: filterData.endDate }),
       });
       if (filterData.productFilters && filterData.productFilters.length > 0) {
         filterData.productFilters.forEach(pf => {
@@ -278,8 +280,8 @@ const SalesManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [filterData.companyId, filterData.branchId, statusFilter, searchTerm, filterData.productFilters]);
-
+  }, [filterData.companyId, filterData.branchId, statusFilter, searchTerm, filterData.startDate, filterData.endDate, filterData.productFilters]);
+  
   const staticDataLoaded = useRef(false);
 
 
@@ -345,7 +347,7 @@ const SalesManagement = () => {
   useEffect(() => {
     fetchSales(0);
     setCurrentPage(1);
-  }, [filterData.companyId, filterData.branchId, statusFilter, searchTerm, JSON.stringify(filterData.productFilters)]);
+  }, [filterData.companyId, filterData.branchId, statusFilter, searchTerm, filterData.startDate, filterData.endDate, JSON.stringify(filterData.productFilters)]);
 
   useEffect(() => {
     fetchSales(currentPage - 1);
