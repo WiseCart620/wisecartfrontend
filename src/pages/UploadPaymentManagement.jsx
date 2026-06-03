@@ -539,11 +539,10 @@ const UploadPaymentManagement = () => {
                                                             <div className="bg-gray-200 rounded-full h-2 w-16">
                                                                 <div
                                                                     className="bg-green-600 rounded-full h-2 transition-all duration-300"
-                                                                    style={{ width: `${po.paymentStatus === 'FULL_PAID' ? 100 : Math.min((po.totalPaid / po.totalAmount) * 100, 100)}%` }}
-                                                                />
+                                                                    style={{ width: `${po.paymentStatus === 'FULL_PAID' ? 100 : Math.min((po.totalPaidDollar / po.totalAmount) * 100, 100)}%` }} />
                                                             </div>
                                                             <span className="text-sm text-gray-600">
-                                                                {po.paymentStatus === 'FULL_PAID' ? '100' : po.totalAmount > 0 ? Math.min((po.totalPaid / po.totalAmount) * 100, 100).toFixed(0) : '0'}%
+                                                                {po.paymentStatus === 'FULL_PAID' ? '100' : po.totalAmount > 0 ? Math.min((po.totalPaidDollar / po.totalAmount) * 100, 100).toFixed(0) : '0'}%
                                                             </span>
                                                         </div>
                                                     </td>
@@ -1217,7 +1216,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
 
     const calculateAlreadyPaidPercentage = () => {
         if (!po || !po.totalAmount || po.totalAmount === 0) return 0;
-        return ((po.totalPaid / po.totalAmount) * 100).toFixed(2);
+        return ((po.totalPaidDollar / po.totalAmount) * 100).toFixed(2);  // ✅ USD / USD
     };
 
     const calculateNewTotalPercentage = () => {
@@ -1807,7 +1806,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                     </div>
                                     <div>
                                         <span className="text-gray-600">Already Paid:</span>
-                                        <p className="font-medium">${po.totalPaid?.toFixed(2)} ({calculateAlreadyPaidPercentage()}%)</p>
+                                        <p className="font-medium">${po.totalPaidDollar?.toFixed(2)} ({calculateAlreadyPaidPercentage()}%)</p>
                                     </div>
                                     <div>
                                         <span className="text-gray-600">This Payment:</span>
@@ -1815,7 +1814,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                     </div>
                                     <div>
                                         <span className="text-gray-600">New Total:</span>
-                                        <p className="font-bold text-red-600">${(po.totalPaid + parseFloat(formData.productDollarAmount || 0)).toFixed(2)} ({calculateNewTotalPercentage()}%)</p>
+                                        <p className="font-bold text-red-600">${(po.totalPaidDollar + parseFloat(formData.productDollarAmount || 0)).toFixed(2)} ({calculateNewTotalPercentage()}%)</p>
                                     </div>
                                 </div>
                                 <div className="mt-3 text-center">
