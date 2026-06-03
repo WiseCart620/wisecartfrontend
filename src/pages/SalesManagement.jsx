@@ -252,6 +252,9 @@ const SalesManagement = () => {
   const fetchSales = useCallback(async (page = 0) => {
     setLoading(true);
     try {
+      const startDateObj = filterData.startDate ? new Date(filterData.startDate) : null;
+      const endDateObj = filterData.endDate ? new Date(filterData.endDate) : null;
+
       const params = new URLSearchParams({
         page: page,
         size: 10,
@@ -259,8 +262,8 @@ const SalesManagement = () => {
         ...(filterData.branchId && { branchId: filterData.branchId }),
         ...(statusFilter !== 'ALL' && { status: statusFilter }),
         ...(searchTerm && { searchTerm: searchTerm }),
-        ...(filterData.startDate && { startDate: filterData.startDate }),
-        ...(filterData.endDate && { endDate: filterData.endDate }),
+        ...(startDateObj && { startYear: startDateObj.getFullYear(), startMonth: startDateObj.getMonth() + 1 }),
+        ...(endDateObj && { endYear: endDateObj.getFullYear(), endMonth: endDateObj.getMonth() + 1 }),
       });
       if (filterData.productFilters && filterData.productFilters.length > 0) {
         filterData.productFilters.forEach(pf => {
@@ -281,7 +284,7 @@ const SalesManagement = () => {
       setLoading(false);
     }
   }, [filterData.companyId, filterData.branchId, statusFilter, searchTerm, filterData.startDate, filterData.endDate, filterData.productFilters]);
-  
+
   const staticDataLoaded = useRef(false);
 
 
