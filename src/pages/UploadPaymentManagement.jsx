@@ -83,7 +83,7 @@ const UploadPaymentManagement = () => {
         paymentDate: new Date().toISOString().split('T')[0],
         productDollarAmount: '',
         productPesoAmount: '',
-        processingFeeDollar: '0',
+        processingFeeDollar: '0.0000',
         processingFeePeso: '0'
     });
 
@@ -1532,7 +1532,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                 </div>
                                 <input
                                     type="text"
-                                    value={formatNumberWithCommas(formData.productDollarAmount || '0.00')}
+                                    value={formatNumberWithCommas(formData.productDollarAmount || '0.0000')}
                                     onChange={(e) => { }}
                                     onKeyDown={(e) => {
                                         e.preventDefault();
@@ -1591,7 +1591,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                             <div>
                                 <input
                                     type="text"
-                                    value={formatNumberWithCommas(formData.processingFeeDollar || '0.00')}
+                                    value={formatNumberWithCommas(formData.processingFeeDollar || '0.0000')}
                                     onChange={(e) => { }}
                                     onKeyDown={(e) => {
                                         e.preventDefault();
@@ -1643,7 +1643,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                             </div>
                             <div>
                                 <div className="w-full px-4 py-2 bg-gray-100 rounded-lg font-semibold text-gray-900 text-right">
-                                    ${formatNumberWithCommas(calculateDollarTotal().toFixed(2))}
+                                    ${formatNumberWithCommas(calculateDollarTotal().toFixed(4))}
                                 </div>
                             </div>
                             <div>
