@@ -85,7 +85,10 @@ const InventoryManagement = () => {
           api.get('/companies'),
         ]);
         if (productsRes.success) setProducts(productsRes.data || []);
-        if (warehousesRes.success) setWarehouses(warehousesRes.data || []);
+        if (warehousesRes.success) {
+          console.log('Warehouses loaded:', warehousesRes.data);
+          setWarehouses(warehousesRes.data || []);
+        }
         if (branchesRes.success) setBranches(branchesRes.data || []);
         if (companiesRes.success) setCompanies(companiesRes.data || []);
         await loadProductSummaries();
@@ -254,70 +257,106 @@ const InventoryManagement = () => {
     }
   };
 
-  const handleRefresh = async () => {
-    const handleGenerateReport = async () => {
-      setReportLoading(true);
-      try {
-        const params = new URLSearchParams();
-        if (reportFilters.warehouse) params.append('warehouseId', reportFilters.warehouse);
-        if (reportFilters.dateFrom) params.append('dateFrom', reportFilters.dateFrom);
-        if (reportFilters.dateTo) params.append('dateTo', reportFilters.dateTo);
+  const handleGenerateReport = async () => {
+    setReportLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (reportFilters.warehouse) params.append('warehouseId', reportFilters.warehouse);
 
-        const [movementsRes, deliveriesRes, salesRes, begStockRes] = await Promise.all([
-          api.get(`/inventories/report/movements?${params}`),
-          api.get(`/inventories/report/deliveries?${params}`),
-          api.get(`/inventories/report/sales?${params}`),
-          api.get(`/inventories/report/beginning-stock?${params}`),
-        ]);
+      // Fix date format: Convert from MM/DD/YYYY to YYYY-MM-DD
+      let formattedDateFrom = reportFilters.dateFrom;
+      let formattedDateTo = reportFilters.dateTo;
 
-        const productMap = {};
-
-        (movementsRes.data || []).forEach(row => {
-          productMap[row.productId] = {
-            productName: row.productName,
-            stockIn: row.stockIn || 0,
-            transferOut: row.transferOut || 0,
-            returns: row.returns || 0,
-            damage: row.damage || 0,
-            qtyDelivered: 0,
-            drCount: 0,
-            qtySold: 0,
-            totalValue: 0,
-            begStock: 0,
-            endStock: 0,
-          };
-        });
-
-        (deliveriesRes.data || []).forEach(row => {
-          if (productMap[row.productId]) {
-            productMap[row.productId].qtyDelivered = row.qtyDelivered || 0;
-            productMap[row.productId].drCount = row.drCount || 0;
-          }
-        });
-
-        (salesRes.data || []).forEach(row => {
-          if (productMap[row.productId]) {
-            productMap[row.productId].qtySold = row.qtySold || 0;
-            productMap[row.productId].totalValue = row.totalValue || 0;
-          }
-        });
-
-        (begStockRes.data || []).forEach(row => {
-          if (productMap[row.productId]) {
-            const p = productMap[row.productId];
-            p.begStock = row.begStock || 0;
-            p.endStock = p.begStock + p.stockIn - p.transferOut - p.damage - p.qtyDelivered;
-          }
-        });
-
-        setReportData(Object.values(productMap));
-        setShowReportModal(true);
-      } catch (err) {
-        toast.error('Failed to generate report');
-      } finally {
-        setReportLoading(false);
+      if (formattedDateFrom && formattedDateFrom.includes('/')) {
+        const [month, day, year] = formattedDateFrom.split('/');
+        formattedDateFrom = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
       }
-    };
+      if (formattedDateTo && formattedDateTo.includes('/')) {
+        const [month, day, year] = formattedDateTo.split('/');
+        formattedDateTo = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      }
+
+      if (formattedDateFrom) params.append('dateFrom', formattedDateFrom);
+      if (formattedDateTo) params.append('dateTo', formattedDateTo);
+
+      console.log('Report params:', params.toString());
+      console.log('Report filters:', reportFilters);
+      console.log('Formatted dateFrom:', formattedDateFrom);
+      console.log('Formatted dateTo:', formattedDateTo);
+
+      const [movementsRes, deliveriesRes, salesRes, begStockRes] = await Promise.all([
+        api.get(`/inventories/report/movements?${params}`),
+        api.get(`/inventories/report/deliveries?${params}`),
+        api.get(`/inventories/report/sales?${params}`),
+        api.get(`/inventories/report/beginning-stock?${params}`),
+      ]);
+
+      console.log('Movements response:', movementsRes.data);
+      console.log('Deliveries response:', deliveriesRes.data);
+      console.log('Sales response:', salesRes.data);
+      console.log('BegStock response:', begStockRes.data);
+
+      const productMap = {};
+
+      (movementsRes.data || []).forEach(row => {
+        const key = `${row.productId}_${row.variationId || 'base'}`;
+        productMap[key] = {
+          productName: row.productName,
+          variationName: row.variationName || '',
+          variationId: row.variationId || null,
+          stockIn: row.stockIn || 0,
+          transferIn: row.transferIn || 0,
+          transferOut: row.transferOut || 0,
+          returns: row.returns || 0,
+          damage: row.damage || 0,
+          qtyDelivered: 0,
+          drCount: 0,
+          qtySold: 0,
+          totalValue: 0,
+          begStock: 0,
+          stockOnHand: 0,
+        };
+      });
+
+      (deliveriesRes.data || []).forEach(row => {
+        const key = `${row.productId}_${row.variationId || 'base'}`;
+        if (productMap[key]) {
+          productMap[key].qtyDelivered = row.qtyDelivered || 0;
+          productMap[key].drCount = row.drCount || 0;
+        }
+      });
+
+      (salesRes.data || []).forEach(row => {
+        const key = `${row.productId}_${row.variationId || 'base'}`;
+        if (productMap[key]) {
+          productMap[key].qtySold = row.qtySold || 0;
+          productMap[key].totalValue = row.totalValue || 0;
+        }
+      });
+
+      // Calculate Stock as of the filtered date
+      (begStockRes.data || []).forEach(row => {
+        const key = `${row.productId}_${row.variationId || 'base'}`;
+        if (productMap[key]) {
+          const p = productMap[key];
+          p.begStock = row.begStock || 0;
+          const totalInbound = (p.stockIn || 0) + (p.transferIn || 0) + (p.returns || 0);
+          const totalOutbound = (p.transferOut || 0) + (p.damage || 0) + (p.qtyDelivered || 0) + (p.qtySold || 0);
+          p.stockOnHand = p.begStock + totalInbound - totalOutbound;
+        }
+      });
+
+      setReportData(Object.values(productMap));
+      setShowReportModal(true);
+    } catch (err) {
+      toast.error('Failed to generate report');
+      console.error('Report error:', err);
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
     setActionLoading(true);
     setLoadingMessage('Refreshing...');
     try {
@@ -360,7 +399,7 @@ const InventoryManagement = () => {
             >
               <option value="">All Warehouses</option>
               {warehouses.map(w => (
-                <option key={w.id} value={w.id}>{w.name}</option>
+                <option key={w.id} value={String(w.id)}>{w.warehouseName}</option>
               ))}
             </select>
           </div>

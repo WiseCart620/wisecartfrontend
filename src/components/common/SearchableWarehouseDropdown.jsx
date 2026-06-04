@@ -19,7 +19,7 @@ const SearchableWarehouseDropdown = ({ warehouses, value, onChange, placeholder 
     warehouse.warehouseCode.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const selectedWarehouse = warehouses.find(w => w.warehouseName === value);
+  const selectedWarehouse = warehouses.find(w => String(w.id) === String(value));
 
   return (
     <div ref={dropdownRef} className="relative">
@@ -70,12 +70,11 @@ const SearchableWarehouseDropdown = ({ warehouses, value, onChange, placeholder 
                   key={warehouse.id}
                   type="button"
                   onClick={() => {
-                    onChange(warehouse.warehouseName);
+                    onChange(String(warehouse.id));
                     setIsOpen(false);
                     setSearchTerm('');
                   }}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-blue-50 ${value === warehouse.warehouseName ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'
-                    }`}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-blue-50 ${String(value) === String(warehouse.id) ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'}`}
                 >
                   <div className="font-medium">{warehouse.warehouseName}</div>
                   <div className="text-xs text-gray-500">{warehouse.warehouseCode}</div>

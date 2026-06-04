@@ -30,7 +30,7 @@ export const filterWarehouseStocks = (warehouseStocks, stockSearchTerm, warehous
   if (!stockSearchTerm || stockSearchTerm.trim() === '') {
     return warehouseStocks.filter(stock => {
       const matchesWarehouse = !warehouseFilters.warehouse ||
-        stock.warehouseName === warehouseFilters.warehouse;
+        String(stock.warehouseId) === String(warehouseFilters.warehouse);
 
       const matchesMinQty = !warehouseFilters.minQty || (stock.quantity || 0) >= parseInt(warehouseFilters.minQty);
       const matchesMaxQty = !warehouseFilters.maxQty || (stock.quantity || 0) <= parseInt(warehouseFilters.maxQty);
@@ -65,9 +65,8 @@ export const filterWarehouseStocks = (warehouseStocks, stockSearchTerm, warehous
 
     if (!matchesSearch) return false;
 
-    // Apply other filters
     const matchesWarehouse = !warehouseFilters.warehouse ||
-      stock.warehouseName === warehouseFilters.warehouse;
+      String(stock.warehouseId) === String(warehouseFilters.warehouse);
 
     const matchesMinQty = !warehouseFilters.minQty || (stock.quantity || 0) >= parseInt(warehouseFilters.minQty);
     const matchesMaxQty = !warehouseFilters.maxQty || (stock.quantity || 0) <= parseInt(warehouseFilters.maxQty);
