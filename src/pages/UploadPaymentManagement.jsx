@@ -987,9 +987,11 @@ const EditingModal = ({ po, poFormData, setPoFormData, selectedFile, selectedFil
                                         </tbody>
                                         <tfoot className="bg-gray-100 border-t">
                                             <tr>
-                                                <td colSpan="6" className="px-4 py-3 text-right font-bold text-gray-900">
-                                                    Grand Total:
+                                                <td colSpan="4" className="px-4 py-3 text-right font-bold text-gray-900">TOTAL QTY:</td>
+                                                <td className="px-4 py-3 font-bold text-gray-900">
+                                                    {po.items.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0).toLocaleString('en-US')}
                                                 </td>
+                                                <td className="px-4 py-3 text-right font-bold text-gray-900">Grand Total:</td>
                                                 <td className="px-4 py-3 font-bold text-lg text-gray-900">
                                                     ₱{po.totalAmount ? po.totalAmount.toFixed(2) : '0.00'}
                                                 </td>
@@ -1172,7 +1174,11 @@ const QuotationDetailsSection = ({ quotationRequest }) => {
                     </tbody>
                     <tfoot className="bg-gray-50 border-t">
                         <tr>
-                            <td colSpan="5" className="px-3 py-2 text-right font-bold text-sm">Grand Total:</td>
+                            <td colSpan="3" className="px-3 py-2 text-right font-bold text-sm">TOTAL QTY:</td>
+                            <td className="px-3 py-2 text-right font-bold text-sm">
+                                {quotationRequest.items.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0).toLocaleString('en-US')}
+                            </td>
+                            <td className="px-3 py-2 text-right font-bold text-sm">GRAND TOTAL:</td>
                             <td className="px-3 py-2 text-right font-bold text-sm">
                                 ${quotationRequest.items.reduce((sum, item) =>
                                     sum + (parseFloat(item.totalAmount) || 0), 0
@@ -1935,9 +1941,11 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                         </tbody>
                                         <tfoot className="bg-gray-50">
                                             <tr>
-                                                <td colSpan="7" className="px-4 py-3 text-right font-bold text-sm border border-gray-300">
-                                                    GRAND TOTAL:
+                                                <td colSpan="5" className="px-4 py-3 text-right font-bold text-sm border border-gray-300">TOTAL QTY:</td>
+                                                <td className="px-4 py-3 font-bold text-sm border border-gray-300 text-right">
+                                                    {po.items.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0).toLocaleString('en-US')}
                                                 </td>
+                                                <td className="px-4 py-3 text-right font-bold text-sm border border-gray-300">GRAND TOTAL:</td>
                                                 <td className="px-4 py-3 font-bold text-sm border border-gray-300 text-right">
                                                     ${po.items.reduce((sum, item) =>
                                                         sum + ((parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0)), 0
@@ -2161,6 +2169,19 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                                     </tr>
                                                 ))}
                                             </tbody>
+                                            <tfoot className="bg-gray-50 border-t">
+                                                <tr>
+                                                    <td className="px-3 py-2 text-xs font-semibold text-gray-700">Total</td>
+                                                    <td className="px-3 py-2 text-xs font-semibold text-gray-700">
+                                                        {shippingData.items.reduce((s, i) => s + (parseInt(i.qty) || 0), 0).toLocaleString('en-US')}
+                                                    </td>
+                                                    <td className="px-3 py-2"></td>
+                                                    <td className="px-3 py-2"></td>
+                                                    <td className="px-3 py-2 text-right text-xs font-semibold text-gray-700">
+                                                        ₱{formatNumberWithCommas(shippingData.items.reduce((s, i) => s + (parseFloat(i.allocatedPhpCost || 0)), 0).toFixed(2))}
+                                                    </td>
+                                                </tr>
+                                            </tfoot>
                                         </table>
                                     </div>
                                 )}
@@ -2316,9 +2337,11 @@ const ProductDetailsModal = ({ products, onClose, po }) => {
                                 </tbody>
                                 <tfoot className="bg-gray-50">
                                     <tr>
-                                        <td colSpan="7" className="px-4 py-3 text-right font-bold text-sm border border-gray-300">
-                                            GRAND TOTAL:
+                                        <td colSpan="5" className="px-4 py-3 text-right font-bold text-sm border border-gray-300">TOTAL QTY:</td>
+                                        <td className="px-4 py-3 font-bold text-sm border border-gray-300 text-right">
+                                            {products.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0).toLocaleString('en-US')}
                                         </td>
+                                        <td className="px-4 py-3 text-right font-bold text-sm border border-gray-300">GRAND TOTAL:</td>
                                         <td className="px-4 py-3 font-bold text-sm border border-gray-300 text-right">
                                             ${products.reduce((sum, item) =>
                                                 sum + ((parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0)), 0

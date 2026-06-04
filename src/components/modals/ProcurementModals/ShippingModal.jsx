@@ -345,7 +345,9 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
                                     <tfoot className="bg-gray-50 border-t">
                                         <tr>
                                             <td className="px-3 py-2 text-xs font-semibold text-gray-700">Total</td>
-                                            <td className="px-3 py-2"></td>
+                                            <td className="px-3 py-2 text-xs font-semibold text-gray-700 text-right">
+                                                {items.reduce((s, i) => s + (parseInt(i.qty) || 0), 0).toLocaleString('en-US')}
+                                            </td>
                                             <td className="px-3 py-2 text-xs font-semibold text-gray-700">
                                                 {items.reduce((s, i) => s + (parseFloat(i.cbm) || 0), 0).toFixed(4)}
                                             </td>
