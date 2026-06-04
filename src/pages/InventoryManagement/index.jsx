@@ -12,6 +12,7 @@ import { api } from '../../services/api';
 // Components
 import { LoadingOverlay } from '../../components/common/LoadingOverlay';
 import ProductTransactionsModal from '../../components/modals/ProductTransactionsModal';
+import InventorySummaryReportModal from '../../components/modals/InventorySummaryReportModal';
 import ProductSummaryTable from '../../components/tables/InventoryManagement/ProductSummaryTable';
 import WarehouseStockTable from '../../components/tables/InventoryManagement/WarehouseStockTable';
 import BranchStockTable from '../../components/tables/InventoryManagement/BranchStockTable';
@@ -20,8 +21,6 @@ import ProductFilterPanel from '../../components/filters/ProductFilterPanel';
 import WarehouseFilterPanel from '../../components/filters/WarehouseFilterPanel';
 import BranchFilterPanel from '../../components/filters/BranchFilterPanel';
 import TransactionFilterPanel from '../../components/filters/TransactionFilterPanel';
-
-// Utils
 import { calculateTotalQuantity } from '../../utils/transactionHelpers';
 import {
   filterProductSummaries,
@@ -31,7 +30,6 @@ import {
 } from '../../utils/inventoryFilters';
 
 const InventoryManagement = () => {
-  // State
   const [searchTerm, setSearchTerm] = useState('');
   const [productSearchTerm, setProductSearchTerm] = useState('');
   const [stockSearchTerm, setStockSearchTerm] = useState('');
@@ -53,6 +51,14 @@ const InventoryManagement = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [viewingId, setViewingId] = useState(null);
   const [refDataLoading, setRefDataLoading] = useState(true);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportFilters, setReportFilters] = useState({
+    warehouse: '',
+    dateFrom: '',
+    dateTo: '',
+  });
+  const [reportData, setReportData] = useState([]);
+  const [reportLoading, setReportLoading] = useState(false);
 
   const loadProductSummaries = useCallback(async () => {
     try {
@@ -82,8 +88,6 @@ const InventoryManagement = () => {
         if (warehousesRes.success) setWarehouses(warehousesRes.data || []);
         if (branchesRes.success) setBranches(branchesRes.data || []);
         if (companiesRes.success) setCompanies(companiesRes.data || []);
-
-        // FIX: load product summaries separately via the shared callback
         await loadProductSummaries();
       } finally {
         setRefDataLoading(false);
@@ -251,6 +255,69 @@ const InventoryManagement = () => {
   };
 
   const handleRefresh = async () => {
+    const handleGenerateReport = async () => {
+      setReportLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (reportFilters.warehouse) params.append('warehouseId', reportFilters.warehouse);
+        if (reportFilters.dateFrom) params.append('dateFrom', reportFilters.dateFrom);
+        if (reportFilters.dateTo) params.append('dateTo', reportFilters.dateTo);
+
+        const [movementsRes, deliveriesRes, salesRes, begStockRes] = await Promise.all([
+          api.get(`/inventories/report/movements?${params}`),
+          api.get(`/inventories/report/deliveries?${params}`),
+          api.get(`/inventories/report/sales?${params}`),
+          api.get(`/inventories/report/beginning-stock?${params}`),
+        ]);
+
+        const productMap = {};
+
+        (movementsRes.data || []).forEach(row => {
+          productMap[row.productId] = {
+            productName: row.productName,
+            stockIn: row.stockIn || 0,
+            transferOut: row.transferOut || 0,
+            returns: row.returns || 0,
+            damage: row.damage || 0,
+            qtyDelivered: 0,
+            drCount: 0,
+            qtySold: 0,
+            totalValue: 0,
+            begStock: 0,
+            endStock: 0,
+          };
+        });
+
+        (deliveriesRes.data || []).forEach(row => {
+          if (productMap[row.productId]) {
+            productMap[row.productId].qtyDelivered = row.qtyDelivered || 0;
+            productMap[row.productId].drCount = row.drCount || 0;
+          }
+        });
+
+        (salesRes.data || []).forEach(row => {
+          if (productMap[row.productId]) {
+            productMap[row.productId].qtySold = row.qtySold || 0;
+            productMap[row.productId].totalValue = row.totalValue || 0;
+          }
+        });
+
+        (begStockRes.data || []).forEach(row => {
+          if (productMap[row.productId]) {
+            const p = productMap[row.productId];
+            p.begStock = row.begStock || 0;
+            p.endStock = p.begStock + p.stockIn - p.transferOut - p.damage - p.qtyDelivered;
+          }
+        });
+
+        setReportData(Object.values(productMap));
+        setShowReportModal(true);
+      } catch (err) {
+        toast.error('Failed to generate report');
+      } finally {
+        setReportLoading(false);
+      }
+    };
     setActionLoading(true);
     setLoadingMessage('Refreshing...');
     try {
@@ -281,6 +348,48 @@ const InventoryManagement = () => {
         <div className="mb-4">
           <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Inventory Management</h1>
           <p className="text-sm text-gray-600">Track stock movements across warehouses and branches</p>
+        </div>
+
+        <div className="mb-4 flex flex-wrap gap-3 items-end p-3 bg-gray-50 border border-gray-200 rounded-lg">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-gray-500">Warehouse</label>
+            <select
+              value={reportFilters.warehouse}
+              onChange={e => setReportFilters(f => ({ ...f, warehouse: e.target.value }))}
+              className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Warehouses</option>
+              {warehouses.map(w => (
+                <option key={w.id} value={w.id}>{w.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-gray-500">Date From</label>
+            <input
+              type="date"
+              value={reportFilters.dateFrom}
+              onChange={e => setReportFilters(f => ({ ...f, dateFrom: e.target.value }))}
+              className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-gray-500">Date To</label>
+            <input
+              type="date"
+              value={reportFilters.dateTo}
+              onChange={e => setReportFilters(f => ({ ...f, dateTo: e.target.value }))}
+              className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <button
+            onClick={handleGenerateReport}
+            disabled={reportLoading}
+            className="px-4 py-1.5 text-sm bg-[#185FA5] text-white rounded-lg hover:bg-[#0C447C] transition disabled:opacity-50 flex items-center gap-2"
+          >
+            <BarChart3 size={14} />
+            {reportLoading ? 'Generating...' : 'Generate Report'}
+          </button>
         </div>
 
         {/* Navigation Tabs */}
@@ -329,7 +438,7 @@ const InventoryManagement = () => {
               </button>
             </nav>
           </div>
-          <div className="mt-3 flex justify-end">
+          <div className="mt-3 flex justify-end gap-2">
             <button
               onClick={handleRefresh}
               disabled={actionLoading}
@@ -530,6 +639,14 @@ const InventoryManagement = () => {
             )}
           </>
         )}
+
+        <InventorySummaryReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          data={reportData}
+          filters={reportFilters}
+          warehouses={warehouses}
+        />
 
         <ProductTransactionsModal
           product={transactionHandlers.selectedProduct}
