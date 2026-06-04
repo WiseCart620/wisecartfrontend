@@ -101,7 +101,7 @@ const Dashboard = () => {
         setSelectedProductId(productAnalysis[0].id);
       }
     }
-  }, [sales, products, selectedYear, selectedCompany, selectedBranch, performanceYear, performanceView, performanceMonth]);
+  }, [sales, products, selectedYear, selectedCompany, selectedBranch, performanceYear, performanceView, performanceMonth, selectedProductId]);
 
   const loadStats = async () => {
     try {
