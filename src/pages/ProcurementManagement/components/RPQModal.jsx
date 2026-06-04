@@ -419,7 +419,7 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
                                                 <td className="px-3 py-2 border border-gray-300">
                                                     <input
                                                         type="text"
-                                                        value={formatNumberWithCommas(item.unitPrice || '0.00')}
+                                                        value={formatNumberWithCommas(item.unitPrice || '0.0000')}
                                                         onChange={() => { }} // Add this to silence the warning
                                                         onKeyDown={(e) => {
                                                             e.preventDefault();
@@ -427,9 +427,9 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
                                                             let newValue;
 
                                                             if (e.key === 'Backspace' || e.key === 'Delete') {
-                                                                newValue = handleCalculatorInput(item.unitPrice || '0.00', '', true);
+                                                                newValue = handleCalculatorInput(item.unitPrice || '0.0000', '', true, 4);
                                                             } else if (e.key >= '0' && e.key <= '9') {
-                                                                newValue = handleCalculatorInput(item.unitPrice || '0.00', e.key, false);
+                                                                newValue = handleCalculatorInput(item.unitPrice || '0.0000', e.key, false, 4);
                                                             } else if (e.key === 'Tab' || e.key === 'Enter') {
                                                                 return;
                                                             } else {
@@ -449,7 +449,7 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
                                                             recalculatePaymentAmounts();
                                                         }}
                                                         className="w-24 px-2 py-1 border border-gray-300 rounded text-xs no-print text-right"
-                                                        placeholder="0.00"
+                                                        placeholder="0.0000"
                                                     />
                                                     <span className="hidden print:inline text-xs">
                                                         {item.unitPrice && parseFloat(item.unitPrice) > 0 ? `$${formatNumberWithCommas(parseFloat(item.unitPrice).toFixed(2))}` : ''}
@@ -474,7 +474,11 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
                                     </tbody>
                                     <tfoot className="bg-gray-50">
                                         <tr>
-                                            <td colSpan="6" className="px-3 py-2 text-right font-bold text-sm border border-gray-300">GRAND TOTAL:</td>
+                                            <td colSpan="4" className="px-3 py-2 text-right font-bold text-sm border border-gray-300">TOTAL QTY:</td>
+                                            <td className="px-3 py-2 font-bold text-sm border border-gray-300 text-right">
+                                                {rpqFormData.items.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0).toLocaleString('en-US')}
+                                            </td>
+                                            <td className="px-3 py-2 text-right font-bold text-sm border border-gray-300">GRAND TOTAL:</td>
                                             <td className="px-3 py-2 font-bold text-sm border border-gray-300 text-right">
                                                 ${formatNumberWithCommas(rpqFormData.items.reduce((sum, item) =>
                                                     sum + ((parseFloat(parseFormattedNumber(item.unitPrice || 0)) || 0) * (parseInt(item.qty) || 0)), 0

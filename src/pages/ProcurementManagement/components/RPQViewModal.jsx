@@ -251,7 +251,7 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
                                                 {item.qty ? parseInt(item.qty).toLocaleString('en-US') : '-'}
                                             </td>
                                             <td className="px-3 py-2 text-xs border border-gray-300">
-                                                {item.unitPrice && parseFloat(item.unitPrice) > 0 ? `$${parseFloat(item.unitPrice).toFixed(2)}` : '-'}
+                                                {item.unitPrice && parseFloat(item.unitPrice) > 0 ? `$${parseFloat(item.unitPrice).toFixed(4)}` : '-'}
                                             </td>
                                             <td className="px-3 py-2 text-xs font-medium border border-gray-300">
                                                 {(() => {
@@ -264,7 +264,11 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
                                 </tbody>
                                 <tfoot className="bg-gray-50">
                                     <tr>
-                                        <td colSpan="6" className="px-3 py-2 text-right font-bold text-sm border border-gray-300">GRAND TOTAL:</td>
+                                        <td colSpan="4" className="px-3 py-2 text-right font-bold text-sm border border-gray-300">TOTAL QTY:</td>
+                                        <td className="px-3 py-2 font-bold text-sm border border-gray-300 text-right">
+                                            {viewingRpq.items.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0).toLocaleString('en-US')}
+                                        </td>
+                                        <td className="px-3 py-2 text-right font-bold text-sm border border-gray-300">GRAND TOTAL:</td>
                                         <td className="px-3 py-2 font-bold text-sm border border-gray-300 text-right">
                                             ${formatNumberWithCommas(viewingRpq.items.reduce((sum, item) =>
                                                 sum + ((parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0)), 0

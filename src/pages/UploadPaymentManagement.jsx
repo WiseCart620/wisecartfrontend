@@ -32,22 +32,23 @@ const parseFormattedNumber = (formattedValue) => {
     return stringValue.replace(/[^0-9.]/g, '');
 };
 
-const handleCalculatorInput = (currentValue, newInput, isBackspace) => {
-    const currentCents = Math.round(parseFloat(currentValue || '0') * 100);
-    const currentStr = currentCents.toString().padStart(1, '0');
+const handleCalculatorInput = (currentValue, newInput, isBackspace, decimals = 2) => {
+    const multiplier = Math.pow(10, decimals);
+    const currentUnits = Math.round(parseFloat(currentValue || '0') * multiplier);
+    const currentStr = currentUnits.toString().padStart(1, '0');
 
-    let newCents;
+    let newUnits;
     if (isBackspace) {
-        newCents = Math.floor(currentCents / 10);
+        newUnits = Math.floor(currentUnits / 10);
     } else {
         const digit = newInput.replace(/[^0-9]/g, '').slice(-1);
         if (digit) {
-            newCents = parseInt(currentStr + digit);
+            newUnits = parseInt(currentStr + digit);
         } else {
             return currentValue;
         }
     }
-    return (newCents / 100).toFixed(2);
+    return (newUnits / multiplier).toFixed(decimals);
 };
 
 const UploadPaymentManagement = () => {
@@ -1531,9 +1532,9 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                         e.preventDefault();
                                         let newValue;
                                         if (e.key === 'Backspace' || e.key === 'Delete') {
-                                            newValue = handleCalculatorInput(formData.productDollarAmount || '0.00', '', true);
+                                            newValue = handleCalculatorInput(formData.productDollarAmount || '0.0000', '', true, 4);
                                         } else if (e.key >= '0' && e.key <= '9') {
-                                            newValue = handleCalculatorInput(formData.productDollarAmount || '0.00', e.key, false);
+                                            newValue = handleCalculatorInput(formData.productDollarAmount || '0.0000', e.key, false, 4);
                                         } else if (e.key === 'Tab' || e.key === 'Enter') {
                                             return;
                                         } else {
@@ -1543,7 +1544,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                     }}
                                     required
                                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right"
-                                    placeholder="0.00"
+                                    placeholder="0.0000"
                                 />
                             </div>
                             <div>
@@ -1590,9 +1591,9 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                         e.preventDefault();
                                         let newValue;
                                         if (e.key === 'Backspace' || e.key === 'Delete') {
-                                            newValue = handleCalculatorInput(formData.processingFeeDollar || '0.00', '', true);
+                                            newValue = handleCalculatorInput(formData.processingFeeDollar || '0.0000', '', true, 4);
                                         } else if (e.key >= '0' && e.key <= '9') {
-                                            newValue = handleCalculatorInput(formData.processingFeeDollar || '0.00', e.key, false);
+                                            newValue = handleCalculatorInput(formData.processingFeeDollar || '0.0000', e.key, false, 4);
                                         } else if (e.key === 'Tab' || e.key === 'Enter') {
                                             return;
                                         } else {
@@ -1601,7 +1602,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                         setFormData({ ...formData, processingFeeDollar: newValue });
                                     }}
                                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right"
-                                    placeholder="0.00"
+                                    placeholder="0.0000"
                                 />
                             </div>
                             <div>
