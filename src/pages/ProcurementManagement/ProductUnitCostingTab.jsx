@@ -55,8 +55,8 @@ const ProductUnitCostingTab = () => {
     );
 
     const formatCost = (val) => {
-        if (!val) return '₱0.0000';
-        return `₱${parseFloat(val).toLocaleString('en-PH', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
+        if (!val) return '₱0.00';
+        return `₱${parseFloat(val).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     const MiniChart = ({ data, pos, onClose, isHover = false }) => {
