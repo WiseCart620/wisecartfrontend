@@ -354,27 +354,29 @@ const InventoryManagement = () => {
         const key = `${row.productId}_${row.variationId || 'base'}`;
         if (!productMap[key]) {
           productMap[key] = {
-            productName: row.productName || `Product ${row.productId}`,
+            productName: row.productName,
             variationName: row.variationName || '',
             variationId: row.variationId || null,
-            stockIn: 0,
-            transferIn: 0,
-            transferOut: 0,
-            returns: 0,
-            damage: 0,
+            stockIn: row.stockIn || 0,
+            transferIn: row.transferIn || 0,
+            transferOut: row.transferOut || 0,
+            returns: row.returns || 0,
+            damage: row.damage || 0,
             qtyDelivered: 0,
             drCount: 0,
             qtySold: 0,
             totalValue: 0,
             begStock: 0,
-            stockOnHand: 0,
+            stockOnHand: row.currentStock || 0,
           };
         }
         const p = productMap[key];
         p.begStock = row.begStock || 0;
         const totalInbound = (p.stockIn || 0) + (p.transferIn || 0) + (p.returns || 0);
         const totalOutbound = (p.transferOut || 0) + (p.damage || 0) + (p.qtyDelivered || 0) + (p.qtySold || 0);
-        p.stockOnHand = p.begStock + totalInbound - totalOutbound;
+        if (!productMap[key] || productMap[key].stockOnHand === 0) {
+          p.stockOnHand = p.begStock + totalInbound - totalOutbound;
+        }
       });
 
       setReportData(Object.values(productMap));
