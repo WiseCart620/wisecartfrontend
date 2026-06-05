@@ -5,12 +5,12 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const allMainMenuItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: Home, financeHidden: true },
-  { to: '/sales', label: 'Sales', icon: ShoppingCart, financeHidden: false },
-  { to: '/deliveries', label: 'Deliveries', icon: Truck, financeHidden: false },
-  { to: '/warehouse-inventory', label: 'Warehouse', icon: PackageOpen, financeHidden: true },
-  { to: '/inventory', label: 'Inventory Record', icon: PackageSearch, financeHidden: true },
-  { to: '/procurement', label: 'Procurement', icon: ClipboardList, financeHidden: true },
+  { to: '/dashboard', label: 'Dashboard', icon: Home, userHidden: true },
+  { to: '/sales', label: 'Sales', icon: ShoppingCart, userHidden: false },
+  { to: '/deliveries', label: 'Deliveries', icon: Truck, userHidden: false },
+  { to: '/warehouse-inventory', label: 'Warehouse', icon: PackageOpen, userHidden: true },
+  { to: '/inventory', label: 'Inventory Record', icon: PackageSearch, userHidden: true },
+  { to: '/procurement', label: 'Procurement', icon: ClipboardList, userHidden: true },
 ];
 
 const dataEntryItems = [
@@ -27,7 +27,7 @@ const Sidebar = ({ isOpen, toggle }) => {
   const isUser = user?.role === 'USER';
   const isRestricted = isUser;
   const mainMenuItems = isRestricted
-    ? allMainMenuItems.filter(item => !item.financeHidden)
+    ? allMainMenuItems.filter(item => !item.userHidden)
     : allMainMenuItems;
   const showDataEntry = isAdmin || isFinance;
 

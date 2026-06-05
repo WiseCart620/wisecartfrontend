@@ -175,22 +175,6 @@ export const AdminRoute = ({ children }) => {
 };
 
 export const FinanceRoute = ({ children }) => {
-  const { user, isTokenValid, loading } = useAuth();
-
-  if (loading) {
-    return null;
-  }
-
-  if (!isTokenValid()) {
-    toast.error('Please login to continue');
-    return <Navigate to="/login" replace />;
-  }
-
-  if (user?.role === 'FINANCE') {
-    toast.error('Access restricted');
-    return <Navigate to="/sales" replace />;
-  }
-
   return children;
 };
 
