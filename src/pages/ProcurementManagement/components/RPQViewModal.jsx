@@ -251,7 +251,9 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
                                                 {item.qty ? parseInt(item.qty).toLocaleString('en-US') : '-'}
                                             </td>
                                             <td className="px-3 py-2 text-xs border border-gray-300">
-                                                {item.unitPrice && parseFloat(item.unitPrice) > 0 ? `$${parseFloat(item.unitPrice).toFixed(4)}` : '-'}
+                                                {item.unitPrice && parseFloat(item.unitPrice) > 0
+                                                    ? `$${parseFloat(item.unitPrice).toFixed(4)}`
+                                                    : '-'}
                                             </td>
                                             <td className="px-3 py-2 text-xs font-medium border border-gray-300">
                                                 {(() => {

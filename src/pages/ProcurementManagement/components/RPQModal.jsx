@@ -53,7 +53,9 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
                 items: editingRpq.items?.map(item => ({
                     ...item,
                     uom: item.uom || 'PCS',
-                    unitPrice: item.unitPrice || '',
+                    unitPrice: item.unitPrice
+                        ? parseFloat(item.unitPrice).toFixed(4)
+                        : '0.0000',
                     totalAmount: item.totalAmount || ''
                 })) || [],
                 moq: editingRpq.moq || '',
@@ -77,8 +79,8 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
         }
     }, [editingRpq]);
 
-    const recalculatePaymentAmounts = () => {
-        const grandTotal = rpqFormData.items.reduce((sum, item) => {
+    const recalculatePaymentAmounts = (updatedItems) => {
+        const grandTotal = updatedItems.reduce((sum, item) => {
             const unitPrice = parseFloat(parseFormattedNumber(item.unitPrice || 0)) || 0;
             const qty = parseInt(item.qty) || 0;
             return sum + (unitPrice * qty);
@@ -90,10 +92,13 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
 
             setRpqFormData(prev => ({
                 ...prev,
+                items: updatedItems,
                 initialPaymentAmount: (grandTotal * initialPercent) / 100,
                 finalPaymentPercent: finalPercent === '' ? '' : finalPercent.toString(),
                 finalPaymentAmount: finalPercent === '' ? 0 : (grandTotal * finalPercent) / 100
             }));
+        } else {
+            setRpqFormData(prev => ({ ...prev, items: updatedItems }));
         }
     };
 
@@ -444,15 +449,13 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
                                                                 unitPrice: newValue,
                                                                 totalAmount: unitPrice * qty
                                                             };
-
-                                                            setRpqFormData({ ...rpqFormData, items: newItems });
-                                                            recalculatePaymentAmounts();
+                                                            recalculatePaymentAmounts(newItems);
                                                         }}
                                                         className="w-24 px-2 py-1 border border-gray-300 rounded text-xs no-print text-right"
                                                         placeholder="0.0000"
                                                     />
                                                     <span className="hidden print:inline text-xs">
-                                                        {item.unitPrice && parseFloat(item.unitPrice) > 0 ? `$${formatNumberWithCommas(parseFloat(item.unitPrice).toFixed(2))}` : ''}
+                                                        {item.unitPrice && parseFloat(item.unitPrice) > 0 ? `$${formatNumberWithCommas(parseFloat(item.unitPrice).toFixed(4))}` : ''}
                                                     </span>
                                                 </td>
                                                 <td className="px-3 py-2 border border-gray-300">
