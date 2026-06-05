@@ -264,6 +264,7 @@ const UserManagement = () => {
     const roleStyles = {
       ADMIN: 'bg-purple-100 text-purple-800',
       USER: 'bg-blue-100 text-blue-800',
+      FINANCE: 'bg-green-100 text-green-800',
     };
 
     return (
@@ -386,8 +387,8 @@ const UserManagement = () => {
                         <button
                           onClick={() => handleToggleStatus(user)}
                           className={`p-2 rounded-lg transition ${user.enabled
-                              ? 'text-orange-600 hover:bg-orange-50'
-                              : 'text-green-600 hover:bg-green-50'
+                            ? 'text-orange-600 hover:bg-orange-50'
+                            : 'text-green-600 hover:bg-green-50'
                             }`}
                           title={user.enabled ? 'Disable User' : 'Enable User'}
                         >
@@ -528,6 +529,7 @@ const UserManagement = () => {
                   >
                     <option value="USER">User</option>
                     <option value="ADMIN">Admin</option>
+                    <option value="FINANCE">Finance</option>
                   </select>
                 </div>
 

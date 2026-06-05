@@ -4,13 +4,13 @@ import { Package, Truck, Warehouse, ShoppingCart, Users, Home, UserPlus, Package
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-const mainMenuItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: Home },
-  { to: '/sales', label: 'Sales', icon: ShoppingCart },
-  { to: '/deliveries', label: 'Deliveries', icon: Truck },
-  { to: '/warehouse-inventory', label: 'Warehouse', icon: PackageOpen },
-  { to: '/inventory', label: 'Inventory Record', icon: PackageSearch },
-  { to: '/procurement', label: 'Procurement', icon: ClipboardList },
+const allMainMenuItems = [
+  { to: '/dashboard', label: 'Dashboard', icon: Home, financeHidden: true },
+  { to: '/sales', label: 'Sales', icon: ShoppingCart, financeHidden: false },
+  { to: '/deliveries', label: 'Deliveries', icon: Truck, financeHidden: false },
+  { to: '/warehouse-inventory', label: 'Warehouse', icon: PackageOpen, financeHidden: true },
+  { to: '/inventory', label: 'Inventory Record', icon: PackageSearch, financeHidden: true },
+  { to: '/procurement', label: 'Procurement', icon: ClipboardList, financeHidden: true },
 ];
 
 const dataEntryItems = [
@@ -23,6 +23,11 @@ const dataEntryItems = [
 const Sidebar = ({ isOpen, toggle }) => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
+  const isFinance = user?.role === 'FINANCE';
+  const mainMenuItems = isFinance
+    ? allMainMenuItems.filter(item => !item.financeHidden)
+    : allMainMenuItems;
+
   const [dataEntryOpen, setDataEntryOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -71,42 +76,44 @@ const Sidebar = ({ isOpen, toggle }) => {
               );
             })}
 
-            <div className={`pt-2 ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
-              <button
-                onClick={() => setDataEntryOpen(!dataEntryOpen)}
-                className="flex items-center justify-between w-full px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"
-              >
-                <div className="flex items-center gap-3">
-                  <Database size={20} />
-                  <span className="font-medium">Data Entry</span>
-                </div>
-                {dataEntryOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-              </button>
+            {!isFinance && (
+              <div className={`pt-2 ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
+                <button
+                  onClick={() => setDataEntryOpen(!dataEntryOpen)}
+                  className="flex items-center justify-between w-full px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 transition"
+                >
+                  <div className="flex items-center gap-3">
+                    <Database size={20} />
+                    <span className="font-medium">Data Entry</span>
+                  </div>
+                  {dataEntryOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                </button>
 
-              <div className={`overflow-hidden transition-all duration-300 ${dataEntryOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                <div className="ml-4 mt-1 space-y-1 border-l-2 border-gray-700 pl-2">
-                  {dataEntryItems.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <NavLink
-                        key={item.to}
-                        to={item.to}
-                        onClick={() => window.innerWidth < 1024 && toggle()}
-                        className={({ isActive }) =>
-                          `flex items-center gap-3 px-4 py-2.5 rounded-lg transition text-sm ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-800 text-gray-400'
-                          }`
-                        }
-                      >
-                        <Icon size={18} />
-                        <span>{item.label}</span>
-                      </NavLink>
-                    );
-                  })}
+                <div className={`overflow-hidden transition-all duration-300 ${dataEntryOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                  <div className="ml-4 mt-1 space-y-1 border-l-2 border-gray-700 pl-2">
+                    {dataEntryItems.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <NavLink
+                          key={item.to}
+                          to={item.to}
+                          onClick={() => window.innerWidth < 1024 && toggle()}
+                          className={({ isActive }) =>
+                            `flex items-center gap-3 px-4 py-2.5 rounded-lg transition text-sm ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-800 text-gray-400'
+                            }`
+                          }
+                        >
+                          <Icon size={18} />
+                          <span>{item.label}</span>
+                        </NavLink>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {sidebarCollapsed && (
+            {sidebarCollapsed && !isFinance && (
               <div className="hidden lg:block pt-2 space-y-1">
                 {dataEntryItems.map((item) => {
                   const Icon = item.icon;

@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }) => {
   const validateToken = () => {
     const token = localStorage.getItem('authToken');
     const userData = localStorage.getItem('user');
-    
+
     if (!token || !userData) {
       setUser(null);
       return false;
@@ -96,10 +96,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      login, 
-      logout, 
+    <AuthContext.Provider value={{
+      user,
+      login,
+      logout,
       loading,
       isTokenValid: checkTokenValid
     }}>
@@ -120,7 +120,7 @@ export const useAuth = () => {
 
 export const AuthLoading = ({ children }) => {
   const { loading } = useAuth();
-  
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
@@ -131,45 +131,65 @@ export const AuthLoading = ({ children }) => {
       </div>
     );
   }
-  
+
   return children;
 };
 
 
 export const ProtectedRoute = ({ children }) => {
   const { isTokenValid, loading } = useAuth();
-  
+
 
   if (loading) {
     return null;
   }
-  
+
   if (!isTokenValid()) {
     toast.error('Please login to continue');
     return <Navigate to="/login" replace />;
   }
-  
+
   return children;
 };
 
 
 export const AdminRoute = ({ children }) => {
   const { user, isTokenValid, loading } = useAuth();
-  
+
 
   if (loading) {
     return null;
   }
-  
+
   if (!isTokenValid()) {
     toast.error('Please login to continue');
     return <Navigate to="/login" replace />;
   }
-  
+
   if (!user || user.role !== 'ADMIN') {
     toast.error('Admin access required');
     return <Navigate to="/dashboard" replace />;
   }
-  
+
+  return children;
+};
+
+export const FinanceRoute = ({ children }) => {
+  const { user, isTokenValid, loading } = useAuth();
+
+  if (loading) {
+    return null;
+  }
+
+  if (!isTokenValid()) {
+    toast.error('Please login to continue');
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user?.role === 'FINANCE') {
+    toast.error('Access restricted');
+    return <Navigate to="/sales" replace />;
+  }
+
   return children;
 };

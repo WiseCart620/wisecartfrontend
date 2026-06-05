@@ -15,7 +15,7 @@ import Layout from './components/layout/Layout';
 import Supplier from './pages/SupplierManagement';
 import ProcurementManagement from './pages/ProcurementManagement/index.jsx';
 import TransmittalManagement from './pages/TransmittalManagement';
-import { AuthProvider, AuthLoading, ProtectedRoute, AdminRoute } from './context/AuthContext';
+import { AuthProvider, AuthLoading, ProtectedRoute, AdminRoute, FinanceRoute } from './context/AuthContext';
 import { startActivityTracking, stopActivityTracking } from './services/api';
 import { useEffect } from 'react';
 
@@ -37,35 +37,43 @@ function App() {
 
             <Route path="/dashboard" element={
               <ProtectedRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
+                <FinanceRoute>
+                  <Layout>
+                    <Dashboard />
+                  </Layout>
+                </FinanceRoute>
               </ProtectedRoute>
             } />
 
 
             <Route path="/supplier" element={
               <ProtectedRoute>
-                <Layout>
-                  <Supplier />
-                </Layout>
+                <FinanceRoute>
+                  <Layout>
+                    <Supplier />
+                  </Layout>
+                </FinanceRoute>
               </ProtectedRoute>
             } />
 
 
             <Route path="/procurement" element={
               <ProtectedRoute>
-                <Layout>
-                  <ProcurementManagement />
-                </Layout>
+                <FinanceRoute>
+                  <Layout>
+                    <ProcurementManagement />
+                  </Layout>
+                </FinanceRoute>
               </ProtectedRoute>
             } />
 
             <Route path="/transmittals" element={
               <ProtectedRoute>
-                <Layout>
-                  <TransmittalManagement />
-                </Layout>
+                <FinanceRoute>
+                  <Layout>
+                    <TransmittalManagement />
+                  </Layout>
+                </FinanceRoute>
               </ProtectedRoute>
             } />
 
@@ -82,9 +90,11 @@ function App() {
 
             <Route path="/warehouse-inventory" element={
               <ProtectedRoute>
-                <Layout>
-                  <WarehouseInventory />
-                </Layout>
+                <FinanceRoute>
+                  <Layout>
+                    <WarehouseInventory />
+                  </Layout>
+                </FinanceRoute>
               </ProtectedRoute>
             } />
 
@@ -101,9 +111,11 @@ function App() {
 
             <Route path="/inventory" element={
               <ProtectedRoute>
-                <Layout>
-                  <InventoryManagement />
-                </Layout>
+                <FinanceRoute>
+                  <Layout>
+                    <InventoryManagement />
+                  </Layout>
+                </FinanceRoute>
               </ProtectedRoute>
             } />
 
@@ -117,25 +129,31 @@ function App() {
 
             <Route path="/warehouse" element={
               <ProtectedRoute>
-                <Layout>
-                  <WarehouseManagement />
-                </Layout>
+                <FinanceRoute>
+                  <Layout>
+                    <WarehouseManagement />
+                  </Layout>
+                </FinanceRoute>
               </ProtectedRoute>
             } />
 
             <Route path="/products" element={
               <ProtectedRoute>
-                <Layout>
-                  <ProductManagement />
-                </Layout>
+                <FinanceRoute>
+                  <Layout>
+                    <ProductManagement />
+                  </Layout>
+                </FinanceRoute>
               </ProtectedRoute>
             } />
 
             <Route path="/branches" element={
               <ProtectedRoute>
-                <Layout>
-                  <BranchCompanyManagement />
-                </Layout>
+                <FinanceRoute>
+                  <Layout>
+                    <BranchCompanyManagement />
+                  </Layout>
+                </FinanceRoute>
               </ProtectedRoute>
             } />
 
