@@ -314,7 +314,7 @@ const InventoryManagement = () => {
           qtySold: 0,
           totalValue: 0,
           begStock: 0,
-          stockOnHand: 0,
+          stockOnHand: row.currentStock || 0,
         };
       });
 
