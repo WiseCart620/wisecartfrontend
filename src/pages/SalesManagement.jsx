@@ -191,6 +191,7 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
 const SalesManagement = () => {
   const { user } = useAuth();
   const isAdminOrUser = user?.role === 'ADMIN' || user?.role === 'USER';
+  const isAdminOrFinance = user?.role === 'ADMIN' || user?.role === 'FINANCE';
   const [sales, setSales] = useState([]);
   const [branches, setBranches] = useState([]);
   const [products, setProducts] = useState([]);
@@ -1245,7 +1246,7 @@ const SalesManagement = () => {
                     <span>New Sale</span>
                   </button>
                 )}
-                {isAdminOrUser && (
+                {isAdminOrFinance && (
                   <button
                     onClick={() => setShowInvoiceModal(true)}
                     className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md text-sm"
@@ -1254,7 +1255,7 @@ const SalesManagement = () => {
                     <span>Generate Invoice / COS</span>
                   </button>
                 )}
-                {isAdminOrUser && (
+                {isAdminOrFinance && (
                   <button
                     onClick={() => setShowInvoicingProfile(true)}
                     className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-md text-sm font-medium"
