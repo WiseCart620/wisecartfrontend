@@ -27,6 +27,7 @@ const Sidebar = ({ isOpen, toggle }) => {
   const mainMenuItems = isFinance
     ? allMainMenuItems.filter(item => !item.financeHidden)
     : allMainMenuItems;
+  const showDataEntry = !isFinance;
 
   const [dataEntryOpen, setDataEntryOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -76,7 +77,7 @@ const Sidebar = ({ isOpen, toggle }) => {
               );
             })}
 
-            {!isFinance && (
+            {showDataEntry && (
               <div className={`pt-2 ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
                 <button
                   onClick={() => setDataEntryOpen(!dataEntryOpen)}
@@ -113,7 +114,7 @@ const Sidebar = ({ isOpen, toggle }) => {
               </div>
             )}
 
-            {sidebarCollapsed && !isFinance && (
+            {sidebarCollapsed && showDataEntry && (
               <div className="hidden lg:block pt-2 space-y-1">
                 {dataEntryItems.map((item) => {
                   const Icon = item.icon;

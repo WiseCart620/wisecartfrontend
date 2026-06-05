@@ -15,7 +15,7 @@ import Layout from './components/layout/Layout';
 import Supplier from './pages/SupplierManagement';
 import ProcurementManagement from './pages/ProcurementManagement/index.jsx';
 import TransmittalManagement from './pages/TransmittalManagement';
-import { AuthProvider, AuthLoading, ProtectedRoute, AdminRoute, FinanceRoute } from './context/AuthContext';
+import { AuthProvider, AuthLoading, ProtectedRoute, AdminRoute, FinanceRoute, AdminOrUserRoute } from './context/AuthContext';
 import { startActivityTracking, stopActivityTracking } from './services/api';
 import { useEffect } from 'react';
 
@@ -37,43 +37,43 @@ function App() {
 
             <Route path="/dashboard" element={
               <ProtectedRoute>
-                <FinanceRoute>
+                <AdminOrUserRoute>
                   <Layout>
                     <Dashboard />
                   </Layout>
-                </FinanceRoute>
+                </AdminOrUserRoute>
               </ProtectedRoute>
             } />
 
 
             <Route path="/supplier" element={
               <ProtectedRoute>
-                <FinanceRoute>
+                <AdminOrUserRoute>
                   <Layout>
                     <Supplier />
                   </Layout>
-                </FinanceRoute>
+                </AdminOrUserRoute>
               </ProtectedRoute>
             } />
 
 
             <Route path="/procurement" element={
               <ProtectedRoute>
-                <FinanceRoute>
+                <AdminOrUserRoute>
                   <Layout>
                     <ProcurementManagement />
                   </Layout>
-                </FinanceRoute>
+                </AdminOrUserRoute>
               </ProtectedRoute>
             } />
 
             <Route path="/transmittals" element={
               <ProtectedRoute>
-                <FinanceRoute>
+                <AdminOrUserRoute>
                   <Layout>
                     <TransmittalManagement />
                   </Layout>
-                </FinanceRoute>
+                </AdminOrUserRoute>
               </ProtectedRoute>
             } />
 
@@ -90,11 +90,11 @@ function App() {
 
             <Route path="/warehouse-inventory" element={
               <ProtectedRoute>
-                <FinanceRoute>
+                <AdminOrUserRoute>
                   <Layout>
                     <WarehouseInventory />
                   </Layout>
-                </FinanceRoute>
+                </AdminOrUserRoute>
               </ProtectedRoute>
             } />
 
@@ -111,11 +111,11 @@ function App() {
 
             <Route path="/inventory" element={
               <ProtectedRoute>
-                <FinanceRoute>
+                <AdminOrUserRoute>
                   <Layout>
                     <InventoryManagement />
                   </Layout>
-                </FinanceRoute>
+                </AdminOrUserRoute>
               </ProtectedRoute>
             } />
 
@@ -129,31 +129,31 @@ function App() {
 
             <Route path="/warehouse" element={
               <ProtectedRoute>
-                <FinanceRoute>
+                <AdminOrUserRoute>
                   <Layout>
                     <WarehouseManagement />
                   </Layout>
-                </FinanceRoute>
+                </AdminOrUserRoute>
               </ProtectedRoute>
             } />
 
             <Route path="/products" element={
               <ProtectedRoute>
-                <FinanceRoute>
+                <AdminOrUserRoute>
                   <Layout>
                     <ProductManagement />
                   </Layout>
-                </FinanceRoute>
+                </AdminOrUserRoute>
               </ProtectedRoute>
             } />
 
             <Route path="/branches" element={
               <ProtectedRoute>
-                <FinanceRoute>
+                <AdminOrUserRoute>
                   <Layout>
                     <BranchCompanyManagement />
                   </Layout>
-                </FinanceRoute>
+                </AdminOrUserRoute>
               </ProtectedRoute>
             } />
 

@@ -11,6 +11,7 @@ import DeliveryReceiptModal from '../../components/modals/DeliveryReceiptModal';
 import { useDeliveries } from '../../hooks/useDeliveries';
 import { toast } from 'react-hot-toast';
 import { api } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import '../../styles/deliveryReceipt.css';
 
 const SORT_OPTIONS = [
@@ -21,6 +22,8 @@ const SORT_OPTIONS = [
 ];
 
 const DeliveryManagement = () => {
+  const { user } = useAuth();
+  const isAdminOrUser = user?.role === 'ADMIN' || user?.role === 'USER';
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -376,13 +379,15 @@ const DeliveryManagement = () => {
 
         <div className="flex flex-wrap justify-between items-center gap-2 mb-3">
           <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => handleOpenModal('create')}
-              className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium text-sm"
-            >
-              <Plus size={16} />
-              <span>New Delivery</span>
-            </button>
+            {isAdminOrUser && (
+              <button
+                onClick={() => handleOpenModal('create')}
+                className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium text-sm"
+              >
+                <Plus size={16} />
+                <span>New Delivery</span>
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2 py-1.5 shadow-sm">

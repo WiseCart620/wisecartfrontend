@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import '../styles/invoice-print.css';
 import { api } from '../services/api';
 import toast, { Toaster } from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 import { Search, Plus, Edit2, Trash2, Eye, FileText, Check, X, Printer, ChevronDown, ChevronLeft, ChevronRight, Receipt } from 'lucide-react';
 import InvoicingProfile from './InvoicingProfile';
 import '../styles/sales-memo-print.css';
@@ -188,6 +189,8 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
 
 
 const SalesManagement = () => {
+  const { user } = useAuth();
+  const isAdminOrUser = user?.role === 'ADMIN' || user?.role === 'USER';
   const [sales, setSales] = useState([]);
   const [branches, setBranches] = useState([]);
   const [products, setProducts] = useState([]);
@@ -1233,26 +1236,32 @@ const SalesManagement = () => {
           <div className="flex flex-col gap-3">
             <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
               <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => handleOpenModal('create')}
-                  className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium text-sm"
-                >
-                  <Plus size={16} />
-                  <span>New Sale</span>
-                </button>
-                <button
-                  onClick={() => setShowInvoiceModal(true)}
-                  className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md text-sm"
-                >
-                  <FileText size={16} />
-                  <span>Generate Invoice / COS</span>
-                </button>
-                <button
-                  onClick={() => setShowInvoicingProfile(true)}
-                  className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-md text-sm font-medium"
-                >
-                  Sales Journal
-                </button>
+                {isAdminOrUser && (
+                  <button
+                    onClick={() => handleOpenModal('create')}
+                    className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium text-sm"
+                  >
+                    <Plus size={16} />
+                    <span>New Sale</span>
+                  </button>
+                )}
+                {isAdminOrUser && (
+                  <button
+                    onClick={() => setShowInvoiceModal(true)}
+                    className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md text-sm"
+                  >
+                    <FileText size={16} />
+                    <span>Generate Invoice / COS</span>
+                  </button>
+                )}
+                {isAdminOrUser && (
+                  <button
+                    onClick={() => setShowInvoicingProfile(true)}
+                    className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-md text-sm font-medium"
+                  >
+                    Sales Journal
+                  </button>
+                )}
               </div>
 
               <div className="relative w-full sm:w-56 lg:w-64">
@@ -1494,7 +1503,7 @@ const SalesManagement = () => {
                             <Eye size={15} />
                           </button>
 
-                          {sale.status === 'PENDING' && (
+                          {sale.status === 'PENDING' && isAdminOrUser && (
                             <>
                               <button
                                 onClick={() => handleOpenModal('edit', sale)}
@@ -1527,7 +1536,7 @@ const SalesManagement = () => {
                             </>
                           )}
 
-                          {sale.status === 'CONFIRMED' && (
+                          {sale.status === 'CONFIRMED' && isAdminOrUser && (
                             <>
                               <button
                                 onClick={() => handleUpdateStatus(sale.id, 'INVOICED')}
@@ -1546,7 +1555,7 @@ const SalesManagement = () => {
                             </>
                           )}
 
-                          {sale.status === 'INVOICED' && (
+                          {sale.status === 'INVOICED' && isAdminOrUser && (
                             <button
                               onClick={() => handleDelete(sale.id)}
                               className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 hover:bg-red-50 transition"
