@@ -320,10 +320,26 @@ const InventoryManagement = () => {
 
       (deliveriesRes.data || []).forEach(row => {
         const key = `${row.productId}_${row.variationId || 'base'}`;
-        if (productMap[key]) {
-          productMap[key].qtyDelivered = row.qtyDelivered || 0;
-          productMap[key].drCount = row.drCount || 0;
+        if (!productMap[key]) {
+          productMap[key] = {
+            productName: row.productName || `Product ${row.productId}`,
+            variationName: row.variationName || '',
+            variationId: row.variationId || null,
+            stockIn: 0,
+            transferIn: 0,
+            transferOut: 0,
+            returns: 0,
+            damage: 0,
+            qtyDelivered: 0,
+            drCount: 0,
+            qtySold: 0,
+            totalValue: 0,
+            begStock: 0,
+            stockOnHand: 0,
+          };
         }
+        productMap[key].qtyDelivered = row.qtyDelivered || 0;
+        productMap[key].drCount = row.drCount || 0;
       });
 
       (salesRes.data || []).forEach(row => {
