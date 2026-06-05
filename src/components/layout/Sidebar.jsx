@@ -24,10 +24,12 @@ const Sidebar = ({ isOpen, toggle }) => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
   const isFinance = user?.role === 'FINANCE';
-  const mainMenuItems = isFinance
+  const isUser = user?.role === 'USER';
+  const isRestricted = isUser;
+  const mainMenuItems = isRestricted
     ? allMainMenuItems.filter(item => !item.financeHidden)
     : allMainMenuItems;
-  const showDataEntry = !isFinance;
+  const showDataEntry = isAdmin || isFinance;
 
   const [dataEntryOpen, setDataEntryOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
