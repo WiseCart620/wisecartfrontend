@@ -206,7 +206,7 @@ export const AdminOrUserRoute = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (user?.role === 'FINANCE') {
+  if (user?.role === 'USER') {
     toast.error('Access restricted');
     return <Navigate to="/sales" replace />;
   }
