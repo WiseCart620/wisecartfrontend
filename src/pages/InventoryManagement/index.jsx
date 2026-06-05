@@ -374,9 +374,7 @@ const InventoryManagement = () => {
         p.begStock = row.begStock || 0;
         const totalInbound = (p.stockIn || 0) + (p.transferIn || 0) + (p.returns || 0);
         const totalOutbound = (p.transferOut || 0) + (p.damage || 0) + (p.qtyDelivered || 0) + (p.qtySold || 0);
-        if (!productMap[key] || productMap[key].stockOnHand === 0) {
-          p.stockOnHand = p.begStock + totalInbound - totalOutbound;
-        }
+        p.stockOnHand = p.begStock + totalInbound - totalOutbound;
       });
 
       setReportData(Object.values(productMap));
