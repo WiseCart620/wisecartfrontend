@@ -24,22 +24,23 @@ export const calculateAmountFromPercent = (percent, total) => {
 };
 
 export const handleCalculatorInput = (currentValue, newInput, isBackspace, decimals = 2) => {
-    const multiplier = Math.pow(10, decimals);
-    const currentUnits = Math.round(parseFloat(currentValue || '0') * multiplier);
-    const currentStr = currentUnits.toString().padStart(1, '0');
+    const raw = parseFloat(currentValue || 0).toFixed(decimals).replace('.', '');
 
-    let newUnits;
+    let newRaw;
     if (isBackspace) {
-        newUnits = Math.floor(currentUnits / 10);
+        newRaw = raw.length > 1 ? raw.slice(0, -1) : '0';
     } else {
-        const digit = newInput.replace(/[^0-9]/g, '').slice(-1);
-        if (digit) {
-            newUnits = parseInt(currentStr + digit);
-        } else {
-            return currentValue;
-        }
+        const digit = String(newInput).replace(/[^0-9]/g, '').slice(-1);
+        if (!digit) return currentValue;
+        const stripped = raw.replace(/^0+/, '') || '0';
+        newRaw = stripped + digit;
     }
-    return (newUnits / multiplier).toFixed(decimals);
+
+    const padded = newRaw.padStart(decimals + 1, '0');
+    const intPart = padded.slice(0, padded.length - decimals);
+    const decPart = padded.slice(padded.length - decimals);
+
+    return `${parseInt(intPart, 10)}.${decPart}`;
 };
 
 export const formatCurrency = (amount) => {
