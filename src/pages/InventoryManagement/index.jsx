@@ -346,7 +346,7 @@ const InventoryManagement = () => {
         const key = `${row.productId}_${row.variationId || 'base'}`;
         if (productMap[key]) {
           productMap[key].qtySold = row.qtySold || 0;
-          productMap[key].totalValue = row.salesCount || 0;
+          productMap[key].totalValue = row.totalValue || 0;
         }
       });
 
