@@ -130,10 +130,15 @@ const ProductTransactionsModal = ({
                 grouped[refKey][0].isLatestVersion = true;
                 grouped[refKey][0].hasHistory = true;
                 grouped[refKey][0].versionCount = grouped[refKey].length;
-                for (let i = 1; i < grouped[refKey].length - 1; i++) {
-                    grouped[refKey][i].isPreviousVersion = true;
+
+                const lastIndex = grouped[refKey].length - 1;
+                for (let i = 1; i <= lastIndex; i++) {
+                    if (i === lastIndex) {
+                        grouped[refKey][i].isOriginal = true;
+                    } else {
+                        grouped[refKey][i].isPreviousVersion = true;
+                    }
                 }
-                grouped[refKey][grouped[refKey].length - 1].isOriginal = true;
             }
         });
         return grouped;
