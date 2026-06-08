@@ -114,11 +114,16 @@ const ProductTransactionsModal = ({
             if (isCancellationTransaction(transaction)) {
                 refKey = `CANCEL-${transaction.id}`;
             } else {
-                const dest = transaction.toBranch?.id || transaction.toWarehouse?.id || '';
-                const from = transaction.fromBranch?.id || transaction.fromWarehouse?.id || '';
-                refKey = transaction.referenceNumber
-                    ? `${transaction.referenceNumber}-${dest}-${from}`
-                    : `REF-${transaction.referenceId || transaction.id}`;
+                const isDeleted = transaction.isDeleted === true || transaction.action === 'DELETED';
+                if (isDeleted) {
+                    refKey = `DELETED-${transaction.id}`;
+                } else {
+                    const dest = transaction.toBranch?.id || transaction.toWarehouse?.id || '';
+                    const from = transaction.fromBranch?.id || transaction.fromWarehouse?.id || '';
+                    refKey = transaction.referenceNumber
+                        ? `${transaction.referenceNumber}-${dest}-${from}`
+                        : `REF-${transaction.referenceId || transaction.id}`;
+                }
             }
             if (!grouped[refKey]) grouped[refKey] = [];
             grouped[refKey].push(transaction);
@@ -500,11 +505,14 @@ const ProductTransactionsModal = ({
                                             const isDeleted = transaction.isDeleted === true || transaction.action === 'DELETED';
                                             const dest = transaction.toBranch?.id || transaction.toWarehouse?.id || '';
                                             const from = transaction.fromBranch?.id || transaction.fromWarehouse?.id || '';
+                                            const isDeletedTx = transaction.isDeleted === true || transaction.action === 'DELETED';
                                             const refKey = isCancellationTransaction(transaction)
                                                 ? `CANCEL-${transaction.id}`
-                                                : transaction.referenceNumber
-                                                    ? `${transaction.referenceNumber}-${dest}-${from}`
-                                                    : `REF-${transaction.referenceId || transaction.id}`;
+                                                : isDeletedTx
+                                                    ? `DELETED-${transaction.id}`
+                                                    : transaction.referenceNumber
+                                                        ? `${transaction.referenceNumber}-${dest}-${from}`
+                                                        : `REF-${transaction.referenceId || transaction.id}`;
                                             const transactionHistory = groupedTransactionsRef[refKey] || [];
                                             const hasHistory = transactionHistory.length > 1;
                                             const isExpanded = expandedRows[transaction.id];
