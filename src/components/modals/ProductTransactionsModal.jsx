@@ -114,7 +114,11 @@ const ProductTransactionsModal = ({
             if (isCancellationTransaction(transaction)) {
                 refKey = `CANCEL-${transaction.id}`;
             } else {
-                refKey = transaction.referenceNumber || `REF-${transaction.referenceId || transaction.id}`;
+                const dest = transaction.toBranch?.id || transaction.toWarehouse?.id || '';
+                const from = transaction.fromBranch?.id || transaction.fromWarehouse?.id || '';
+                refKey = transaction.referenceNumber
+                    ? `${transaction.referenceNumber}-${dest}-${from}`
+                    : `REF-${transaction.referenceId || transaction.id}`;
             }
             if (!grouped[refKey]) grouped[refKey] = [];
             grouped[refKey].push(transaction);
@@ -494,7 +498,13 @@ const ProductTransactionsModal = ({
                                             const isDeliverySubtract = transactionType === 'DELIVERY' && transaction.action === 'SUBTRACT';
                                             const isDeliveryAdd = transactionType === 'DELIVERY' && transaction.action === 'ADD';
                                             const isDeleted = transaction.isDeleted === true || transaction.action === 'DELETED';
-                                            const refKey = transaction.referenceNumber || `REF-${transaction.referenceId || transaction.id}`;
+                                            const dest = transaction.toBranch?.id || transaction.toWarehouse?.id || '';
+                                            const from = transaction.fromBranch?.id || transaction.fromWarehouse?.id || '';
+                                            const refKey = isCancellationTransaction(transaction)
+                                                ? `CANCEL-${transaction.id}`
+                                                : transaction.referenceNumber
+                                                    ? `${transaction.referenceNumber}-${dest}-${from}`
+                                                    : `REF-${transaction.referenceId || transaction.id}`;
                                             const transactionHistory = groupedTransactionsRef[refKey] || [];
                                             const hasHistory = transactionHistory.length > 1;
                                             const isExpanded = expandedRows[transaction.id];
