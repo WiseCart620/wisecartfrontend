@@ -379,6 +379,7 @@ export const useTransactionHandlers = () => {
       if (locationType === 'warehouse' && stock.warehouseId) {
         filteredTransactions = transactionsData.filter(t => {
           const transactionType = t.transactionType || t.inventoryType;
+          const isCancelled = t.remarks && t.remarks.includes('Delivery cancelled');
 
           if (transactionType === 'TRANSFER') {
             const isSendingOut = t.fromWarehouse?.id === stock.warehouseId && t.action === 'SUBTRACT';
@@ -387,7 +388,13 @@ export const useTransactionHandlers = () => {
           }
 
           if (transactionType === 'DELIVERY') {
-            return t.fromWarehouse?.id === stock.warehouseId && t.action === 'SUBTRACT';
+            // Normal delivery: warehouse sent stock out
+            const isNormalDelivery = t.fromWarehouse?.id === stock.warehouseId && t.action === 'SUBTRACT';
+            // Cancelled delivery: stock returned to this warehouse
+            const isCancelledReturn = isCancelled && t.toWarehouse?.id === stock.warehouseId && t.action === 'ADD';
+            // Cancelled delivery: removed from branch (show in warehouse history too)
+            const isCancelledBranchRemoval = isCancelled && t.action === 'SUBTRACT' && t.fromBranch;
+            return isNormalDelivery || isCancelledReturn || isCancelledBranchRemoval;
           }
 
           if (transactionType === 'STOCK_IN' || t.action === 'ADD') {

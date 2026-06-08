@@ -98,16 +98,29 @@ const ProductTransactionsModal = ({
         });
     };
 
+    const isCancellationTransaction = (transaction) => {
+        return transaction.remarks &&
+            (transaction.remarks.includes('Delivery cancelled') ||
+                transaction.remarks.includes('cancelled — removed from branch') ||
+                transaction.remarks.includes('cancelled — returned to warehouse'));
+    };
+
     const groupTransactionsByReference = (transactions) => {
         const grouped = {};
         transactions.forEach(transaction => {
-            const refKey = transaction.referenceNumber || `REF-${transaction.referenceId || transaction.id}`;
+            // Cancellation transactions are always their own standalone row
+            // Use unique key per transaction so they never get grouped
+            let refKey;
+            if (isCancellationTransaction(transaction)) {
+                refKey = `CANCEL-${transaction.id}`;
+            } else {
+                refKey = transaction.referenceNumber || `REF-${transaction.referenceId || transaction.id}`;
+            }
             if (!grouped[refKey]) grouped[refKey] = [];
             grouped[refKey].push(transaction);
         });
         Object.keys(grouped).forEach(refKey => {
             grouped[refKey].sort((a, b) => {
-
                 const dateA = a.createdAt ? parseDate(a.createdAt) : null;
                 const dateB = b.createdAt ? parseDate(b.createdAt) : null;
                 if (dateA && dateB) return (dateB || 0) - (dateA || 0);
@@ -237,7 +250,7 @@ const ProductTransactionsModal = ({
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex);
-    
+
     React.useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, filterType, showDeletedFilter, startDate, endDate]);
@@ -561,24 +574,69 @@ const ProductTransactionsModal = ({
 
                                                         {/* Source → Destination Column */}
                                                         <td className="px-4 py-3 text-sm">
-                                                            <div className="flex flex-col">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-gray-600 text-xs">From:</span>
-                                                                    <span className="text-sm font-medium">
-                                                                        {isDeliverySubtract
-                                                                            ? transaction.fromWarehouse?.warehouseName || 'Warehouse'
-                                                                            : fromLocation || (warehouseSource ? `Warehouse: ${warehouseSource}` : (transactionType === 'SALE' ? transaction.fromBranch?.branchName || 'Branch' : '-'))}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="flex items-center gap-2 mt-1">
-                                                                    <span className="text-gray-600 text-xs">To:</span>
-                                                                    <span className="text-sm font-medium">
-                                                                        {isDeliverySubtract
-                                                                            ? transaction.toBranch?.branchName || 'Branch'
-                                                                            : toLocation || (transactionType === 'SALE' ? 'Sale' : '-')}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
+                                                            {(() => {
+                                                                const isCancelled = transaction.remarks &&
+                                                                    transaction.remarks.includes('Delivery cancelled');
+                                                                const isCancelledReturn = isCancelled &&
+                                                                    transaction.action === 'ADD' &&
+                                                                    transaction.toWarehouse;
+                                                                const isCancelledBranchRemoval = isCancelled &&
+                                                                    transaction.action === 'SUBTRACT' &&
+                                                                    transaction.fromBranch;
+
+                                                                if (isCancelledReturn) {
+                                                                    return (
+                                                                        <div className="flex flex-col gap-1">
+                                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                                                                                🚫 Delivery Cancelled
+                                                                            </span>
+                                                                            <div className="flex items-center gap-1 mt-1">
+                                                                                <span className="text-gray-500 text-xs">Returned to:</span>
+                                                                                <span className="text-sm font-medium text-green-700">
+                                                                                    {transaction.toWarehouse.warehouseName}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                }
+
+                                                                if (isCancelledBranchRemoval) {
+                                                                    return (
+                                                                        <div className="flex flex-col gap-1">
+                                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                                                                                🚫 Delivery Cancelled
+                                                                            </span>
+                                                                            <div className="flex items-center gap-1 mt-1">
+                                                                                <span className="text-gray-500 text-xs">Removed from:</span>
+                                                                                <span className="text-sm font-medium text-red-700">
+                                                                                    {transaction.fromBranch.branchName}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                }
+
+                                                                return (
+                                                                    <div className="flex flex-col">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-gray-600 text-xs">From:</span>
+                                                                            <span className="text-sm font-medium">
+                                                                                {isDeliverySubtract
+                                                                                    ? transaction.fromWarehouse?.warehouseName || 'Warehouse'
+                                                                                    : fromLocation || (warehouseSource ? `Warehouse: ${warehouseSource}` : (transactionType === 'SALE' ? transaction.fromBranch?.branchName || 'Branch' : '-'))}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2 mt-1">
+                                                                            <span className="text-gray-600 text-xs">To:</span>
+                                                                            <span className="text-sm font-medium">
+                                                                                {isDeliverySubtract
+                                                                                    ? transaction.toBranch?.branchName || 'Branch'
+                                                                                    : toLocation || (transactionType === 'SALE' ? 'Sale' : '-')}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })()}
                                                         </td>
 
                                                         {/* Quantity Column */}

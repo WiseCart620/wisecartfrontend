@@ -74,15 +74,50 @@ const TransactionTable = ({
                     <td className="px-4 py-3 text-sm">
                       <div className="max-w-[250px]">
                         <div className="text-gray-900">
-                          {transaction.inventoryType === 'DELIVERY' ?
-                            `${transaction.fromWarehouse?.warehouseName || 'Warehouse'} → ${transaction.toBranch?.branchName || 'Branch'}` :
-                            transaction.inventoryType === 'SALE' ?
-                              `${transaction.fromBranch?.branchName || 'Branch'} → Sale` :
-                              transaction.inventoryType === 'STOCK_IN' ?
-                                `Stock In → ${transaction.toWarehouse?.warehouseName || transaction.toBranch?.branchName || '-'}` :
-                                transaction.inventoryType === 'DAMAGE' ?
-                                  `${transaction.toWarehouse?.warehouseName || transaction.toBranch?.branchName || '-'} (Damage)` :
-                                  `${(transaction.fromWarehouse?.warehouseName || transaction.fromBranch?.branchName || '-')} → ${(transaction.toWarehouse?.warehouseName || transaction.toBranch?.branchName || '-')}`
+                          {transaction.inventoryType === 'DELIVERY' ? (
+                            (() => {
+                              const isCancelled = transaction.remarks &&
+                                transaction.remarks.includes('Delivery cancelled');
+                              const isReturnToWarehouse = isCancelled &&
+                                transaction.action === 'ADD' &&
+                                transaction.toWarehouse;
+                              const isRemoveFromBranch = isCancelled &&
+                                transaction.action === 'SUBTRACT' &&
+                                transaction.fromBranch;
+
+                              if (isReturnToWarehouse) {
+                                return (
+                                  <div>
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 mb-1">
+                                      Delivery Cancelled
+                                    </span>
+                                    <div className="text-xs text-gray-600">
+                                      Returned to: {transaction.toWarehouse.warehouseName}
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              if (isRemoveFromBranch) {
+                                return (
+                                  <div>
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 mb-1">
+                                      Delivery Cancelled
+                                    </span>
+                                    <div className="text-xs text-gray-600">
+                                      Removed from: {transaction.fromBranch.branchName}
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return `${transaction.fromWarehouse?.warehouseName || 'Warehouse'} → ${transaction.toBranch?.branchName || 'Branch'}`;
+                            })()
+                          ) : transaction.inventoryType === 'SALE' ?
+                            `${transaction.fromBranch?.branchName || 'Branch'} → Sale` :
+                            transaction.inventoryType === 'STOCK_IN' ?
+                              `Stock In → ${transaction.toWarehouse?.warehouseName || transaction.toBranch?.branchName || '-'}` :
+                              transaction.inventoryType === 'DAMAGE' ?
+                                `${transaction.toWarehouse?.warehouseName || transaction.toBranch?.branchName || '-'} (Damage)` :
+                                `${(transaction.fromWarehouse?.warehouseName || transaction.fromBranch?.branchName || '-')} → ${(transaction.toWarehouse?.warehouseName || transaction.toBranch?.branchName || '-')}`
                           }
                         </div>
                       </div>
