@@ -99,6 +99,7 @@ const ProductTransactionsModal = ({
     };
 
     const isCancellationTransaction = (transaction) => {
+        if (transaction.referenceNumber?.startsWith('CANCELLED-')) return true;
         return transaction.remarks &&
             (transaction.remarks.includes('Delivery cancelled') ||
                 transaction.remarks.includes('cancelled — removed from branch') ||
@@ -108,8 +109,6 @@ const ProductTransactionsModal = ({
     const groupTransactionsByReference = (transactions) => {
         const grouped = {};
         transactions.forEach(transaction => {
-            // Cancellation transactions are always their own standalone row
-            // Use unique key per transaction so they never get grouped
             let refKey;
             if (isCancellationTransaction(transaction)) {
                 refKey = `CANCEL-${transaction.id}`;
