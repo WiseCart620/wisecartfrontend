@@ -46,8 +46,16 @@ const InventoryTable = ({
               </tr>
             ) : (
               inventories.map((inventory) => {
+                const toManilaDate = (dateString) => {
+                  if (!dateString) return null;
+                  const normalized = dateString.includes('+') || dateString.endsWith('Z')
+                    ? dateString
+                    : dateString + '+00:00'; // createdAt/updatedAt are server UTC — treat as UTC
+                  const d = new Date(normalized);
+                  return isNaN(d.getTime()) ? null : d;
+                };
                 const ts = inventory.createdAt || inventory.updatedAt;
-                const tsDate = ts ? new Date(ts) : null;
+                const tsDate = toManilaDate(ts);
 
                 return (
                   <tr key={inventory.id} className="hover:bg-gray-50 transition">
@@ -131,10 +139,10 @@ const InventoryTable = ({
                       {tsDate ? (
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[11px] font-medium text-gray-700">
-                            {tsDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                            {tsDate.toLocaleDateString('en-US', { timeZone: 'Asia/Manila', year: 'numeric', month: 'short', day: 'numeric' })}
                           </span>
                           <span className="text-xs text-gray-400">
-                            {tsDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                            {tsDate.toLocaleTimeString('en-US', { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                           </span>
                         </div>
                       ) : (
