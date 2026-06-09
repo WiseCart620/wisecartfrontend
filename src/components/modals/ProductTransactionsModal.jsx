@@ -130,8 +130,10 @@ const ProductTransactionsModal = ({
                 } else {
                     const dest = transaction.toBranch?.id || transaction.toWarehouse?.id || '';
                     const from = transaction.fromBranch?.id || transaction.fromWarehouse?.id || '';
+                    const action = transaction.action || '';
+                    const txType = transaction.inventoryType || transaction.transactionType || '';
                     refKey = transaction.referenceNumber
-                        ? `${transaction.referenceNumber}-${dest}-${from}`
+                        ? `${transaction.referenceNumber}-${dest}-${from}-${txType === 'TRANSFER' ? action : ''}`
                         : `REF-${transaction.referenceId || transaction.id}`;
                 }
             }
