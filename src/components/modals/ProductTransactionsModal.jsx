@@ -111,10 +111,13 @@ const ProductTransactionsModal = ({
 
     const isCancellationTransaction = (transaction) => {
         if (transaction.referenceNumber?.startsWith('CANCELLED-')) return true;
+        if (transaction.referenceNumber?.startsWith('RETURN-')) return true;
         return transaction.remarks &&
             (transaction.remarks.includes('Delivery cancelled') ||
                 transaction.remarks.includes('cancelled — removed from branch') ||
-                transaction.remarks.includes('cancelled — returned to warehouse'));
+                transaction.remarks.includes('cancelled — returned to warehouse') ||
+                transaction.remarks.includes('returned to warehouse') ||
+                transaction.remarks.includes('RESTORED RETURN/CANCELLED'));
     };
 
     const groupTransactionsByReference = (transactions) => {
@@ -621,14 +624,16 @@ const ProductTransactionsModal = ({
                                                         {/* Source → Destination Column */}
                                                         <td className="px-4 py-3 text-sm">
                                                             {(() => {
-                                                                const isCancelled = transaction.remarks &&
-                                                                    transaction.remarks.includes('Delivery cancelled');
+                                                                const isCancelled = isCancellationTransaction(transaction);
                                                                 const isCancelledReturn = isCancelled &&
                                                                     transaction.action === 'ADD' &&
                                                                     transaction.toWarehouse;
                                                                 const isCancelledBranchRemoval = isCancelled &&
                                                                     transaction.action === 'SUBTRACT' &&
                                                                     transaction.fromBranch;
+                                                                const isReturnToWarehouse = isCancelled &&
+                                                                    transaction.action === 'ADD' &&
+                                                                    !transaction.toWarehouse;
 
                                                                 if (isCancelledReturn) {
                                                                     return (
@@ -656,6 +661,26 @@ const ProductTransactionsModal = ({
                                                                                 <span className="text-gray-500 text-xs">Removed from:</span>
                                                                                 <span className="text-sm font-medium text-red-700">
                                                                                     {transaction.fromBranch.branchName}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                }
+
+
+                                                                if (isReturnToWarehouse) {
+                                                                    const warehouseName = transaction.remarks?.match(
+                                                                        /returned to warehouse[:\s]+([^|[\]]+)/i
+                                                                    )?.[1]?.trim() || 'Warehouse';
+                                                                    return (
+                                                                        <div className="flex flex-col gap-1">
+                                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                                                                                🚫 Delivery Cancelled
+                                                                            </span>
+                                                                            <div className="flex items-center gap-1 mt-1">
+                                                                                <span className="text-gray-500 text-xs">Returned to:</span>
+                                                                                <span className="text-sm font-medium text-green-700">
+                                                                                    {warehouseName}
                                                                                 </span>
                                                                             </div>
                                                                         </div>
