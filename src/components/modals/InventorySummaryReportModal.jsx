@@ -33,7 +33,6 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
         adjustment: sum(data, 'adjustment'),
         qtyDelivered: sum(data, 'qtyDelivered'),
         drCount: sum(data, 'drCount'),
-        stockOnHand: sum(data, 'stockOnHand'),
     };
 
     const truncateText = (text, maxLength = 35) => {
@@ -109,8 +108,7 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
             'Adjustment': row.adjustment || 0,
             'Delivery Qty': row.qtyDelivered || 0,
             'No. of DR': row.drCount || 0,
-            'Stock On Hand': row.stockOnHand || 0,
-            'Actual': '',
+            'Stock on Hand': '',
             'Remarks': '',
         }));
 
@@ -127,8 +125,7 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                 'Adjustment': totals.adjustment,
                 'Delivery Qty': totals.qtyDelivered,
                 'No. of DR': totals.drCount,
-                'Stock On Hand': totals.stockOnHand,
-                'Actual': '',
+                'Stock on Hand': '',
                 'Remarks': '',
             });
         }
@@ -190,21 +187,31 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8pt', tableLayout: 'fixed' }}>
                             <thead>
                                 <tr>
-                                    {/* Col widths: Product 18%, then equal for the rest */}
+                                    {/* Product */}
                                     <th rowSpan="2" style={{ width: '18%', textAlign: 'left', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Product</th>
+                                    {/* Beg. Stock */}
                                     <th rowSpan="2" style={{ width: '6%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Beg. Stock</th>
+                                    {/* Stock In */}
                                     <th rowSpan="2" style={{ width: '6%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Stock In</th>
+                                    {/* Transfer In */}
                                     <th rowSpan="2" style={{ width: '6%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Transfer In</th>
+                                    {/* Transfer Out */}
                                     <th rowSpan="2" style={{ width: '6%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Transfer Out</th>
+                                    {/* Returns */}
                                     <th rowSpan="2" style={{ width: '6%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Returns</th>
+                                    {/* Damage */}
                                     <th rowSpan="2" style={{ width: '6%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Damage</th>
+                                    {/* Adjustment */}
                                     <th rowSpan="2" style={{ width: '6%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#FFF3E0', color: '#E65100' }}>Adjustment</th>
+                                    {/* Delivery (grouped header) */}
                                     <th colSpan="2" style={{ textAlign: 'center', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Delivery</th>
-                                    <th rowSpan="2" style={{ width: '7%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#C8DCEF', color: '#0C447C', fontWeight: 'bold' }}>Stock On Hand</th>
-                                    <th rowSpan="2" style={{ width: '6%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Actual</th>
+                                    {/* Stock on Hand — blank input column (was "Actual") */}
+                                    <th rowSpan="2" style={{ width: '7%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#C8DCEF', color: '#0C447C', fontWeight: 'bold' }}>Stock on Hand</th>
+                                    {/* Remarks */}
                                     <th rowSpan="2" style={{ width: '10%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Remarks</th>
                                 </tr>
                                 <tr>
+                                    {/* Delivery sub-columns */}
                                     <th style={{ width: '6%', textAlign: 'center', fontSize: '6.5pt', padding: '5px 3px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Qty</th>
                                     <th style={{ width: '6%', textAlign: 'center', fontSize: '6.5pt', padding: '5px 3px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>No. of DR</th>
                                 </tr>
@@ -220,29 +227,38 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                                     <>
                                         {data.map((row, i) => (
                                             <tr key={i} style={{ backgroundColor: i % 2 === 1 ? '#F9FAFB' : '#fff' }}>
+                                                {/* Product name + variation */}
                                                 <td style={{ textAlign: 'left', padding: '5px 4px', wordWrap: 'break-word', wordBreak: 'break-word', border: '1px solid #aaa' }}>
                                                     <div style={{ fontSize: '7.5pt', fontWeight: 500, lineHeight: 1.3 }}>{truncateText(row.productName, 45)}</div>
                                                     {row.variationName && (
                                                         <div style={{ fontSize: '6.5pt', color: '#666', marginTop: '2px' }}>{truncateText(row.variationName, 35)}</div>
                                                     )}
                                                 </td>
+                                                {/* Beg. Stock */}
                                                 <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.begStock || 0).toLocaleString()}</td>
+                                                {/* Stock In */}
                                                 <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.stockIn || 0).toLocaleString()}</td>
+                                                {/* Transfer In */}
                                                 <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.transferIn || 0).toLocaleString()}</td>
+                                                {/* Transfer Out */}
                                                 <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.transferOut || 0).toLocaleString()}</td>
+                                                {/* Returns */}
                                                 <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.returns || 0).toLocaleString()}</td>
+                                                {/* Damage */}
                                                 <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.damage || 0).toLocaleString()}</td>
+                                                {/* Adjustment */}
                                                 <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: (row.adjustment || 0) !== 0 ? '#E65100' : 'inherit' }}>{(row.adjustment || 0).toLocaleString()}</td>
-                                                <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.qtyDelivered || 0).toLocaleString()}</td>                                                <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.qtyDelivered || 0).toLocaleString()}</td>
+                                                {/* Delivery Qty */}
+                                                <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.qtyDelivered || 0).toLocaleString()}</td>
+                                                {/* No. of DR — FIXED: was showing qtyDelivered again */}
                                                 <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.drCount || 0).toLocaleString()}</td>
-                                                <td style={{ textAlign: 'right', padding: '5px 4px', fontWeight: 'bold', backgroundColor: '#C8DCEF', color: '#0C447C', border: '1px solid #aaa' }}>
-                                                    {(row.stockOnHand || 0).toLocaleString()}
-                                                </td>
-                                                <td style={{ textAlign: 'center', padding: '5px 4px', border: '1px solid #aaa' }}>-</td>
-                                                <td style={{ textAlign: 'left', padding: '5px 4px', fontSize: '6.5pt', fontStyle: 'italic', color: '#999', border: '1px solid #aaa' }}>-</td>
+                                                {/* Stock on Hand — blank, for manual counting input */}
+                                                <td style={{ textAlign: 'center', padding: '5px 4px', backgroundColor: '#C8DCEF', border: '1px solid #aaa' }}></td>
+                                                {/* Remarks */}
+                                                <td style={{ textAlign: 'left', padding: '5px 4px', fontSize: '6.5pt', fontStyle: 'italic', color: '#999', border: '1px solid #aaa' }}></td>
                                             </tr>
                                         ))}
-                                        {/* Totals */}
+                                        {/* Totals row */}
                                         <tr style={{ backgroundColor: '#E6F1FB', fontWeight: 'bold' }}>
                                             <td style={{ textAlign: 'left', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>TOTAL</td>
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>{totals.begStock.toLocaleString()}</td>
@@ -252,13 +268,13 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>{totals.returns.toLocaleString()}</td>
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>{totals.damage.toLocaleString()}</td>
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#E65100', fontWeight: 'bold' }}>{totals.adjustment.toLocaleString()}</td>
+                                            {/* Delivery totals */}
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>{totals.qtyDelivered.toLocaleString()}</td>
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>{totals.drCount.toLocaleString()}</td>
-                                            <td style={{ textAlign: 'right', padding: '5px 4px', fontWeight: 'bold', backgroundColor: '#C8DCEF', color: '#0C447C', border: '1px solid #aaa' }}>
-                                                {totals.stockOnHand.toLocaleString()}
-                                            </td>
-                                            <td style={{ textAlign: 'center', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>-</td>
-                                            <td style={{ textAlign: 'left', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>-</td>
+                                            {/* Stock on Hand total — blank */}
+                                            <td style={{ textAlign: 'center', padding: '5px 4px', backgroundColor: '#C8DCEF', border: '1px solid #aaa', color: '#0C447C' }}></td>
+                                            {/* Remarks total — blank */}
+                                            <td style={{ textAlign: 'left', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}></td>
                                         </tr>
                                     </>
                                 )}
