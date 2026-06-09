@@ -575,7 +575,7 @@ const InventoryRecordsManagement = () => {
       const localNow = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
       setFormData({
         inventoryType: 'STOCK_IN', fromWarehouseId: '', toWarehouseId: '', fromBranchId: '', toBranchId: '',
-        dateProcessed: localNow,  // ← FIXED
+        dateProcessed: localNow,
         processedBy: getCurrentUser(),
         remarks: '', status: 'PENDING', confirmedBy: '', items: []
       });
