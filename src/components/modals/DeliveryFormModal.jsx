@@ -60,10 +60,11 @@ const DeliveryFormModal = ({
         return `${date}T${time || '00:00'}:00`;
     };
 
-    // ── NOW initialised from formatDateForInput output ────────────────────
+
     const nowDatetime = () => {
-        const raw = formatDateForInput(new Date().toISOString()); // "YYYY-MM-DDTHH:mm:ss"
-        return raw;
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
     };
 
     useEffect(() => {

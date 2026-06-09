@@ -3,7 +3,7 @@ const toManila = (dateString) => {
   try {
     const normalized = dateString.includes('+') || dateString.endsWith('Z')
       ? dateString
-      : dateString + '+00:00';
+      : dateString + '+08:00';
     const date = new Date(normalized);
     return isNaN(date.getTime()) ? null : date;
   } catch {
