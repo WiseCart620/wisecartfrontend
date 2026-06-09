@@ -76,10 +76,10 @@ const ProductTransactionsModal = ({
         if (type === 'SALE') return 'System Entry Timestamp';
         return 'System Verification Timestamp';
     };
-
     const formatDate = (date) => {
         if (!date) return 'Invalid date';
         return date.toLocaleString('en-US', {
+            timeZone: 'Asia/Manila',
             month: 'short',
             day: 'numeric',
             year: 'numeric',
@@ -92,6 +92,7 @@ const ProductTransactionsModal = ({
     const formatDateOnly = (date) => {
         if (!date) return 'Invalid date';
         return date.toLocaleDateString('en-US', {
+            timeZone: 'Asia/Manila',
             month: 'short',
             day: 'numeric',
             year: 'numeric'
@@ -101,6 +102,7 @@ const ProductTransactionsModal = ({
     const formatTimeOnly = (date) => {
         if (!date) return 'Invalid date';
         return date.toLocaleTimeString('en-US', {
+            timeZone: 'Asia/Manila',
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit'
@@ -541,6 +543,7 @@ const ProductTransactionsModal = ({
                                                                     </div>
                                                                     <div className="font-medium text-gray-900">
                                                                         {userEnteredDate.toLocaleDateString('en-US', {
+                                                                            timeZone: 'Asia/Manila',
                                                                             month: 'short',
                                                                             day: 'numeric',
                                                                             year: 'numeric'
@@ -548,10 +551,12 @@ const ProductTransactionsModal = ({
                                                                     </div>
                                                                     <div className="text-xs text-gray-600">
                                                                         {userEnteredDate.toLocaleTimeString('en-US', {
+                                                                            timeZone: 'Asia/Manila',
                                                                             hour: '2-digit',
                                                                             minute: '2-digit',
                                                                             hour12: true
                                                                         })}
+
                                                                     </div>
                                                                 </div>
                                                             ) : (

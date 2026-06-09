@@ -284,45 +284,41 @@ const InventoryManagement = () => {
       console.log('Formatted dateFrom:', formattedDateFrom);
       console.log('Formatted dateTo:', formattedDateTo);
 
-      const [movementsRes, deliveriesRes, salesRes, begStockRes] = await Promise.all([
+      const [movementsRes, begStockRes] = await Promise.all([
         api.get(`/inventories/report/movements?${params}`),
-        api.get(`/inventories/report/deliveries?${params}`),
-        api.get(`/inventories/report/sales?${params}`),
         api.get(`/inventories/report/beginning-stock?${params}`),
       ]);
 
       console.log('Movements response:', movementsRes.data);
-      console.log('Deliveries response:', deliveriesRes.data);
-      console.log('Sales response:', salesRes.data);
       console.log('BegStock response:', begStockRes.data);
 
       const productMap = {};
 
+      // 1. Seed from movements
       (movementsRes.data || []).forEach(row => {
         const key = `${row.productId}_${row.variationId || 'base'}`;
         productMap[key] = {
           productName: row.productName,
           variationName: row.variationName || '',
           variationId: row.variationId || null,
-          stockIn: row.stockIn || 0,
-          transferIn: row.transferIn || 0,
-          transferOut: row.transferOut || 0,
-          returns: row.returns || 0,
-          damage: row.damage || 0,
-          qtyDelivered: 0,
-          drCount: 0,
-          qtySold: 0,
-          totalValue: 0,
+          stockIn: Number(row.stockIn) || 0,
+          transferIn: Number(row.transferIn) || 0,
+          transferOut: Number(row.transferOut) || 0,
+          returns: Number(row.returns) || 0,
+          damage: Number(row.damage) || 0,
+          qtyDelivered: Number(row.qtyDelivered) || 0,
+          drCount: Number(row.drCount) || 0,
           begStock: 0,
-          stockOnHand: row.currentStock || 0,
+          stockOnHand: 0,
         };
       });
 
-      (deliveriesRes.data || []).forEach(row => {
+      // 2. Merge begStock
+      (begStockRes.data || []).forEach(row => {
         const key = `${row.productId}_${row.variationId || 'base'}`;
         if (!productMap[key]) {
           productMap[key] = {
-            productName: row.productName || `Product ${row.productId}`,
+            productName: row.productName,
             variationName: row.variationName || '',
             variationId: row.variationId || null,
             stockIn: 0,
@@ -332,49 +328,17 @@ const InventoryManagement = () => {
             damage: 0,
             qtyDelivered: 0,
             drCount: 0,
-            qtySold: 0,
-            totalValue: 0,
             begStock: 0,
             stockOnHand: 0,
           };
         }
-        productMap[key].qtyDelivered = row.qtyDelivered || 0;
-        productMap[key].drCount = row.drCount || 0;
+        productMap[key].begStock = Number(row.begStock) || 0;
       });
 
-      (salesRes.data || []).forEach(row => {
-        const key = `${row.productId}_${row.variationId || 'base'}`;
-        if (productMap[key]) {
-          productMap[key].qtySold = row.qtySold || 0;
-          productMap[key].totalValue = row.totalValue || 0;
-        }
-      });
-
-      (begStockRes.data || []).forEach(row => {
-        const key = `${row.productId}_${row.variationId || 'base'}`;
-        if (!productMap[key]) {
-          productMap[key] = {
-            productName: row.productName,
-            variationName: row.variationName || '',
-            variationId: row.variationId || null,
-            stockIn: row.stockIn || 0,
-            transferIn: row.transferIn || 0,
-            transferOut: row.transferOut || 0,
-            returns: row.returns || 0,
-            damage: row.damage || 0,
-            qtyDelivered: 0,
-            drCount: 0,
-            qtySold: 0,
-            totalValue: 0,
-            begStock: 0,
-            stockOnHand: row.currentStock || 0,
-          };
-        }
-        const p = productMap[key];
-        p.begStock = row.begStock || 0;
-        const totalInbound = (p.stockIn || 0) + (p.transferIn || 0) + (p.returns || 0);
-        const totalOutbound = (p.transferOut || 0) + (p.damage || 0) + (p.qtyDelivered || 0) + (p.qtySold || 0);
-        p.stockOnHand = p.begStock + totalInbound - totalOutbound;
+      Object.values(productMap).forEach(p => {
+        p.stockOnHand = p.begStock
+          + p.stockIn + p.transferIn + p.returns
+          - p.transferOut - p.damage - p.qtyDelivered;
       });
 
       setReportData(Object.values(productMap));
