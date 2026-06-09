@@ -570,9 +570,13 @@ const InventoryRecordsManagement = () => {
     setModalMode(mode);
     if (mode === 'create') {
       setSelectedInventory(null);
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const localNow = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
       setFormData({
         inventoryType: 'STOCK_IN', fromWarehouseId: '', toWarehouseId: '', fromBranchId: '', toBranchId: '',
-        dateProcessed: new Date().toISOString().split('T')[0], processedBy: getCurrentUser(),
+        dateProcessed: localNow,  // ← FIXED
+        processedBy: getCurrentUser(),
         remarks: '', status: 'PENDING', confirmedBy: '', items: []
       });
       setWarehouseStocks({});
