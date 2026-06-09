@@ -36,8 +36,17 @@ const ProductTransactionsModal = ({
             ? parseDate(transaction.transactionDate)
             : null;
 
+        const parseUtc = (dateString) => {
+            if (!dateString) return null;
+            const normalized = dateString.includes('+') || dateString.endsWith('Z')
+                ? dateString
+                : dateString + '+00:00';
+            const d = new Date(normalized);
+            return isNaN(d.getTime()) ? null : d;
+        };
+
         const systemDate = transaction.createdAt
-            ? parseDate(transaction.createdAt)
+            ? parseUtc(transaction.createdAt)
             : userEnteredDate;
 
         return { userEnteredDate, systemDate };
