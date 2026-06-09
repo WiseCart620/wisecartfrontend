@@ -33,6 +33,7 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
         adjustment: sum(data, 'adjustment'),
         qtyDelivered: sum(data, 'qtyDelivered'),
         drCount: sum(data, 'drCount'),
+        stockOnHand: sum(data, 'stockOnHand'),
     };
 
     const truncateText = (text, maxLength = 35) => {
@@ -108,7 +109,8 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
             'Adjustment': row.adjustment || 0,
             'Delivery Qty': row.qtyDelivered || 0,
             'No. of DR': row.drCount || 0,
-            'Stock on Hand': '',
+            'Stock on Hand': row.stockOnHand || 0,
+            'Actual': '',
             'Remarks': '',
         }));
 
@@ -125,7 +127,8 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                 'Adjustment': totals.adjustment,
                 'Delivery Qty': totals.qtyDelivered,
                 'No. of DR': totals.drCount,
-                'Stock on Hand': '',
+                'Stock on Hand': totals.stockOnHand,
+                'Actual': '',
                 'Remarks': '',
             });
         }
@@ -206,7 +209,9 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                                     {/* Delivery (grouped header) */}
                                     <th colSpan="2" style={{ textAlign: 'center', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Delivery</th>
                                     {/* Stock on Hand — blank input column (was "Actual") */}
+                                    <th rowSpan="2" style={{ width: '7%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#C8DCEF', color: '#0C447C', fontWeight: 'bold' }}>Actual</th>
                                     <th rowSpan="2" style={{ width: '7%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#C8DCEF', color: '#0C447C', fontWeight: 'bold' }}>Stock on Hand</th>
+
                                     {/* Remarks */}
                                     <th rowSpan="2" style={{ width: '10%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Remarks</th>
                                 </tr>
@@ -219,7 +224,7 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                             <tbody>
                                 {data.length === 0 ? (
                                     <tr>
-                                        <td colSpan="12" style={{ textAlign: 'center', padding: '30px', color: '#888', border: '1px solid #aaa' }}>
+                                        <td colSpan="14" style={{ textAlign: 'center', padding: '30px', color: '#888', border: '1px solid #aaa' }}>
                                             No data available for the selected filters.
                                         </td>
                                     </tr>
@@ -253,7 +258,12 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                                                 {/* No. of DR — FIXED: was showing qtyDelivered again */}
                                                 <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.drCount || 0).toLocaleString()}</td>
                                                 {/* Stock on Hand — blank, for manual counting input */}
-                                                <td style={{ textAlign: 'center', padding: '5px 4px', backgroundColor: '#C8DCEF', border: '1px solid #aaa' }}></td>
+                                                {/* Stock on Hand — computed */}
+                                                <td style={{ textAlign: 'right', padding: '5px 4px', fontWeight: 'bold', backgroundColor: '#C8DCEF', color: '#0C447C', border: '1px solid #aaa' }}>
+                                                    {(row.stockOnHand || 0).toLocaleString()}
+                                                </td>
+                                                {/* Actual — blank for manual input */}
+                                                <td style={{ textAlign: 'center', padding: '5px 4px', border: '1px solid #aaa' }}></td>
                                                 {/* Remarks */}
                                                 <td style={{ textAlign: 'left', padding: '5px 4px', fontSize: '6.5pt', fontStyle: 'italic', color: '#999', border: '1px solid #aaa' }}></td>
                                             </tr>
@@ -271,8 +281,12 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                                             {/* Delivery totals */}
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>{totals.qtyDelivered.toLocaleString()}</td>
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>{totals.drCount.toLocaleString()}</td>
-                                            {/* Stock on Hand total — blank */}
-                                            <td style={{ textAlign: 'center', padding: '5px 4px', backgroundColor: '#C8DCEF', border: '1px solid #aaa', color: '#0C447C' }}></td>
+                                            {/* Stock on Hand total — computed */}
+                                            <td style={{ textAlign: 'right', padding: '5px 4px', fontWeight: 'bold', backgroundColor: '#C8DCEF', color: '#0C447C', border: '1px solid #aaa' }}>
+                                                {totals.stockOnHand.toLocaleString()}
+                                            </td>
+                                            {/* Actual total — blank */}
+                                            <td style={{ textAlign: 'center', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}></td>
                                             {/* Remarks total — blank */}
                                             <td style={{ textAlign: 'left', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}></td>
                                         </tr>
