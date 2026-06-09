@@ -252,8 +252,16 @@ const ProductTransactionsModal = ({
                 (showDeletedFilter === 'ACTIVE' && !isDeleted) ||
                 (showDeletedFilter === 'DELETED' && isDeleted);
 
-            const matchesStartDate = !startDate || !userEnteredDate || userEnteredDate >= new Date(startDate);
-            const matchesEndDate = !endDate || !userEnteredDate || userEnteredDate <= new Date(endDate + 'T23:59:59');
+            const toManilaStartOfDay = (dateStr) => {
+                const d = new Date(dateStr + 'T00:00:00+08:00');
+                return d;
+            };
+            const toManilaEndOfDay = (dateStr) => {
+                const d = new Date(dateStr + 'T23:59:59+08:00');
+                return d;
+            };
+            const matchesStartDate = !startDate || !userEnteredDate || userEnteredDate >= toManilaStartOfDay(startDate);
+            const matchesEndDate = !endDate || !userEnteredDate || userEnteredDate <= toManilaEndOfDay(endDate);
 
             return matchesSearch && matchesType && matchesDeletedFilter && matchesStartDate && matchesEndDate;
         }).sort((a, b) => {
