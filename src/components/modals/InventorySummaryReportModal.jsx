@@ -109,7 +109,7 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
             'Adjustment': row.adjustment || 0,
             'Delivery Qty': row.qtyDelivered || 0,
             'No. of DR': row.drCount || 0,
-            'Stock on Hand': row.stockOnHand || 0,
+            'Stock': row.stockOnHand || 0,
             'Actual': '',
             'Remarks': '',
         }));
@@ -127,7 +127,7 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                 'Adjustment': totals.adjustment,
                 'Delivery Qty': totals.qtyDelivered,
                 'No. of DR': totals.drCount,
-                'Stock on Hand': totals.stockOnHand,
+                'Stock': totals.stockOnHand,
                 'Actual': '',
                 'Remarks': '',
             });
@@ -209,8 +209,8 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                                     {/* Delivery (grouped header) */}
                                     <th colSpan="2" style={{ textAlign: 'center', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Delivery</th>
                                     {/* Stock on Hand — blank input column (was "Actual") */}
+                                    <th rowSpan="2" style={{ width: '7%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#C8DCEF', color: '#0C447C', fontWeight: 'bold' }}>Stock</th>
                                     <th rowSpan="2" style={{ width: '7%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#C8DCEF', color: '#0C447C', fontWeight: 'bold' }}>Actual</th>
-                                    <th rowSpan="2" style={{ width: '7%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#C8DCEF', color: '#0C447C', fontWeight: 'bold' }}>Stock on Hand</th>
 
                                     {/* Remarks */}
                                     <th rowSpan="2" style={{ width: '10%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Remarks</th>
