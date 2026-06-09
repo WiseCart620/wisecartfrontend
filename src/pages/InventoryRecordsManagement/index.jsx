@@ -455,7 +455,11 @@ const InventoryRecordsManagement = () => {
     toWarehouseId: '',
     fromBranchId: '',
     toBranchId: '',
-    dateProcessed: new Date().toISOString().split('T')[0],
+    dateProcessed: (() => {
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    })(),
     processedBy: getCurrentUser(),
     remarks: '',
     status: 'PENDING',
