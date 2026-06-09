@@ -24,15 +24,16 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
     const reportNo = `INV-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}`;
 
     const totals = {
-        begStock:     sum(data, 'begStock'),
-        stockIn:      sum(data, 'stockIn'),
-        transferIn:   sum(data, 'transferIn'),
-        transferOut:  sum(data, 'transferOut'),
-        returns:      sum(data, 'returns'),
-        damage:       sum(data, 'damage'),
+        begStock: sum(data, 'begStock'),
+        stockIn: sum(data, 'stockIn'),
+        transferIn: sum(data, 'transferIn'),
+        transferOut: sum(data, 'transferOut'),
+        returns: sum(data, 'returns'),
+        damage: sum(data, 'damage'),
+        adjustment: sum(data, 'adjustment'),
         qtyDelivered: sum(data, 'qtyDelivered'),
-        drCount:      sum(data, 'drCount'),
-        stockOnHand:  sum(data, 'stockOnHand'),
+        drCount: sum(data, 'drCount'),
+        stockOnHand: sum(data, 'stockOnHand'),
     };
 
     const truncateText = (text, maxLength = 35) => {
@@ -97,36 +98,38 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
 
     const handleExportExcel = () => {
         const excelData = data.map(row => ({
-            'Product':       truncateText(row.productName, 40),
-            'Variation':     row.variationName || '',
-            'Beg. Stock':    row.begStock     || 0,
-            'Stock In':      row.stockIn      || 0,
-            'Transfer In':   row.transferIn   || 0,
-            'Transfer Out':  row.transferOut  || 0,
-            'Returns':       row.returns      || 0,
-            'Damage':        row.damage       || 0,
-            'Delivery Qty':  row.qtyDelivered || 0,
-            'No. of DR':     row.drCount      || 0,
-            'Stock On Hand': row.stockOnHand  || 0,
-            'Actual':        '',
-            'Remarks':       '',
+            'Product': truncateText(row.productName, 40),
+            'Variation': row.variationName || '',
+            'Beg. Stock': row.begStock || 0,
+            'Stock In': row.stockIn || 0,
+            'Transfer In': row.transferIn || 0,
+            'Transfer Out': row.transferOut || 0,
+            'Returns': row.returns || 0,
+            'Damage': row.damage || 0,
+            'Adjustment': row.adjustment || 0,
+            'Delivery Qty': row.qtyDelivered || 0,
+            'No. of DR': row.drCount || 0,
+            'Stock On Hand': row.stockOnHand || 0,
+            'Actual': '',
+            'Remarks': '',
         }));
 
         if (data.length > 0) {
             excelData.push({
-                'Product':       'TOTAL',
-                'Variation':     '',
-                'Beg. Stock':    totals.begStock,
-                'Stock In':      totals.stockIn,
-                'Transfer In':   totals.transferIn,
-                'Transfer Out':  totals.transferOut,
-                'Returns':       totals.returns,
-                'Damage':        totals.damage,
-                'Delivery Qty':  totals.qtyDelivered,
-                'No. of DR':     totals.drCount,
+                'Product': 'TOTAL',
+                'Variation': '',
+                'Beg. Stock': totals.begStock,
+                'Stock In': totals.stockIn,
+                'Transfer In': totals.transferIn,
+                'Transfer Out': totals.transferOut,
+                'Returns': totals.returns,
+                'Damage': totals.damage,
+                'Adjustment': totals.adjustment,
+                'Delivery Qty': totals.qtyDelivered,
+                'No. of DR': totals.drCount,
                 'Stock On Hand': totals.stockOnHand,
-                'Actual':        '',
-                'Remarks':       '',
+                'Actual': '',
+                'Remarks': '',
             });
         }
 
@@ -189,15 +192,16 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                                 <tr>
                                     {/* Col widths: Product 18%, then equal for the rest */}
                                     <th rowSpan="2" style={{ width: '18%', textAlign: 'left', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Product</th>
-                                    <th rowSpan="2" style={{ width: '6%',  textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Beg. Stock</th>
-                                    <th rowSpan="2" style={{ width: '6%',  textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Stock In</th>
-                                    <th rowSpan="2" style={{ width: '6%',  textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Transfer In</th>
-                                    <th rowSpan="2" style={{ width: '6%',  textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Transfer Out</th>
-                                    <th rowSpan="2" style={{ width: '6%',  textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Returns</th>
-                                    <th rowSpan="2" style={{ width: '6%',  textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Damage</th>
-                                    <th colSpan="2"  style={{ textAlign: 'center', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Delivery</th>
-                                    <th rowSpan="2" style={{ width: '7%',  textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#C8DCEF', color: '#0C447C', fontWeight: 'bold' }}>Stock On Hand</th>
-                                    <th rowSpan="2" style={{ width: '6%',  textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Actual</th>
+                                    <th rowSpan="2" style={{ width: '6%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Beg. Stock</th>
+                                    <th rowSpan="2" style={{ width: '6%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Stock In</th>
+                                    <th rowSpan="2" style={{ width: '6%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Transfer In</th>
+                                    <th rowSpan="2" style={{ width: '6%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Transfer Out</th>
+                                    <th rowSpan="2" style={{ width: '6%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Returns</th>
+                                    <th rowSpan="2" style={{ width: '6%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Damage</th>
+                                    <th rowSpan="2" style={{ width: '6%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#FFF3E0', color: '#E65100' }}>Adjustment</th>
+                                    <th colSpan="2" style={{ textAlign: 'center', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Delivery</th>
+                                    <th rowSpan="2" style={{ width: '7%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#C8DCEF', color: '#0C447C', fontWeight: 'bold' }}>Stock On Hand</th>
+                                    <th rowSpan="2" style={{ width: '6%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Actual</th>
                                     <th rowSpan="2" style={{ width: '10%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Remarks</th>
                                 </tr>
                                 <tr>
@@ -228,7 +232,8 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                                                 <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.transferOut || 0).toLocaleString()}</td>
                                                 <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.returns || 0).toLocaleString()}</td>
                                                 <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.damage || 0).toLocaleString()}</td>
-                                                <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.qtyDelivered || 0).toLocaleString()}</td>
+                                                <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: (row.adjustment || 0) !== 0 ? '#E65100' : 'inherit' }}>{(row.adjustment || 0).toLocaleString()}</td>
+                                                <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.qtyDelivered || 0).toLocaleString()}</td>                                                <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.qtyDelivered || 0).toLocaleString()}</td>
                                                 <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.drCount || 0).toLocaleString()}</td>
                                                 <td style={{ textAlign: 'right', padding: '5px 4px', fontWeight: 'bold', backgroundColor: '#C8DCEF', color: '#0C447C', border: '1px solid #aaa' }}>
                                                     {(row.stockOnHand || 0).toLocaleString()}
@@ -246,13 +251,14 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>{totals.transferOut.toLocaleString()}</td>
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>{totals.returns.toLocaleString()}</td>
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>{totals.damage.toLocaleString()}</td>
+                                            <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#E65100', fontWeight: 'bold' }}>{totals.adjustment.toLocaleString()}</td>
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>{totals.qtyDelivered.toLocaleString()}</td>
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>{totals.drCount.toLocaleString()}</td>
                                             <td style={{ textAlign: 'right', padding: '5px 4px', fontWeight: 'bold', backgroundColor: '#C8DCEF', color: '#0C447C', border: '1px solid #aaa' }}>
                                                 {totals.stockOnHand.toLocaleString()}
                                             </td>
                                             <td style={{ textAlign: 'center', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>-</td>
-                                            <td style={{ textAlign: 'left',   padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>-</td>
+                                            <td style={{ textAlign: 'left', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>-</td>
                                         </tr>
                                     </>
                                 )}

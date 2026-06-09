@@ -306,6 +306,7 @@ const InventoryManagement = () => {
           transferOut: Number(row.transferOut) || 0,
           returns: Number(row.returns) || 0,
           damage: Number(row.damage) || 0,
+          adjustment: Number(row.adjustment) || 0,
           qtyDelivered: Number(row.qtyDelivered) || 0,
           drCount: Number(row.drCount) || 0,
           begStock: 0,
@@ -326,6 +327,7 @@ const InventoryManagement = () => {
             transferOut: 0,
             returns: 0,
             damage: 0,
+            adjustment: 0,
             qtyDelivered: 0,
             drCount: 0,
             begStock: 0,
@@ -338,7 +340,7 @@ const InventoryManagement = () => {
       Object.values(productMap).forEach(p => {
         p.stockOnHand = p.begStock
           + p.stockIn + p.transferIn + p.returns
-          - p.transferOut - p.damage - p.qtyDelivered;
+          - p.transferOut - p.damage - p.adjustment - p.qtyDelivered;
       });
 
       setReportData(Object.values(productMap));
