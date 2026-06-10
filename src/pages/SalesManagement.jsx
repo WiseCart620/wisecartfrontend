@@ -270,6 +270,7 @@ const SalesManagement = () => {
       const startDateObj = filterData.startDate ? new Date(filterData.startDate) : null;
       const endDateObj = filterData.endDate ? new Date(filterData.endDate) : null;
 
+      // Fetch paginated sales (for table)
       const params = new URLSearchParams({
         page: page,
         size: 10,
@@ -280,6 +281,7 @@ const SalesManagement = () => {
         ...(startDateObj && { startYear: startDateObj.getFullYear(), startMonth: startDateObj.getMonth() + 1 }),
         ...(endDateObj && { endYear: endDateObj.getFullYear(), endMonth: endDateObj.getMonth() + 1 }),
       });
+
       if (filterData.productFilters && filterData.productFilters.length > 0) {
         filterData.productFilters.forEach(pf => {
           if (pf.productId) params.append('productIds', pf.productId);
@@ -287,47 +289,29 @@ const SalesManagement = () => {
         });
       }
 
-      const response = await api.get(`/sales/all?${params}`);
-      setSales(response.data.content);
-      setTotalPages(response.data.totalPages);
-      setCurrentPage(response.data.currentPage + 1);
-      setTotalElements(response.data.totalElements);
+      const [salesResponse, summaryResponse] = await Promise.all([
+        api.get(`/sales/all?${params}`),
+        api.get(`/sales/summary?${params}`) // NEW: Fast summary endpoint
+      ]);
 
-      // OPTIMIZED: ONLY fetch all sales when filters actually change
-      const allParams = new URLSearchParams({
-        page: 0,
-        size: 10000,
-        ...(filterData.companyId && { companyId: filterData.companyId }),
-        ...(filterData.branchId && { branchId: filterData.branchId }),
-        ...(statusFilter !== 'ALL' && { status: statusFilter }),
-        ...(searchTerm && { searchTerm: searchTerm }),
-        ...(startDateObj && { startYear: startDateObj.getFullYear(), startMonth: startDateObj.getMonth() + 1 }),
-        ...(endDateObj && { endYear: endDateObj.getFullYear(), endMonth: endDateObj.getMonth() + 1 }),
-      });
-      if (filterData.productFilters && filterData.productFilters.length > 0) {
-        filterData.productFilters.forEach(pf => {
-          if (pf.productId) allParams.append('productIds', pf.productId);
-          if (pf.variationId) allParams.append('variationIds', pf.variationId);
-        });
+      setSales(salesResponse.data.content);
+      setTotalPages(salesResponse.data.totalPages);
+      setCurrentPage(salesResponse.data.currentPage + 1);
+      setTotalElements(salesResponse.data.totalElements);
+
+      // Convert summary to compatible format
+      const summary = summaryResponse.data;
+      const mockSalesArray = [];
+      if (summary.pending > 0) {
+        mockSalesArray.push({ status: 'PENDING', totalAmount: summary.pendingAmount });
       }
-
-      // CREATE UNIQUE KEY FOR CURRENT FILTERS
-      const filterKey = JSON.stringify({
-        companyId: filterData.companyId,
-        branchId: filterData.branchId,
-        status: statusFilter,
-        searchTerm,
-        startDate: filterData.startDate,
-        endDate: filterData.endDate,
-        productFilters: filterData.productFilters
-      });
-
-      // ONLY fetch if filters changed
-      if (lastFilterKey.current !== filterKey) {
-        lastFilterKey.current = filterKey;
-        const allResponse = await api.get(`/sales/all?${allParams}`);
-        setAllFilteredSales(allResponse.data.content || []);
+      if (summary.confirmed > 0) {
+        mockSalesArray.push({ status: 'CONFIRMED', totalAmount: summary.confirmedAmount });
       }
+      if (summary.invoiced > 0) {
+        mockSalesArray.push({ status: 'INVOICED', totalAmount: summary.invoicedAmount });
+      }
+      setAllFilteredSales(mockSalesArray);
 
     } catch (error) {
       console.error('Error fetching sales:', error);
