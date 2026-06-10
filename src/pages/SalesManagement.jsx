@@ -204,6 +204,7 @@ const SalesManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [invoiceReport, setInvoiceReport] = useState(null);
+  const [allFilteredSales, setAllFilteredSales] = useState([]);
   const [branchInfo, setBranchInfo] = useState(null);
   const [productPrices, setProductPrices] = useState({});
   const [branchStocks, setBranchStocks] = useState({});
@@ -291,6 +292,28 @@ const SalesManagement = () => {
       setTotalPages(response.data.totalPages);
       setCurrentPage(response.data.currentPage + 1);
       setTotalElements(response.data.totalElements);
+
+      // ALSO FETCH ALL SALES FOR SUMMARY (unpaged)
+      const allParams = new URLSearchParams({
+        page: 0,
+        size: 10000, // Large number to get all
+        ...(filterData.companyId && { companyId: filterData.companyId }),
+        ...(filterData.branchId && { branchId: filterData.branchId }),
+        ...(statusFilter !== 'ALL' && { status: statusFilter }),
+        ...(searchTerm && { searchTerm: searchTerm }),
+        ...(startDateObj && { startYear: startDateObj.getFullYear(), startMonth: startDateObj.getMonth() + 1 }),
+        ...(endDateObj && { endYear: endDateObj.getFullYear(), endMonth: endDateObj.getMonth() + 1 }),
+      });
+      if (filterData.productFilters && filterData.productFilters.length > 0) {
+        filterData.productFilters.forEach(pf => {
+          if (pf.productId) allParams.append('productIds', pf.productId);
+          if (pf.variationId) allParams.append('variationIds', pf.variationId);
+        });
+      }
+
+      const allResponse = await api.get(`/sales/all?${allParams}`);
+      setAllFilteredSales(allResponse.data.content || []);
+
     } catch (error) {
       console.error('Error fetching sales:', error);
       toast.error('Failed to load sales');
