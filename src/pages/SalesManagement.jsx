@@ -3,7 +3,7 @@ import '../styles/invoice-print.css';
 import { api } from '../services/api';
 import toast, { Toaster } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { Search, Plus, Edit2, Trash2, Eye, FileText, Check, X, Printer, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Receipt } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Eye, FileText, Check, X, Printer, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Receipt, Package } from 'lucide-react';
 import InvoicingProfile from './InvoicingProfile';
 import '../styles/sales-memo-print.css';
 import { LoadingOverlay } from '../components/common/LoadingOverlay';
@@ -228,6 +228,10 @@ const SalesManagement = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [showSalesReportModal, setShowSalesReportModal] = useState(false);
+  const [showAllProductsModal, setShowAllProductsModal] = useState(false);
+  const [aggregatedProducts, setAggregatedProducts] = useState([]);
+  const [selectedCompanyForProducts, setSelectedCompanyForProducts] = useState(null);
+  const [selectedPeriodForProducts, setSelectedPeriodForProducts] = useState({ month: null, year: null });
   const [salesReportFilter, setSalesReportFilter] = useState({
     startDate: '',
     endDate: '',
@@ -291,7 +295,7 @@ const SalesManagement = () => {
 
       const [salesResponse, summaryResponse] = await Promise.all([
         api.get(`/sales/all?${params}`),
-        api.get(`/sales/summary?${params}`) // NEW: Fast summary endpoint
+        api.get(`/sales/summary?${params}`)
       ]);
 
       setSales(salesResponse.data.content);
@@ -320,6 +324,7 @@ const SalesManagement = () => {
       setLoading(false);
     }
   }, [filterData.companyId, filterData.branchId, statusFilter, searchTerm, filterData.startDate, filterData.endDate, filterData.productFilters]);
+
 
   const staticDataLoaded = useRef(false);
   const initialLoadDone = useRef(false);
@@ -1171,6 +1176,61 @@ const SalesManagement = () => {
     } finally {
       setSalesReportLoading(false);
     }
+  };
+
+
+
+  // Add this function after generateSalesReport
+  const aggregateProductsByCompany = (companyId, year, month) => {
+    if (!salesReportData) return [];
+
+    // Find the specific month data
+    const yearData = salesReportData.find(yr => yr.year === year);
+    if (!yearData) return [];
+
+    const monthData = yearData.products.find(p => p.month === month);
+    if (!monthData) return [];
+
+    // Collect all sales for this company
+    const companySales = [];
+    monthData.companyGroups.forEach(cg => {
+      if (cg.company?.id === companyId) {
+        companySales.push(...cg.sales);
+      }
+    });
+
+    // Aggregate products
+    const productMap = new Map();
+
+    companySales.forEach(sale => {
+      sale.items.forEach(item => {
+        const key = `${item.product.id}_${item.variation?.id || 'no-variation'}`;
+
+        if (productMap.has(key)) {
+          const existing = productMap.get(key);
+          existing.quantity += item.quantity;
+          existing.amount += item.amount;
+        } else {
+          productMap.set(key, {
+            id: key,
+            productId: item.product.id,
+            productName: item.product.productName,
+            variationId: item.variation?.id || null,
+            variationDisplay: item.variation?.combinationDisplay ||
+              (item.variation?.variationType && item.variation?.variationValue
+                ? `${item.variation.variationType}: ${item.variation.variationValue}`
+                : 'No variation'),
+            sku: item.variation?.sku || item.product.sku || 'N/A',
+            upc: item.variation?.upc || item.product.upc || 'N/A',
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            amount: item.amount
+          });
+        }
+      });
+    });
+
+    return Array.from(productMap.values()).sort((a, b) => a.productName.localeCompare(b.productName));
   };
 
   const exportReportToExcel = () => {
@@ -3274,21 +3334,37 @@ const SalesManagement = () => {
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={exportReportToExcel}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
+                  onClick={() => {
+                    const activeYear = salesReportData[0]?.year;
+                    const activeMonth = selectedReportMonths[activeYear];
+                    // Find first company from the first company group
+                    let firstCompany = null;
+                    if (salesReportData[0]?.products[0]?.companyGroups?.[0]?.company) {
+                      firstCompany = salesReportData[0].products[0].companyGroups[0].company;
+                    }
+
+                    if (firstCompany && activeMonth) {
+                      setSelectedCompanyForProducts(firstCompany);
+                      setSelectedPeriodForProducts({ month: activeMonth, year: activeYear });
+                      const products = aggregateProductsByCompany(firstCompany.id, activeYear, activeMonth);
+                      setAggregatedProducts(products);
+                      setShowAllProductsModal(true);
+                    } else {
+                      toast.error('No company data available for the selected period');
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700"
                 >
+                  <Package size={16} />
+                  View All Products
+                </button>
+                <button onClick={exportReportToExcel} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">
                   <FileText size={16} /> Export CSV/Excel
                 </button>
-                <button
-                  onClick={printSalesReport}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
-                >
+                <button onClick={printSalesReport} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
                   <Printer size={16} /> Print
                 </button>
-                <button
-                  onClick={() => { setSalesReportData(null); setShowSalesReportModal(false); }}
-                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
-                >
+                <button onClick={() => { setSalesReportData(null); setShowSalesReportModal(false); }} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
                   <X size={22} />
                 </button>
               </div>
@@ -3599,6 +3675,179 @@ const SalesManagement = () => {
           </div>
         </div>
       )}
+
+      {/* All Products Aggregated Modal */}
+      {showAllProductsModal && selectedCompanyForProducts && (
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl">
+            {/* Header */}
+            <div className="p-5 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">All Products - {selectedCompanyForProducts.companyName}</h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Period: {selectedPeriodForProducts.month ? monthsFull[selectedPeriodForProducts.month - 1] : 'All'} {selectedPeriodForProducts.year || ''}
+                  <br />
+                  Total Products: {aggregatedProducts.length} | Total Quantity: {aggregatedProducts.reduce((sum, p) => sum + p.quantity, 0).toLocaleString()} |
+                  Total Amount: ₱{aggregatedProducts.reduce((sum, p) => sum + p.amount, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+              <button onClick={() => setShowAllProductsModal(false)} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Products Table */}
+            <div className="flex-1 overflow-auto p-5">
+              <table className="w-full text-sm border-collapse">
+                <thead className="sticky top-0 bg-gray-100">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">#</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Product</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Variation</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">SKU</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">UPC</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Qty</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Unit Price</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {aggregatedProducts.map((product, idx) => (
+                    <tr key={product.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-center text-gray-400">{idx + 1}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{product.productName}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.variationDisplay !== 'No variation'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-gray-100 text-gray-500'
+                          }`}>
+                          {product.variationDisplay}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">{product.sku}</td>
+                      <td className="px-4 py-3 text-gray-600">{product.upc}</td>
+                      <td className="px-4 py-3 text-right font-semibold text-gray-900">
+                        {product.quantity.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-700">
+                        ₱{product.unitPrice.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-blue-600">
+                        ₱{product.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="sticky bottom-0 bg-gray-100 border-t-2 border-gray-300">
+                  <tr>
+                    <td colSpan={5} className="px-4 py-3 text-right font-bold text-gray-700">TOTALS:</td>
+                    <td className="px-4 py-3 text-right font-bold text-gray-900">
+                      {aggregatedProducts.reduce((sum, p) => sum + p.quantity, 0).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3"></td>
+                    <td className="px-4 py-3 text-right font-bold text-blue-700">
+                      ₱{aggregatedProducts.reduce((sum, p) => sum + p.amount, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  const csvRows = [
+                    ['Product', 'Variation', 'SKU', 'UPC', 'Quantity', 'Unit Price', 'Amount'],
+                    ...aggregatedProducts.map(p => [p.productName, p.variationDisplay, p.sku, p.upc, p.quantity, p.unitPrice, p.amount]),
+                    [],
+                    [`TOTAL`, '', '', '', aggregatedProducts.reduce((s, p) => s + p.quantity, 0), '', aggregatedProducts.reduce((s, p) => s + p.amount, 0)]
+                  ];
+                  const csvContent = csvRows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+                  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `products_${selectedCompanyForProducts.companyName}_${selectedPeriodForProducts.year}_${selectedPeriodForProducts.month}.csv`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  toast.success('Products exported successfully!');
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
+              >
+                <FileText size={16} className="inline mr-2" />
+                Export CSV
+              </button>
+              <button
+                onClick={() => {
+                  const printContent = document.getElementById('products-print-content');
+                  if (printContent) {
+                    const printWindow = window.open('', '_blank');
+                    printWindow.document.write(`
+                      <!DOCTYPE html>
+                      <html>
+                      <head><title>Products Report</title>
+                      <style>
+                        body { font-family: Arial; padding: 20px; }
+                        table { border-collapse: collapse; width: 100%; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                        .text-right { text-align: right; }
+                      </style>
+                      </head>
+                      <body>
+                        <h2>All Products - ${selectedCompanyForProducts.companyName}</h2>
+                        <p>Period: ${selectedPeriodForProducts.month ? monthsFull[selectedPeriodForProducts.month - 1] : 'All'} ${selectedPeriodForProducts.year || ''}</p>
+                        ${printContent.outerHTML}
+                      </body>
+                      </html>
+                    `);
+                    printWindow.document.close();
+                    printWindow.print();
+                  }
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+              >
+                <Printer size={16} className="inline mr-2" />
+                Print
+              </button>
+              <button onClick={() => setShowAllProductsModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden div for printing products */}
+      <div id="products-print-content" className="hidden">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr>
+              <th className="px-4 py-3 text-left">Product</th>
+              <th className="px-4 py-3 text-left">Variation</th>
+              <th className="px-4 py-3 text-left">SKU</th>
+              <th className="px-4 py-3 text-left">UPC</th>
+              <th className="px-4 py-3 text-right">Qty</th>
+              <th className="px-4 py-3 text-right">Unit Price</th>
+              <th className="px-4 py-3 text-right">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {aggregatedProducts.map((product, idx) => (
+              <tr key={product.id}>
+                <td className="px-4 py-2">{product.productName}</td>
+                <td className="px-4 py-2">{product.variationDisplay}</td>
+                <td className="px-4 py-2">{product.sku}</td>
+                <td className="px-4 py-2">{product.upc}</td>
+                <td className="px-4 py-2 text-right">{product.quantity.toLocaleString()}</td>
+                <td className="px-4 py-2 text-right">₱{product.unitPrice.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                <td className="px-4 py-2 text-right">₱{product.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
     </div>
 
