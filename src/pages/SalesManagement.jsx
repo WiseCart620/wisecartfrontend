@@ -1241,8 +1241,6 @@ const SalesManagement = () => {
 
       const params = new URLSearchParams({
         status: statusToFetch,
-        page: 0,
-        size: 100,
         ...(filterData.companyId && { companyId: filterData.companyId }),
         ...(filterData.branchId && { branchId: filterData.branchId }),
         ...(searchTerm && { searchTerm: searchTerm }),
@@ -1256,30 +1254,11 @@ const SalesManagement = () => {
         }),
       });
 
-      let allProducts = new Map();
-      let currentPageNum = 0;
-      let totalPagesNum = 1;
+      // Single request — backend handles everything
+      const response = await api.get(`/sales/items-by-status?${params}`);
+      const data = response.data;
 
-      while (currentPageNum < totalPagesNum) {
-        params.set('page', currentPageNum);
-        const response = await api.get(`/sales/items-by-status?${params}`);
-        const data = response.data;
-        totalPagesNum = data.totalPages || 1;
-
-        (data.products || []).forEach(item => {
-          if (allProducts.has(item.id)) {
-            const existing = allProducts.get(item.id);
-            existing.quantity += item.quantity;
-            existing.amount += item.amount;
-          } else {
-            allProducts.set(item.id, { ...item });
-          }
-        });
-
-        currentPageNum++;
-      }
-
-      const sortedProducts = Array.from(allProducts.values())
+      const sortedProducts = (data.products || [])
         .sort((a, b) => a.productName.localeCompare(b.productName));
 
       setProductsByStatus(prev => ({
