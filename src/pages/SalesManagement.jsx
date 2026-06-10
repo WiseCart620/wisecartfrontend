@@ -233,6 +233,7 @@ const SalesManagement = () => {
   const [selectedCompanyForProducts, setSelectedCompanyForProducts] = useState(null);
   const [selectedPeriodForProducts, setSelectedPeriodForProducts] = useState({ month: null, year: null });
   const [showProductsByStatusModal, setShowProductsByStatusModal] = useState(false);
+  const [productsByStatusLoading, setProductsByStatusLoading] = useState(false);
   const [productsByStatus, setProductsByStatus] = useState({ pending: [], confirmed: [], invoiced: [] });
   const [selectedStatusForModal, setSelectedStatusForModal] = useState(null);
   const [salesReportFilter, setSalesReportFilter] = useState({
@@ -335,7 +336,6 @@ const SalesManagement = () => {
   useEffect(() => {
     fetchSales(0).then(() => {
       initialLoadDone.current = true;
-      aggregateProductsByStatus();
     });
     if (!staticDataLoaded.current) {
       staticDataLoaded.current = true;
@@ -361,7 +361,7 @@ const SalesManagement = () => {
 
   useEffect(() => {
     if (!initialLoadDone.current) return;
-    fetchSales(0).then(() => aggregateProductsByStatus());
+    fetchSales(0);
     setCurrentPage(1);
   }, [filterData.companyId, filterData.branchId, statusFilter, searchTerm, filterData.startDate, filterData.endDate, JSON.stringify(filterData.productFilters)]);
 
@@ -1233,92 +1233,68 @@ const SalesManagement = () => {
   };
 
 
-  const aggregateProductsByStatus = async () => {
-
+  const aggregateProductsByStatus = async (statusToFetch) => {
     try {
+      setProductsByStatusLoading(true);
       const startDateObj = filterData.startDate ? new Date(filterData.startDate) : null;
       const endDateObj = filterData.endDate ? new Date(filterData.endDate) : null;
 
       const params = new URLSearchParams({
+        status: statusToFetch,
         page: 0,
-        size: 10000,
+        size: 100,
         ...(filterData.companyId && { companyId: filterData.companyId }),
         ...(filterData.branchId && { branchId: filterData.branchId }),
-        ...(statusFilter !== 'ALL' && { status: statusFilter }),
         ...(searchTerm && { searchTerm: searchTerm }),
-        ...(startDateObj && { startYear: startDateObj.getFullYear(), startMonth: startDateObj.getMonth() + 1 }),
-        ...(endDateObj && { endYear: endDateObj.getFullYear(), endMonth: endDateObj.getMonth() + 1 }),
+        ...(startDateObj && {
+          startYear: startDateObj.getFullYear(),
+          startMonth: startDateObj.getMonth() + 1
+        }),
+        ...(endDateObj && {
+          endYear: endDateObj.getFullYear(),
+          endMonth: endDateObj.getMonth() + 1
+        }),
       });
 
-      if (filterData.productFilters && filterData.productFilters.length > 0) {
-        filterData.productFilters.forEach(pf => {
-          if (pf.productId) params.append('productIds', pf.productId);
-          if (pf.variationId) params.append('variationIds', pf.variationId);
-        });
-      }
+      let allProducts = new Map();
+      let currentPageNum = 0;
+      let totalPagesNum = 1;
 
-      const response = await api.get(`/sales/all?${params}`);
-      const allSalesData = response.data.content || [];
+      while (currentPageNum < totalPagesNum) {
+        params.set('page', currentPageNum);
+        const response = await api.get(`/sales/items-by-status?${params}`);
+        const data = response.data;
+        totalPagesNum = data.totalPages || 1;
 
-      const pendingMap = new Map();
-      const confirmedMap = new Map();
-      const invoicedMap = new Map();
-
-      allSalesData.forEach(sale => {
-        if (!sale.items || sale.items.length === 0) return;
-
-        const targetMap = sale.status === 'PENDING' ? pendingMap :
-          sale.status === 'CONFIRMED' ? confirmedMap :
-            sale.status === 'INVOICED' ? invoicedMap : null;
-        if (!targetMap) return;
-
-        sale.items.forEach(item => {
-          if (!item.product) return;
-
-          const key = `${item.product.id}_${item.variation?.id || 'no-variation'}`;
-
-          if (targetMap.has(key)) {
-            const existing = targetMap.get(key);
+        (data.products || []).forEach(item => {
+          if (allProducts.has(item.id)) {
+            const existing = allProducts.get(item.id);
             existing.quantity += item.quantity;
             existing.amount += item.amount;
           } else {
-            targetMap.set(key, {
-              id: key,
-              productId: item.product.id,
-              productName: item.product.productName,
-              variationId: item.variation?.id || null,
-              variationDisplay: item.variation?.combinationDisplay ||
-                (item.variation?.variationType && item.variation?.variationValue
-                  ? `${item.variation.variationType}: ${item.variation.variationValue}`
-                  : 'No variation'),
-              sku: item.variation?.sku || item.product.sku || 'N/A',
-              upc: item.variation?.upc || item.product.upc || 'N/A',
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              amount: item.amount
-            });
+            allProducts.set(item.id, { ...item });
           }
         });
-      });
 
-      setProductsByStatus({
-        pending: Array.from(pendingMap.values()).sort((a, b) => a.productName.localeCompare(b.productName)),
-        confirmed: Array.from(confirmedMap.values()).sort((a, b) => a.productName.localeCompare(b.productName)),
-        invoiced: Array.from(invoicedMap.values()).sort((a, b) => a.productName.localeCompare(b.productName))
-      });
+        currentPageNum++;
+      }
 
-      console.log('Products by status:', {
-        pendingCount: pendingMap.size,
-        confirmedCount: confirmedMap.size,
-        invoicedCount: invoicedMap.size,
-        totalSales: allSalesData.length
-      });
+      const sortedProducts = Array.from(allProducts.values())
+        .sort((a, b) => a.productName.localeCompare(b.productName));
+
+      setProductsByStatus(prev => ({
+        ...prev,
+        [statusToFetch.toLowerCase()]: sortedProducts
+      }));
 
     } catch (error) {
       console.error('Error fetching products by status:', error);
       toast.error('Failed to load product details');
+    } finally {
+      setProductsByStatusLoading(false);
     }
   };
+
 
   const exportReportToExcel = () => {
     if (!salesReportData) return;
@@ -1958,8 +1934,9 @@ const SalesManagement = () => {
                       <button
                         onClick={() => {
                           setSelectedStatusForModal('PENDING');
-                          aggregateProductsByStatus();
+                          setProductsByStatus(prev => ({ ...prev, pending: [] }));
                           setShowProductsByStatusModal(true);
+                          aggregateProductsByStatus('PENDING');
                         }}
                         className="flex items-center gap-2 border border-yellow-400 rounded-lg px-3 py-1 hover:bg-yellow-50 transition-colors cursor-pointer"
                       >
@@ -1972,8 +1949,9 @@ const SalesManagement = () => {
                       <button
                         onClick={() => {
                           setSelectedStatusForModal('CONFIRMED');
-                          aggregateProductsByStatus();
+                          setProductsByStatus(prev => ({ ...prev, confirmed: [] }));
                           setShowProductsByStatusModal(true);
+                          aggregateProductsByStatus('CONFIRMED');
                         }}
                         className="flex items-center gap-2 border border-blue-400 rounded-lg px-3 py-1 hover:bg-blue-50 transition-colors cursor-pointer"
                       >
@@ -1986,8 +1964,9 @@ const SalesManagement = () => {
                       <button
                         onClick={() => {
                           setSelectedStatusForModal('INVOICED');
-                          aggregateProductsByStatus();
+                          setProductsByStatus(prev => ({ ...prev, invoiced: [] }));
                           setShowProductsByStatusModal(true);
+                          aggregateProductsByStatus('INVOICED');
                         }}
                         className="flex items-center gap-2 border border-green-400 rounded-lg px-3 py-1 hover:bg-green-50 transition-colors cursor-pointer"
                       >
@@ -4006,31 +3985,52 @@ const SalesManagement = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {(productsByStatus[selectedStatusForModal.toLowerCase()] || []).map((product, idx) => (
-                    <tr key={product.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-center text-gray-400">{idx + 1}</td>
-                      <td className="px-4 py-3 font-medium text-gray-900">{product.productName}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.variationDisplay !== 'No variation'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-gray-100 text-gray-500'
-                          }`}>
-                          {product.variationDisplay}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{product.sku}</td>
-                      <td className="px-4 py-3 text-gray-600">{product.upc}</td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-900">
-                        {product.quantity.toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-700">
-                        ₱{product.unitPrice.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="px-4 py-3 text-right font-bold text-blue-600">
-                        ₱{product.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                  {productsByStatusLoading ? (
+                    [...Array(5)].map((_, i) => (
+                      <tr key={i} className="animate-pulse">
+                        <td className="px-4 py-3"><div className="h-4 bg-gray-100 rounded w-6 mx-auto" /></td>
+                        <td className="px-4 py-3"><div className="h-4 bg-gray-100 rounded w-40" /></td>
+                        <td className="px-4 py-3"><div className="h-4 bg-gray-100 rounded w-24" /></td>
+                        <td className="px-4 py-3"><div className="h-4 bg-gray-100 rounded w-20" /></td>
+                        <td className="px-4 py-3"><div className="h-4 bg-gray-100 rounded w-20" /></td>
+                        <td className="px-4 py-3"><div className="h-4 bg-gray-100 rounded w-12 ml-auto" /></td>
+                        <td className="px-4 py-3"><div className="h-4 bg-gray-100 rounded w-16 ml-auto" /></td>
+                        <td className="px-4 py-3"><div className="h-4 bg-gray-100 rounded w-16 ml-auto" /></td>
+                      </tr>
+                    ))
+                  ) : (productsByStatus[selectedStatusForModal.toLowerCase()] || []).length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-4 py-12 text-center text-gray-400 italic">
+                        No products found
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    (productsByStatus[selectedStatusForModal.toLowerCase()] || []).map((product, idx) => (
+                      <tr key={product.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-center text-gray-400">{idx + 1}</td>
+                        <td className="px-4 py-3 font-medium text-gray-900">{product.productName}</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.variationDisplay !== 'No variation'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-gray-100 text-gray-500'
+                            }`}>
+                            {product.variationDisplay}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">{product.sku}</td>
+                        <td className="px-4 py-3 text-gray-600">{product.upc}</td>
+                        <td className="px-4 py-3 text-right font-semibold text-gray-900">
+                          {product.quantity.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-right text-gray-700">
+                          ₱{product.unitPrice.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-4 py-3 text-right font-bold text-blue-600">
+                          ₱{product.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
                 <tfoot className="sticky bottom-0 bg-gray-100 border-t-2 border-gray-300">
                   <tr>
