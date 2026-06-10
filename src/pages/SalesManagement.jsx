@@ -232,6 +232,9 @@ const SalesManagement = () => {
   const [aggregatedProducts, setAggregatedProducts] = useState([]);
   const [selectedCompanyForProducts, setSelectedCompanyForProducts] = useState(null);
   const [selectedPeriodForProducts, setSelectedPeriodForProducts] = useState({ month: null, year: null });
+  const [showProductsByStatusModal, setShowProductsByStatusModal] = useState(false);
+  const [productsByStatus, setProductsByStatus] = useState({ pending: [], confirmed: [], invoiced: [] });
+  const [selectedStatusForModal, setSelectedStatusForModal] = useState(null);
   const [salesReportFilter, setSalesReportFilter] = useState({
     startDate: '',
     endDate: '',
@@ -303,19 +306,15 @@ const SalesManagement = () => {
       setCurrentPage(salesResponse.data.currentPage + 1);
       setTotalElements(salesResponse.data.totalElements);
 
-      // Convert summary to compatible format
       const summary = summaryResponse.data;
-      const mockSalesArray = [];
-      if (summary.pending > 0) {
-        mockSalesArray.push({ status: 'PENDING', totalAmount: summary.pendingAmount });
-      }
-      if (summary.confirmed > 0) {
-        mockSalesArray.push({ status: 'CONFIRMED', totalAmount: summary.confirmedAmount });
-      }
-      if (summary.invoiced > 0) {
-        mockSalesArray.push({ status: 'INVOICED', totalAmount: summary.invoicedAmount });
-      }
-      setAllFilteredSales(mockSalesArray);
+      setAllFilteredSales({
+        pendingCount: summary.pending || 0,
+        confirmedCount: summary.confirmed || 0,
+        invoicedCount: summary.invoiced || 0,
+        pendingAmount: summary.pendingAmount || 0,
+        confirmedAmount: summary.confirmedAmount || 0,
+        invoicedAmount: summary.invoicedAmount || 0,
+      });
 
     } catch (error) {
       console.error('Error fetching sales:', error);
@@ -333,6 +332,7 @@ const SalesManagement = () => {
   useEffect(() => {
     fetchSales(0).then(() => {
       initialLoadDone.current = true;
+      aggregateProductsByStatus();
     });
     if (!staticDataLoaded.current) {
       staticDataLoaded.current = true;
@@ -358,7 +358,7 @@ const SalesManagement = () => {
 
   useEffect(() => {
     if (!initialLoadDone.current) return;
-    fetchSales(0);
+    fetchSales(0).then(() => aggregateProductsByStatus());
     setCurrentPage(1);
   }, [filterData.companyId, filterData.branchId, statusFilter, searchTerm, filterData.startDate, filterData.endDate, JSON.stringify(filterData.productFilters)]);
 
@@ -1180,18 +1180,15 @@ const SalesManagement = () => {
 
 
 
-  // Add this function after generateSalesReport
   const aggregateProductsByCompany = (companyId, year, month) => {
     if (!salesReportData) return [];
 
-    // Find the specific month data
     const yearData = salesReportData.find(yr => yr.year === year);
     if (!yearData) return [];
 
     const monthData = yearData.products.find(p => p.month === month);
     if (!monthData) return [];
 
-    // Collect all sales for this company
     const companySales = [];
     monthData.companyGroups.forEach(cg => {
       if (cg.company?.id === companyId) {
@@ -1199,7 +1196,6 @@ const SalesManagement = () => {
       }
     });
 
-    // Aggregate products
     const productMap = new Map();
 
     companySales.forEach(sale => {
@@ -1231,6 +1227,95 @@ const SalesManagement = () => {
     });
 
     return Array.from(productMap.values()).sort((a, b) => a.productName.localeCompare(b.productName));
+  };
+
+
+  const aggregateProductsByStatus = async () => {
+    if (!allFilteredSales.length && !sales.length) return;
+
+    try {
+      const startDateObj = filterData.startDate ? new Date(filterData.startDate) : null;
+      const endDateObj = filterData.endDate ? new Date(filterData.endDate) : null;
+
+      const params = new URLSearchParams({
+        page: 0,
+        size: 10000,
+        ...(filterData.companyId && { companyId: filterData.companyId }),
+        ...(filterData.branchId && { branchId: filterData.branchId }),
+        ...(statusFilter !== 'ALL' && { status: statusFilter }),
+        ...(searchTerm && { searchTerm: searchTerm }),
+        ...(startDateObj && { startYear: startDateObj.getFullYear(), startMonth: startDateObj.getMonth() + 1 }),
+        ...(endDateObj && { endYear: endDateObj.getFullYear(), endMonth: endDateObj.getMonth() + 1 }),
+      });
+
+      if (filterData.productFilters && filterData.productFilters.length > 0) {
+        filterData.productFilters.forEach(pf => {
+          if (pf.productId) params.append('productIds', pf.productId);
+          if (pf.variationId) params.append('variationIds', pf.variationId);
+        });
+      }
+
+      const response = await api.get(`/sales/all?${params}`);
+      const allSalesData = response.data.content || [];
+
+      const pendingMap = new Map();
+      const confirmedMap = new Map();
+      const invoicedMap = new Map();
+
+      allSalesData.forEach(sale => {
+        if (!sale.items || sale.items.length === 0) return;
+
+        const targetMap = sale.status === 'PENDING' ? pendingMap :
+          sale.status === 'CONFIRMED' ? confirmedMap :
+            sale.status === 'INVOICED' ? invoicedMap : null;
+        if (!targetMap) return;
+
+        sale.items.forEach(item => {
+          if (!item.product) return;
+
+          const key = `${item.product.id}_${item.variation?.id || 'no-variation'}`;
+
+          if (targetMap.has(key)) {
+            const existing = targetMap.get(key);
+            existing.quantity += item.quantity;
+            existing.amount += item.amount;
+          } else {
+            targetMap.set(key, {
+              id: key,
+              productId: item.product.id,
+              productName: item.product.productName,
+              variationId: item.variation?.id || null,
+              variationDisplay: item.variation?.combinationDisplay ||
+                (item.variation?.variationType && item.variation?.variationValue
+                  ? `${item.variation.variationType}: ${item.variation.variationValue}`
+                  : 'No variation'),
+              sku: item.variation?.sku || item.product.sku || 'N/A',
+              upc: item.variation?.upc || item.product.upc || 'N/A',
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              amount: item.amount
+            });
+          }
+        });
+      });
+
+      setProductsByStatus({
+        pending: Array.from(pendingMap.values()).sort((a, b) => a.productName.localeCompare(b.productName)),
+        confirmed: Array.from(confirmedMap.values()).sort((a, b) => a.productName.localeCompare(b.productName)),
+        invoiced: Array.from(invoicedMap.values()).sort((a, b) => a.productName.localeCompare(b.productName))
+      });
+
+      console.log('Products by status:', {
+        pendingCount: pendingMap.size,
+        confirmedCount: confirmedMap.size,
+        invoicedCount: invoicedMap.size,
+        totalSales: allSalesData.length
+      });
+
+    } catch (error) {
+      console.error('Error fetching products by status:', error);
+      toast.error('Failed to load product details');
+    }
   };
 
   const exportReportToExcel = () => {
@@ -1848,36 +1933,61 @@ const SalesManagement = () => {
               <div className="flex flex-col justify-start">
                 <label className="block text-xs font-medium text-gray-700 mb-1">Summary</label>
                 {(() => {
-                  const summaryData = allFilteredSales.length > 0 ? allFilteredSales : currentSales;
-                  const pending = summaryData.filter(s => s.status === 'PENDING').length;
-                  const confirmed = summaryData.filter(s => s.status === 'CONFIRMED').length;
-                  const invoiced = summaryData.filter(s => s.status === 'INVOICED').length;
-                  const pendingAmt = summaryData.filter(s => s.status === 'PENDING').reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
-                  const confirmedAmt = summaryData.filter(s => s.status === 'CONFIRMED').reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
-                  const invoicedAmt = summaryData.filter(s => s.status === 'INVOICED').reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
+                  const pending = allFilteredSales.pendingCount ?? currentSales.filter(s => s.status === 'PENDING').length;
+                  const confirmed = allFilteredSales.confirmedCount ?? currentSales.filter(s => s.status === 'CONFIRMED').length;
+                  const invoiced = allFilteredSales.invoicedCount ?? currentSales.filter(s => s.status === 'INVOICED').length;
+                  const pendingAmt = allFilteredSales.pendingAmount ?? currentSales.filter(s => s.status === 'PENDING').reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
+                  const confirmedAmt = allFilteredSales.confirmedAmount ?? currentSales.filter(s => s.status === 'CONFIRMED').reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
+                  const invoicedAmt = allFilteredSales.invoicedAmount ?? currentSales.filter(s => s.status === 'INVOICED').reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
                   const grandTotal = pendingAmt + confirmedAmt + invoicedAmt;
+
+                  const pendingQty = productsByStatus.pending.reduce((sum, p) => sum + p.quantity, 0);
+                  const confirmedQty = productsByStatus.confirmed.reduce((sum, p) => sum + p.quantity, 0);
+                  const invoicedQty = productsByStatus.invoiced.reduce((sum, p) => sum + p.quantity, 0);
+
                   return (
                     <div className="flex items-center gap-4 flex-wrap">
-                      {/* Pending */}
-                      <div className="flex items-center gap-2 border border-yellow-400 rounded-lg px-3 py-1">
+                      <button
+                        onClick={() => {
+                          setSelectedStatusForModal('PENDING');
+                          aggregateProductsByStatus();
+                          setShowProductsByStatusModal(true);
+                        }}
+                        className="flex items-center gap-2 border border-yellow-400 rounded-lg px-3 py-1 hover:bg-yellow-50 transition-colors cursor-pointer"
+                      >
                         <span className="text-xs text-gray-600">Pending:</span>
                         <span className="text-xs font-semibold text-gray-800">₱{pendingAmt.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         <span className="text-xs font-bold text-gray-700">{pending}</span>
-                      </div>
+                        <span className="text-xs text-gray-500 ml-1">(Qty: {pendingQty.toLocaleString()})</span>
+                      </button>
 
-                      {/* Confirmed */}
-                      <div className="flex items-center gap-2 border border-blue-400 rounded-lg px-3 py-1">
+                      <button
+                        onClick={() => {
+                          setSelectedStatusForModal('CONFIRMED');
+                          aggregateProductsByStatus();
+                          setShowProductsByStatusModal(true);
+                        }}
+                        className="flex items-center gap-2 border border-blue-400 rounded-lg px-3 py-1 hover:bg-blue-50 transition-colors cursor-pointer"
+                      >
                         <span className="text-xs text-gray-600">Confirmed:</span>
                         <span className="text-xs font-semibold text-gray-800">₱{confirmedAmt.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         <span className="text-xs font-bold text-gray-700">{confirmed}</span>
-                      </div>
+                        <span className="text-xs text-gray-500 ml-1">(Qty: {confirmedQty.toLocaleString()})</span>
+                      </button>
 
-                      {/* Invoiced */}
-                      <div className="flex items-center gap-2 border border-green-400 rounded-lg px-3 py-1">
+                      <button
+                        onClick={() => {
+                          setSelectedStatusForModal('INVOICED');
+                          aggregateProductsByStatus();
+                          setShowProductsByStatusModal(true);
+                        }}
+                        className="flex items-center gap-2 border border-green-400 rounded-lg px-3 py-1 hover:bg-green-50 transition-colors cursor-pointer"
+                      >
                         <span className="text-xs text-gray-600">Invoiced:</span>
                         <span className="text-xs font-semibold text-gray-800">₱{invoicedAmt.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         <span className="text-xs font-bold text-gray-700">{invoiced}</span>
-                      </div>
+                        <span className="text-xs text-gray-500 ml-1">(Qty: {invoicedQty.toLocaleString()})</span>
+                      </button>
 
                       {/* Grand Total */}
                       <div className="flex items-center gap-2 border-2 border-blue-600 rounded-lg px-3 py-1">
@@ -3835,6 +3945,183 @@ const SalesManagement = () => {
           </thead>
           <tbody>
             {aggregatedProducts.map((product, idx) => (
+              <tr key={product.id}>
+                <td className="px-4 py-2">{product.productName}</td>
+                <td className="px-4 py-2">{product.variationDisplay}</td>
+                <td className="px-4 py-2">{product.sku}</td>
+                <td className="px-4 py-2">{product.upc}</td>
+                <td className="px-4 py-2 text-right">{product.quantity.toLocaleString()}</td>
+                <td className="px-4 py-2 text-right">₱{product.unitPrice.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                <td className="px-4 py-2 text-right">₱{product.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+      </div>
+      {/* Products by Status Modal */}
+      {showProductsByStatusModal && selectedStatusForModal && (
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl">
+            {/* Header */}
+            <div className="p-5 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  {selectedStatusForModal === 'PENDING' && '📋 Pending Sales - All Products'}
+                  {selectedStatusForModal === 'CONFIRMED' && '✅ Confirmed Sales - All Products'}
+                  {selectedStatusForModal === 'INVOICED' && '💰 Invoiced Sales - All Products'}
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Total Products: {productsByStatus[selectedStatusForModal.toLowerCase()]?.length || 0} |
+                  Total Quantity: {productsByStatus[selectedStatusForModal.toLowerCase()]?.reduce((sum, p) => sum + p.quantity, 0).toLocaleString() || 0} |
+                  Total Amount: ₱{productsByStatus[selectedStatusForModal.toLowerCase()]?.reduce((sum, p) => sum + p.amount, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 }) || 0}
+                </p>
+              </div>
+              <button onClick={() => setShowProductsByStatusModal(false)} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Products Table */}
+            <div className="flex-1 overflow-auto p-5">
+              <table className="w-full text-sm border-collapse">
+                <thead className="sticky top-0 bg-gray-100">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">#</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Product</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Variation</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">SKU</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">UPC</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Qty</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Unit Price</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {(productsByStatus[selectedStatusForModal.toLowerCase()] || []).map((product, idx) => (
+                    <tr key={product.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-center text-gray-400">{idx + 1}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{product.productName}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.variationDisplay !== 'No variation'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-gray-100 text-gray-500'
+                          }`}>
+                          {product.variationDisplay}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">{product.sku}</td>
+                      <td className="px-4 py-3 text-gray-600">{product.upc}</td>
+                      <td className="px-4 py-3 text-right font-semibold text-gray-900">
+                        {product.quantity.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-700">
+                        ₱{product.unitPrice.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-blue-600">
+                        ₱{product.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="sticky bottom-0 bg-gray-100 border-t-2 border-gray-300">
+                  <tr>
+                    <td colSpan={5} className="px-4 py-3 text-right font-bold text-gray-700">TOTALS:</td>
+                    <td className="px-4 py-3 text-right font-bold text-gray-900">
+                      {(productsByStatus[selectedStatusForModal.toLowerCase()] || []).reduce((sum, p) => sum + p.quantity, 0).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3"></td>
+                    <td className="px-4 py-3 text-right font-bold text-blue-700">
+                      ₱{(productsByStatus[selectedStatusForModal.toLowerCase()] || []).reduce((sum, p) => sum + p.amount, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  const products = productsByStatus[selectedStatusForModal.toLowerCase()] || [];
+                  const csvRows = [
+                    ['Product', 'Variation', 'SKU', 'UPC', 'Quantity', 'Unit Price', 'Amount'],
+                    ...products.map(p => [p.productName, p.variationDisplay, p.sku, p.upc, p.quantity, p.unitPrice, p.amount]),
+                    [],
+                    ['TOTAL', '', '', '', products.reduce((s, p) => s + p.quantity, 0), '', products.reduce((s, p) => s + p.amount, 0)]
+                  ];
+                  const csvContent = csvRows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+                  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `${selectedStatusForModal}_products_${new Date().toISOString().split('T')[0]}.csv`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  toast.success('Products exported successfully!');
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
+              >
+                <FileText size={16} className="inline mr-2" />
+                Export CSV
+              </button>
+              <button
+                onClick={() => {
+                  const printContent = document.getElementById('products-by-status-print-content');
+                  if (printContent) {
+                    const printWindow = window.open('', '_blank');
+                    printWindow.document.write(`
+                      <!DOCTYPE html>
+                      <html>
+                      <head>
+                        <title>${selectedStatusForModal} Products Report</title>
+                        <style>
+                          body { font-family: Arial; padding: 20px; }
+                          table { border-collapse: collapse; width: 100%; }
+                          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                          th { background-color: #f2f2f2; }
+                          .text-right { text-align: right; }
+                        </style>
+                      </head>
+                      <body>
+                        <h2>${selectedStatusForModal} Sales - All Products</h2>
+                        ${printContent.outerHTML}
+                      </body>
+                      </html>
+                    `);
+                    printWindow.document.close();
+                    printWindow.print();
+                  }
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+              >
+                <Printer size={16} className="inline mr-2" />
+                Print
+              </button>
+              <button onClick={() => setShowProductsByStatusModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden div for printing products by status */}
+      <div id="products-by-status-print-content" className="hidden">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr>
+              <th className="px-4 py-3 text-left">Product</th>
+              <th className="px-4 py-3 text-left">Variation</th>
+              <th className="px-4 py-3 text-left">SKU</th>
+              <th className="px-4 py-3 text-left">UPC</th>
+              <th className="px-4 py-3 text-right">Qty</th>
+              <th className="px-4 py-3 text-right">Unit Price</th>
+              <th className="px-4 py-3 text-right">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(productsByStatus[selectedStatusForModal?.toLowerCase()] || []).map((product, idx) => (
               <tr key={product.id}>
                 <td className="px-4 py-2">{product.productName}</td>
                 <td className="px-4 py-2">{product.variationDisplay}</td>
