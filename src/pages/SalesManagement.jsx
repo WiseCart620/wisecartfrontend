@@ -314,6 +314,9 @@ const SalesManagement = () => {
         pendingAmount: summary.pendingAmount || 0,
         confirmedAmount: summary.confirmedAmount || 0,
         invoicedAmount: summary.invoicedAmount || 0,
+        pendingQty: summary.pendingQty || 0,
+        confirmedQty: summary.confirmedQty || 0,
+        invoicedQty: summary.invoicedQty || 0,
       });
 
     } catch (error) {
@@ -1231,7 +1234,6 @@ const SalesManagement = () => {
 
 
   const aggregateProductsByStatus = async () => {
-    if (!allFilteredSales.length && !sales.length) return;
 
     try {
       const startDateObj = filterData.startDate ? new Date(filterData.startDate) : null;
@@ -1941,9 +1943,15 @@ const SalesManagement = () => {
                   const invoicedAmt = allFilteredSales.invoicedAmount ?? currentSales.filter(s => s.status === 'INVOICED').reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
                   const grandTotal = pendingAmt + confirmedAmt + invoicedAmt;
 
-                  const pendingQty = productsByStatus.pending.reduce((sum, p) => sum + p.quantity, 0);
-                  const confirmedQty = productsByStatus.confirmed.reduce((sum, p) => sum + p.quantity, 0);
-                  const invoicedQty = productsByStatus.invoiced.reduce((sum, p) => sum + p.quantity, 0);
+                  const pendingQty = productsByStatus.pending.length > 0
+                    ? productsByStatus.pending.reduce((sum, p) => sum + p.quantity, 0)
+                    : allFilteredSales.pendingQty || 0;
+                  const confirmedQty = productsByStatus.confirmed.length > 0
+                    ? productsByStatus.confirmed.reduce((sum, p) => sum + p.quantity, 0)
+                    : allFilteredSales.confirmedQty || 0;
+                  const invoicedQty = productsByStatus.invoiced.length > 0
+                    ? productsByStatus.invoiced.reduce((sum, p) => sum + p.quantity, 0)
+                    : allFilteredSales.invoicedQty || 0;
 
                   return (
                     <div className="flex items-center gap-4 flex-wrap">
@@ -3967,9 +3975,9 @@ const SalesManagement = () => {
             <div className="p-5 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">
-                  {selectedStatusForModal === 'PENDING' && '📋 Pending Sales - All Products'}
-                  {selectedStatusForModal === 'CONFIRMED' && '✅ Confirmed Sales - All Products'}
-                  {selectedStatusForModal === 'INVOICED' && '💰 Invoiced Sales - All Products'}
+                  {selectedStatusForModal === 'PENDING' && ' Pending Sales - All Products'}
+                  {selectedStatusForModal === 'CONFIRMED' && ' Confirmed Sales - All Products'}
+                  {selectedStatusForModal === 'INVOICED' && ' Invoiced Sales - All Products'}
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
                   Total Products: {productsByStatus[selectedStatusForModal.toLowerCase()]?.length || 0} |
