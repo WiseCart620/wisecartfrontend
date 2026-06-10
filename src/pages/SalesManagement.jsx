@@ -3,7 +3,7 @@ import '../styles/invoice-print.css';
 import { api } from '../services/api';
 import toast, { Toaster } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { Search, Plus, Edit2, Trash2, Eye, FileText, Check, X, Printer, ChevronDown, ChevronLeft, ChevronRight, Receipt } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Eye, FileText, Check, X, Printer, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Receipt } from 'lucide-react';
 import InvoicingProfile from './InvoicingProfile';
 import '../styles/sales-memo-print.css';
 import { LoadingOverlay } from '../components/common/LoadingOverlay';
@@ -226,6 +226,16 @@ const SalesManagement = () => {
   const [selectedProductForAdd, setSelectedProductForAdd] = useState('');
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
+  const [showSalesReportModal, setShowSalesReportModal] = useState(false);
+  const [salesReportFilter, setSalesReportFilter] = useState({
+    startDate: '',
+    endDate: '',
+  });
+  const [salesReportData, setSalesReportData] = useState(null);
+  const [salesReportLoading, setSalesReportLoading] = useState(false);
+  const [expandedReportYears, setExpandedReportYears] = useState({});
+  const [expandedReportMonths, setExpandedReportMonths] = useState({});
+  const [selectedReportMonths, setSelectedReportMonths] = useState({});
   const [formData, setFormData] = useState({
     branchId: '',
     month: new Date().getMonth() + 1,
@@ -292,71 +302,42 @@ const SalesManagement = () => {
   const staticDataLoaded = useRef(false);
 
 
-  const loadData = useCallback(async (background = false) => {
-    if (!background) setLoading(true);
-
-    await fetchSales(currentPage - 1);
-
-    if (!staticDataLoaded.current) {
-      staticDataLoaded.current = true;
-
-      try {
-        const results = await Promise.all([
-          api.get('/branches').catch(() => ({ success: false, data: [] })),
-          api.get('/companies').catch(() => ({ success: false, data: [] })),
-          api.get('/products').catch(() => ({ success: false, data: [] })),
-          api.get('/inventories').catch(() => ({ success: false, data: [] })),
-          api.get('/warehouse').catch(() => ({ success: false, data: [] })),
-          api.get('/stocks/warehouses').catch(() => ({ success: false, data: [] })),
-          api.get('/inventories/products/summary').catch(() => ({ success: false, data: [] }))
-        ]);
-
-        // Extract data, ensuring we always get arrays
-        const branchesData = extractArray(results[0]);
-        const companiesData = extractArray(results[1]);
-        const productsData = extractArray(results[2]);
-        console.log('Products data:', productsData);
-        const inventoriesData = extractArray(results[3]);
-        const warehousesData = extractArray(results[4]);
-        const warehouseStocksData = extractArray(results[5]);
-        const productSummariesData = extractArray(results[6]);
-
-        // Always set to arrays, never undefined
-        setBranches(Array.isArray(branchesData) ? branchesData : []);
-        setCompanies(Array.isArray(companiesData) ? companiesData : []);
-        setProducts(Array.isArray(productsData) ? productsData : []);
-        setInventories(Array.isArray(inventoriesData) ? inventoriesData : []);
-        setWarehouses(Array.isArray(warehousesData) ? warehousesData : []);
-        setWarehouseStocks(Array.isArray(warehouseStocksData) ? warehouseStocksData : []);
-        setProductSummaries(Array.isArray(productSummariesData) ? productSummariesData : []);
-
-      } catch (error) {
-        console.error('Error loading static data:', error);
-        // Set empty arrays on error to prevent crashes
-        setBranches([]);
-        setCompanies([]);
-        setProducts([]);
-        setInventories([]);
-        setWarehouses([]);
-        setWarehouseStocks([]);
-        setProductSummaries([]);
-      }
-    }
-
-    setLoading(false);
-  }, [currentPage, filterData, statusFilter, searchTerm]);
-
+  const initialLoadDone = useRef(false);
 
   useEffect(() => {
-    loadData();
+    fetchSales(0).then(() => {
+      initialLoadDone.current = true;
+    });
+    if (!staticDataLoaded.current) {
+      staticDataLoaded.current = true;
+      Promise.all([
+        api.get('/branches').catch(() => ({ data: [] })),
+        api.get('/companies').catch(() => ({ data: [] })),
+        api.get('/products').catch(() => ({ data: [] })),
+        api.get('/inventories').catch(() => ({ data: [] })),
+        api.get('/warehouse').catch(() => ({ data: [] })),
+        api.get('/stocks/warehouses').catch(() => ({ data: [] })),
+        api.get('/inventories/products/summary').catch(() => ({ data: [] })),
+      ]).then(results => {
+        setBranches(extractArray(results[0]));
+        setCompanies(extractArray(results[1]));
+        setProducts(extractArray(results[2]));
+        setInventories(extractArray(results[3]));
+        setWarehouses(extractArray(results[4]));
+        setWarehouseStocks(extractArray(results[5]));
+        setProductSummaries(extractArray(results[6]));
+      }).catch(() => { });
+    }
   }, []);
 
   useEffect(() => {
+    if (!initialLoadDone.current) return;
     fetchSales(0);
     setCurrentPage(1);
   }, [filterData.companyId, filterData.branchId, statusFilter, searchTerm, filterData.startDate, filterData.endDate, JSON.stringify(filterData.productFilters)]);
 
   useEffect(() => {
+    if (!initialLoadDone.current || currentPage === 1) return;
     fetchSales(currentPage - 1);
   }, [currentPage]);
 
@@ -395,7 +376,7 @@ const SalesManagement = () => {
       clearTimeout(retryTimeout);
       if (es) es.close();
     };
-  }, [loadData]);
+  }, [fetchSales, currentPage]);
 
 
   const loadProductPricesForCompany = async (companyId) => {
@@ -1009,6 +990,373 @@ const SalesManagement = () => {
   };
 
 
+  const generateSalesReport = async () => {
+    setSalesReportLoading(true);
+    try {
+      const params = new URLSearchParams({ page: 0, size: 9999, status: 'INVOICED' });
+      if (filterData.companyId) params.append('companyId', filterData.companyId);
+      if (filterData.branchId) params.append('branchId', filterData.branchId);
+      if (salesReportFilter.startDate) {
+        const d = new Date(salesReportFilter.startDate);
+        params.append('startYear', d.getFullYear());
+        params.append('startMonth', d.getMonth() + 1);
+      }
+      if (salesReportFilter.endDate) {
+        const d = new Date(salesReportFilter.endDate);
+        params.append('endYear', d.getFullYear());
+        params.append('endMonth', d.getMonth() + 1);
+      }
+      const response = await api.get(`/sales/all?${params}`);
+      const allSales = response.data?.content || [];
+
+      const grouped = {};
+      allSales.forEach(sale => {
+        const yr = sale.year;
+        if (!grouped[yr]) grouped[yr] = [];
+        grouped[yr].push(sale);
+      });
+
+      // NEW: Function to merge sales by month, company, branch within each year
+      const mergeSalesByMonthCompanyBranch = (salesList) => {
+        const mergedMap = new Map();
+
+        salesList.forEach(sale => {
+          const key = `${sale.year}_${sale.month}_${sale.company?.id}_${sale.branch?.id}`;
+
+          if (mergedMap.has(key)) {
+            const existing = mergedMap.get(key);
+
+            // Merge items
+            const mergedItems = [...(existing.items || [])];
+            (sale.items || []).forEach(newItem => {
+              const existingIndex = mergedItems.findIndex(item =>
+                item.product?.id === newItem.product?.id &&
+                (item.variation?.id || null) === (newItem.variation?.id || null)
+              );
+              if (existingIndex !== -1) {
+                mergedItems[existingIndex].quantity += newItem.quantity;
+                mergedItems[existingIndex].amount += newItem.amount;
+              } else {
+                mergedItems.push({ ...newItem });
+              }
+            });
+
+            mergedMap.set(key, {
+              ...existing,
+              items: mergedItems,
+              totalAmount: (existing.totalAmount || 0) + (sale.totalAmount || 0),
+              mergedSaleIds: [...(existing.mergedSaleIds || [existing.id]), sale.id]
+            });
+          } else {
+            mergedMap.set(key, {
+              ...sale,
+              mergedSaleIds: [sale.id],
+              items: [...(sale.items || [])]
+            });
+          }
+        });
+
+        return Array.from(mergedMap.values());
+      };
+
+      const rows = Object.keys(grouped).sort((a, b) => Number(a) - Number(b)).map(yr => {
+        const yrSales = grouped[yr];
+        const invoiced = yrSales.filter(s => s.status === 'INVOICED');
+        const monthMap = {};
+        const mergedSales = mergeSalesByMonthCompanyBranch(yrSales);
+        mergedSales.forEach(sale => {
+          const mo = sale.month;
+          if (!monthMap[mo]) monthMap[mo] = [];
+          monthMap[mo].push(sale);
+        });
+
+        const monthRows = Object.keys(monthMap).sort((a, b) => Number(a) - Number(b)).map(mo => {
+          const moSales = monthMap[mo];
+          const moAmount = moSales.reduce((s, x) => s + (Number(x.totalAmount) || 0), 0);
+          const moVatable = moAmount / 1.12;
+          const moVat = moVatable * 0.12;
+          const moEwt = moVatable * 0.01;
+          const moDue = moAmount - moEwt;
+
+          const companyMap = {};
+          moSales.forEach(sale => {
+            const companyId = sale.company?.id || 'unknown';
+            if (!companyMap[companyId]) companyMap[companyId] = {
+              company: sale.company,
+              sales: [],
+              mergedSaleIds: sale.mergedSaleIds || [sale.id]
+            };
+            companyMap[companyId].sales.push(sale);
+          });
+
+          const companyGroups = Object.values(companyMap).map(cg => {
+            const cgAmount = cg.sales.reduce((s, x) => s + (Number(x.totalAmount) || 0), 0);
+            const cgVatable = cgAmount / 1.12;
+            const cgVat = cgVatable * 0.12;
+            const cgEwt = cgVatable * 0.01;
+            const cgDue = cgAmount - cgEwt;
+            return {
+              company: cg.company,
+              sales: cg.sales,
+              salesCount: cg.sales.length,
+              amount: cgAmount,
+              vatableSales: cgVatable,
+              vat: cgVat,
+              lesEwt: cgEwt,
+              due: cgDue,
+            };
+          });
+
+          return {
+            month: Number(mo),
+            qty: moSales.reduce((s, x) => s + (x.items || []).reduce((ss, i) => ss + (i.quantity || 0), 0), 0),
+            amount: moAmount,
+            vatableSales: moVatable,
+            vat: moVat,
+            lesEwt: moEwt,
+            due: moDue,
+            salesCount: moSales.length,
+            sales: moSales,
+            companyGroups,
+          };
+        });
+
+        const grossTotal = yrSales.reduce((s, x) => s + (Number(x.totalAmount) || 0), 0);
+        const vatableTotal = grossTotal / 1.12;
+        const vatTotal = vatableTotal * 0.12;
+        const ewtTotal = vatableTotal * 0.01;
+        const dueTotal = grossTotal - ewtTotal;
+
+        return {
+          year: yr,
+          sales: yrSales,
+          invoiced: invoiced.length,
+          total: yrSales.length,
+          grossTotal,
+          vatableTotal,
+          vatTotal,
+          ewtTotal,
+          dueTotal,
+          products: monthRows,
+        };
+      });
+
+      setSalesReportData(rows);
+      setExpandedReportYears(Object.fromEntries(rows.map(r => [r.year, true])));
+      setSelectedReportMonths(Object.fromEntries(rows.map(r => [r.year, r.products[0]?.month ?? null])));
+    } catch (e) {
+      toast.error('Failed to generate sales report');
+      console.error(e);
+    } finally {
+      setSalesReportLoading(false);
+    }
+  };
+
+  const exportReportToExcel = () => {
+    if (!salesReportData) return;
+
+    // Create workbook data with proper layout
+    const rows = [];
+
+    // Header
+    rows.push(['WISECART MERCHANTS CORP.']);
+    rows.push(['Sales Report']);
+    rows.push([`Generated: ${new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}`]);
+    rows.push([]);
+
+    // Summary row
+    const totalGross = salesReportData.reduce((s, r) => s + r.vatableTotal, 0);
+    const totalVat = salesReportData.reduce((s, r) => s + r.vatTotal, 0);
+    const totalEwt = salesReportData.reduce((s, r) => s + r.ewtTotal, 0);
+    const totalDue = salesReportData.reduce((s, r) => s + r.dueTotal, 0);
+
+    rows.push(['SUMMARY']);
+    rows.push(['Total Years:', salesReportData.length]);
+    rows.push(['Total Months:', salesReportData.reduce((s, r) => s + r.products.length, 0)]);
+    rows.push(['Total Gross/Vatable:', `₱${totalGross.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`]);
+    rows.push(['Total VAT/PT:', `₱${totalVat.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`]);
+    rows.push(['Total Less EWT:', `₱${totalEwt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`]);
+    rows.push(['Total Amount Due:', `₱${totalDue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`]);
+    rows.push([]);
+
+    // Main data table header
+    rows.push(['#', 'Year', 'Month', 'Gross / Vatable', 'VAT/PT', 'Less: EWT', 'Total Due', 'Invoices']);
+
+    let rowNum = 1;
+    salesReportData.forEach(yr => {
+      yr.products.forEach(p => {
+        rows.push([
+          rowNum++,
+          yr.year,
+          monthsFull[p.month - 1],
+          `₱${p.vatableSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
+          `₱${p.vat.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
+          `₱${p.lesEwt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
+          `₱${p.due.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
+          p.salesCount
+        ]);
+
+        // Add detailed invoice data for each month
+        p.sales.forEach(sale => {
+          rows.push([`  └─ Invoice #${sale.id}`, sale.branch?.branchName || '', sale.status, '', '', '', `₱${formatCurrency(sale.totalAmount)}`, '']);
+
+          // Add items for each sale
+          (sale.items || []).forEach((item, idx) => {
+            rows.push([
+              `     ${idx + 1}.`,
+              item.product?.productName || '',
+              item.variation?.combinationDisplay || 'No variation',
+              item.quantity,
+              `₱${formatCurrency(item.unitPrice)}`,
+              `₱${formatCurrency(item.amount)}`,
+              '',
+              ''
+            ]);
+          });
+          rows.push([]);
+        });
+      });
+
+      // Year total row
+      rows.push([`YEAR ${yr.year} TOTAL`, '', '', `₱${yr.vatableTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`, `₱${yr.vatTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`, `₱${yr.ewtTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`, `₱${yr.dueTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`, yr.total]);
+      rows.push([]);
+    });
+
+    // Create CSV content
+    const csvContent = rows.map(r =>
+      r.map(c => {
+        if (c === undefined || c === null) return '';
+        const stringValue = String(c);
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }).join(',')
+    ).join('\n');
+
+    // Add BOM for UTF-8 encoding to handle special characters
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sales_report_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Excel report downloaded successfully!');
+  };
+
+  // Print function for the modal content only
+  const printSalesReport = () => {
+    const printContent = document.getElementById('sales-report-print-content');
+    if (!printContent) return;
+
+    const originalTitle = document.title;
+    document.title = 'Sales Report';
+
+    const printWindow = window.open('', '_blank', 'width=1200,height=800');
+
+    printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Sales Report</title>
+      <meta charset="UTF-8">
+      <style>
+        @media print {
+          body { margin: 0; padding: 20px; }
+          .no-print { display: none; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f2f2f2; }
+        }
+        * {
+          font-family: Arial, Helvetica, sans-serif;
+        }
+        body {
+          padding: 20px;
+          margin: 0;
+        }
+        .report-header {
+          text-align: center;
+          margin-bottom: 20px;
+          padding-bottom: 10px;
+          border-bottom: 2px solid #333;
+        }
+        .report-title {
+          font-size: 24px;
+          font-weight: bold;
+          margin-bottom: 5px;
+        }
+        .report-subtitle {
+          font-size: 14px;
+          color: #666;
+        }
+        table {
+          border-collapse: collapse;
+          width: 100%;
+          margin-bottom: 20px;
+        }
+        th, td {
+          border: 1px solid #ddd;
+          padding: 8px;
+          text-align: left;
+        }
+        th {
+          background-color: #f2f2f2;
+          font-weight: bold;
+        }
+        .text-right {
+          text-align: right;
+        }
+        .text-center {
+          text-align: center;
+        }
+        .grand-total {
+          font-weight: bold;
+          background-color: #f0f0f0;
+        }
+        .company-group {
+          background-color: #e8e8e8;
+          font-weight: bold;
+        }
+        .sale-detail {
+          background-color: #fafafa;
+        }
+        .product-detail {
+          padding-left: 30px;
+        }
+        .summary-box {
+          margin-bottom: 20px;
+          padding: 10px;
+          border: 1px solid #ddd;
+          background-color: #f9f9f9;
+        }
+        @media print {
+          body { print-color-adjust: exact; }
+          .page-break { page-break-before: always; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="report-header">
+        <div class="report-title">WISECART MERCHANTS CORP.</div>
+        <div class="report-subtitle">Sales Report</div>
+        <div class="report-subtitle">Generated: ${new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+      </div>
+      ${printContent.outerHTML}
+    </body>
+    </html>
+  `);
+
+    printWindow.document.close();
+    printWindow.focus();
+
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
+
+    document.title = originalTitle;
+  };
+
+
   const handleResetFilter = () => {
     setFilterData({
       companyId: '',
@@ -1029,7 +1377,6 @@ const SalesManagement = () => {
     setSearchTerm('');
     setCurrentPage(1);
   };
-
 
   const handleCompanyFilterChange = (value) => {
     setFilterData({ ...filterData, companyId: value });
@@ -1258,9 +1605,19 @@ const SalesManagement = () => {
                 {isAdminOrFinance && (
                   <button
                     onClick={() => setShowInvoicingProfile(true)}
-                    className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-md text-sm font-medium"
+                    className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md text-sm font-medium"
                   >
+                    <FileText size={16} />
                     Sales Journal
+                  </button>
+                )}
+                {isAdminOrFinance && (
+                  <button
+                    onClick={() => setShowSalesReportModal(true)}
+                    className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm text-sm font-medium"
+                  >
+                    <span className="text-sm font-bold leading-none">₱</span>
+                    Sales Report
                   </button>
                 )}
               </div>
@@ -1340,7 +1697,6 @@ const SalesManagement = () => {
               </div>
             </div>
 
-            {/* Third Row: Product Search */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2 border-t border-gray-100">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -1405,6 +1761,50 @@ const SalesManagement = () => {
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Summary stats — right side */}
+              <div className="flex flex-col justify-start">
+                <label className="block text-xs font-medium text-gray-700 mb-1">Summary</label>
+                {(() => {
+                  const pending = currentSales.filter(s => s.status === 'PENDING').length;
+                  const confirmed = currentSales.filter(s => s.status === 'CONFIRMED').length;
+                  const invoiced = currentSales.filter(s => s.status === 'INVOICED').length;
+                  const pendingAmt = currentSales.filter(s => s.status === 'PENDING').reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
+                  const confirmedAmt = currentSales.filter(s => s.status === 'CONFIRMED').reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
+                  const invoicedAmt = currentSales.filter(s => s.status === 'INVOICED').reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
+                  const grandTotal = pendingAmt + confirmedAmt + invoicedAmt;
+                  return (
+                    <div className="flex items-center gap-4 flex-wrap">
+                      {/* Pending */}
+                      <div className="flex items-center gap-2 border border-yellow-400 rounded-lg px-3 py-1">
+                        <span className="text-xs text-gray-600">Pending:</span>
+                        <span className="text-xs font-semibold text-gray-800">₱{pendingAmt.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span className="text-xs font-bold text-gray-700">{pending}</span>
+                      </div>
+
+                      {/* Confirmed */}
+                      <div className="flex items-center gap-2 border border-blue-400 rounded-lg px-3 py-1">
+                        <span className="text-xs text-gray-600">Confirmed:</span>
+                        <span className="text-xs font-semibold text-gray-800">₱{confirmedAmt.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span className="text-xs font-bold text-gray-700">{confirmed}</span>
+                      </div>
+
+                      {/* Invoiced */}
+                      <div className="flex items-center gap-2 border border-green-400 rounded-lg px-3 py-1">
+                        <span className="text-xs text-gray-600">Invoiced:</span>
+                        <span className="text-xs font-semibold text-gray-800">₱{invoicedAmt.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span className="text-xs font-bold text-gray-700">{invoiced}</span>
+                      </div>
+
+                      {/* Grand Total */}
+                      <div className="flex items-center gap-2 border-2 border-blue-600 rounded-lg px-3 py-1">
+                        <span className="text-xs font-bold text-blue-700">Grand Total:</span>
+                        <span className="text-sm font-black text-blue-700">₱{grandTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
@@ -2784,9 +3184,407 @@ const SalesManagement = () => {
         )}
 
       </div>
+      {showSalesReportModal && !salesReportData && (
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900">Generate Sales Report</h2>
+              <button onClick={() => setShowSalesReportModal(false)} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
+                <X size={22} />
+              </button>
+            </div>
+            <div className="p-6 space-y-5">
+              <p className="text-sm text-gray-500">Leave dates empty to include all years. Results are grouped by year then expandable by invoice.</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                  <input
+                    type="date"
+                    value={salesReportFilter.startDate}
+                    onChange={e => setSalesReportFilter(p => ({ ...p, startDate: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                  <input
+                    type="date"
+                    value={salesReportFilter.endDate}
+                    onChange={e => setSalesReportFilter(p => ({ ...p, endDate: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+              {filterData.companyId && (
+                <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200 text-sm text-indigo-700">
+                  Filtered by selected company/branch from main filters.
+                </div>
+              )}
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <button onClick={() => setShowSalesReportModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+              <button
+                onClick={generateSalesReport}
+                disabled={salesReportLoading}
+                className="px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {salesReportLoading ? 'Generating...' : 'Generate Report'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {salesReportData && (
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-white rounded-2xl w-full max-w-7xl max-h-[97vh] flex flex-col shadow-2xl">
+            {/* Header */}
+            <div className="p-5 border-b border-gray-200 flex justify-between items-center print:hidden sticky top-0 bg-white rounded-t-2xl z-10">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Sales Report</h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {salesReportFilter.startDate || salesReportFilter.endDate
+                    ? `${salesReportFilter.startDate || 'All'} — ${salesReportFilter.endDate || 'All'}`
+                    : 'All periods'
+                  } · {salesReportData.reduce((s, r) => s + r.products.length, 0)} months
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={exportReportToExcel}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
+                >
+                  <FileText size={16} /> Export CSV/Excel
+                </button>
+                <button
+                  onClick={printSalesReport}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+                >
+                  <Printer size={16} /> Print
+                </button>
+                <button
+                  onClick={() => { setSalesReportData(null); setShowSalesReportModal(false); }}
+                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                >
+                  <X size={22} />
+                </button>
+              </div>
+            </div>
+
+            {/* Summary row */}
+            <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 print:bg-white print:border print:mb-4">
+              <div className="flex flex-wrap gap-4 print:grid print:grid-cols-2">
+                <div><span className="text-xs text-gray-500">Total Years:</span> <span className="font-semibold">{salesReportData.length}</span></div>
+                <div><span className="text-xs text-gray-500">Total Months:</span> <span className="font-semibold">{salesReportData.reduce((s, r) => s + r.products.length, 0)}</span></div>
+                <div><span className="text-xs text-gray-500">Gross / Vatable:</span> <span className="font-semibold text-blue-700">₱{salesReportData.reduce((s, r) => s + r.vatableTotal, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span></div>
+                <div><span className="text-xs text-gray-500">VAT/PT:</span> <span className="font-semibold text-indigo-700">₱{salesReportData.reduce((s, r) => s + r.vatTotal, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span></div>
+                <div><span className="text-xs text-gray-500">Less: EWT:</span> <span className="font-semibold text-red-600">₱{salesReportData.reduce((s, r) => s + r.ewtTotal, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span></div>
+                <div><span className="text-xs text-gray-500">Total Due:</span> <span className="font-semibold text-green-700">₱{salesReportData.reduce((s, r) => s + r.dueTotal, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span></div>
+              </div>
+            </div>
+
+            {/* Table Content for Printing */}
+            <div className="flex-1 overflow-y-auto" id="sales-report-print-content">
+              {salesReportData.length === 0 ? (
+                <div className="p-12 text-center text-gray-400 italic">No sales data found for the selected period.</div>
+              ) : (
+                <table className="w-full text-sm border-collapse" style={{ minWidth: 900 }}>
+                  <thead className="sticky top-0 z-10 bg-gray-100 print:bg-gray-200">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase tracking-wide w-10">#</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase tracking-wide">Year</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase tracking-wide">Month</th>
+                      <th className="px-4 py-3 text-right text-[11px] font-semibold text-gray-600 uppercase tracking-wide">Gross / Vatable</th>
+                      <th className="px-4 py-3 text-right text-[11px] font-semibold text-gray-600 uppercase tracking-wide">VAT/PT</th>
+                      <th className="px-4 py-3 text-right text-[11px] font-semibold text-gray-600 uppercase tracking-wide">Less: EWT</th>
+                      <th className="px-4 py-3 text-right text-[11px] font-semibold text-gray-600 uppercase tracking-wide">Due</th>
+                      <th className="px-4 py-3 text-center text-[11px] font-semibold text-gray-600 uppercase tracking-wide w-20">Invoices</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {salesReportData.map((row, idx) => {
+                      const activeMonth = selectedReportMonths[row.year] ?? row.products[0]?.month ?? null;
+                      const activeProd = row.products.find(p => p.month === activeMonth);
+                      const monthKey = `${row.year}_${activeMonth}`;
+                      const isInvoicesExpanded = expandedReportMonths[monthKey];
+
+                      return (
+                        <React.Fragment key={`report-row-${row.year}`}>
+                          <tr className="border-b border-gray-200 hover:bg-gray-50 transition print:border-black">
+                            <td className="px-4 py-3 text-center text-xs text-gray-400 font-medium">{idx + 1}</td>
+                            <td className="px-4 py-3 text-sm font-bold text-gray-900 whitespace-nowrap">{row.year}</td>
+                            <td className="px-4 py-3">
+                              <div className="relative inline-block print:hidden">
+                                <select
+                                  value={activeMonth ?? ''}
+                                  onChange={(e) => {
+                                    const newMonth = Number(e.target.value);
+                                    setSelectedReportMonths(prev => ({ ...prev, [row.year]: newMonth }));
+                                    setExpandedReportMonths(prev => ({ ...prev, [`${row.year}_${newMonth}`]: false }));
+                                  }}
+                                  className="appearance-none pl-3 pr-8 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-800 bg-white focus:ring-2 focus:ring-gray-400 focus:border-gray-400 cursor-pointer font-medium"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {row.products.map(p => (
+                                    <option key={p.month} value={p.month}>
+                                      {monthsFull[p.month - 1]} ({p.salesCount} invoice{p.salesCount !== 1 ? 's' : ''})
+                                    </option>
+                                  ))}
+                                </select>
+                                <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500">
+                                  <ChevronDown size={14} strokeWidth={2.5} />
+                                </div>
+                              </div>
+                              <span className="hidden print:inline">{activeProd ? monthsFull[activeProd.month - 1] : '—'}</span>
+                            </td>
+                            <td className="px-4 py-3 text-right text-sm text-gray-800">
+                              {activeProd ? `₱${activeProd.vatableSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '—'}
+                            </td>
+                            <td className="px-4 py-3 text-right text-sm text-gray-800">
+                              {activeProd ? `₱${activeProd.vat.toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '—'}
+                            </td>
+                            <td className="px-4 py-3 text-right text-sm text-gray-800">
+                              {activeProd ? `₱${activeProd.lesEwt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '—'}
+                            </td>
+                            <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                              {activeProd ? `₱${activeProd.due.toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '—'}
+                            </td>
+                            <td className="px-4 py-3 text-center print:hidden">
+                              {activeProd && (
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedReportMonths(prev => ({ ...prev, [monthKey]: !prev[monthKey] }))}
+                                  className={`flex items-center justify-center w-6 h-6 rounded-full border transition-all duration-200 mx-auto ${isInvoicesExpanded ? 'bg-gray-800 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-500 hover:border-gray-500'}`}
+                                  title={isInvoicesExpanded ? 'Hide invoices' : 'Show invoices'}
+                                >
+                                  {isInvoicesExpanded ? <ChevronUp size={13} strokeWidth={2.5} /> : <ChevronDown size={13} strokeWidth={2.5} />}
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+
+                          {/* Expandable invoice + products detail — Show all when printing */}
+                          {(isInvoicesExpanded || window.matchMedia('print').matches) && activeProd && (
+                            <tr>
+                              <td colSpan={8} className="p-0 bg-white">
+                                <div className="mx-4 my-2 space-y-3">
+                                  {(activeProd.companyGroups || []).map((cg, cgIdx) => {
+                                    const cgKey = `${monthKey}_company_${cg.company?.id}`;
+                                    const isCgExpanded = expandedReportMonths[cgKey] ?? true;
+                                    return (
+                                      <div key={cgIdx} className="rounded-xl border border-gray-200 overflow-hidden shadow-sm print:border-black">
+                                        {/* Company header */}
+                                        <div className="flex items-center justify-between px-4 py-2.5 bg-gray-100 border-b border-gray-200 print:bg-gray-200 print:border-black">
+                                          <div className="flex items-center gap-2">
+                                            <div className="print:hidden">
+                                              <button
+                                                type="button"
+                                                onClick={() => setExpandedReportMonths(prev => ({ ...prev, [cgKey]: !isCgExpanded }))}
+                                                className={`flex items-center justify-center w-5 h-5 rounded-full border transition-all duration-200 ${isCgExpanded ? 'bg-gray-700 border-gray-700 text-white' : 'bg-white border-gray-400 text-gray-500'}`}
+                                              >
+                                                {isCgExpanded ? <ChevronUp size={11} strokeWidth={2.5} /> : <ChevronDown size={11} strokeWidth={2.5} />}
+                                              </button>
+                                            </div>
+                                            <span className="text-sm font-bold text-gray-800">{cg.company?.companyName || 'Unknown Company'}</span>
+                                            <span className="text-xs text-gray-500">({cg.salesCount} invoice{cg.salesCount !== 1 ? 's' : ''})</span>
+                                          </div>
+                                          <div className="flex items-center gap-4 text-xs text-gray-600">
+                                            <span>Vatable: ₱{cg.vatableSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+                                            <span className="font-bold text-gray-800">Total: ₱{cg.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+                                          </div>
+                                        </div>
+
+                                        {/* Sales under this company - Always show when printing */}
+                                        {(isCgExpanded || window.matchMedia('print').matches) && (
+                                          <table className="w-full text-xs">
+                                            <thead className="bg-gray-700 text-white print:bg-gray-800">
+                                              <tr>
+                                                <th className="px-4 py-2 text-left font-semibold tracking-wide">Branch</th>
+                                                <th className="px-4 py-2 text-left font-semibold tracking-wide">Encoded By</th>
+                                                <th className="px-4 py-2 text-center font-semibold tracking-wide">Status</th>
+                                                <th className="px-4 py-2 text-right font-semibold tracking-wide">Vatable</th>
+                                                <th className="px-4 py-2 text-right font-semibold tracking-wide">VAT</th>
+                                                <th className="px-4 py-2 text-right font-semibold tracking-wide">EWT</th>
+                                                <th className="px-4 py-2 text-right font-semibold tracking-wide">Total Amount</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100 bg-white">
+                                              {cg.sales.map((s, si) => {
+                                                const sVatable = (Number(s.totalAmount) || 0) / 1.12;
+                                                const sVat = sVatable * 0.12;
+                                                const sEwt = sVatable * 0.01;
+                                                const saleProductsExpanded = expandedReportMonths[`sale_${s.id}`];
+                                                return (
+                                                  <React.Fragment key={s.id}>
+                                                    <tr className={`hover:bg-gray-50 transition ${si % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                                                      <td className="px-4 py-2">
+                                                        <div className="font-medium text-gray-900">{s.branch?.branchName}</div>
+                                                        <div className="text-[10px] text-gray-400">{s.branch?.branchCode}</div>
+                                                      </td>
+                                                      <td className="px-4 py-2 text-gray-600">{s.createdBy || '—'}</td>
+                                                      <td className="px-4 py-2 text-center">
+                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-700 border border-gray-200 print:border print:bg-gray-100">
+                                                          {s.status}
+                                                        </span>
+                                                      </td>
+                                                      <td className="px-4 py-2 text-right text-gray-800 font-medium">
+                                                        ₱{sVatable.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                                      </td>
+                                                      <td className="px-4 py-2 text-right text-gray-700">
+                                                        ₱{sVat.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                                      </td>
+                                                      <td className="px-4 py-2 text-right text-gray-700">
+                                                        ₱{sEwt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                                      </td>
+                                                      <td className="px-4 py-2 text-right font-bold text-gray-900">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                          ₱{formatCurrency(s.totalAmount)}
+                                                          <div className="print:hidden">
+                                                            <button
+                                                              type="button"
+                                                              onClick={() => setExpandedReportMonths(prev => ({ ...prev, [`sale_${s.id}`]: !prev[`sale_${s.id}`] }))}
+                                                              className={`flex items-center justify-center w-5 h-5 rounded-full border transition-all duration-200 ${saleProductsExpanded ? 'bg-gray-800 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-500 hover:border-gray-500'}`}
+                                                              title={saleProductsExpanded ? 'Hide products' : 'Show products'}
+                                                            >
+                                                              {saleProductsExpanded ? <ChevronUp size={11} strokeWidth={2.5} /> : <ChevronDown size={11} strokeWidth={2.5} />}
+                                                            </button>
+                                                          </div>
+                                                        </div>
+                                                      </td>
+                                                    </tr>
+                                                    {/* Product items for this sale - Always show when printing */}
+                                                    {(saleProductsExpanded || window.matchMedia('print').matches) && (
+                                                      <tr>
+                                                        <td colSpan={7} className="p-0 bg-gray-50">
+                                                          <div className="mx-6 my-2 rounded-lg border border-gray-200 overflow-hidden print:border-black">
+                                                            <table className="w-full text-xs">
+                                                              <thead className="bg-gray-100 border-b border-gray-200 print:bg-gray-200">
+                                                                <tr>
+                                                                  <th className="px-3 py-2 text-left font-semibold text-gray-600">#</th>
+                                                                  <th className="px-3 py-2 text-left font-semibold text-gray-600">Product</th>
+                                                                  <th className="px-3 py-2 text-left font-semibold text-gray-600">Variation</th>
+                                                                  <th className="px-3 py-2 text-left font-semibold text-gray-600">SKU</th>
+                                                                  <th className="px-3 py-2 text-left font-semibold text-gray-600">UPC</th>
+                                                                  <th className="px-3 py-2 text-right font-semibold text-gray-600">Qty</th>
+                                                                  <th className="px-3 py-2 text-right font-semibold text-gray-600">Unit Price</th>
+                                                                  <th className="px-3 py-2 text-right font-semibold text-gray-600">Amount</th>
+                                                                </tr>
+                                                              </thead>
+                                                              <tbody className="divide-y divide-gray-100 bg-white">
+                                                                {(s.items || []).map((item, ii) => (
+                                                                  <tr key={item.id || ii} className="hover:bg-gray-50">
+                                                                    <td className="px-3 py-2 text-gray-400">{ii + 1}</td>
+                                                                    <td className="px-3 py-2 font-medium text-gray-900">{item.product?.productName || '—'}</td>
+                                                                    <td className="px-3 py-2 text-gray-600">
+                                                                      {item.variation
+                                                                        ? (item.variation.combinationDisplay ||
+                                                                          (item.variation.variationType && item.variation.variationValue
+                                                                            ? `${item.variation.variationType}: ${item.variation.variationValue}`
+                                                                            : 'Variation'))
+                                                                        : <span className="text-gray-400 italic">None</span>
+                                                                      }
+                                                                    </td>
+                                                                    <td className="px-3 py-2 text-gray-500">
+                                                                      {item.variation ? (item.variation.sku || '—') : (item.product?.sku || '—')}
+                                                                    </td>
+                                                                    <td className="px-3 py-2 text-gray-500">
+                                                                      {item.variation ? (item.variation.upc || '—') : (item.product?.upc || '—')}
+                                                                    </td>
+                                                                    <td className="px-3 py-2 text-right text-gray-800 font-medium">
+                                                                      {(item.quantity || 0).toLocaleString()}
+                                                                    </td>
+                                                                    <td className="px-3 py-2 text-right text-gray-700">
+                                                                      ₱{formatCurrency(item.unitPrice)}
+                                                                    </td>
+                                                                    <td className="px-3 py-2 text-right font-semibold text-gray-900">
+                                                                      ₱{formatCurrency(item.amount)}
+                                                                    </td>
+                                                                  </tr>
+                                                                ))}
+                                                              </tbody>
+                                                              <tfoot className="bg-gray-50 border-t border-gray-200 print:bg-gray-100">
+                                                                <tr>
+                                                                  <td colSpan={5} className="px-3 py-2 text-xs font-bold text-gray-600">Sale #{s.id} Total</td>
+                                                                  <td className="px-3 py-2 text-right text-xs font-bold text-gray-800">
+                                                                    {(s.items || []).reduce((sum, i) => sum + (i.quantity || 0), 0).toLocaleString()}
+                                                                  </td>
+                                                                  <td></td>
+                                                                  <td className="px-3 py-2 text-right text-xs font-bold text-gray-900">
+                                                                    ₱{formatCurrency(s.totalAmount)}
+                                                                  </td>
+                                                                </tr>
+                                                              </tfoot>
+                                                            </table>
+                                                          </div>
+                                                        </td>
+                                                      </tr>
+                                                    )}
+                                                  </React.Fragment>
+                                                );
+                                              })}
+                                            </tbody>
+                                            <tfoot className="bg-gray-50 border-t border-gray-200 print:bg-gray-100">
+                                              <tr>
+                                                <td colSpan={3} className="px-4 py-2 text-xs font-bold text-gray-600 uppercase tracking-wide">
+                                                  {cg.company?.companyName} Total
+                                                </td>
+                                                <td className="px-4 py-2 text-right text-xs font-bold text-gray-700">
+                                                  ₱{cg.vatableSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                                </td>
+                                                <td className="px-4 py-2 text-right text-xs font-bold text-gray-700">
+                                                  ₱{cg.vat.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                                </td>
+                                                <td className="px-4 py-2 text-right text-xs font-bold text-gray-700">
+                                                  ₱{cg.lesEwt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                                </td>
+                                                <td className="px-4 py-2 text-right text-xs font-bold text-gray-900">
+                                                  ₱{cg.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                                </td>
+                                              </tr>
+                                            </tfoot>
+                                          </table>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-gray-200 flex justify-between items-center print:hidden bg-white rounded-b-2xl">
+              <button
+                onClick={() => { setSalesReportData(null); setShowSalesReportModal(true); }}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
+              >
+                ← Back to Filters
+              </button>
+              <button
+                onClick={() => { setSalesReportData(null); setShowSalesReportModal(false); }}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
 
+
+
   );
+
+
 };
 
 export default SalesManagement;
