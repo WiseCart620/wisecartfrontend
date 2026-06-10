@@ -3,12 +3,13 @@ import '../styles/invoice-print.css';
 import { api } from '../services/api';
 import toast, { Toaster } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { Search, Plus, Edit2, Trash2, Eye, FileText, Check, X, Printer, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Receipt, Package } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Eye, FileText, Check, X, Printer, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import InvoicingProfile from './InvoicingProfile';
 import '../styles/sales-memo-print.css';
 import { LoadingOverlay } from '../components/common/LoadingOverlay';
 import VariationSearchableDropdown from '../components/common/VariationSearchableDropdown';
 import Pagination from '../components/common/Pagination';
+import SalesReport from './SalesReport';
 
 
 
@@ -208,6 +209,7 @@ const SalesManagement = () => {
   const [branchInfo, setBranchInfo] = useState(null);
   const [productPrices, setProductPrices] = useState({});
   const [branchStocks, setBranchStocks] = useState({});
+  const [showSalesReport, setShowSalesReport] = useState(false);
   const [inventories, setInventories] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [warehouseStocks, setWarehouseStocks] = useState([]);
@@ -227,11 +229,6 @@ const SalesManagement = () => {
   const [selectedProductForAdd, setSelectedProductForAdd] = useState('');
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
-  const [showSalesReportModal, setShowSalesReportModal] = useState(false);
-  const [showAllProductsModal, setShowAllProductsModal] = useState(false);
-  const [aggregatedProducts, setAggregatedProducts] = useState([]);
-  const [selectedCompanyForProducts, setSelectedCompanyForProducts] = useState(null);
-  const [selectedPeriodForProducts, setSelectedPeriodForProducts] = useState({ month: null, year: null });
   const [showProductsByStatusModal, setShowProductsByStatusModal] = useState(false);
   const [productsByStatusLoading, setProductsByStatusLoading] = useState(false);
   const [productsByStatus, setProductsByStatus] = useState({ pending: [], confirmed: [], invoiced: [] });
@@ -240,11 +237,6 @@ const SalesManagement = () => {
     startDate: '',
     endDate: '',
   });
-  const [salesReportData, setSalesReportData] = useState(null);
-  const [salesReportLoading, setSalesReportLoading] = useState(false);
-  const [expandedReportYears, setExpandedReportYears] = useState({});
-  const [expandedReportMonths, setExpandedReportMonths] = useState({});
-  const [selectedReportMonths, setSelectedReportMonths] = useState({});
   const [formData, setFormData] = useState({
     branchId: '',
     month: new Date().getMonth() + 1,
@@ -1019,220 +1011,6 @@ const SalesManagement = () => {
   };
 
 
-  const generateSalesReport = async () => {
-    setSalesReportLoading(true);
-    try {
-      const params = new URLSearchParams({ page: 0, size: 9999, status: 'INVOICED' });
-      if (filterData.companyId) params.append('companyId', filterData.companyId);
-      if (filterData.branchId) params.append('branchId', filterData.branchId);
-      if (salesReportFilter.startDate) {
-        const d = new Date(salesReportFilter.startDate);
-        params.append('startYear', d.getFullYear());
-        params.append('startMonth', d.getMonth() + 1);
-      }
-      if (salesReportFilter.endDate) {
-        const d = new Date(salesReportFilter.endDate);
-        params.append('endYear', d.getFullYear());
-        params.append('endMonth', d.getMonth() + 1);
-      }
-      const response = await api.get(`/sales/all?${params}`);
-      const allSales = response.data?.content || [];
-
-      const grouped = {};
-      allSales.forEach(sale => {
-        const yr = sale.year;
-        if (!grouped[yr]) grouped[yr] = [];
-        grouped[yr].push(sale);
-      });
-
-      // NEW: Function to merge sales by month, company, branch within each year
-      const mergeSalesByMonthCompanyBranch = (salesList) => {
-        const mergedMap = new Map();
-
-        salesList.forEach(sale => {
-          const key = `${sale.year}_${sale.month}_${sale.company?.id}_${sale.branch?.id}`;
-
-          if (mergedMap.has(key)) {
-            const existing = mergedMap.get(key);
-
-            // Merge items
-            const mergedItems = [...(existing.items || [])];
-            (sale.items || []).forEach(newItem => {
-              const existingIndex = mergedItems.findIndex(item =>
-                item.product?.id === newItem.product?.id &&
-                (item.variation?.id || null) === (newItem.variation?.id || null)
-              );
-              if (existingIndex !== -1) {
-                mergedItems[existingIndex].quantity += newItem.quantity;
-                mergedItems[existingIndex].amount += newItem.amount;
-              } else {
-                mergedItems.push({ ...newItem });
-              }
-            });
-
-            mergedMap.set(key, {
-              ...existing,
-              items: mergedItems,
-              totalAmount: (existing.totalAmount || 0) + (sale.totalAmount || 0),
-              mergedSaleIds: [...(existing.mergedSaleIds || [existing.id]), sale.id]
-            });
-          } else {
-            mergedMap.set(key, {
-              ...sale,
-              mergedSaleIds: [sale.id],
-              items: [...(sale.items || [])]
-            });
-          }
-        });
-
-        return Array.from(mergedMap.values());
-      };
-
-      const rows = Object.keys(grouped).sort((a, b) => Number(a) - Number(b)).map(yr => {
-        const yrSales = grouped[yr];
-        const invoiced = yrSales.filter(s => s.status === 'INVOICED');
-        const monthMap = {};
-        const mergedSales = mergeSalesByMonthCompanyBranch(yrSales);
-        mergedSales.forEach(sale => {
-          const mo = sale.month;
-          if (!monthMap[mo]) monthMap[mo] = [];
-          monthMap[mo].push(sale);
-        });
-
-        const monthRows = Object.keys(monthMap).sort((a, b) => Number(a) - Number(b)).map(mo => {
-          const moSales = monthMap[mo];
-          const moAmount = moSales.reduce((s, x) => s + (Number(x.totalAmount) || 0), 0);
-          const moVatable = moAmount / 1.12;
-          const moVat = moVatable * 0.12;
-          const moEwt = moVatable * 0.01;
-          const moDue = moAmount - moEwt;
-
-          const companyMap = {};
-          moSales.forEach(sale => {
-            const companyId = sale.company?.id || 'unknown';
-            if (!companyMap[companyId]) companyMap[companyId] = {
-              company: sale.company,
-              sales: [],
-              mergedSaleIds: sale.mergedSaleIds || [sale.id]
-            };
-            companyMap[companyId].sales.push(sale);
-          });
-
-          const companyGroups = Object.values(companyMap).map(cg => {
-            const cgAmount = cg.sales.reduce((s, x) => s + (Number(x.totalAmount) || 0), 0);
-            const cgVatable = cgAmount / 1.12;
-            const cgVat = cgVatable * 0.12;
-            const cgEwt = cgVatable * 0.01;
-            const cgDue = cgAmount - cgEwt;
-            return {
-              company: cg.company,
-              sales: cg.sales,
-              salesCount: cg.sales.length,
-              amount: cgAmount,
-              vatableSales: cgVatable,
-              vat: cgVat,
-              lesEwt: cgEwt,
-              due: cgDue,
-            };
-          });
-
-          return {
-            month: Number(mo),
-            qty: moSales.reduce((s, x) => s + (x.items || []).reduce((ss, i) => ss + (i.quantity || 0), 0), 0),
-            amount: moAmount,
-            vatableSales: moVatable,
-            vat: moVat,
-            lesEwt: moEwt,
-            due: moDue,
-            salesCount: moSales.length,
-            sales: moSales,
-            companyGroups,
-          };
-        });
-
-        const grossTotal = yrSales.reduce((s, x) => s + (Number(x.totalAmount) || 0), 0);
-        const vatableTotal = grossTotal / 1.12;
-        const vatTotal = vatableTotal * 0.12;
-        const ewtTotal = vatableTotal * 0.01;
-        const dueTotal = grossTotal - ewtTotal;
-
-        return {
-          year: yr,
-          sales: yrSales,
-          invoiced: invoiced.length,
-          total: yrSales.length,
-          grossTotal,
-          vatableTotal,
-          vatTotal,
-          ewtTotal,
-          dueTotal,
-          products: monthRows,
-        };
-      });
-
-      setSalesReportData(rows);
-      setExpandedReportYears(Object.fromEntries(rows.map(r => [r.year, true])));
-      setSelectedReportMonths(Object.fromEntries(rows.map(r => [r.year, r.products[0]?.month ?? null])));
-    } catch (e) {
-      toast.error('Failed to generate sales report');
-      console.error(e);
-    } finally {
-      setSalesReportLoading(false);
-    }
-  };
-
-
-
-  const aggregateProductsByCompany = (companyId, year, month) => {
-    if (!salesReportData) return [];
-
-    const yearData = salesReportData.find(yr => yr.year === year);
-    if (!yearData) return [];
-
-    const monthData = yearData.products.find(p => p.month === month);
-    if (!monthData) return [];
-
-    const companySales = [];
-    monthData.companyGroups.forEach(cg => {
-      if (cg.company?.id === companyId) {
-        companySales.push(...cg.sales);
-      }
-    });
-
-    const productMap = new Map();
-
-    companySales.forEach(sale => {
-      sale.items.forEach(item => {
-        const key = `${item.product.id}_${item.variation?.id || 'no-variation'}`;
-
-        if (productMap.has(key)) {
-          const existing = productMap.get(key);
-          existing.quantity += item.quantity;
-          existing.amount += item.amount;
-        } else {
-          productMap.set(key, {
-            id: key,
-            productId: item.product.id,
-            productName: item.product.productName,
-            variationId: item.variation?.id || null,
-            variationDisplay: item.variation?.combinationDisplay ||
-              (item.variation?.variationType && item.variation?.variationValue
-                ? `${item.variation.variationType}: ${item.variation.variationValue}`
-                : 'No variation'),
-            sku: item.variation?.sku || item.product.sku || 'N/A',
-            upc: item.variation?.upc || item.product.upc || 'N/A',
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            amount: item.amount
-          });
-        }
-      });
-    });
-
-    return Array.from(productMap.values()).sort((a, b) => a.productName.localeCompare(b.productName));
-  };
-
-
   const aggregateProductsByStatus = async (statusToFetch) => {
     try {
       setProductsByStatusLoading(true);
@@ -1254,7 +1032,6 @@ const SalesManagement = () => {
         }),
       });
 
-      // Single request — backend handles everything
       const response = await api.get(`/sales/items-by-status?${params}`);
       const data = response.data;
 
@@ -1274,210 +1051,6 @@ const SalesManagement = () => {
     }
   };
 
-
-  const exportReportToExcel = () => {
-    if (!salesReportData) return;
-
-    // Create workbook data with proper layout
-    const rows = [];
-
-    // Header
-    rows.push(['WISECART MERCHANTS CORP.']);
-    rows.push(['Sales Report']);
-    rows.push([`Generated: ${new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}`]);
-    rows.push([]);
-
-    // Summary row
-    const totalGross = salesReportData.reduce((s, r) => s + r.vatableTotal, 0);
-    const totalVat = salesReportData.reduce((s, r) => s + r.vatTotal, 0);
-    const totalEwt = salesReportData.reduce((s, r) => s + r.ewtTotal, 0);
-    const totalDue = salesReportData.reduce((s, r) => s + r.dueTotal, 0);
-
-    rows.push(['SUMMARY']);
-    rows.push(['Total Years:', salesReportData.length]);
-    rows.push(['Total Months:', salesReportData.reduce((s, r) => s + r.products.length, 0)]);
-    rows.push(['Total Gross/Vatable:', `₱${totalGross.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`]);
-    rows.push(['Total VAT/PT:', `₱${totalVat.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`]);
-    rows.push(['Total Less EWT:', `₱${totalEwt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`]);
-    rows.push(['Total Amount Due:', `₱${totalDue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`]);
-    rows.push([]);
-
-    // Main data table header
-    rows.push(['#', 'Year', 'Month', 'Gross / Vatable', 'VAT/PT', 'Less: EWT', 'Total Due', 'Invoices']);
-
-    let rowNum = 1;
-    salesReportData.forEach(yr => {
-      yr.products.forEach(p => {
-        rows.push([
-          rowNum++,
-          yr.year,
-          monthsFull[p.month - 1],
-          `₱${p.vatableSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-          `₱${p.vat.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-          `₱${p.lesEwt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-          `₱${p.due.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-          p.salesCount
-        ]);
-
-        // Add detailed invoice data for each month
-        p.sales.forEach(sale => {
-          rows.push([`  └─ Invoice #${sale.id}`, sale.branch?.branchName || '', sale.status, '', '', '', `₱${formatCurrency(sale.totalAmount)}`, '']);
-
-          // Add items for each sale
-          (sale.items || []).forEach((item, idx) => {
-            rows.push([
-              `     ${idx + 1}.`,
-              item.product?.productName || '',
-              item.variation?.combinationDisplay || 'No variation',
-              item.quantity,
-              `₱${formatCurrency(item.unitPrice)}`,
-              `₱${formatCurrency(item.amount)}`,
-              '',
-              ''
-            ]);
-          });
-          rows.push([]);
-        });
-      });
-
-      // Year total row
-      rows.push([`YEAR ${yr.year} TOTAL`, '', '', `₱${yr.vatableTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`, `₱${yr.vatTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`, `₱${yr.ewtTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`, `₱${yr.dueTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`, yr.total]);
-      rows.push([]);
-    });
-
-    // Create CSV content
-    const csvContent = rows.map(r =>
-      r.map(c => {
-        if (c === undefined || c === null) return '';
-        const stringValue = String(c);
-        return `"${stringValue.replace(/"/g, '""')}"`;
-      }).join(',')
-    ).join('\n');
-
-    // Add BOM for UTF-8 encoding to handle special characters
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `sales_report_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('Excel report downloaded successfully!');
-  };
-
-  // Print function for the modal content only
-  const printSalesReport = () => {
-    const printContent = document.getElementById('sales-report-print-content');
-    if (!printContent) return;
-
-    const originalTitle = document.title;
-    document.title = 'Sales Report';
-
-    const printWindow = window.open('', '_blank', 'width=1200,height=800');
-
-    printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Sales Report</title>
-      <meta charset="UTF-8">
-      <style>
-        @media print {
-          body { margin: 0; padding: 20px; }
-          .no-print { display: none; }
-          table { border-collapse: collapse; width: 100%; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          th { background-color: #f2f2f2; }
-        }
-        * {
-          font-family: Arial, Helvetica, sans-serif;
-        }
-        body {
-          padding: 20px;
-          margin: 0;
-        }
-        .report-header {
-          text-align: center;
-          margin-bottom: 20px;
-          padding-bottom: 10px;
-          border-bottom: 2px solid #333;
-        }
-        .report-title {
-          font-size: 24px;
-          font-weight: bold;
-          margin-bottom: 5px;
-        }
-        .report-subtitle {
-          font-size: 14px;
-          color: #666;
-        }
-        table {
-          border-collapse: collapse;
-          width: 100%;
-          margin-bottom: 20px;
-        }
-        th, td {
-          border: 1px solid #ddd;
-          padding: 8px;
-          text-align: left;
-        }
-        th {
-          background-color: #f2f2f2;
-          font-weight: bold;
-        }
-        .text-right {
-          text-align: right;
-        }
-        .text-center {
-          text-align: center;
-        }
-        .grand-total {
-          font-weight: bold;
-          background-color: #f0f0f0;
-        }
-        .company-group {
-          background-color: #e8e8e8;
-          font-weight: bold;
-        }
-        .sale-detail {
-          background-color: #fafafa;
-        }
-        .product-detail {
-          padding-left: 30px;
-        }
-        .summary-box {
-          margin-bottom: 20px;
-          padding: 10px;
-          border: 1px solid #ddd;
-          background-color: #f9f9f9;
-        }
-        @media print {
-          body { print-color-adjust: exact; }
-          .page-break { page-break-before: always; }
-        }
-      </style>
-    </head>
-    <body>
-      <div class="report-header">
-        <div class="report-title">WISECART MERCHANTS CORP.</div>
-        <div class="report-subtitle">Sales Report</div>
-        <div class="report-subtitle">Generated: ${new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-      </div>
-      ${printContent.outerHTML}
-    </body>
-    </html>
-  `);
-
-    printWindow.document.close();
-    printWindow.focus();
-
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 500);
-
-    document.title = originalTitle;
-  };
 
 
   const handleResetFilter = () => {
@@ -1693,6 +1266,15 @@ const SalesManagement = () => {
     return <InvoicingProfile onBack={() => setShowInvoicingProfile(false)} />;
   }
 
+  if (showSalesReport) {
+    return <SalesReport
+      onBack={() => setShowSalesReport(false)}
+      filterData={filterData}
+      companies={companies}
+      branches={branches}
+    />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-2 sm:p-3 lg:p-4">
       <LoadingOverlay show={actionLoading && !!loadingMessage} message={loadingMessage} />
@@ -1736,8 +1318,8 @@ const SalesManagement = () => {
                 )}
                 {isAdminOrFinance && (
                   <button
-                    onClick={() => setShowSalesReportModal(true)}
-                    className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm text-sm font-medium"
+                    onClick={() => setShowSalesReport(true)}
+                    className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm text-sm font-medium"
                   >
                     <span className="text-sm font-bold leading-none">₱</span>
                     Sales Report
@@ -3340,602 +2922,22 @@ const SalesManagement = () => {
             </div>
           </div>
         )}
-
       </div>
-      {showSalesReportModal && !salesReportData && (
-        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900">Generate Sales Report</h2>
-              <button onClick={() => setShowSalesReportModal(false)} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
-                <X size={22} />
-              </button>
-            </div>
-            <div className="p-6 space-y-5">
-              <p className="text-sm text-gray-500">Leave dates empty to include all years. Results are grouped by year then expandable by invoice.</p>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-                  <input
-                    type="date"
-                    value={salesReportFilter.startDate}
-                    onChange={e => setSalesReportFilter(p => ({ ...p, startDate: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                  <input
-                    type="date"
-                    value={salesReportFilter.endDate}
-                    onChange={e => setSalesReportFilter(p => ({ ...p, endDate: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-              </div>
-              {filterData.companyId && (
-                <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200 text-sm text-indigo-700">
-                  Filtered by selected company/branch from main filters.
-                </div>
-              )}
-            </div>
-            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
-              <button onClick={() => setShowSalesReportModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
-              <button
-                onClick={generateSalesReport}
-                disabled={salesReportLoading}
-                className="px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
-              >
-                {salesReportLoading ? 'Generating...' : 'Generate Report'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
 
-      {salesReportData && (
-        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-2 sm:p-4">
-          <div className="bg-white rounded-2xl w-full max-w-7xl max-h-[97vh] flex flex-col shadow-2xl">
-            {/* Header */}
-            <div className="p-5 border-b border-gray-200 flex justify-between items-center print:hidden sticky top-0 bg-white rounded-t-2xl z-10">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Sales Report</h2>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {salesReportFilter.startDate || salesReportFilter.endDate
-                    ? `${salesReportFilter.startDate || 'All'} — ${salesReportFilter.endDate || 'All'}`
-                    : 'All periods'
-                  } · {salesReportData.reduce((s, r) => s + r.products.length, 0)} months
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    const activeYear = salesReportData[0]?.year;
-                    const activeMonth = selectedReportMonths[activeYear];
-                    // Find first company from the first company group
-                    let firstCompany = null;
-                    if (salesReportData[0]?.products[0]?.companyGroups?.[0]?.company) {
-                      firstCompany = salesReportData[0].products[0].companyGroups[0].company;
-                    }
 
-                    if (firstCompany && activeMonth) {
-                      setSelectedCompanyForProducts(firstCompany);
-                      setSelectedPeriodForProducts({ month: activeMonth, year: activeYear });
-                      const products = aggregateProductsByCompany(firstCompany.id, activeYear, activeMonth);
-                      setAggregatedProducts(products);
-                      setShowAllProductsModal(true);
-                    } else {
-                      toast.error('No company data available for the selected period');
-                    }
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700"
-                >
-                  <Package size={16} />
-                  View All Products
-                </button>
-                <button onClick={exportReportToExcel} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">
-                  <FileText size={16} /> Export CSV/Excel
-                </button>
-                <button onClick={printSalesReport} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
-                  <Printer size={16} /> Print
-                </button>
-                <button onClick={() => { setSalesReportData(null); setShowSalesReportModal(false); }} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
-                  <X size={22} />
-                </button>
-              </div>
-            </div>
 
-            {/* Summary row */}
-            <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 print:bg-white print:border print:mb-4">
-              <div className="flex flex-wrap gap-4 print:grid print:grid-cols-2">
-                <div><span className="text-xs text-gray-500">Total Years:</span> <span className="font-semibold">{salesReportData.length}</span></div>
-                <div><span className="text-xs text-gray-500">Total Months:</span> <span className="font-semibold">{salesReportData.reduce((s, r) => s + r.products.length, 0)}</span></div>
-                <div><span className="text-xs text-gray-500">Gross / Vatable:</span> <span className="font-semibold text-blue-700">₱{salesReportData.reduce((s, r) => s + r.vatableTotal, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span></div>
-                <div><span className="text-xs text-gray-500">VAT/PT:</span> <span className="font-semibold text-indigo-700">₱{salesReportData.reduce((s, r) => s + r.vatTotal, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span></div>
-                <div><span className="text-xs text-gray-500">Less: EWT:</span> <span className="font-semibold text-red-600">₱{salesReportData.reduce((s, r) => s + r.ewtTotal, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span></div>
-                <div><span className="text-xs text-gray-500">Total Due:</span> <span className="font-semibold text-green-700">₱{salesReportData.reduce((s, r) => s + r.dueTotal, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span></div>
-              </div>
-            </div>
 
-            {/* Table Content for Printing */}
-            <div className="flex-1 overflow-y-auto" id="sales-report-print-content">
-              {salesReportData.length === 0 ? (
-                <div className="p-12 text-center text-gray-400 italic">No sales data found for the selected period.</div>
-              ) : (
-                <table className="w-full text-sm border-collapse" style={{ minWidth: 900 }}>
-                  <thead className="sticky top-0 z-10 bg-gray-100 print:bg-gray-200">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase tracking-wide w-10">#</th>
-                      <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase tracking-wide">Year</th>
-                      <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase tracking-wide">Month</th>
-                      <th className="px-4 py-3 text-right text-[11px] font-semibold text-gray-600 uppercase tracking-wide">Gross / Vatable</th>
-                      <th className="px-4 py-3 text-right text-[11px] font-semibold text-gray-600 uppercase tracking-wide">VAT/PT</th>
-                      <th className="px-4 py-3 text-right text-[11px] font-semibold text-gray-600 uppercase tracking-wide">Less: EWT</th>
-                      <th className="px-4 py-3 text-right text-[11px] font-semibold text-gray-600 uppercase tracking-wide">Due</th>
-                      <th className="px-4 py-3 text-center text-[11px] font-semibold text-gray-600 uppercase tracking-wide w-20">Invoices</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {salesReportData.map((row, idx) => {
-                      const activeMonth = selectedReportMonths[row.year] ?? row.products[0]?.month ?? null;
-                      const activeProd = row.products.find(p => p.month === activeMonth);
-                      const monthKey = `${row.year}_${activeMonth}`;
-                      const isInvoicesExpanded = expandedReportMonths[monthKey];
-
-                      return (
-                        <React.Fragment key={`report-row-${row.year}`}>
-                          <tr className="border-b border-gray-200 hover:bg-gray-50 transition print:border-black">
-                            <td className="px-4 py-3 text-center text-xs text-gray-400 font-medium">{idx + 1}</td>
-                            <td className="px-4 py-3 text-sm font-bold text-gray-900 whitespace-nowrap">{row.year}</td>
-                            <td className="px-4 py-3">
-                              <div className="relative inline-block print:hidden">
-                                <select
-                                  value={activeMonth ?? ''}
-                                  onChange={(e) => {
-                                    const newMonth = Number(e.target.value);
-                                    setSelectedReportMonths(prev => ({ ...prev, [row.year]: newMonth }));
-                                    setExpandedReportMonths(prev => ({ ...prev, [`${row.year}_${newMonth}`]: false }));
-                                  }}
-                                  className="appearance-none pl-3 pr-8 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-800 bg-white focus:ring-2 focus:ring-gray-400 focus:border-gray-400 cursor-pointer font-medium"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  {row.products.map(p => (
-                                    <option key={p.month} value={p.month}>
-                                      {monthsFull[p.month - 1]} ({p.salesCount} invoice{p.salesCount !== 1 ? 's' : ''})
-                                    </option>
-                                  ))}
-                                </select>
-                                <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500">
-                                  <ChevronDown size={14} strokeWidth={2.5} />
-                                </div>
-                              </div>
-                              <span className="hidden print:inline">{activeProd ? monthsFull[activeProd.month - 1] : '—'}</span>
-                            </td>
-                            <td className="px-4 py-3 text-right text-sm text-gray-800">
-                              {activeProd ? `₱${activeProd.vatableSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '—'}
-                            </td>
-                            <td className="px-4 py-3 text-right text-sm text-gray-800">
-                              {activeProd ? `₱${activeProd.vat.toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '—'}
-                            </td>
-                            <td className="px-4 py-3 text-right text-sm text-gray-800">
-                              {activeProd ? `₱${activeProd.lesEwt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '—'}
-                            </td>
-                            <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
-                              {activeProd ? `₱${activeProd.due.toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '—'}
-                            </td>
-                            <td className="px-4 py-3 text-center print:hidden">
-                              {activeProd && (
-                                <button
-                                  type="button"
-                                  onClick={() => setExpandedReportMonths(prev => ({ ...prev, [monthKey]: !prev[monthKey] }))}
-                                  className={`flex items-center justify-center w-6 h-6 rounded-full border transition-all duration-200 mx-auto ${isInvoicesExpanded ? 'bg-gray-800 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-500 hover:border-gray-500'}`}
-                                  title={isInvoicesExpanded ? 'Hide invoices' : 'Show invoices'}
-                                >
-                                  {isInvoicesExpanded ? <ChevronUp size={13} strokeWidth={2.5} /> : <ChevronDown size={13} strokeWidth={2.5} />}
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-
-                          {/* Expandable invoice + products detail — Show all when printing */}
-                          {(isInvoicesExpanded || window.matchMedia('print').matches) && activeProd && (
-                            <tr>
-                              <td colSpan={8} className="p-0 bg-white">
-                                <div className="mx-4 my-2 space-y-3">
-                                  {(activeProd.companyGroups || []).map((cg, cgIdx) => {
-                                    const cgKey = `${monthKey}_company_${cg.company?.id}`;
-                                    const isCgExpanded = expandedReportMonths[cgKey] ?? true;
-                                    return (
-                                      <div key={cgIdx} className="rounded-xl border border-gray-200 overflow-hidden shadow-sm print:border-black">
-                                        {/* Company header */}
-                                        <div className="flex items-center justify-between px-4 py-2.5 bg-gray-100 border-b border-gray-200 print:bg-gray-200 print:border-black">
-                                          <div className="flex items-center gap-2">
-                                            <div className="print:hidden">
-                                              <button
-                                                type="button"
-                                                onClick={() => setExpandedReportMonths(prev => ({ ...prev, [cgKey]: !isCgExpanded }))}
-                                                className={`flex items-center justify-center w-5 h-5 rounded-full border transition-all duration-200 ${isCgExpanded ? 'bg-gray-700 border-gray-700 text-white' : 'bg-white border-gray-400 text-gray-500'}`}
-                                              >
-                                                {isCgExpanded ? <ChevronUp size={11} strokeWidth={2.5} /> : <ChevronDown size={11} strokeWidth={2.5} />}
-                                              </button>
-                                            </div>
-                                            <span className="text-sm font-bold text-gray-800">{cg.company?.companyName || 'Unknown Company'}</span>
-                                            <span className="text-xs text-gray-500">({cg.salesCount} invoice{cg.salesCount !== 1 ? 's' : ''})</span>
-                                          </div>
-                                          <div className="flex items-center gap-4 text-xs text-gray-600">
-                                            <span>Vatable: ₱{cg.vatableSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
-                                            <span className="font-bold text-gray-800">Total: ₱{cg.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
-                                          </div>
-                                        </div>
-
-                                        {/* Sales under this company - Always show when printing */}
-                                        {(isCgExpanded || window.matchMedia('print').matches) && (
-                                          <table className="w-full text-xs">
-                                            <thead className="bg-gray-700 text-white print:bg-gray-800">
-                                              <tr>
-                                                <th className="px-4 py-2 text-left font-semibold tracking-wide">Branch</th>
-                                                <th className="px-4 py-2 text-left font-semibold tracking-wide">Encoded By</th>
-                                                <th className="px-4 py-2 text-center font-semibold tracking-wide">Status</th>
-                                                <th className="px-4 py-2 text-right font-semibold tracking-wide">Vatable</th>
-                                                <th className="px-4 py-2 text-right font-semibold tracking-wide">VAT</th>
-                                                <th className="px-4 py-2 text-right font-semibold tracking-wide">EWT</th>
-                                                <th className="px-4 py-2 text-right font-semibold tracking-wide">Total Amount</th>
-                                              </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-gray-100 bg-white">
-                                              {cg.sales.map((s, si) => {
-                                                const sVatable = (Number(s.totalAmount) || 0) / 1.12;
-                                                const sVat = sVatable * 0.12;
-                                                const sEwt = sVatable * 0.01;
-                                                const saleProductsExpanded = expandedReportMonths[`sale_${s.id}`];
-                                                return (
-                                                  <React.Fragment key={s.id}>
-                                                    <tr className={`hover:bg-gray-50 transition ${si % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                                                      <td className="px-4 py-2">
-                                                        <div className="font-medium text-gray-900">{s.branch?.branchName}</div>
-                                                        <div className="text-[10px] text-gray-400">{s.branch?.branchCode}</div>
-                                                      </td>
-                                                      <td className="px-4 py-2 text-gray-600">{s.createdBy || '—'}</td>
-                                                      <td className="px-4 py-2 text-center">
-                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-700 border border-gray-200 print:border print:bg-gray-100">
-                                                          {s.status}
-                                                        </span>
-                                                      </td>
-                                                      <td className="px-4 py-2 text-right text-gray-800 font-medium">
-                                                        ₱{sVatable.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                                      </td>
-                                                      <td className="px-4 py-2 text-right text-gray-700">
-                                                        ₱{sVat.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                                      </td>
-                                                      <td className="px-4 py-2 text-right text-gray-700">
-                                                        ₱{sEwt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                                      </td>
-                                                      <td className="px-4 py-2 text-right font-bold text-gray-900">
-                                                        <div className="flex items-center justify-end gap-2">
-                                                          ₱{formatCurrency(s.totalAmount)}
-                                                          <div className="print:hidden">
-                                                            <button
-                                                              type="button"
-                                                              onClick={() => setExpandedReportMonths(prev => ({ ...prev, [`sale_${s.id}`]: !prev[`sale_${s.id}`] }))}
-                                                              className={`flex items-center justify-center w-5 h-5 rounded-full border transition-all duration-200 ${saleProductsExpanded ? 'bg-gray-800 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-500 hover:border-gray-500'}`}
-                                                              title={saleProductsExpanded ? 'Hide products' : 'Show products'}
-                                                            >
-                                                              {saleProductsExpanded ? <ChevronUp size={11} strokeWidth={2.5} /> : <ChevronDown size={11} strokeWidth={2.5} />}
-                                                            </button>
-                                                          </div>
-                                                        </div>
-                                                      </td>
-                                                    </tr>
-                                                    {/* Product items for this sale - Always show when printing */}
-                                                    {(saleProductsExpanded || window.matchMedia('print').matches) && (
-                                                      <tr>
-                                                        <td colSpan={7} className="p-0 bg-gray-50">
-                                                          <div className="mx-6 my-2 rounded-lg border border-gray-200 overflow-hidden print:border-black">
-                                                            <table className="w-full text-xs">
-                                                              <thead className="bg-gray-100 border-b border-gray-200 print:bg-gray-200">
-                                                                <tr>
-                                                                  <th className="px-3 py-2 text-left font-semibold text-gray-600">#</th>
-                                                                  <th className="px-3 py-2 text-left font-semibold text-gray-600">Product</th>
-                                                                  <th className="px-3 py-2 text-left font-semibold text-gray-600">Variation</th>
-                                                                  <th className="px-3 py-2 text-left font-semibold text-gray-600">SKU</th>
-                                                                  <th className="px-3 py-2 text-left font-semibold text-gray-600">UPC</th>
-                                                                  <th className="px-3 py-2 text-right font-semibold text-gray-600">Qty</th>
-                                                                  <th className="px-3 py-2 text-right font-semibold text-gray-600">Unit Price</th>
-                                                                  <th className="px-3 py-2 text-right font-semibold text-gray-600">Amount</th>
-                                                                </tr>
-                                                              </thead>
-                                                              <tbody className="divide-y divide-gray-100 bg-white">
-                                                                {(s.items || []).map((item, ii) => (
-                                                                  <tr key={item.id || ii} className="hover:bg-gray-50">
-                                                                    <td className="px-3 py-2 text-gray-400">{ii + 1}</td>
-                                                                    <td className="px-3 py-2 font-medium text-gray-900">{item.product?.productName || '—'}</td>
-                                                                    <td className="px-3 py-2 text-gray-600">
-                                                                      {item.variation
-                                                                        ? (item.variation.combinationDisplay ||
-                                                                          (item.variation.variationType && item.variation.variationValue
-                                                                            ? `${item.variation.variationType}: ${item.variation.variationValue}`
-                                                                            : 'Variation'))
-                                                                        : <span className="text-gray-400 italic">None</span>
-                                                                      }
-                                                                    </td>
-                                                                    <td className="px-3 py-2 text-gray-500">
-                                                                      {item.variation ? (item.variation.sku || '—') : (item.product?.sku || '—')}
-                                                                    </td>
-                                                                    <td className="px-3 py-2 text-gray-500">
-                                                                      {item.variation ? (item.variation.upc || '—') : (item.product?.upc || '—')}
-                                                                    </td>
-                                                                    <td className="px-3 py-2 text-right text-gray-800 font-medium">
-                                                                      {(item.quantity || 0).toLocaleString()}
-                                                                    </td>
-                                                                    <td className="px-3 py-2 text-right text-gray-700">
-                                                                      ₱{formatCurrency(item.unitPrice)}
-                                                                    </td>
-                                                                    <td className="px-3 py-2 text-right font-semibold text-gray-900">
-                                                                      ₱{formatCurrency(item.amount)}
-                                                                    </td>
-                                                                  </tr>
-                                                                ))}
-                                                              </tbody>
-                                                              <tfoot className="bg-gray-50 border-t border-gray-200 print:bg-gray-100">
-                                                                <tr>
-                                                                  <td colSpan={5} className="px-3 py-2 text-xs font-bold text-gray-600">Sale #{s.id} Total</td>
-                                                                  <td className="px-3 py-2 text-right text-xs font-bold text-gray-800">
-                                                                    {(s.items || []).reduce((sum, i) => sum + (i.quantity || 0), 0).toLocaleString()}
-                                                                  </td>
-                                                                  <td></td>
-                                                                  <td className="px-3 py-2 text-right text-xs font-bold text-gray-900">
-                                                                    ₱{formatCurrency(s.totalAmount)}
-                                                                  </td>
-                                                                </tr>
-                                                              </tfoot>
-                                                            </table>
-                                                          </div>
-                                                        </td>
-                                                      </tr>
-                                                    )}
-                                                  </React.Fragment>
-                                                );
-                                              })}
-                                            </tbody>
-                                            <tfoot className="bg-gray-50 border-t border-gray-200 print:bg-gray-100">
-                                              <tr>
-                                                <td colSpan={3} className="px-4 py-2 text-xs font-bold text-gray-600 uppercase tracking-wide">
-                                                  {cg.company?.companyName} Total
-                                                </td>
-                                                <td className="px-4 py-2 text-right text-xs font-bold text-gray-700">
-                                                  ₱{cg.vatableSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                                </td>
-                                                <td className="px-4 py-2 text-right text-xs font-bold text-gray-700">
-                                                  ₱{cg.vat.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                                </td>
-                                                <td className="px-4 py-2 text-right text-xs font-bold text-gray-700">
-                                                  ₱{cg.lesEwt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                                </td>
-                                                <td className="px-4 py-2 text-right text-xs font-bold text-gray-900">
-                                                  ₱{cg.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                                </td>
-                                              </tr>
-                                            </tfoot>
-                                          </table>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </div>
-
-            <div className="p-4 border-t border-gray-200 flex justify-between items-center print:hidden bg-white rounded-b-2xl">
-              <button
-                onClick={() => { setSalesReportData(null); setShowSalesReportModal(true); }}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
-              >
-                ← Back to Filters
-              </button>
-              <button
-                onClick={() => { setSalesReportData(null); setShowSalesReportModal(false); }}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* All Products Aggregated Modal */}
-      {showAllProductsModal && selectedCompanyForProducts && (
-        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl">
-            {/* Header */}
-            <div className="p-5 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">All Products - {selectedCompanyForProducts.companyName}</h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Period: {selectedPeriodForProducts.month ? monthsFull[selectedPeriodForProducts.month - 1] : 'All'} {selectedPeriodForProducts.year || ''}
-                  <br />
-                  Total Products: {aggregatedProducts.length} | Total Quantity: {aggregatedProducts.reduce((sum, p) => sum + p.quantity, 0).toLocaleString()} |
-                  Total Amount: ₱{aggregatedProducts.reduce((sum, p) => sum + p.amount, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                </p>
-              </div>
-              <button onClick={() => setShowAllProductsModal(false)} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
-                <X size={22} />
-              </button>
-            </div>
-
-            {/* Products Table */}
-            <div className="flex-1 overflow-auto p-5">
-              <table className="w-full text-sm border-collapse">
-                <thead className="sticky top-0 bg-gray-100">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">#</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Product</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Variation</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">SKU</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">UPC</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Qty</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Unit Price</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {aggregatedProducts.map((product, idx) => (
-                    <tr key={product.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-center text-gray-400">{idx + 1}</td>
-                      <td className="px-4 py-3 font-medium text-gray-900">{product.productName}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.variationDisplay !== 'No variation'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-gray-100 text-gray-500'
-                          }`}>
-                          {product.variationDisplay}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{product.sku}</td>
-                      <td className="px-4 py-3 text-gray-600">{product.upc}</td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-900">
-                        {product.quantity.toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-700">
-                        ₱{product.unitPrice.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="px-4 py-3 text-right font-bold text-blue-600">
-                        ₱{product.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot className="sticky bottom-0 bg-gray-100 border-t-2 border-gray-300">
-                  <tr>
-                    <td colSpan={5} className="px-4 py-3 text-right font-bold text-gray-700">TOTALS:</td>
-                    <td className="px-4 py-3 text-right font-bold text-gray-900">
-                      {aggregatedProducts.reduce((sum, p) => sum + p.quantity, 0).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3"></td>
-                    <td className="px-4 py-3 text-right font-bold text-blue-700">
-                      ₱{aggregatedProducts.reduce((sum, p) => sum + p.amount, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-
-            {/* Footer */}
-            <div className="p-4 border-t border-gray-200 flex justify-end gap-3">
-              <button
-                onClick={() => {
-                  const csvRows = [
-                    ['Product', 'Variation', 'SKU', 'UPC', 'Quantity', 'Unit Price', 'Amount'],
-                    ...aggregatedProducts.map(p => [p.productName, p.variationDisplay, p.sku, p.upc, p.quantity, p.unitPrice, p.amount]),
-                    [],
-                    [`TOTAL`, '', '', '', aggregatedProducts.reduce((s, p) => s + p.quantity, 0), '', aggregatedProducts.reduce((s, p) => s + p.amount, 0)]
-                  ];
-                  const csvContent = csvRows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
-                  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `products_${selectedCompanyForProducts.companyName}_${selectedPeriodForProducts.year}_${selectedPeriodForProducts.month}.csv`;
-                  a.click();
-                  URL.revokeObjectURL(url);
-                  toast.success('Products exported successfully!');
-                }}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
-              >
-                <FileText size={16} className="inline mr-2" />
-                Export CSV
-              </button>
-              <button
-                onClick={() => {
-                  const printContent = document.getElementById('products-print-content');
-                  if (printContent) {
-                    const printWindow = window.open('', '_blank');
-                    printWindow.document.write(`
-                      <!DOCTYPE html>
-                      <html>
-                      <head><title>Products Report</title>
-                      <style>
-                        body { font-family: Arial; padding: 20px; }
-                        table { border-collapse: collapse; width: 100%; }
-                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                        th { background-color: #f2f2f2; }
-                        .text-right { text-align: right; }
-                      </style>
-                      </head>
-                      <body>
-                        <h2>All Products - ${selectedCompanyForProducts.companyName}</h2>
-                        <p>Period: ${selectedPeriodForProducts.month ? monthsFull[selectedPeriodForProducts.month - 1] : 'All'} ${selectedPeriodForProducts.year || ''}</p>
-                        ${printContent.outerHTML}
-                      </body>
-                      </html>
-                    `);
-                    printWindow.document.close();
-                    printWindow.print();
-                  }
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
-              >
-                <Printer size={16} className="inline mr-2" />
-                Print
-              </button>
-              <button onClick={() => setShowAllProductsModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Hidden div for printing products */}
-      <div id="products-print-content" className="hidden">
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr>
-              <th className="px-4 py-3 text-left">Product</th>
-              <th className="px-4 py-3 text-left">Variation</th>
-              <th className="px-4 py-3 text-left">SKU</th>
-              <th className="px-4 py-3 text-left">UPC</th>
-              <th className="px-4 py-3 text-right">Qty</th>
-              <th className="px-4 py-3 text-right">Unit Price</th>
-              <th className="px-4 py-3 text-right">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {aggregatedProducts.map((product, idx) => (
-              <tr key={product.id}>
-                <td className="px-4 py-2">{product.productName}</td>
-                <td className="px-4 py-2">{product.variationDisplay}</td>
-                <td className="px-4 py-2">{product.sku}</td>
-                <td className="px-4 py-2">{product.upc}</td>
-                <td className="px-4 py-2 text-right">{product.quantity.toLocaleString()}</td>
-                <td className="px-4 py-2 text-right">₱{product.unitPrice.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
-                <td className="px-4 py-2 text-right">₱{product.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-      </div>
       {/* Products by Status Modal */}
       {showProductsByStatusModal && selectedStatusForModal && (
         <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl">
-            {/* Header */}
             <div className="p-5 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">
-                  {selectedStatusForModal === 'PENDING' && ' Pending Sales - All Products'}
-                  {selectedStatusForModal === 'CONFIRMED' && ' Confirmed Sales - All Products'}
-                  {selectedStatusForModal === 'INVOICED' && ' Invoiced Sales - All Products'}
+                  {selectedStatusForModal === 'PENDING' && 'Pending Sales - All Products'}
+                  {selectedStatusForModal === 'CONFIRMED' && 'Confirmed Sales - All Products'}
+                  {selectedStatusForModal === 'INVOICED' && 'Invoiced Sales - All Products'}
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
                   Total Products: {productsByStatus[selectedStatusForModal.toLowerCase()]?.length || 0} |
@@ -3948,7 +2950,6 @@ const SalesManagement = () => {
               </button>
             </div>
 
-            {/* Products Table */}
             <div className="flex-1 overflow-auto p-5">
               <table className="w-full text-sm border-collapse">
                 <thead className="sticky top-0 bg-gray-100">
@@ -3979,9 +2980,7 @@ const SalesManagement = () => {
                     ))
                   ) : (productsByStatus[selectedStatusForModal.toLowerCase()] || []).length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-12 text-center text-gray-400 italic">
-                        No products found
-                      </td>
+                      <td colSpan={8} className="px-4 py-12 text-center text-gray-400 italic">No products found</td>
                     </tr>
                   ) : (
                     (productsByStatus[selectedStatusForModal.toLowerCase()] || []).map((product, idx) => (
@@ -3989,24 +2988,15 @@ const SalesManagement = () => {
                         <td className="px-4 py-3 text-center text-gray-400">{idx + 1}</td>
                         <td className="px-4 py-3 font-medium text-gray-900">{product.productName}</td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.variationDisplay !== 'No variation'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-gray-100 text-gray-500'
-                            }`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.variationDisplay !== 'No variation' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-500'}`}>
                             {product.variationDisplay}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-gray-600">{product.sku}</td>
                         <td className="px-4 py-3 text-gray-600">{product.upc}</td>
-                        <td className="px-4 py-3 text-right font-semibold text-gray-900">
-                          {product.quantity.toLocaleString()}
-                        </td>
-                        <td className="px-4 py-3 text-right text-gray-700">
-                          ₱{product.unitPrice.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                        </td>
-                        <td className="px-4 py-3 text-right font-bold text-blue-600">
-                          ₱{product.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                        </td>
+                        <td className="px-4 py-3 text-right font-semibold text-gray-900">{product.quantity.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right text-gray-700">₱{product.unitPrice.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                        <td className="px-4 py-3 text-right font-bold text-blue-600">₱{product.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
                       </tr>
                     ))
                   )}
@@ -4026,7 +3016,6 @@ const SalesManagement = () => {
               </table>
             </div>
 
-            {/* Footer */}
             <div className="p-4 border-t border-gray-200 flex justify-end gap-3">
               <button
                 onClick={() => {
@@ -4057,25 +3046,9 @@ const SalesManagement = () => {
                   const printContent = document.getElementById('products-by-status-print-content');
                   if (printContent) {
                     const printWindow = window.open('', '_blank');
-                    printWindow.document.write(`
-                      <!DOCTYPE html>
-                      <html>
-                      <head>
-                        <title>${selectedStatusForModal} Products Report</title>
-                        <style>
-                          body { font-family: Arial; padding: 20px; }
-                          table { border-collapse: collapse; width: 100%; }
-                          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                          th { background-color: #f2f2f2; }
-                          .text-right { text-align: right; }
-                        </style>
-                      </head>
-                      <body>
-                        <h2>${selectedStatusForModal} Sales - All Products</h2>
-                        ${printContent.outerHTML}
-                      </body>
-                      </html>
-                    `);
+                    printWindow.document.write(`<!DOCTYPE html><html><head><title>${selectedStatusForModal} Products</title>
+                      <style>body{font-family:Arial;padding:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f2f2f2}</style>
+                      </head><body><h2>${selectedStatusForModal} Sales - All Products</h2>${printContent.outerHTML}</body></html>`);
                     printWindow.document.close();
                     printWindow.print();
                   }
@@ -4124,12 +3097,7 @@ const SalesManagement = () => {
       </div>
 
     </div>
-
-
-
   );
-
-
 };
 
 export default SalesManagement;
