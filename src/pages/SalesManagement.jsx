@@ -293,10 +293,10 @@ const SalesManagement = () => {
       setCurrentPage(response.data.currentPage + 1);
       setTotalElements(response.data.totalElements);
 
-      // ALSO FETCH ALL SALES FOR SUMMARY (unpaged)
+      // OPTIMIZED: ONLY fetch all sales when filters actually change
       const allParams = new URLSearchParams({
         page: 0,
-        size: 10000, // Large number to get all
+        size: 10000,
         ...(filterData.companyId && { companyId: filterData.companyId }),
         ...(filterData.branchId && { branchId: filterData.branchId }),
         ...(statusFilter !== 'ALL' && { status: statusFilter }),
@@ -311,8 +311,23 @@ const SalesManagement = () => {
         });
       }
 
-      const allResponse = await api.get(`/sales/all?${allParams}`);
-      setAllFilteredSales(allResponse.data.content || []);
+      // CREATE UNIQUE KEY FOR CURRENT FILTERS
+      const filterKey = JSON.stringify({
+        companyId: filterData.companyId,
+        branchId: filterData.branchId,
+        status: statusFilter,
+        searchTerm,
+        startDate: filterData.startDate,
+        endDate: filterData.endDate,
+        productFilters: filterData.productFilters
+      });
+
+      // ONLY fetch if filters changed
+      if (lastFilterKey.current !== filterKey) {
+        lastFilterKey.current = filterKey;
+        const allResponse = await api.get(`/sales/all?${allParams}`);
+        setAllFilteredSales(allResponse.data.content || []);
+      }
 
     } catch (error) {
       console.error('Error fetching sales:', error);
@@ -323,9 +338,8 @@ const SalesManagement = () => {
   }, [filterData.companyId, filterData.branchId, statusFilter, searchTerm, filterData.startDate, filterData.endDate, filterData.productFilters]);
 
   const staticDataLoaded = useRef(false);
-
-
   const initialLoadDone = useRef(false);
+  const lastFilterKey = useRef('');
 
   useEffect(() => {
     fetchSales(0).then(() => {
@@ -1790,12 +1804,13 @@ const SalesManagement = () => {
               <div className="flex flex-col justify-start">
                 <label className="block text-xs font-medium text-gray-700 mb-1">Summary</label>
                 {(() => {
-                  const pending = currentSales.filter(s => s.status === 'PENDING').length;
-                  const confirmed = currentSales.filter(s => s.status === 'CONFIRMED').length;
-                  const invoiced = currentSales.filter(s => s.status === 'INVOICED').length;
-                  const pendingAmt = currentSales.filter(s => s.status === 'PENDING').reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
-                  const confirmedAmt = currentSales.filter(s => s.status === 'CONFIRMED').reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
-                  const invoicedAmt = currentSales.filter(s => s.status === 'INVOICED').reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
+                  const summaryData = allFilteredSales.length > 0 ? allFilteredSales : currentSales;
+                  const pending = summaryData.filter(s => s.status === 'PENDING').length;
+                  const confirmed = summaryData.filter(s => s.status === 'CONFIRMED').length;
+                  const invoiced = summaryData.filter(s => s.status === 'INVOICED').length;
+                  const pendingAmt = summaryData.filter(s => s.status === 'PENDING').reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
+                  const confirmedAmt = summaryData.filter(s => s.status === 'CONFIRMED').reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
+                  const invoicedAmt = summaryData.filter(s => s.status === 'INVOICED').reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
                   const grandTotal = pendingAmt + confirmedAmt + invoicedAmt;
                   return (
                     <div className="flex items-center gap-4 flex-wrap">
