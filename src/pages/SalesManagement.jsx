@@ -431,6 +431,7 @@ const SalesManagement = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [showProductsByStatusModal, setShowProductsByStatusModal] = useState(false);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [productsByStatusLoading, setProductsByStatusLoading] = useState(false);
   const [productsByStatus, setProductsByStatus] = useState({ pending: [], confirmed: [], invoiced: [] });
   const [selectedStatusForModal, setSelectedStatusForModal] = useState(null);
