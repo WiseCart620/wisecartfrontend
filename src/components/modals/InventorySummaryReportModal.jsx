@@ -251,8 +251,13 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                                                 <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.returns || 0).toLocaleString()}</td>
                                                 {/* Damage */}
                                                 <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.damage || 0).toLocaleString()}</td>
-                                                {/* Adjustment */}
-                                                <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: (row.adjustment || 0) !== 0 ? '#E65100' : 'inherit' }}>{(row.adjustment || 0).toLocaleString()}</td>
+                                                <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: (row.adjustment || 0) !== 0 ? '#E65100' : 'inherit' }}>
+                                                    {(row.adjustment || 0) < 0
+                                                        ? `-${Math.abs(row.adjustment).toLocaleString()}`
+                                                        : (row.adjustment || 0) > 0
+                                                            ? `+${(row.adjustment).toLocaleString()}`
+                                                            : '0'}
+                                                </td>
                                                 {/* Delivery Qty */}
                                                 <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.qtyDelivered || 0).toLocaleString()}</td>
                                                 {/* No. of DR — FIXED: was showing qtyDelivered again */}
@@ -277,7 +282,13 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>{totals.transferOut.toLocaleString()}</td>
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>{totals.returns.toLocaleString()}</td>
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>{totals.damage.toLocaleString()}</td>
-                                            <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#E65100', fontWeight: 'bold' }}>{totals.adjustment.toLocaleString()}</td>
+                                            <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#E65100', fontWeight: 'bold' }}>
+                                                {totals.adjustment < 0
+                                                    ? `-${Math.abs(totals.adjustment).toLocaleString()}`
+                                                    : totals.adjustment > 0
+                                                        ? `+${totals.adjustment.toLocaleString()}`
+                                                        : '0'}
+                                            </td>
                                             {/* Delivery totals */}
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>{totals.qtyDelivered.toLocaleString()}</td>
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>{totals.drCount.toLocaleString()}</td>
