@@ -94,7 +94,6 @@ const UploadPaymentManagement = () => {
                 const actualData = response.data.data || response.data;
                 const orders = Array.isArray(actualData) ? actualData : [];
 
-                // Load quotation request details for each PO
                 const ordersWithQuotations = await Promise.all(
                     orders.map(async (po) => {
                         if (po.quotationRequestId) {
@@ -2140,7 +2139,8 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                             <div className="border border-gray-200 rounded-lg p-4">
                                 <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                                     <div><span className="text-gray-400 text-xs">Forwarding Agent:</span><p className="font-medium text-gray-900">{shippingData.forwarderName || `ID: ${shippingData.forwarderId}` || '-'}</p></div>
-                                    <div className="flex gap-4">
+                                    <div><span className="text-gray-400 text-xs">Date:</span><p className="font-medium text-gray-900">{shippingData.createdAt ? new Date(shippingData.createdAt).toLocaleDateString() : '-'}</p></div>
+                                    <div className="col-span-2 flex gap-4">
                                         <div><span className="text-gray-400 text-xs">USD</span><p className="font-bold text-gray-900">${formatNumberWithCommas(parseFloat(shippingData.usdAmount || 0).toFixed(2))}</p></div>
                                         <div><span className="text-gray-400 text-xs">PHP</span><p className="font-bold text-gray-900">₱{formatNumberWithCommas(parseFloat(shippingData.phpAmount || 0).toFixed(2))}</p></div>
                                     </div>
@@ -2210,6 +2210,7 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                         <tr>
                                             <th className="px-3 py-2 text-left text-xs text-gray-500">No.</th>
                                             <th className="px-3 py-2 text-left text-xs text-gray-500">Particulars</th>
+                                            <th className="px-3 py-2 text-left text-xs text-gray-500">Date</th>
                                             <th className="px-3 py-2 text-right text-xs text-gray-500">Cost (PHP)</th>
                                             <th className="px-3 py-2 text-center text-xs text-gray-500">Docs</th>
                                         </tr>
@@ -2221,6 +2222,7 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                                 <td className="px-3 py-2 font-medium text-gray-900">
                                                     {item.particulars === 'Others' && item.customLabel ? item.customLabel : item.particulars}
                                                 </td>
+                                                <td className="px-3 py-2 text-gray-500">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '-'}</td>
                                                 <td className="px-3 py-2 text-right font-medium text-gray-900">₱{formatNumberWithCommas(parseFloat(item.cost || 0).toFixed(2))}</td>
                                                 <td className="px-3 py-2 text-center">
                                                     <div className="flex items-center justify-center gap-2">
@@ -2234,7 +2236,7 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                     </tbody>
                                     <tfoot className="bg-gray-50 border-t">
                                         <tr>
-                                            <td colSpan="2" className="px-3 py-2 text-right text-sm font-bold text-gray-900">Total</td>
+                                            <td colSpan="3" className="px-3 py-2 text-right text-sm font-bold text-gray-900">Total</td>
                                             <td className="px-3 py-2 text-right text-sm font-bold text-gray-900">₱{formatNumberWithCommas(parseFloat(othersData.totalCost || 0).toFixed(2))}</td>
                                             <td></td>
                                         </tr>

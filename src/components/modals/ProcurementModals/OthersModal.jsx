@@ -26,6 +26,7 @@ const OthersModal = ({ purchaseOrder, onClose, onSuccess }) => {
                     particulars: '',
                     customLabel: '',
                     cost: '',
+                    date: '',
                     commercialInvoiceUrl: null,
                     proofOfPaymentUrl: null
                 }]);
@@ -36,6 +37,7 @@ const OthersModal = ({ purchaseOrder, onClose, onSuccess }) => {
                 particulars: '',
                 customLabel: '',
                 cost: '',
+                date: '',
                 commercialInvoiceUrl: null,
                 proofOfPaymentUrl: null
             }]);
@@ -48,6 +50,7 @@ const OthersModal = ({ purchaseOrder, onClose, onSuccess }) => {
             particulars: '',
             customLabel: '',
             cost: '',
+            date: '',
             commercialInvoiceUrl: null,
             proofOfPaymentUrl: null,
             _ciFile: null,
@@ -96,6 +99,7 @@ const OthersModal = ({ purchaseOrder, onClose, onSuccess }) => {
                     particulars: i.particulars === 'Others' ? 'Others' : i.particulars,
                     customLabel: i.particulars === 'Others' ? i.customLabel : null,
                     cost: parseFloat(i.cost) || 0,
+                    date: i.date || null,
                     commercialInvoiceUrl: i.commercialInvoiceUrl || null,
                     proofOfPaymentUrl: i.proofOfPaymentUrl || null
                 }))
@@ -133,7 +137,7 @@ const OthersModal = ({ purchaseOrder, onClose, onSuccess }) => {
                                 </button>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-3 gap-3">
                                 <div>
                                     <label className="text-xs text-gray-500 mb-1 block">Particulars *</label>
                                     <select

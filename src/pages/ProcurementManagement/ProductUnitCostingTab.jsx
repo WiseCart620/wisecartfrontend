@@ -164,10 +164,10 @@ const ProductUnitCostingTab = () => {
                 <table className="w-full">
                     <thead className="bg-gray-50 border-b">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">UPC</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product Name</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variation</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">UPC</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Cost (WAC)</th>
                         </tr>
                     </thead>
@@ -180,10 +180,10 @@ const ProductUnitCostingTab = () => {
                             </tr>
                         ) : filtered.map((p) => (
                             <tr key={p.id} className="hover:bg-gray-50">
-                                <td className="px-6 py-3 text-sm text-gray-700">{p.sku || '-'}</td>
-                                <td className="px-6 py-3 text-sm text-gray-700">{p.upc || '-'}</td>
                                 <td className="px-6 py-3 text-sm font-medium text-gray-900">{p.productName}</td>
                                 <td className="px-6 py-3 text-sm text-gray-600">{p.variationName || '-'}</td>
+                                <td className="px-6 py-3 text-sm text-gray-700">{p.sku || '-'}</td>
+                                <td className="px-6 py-3 text-sm text-gray-700">{p.upc || '-'}</td>
                                 <td className="px-6 py-3">
                                     <span
                                         className="text-sm font-semibold text-blue-700 cursor-pointer underline decoration-dotted hover:text-blue-900 transition"

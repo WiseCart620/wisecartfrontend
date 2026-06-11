@@ -90,8 +90,6 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
         } catch (e) { }
     };
 
-
-
     const handleUsdChange = (val) => {
         setUsdAmount(val);
     };
@@ -253,8 +251,8 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
                     {/* Shipping Cost */}
                     <div>
                         <h3 className="text-sm font-semibold text-gray-700 mb-3">Shipping Cost</h3>
-                        <div className="flex items-center gap-4">
-                            <div className="flex-1">
+                        <div className="grid grid-cols-3 gap-4">
+                            <div>
                                 <label className="text-xs text-gray-500 mb-1 block">USD Amount *</label>
                                 <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
                                     <span className="px-3 py-2 bg-gray-100 text-gray-600 text-sm font-medium">$</span>
@@ -269,7 +267,7 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
                                     />
                                 </div>
                             </div>
-                            <div className="flex-1">
+                            <div>
                                 <label className="text-xs text-gray-500 mb-1 block">PHP Amount</label>
                                 <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
                                     <span className="px-3 py-2 bg-gray-100 text-gray-600 text-sm font-medium">₱</span>
