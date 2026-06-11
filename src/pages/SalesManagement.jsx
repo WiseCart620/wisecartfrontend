@@ -1869,16 +1869,18 @@ const SalesManagement = () => {
                         <span className="text-xs font-bold text-gray-700">{invoiced}</span>
                         <span className="text-xs text-gray-500 ml-1">(Qty: {invoicedQty.toLocaleString()})</span>
                       </button>
-                      <div className="flex items-center gap-2 border-2 border-blue-600 rounded-lg px-3 py-1">
-                        <span className="text-xs font-bold text-blue-700">Grand Total:</span>
-                        <span className="text-sm font-black text-blue-700">
-                          ₱{grandTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
-                      </div>
+
                       <div className="flex items-center gap-2 border-2 border-gray-400 rounded-lg px-3 py-1">
                         <span className="text-xs font-bold text-gray-700">Total Qty:</span>
                         <span className="text-sm font-black text-gray-800">
                           {(pendingQty + confirmedQty + invoicedQty).toLocaleString()}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 border-2 border-blue-600 rounded-lg px-3 py-1">
+                        <span className="text-xs font-bold text-blue-700">Grand Total:</span>
+                        <span className="text-sm font-black text-blue-700">
+                          ₱{grandTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </div>
                       <button
