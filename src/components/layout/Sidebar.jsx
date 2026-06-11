@@ -23,13 +23,11 @@ const dataEntryItems = [
 const Sidebar = ({ isOpen, toggle }) => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
+  const isAssistantAdmin = user?.role === 'ASSISTANT_ADMIN';
   const isFinance = user?.role === 'FINANCE';
-  const isUser = user?.role === 'USER';
-  const isRestricted = isUser;
-  const mainMenuItems = isRestricted
-    ? allMainMenuItems.filter(item => !item.userHidden)
-    : allMainMenuItems;
-  const showDataEntry = isAdmin || isFinance;
+  const isEncoder = user?.role === 'ENCODER';
+  const mainMenuItems = allMainMenuItems;
+  const showDataEntry = isAdmin || isAssistantAdmin || isFinance || isEncoder;
 
   const [dataEntryOpen, setDataEntryOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);

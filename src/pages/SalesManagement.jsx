@@ -194,8 +194,9 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
 
 const SalesManagement = () => {
   const { user } = useAuth();
-  const isAdminOrUser = user?.role === 'ADMIN' || user?.role === 'USER';
-  const isAdminOrFinance = user?.role === 'ADMIN' || user?.role === 'FINANCE';
+  const canCreate = ['ADMIN', 'ENCODER', 'ASSISTANT_ADMIN'].includes(user?.role);
+  const canDelete = ['ADMIN', 'ASSISTANT_ADMIN'].includes(user?.role);
+  const canFinance = ['ADMIN', 'FINANCE', 'ASSISTANT_ADMIN'].includes(user?.role);
   const [sales, setSales] = useState([]);
   const [branches, setBranches] = useState([]);
   const [products, setProducts] = useState([]);
@@ -1420,7 +1421,7 @@ const SalesManagement = () => {
           <div className="flex flex-col gap-3">
             <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
               <div className="flex flex-wrap gap-2">
-                {isAdminOrUser && (
+                {canCreate && (
                   <button
                     onClick={() => handleOpenModal('create')}
                     className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium text-sm"
@@ -1429,7 +1430,7 @@ const SalesManagement = () => {
                     <span>New Sale</span>
                   </button>
                 )}
-                {isAdminOrFinance && (
+                {canFinance && (
                   <button
                     onClick={() => setShowInvoiceModal(true)}
                     className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md text-sm"
@@ -1438,7 +1439,7 @@ const SalesManagement = () => {
                     <span>Generate Invoice / COS</span>
                   </button>
                 )}
-                {isAdminOrFinance && (
+                {canFinance && (
                   <button
                     onClick={() => setShowInvoicingProfile(true)}
                     className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md text-sm font-medium"
@@ -1447,7 +1448,7 @@ const SalesManagement = () => {
                     Sales Journal
                   </button>
                 )}
-                {isAdminOrFinance && (
+                {canFinance && (
                   <button
                     onClick={() => setShowSalesReport(true)}
                     className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm text-sm font-medium"
@@ -1998,7 +1999,7 @@ const SalesManagement = () => {
                               <Eye size={15} />
                             </button>
 
-                            {sale.status === 'PENDING' && isAdminOrUser && (
+                            {sale.status === 'PENDING' && canCreate && (
                               <>
                                 <button
                                   onClick={() => handleOpenModal('edit', sale)}
@@ -2021,17 +2022,19 @@ const SalesManagement = () => {
                                 >
                                   <FileText size={15} />
                                 </button>
-                                <button
-                                  onClick={() => handleDelete(sale.id)}
-                                  className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 hover:bg-red-50 transition"
-                                  title="Delete (Releases Reserved Stock)"
-                                >
-                                  <Trash2 size={15} />
-                                </button>
+                                {canDelete && (
+                                  <button
+                                    onClick={() => handleDelete(sale.id)}
+                                    className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 hover:bg-red-50 transition"
+                                    title="Delete (Releases Reserved Stock)"
+                                  >
+                                    <Trash2 size={15} />
+                                  </button>
+                                )}
                               </>
                             )}
 
-                            {sale.status === 'CONFIRMED' && isAdminOrUser && (
+                            {sale.status === 'CONFIRMED' && canCreate && (
                               <>
                                 <button
                                   onClick={() => handleUpdateStatus(sale.id, 'INVOICED')}
@@ -2040,17 +2043,19 @@ const SalesManagement = () => {
                                 >
                                   <FileText size={15} />
                                 </button>
-                                <button
-                                  onClick={() => handleDelete(sale.id)}
-                                  className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 hover:bg-red-50 transition"
-                                  title="Delete (Returns Stock)"
-                                >
-                                  <Trash2 size={15} />
-                                </button>
+                                {canDelete && (
+                                  <button
+                                    onClick={() => handleDelete(sale.id)}
+                                    className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 hover:bg-red-50 transition"
+                                    title="Delete (Returns Stock)"
+                                  >
+                                    <Trash2 size={15} />
+                                  </button>
+                                )}
                               </>
                             )}
 
-                            {sale.status === 'INVOICED' && isAdminOrUser && (
+                            {sale.status === 'INVOICED' && canDelete && (
                               <button
                                 onClick={() => handleDelete(sale.id)}
                                 className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 hover:bg-red-50 transition"

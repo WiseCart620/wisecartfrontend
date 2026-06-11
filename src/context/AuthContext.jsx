@@ -153,13 +153,11 @@ export const ProtectedRoute = ({ children }) => {
 };
 
 
+// ADMIN only (user management)
 export const AdminRoute = ({ children }) => {
   const { user, isTokenValid, loading } = useAuth();
 
-
-  if (loading) {
-    return null;
-  }
+  if (loading) return null;
 
   if (!isTokenValid()) {
     toast.error('Please login to continue');
@@ -174,27 +172,30 @@ export const AdminRoute = ({ children }) => {
   return children;
 };
 
-export const FinanceRoute = ({ children }) => {
-  return children;
-};
-
+// ADMIN, ENCODER, ASSISTANT_ADMIN, FINANCE — everyone except no one (all roles allowed)
 export const AdminOrUserRoute = ({ children }) => {
   const { user, isTokenValid, loading } = useAuth();
 
-  if (loading) {
-    return null;
-  }
+  if (loading) return null;
 
   if (!isTokenValid()) {
     toast.error('Please login to continue');
     return <Navigate to="/login" replace />;
   }
 
-  if (user?.role === 'USER') {
-    toast.error('Access restricted');
-    return <Navigate to="/sales" replace />;
-  }
-
   return children;
+};
 
+export const FinanceRoute = ({ children }) => {
+  return children;
+};
+
+export const useCanDelete = () => {
+  const { user } = useAuth();
+  return ['ADMIN', 'ASSISTANT_ADMIN', 'FINANCE'].includes(user?.role);
+};
+
+export const useIsAdmin = () => {
+  const { user } = useAuth();
+  return user?.role === 'ADMIN';
 };

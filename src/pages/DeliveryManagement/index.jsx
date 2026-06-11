@@ -23,7 +23,8 @@ const SORT_OPTIONS = [
 
 const DeliveryManagement = () => {
   const { user } = useAuth();
-  const isAdminOrUser = user?.role === 'ADMIN' || user?.role === 'USER';
+  const canCreate = ['ADMIN', 'ENCODER', 'ASSISTANT_ADMIN'].includes(user?.role);
+  const canDelete = ['ADMIN', 'ASSISTANT_ADMIN'].includes(user?.role);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -379,7 +380,7 @@ const DeliveryManagement = () => {
 
         <div className="flex flex-wrap justify-between items-center gap-2 mb-3">
           <div className="flex items-center gap-2 flex-wrap">
-            {isAdminOrUser && (
+            {canCreate && (
               <button
                 onClick={() => handleOpenModal('create')}
                 className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium text-sm"
@@ -415,7 +416,6 @@ const DeliveryManagement = () => {
           products={products}
         />
 
-        {/* ↓ Pass the real loading state from the hook instead of false */}
         <DeliveryTable
           deliveries={currentDeliveries}
           onView={handleViewDelivery}
@@ -428,6 +428,8 @@ const DeliveryManagement = () => {
           itemsPerPage={itemsPerPage}
           totalItems={filteredDeliveries.length}
           isLoading={loading}
+          canDelete={canDelete}
+          canCreate={canCreate}
         />
 
         {modalState.show && modalState.mode === 'view' && modalState.delivery && (

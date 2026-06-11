@@ -28,7 +28,7 @@ const UserManagement = () => {
     email: '',
     fullName: '',
     password: '',
-    role: 'USER',
+    role: 'ENCODER',
     enabled: true
   });
 
@@ -232,7 +232,7 @@ const UserManagement = () => {
       email: '',
       fullName: '',
       password: '',
-      role: 'USER',
+      role: 'ENCODER',
       enabled: true
     });
     setEditingUser(null);
@@ -263,13 +263,21 @@ const UserManagement = () => {
   const getRoleBadge = (role) => {
     const roleStyles = {
       ADMIN: 'bg-purple-100 text-purple-800',
-      USER: 'bg-blue-100 text-blue-800',
+      ENCODER: 'bg-blue-100 text-blue-800',
+      ASSISTANT_ADMIN: 'bg-indigo-100 text-indigo-800',
       FINANCE: 'bg-green-100 text-green-800',
+    };
+
+    const roleLabels = {
+      ADMIN: 'Admin',
+      ENCODER: 'Encoder',
+      ASSISTANT_ADMIN: 'Assistant Admin',
+      FINANCE: 'Finance',
     };
 
     return (
       <span className={`px-2 py-1 text-xs font-medium rounded-full ${roleStyles[role] || 'bg-gray-100 text-gray-800'}`}>
-        {role}
+        {roleLabels[role] || role}
       </span>
     );
   };
@@ -527,8 +535,9 @@ const UserManagement = () => {
                     required
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="USER">User</option>
                     <option value="ADMIN">Admin</option>
+                    <option value="ENCODER">Encoder</option>
+                    <option value="ASSISTANT_ADMIN">Assistant Admin</option>
                     <option value="FINANCE">Finance</option>
                   </select>
                 </div>
