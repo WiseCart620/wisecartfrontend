@@ -217,15 +217,7 @@ const ProductRow = ({
                             {product.variations.length} variation{product.variations.length > 1 ? 's' : ''}
                         </span>
                     ) : (
-                        <div className="space-y-1">
-                            {product.unitCost ? (
-                                <div className="text-sm font-medium text-green-600">
-                                    ₱{Number(product.unitCost).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                </div>
-                            ) : (
-                                <span className="text-xs text-gray-400"></span>
-                            )}
-                        </div>
+                        <span className="text-xs text-gray-400">—</span>
                     )}
                 </td>
 
