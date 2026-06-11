@@ -29,7 +29,7 @@ const ProcurementManagement = () => {
 
             const interval = setInterval(() => {
                 loadPaymentCounts();
-            }, 3000);
+            }, 30000);
 
             return () => clearInterval(interval);
         }

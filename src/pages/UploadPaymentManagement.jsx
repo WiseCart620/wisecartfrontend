@@ -94,24 +94,7 @@ const UploadPaymentManagement = () => {
                 const actualData = response.data.data || response.data;
                 const orders = Array.isArray(actualData) ? actualData : [];
 
-                const ordersWithQuotations = await Promise.all(
-                    orders.map(async (po) => {
-                        if (po.quotationRequestId) {
-                            try {
-                                const qrResponse = await api.get(`/quotation-requests/${po.quotationRequestId}`);
-                                if (qrResponse.success && qrResponse.data) {
-                                    return {
-                                        ...po,
-                                        quotationRequest: qrResponse.data
-                                    };
-                                }
-                            } catch (err) {
-                                console.error(`Failed to load quotation for PO ${po.id}:`, err);
-                            }
-                        }
-                        return po;
-                    })
-                );
+                const ordersWithQuotations = orders;
 
                 setPurchaseOrders(ordersWithQuotations);
 
@@ -366,7 +349,16 @@ const UploadPaymentManagement = () => {
         setLoadingMessage('Preparing payment form...');
         setIsLoadingOverlay(true);
         try {
-            setSelectedPOForPayment(po);
+            let poWithQuotation = po;
+            if (po.quotationRequestId && !po.quotationRequest) {
+                try {
+                    const qrResponse = await api.get(`/quotation-requests/${po.quotationRequestId}`);
+                    if (qrResponse.success && qrResponse.data) {
+                        poWithQuotation = { ...po, quotationRequest: qrResponse.data };
+                    }
+                } catch (err) { }
+            }
+            setSelectedPOForPayment(poWithQuotation);
             setPaymentFormData({
                 bank: '',
                 referenceNumber: '',
@@ -2139,8 +2131,7 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                             <div className="border border-gray-200 rounded-lg p-4">
                                 <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                                     <div><span className="text-gray-400 text-xs">Forwarding Agent:</span><p className="font-medium text-gray-900">{shippingData.forwarderName || `ID: ${shippingData.forwarderId}` || '-'}</p></div>
-                                    <div><span className="text-gray-400 text-xs">Date:</span><p className="font-medium text-gray-900">{shippingData.createdAt ? new Date(shippingData.createdAt).toLocaleDateString() : '-'}</p></div>
-                                    <div className="col-span-2 flex gap-4">
+                                    <div><span className="text-gray-400 text-xs">Date:</span><p className="font-medium text-gray-900">{shippingData.shippingDate ? new Date(shippingData.shippingDate).toLocaleDateString() : '-'}</p></div>                                    <div className="col-span-2 flex gap-4">
                                         <div><span className="text-gray-400 text-xs">USD</span><p className="font-bold text-gray-900">${formatNumberWithCommas(parseFloat(shippingData.usdAmount || 0).toFixed(2))}</p></div>
                                         <div><span className="text-gray-400 text-xs">PHP</span><p className="font-bold text-gray-900">₱{formatNumberWithCommas(parseFloat(shippingData.phpAmount || 0).toFixed(2))}</p></div>
                                     </div>
@@ -2222,7 +2213,7 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                                 <td className="px-3 py-2 font-medium text-gray-900">
                                                     {item.particulars === 'Others' && item.customLabel ? item.customLabel : item.particulars}
                                                 </td>
-                                                <td className="px-3 py-2 text-gray-500">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '-'}</td>
+                                                <td className="px-3 py-2 text-gray-500">{item.date ? new Date(item.date + 'T00:00:00').toLocaleDateString() : '-'}</td>
                                                 <td className="px-3 py-2 text-right font-medium text-gray-900">₱{formatNumberWithCommas(parseFloat(item.cost || 0).toFixed(2))}</td>
                                                 <td className="px-3 py-2 text-center">
                                                     <div className="flex items-center justify-center gap-2">

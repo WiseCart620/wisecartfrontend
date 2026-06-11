@@ -19,7 +19,11 @@ const OthersModal = ({ purchaseOrder, onClose, onSuccess }) => {
         try {
             const res = await api.get(`/other-charges/purchase-order/${purchaseOrder.id}`);
             if (res.success && res.data?.data?.items && res.data.data.items.length > 0) {
-                setItems(res.data.data.items.map((item, idx) => ({ ...item, _key: idx })));
+                setItems(res.data.data.items.map((item, idx) => ({
+                    ...item,
+                    _key: idx,
+                    date: item.date || (item.createdAt ? item.createdAt.split('T')[0] : '')
+                })));
             } else {
                 setItems([{
                     _key: Date.now(),
@@ -137,7 +141,7 @@ const OthersModal = ({ purchaseOrder, onClose, onSuccess }) => {
                                 </button>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="text-xs text-gray-500 mb-1 block">Particulars *</label>
                                     <select
@@ -165,6 +169,16 @@ const OthersModal = ({ purchaseOrder, onClose, onSuccess }) => {
                                         required
                                     />
                                 </div>
+                            </div>
+
+                            <div>
+                                <label className="text-xs text-gray-500 mb-1 block">Date</label>
+                                <input
+                                    type="date"
+                                    value={item.date || ''}
+                                    onChange={e => updateItem(item._key, 'date', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                />
                             </div>
 
                             {item.particulars === 'Others' && (

@@ -146,17 +146,15 @@ const ProductRow = ({
             {/* Parent Row */}
             <tr className="hover:bg-gray-50">
                 <td className="px-6 py-4">
-                    {hasVariations && (
-                        <button
-                            onClick={() => setIsExpanded(!isExpanded)}
-                            className="p-1 hover:bg-gray-200 rounded transition"
-                        >
-                            <ChevronDown
-                                size={18}
-                                className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                            />
-                        </button>
-                    )}
+                    <button
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="p-1 hover:bg-gray-200 rounded transition"
+                    >
+                        <ChevronDown
+                            size={18}
+                            className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                        />
+                    </button>
                 </td>
 
                 <td className="px-6 py-4">
@@ -282,7 +280,71 @@ const ProductRow = ({
                 </td>
             </tr>
 
-            {/* Expanded Variations */}
+            {isExpanded && !hasVariations && (
+                <tr>
+                    <td colSpan="8" className="bg-gray-50 px-6 py-4">
+                        <div className="pl-12">
+                            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                                <table className="w-full">
+                                    <thead className="bg-gray-100">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">SKU</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">UPC</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Weight</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Dimensions</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Materials</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">UOM</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Company Prices</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-600">Unit Cost (WAC)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr className="hover:bg-gray-50">
+                                            <td className="px-4 py-3 text-sm text-gray-900">{product.sku || '-'}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-900 font-mono">{product.upc || '-'}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-900">
+                                                {product.weight ? `${parseFloat(product.weight).toFixed(4)} kg` : '-'}
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-gray-900">{product.dimensions || '-'}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-900">{product.materials || '-'}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-900">{product.uom || '-'}</td>
+                                            <td className="px-4 py-3">
+                                                <div className="space-y-1">
+                                                    {product.companyBasePrices && product.companyBasePrices.length > 0 ? (
+                                                        product.companyBasePrices.slice(0, 2).map((cbp, idx) => (
+                                                            <div key={idx} className="text-xs">
+                                                                <span className="font-medium text-green-600">
+                                                                    ₱{Number(cbp.basePrice).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                                                </span>
+                                                                <span className="text-gray-500 ml-1">({cbp.company?.companyName})</span>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-xs text-gray-400">No prices set</span>
+                                                    )}
+                                                    {product.companyBasePrices && product.companyBasePrices.length > 2 && (
+                                                        <div className="text-xs text-gray-500">+{product.companyBasePrices.length - 2} more</div>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                {product.unitCost ? (
+                                                    <span className="text-sm font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded">
+                                                        ₱{parseFloat(product.unitCost).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-xs text-gray-400">—</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            )}
+
             {isExpanded && hasVariations && (
                 <tr>
                     <td colSpan="8" className="bg-gray-50 px-6 py-4">
@@ -322,7 +384,7 @@ const ProductRow = ({
                                                 <td className="px-4 py-3 text-sm text-gray-900">{variation.sku || '-'}</td>
                                                 <td className="px-4 py-3 text-sm text-gray-600">{variation.upc || '-'}</td>
                                                 <td className="px-4 py-3 text-sm text-gray-600">
-                                                    {variation.weight ? `${variation.weight} kg` : '-'}
+                                                    {variation.weight ? `${parseFloat(variation.weight).toFixed(4)} kg` : '-'}
                                                 </td>
                                                 <td className="px-4 py-3 text-sm text-gray-600">
                                                     {variation.dimensions || '-'}

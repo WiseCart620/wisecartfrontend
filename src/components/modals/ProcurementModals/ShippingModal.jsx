@@ -11,6 +11,7 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
     const [showDropdown, setShowDropdown] = useState(false);
     const [usdAmount, setUsdAmount] = useState('');
     const [phpAmount, setPhpAmount] = useState('');
+    const [shippingDate, setShippingDate] = useState('');
     const [items, setItems] = useState([]);
     const [uploadedFiles, setUploadedFiles] = useState({
         commercialInvoice: null,
@@ -45,6 +46,7 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
                 setSelectedForwarderId(d.forwarderId || '');
                 setUsdAmount(d.usdAmount || '');
                 setPhpAmount(d.phpAmount || '');
+                setShippingDate(d.shippingDate || '');
                 if (d.forwarderId) loadAgentInfo(d.forwarderId);
                 if (d.items) {
                     const loaded = d.items.map(i => ({
@@ -156,6 +158,7 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
                 forwarderId: parseInt(selectedForwarderId),
                 usdAmount: parseFloat(usdAmount),
                 phpAmount: parseFloat(phpAmount),
+                shippingDate: shippingDate || null,
                 commercialInvoiceUrl: uploadedFiles.commercialInvoice?.url || null,
                 proofOfPaymentUrl: uploadedFiles.proofOfPayment?.url || null,
                 packingListUrl: uploadedFiles.packingList?.url || null,
@@ -281,6 +284,15 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
                                         step="0.01"
                                     />
                                 </div>
+                            </div>
+                            <div>
+                                <label className="text-xs text-gray-500 mb-1 block">Date</label>
+                                <input
+                                    type="date"
+                                    value={shippingDate}
+                                    onChange={e => setShippingDate(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                />
                             </div>
                         </div>
                     </div>
