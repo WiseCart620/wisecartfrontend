@@ -1834,7 +1834,7 @@ const SalesManagement = () => {
                           setShowProductsByStatusModal(true);
                           aggregateProductsByStatus('PENDING');
                         }}
-                        className="flex items-center gap-2 border border-yellow-400 rounded-lg px-3 py-1 hover:bg-yellow-50 transition-colors cursor-pointer"
+                        className="flex items-center gap-2 border border-blue-400 rounded-lg px-3 py-1 hover:bg-yellow-50 transition-colors cursor-pointer"
                       >
                         <span className="text-xs text-gray-600">Pending:</span>
                         <span className="text-xs font-semibold text-gray-800">₱{pendingAmt.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -1862,7 +1862,7 @@ const SalesManagement = () => {
                           setShowProductsByStatusModal(true);
                           aggregateProductsByStatus('INVOICED');
                         }}
-                        className="flex items-center gap-2 border border-green-400 rounded-lg px-3 py-1 hover:bg-green-50 transition-colors cursor-pointer"
+                        className="flex items-center gap-2 border border-blue-400 rounded-lg px-3 py-1 hover:bg-green-50 transition-colors cursor-pointer"
                       >
                         <span className="text-xs text-gray-600">Invoiced:</span>
                         <span className="text-xs font-semibold text-gray-800">₱{invoicedAmt.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -1870,7 +1870,7 @@ const SalesManagement = () => {
                         <span className="text-xs text-gray-500 ml-1">(Qty: {invoicedQty.toLocaleString()})</span>
                       </button>
 
-                      <div className="flex items-center gap-2 border-2 border-gray-400 rounded-lg px-3 py-1">
+                      <div className="flex items-center gap-2 border-2 border-blue-400 rounded-lg px-3 py-1">
                         <span className="text-xs font-bold text-gray-700">Total Qty:</span>
                         <span className="text-sm font-black text-gray-800">
                           {(pendingQty + confirmedQty + invoicedQty).toLocaleString()}
