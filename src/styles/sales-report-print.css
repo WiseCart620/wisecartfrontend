@@ -1,0 +1,85 @@
+@media print {
+
+  /* Hide everything visually but keep in layout tree */
+  * {
+    visibility: hidden !important;
+  }
+
+  /* Show only the print area wrapper */
+  #sales-print-area,
+  #sales-print-area * {
+    visibility: visible !important;
+  }
+
+  #sales-print-area {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Hide the screen table inside the print area */
+  #sales-print-area .bg-white.rounded-xl,
+  #sales-print-area .fixed,
+  #sales-print-area .no-print {
+    visibility: hidden !important;
+    display: none !important;
+  }
+
+  /* Show the summary print block (override Tailwind hidden) */
+  #sales-summary-print {
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  #sales-summary-print * {
+    visibility: visible !important;
+  }
+
+  /* Show the header and meta */
+  .sales-print-header {
+    display: block !important;
+    visibility: visible !important;
+    margin-bottom: 6pt;
+  }
+
+  .sales-print-header h1 {
+    font-size: 13pt;
+    font-weight: bold;
+    margin: 0 0 3pt 0;
+    font-family: Arial, sans-serif;
+  }
+
+  .sales-print-meta {
+    display: grid !important;
+    visibility: visible !important;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4pt;
+    margin-bottom: 6pt;
+    font-size: 7.5pt;
+    font-family: Arial, sans-serif;
+  }
+
+  .sales-print-meta-item {
+    border: 0.5pt solid #ccc;
+    padding: 3pt 5pt;
+    border-radius: 2pt;
+  }
+
+  .sales-print-meta-item strong {
+    display: block;
+    font-size: 6.5pt;
+    color: #666;
+    text-transform: uppercase;
+    margin-bottom: 1pt;
+  }
+
+  .no-print {
+    visibility: hidden !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 10mm 8mm 10mm 8mm;
+  }
+}

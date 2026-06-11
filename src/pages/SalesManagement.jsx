@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import '../styles/invoice-print.css';
+import '../styles/sales-report-print.css';
 import { api } from '../services/api';
 import toast, { Toaster } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -69,6 +70,8 @@ const formatDate = (dateString) => {
     });
   }
 };
+
+
 
 
 const makeStockKey = (productId, variationId, branchId) =>
@@ -247,6 +250,9 @@ const SalesManagement = () => {
 
 
 
+
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthsFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   const [filterData, setFilterData] = useState({
     companyId: '',
@@ -1011,6 +1017,191 @@ const SalesManagement = () => {
   };
 
 
+  const handleDownloadReport = useCallback(async () => {
+    const toastId = toast.loading('Generating report...');
+    try {
+      const startDateObj = filterData.startDate ? new Date(filterData.startDate) : null;
+      const endDateObj = filterData.endDate ? new Date(filterData.endDate) : null;
+
+      const params = new URLSearchParams({
+        page: 0,
+        size: 10000,
+        ...(filterData.companyId && { companyId: filterData.companyId }),
+        ...(filterData.branchId && { branchId: filterData.branchId }),
+        ...(statusFilter !== 'ALL' && { status: statusFilter }),
+        ...(searchTerm && { searchTerm }),
+        ...(startDateObj && {
+          startYear: startDateObj.getFullYear(),
+          startMonth: startDateObj.getMonth() + 1,
+        }),
+        ...(endDateObj && {
+          endYear: endDateObj.getFullYear(),
+          endMonth: endDateObj.getMonth() + 1,
+        }),
+      });
+
+      if (filterData.productFilters?.length > 0) {
+        filterData.productFilters.forEach(pf => {
+          if (pf.productId) params.append('productIds', pf.productId);
+          if (pf.variationId) params.append('variationIds', pf.variationId);
+        });
+      }
+
+      const response = await api.get(`/sales/all?${params}`);
+      const allSales = response.data?.content || [];
+
+      if (allSales.length === 0) {
+        toast.error('No sales data found for the selected filters.', { id: toastId });
+        return;
+      }
+
+      const selectedCompany = filterData.companyId
+        ? (companies.find(c => c.id === filterData.companyId)?.companyName
+          || companies.find(c => c.id === filterData.companyId)?.name
+          || 'Unknown')
+        : 'All Companies';
+
+      const selectedBranch = filterData.branchId
+        ? (branches.find(b => b.id === filterData.branchId)?.branchName || 'Unknown')
+        : 'All Branches';
+
+      const statusLabel = statusFilter === 'ALL' ? 'All Status' : statusFilter;
+      const dateFrom = filterData.startDate || '—';
+      const dateTo = filterData.endDate || '—';
+
+      const rows = [];
+
+      // ── Meta header block ──────────────────────────────────────────
+      rows.push(['COMPANY', selectedCompany]);
+      rows.push(['BRANCH', selectedBranch]);
+      rows.push(['STATUS', statusLabel]);
+      rows.push(['DATE OF COVERAGE', `${dateFrom} to ${dateTo}`]);
+      rows.push(['GENERATED AT', new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })]);
+      rows.push([]);
+
+      // ── Column headers ─────────────────────────────────────────────
+      rows.push([
+        'NO.',
+        'SALE ID',
+        'BRANCH',
+        'BRANCH CODE',
+        'COMPANY',
+        'PERIOD',
+        'ENCODED BY',
+        'PRODUCT',
+        'VARIATION',
+        'SKU',
+        'UPC',
+        'QTY',
+        'UNIT PRICE',
+        'TOTAL',
+        'SALE STATUS',
+      ]);
+
+      let rowNum = 1;
+
+      allSales.forEach(sale => {
+        const branchName = sale.branch?.branchName || '';
+        const branchCode = sale.branch?.branchCode || '';
+        const companyName = sale.company?.companyName || '';
+        const period = `${months[sale.month - 1]} ${sale.year}`;
+        const encodedBy = sale.createdBy || sale.generatedBy || '—';
+
+        if (!sale.items || sale.items.length === 0) {
+          rows.push([
+            rowNum++,
+            sale.id,
+            branchName,
+            branchCode,
+            companyName,
+            period,
+            encodedBy,
+            '(no items)', '', '', '', 0, '0.00', '0.00',
+            sale.status,
+          ]);
+          return;
+        }
+
+        sale.items.forEach((item, idx) => {
+          const productName = item.product?.productName || '';
+          const variationLabel = item.variation
+            ? (item.variation.combinationDisplay
+              || (item.variation.variationType && item.variation.variationValue
+                ? `${item.variation.variationType}: ${item.variation.variationValue}`
+                : 'Variation'))
+            : '—';
+          const sku = item.variation?.sku || item.product?.sku || '—';
+          const upc = item.variation?.upc || item.product?.upc || '—';
+
+          rows.push([
+            idx === 0 ? rowNum++ : '',
+            idx === 0 ? sale.id : '',
+            idx === 0 ? branchName : '',
+            idx === 0 ? branchCode : '',
+            idx === 0 ? companyName : '',
+            idx === 0 ? period : '',
+            idx === 0 ? encodedBy : '',
+            productName,
+            variationLabel,
+            sku,
+            upc,
+            item.quantity || 0,
+            Number(item.unitPrice || 0).toFixed(2),
+            Number(item.amount || 0).toFixed(2),
+            idx === 0 ? sale.status : '',
+          ]);
+        });
+      });
+
+      // ── Grand-total footer ─────────────────────────────────────────
+      const grandTotal = allSales.reduce(
+        (sum, s) => sum + (Number(s.totalAmount) || 0), 0
+      );
+      const totalQty = allSales.reduce(
+        (sum, s) => sum + (s.items || []).reduce((q, i) => q + (i.quantity || 0), 0), 0
+      );
+
+      rows.push([]);
+      rows.push([
+        '', '', '', '', '', '', '',
+        '', '', '',
+        'TOTAL QTY', totalQty, '', '', '',
+      ]);
+      rows.push([
+        '', '', '', '', '', '', '',
+        '', '', '',
+        'GRAND TOTAL', '', '', grandTotal.toFixed(2), '',
+      ]);
+
+      // ── Build & trigger CSV download ───────────────────────────────
+      const csv = rows
+        .map(row =>
+          row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(',')
+        )
+        .join('\n');
+
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sales_report_${selectedCompany}_${selectedBranch}_${new Date().toISOString().split('T')[0]}.csv`
+        .replace(/[\s/\\:*?"<>|]+/g, '_');
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success(
+        `Report downloaded! ${allSales.length} sales · ${totalQty.toLocaleString()} units`,
+        { id: toastId }
+      );
+    } catch (error) {
+      console.error('Download report error:', error);
+      toast.error('Failed to generate report. Please try again.', { id: toastId });
+    }
+  }, [filterData, statusFilter, searchTerm, companies, branches, months]);
+
+
   const aggregateProductsByStatus = async (statusToFetch) => {
     try {
       setProductsByStatusLoading(true);
@@ -1085,11 +1276,7 @@ const SalesManagement = () => {
     }
   };
 
-
   const currentSales = Array.isArray(sales) ? sales : [];
-
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const monthsFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   const branchOptions = Array.isArray(branches) ? branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` })) : [];
   const companyOptions = Array.isArray(companies) ? companies.map(c => ({
@@ -1538,9 +1725,153 @@ const SalesManagement = () => {
                       </button>
 
                       {/* Grand Total */}
-                      <div className="flex items-center gap-2 border-2 border-blue-600 rounded-lg px-3 py-1">
-                        <span className="text-xs font-bold text-blue-700">Grand Total:</span>
-                        <span className="text-sm font-black text-blue-700">₱{grandTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 border-2 border-blue-600 rounded-lg px-3 py-1">
+                          <span className="text-xs font-bold text-blue-700">Grand Total:</span>
+                          <span className="text-sm font-black text-blue-700">
+                            ₱{grandTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        <button
+                          onClick={handleDownloadReport}
+                          className="flex items-center gap-1.5 px-3 py-1 rounded-lg border-2 border-green-600 text-green-700 hover:bg-green-50 text-xs font-semibold transition-colors"
+                          title="Download all filtered sales as CSV"
+                        >
+                          <FileText size={13} />
+                          Download Report
+                        </button>
+                        <button
+                          onClick={async () => {
+                            const toastId = toast.loading('Preparing print report...');
+                            try {
+                              const startDateObj = filterData.startDate ? new Date(filterData.startDate) : null;
+                              const endDateObj = filterData.endDate ? new Date(filterData.endDate) : null;
+
+                              const params = new URLSearchParams({
+                                page: 0,
+                                size: 10000,
+                                ...(filterData.companyId && { companyId: filterData.companyId }),
+                                ...(filterData.branchId && { branchId: filterData.branchId }),
+                                ...(statusFilter !== 'ALL' && { status: statusFilter }),
+                                ...(searchTerm && { searchTerm }),
+                                ...(startDateObj && { startYear: startDateObj.getFullYear(), startMonth: startDateObj.getMonth() + 1 }),
+                                ...(endDateObj && { endYear: endDateObj.getFullYear(), endMonth: endDateObj.getMonth() + 1 }),
+                              });
+
+                              if (filterData.productFilters?.length > 0) {
+                                filterData.productFilters.forEach(pf => {
+                                  if (pf.productId) params.append('productIds', pf.productId);
+                                  if (pf.variationId) params.append('variationIds', pf.variationId);
+                                });
+                              }
+
+                              const response = await api.get(`/sales/all?${params}`);
+                              const allSales = response.data?.content || [];
+
+                              // Flatten all sales into product rows then aggregate by product+variation
+                              const productMap = new Map();
+                              allSales.forEach(sale => {
+                                (sale.items || []).forEach(item => {
+                                  const sku = item.variation?.sku || item.product?.sku || '—';
+                                  const upc = item.variation?.upc || item.product?.upc || '—';
+                                  const variationDisplay = item.variation
+                                    ? (item.variation.combinationDisplay ||
+                                      (item.variation.variationType && item.variation.variationValue
+                                        ? `${item.variation.variationType}: ${item.variation.variationValue}`
+                                        : 'Variation'))
+                                    : '';
+                                  const key = `${item.product?.id}_${item.variation?.id || 'base'}`;
+
+                                  if (productMap.has(key)) {
+                                    const existing = productMap.get(key);
+                                    existing.quantity += item.quantity || 0;
+                                    existing.amount += item.amount || 0;
+                                  } else {
+                                    productMap.set(key, {
+                                      productName: item.product?.productName || '',
+                                      variationDisplay,
+                                      sku,
+                                      upc,
+                                      quantity: item.quantity || 0,
+                                      unitPrice: item.unitPrice || 0,
+                                      amount: item.amount || 0,
+                                    });
+                                  }
+                                });
+                              });
+
+                              const productRows = Array.from(productMap.values())
+                                .sort((a, b) => a.productName.localeCompare(b.productName));
+
+                              // Build the summary print content
+                              const selectedCompany = filterData.companyId
+                                ? (companies.find(c => c.id === filterData.companyId)?.companyName || 'All Companies')
+                                : 'All Companies';
+                              const selectedBranch = filterData.branchId
+                                ? (branches.find(b => b.id === filterData.branchId)?.branchName || 'All Branches')
+                                : 'All Branches';
+                              const statusLabel = statusFilter === 'ALL' ? 'All Status' : statusFilter;
+                              const dateFrom = filterData.startDate || '—';
+                              const dateTo = filterData.endDate || '—';
+
+                              const grandTotal = productRows.reduce((sum, r) => sum + r.amount, 0);
+                              const grandQty = productRows.reduce((sum, r) => sum + r.quantity, 0);
+
+                              const printEl = document.getElementById('sales-summary-print');
+                              printEl.innerHTML = `
+      <div style="font-family: Arial, sans-serif; font-size: 9pt;">
+        <table style="width:100%; border-collapse:collapse; font-size:7.5pt;">
+          <thead>
+            <tr>
+              <th style="border:0.5pt solid #999; padding:3pt 4pt; background:#f0f0f0; text-align:left; white-space:nowrap;">#</th>
+              <th style="border:0.5pt solid #999; padding:3pt 4pt; background:#f0f0f0; text-align:left;">PRODUCT / SKU / UPC</th>
+              <th style="border:0.5pt solid #999; padding:3pt 4pt; background:#f0f0f0; text-align:right;">QTY</th>
+              <th style="border:0.5pt solid #999; padding:3pt 4pt; background:#f0f0f0; text-align:right;">UNIT PRICE</th>
+              <th style="border:0.5pt solid #999; padding:3pt 4pt; background:#f0f0f0; text-align:right;">TOTAL</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${productRows.map((row, idx) => `
+              <tr style="background:${idx % 2 === 1 ? '#fafafa' : '#fff'};">
+                <td style="border:0.5pt solid #ccc; padding:2.5pt 4pt;">${idx + 1}</td>
+                <td style="border:0.5pt solid #ccc; padding:2.5pt 4pt;">
+                  <div style="font-weight:600;">${row.productName}${row.variationDisplay ? ` — ${row.variationDisplay}` : ''}</div>
+                  <div style="font-size:6.5pt; color:#555;">SKU: ${row.sku} &nbsp;|&nbsp; UPC: ${row.upc}</div>
+                </td>
+                <td style="border:0.5pt solid #ccc; padding:2.5pt 4pt; text-align:right;">${row.quantity.toLocaleString()}</td>
+                <td style="border:0.5pt solid #ccc; padding:2.5pt 4pt; text-align:right;">${Number(row.unitPrice).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td style="border:0.5pt solid #ccc; padding:2.5pt 4pt; text-align:right;">${Number(row.amount).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2" style="border:0.5pt solid #ccc; padding:3pt 4pt; font-weight:bold; text-align:right; border-top:1.5pt solid #333;">GRAND TOTAL</td>
+              <td style="border:0.5pt solid #ccc; padding:3pt 4pt; font-weight:bold; text-align:right; border-top:1.5pt solid #333;">${grandQty.toLocaleString()}</td>
+              <td style="border:0.5pt solid #ccc; padding:3pt 4pt; border-top:1.5pt solid #333;"></td>
+              <td style="border:0.5pt solid #ccc; padding:3pt 4pt; font-weight:bold; text-align:right; border-top:1.5pt solid #333;">₱${grandTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            </tr>
+          </tfoot>
+        </table>
+        <div style="margin-top:6pt; font-size:7pt; color:#666; text-align:right;">
+          Generated: ${new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })} &nbsp;|&nbsp; Total Products: ${productRows.length}
+        </div>
+      </div>
+    `;
+
+                              toast.success('Report ready!', { id: toastId });
+                              setTimeout(() => window.print(), 100);
+                            } catch (err) {
+                              console.error(err);
+                              toast.error('Failed to prepare print report', { id: toastId });
+                            }
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1 rounded-lg border-2 border-gray-500 text-gray-700 hover:bg-gray-50 text-xs font-semibold transition-colors"
+                          title="Print current page as A4"
+                        >
+                          <Printer size={13} />
+                          Print
+                        </button>
                       </div>
                     </div>
                   );
@@ -1563,129 +1894,219 @@ const SalesManagement = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[680px]">
-              <thead className="bg-gray-50 border-b border-gray-200">
+        <div id="sales-print-area">
+          {/* Print-only header */}
+          <div className="sales-print-header hidden">
+            <h1>Sales Report — WISECART MERCHANTS CORP.</h1>
+          </div>
+          <div className="sales-print-meta hidden">
+            <div className="sales-print-meta-item">
+              <strong>Company</strong>
+              {filterData.companyId
+                ? (companies.find(c => c.id === filterData.companyId)?.companyName || 'All Companies')
+                : 'All Companies'}
+            </div>
+            <div className="sales-print-meta-item">
+              <strong>Branch</strong>
+              {filterData.branchId
+                ? (branches.find(b => b.id === filterData.branchId)?.branchName || 'All Branches')
+                : 'All Branches'}
+            </div>
+            <div className="sales-print-meta-item">
+              <strong>Status</strong>
+              {statusFilter === 'ALL' ? 'All Status' : statusFilter}
+            </div>
+            <div className="sales-print-meta-item">
+              <strong>Date of Coverage</strong>
+              {filterData.startDate || '—'} to {filterData.endDate || '—'}
+            </div>
+          </div>
+
+          {/* Print-only summary report */}
+          <div id="sales-summary-print" className="hidden">
+            <table className="w-full border-collapse text-xs" style={{ fontFamily: 'Arial, sans-serif' }}>
+              <thead>
                 <tr>
-                  <th className="px-3 py-3 text-center text-[11px] font-medium text-gray-500 uppercase tracking-wider w-10">#</th>
-                  <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Branch</th>
-                  <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                  <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Period</th>
-                  <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Encoded By</th>
-                  <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                  <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th style={{ border: '0.5pt solid #999', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'left' }}>#</th>
+                  <th style={{ border: '0.5pt solid #999', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'left' }}>Branch</th>
+                  <th style={{ border: '0.5pt solid #999', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'left' }}>Branch Code</th>
+                  <th style={{ border: '0.5pt solid #999', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'left' }}>Company</th>
+                  <th style={{ border: '0.5pt solid #999', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'left' }}>Period</th>
+                  <th style={{ border: '0.5pt solid #999', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'left' }}>Encoded By</th>
+                  <th style={{ border: '0.5pt solid #999', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'right' }}>Total Amount</th>
+                  <th style={{ border: '0.5pt solid #999', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'left' }}>Status</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {loading ? (
-                  <>
-                    {[...Array(5)].map((_, i) => (
-                      <tr key={i} className="animate-pulse">
-                        <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-6 mx-auto" /></td>
-                        <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-28" /></td>
-                        <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-24" /></td>
-                        <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-16" /></td>
-                        <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-20" /></td>
-                        <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-20" /></td>
-                        <td className="px-3 py-3"><div className="h-6 bg-gray-100 rounded-full w-16" /></td>
-                        <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-20" /></td>
-                      </tr>
-                    ))}
-                  </>
-                ) : currentSales.length === 0 ? (
-                  <tr>
-                    <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
-                      {'No sales found'}
-                    </td>
+              <tbody>
+                {currentSales.map((sale, idx) => (
+                  <tr key={sale.id}>
+                    <td style={{ border: '0.5pt solid #ccc', padding: '2.5pt 4pt' }}>{((currentPage - 1) * 10) + idx + 1}</td>
+                    <td style={{ border: '0.5pt solid #ccc', padding: '2.5pt 4pt' }}>{sale.branch.branchName}</td>
+                    <td style={{ border: '0.5pt solid #ccc', padding: '2.5pt 4pt' }}>{sale.branch.branchCode}</td>
+                    <td style={{ border: '0.5pt solid #ccc', padding: '2.5pt 4pt' }}>{sale.company.companyName}</td>
+                    <td style={{ border: '0.5pt solid #ccc', padding: '2.5pt 4pt' }}>{months[sale.month - 1]} {sale.year}</td>
+                    <td style={{ border: '0.5pt solid #ccc', padding: '2.5pt 4pt' }}>{sale.createdBy || sale.generatedBy || '—'}</td>
+                    <td style={{ border: '0.5pt solid #ccc', padding: '2.5pt 4pt', textAlign: 'right' }}>{formatCurrency(sale.totalAmount)}</td>
+                    <td style={{ border: '0.5pt solid #ccc', padding: '2.5pt 4pt' }}>{sale.status}</td>
                   </tr>
-                ) : (
-                  currentSales.map((sale) => (
-                    <tr key={sale.id} className="hover:bg-gray-50 transition">
-                      <td className="px-3 py-3 whitespace-nowrap text-center text-xs text-gray-400 font-medium">
-                        {((currentPage - 1) * 10) + currentSales.indexOf(sale) + 1}
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap">
-                        <div>
-                          <div className="text-xs font-medium text-gray-900">{sale.branch.branchName}</div>
-                          <div className="text-xs text-gray-500">{sale.branch.branchCode}</div>
-                        </div>
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">
-                        {sale.company.companyName}
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">
-                        {months[sale.month - 1]} {sale.year}
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">
-                        {sale.createdBy || sale.generatedBy || '-'}
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-xs font-semibold text-gray-900">
-                        {formatCurrency(sale.totalAmount)}
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap">
-                        <span className={`px-2 py-1 inline-flex text-[11px] leading-5 font-semibold rounded-full ${sale.status === 'INVOICED'
-                          ? 'bg-green-100 text-green-800'
-                          : sale.status === 'CONFIRMED'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                          {sale.status}
-                        </span>
-                      </td>
-                      <td className="px-2 py-3 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center gap-0.5 flex-nowrap">
-                          <button
-                            onClick={() => handleOpenModal('view', sale)}
-                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-blue-600 hover:bg-blue-50 transition"
-                            title="View"
-                          >
-                            <Eye size={15} />
-                          </button>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan={6} style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt', fontWeight: 'bold', textAlign: 'right', borderTop: '1.5pt solid #333' }}>
+                    GRAND TOTAL ({currentSales.length} sales):
+                  </td>
+                  <td style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt', fontWeight: 'bold', textAlign: 'right', borderTop: '1.5pt solid #333' }}>
+                    ₱{currentSales.reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0)
+                      .toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                  <td style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt', borderTop: '1.5pt solid #333' }}></td>
+                </tr>
+                <tr>
+                  <td colSpan={8} style={{ padding: '4pt', fontSize: '7pt', color: '#666', textAlign: 'right', borderTop: '0.5pt solid #ccc' }}>
+                    Pending: ₱{(allFilteredSales.pendingAmount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })} &nbsp;|&nbsp;
+                    Confirmed: ₱{(allFilteredSales.confirmedAmount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })} &nbsp;|&nbsp;
+                    Invoiced: ₱{(allFilteredSales.invoicedAmount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
 
-                          {sale.status === 'PENDING' && isAdminOrUser && (
-                            <>
-                              <button
-                                onClick={() => handleOpenModal('edit', sale)}
-                                className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-indigo-600 hover:bg-indigo-50 transition"
-                                title="Edit"
-                              >
-                                <Edit2 size={15} />
-                              </button>
-                              <button
-                                onClick={() => handleUpdateStatus(sale.id, 'CONFIRMED')}
-                                className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-green-600 hover:bg-green-50 transition"
-                                title="Confirm Sale (Deducts Stock)"
-                              >
-                                <Check size={15} />
-                              </button>
-                              <button
-                                onClick={() => handleUpdateStatus(sale.id, 'INVOICED')}
-                                className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-purple-600 hover:bg-purple-50 transition"
-                                title="Mark as Invoiced (Deducts Stock)"
-                              >
-                                <FileText size={15} />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(sale.id)}
-                                className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 hover:bg-red-50 transition"
-                                title="Delete (Releases Reserved Stock)"
-                              >
-                                <Trash2 size={15} />
-                              </button>
-                            </>
-                          )}
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[680px] sales-print-table">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-3 py-3 text-center text-[11px] font-medium text-gray-500 uppercase tracking-wider w-10">#</th>
+                    <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Branch</th>
+                    <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                    <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Period</th>
+                    <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Encoded By</th>
+                    <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider no-print">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {loading ? (
+                    <>
+                      {[...Array(5)].map((_, i) => (
+                        <tr key={i} className="animate-pulse">
+                          <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-6 mx-auto" /></td>
+                          <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-28" /></td>
+                          <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-24" /></td>
+                          <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-16" /></td>
+                          <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-20" /></td>
+                          <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-20" /></td>
+                          <td className="px-3 py-3"><div className="h-6 bg-gray-100 rounded-full w-16" /></td>
+                          <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-20" /></td>
+                        </tr>
+                      ))}
+                    </>
+                  ) : currentSales.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
+                        {'No sales found'}
+                      </td>
+                    </tr>
+                  ) : (
+                    currentSales.map((sale) => (
+                      <tr key={sale.id} className="hover:bg-gray-50 transition">
+                        <td className="px-3 py-3 whitespace-nowrap text-center text-xs text-gray-400 font-medium">
+                          {((currentPage - 1) * 10) + currentSales.indexOf(sale) + 1}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <div>
+                            <div className="text-xs font-medium text-gray-900">{sale.branch.branchName}</div>
+                            <div className="text-xs text-gray-500">{sale.branch.branchCode}</div>
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">
+                          {sale.company.companyName}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">
+                          {months[sale.month - 1]} {sale.year}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">
+                          {sale.createdBy || sale.generatedBy || '-'}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap text-xs font-semibold text-gray-900">
+                          {formatCurrency(sale.totalAmount)}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <span className={`px-2 py-1 inline-flex text-[11px] leading-5 font-semibold rounded-full ${sale.status === 'INVOICED'
+                            ? 'bg-green-100 text-green-800'
+                            : sale.status === 'CONFIRMED'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                            {sale.status}
+                          </span>
+                        </td>
+                        <td className="px-2 py-3 whitespace-nowrap text-sm font-medium no-print">
+                          <div className="flex items-center gap-0.5 flex-nowrap">
+                            <button
+                              onClick={() => handleOpenModal('view', sale)}
+                              className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-blue-600 hover:bg-blue-50 transition"
+                              title="View"
+                            >
+                              <Eye size={15} />
+                            </button>
 
-                          {sale.status === 'CONFIRMED' && isAdminOrUser && (
-                            <>
-                              <button
-                                onClick={() => handleUpdateStatus(sale.id, 'INVOICED')}
-                                className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-purple-600 hover:bg-purple-50 transition"
-                                title="Mark as Invoiced (No Stock Change)"
-                              >
-                                <FileText size={15} />
-                              </button>
+                            {sale.status === 'PENDING' && isAdminOrUser && (
+                              <>
+                                <button
+                                  onClick={() => handleOpenModal('edit', sale)}
+                                  className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-indigo-600 hover:bg-indigo-50 transition"
+                                  title="Edit"
+                                >
+                                  <Edit2 size={15} />
+                                </button>
+                                <button
+                                  onClick={() => handleUpdateStatus(sale.id, 'CONFIRMED')}
+                                  className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-green-600 hover:bg-green-50 transition"
+                                  title="Confirm Sale (Deducts Stock)"
+                                >
+                                  <Check size={15} />
+                                </button>
+                                <button
+                                  onClick={() => handleUpdateStatus(sale.id, 'INVOICED')}
+                                  className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-purple-600 hover:bg-purple-50 transition"
+                                  title="Mark as Invoiced (Deducts Stock)"
+                                >
+                                  <FileText size={15} />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(sale.id)}
+                                  className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 hover:bg-red-50 transition"
+                                  title="Delete (Releases Reserved Stock)"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </>
+                            )}
+
+                            {sale.status === 'CONFIRMED' && isAdminOrUser && (
+                              <>
+                                <button
+                                  onClick={() => handleUpdateStatus(sale.id, 'INVOICED')}
+                                  className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-purple-600 hover:bg-purple-50 transition"
+                                  title="Mark as Invoiced (No Stock Change)"
+                                >
+                                  <FileText size={15} />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(sale.id)}
+                                  className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 hover:bg-red-50 transition"
+                                  title="Delete (Returns Stock)"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </>
+                            )}
+
+                            {sale.status === 'INVOICED' && isAdminOrUser && (
                               <button
                                 onClick={() => handleDelete(sale.id)}
                                 className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 hover:bg-red-50 transition"
@@ -1693,1235 +2114,1225 @@ const SalesManagement = () => {
                               >
                                 <Trash2 size={15} />
                               </button>
-                            </>
-                          )}
-
-                          {sale.status === 'INVOICED' && isAdminOrUser && (
-                            <button
-                              onClick={() => handleDelete(sale.id)}
-                              className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 hover:bg-red-50 transition"
-                              title="Delete (Returns Stock)"
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          {totalElements !== undefined && totalElements > 0 && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages || 1}
-              onPageChange={(page) => {
-                setCurrentPage(page);
-              }}
-              onNextPage={() => {
-                if (currentPage < (totalPages || 1)) {
-                  const newPage = currentPage + 1;
-                  setCurrentPage(newPage);
-                }
-              }}
-              onPrevPage={() => {
-                if (currentPage > 1) {
-                  const newPage = currentPage - 1;
-                  setCurrentPage(newPage);
-                }
-              }}
-              showingStart={((currentPage - 1) * 10) + 1}
-              showingEnd={Math.min(currentPage * 10, totalElements || 0)}
-              totalItems={totalElements || 0}
-            />
-          )}
-        </div>
-
-        {/* Create/Edit Modal */}
-        {showModal && (modalMode === 'create' || modalMode === 'edit') && (
-          <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-2 sm:p-6">
-            <div className="bg-white rounded-xl sm:rounded-2xl max-w-7xl w-full max-h-[98vh] sm:max-h-[95vh] overflow-y-auto shadow-2xl">
-              <div className="p-4 sm:p-8 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-xl sm:rounded-t-2xl z-10">
-                <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
-                  {modalMode === 'create' ? 'Create New Sale' : 'Edit Sale'}
-                </h2>
-                <button
-                  onClick={handleCloseModal}
-                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="p-4 sm:p-8">
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">Branch *</label>
-                    <SearchableDropdown
-                      options={branchOptions}
-                      value={formData.branchId}
-                      onChange={handleBranchChange}
-                      placeholder="Select Branch"
-                      displayKey="name"
-                      valueKey="id"
-                      required
-                    />
-                  </div>
-
-                  {branchInfo && (
-                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <p className="text-sm text-blue-800 mb-1"><strong>Branch:</strong> {branchInfo.branchName}</p>
-                      <p className="text-sm text-blue-800 mb-1"><strong>Branch Code:</strong> {branchInfo.branchCode}</p>
-                      <p className="text-sm text-blue-800 mb-1"><strong>TIN:</strong> {branchInfo.tin}</p>
-                      <p className="text-sm text-blue-800"><strong>Address:</strong> {branchInfo.fullAddress}</p>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-3">Month *</label>
-                      <select
-                        value={formData.month}
-                        onChange={(e) => setFormData({ ...formData, month: parseInt(e.target.value) })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                        required
-                      >
-                        {months.map((m, i) => (
-                          <option key={i} value={i + 1}>{m}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-3">Year *</label>
-                      <input
-                        type="number"
-                        value={formData.year}
-                        onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4 relative">
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Encoded By <span className="text-xs text-gray-500">(Optional - defaults to current user)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.createdBy}
-                      onChange={(e) => {
-                        setFormData({ ...formData, createdBy: e.target.value });
-                      }}
-                      onFocus={() => setShowEncodedByDropdown(true)}
-                      onBlur={() => setTimeout(() => setShowEncodedByDropdown(false), 150)}
-                      placeholder="Select existing or type a custom name..."
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                    />
-                    {showEncodedByDropdown && Array.isArray(encodedByOptions) && encodedByOptions.filter(name =>
-                      name.toLowerCase().includes(formData.createdBy.toLowerCase())
-                    ).length > 0 && (
-                        <div className="absolute z-50 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
-                          {encodedByOptions
-                            .filter(name => name.toLowerCase().includes(formData.createdBy.toLowerCase()))
-                            .map((name) => (
-                              <button
-                                key={name}
-                                type="button"
-                                onMouseDown={() => {
-                                  setFormData({ ...formData, createdBy: name });
-                                  setShowEncodedByDropdown(false);
-                                }}
-                                className={`w-full px-4 py-2 text-left text-sm hover:bg-blue-50 transition ${formData.createdBy === name ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'}`}
-                              >
-                                {name}
-                              </button>
-                            ))}
-                        </div>
-                      )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">Add Products *</label>
-
-                    {/* Product Selector */}
-                    <div className="mb-6">
-                      <VariationSearchableDropdown
-                        options={Array.isArray(productOptions) ? productOptions : []}
-                        value={selectedProductForAdd}
-                        onChange={(value) => setSelectedProductForAdd(value)}
-                        placeholder="Select Product to Add..."
-                        required={false}
-                        formData={{
-                          ...formData,
-                          fromBranchId: formData.branchId,
-                          items: formData.items
-                        }}
-                        index={-1}
-                        warehouseStocks={{}}
-                        branchStocks={branchStocks}
-                        loadingStocks={loadingStocks}
-                        onAddProduct={formData.branchId ? handleAddProductToTable : undefined}
-                        activeCompanyId={branchInfo?.companyId ?? null}
-                      />
-                    </div>
-
-                    {/* Products Table */}
-                    {formData.items.length === 0 ? (
-                      <div className="text-center py-10 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                        <p className="font-medium text-gray-500">No products added yet</p>
-                        <p className="text-sm text-gray-400">Select a product above and click "Add Product" to start</p>
-                      </div>
-                    ) : (
-                      <div className="overflow-x-auto rounded-lg border border-gray-200">
-                        <table className="w-full">
-                          <thead className="bg-gray-50 border-b border-gray-200">
-                            <tr>
-                              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase w-10">#</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Product Name</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Variation</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">SKU</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">UPC</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Company SKU</th>
-                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Unit Price</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Stock</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Quantity</th>
-                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Amount</th>
-                              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Action</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200 bg-white">
-                            {formData.items.map((item, i) => {
-
-                              const selectedOption = Array.isArray(productOptions) ? productOptions.find(opt =>
-                                opt.parentProductId === item.productId &&
-                                (item.variationId !== null
-                                  ? opt.variationId === item.variationId
-                                  : opt.variationId === null)
-                              ) : null;
-
-                              const stockKey = makeStockKey(item.productId, item.variationId, formData.branchId);
-                              const stockInfo = branchStocks[stockKey];
-                              const isLoadingStock = loadingStocks[stockKey];
-
-                              const oldItem = modalMode === 'edit' && originalSaleItems
-                                ? originalSaleItems.find(oi =>
-                                  oi.productId === item.productId &&
-                                  oi.variationId === item.variationId
-                                )
-                                : null;
-
-                              const maxAllowed = getMaxAllowedQuantity(item, stockInfo, oldItem);
-                              const hasEnoughStock = maxAllowed === undefined || maxAllowed >= item.quantity;
-
-                              return (
-                                <tr key={`${item.productId}_${item.variationId ?? 'base'}`} className="hover:bg-gray-50">
-                                  <td className="px-4 py-3 text-center text-sm text-gray-400 font-medium">{i + 1}</td>
-                                  {/* Product Name */}
-                                  <td className="px-4 py-3">
-                                    {selectedOption ? (
-                                      <div className="font-semibold text-gray-900 text-sm">
-                                        {selectedOption.fullName}
-                                      </div>
-                                    ) : (
-                                      <div className="text-gray-500 italic text-sm">Product not found</div>
-                                    )}
-                                  </td>
-
-                                  {/* Variation */}
-                                  <td className="px-4 py-3">
-                                    {selectedOption?.variationLabel && selectedOption.variationLabel !== 'No variations' ? (
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                        {selectedOption.variationLabel}
-                                      </span>
-                                    ) : (
-                                      <span className="text-xs text-gray-500">None</span>
-                                    )}
-                                  </td>
-
-                                  {/* SKU */}
-                                  <td className="px-4 py-3">
-                                    <span className="text-sm text-gray-900">{selectedOption?.sku || 'N/A'}</span>
-                                  </td>
-
-                                  {/* UPC */}
-                                  <td className="px-4 py-3">
-                                    <span className="text-sm text-gray-900">{selectedOption?.upc || 'N/A'}</span>
-                                  </td>
-
-                                  {/* Company SKU */}
-                                  <td className="px-4 py-3">
-                                    {selectedOption?.companySku
-                                      ? <span className="text-sm font-medium text-gray-900">{selectedOption.companySku}</span>
-                                      : <span className="text-xs text-gray-400 italic">—</span>
-                                    }
-                                  </td>
-
-                                  {/* Unit Price */}
-                                  <td className="px-4 py-3 text-right">
-                                    {(() => {
-                                      const price = selectedOption?.price ?? 0;
-                                      return price > 0
-                                        ? <span className="text-sm font-semibold text-green-700">
-                                          ₱{Number(price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                        </span>
-                                        : <span className="text-xs text-gray-400 italic">No price</span>;
-                                    })()}
-                                  </td>
-
-                                  {/* Stock */}
-                                  <td className="px-4 py-3">
-                                    {isLoadingStock ? (
-                                      <div className="flex items-center gap-2 text-blue-600 text-xs">
-                                        <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                                        Loading...
-                                      </div>
-                                    ) : stockInfo ? (
-                                      <div className="text-sm space-y-1">
-                                        <div className={`font-bold ${hasEnoughStock ? 'text-green-600' : 'text-red-600'}`}>
-                                          Avail: {stockInfo.availableQuantity ?? 0}
-                                        </div>
-                                        <div className="text-xs text-gray-500">
-                                          Total: {stockInfo.quantity ?? 0}
-                                        </div>
-                                        {stockInfo.reservedQuantity > 0 && (
-                                          <div className="text-xs text-orange-600">
-                                            Reserved: {stockInfo.reservedQuantity}
-                                          </div>
-                                        )}
-                                      </div>
-                                    ) : (
-                                      <div className="text-xs">
-                                        <button
-                                          type="button"
-                                          onClick={() => loadProductStock(item.productId, formData.branchId, item.variationId)}
-                                          className="text-blue-600 hover:underline font-medium"
-                                        >
-                                          Load stock
-                                        </button>
-                                        {stockErrors[stockKey] && (
-                                          <div className="text-red-500 mt-0.5">Retry failed</div>
-                                        )}
-                                      </div>
-                                    )}
-                                  </td>
-
-                                  {/* Quantity */}
-                                  <td className="px-4 py-3">
-                                    <input
-                                      type="text"
-                                      value={item.quantity && item.quantity !== 0 ? Number(item.quantity).toLocaleString('en-US') : ''}
-                                      onChange={(e) => handleItemChange(i, 'quantity', e.target.value.replace(/,/g, ''))}
-                                      placeholder="Qty"
-                                      className={`w-24 px-3 py-2 border rounded-lg text-sm font-medium ${!hasEnoughStock && !isLoadingStock && item.quantity > 0
-                                        ? 'border-red-300 bg-red-50'
-                                        : 'border-gray-300'
-                                        }`}
-                                      min="1"
-                                      max={maxAllowed}
-                                      required
-                                      disabled={isLoadingStock}
-                                    />
-                                    {!hasEnoughStock && !isLoadingStock && item.quantity > 0 && (
-                                      <div className="text-xs text-red-600 mt-1">Exceeds max: {maxAllowed}</div>
-                                    )}
-                                  </td>
-
-
-                                  {/* Amount */}
-                                  <td className="px-4 py-3 text-right">
-                                    {(() => {
-                                      const price = selectedOption?.price ?? 0;
-                                      const qty = item.quantity || 0;
-                                      const amount = price * qty;
-                                      return amount > 0
-                                        ? <span className="text-sm font-bold text-blue-700">
-                                          ₱{amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                        </span>
-                                        : <span className="text-xs text-gray-400">—</span>;
-                                    })()}
-                                  </td>
-
-                                  {/* Action */}
-                                  <td className="px-4 py-3 text-center">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemoveItem(i)}
-                                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                                      disabled={isLoadingStock}
-                                      title="Remove item"
-                                    >
-                                      <Trash2 size={18} />
-                                    </button>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                          <tfoot className="bg-gray-50 border-t-2 border-gray-300">
-                            <tr>
-                              <td colSpan={8} className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
-                                Grand Total:
-                              </td>
-                              <td className="px-4 py-3 text-center text-sm font-bold text-gray-900">
-                                {formData.items.reduce((sum, item) => sum + (item.quantity || 0), 0).toLocaleString('en-US')}
-                              </td>
-                              <td className="px-4 py-3 text-right text-sm font-bold text-blue-700">
-                                ₱{formData.items.reduce((sum, item) => {
-                                  if (!Array.isArray(productOptions)) return 0;
-                                  const opt = productOptions.find(o =>
-                                    o.parentProductId === item.productId &&
-                                    (item.variationId !== null
-                                      ? o.variationId === item.variationId
-                                      : o.variationId === null)
-                                  );
-                                  return sum + ((opt?.price ?? 0) * (item.quantity || 0));
-                                }, 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </td>
-                              <td></td>
-                            </tr>
-                          </tfoot>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-8 flex justify-end gap-4 pt-6 border-t border-gray-200">
-                  <button
-                    type="button"
-                    onClick={handleCloseModal}
-                    className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
-                  >
-                    {modalMode === 'create' ? 'Create Sale' : 'Update Sale'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* View Modal */}
-        {showModal && modalMode === 'view' && selectedSale && (
-          <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-            <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
-              <div className="p-8 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl">
-                <h2 className="text-2xl font-bold text-gray-900">Sale Details</h2>
-                <button
-                  onClick={handleCloseModal}
-                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              <div className="p-8">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 mb-8">
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <h3 className="font-semibold text-gray-700 mb-2">Branch</h3>
-                    <p className="text-gray-900 text-lg">{selectedSale.branch.branchName}</p>
-                    <p className="text-gray-500">{selectedSale.branch.branchCode}</p>
-                  </div>
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <h3 className="font-semibold text-gray-700 mb-2">Company</h3>
-                    <p className="text-gray-900 text-lg">{selectedSale.company.companyName}</p>
-                    <p className="text-gray-500">TIN: {selectedSale.tin || 'N/A'}</p>
-                  </div>
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <h3 className="font-semibold text-gray-700 mb-2">Period</h3>
-                    <p className="text-gray-900 text-lg">{months[selectedSale.month - 1]} {selectedSale.year}</p>
-                  </div>
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <h3 className="font-semibold text-gray-700 mb-2">Status</h3>
-                    <span className={`px-4 py-2 inline-flex text-sm leading-5 font-semibold rounded-full ${selectedSale.status === 'INVOICED'
-                      ? 'bg-green-100 text-green-800'
-                      : selectedSale.status === 'CONFIRMED'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                      {selectedSale.status}
-                    </span>
-                    {selectedSale.status === 'INVOICED' && selectedSale.generatedBy && (
-                      <p className="text-sm text-gray-600 mt-2">
-                        Invoiced by: <span className="font-medium">{selectedSale.generatedBy}</span>
-                      </p>
-                    )}
-                    {selectedSale.status === 'INVOICED' && selectedSale.invoicedAt && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        {formatPHDateTime(selectedSale.invoicedAt)}
-                      </p>
-                    )}
-                  </div>
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <h3 className="font-semibold text-gray-700 mb-2">Encoded By</h3>
-                    <p className="text-gray-900 text-lg">{selectedSale.createdBy || selectedSale.generatedBy || 'System'}</p>
-                    <p className="text-xs text-gray-500 mt-1">Created: {formatPHDateTime(selectedSale.createdAt)} <span className="text-[10px] text-gray-400">({selectedSale.createdAt})</span></p>                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="font-semibold text-gray-700 mb-4 text-lg">Items</h3>
-                <div className="overflow-x-auto rounded-lg border border-gray-200">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-4 text-center text-sm font-medium text-gray-700 w-10">Number</th>
-                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Product</th>
-                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">SKU</th>
-                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">UPC</th>
-                        <th className="px-6 py-4 text-right text-sm font-medium text-gray-700">Quantity</th>
-                        <th className="px-6 py-4 text-right text-sm font-medium text-gray-700">Unit Price</th>
-                        <th className="px-6 py-4 text-right text-sm font-medium text-gray-700">Amount</th>
+                            )}
+                          </div>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {selectedSale?.items && selectedSale.items.length > 0 ? (
-                        selectedSale.items.map((item, i) => (
-                          <tr key={item.id || i} className="hover:bg-gray-50 transition">
-                            <td className="px-6 py-4 text-center text-sm text-gray-400 font-medium">{i + 1}</td>
-                            <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                              {item.product.productName}
-                              {item.variation && (
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {item.variation.combinationDisplay ||
-                                    (item.variation.variationType && item.variation.variationValue
-                                      ? `${item.variation.variationType}: ${item.variation.variationValue}`
-                                      : 'Variation')}
-                                </div>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-500">
-                              {item.variation ? (item.variation.sku || '—') : (item.product.sku || '—')}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-500">
-                              {item.variation ? (item.variation.upc || '—') : (item.product.upc || '—')}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900">
-                              {item.quantity.toLocaleString()}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-right text-gray-900">
-                              {formatCurrency(item.unitPrice)}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-right font-bold text-blue-600">
-                              {formatCurrency(item.amount)}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan="7" className="px-6 py-12 text-center text-gray-500 italic">
-                            No items in this sale
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              <div className="mt-8 pt-6 border-t border-gray-200 text-right">
-                <p className="text-3xl font-bold text-gray-900">
-                  Total: {formatCurrency(selectedSale.totalAmount)}
-                </p>
-              </div>
-
-              <div className="p-8 border-t border-gray-200 flex justify-end">
-                <button
-                  onClick={handleCloseModal}
-                  className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-
-        {/* Invoice Generation Modal */}
-        {showInvoiceModal && (
-          <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-2 sm:p-6">
-            <div className="bg-white rounded-xl sm:rounded-2xl max-w-2xl w-full shadow-2xl max-h-[98vh] overflow-y-auto">
-              <div className="p-4 sm:p-8 border-b border-gray-200 flex justify-between items-center">
-                <h2 className="text-lg sm:text-2xl font-bold text-gray-900">Generate Invoice Report</h2>
-                <button
-                  onClick={() => { setShowInvoiceModal(false); setInvoiceSubmitted(false); }}
-                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-              <div className="p-8 space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">Company *</label>
-                  <SearchableDropdown
-                    options={companyOptions}
-                    value={filterData.companyId}
-                    onChange={(value) => setFilterData({ ...filterData, companyId: value, branchId: '' })}
-                    placeholder="Select Company"
-                    displayKey="name"
-                    valueKey="id"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Branch (Optional - Leave empty for all branches)
-                  </label>
-                  <SearchableDropdown
-                    options={filteredBranchOptions}
-                    value={filterData.branchId}
-                    onChange={(value) => setFilterData({ ...filterData, branchId: value })}
-                    placeholder="All Branches"
-                    displayKey="name"
-                    valueKey="id"
-                  />
-                  {filterData.companyId && filteredBranchOptions.length === 0 && (
-                    <p className="text-xs text-orange-600 mt-1">No branches for selected company</p>
+                    ))
                   )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">Start Month</label>
-                    <select
-                      value={filterData.startMonth}
-                      onChange={(e) => setFilterData({ ...filterData, startMonth: parseInt(e.target.value) })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                    >
-                      {monthsFull.map((m, i) => (
-                        <option key={i} value={i + 1}>{m}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">End Month</label>
-                    <select
-                      value={filterData.endMonth}
-                      onChange={(e) => setFilterData({ ...filterData, endMonth: parseInt(e.target.value) })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                    >
-                      {monthsFull.map((m, i) => (
-                        <option key={i} value={i + 1}>{m}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">Start Year</label>
-                    <input
-                      type="number"
-                      value={filterData.startYear}
-                      onChange={(e) => setFilterData({ ...filterData, startYear: parseInt(e.target.value) })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">End Year</label>
-                    <input
-                      type="number"
-                      value={filterData.endYear}
-                      onChange={(e) => setFilterData({ ...filterData, endYear: parseInt(e.target.value) })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">Status Filter</label>
-                  <select
-                    value={filterData.status}
-                    onChange={(e) => setFilterData({ ...filterData, status: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
-                  >
-                    <option value="">Both (Confirmed & Invoiced)</option>
-                    <option value="CONFIRMED">Confirmed Only</option>
-                    <option value="INVOICED">Invoiced Only</option>
-                  </select>
-                </div>
-                <div className="pt-4 border-t border-gray-200">
-                  <label className="block text-sm font-medium text-gray-700 mb-3">Tax Computation Type *</label>
-                  <div className="flex gap-3 mb-6">
-                    <button
-                      type="button"
-                      onClick={() => setTaxType('VAT')}
-                      className={`flex-1 py-3 px-4 rounded-lg border-2 text-sm font-medium transition ${taxType === 'VAT'
-                        ? 'border-blue-600 bg-blue-50 text-blue-700'
-                        : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
-                        }`}
-                    >
-                      <div className="font-semibold">VAT</div>
-                      <div className="text-xs mt-0.5 font-normal opacity-75">Standard VAT computation</div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setTaxType('PT')}
-                      className={`flex-1 py-3 px-4 rounded-lg border-2 text-sm font-medium transition ${taxType === 'PT'
-                        ? 'border-purple-600 bg-purple-50 text-purple-700'
-                        : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
-                        }`}
-                    >
-                      <div className="font-semibold">Percentage Tax (PT)</div>
-                      <div className="text-xs mt-0.5 font-normal opacity-75">Gross sales × 3%, EWT</div>
-                    </button>
-                  </div>
-                </div>
-                <div className="pt-4 border-t border-gray-200">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                    Invoice details
-                  </p>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-3">
-                        Invoice Number <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={invoiceNumber}
-                        onChange={(e) => setInvoiceNumber(e.target.value)}
-                        placeholder="e.g. SI-2025-0001"
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${invoiceSubmitted && !invoiceNumber.trim()
-                          ? 'border-red-400 bg-red-50'
-                          : 'border-gray-300'
-                          }`}
-                      />
-                      {invoiceSubmitted && !invoiceNumber.trim() && (
-                        <p className="text-xs text-red-500 mt-1">
-                          Invoice number is required before previewing.
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-3">Invoice Date</label>
-                      <input
-                        type="date"
-                        value={invoiceDate}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (!val) { setInvoiceDate(''); return; }
-                          const parts = val.split('-');
-                          if (parts[0] && parts[0].length > 4) {
-                            parts[0] = parts[0].slice(0, 4);
-                            setInvoiceDate(parts.join('-'));
-                          } else {
-                            setInvoiceDate(val);
-                          }
-                        }}
-                        max="9999-12-31"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="p-8 border-t border-gray-200 flex justify-end gap-4">
-                <button
-                  onClick={() => { setShowInvoiceModal(false); setInvoiceSubmitted(false); }}
-                  className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    setInvoiceSubmitted(true);
-                    if (!invoiceNumber.trim()) return;
-                    handleGenerateInvoice();
-                  }}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
-                >
-                  Preview Invoice
-                </button>
-              </div>
+                </tbody>
+              </table>
             </div>
+            {totalElements !== undefined && totalElements > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages || 1}
+                onPageChange={(page) => {
+                  setCurrentPage(page);
+                }}
+                onNextPage={() => {
+                  if (currentPage < (totalPages || 1)) {
+                    const newPage = currentPage + 1;
+                    setCurrentPage(newPage);
+                  }
+                }}
+                onPrevPage={() => {
+                  if (currentPage > 1) {
+                    const newPage = currentPage - 1;
+                    setCurrentPage(newPage);
+                  }
+                }}
+                showingStart={((currentPage - 1) * 10) + 1}
+                showingEnd={Math.min(currentPage * 10, totalElements || 0)}
+                totalItems={totalElements || 0}
+              />
+            )}
           </div>
-        )}
 
-        {/* Invoice Report Modal */}
-        {invoiceReport && (
-          <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-            <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
-              <div className="p-8 border-b border-gray-200 flex justify-between items-center print:hidden sticky top-0 bg-white rounded-t-2xl z-10">
-                <h2 className="text-2xl font-bold text-gray-900">Invoice Report</h2>
-                <div className="flex gap-3">
+          {/* Create/Edit Modal */}
+          {showModal && (modalMode === 'create' || modalMode === 'edit') && (
+            <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-2 sm:p-6">
+              <div className="bg-white rounded-xl sm:rounded-2xl max-w-7xl w-full max-h-[98vh] sm:max-h-[95vh] overflow-y-auto shadow-2xl">
+                <div className="p-4 sm:p-8 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-xl sm:rounded-t-2xl z-10">
+                  <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
+                    {modalMode === 'create' ? 'Create New Sale' : 'Edit Sale'}
+                  </h2>
                   <button
-                    onClick={() => {
-                      const newAdjustments = [...(invoiceReport.adjustments || []), { description: '', quantity: 1, unitCost: 0, amount: 0 }];
-                      setInvoiceReport({ ...invoiceReport, adjustments: newAdjustments });
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                  >
-                    <Plus size={18} />
-                    Add Adjustment
-                  </button>
-                  <button
-                    onClick={() => setInvoiceReport(null)}
+                    onClick={handleCloseModal}
                     className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
                   >
                     <X size={24} />
                   </button>
                 </div>
-              </div>
-              <div id="invoice-report" className="p-8">
-                {/* Header Section */}
-                <div className="flex justify-between items-start mb-5 pb-4 border-gray-900">
-                  <div className="text-left leading-none space-y-0">
-                    <div className="text-[34px] font-bold text-gray-900 -mb-0 font-serif tracking-tight">
-                      WISECART MERCHANTS CORP.
+
+                <form onSubmit={handleSubmit} className="p-4 sm:p-8">
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">Branch *</label>
+                      <SearchableDropdown
+                        options={branchOptions}
+                        value={formData.branchId}
+                        onChange={handleBranchChange}
+                        placeholder="Select Branch"
+                        displayKey="name"
+                        valueKey="id"
+                        required
+                      />
                     </div>
-                    <div className="text-[18px] text-gray-900 font-medium space-y-[1px] tracking-tight">
-                      <div>407B 4F Tower One Plaza Magellan The Mactan Newtown</div>
-                      <div>Mactan 6015 City of Lapu-lapu Cebu, Phils.</div>
-                      <div>VAT REG. TIN 010-751-561-00000</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="inline-block text-left leading-none">
-                      <div className="text-3xl font-bold text-gray-900 tracking-widest">
-                        SALES
+
+                    {branchInfo && (
+                      <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <p className="text-sm text-blue-800 mb-1"><strong>Branch:</strong> {branchInfo.branchName}</p>
+                        <p className="text-sm text-blue-800 mb-1"><strong>Branch Code:</strong> {branchInfo.branchCode}</p>
+                        <p className="text-sm text-blue-800 mb-1"><strong>TIN:</strong> {branchInfo.tin}</p>
+                        <p className="text-sm text-blue-800"><strong>Address:</strong> {branchInfo.fullAddress}</p>
                       </div>
-                      <div className="text-3xl font-bold text-gray-900 tracking-widest -mt-2">
-                        INVOICE
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-3">Month *</label>
+                        <select
+                          value={formData.month}
+                          onChange={(e) => setFormData({ ...formData, month: parseInt(e.target.value) })}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                          required
+                        >
+                          {months.map((m, i) => (
+                            <option key={i} value={i + 1}>{m}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-3">Year *</label>
+                        <input
+                          type="number"
+                          value={formData.year}
+                          onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                          required
+                        />
                       </div>
                     </div>
-                    <div className="text-lg font-semibold flex items-center gap-1">
-                      NO.
+                    <div className="mt-4 relative">
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        Encoded By <span className="text-xs text-gray-500">(Optional - defaults to current user)</span>
+                      </label>
                       <input
                         type="text"
-                        value={invoiceNumber}
-                        onChange={(e) => setInvoiceNumber(e.target.value)}
-                        placeholder="_____________"
-                        className="border-b border-gray-500 w-36 text-center focus:outline-none bg-transparent print:border-0"
+                        value={formData.createdBy}
+                        onChange={(e) => {
+                          setFormData({ ...formData, createdBy: e.target.value });
+                        }}
+                        onFocus={() => setShowEncodedByDropdown(true)}
+                        onBlur={() => setTimeout(() => setShowEncodedByDropdown(false), 150)}
+                        placeholder="Select existing or type a custom name..."
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                       />
+                      {showEncodedByDropdown && Array.isArray(encodedByOptions) && encodedByOptions.filter(name =>
+                        name.toLowerCase().includes(formData.createdBy.toLowerCase())
+                      ).length > 0 && (
+                          <div className="absolute z-50 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                            {encodedByOptions
+                              .filter(name => name.toLowerCase().includes(formData.createdBy.toLowerCase()))
+                              .map((name) => (
+                                <button
+                                  key={name}
+                                  type="button"
+                                  onMouseDown={() => {
+                                    setFormData({ ...formData, createdBy: name });
+                                    setShowEncodedByDropdown(false);
+                                  }}
+                                  className={`w-full px-4 py-2 text-left text-sm hover:bg-blue-50 transition ${formData.createdBy === name ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'}`}
+                                >
+                                  {name}
+                                </button>
+                              ))}
+                          </div>
+                        )}
                     </div>
-                  </div>
-                </div>
 
-                {/* Checkboxes and Date Section */}
-                <div className="flex justify-between items-center mb-2 mt-11">
-                  <div className="flex gap-6">
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                      <input type="checkbox" className="w-6 h-6 border-2 border-gray-900" />
-                      {' '}
-                      CASH SALES
-                    </label>
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                      <input type="checkbox" className="w-6 h-6 border-2 border-gray-900" />
-                      {' '}
-                      CHARGE SALES
-                    </label>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-2 justify-end text-black-900">
-                      <span className="font-medium">DATE:</span>
-                      <input
-                        type="date"
-                        value={invoiceDate}
-                        onChange={(e) => setInvoiceDate(e.target.value)}
-                        className="border-b border-gray-500 text-sm focus:outline-none bg-transparent print:border-0"
-                      />
-                    </div>
-                  </div>
-                </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">Add Products *</label>
 
-                <div className="border-1 border-gray-900 p-3 mb-1.5" style={{ height: '165px' }}>
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center mb-1.5">
-                      <span className="font-bold text-gray-900 w-48">SOLD TO:</span>
-                      <span className="text-black-900 flex-1 print-visible">
-                        {invoiceReport.soldTo || 'N/A'}
-                      </span>
-                    </div>
-                    <div className="flex items-center mb-1.5">
-                      <span className="font-bold text-gray-900 w-48">REGISTERED NAME:</span>
-                      <span className="text-black-900 flex-1 print-visible">
-                        {invoiceReport.registeredName || 'N/A'}
-                      </span>
-                    </div>
-                    <div className="flex items-center mb-1.5">
-                      <span className="font-bold text-gray-900 w-48">TIN:</span>
-                      <span className="text-black-900 flex-1 print-visible">
-                        {invoiceReport.tin || invoiceReport.branchTin || 'N/A'}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-[180px_1fr] items-start gap-3">
-                      <div className="font-bold text-black-900 pt-1 self-start">
-                        BUSINESS ADDRESS:
+                      {/* Product Selector */}
+                      <div className="mb-6">
+                        <VariationSearchableDropdown
+                          options={Array.isArray(productOptions) ? productOptions : []}
+                          value={selectedProductForAdd}
+                          onChange={(value) => setSelectedProductForAdd(value)}
+                          placeholder="Select Product to Add..."
+                          required={false}
+                          formData={{
+                            ...formData,
+                            fromBranchId: formData.branchId,
+                            items: formData.items
+                          }}
+                          index={-1}
+                          warehouseStocks={{}}
+                          branchStocks={branchStocks}
+                          loadingStocks={loadingStocks}
+                          onAddProduct={formData.branchId ? handleAddProductToTable : undefined}
+                          activeCompanyId={branchInfo?.companyId ?? null}
+                        />
                       </div>
-                      <div className="text-black-900 -mt-1 leading-[1.1] tracking-tight print-visible">
-                        {invoiceReport.businessAddress || 'N/A'}
-                      </div>
+
+                      {/* Products Table */}
+                      {formData.items.length === 0 ? (
+                        <div className="text-center py-10 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                          <p className="font-medium text-gray-500">No products added yet</p>
+                          <p className="text-sm text-gray-400">Select a product above and click "Add Product" to start</p>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto rounded-lg border border-gray-200">
+                          <table className="w-full">
+                            <thead className="bg-gray-50 border-b border-gray-200">
+                              <tr>
+                                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase w-10">#</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Product Name</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Variation</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">SKU</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">UPC</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Company SKU</th>
+                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Unit Price</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Stock</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Quantity</th>
+                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Amount</th>
+                                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Action</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200 bg-white">
+                              {formData.items.map((item, i) => {
+
+                                const selectedOption = Array.isArray(productOptions) ? productOptions.find(opt =>
+                                  opt.parentProductId === item.productId &&
+                                  (item.variationId !== null
+                                    ? opt.variationId === item.variationId
+                                    : opt.variationId === null)
+                                ) : null;
+
+                                const stockKey = makeStockKey(item.productId, item.variationId, formData.branchId);
+                                const stockInfo = branchStocks[stockKey];
+                                const isLoadingStock = loadingStocks[stockKey];
+
+                                const oldItem = modalMode === 'edit' && originalSaleItems
+                                  ? originalSaleItems.find(oi =>
+                                    oi.productId === item.productId &&
+                                    oi.variationId === item.variationId
+                                  )
+                                  : null;
+
+                                const maxAllowed = getMaxAllowedQuantity(item, stockInfo, oldItem);
+                                const hasEnoughStock = maxAllowed === undefined || maxAllowed >= item.quantity;
+
+                                return (
+                                  <tr key={`${item.productId}_${item.variationId ?? 'base'}`} className="hover:bg-gray-50">
+                                    <td className="px-4 py-3 text-center text-sm text-gray-400 font-medium">{i + 1}</td>
+                                    {/* Product Name */}
+                                    <td className="px-4 py-3">
+                                      {selectedOption ? (
+                                        <div className="font-semibold text-gray-900 text-sm">
+                                          {selectedOption.fullName}
+                                        </div>
+                                      ) : (
+                                        <div className="text-gray-500 italic text-sm">Product not found</div>
+                                      )}
+                                    </td>
+
+                                    {/* Variation */}
+                                    <td className="px-4 py-3">
+                                      {selectedOption?.variationLabel && selectedOption.variationLabel !== 'No variations' ? (
+                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                          {selectedOption.variationLabel}
+                                        </span>
+                                      ) : (
+                                        <span className="text-xs text-gray-500">None</span>
+                                      )}
+                                    </td>
+
+                                    {/* SKU */}
+                                    <td className="px-4 py-3">
+                                      <span className="text-sm text-gray-900">{selectedOption?.sku || 'N/A'}</span>
+                                    </td>
+
+                                    {/* UPC */}
+                                    <td className="px-4 py-3">
+                                      <span className="text-sm text-gray-900">{selectedOption?.upc || 'N/A'}</span>
+                                    </td>
+
+                                    {/* Company SKU */}
+                                    <td className="px-4 py-3">
+                                      {selectedOption?.companySku
+                                        ? <span className="text-sm font-medium text-gray-900">{selectedOption.companySku}</span>
+                                        : <span className="text-xs text-gray-400 italic">—</span>
+                                      }
+                                    </td>
+
+                                    {/* Unit Price */}
+                                    <td className="px-4 py-3 text-right">
+                                      {(() => {
+                                        const price = selectedOption?.price ?? 0;
+                                        return price > 0
+                                          ? <span className="text-sm font-semibold text-green-700">
+                                            ₱{Number(price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                          </span>
+                                          : <span className="text-xs text-gray-400 italic">No price</span>;
+                                      })()}
+                                    </td>
+
+                                    {/* Stock */}
+                                    <td className="px-4 py-3">
+                                      {isLoadingStock ? (
+                                        <div className="flex items-center gap-2 text-blue-600 text-xs">
+                                          <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                          Loading...
+                                        </div>
+                                      ) : stockInfo ? (
+                                        <div className="text-sm space-y-1">
+                                          <div className={`font-bold ${hasEnoughStock ? 'text-green-600' : 'text-red-600'}`}>
+                                            Avail: {stockInfo.availableQuantity ?? 0}
+                                          </div>
+                                          <div className="text-xs text-gray-500">
+                                            Total: {stockInfo.quantity ?? 0}
+                                          </div>
+                                          {stockInfo.reservedQuantity > 0 && (
+                                            <div className="text-xs text-orange-600">
+                                              Reserved: {stockInfo.reservedQuantity}
+                                            </div>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div className="text-xs">
+                                          <button
+                                            type="button"
+                                            onClick={() => loadProductStock(item.productId, formData.branchId, item.variationId)}
+                                            className="text-blue-600 hover:underline font-medium"
+                                          >
+                                            Load stock
+                                          </button>
+                                          {stockErrors[stockKey] && (
+                                            <div className="text-red-500 mt-0.5">Retry failed</div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </td>
+
+                                    {/* Quantity */}
+                                    <td className="px-4 py-3">
+                                      <input
+                                        type="text"
+                                        value={item.quantity && item.quantity !== 0 ? Number(item.quantity).toLocaleString('en-US') : ''}
+                                        onChange={(e) => handleItemChange(i, 'quantity', e.target.value.replace(/,/g, ''))}
+                                        placeholder="Qty"
+                                        className={`w-24 px-3 py-2 border rounded-lg text-sm font-medium ${!hasEnoughStock && !isLoadingStock && item.quantity > 0
+                                          ? 'border-red-300 bg-red-50'
+                                          : 'border-gray-300'
+                                          }`}
+                                        min="1"
+                                        max={maxAllowed}
+                                        required
+                                        disabled={isLoadingStock}
+                                      />
+                                      {!hasEnoughStock && !isLoadingStock && item.quantity > 0 && (
+                                        <div className="text-xs text-red-600 mt-1">Exceeds max: {maxAllowed}</div>
+                                      )}
+                                    </td>
+
+
+                                    {/* Amount */}
+                                    <td className="px-4 py-3 text-right">
+                                      {(() => {
+                                        const price = selectedOption?.price ?? 0;
+                                        const qty = item.quantity || 0;
+                                        const amount = price * qty;
+                                        return amount > 0
+                                          ? <span className="text-sm font-bold text-blue-700">
+                                            ₱{amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                          </span>
+                                          : <span className="text-xs text-gray-400">—</span>;
+                                      })()}
+                                    </td>
+
+                                    {/* Action */}
+                                    <td className="px-4 py-3 text-center">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveItem(i)}
+                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                                        disabled={isLoadingStock}
+                                        title="Remove item"
+                                      >
+                                        <Trash2 size={18} />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                            <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+                              <tr>
+                                <td colSpan={8} className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
+                                  Grand Total:
+                                </td>
+                                <td className="px-4 py-3 text-center text-sm font-bold text-gray-900">
+                                  {formData.items.reduce((sum, item) => sum + (item.quantity || 0), 0).toLocaleString('en-US')}
+                                </td>
+                                <td className="px-4 py-3 text-right text-sm font-bold text-blue-700">
+                                  ₱{formData.items.reduce((sum, item) => {
+                                    if (!Array.isArray(productOptions)) return 0;
+                                    const opt = productOptions.find(o =>
+                                      o.parentProductId === item.productId &&
+                                      (item.variationId !== null
+                                        ? o.variationId === item.variationId
+                                        : o.variationId === null)
+                                    );
+                                    return sum + ((opt?.price ?? 0) * (item.quantity || 0));
+                                  }, 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </td>
+                                <td></td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+                      )}
                     </div>
+                  </div>
+
+                  <div className="mt-8 flex justify-end gap-4 pt-6 border-t border-gray-200">
+                    <button
+                      type="button"
+                      onClick={handleCloseModal}
+                      className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
+                    >
+                      {modalMode === 'create' ? 'Create Sale' : 'Update Sale'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* View Modal */}
+          {showModal && modalMode === 'view' && selectedSale && (
+            <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+              <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
+                <div className="p-8 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl">
+                  <h2 className="text-2xl font-bold text-gray-900">Sale Details</h2>
+                  <button
+                    onClick={handleCloseModal}
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+
+                <div className="p-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 mb-8">
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h3 className="font-semibold text-gray-700 mb-2">Branch</h3>
+                      <p className="text-gray-900 text-lg">{selectedSale.branch.branchName}</p>
+                      <p className="text-gray-500">{selectedSale.branch.branchCode}</p>
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h3 className="font-semibold text-gray-700 mb-2">Company</h3>
+                      <p className="text-gray-900 text-lg">{selectedSale.company.companyName}</p>
+                      <p className="text-gray-500">TIN: {selectedSale.tin || 'N/A'}</p>
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h3 className="font-semibold text-gray-700 mb-2">Period</h3>
+                      <p className="text-gray-900 text-lg">{months[selectedSale.month - 1]} {selectedSale.year}</p>
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h3 className="font-semibold text-gray-700 mb-2">Status</h3>
+                      <span className={`px-4 py-2 inline-flex text-sm leading-5 font-semibold rounded-full ${selectedSale.status === 'INVOICED'
+                        ? 'bg-green-100 text-green-800'
+                        : selectedSale.status === 'CONFIRMED'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                        {selectedSale.status}
+                      </span>
+                      {selectedSale.status === 'INVOICED' && selectedSale.generatedBy && (
+                        <p className="text-sm text-gray-600 mt-2">
+                          Invoiced by: <span className="font-medium">{selectedSale.generatedBy}</span>
+                        </p>
+                      )}
+                      {selectedSale.status === 'INVOICED' && selectedSale.invoicedAt && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {formatPHDateTime(selectedSale.invoicedAt)}
+                        </p>
+                      )}
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h3 className="font-semibold text-gray-700 mb-2">Encoded By</h3>
+                      <p className="text-gray-900 text-lg">{selectedSale.createdBy || selectedSale.generatedBy || 'System'}</p>
+                      <p className="text-xs text-gray-500 mt-1">Created: {formatPHDateTime(selectedSale.createdAt)} <span className="text-[10px] text-gray-400">({selectedSale.createdAt})</span></p>                  </div>
                   </div>
                 </div>
 
-                {/* Items Table */}
-                <div className="border-1 border-b-0 border-gray-900">
-                  <table className="w-full" style={{ minHeight: '150mm' }}>
-                    <thead>
-                      <tr className="border-b border-gray-900">
-                        <th className="text-left px-4 font-bold text-gray-900 text-sm leading-tight" style={{ width: '60%' }}>
-                          ITEM DESCRIPTION / NATURE OF SERVICE
-                        </th>
-                        <th className="text-right px-4 font-bold text-gray-900 text-sm leading-tight" style={{ width: '12%' }}>
-                          QTY.
-                        </th>
-                        <th className="text-right px-4 text-gray-900 text-xs text-[11px] leading-tight" style={{ width: '12%' }}>
-                          UNIT COST / PRICE
-                        </th>
-                        <th className="text-right px-4 font-bold text-gray-900 text-sm leading-tight" style={{ width: '15%' }}>
-                          AMOUNT
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {invoiceReport.products.map((product, i) => (
-                        <tr key={i} className="align-top">
-                          <td className="py-2 px-4 text-sm text-gray-900">
-                            {product.productName}
-                            {product.variation &&
-                              `  ${product.variation.combinationDisplay ||
-                              (product.variation.variationType && product.variation.variationValue
-                                ? `${product.variation.variationType}: ${product.variation.variationValue}`
-                                : 'Variation')} - ${product.variation.upc || 'N/A'}`
-                            }
-                          </td>
-                          <td className="py-2 px-4 text-right text-sm text-gray-900">
-                            {product.totalQuantity.toLocaleString()}
-                          </td>
-                          <td className="py-2 px-4 text-right text-sm text-gray-900">
-                            {formatCurrency(product.totalAmount / product.totalQuantity)}
-                          </td>
-                          <td className="py-2 px-4 text-right text-sm text-gray-900">
-                            {formatCurrency(product.totalAmount)}
-                          </td>
+                <div>
+                  <h3 className="font-semibold text-gray-700 mb-4 text-lg">Items</h3>
+                  <div className="overflow-x-auto rounded-lg border border-gray-200">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-4 text-center text-sm font-medium text-gray-700 w-10">Number</th>
+                          <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Product</th>
+                          <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">SKU</th>
+                          <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">UPC</th>
+                          <th className="px-6 py-4 text-right text-sm font-medium text-gray-700">Quantity</th>
+                          <th className="px-6 py-4 text-right text-sm font-medium text-gray-700">Unit Price</th>
+                          <th className="px-6 py-4 text-right text-sm font-medium text-gray-700">Amount</th>
                         </tr>
-                      ))}
-                      {invoiceReport.adjustments && invoiceReport.adjustments.length > 0 && (
-                        <>
-                          {invoiceReport.adjustments.map((adj, i) => (
-                            <tr key={`adj-${i}`} className="align-top print:break-inside-avoid">
-                              <td className="py-1 px-2">
-                                <input
-                                  type="text"
-                                  value={adj.description}
-                                  onChange={(e) => {
-                                    const newAdj = [...invoiceReport.adjustments];
-                                    newAdj[i].description = e.target.value;
-                                    setInvoiceReport({ ...invoiceReport, adjustments: newAdj });
-                                  }}
-                                  placeholder="Adjustment description..."
-                                  className="w-full text-sm text-gray-900 border-0 focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 print:border-0 print:p-0"
-                                />
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {selectedSale?.items && selectedSale.items.length > 0 ? (
+                          selectedSale.items.map((item, i) => (
+                            <tr key={item.id || i} className="hover:bg-gray-50 transition">
+                              <td className="px-6 py-4 text-center text-sm text-gray-400 font-medium">{i + 1}</td>
+                              <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                                {item.product.productName}
+                                {item.variation && (
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {item.variation.combinationDisplay ||
+                                      (item.variation.variationType && item.variation.variationValue
+                                        ? `${item.variation.variationType}: ${item.variation.variationValue}`
+                                        : 'Variation')}
+                                  </div>
+                                )}
                               </td>
-                              <td className="py-1 px-2">
-                                <input
-                                  type="text"
-                                  value={adj.quantity}
-                                  onChange={(e) => {
-                                    const newAdj = [...invoiceReport.adjustments];
-                                    newAdj[i].quantity = parseFloat(e.target.value) || 0;
-                                    newAdj[i].amount = newAdj[i].quantity * newAdj[i].unitCost;
-                                    setInvoiceReport({ ...invoiceReport, adjustments: newAdj });
-                                  }}
-                                  className="w-full text-sm text-gray-900 text-right border-0 focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 print:border-0 print:p-0"
-                                />
+                              <td className="px-6 py-4 text-sm text-gray-500">
+                                {item.variation ? (item.variation.sku || '—') : (item.product.sku || '—')}
                               </td>
-                              <td className="py-1 px-2 ">
-                                <input
-                                  type="number"
-                                  value={adj.unitCost}
-                                  onChange={(e) => {
-                                    const newAdj = [...invoiceReport.adjustments];
-                                    newAdj[i].unitCost = parseFloat(e.target.value) || 0;
-                                    newAdj[i].amount = newAdj[i].quantity * newAdj[i].unitCost;
-                                    setInvoiceReport({ ...invoiceReport, adjustments: newAdj });
-                                  }}
-                                  className="w-full text-sm text-gray-900 text-right border-0 focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 mx-4 print:border-0 print:p-0"
-                                />
+                              <td className="px-6 py-4 text-sm text-gray-500">
+                                {item.variation ? (item.variation.upc || '—') : (item.product.upc || '—')}
                               </td>
-                              <td className="py-2 px-4 text-right relative">
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="text-sm text-gray-900 flex-1 text-right">
-                                    {formatCurrency(adj.amount)}
-                                  </span>
-                                  <button
-                                    onClick={() => {
-                                      const newAdj = invoiceReport.adjustments.filter((_, idx) => idx !== i);
-                                      setInvoiceReport({ ...invoiceReport, adjustments: newAdj });
-                                    }}
-                                    className="print:hidden p-1 text-red-600 hover:bg-red-50 rounded transition"
-                                    title="Remove adjustment"
-                                  >
-                                    <X size={16} />
-                                  </button>
-                                </div>
+                              <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900">
+                                {item.quantity.toLocaleString()}
+                              </td>
+                              <td className="px-6 py-4 text-sm text-right text-gray-900">
+                                {formatCurrency(item.unitPrice)}
+                              </td>
+                              <td className="px-6 py-4 text-sm text-right font-bold text-blue-600">
+                                {formatCurrency(item.amount)}
                               </td>
                             </tr>
-                          ))}
-                        </>
-                      )}
-                      <tr className="h-full">
-                        <td colSpan={4} className="p-0"></td>
-                      </tr>
-                    </tbody>
-                  </table>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="7" className="px-6 py-12 text-center text-gray-500 italic">
+                              No items in this sale
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div className="mt-8 pt-6 border-t border-gray-200 text-right">
+                  <p className="text-3xl font-bold text-gray-900">
+                    Total: {formatCurrency(selectedSale.totalAmount)}
+                  </p>
                 </div>
 
-                {taxType === 'VAT' ? (
-                  <div className="grid grid-cols-6 border-1 border-gray-900 text-sm">
-                    <div className="col-span-2 grid grid-cols-2">
-                      <div className=" border-l-0 border-1  border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[13px]">
-                        <div className="mb-2">Total Sales:</div>
-                        <div className="mb-2">VAT/PT:</div>
-                        <div className="mb-2">Zero-Rated Sales:</div>
-                        <div className="">VAT-Exempt Sales:</div>
-                      </div>
-                      <div className="border-r-1 border-gray-900 px-4 py-3 flex flex-col justify-start text-[15px]">
-                        <input readOnly value={formatCurrency(
-                          (() => {
-                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                            return ((invoiceReport.vatableSales || 0) + adjustmentTotal);
-                          })()
-                        )} className="w-full text-right pb-0 mb-2" />
-                        <input readOnly value={formatCurrency(
-                          (() => {
-                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                            const vatableSales = (invoiceReport.vatableSales || 0) + adjustmentTotal;
-                            return vatableSales * 0.12;
-                          })()
-                        )} className="w-full text-right pb-0 mb-2" />
-                        <input readOnly value={formatCurrency(invoiceReport.zeroRatedSales || 0)} className="w-full text-right pb-0 mb-2" />
-                        <input readOnly value={formatCurrency(invoiceReport.vatExemptSales || 0)} className="w-full text-right pb-0" />
-                      </div>
-                    </div>
-                    <div className="border-r-1 border-gray-900 px-3 py-3 flex flex-col justify-center text-[11px]">
-                      <div className="font-medium leading-tight">
-                        SC/PWD/NAAC/MOV/<br />SOLO PARENT ID No.:
-                      </div>
-                      <div className="font-medium leading-tight mt-9">
-                        SC/PWD/NAAC/MOV/<br />Signature:
-                      </div>
-                    </div>
-                    <div className="border-r-1 border-gray-900 px-3 py-3 flex flex-col justify-center text-[13px]">
-                      <input type="text" className="w-full pb-0 text-sm -mt-1" />
-                      <input type="text" className="w-full pb-0 text-sm mt-5" />
-                    </div>
-                    <div className="col-span-2 grid grid-cols-2">
-                      <div className=" border-l-0 border-1  border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
-                        <div className="mb-2 text-[9px]">TOTAL SALES (VAT Inclusive)</div>
-                        <div className="mb-2">Less: VAT</div>
-                        <div className="mb-2">Amount: Net of VAT</div>
-                        <div className="">Less: Discount<br /><span className="text-[10px]">(SC/PWD/NAAC/MOV/SP)</span></div>
-                      </div>
-                      <div className="px-4 border-1 flex flex-col justify-start border-t-0 border-l-0 border-r-0 pt-2">
-                        <input readOnly value={formatCurrency(
-                          (() => {
-                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                            return (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
-                          })()
-                        )} className="w-full text-right pb-0 mb-2 text-[15px]" />
-                        <input readOnly value={formatCurrency(
-                          (() => {
-                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                            const vatableSales = (invoiceReport.vatableSales || 0) + adjustmentTotal;
-                            return vatableSales * 0.12;
-                          })()
-                        )} className="w-full text-right pb-0 mb-2 text-[15px]" />
-                        <input readOnly value={formatCurrency(
-                          (() => {
-                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                            return (invoiceReport.netOfVat || 0) + adjustmentTotal;
-                          })()
-                        )} className="w-full text-right pb-0 mb-2 text-[15px]" />
-                        <input readOnly value={formatCurrency(invoiceReport.discount || 0)} className="w-full text-right pb-0 text-[15px]" />
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-6 border-1 border-gray-900 text-sm">
-                    <div className="col-span-2 grid grid-cols-2">
-                      <div className=" border-l-0 border-1  border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[13px]">
-                        <div style={{ fontSize: '11px' }}>Vatable Sales:</div>
-                        <div style={{ fontSize: '11px' }}>Gross Sales (PT):</div>
-                        <div className="mb-2" style={{ fontSize: '11px' }}>&nbsp;</div>
-                        <div className="mb-2">VAT/PT:</div>
-                        <div className="mb-2">Zero-Rated Sales:</div>
-                        <div className="">VAT-Exempt Sales:</div>
-                      </div>
-                      <div className="border-r-1 border-gray-900 px-4 py-3 flex flex-col justify-start text-[15px]">
-                        <input readOnly value={formatCurrency(
-                          (() => {
-                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                            return (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
-                          })()
-                        )} className="w-full text-right pb-0 mb-2" />
-                        <input readOnly value="" className="w-full text-right pb-0 mb-2" />
-                        <input readOnly value="" className="w-full text-right pb-0 mb-2" />
-                        <input readOnly value="" className="w-full text-right pb-0" />
-                      </div>
-                    </div>
-                    <div className="border-r-1 border-gray-900 px-3 py-3 flex flex-col justify-center text-[11px]">
-                      <div className="font-medium leading-tight">
-                        SC/PWD/NAAC/MOV/<br />SOLO PARENT ID No.:
-                      </div>
-                      <div className="font-medium leading-tight mt-9">
-                        SC/PWD/NAAC/MOV/<br />Signature:
-                      </div>
-                    </div>
-                    <div className="border-r-1 border-gray-900 px-3 py-3 flex flex-col justify-center text-[13px]">
-                      <input type="text" className="w-full pb-0 text-sm -mt-1" />
-                      <input type="text" className="w-full pb-0 text-sm mt-5" />
-                    </div>
-                    <div className="col-span-2 grid grid-cols-2">
-                      <div className=" border-l-0 border-1  border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
-                        <div className="mb-2 text-[9px]">TOTAL SALES (Gross Sales)</div>
-                        <div className="mb-2">Less: VAT</div>
-                        <div className="mb-2">Amount: Net of VAT</div>
-                        <div className="">Less: Discount<br /><span className="text-[10px]">(SC/PWD/NAAC/MOV/SP)</span></div>
-                      </div>
-                      <div className="px-4 border-1 flex flex-col justify-start border-t-0 border-l-0 border-r-0 pt-2">
-                        <input readOnly value={formatCurrency(
-                          (() => {
-                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                            return (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
-                          })()
-                        )} className="w-full text-right pb-0 mb-2 text-[15px]" />
-                        <input readOnly value="" className="w-full text-right pb-0 mb-2 text-[15px]" />
-                        <input readOnly value="" className="w-full text-right pb-0 mb-2 text-[15px]" />
-                        <input readOnly value="" className="w-full text-right pb-0 text-[15px]" />
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <div className="p-8 border-t border-gray-200 flex justify-end">
+                  <button
+                    onClick={handleCloseModal}
+                    className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
 
-                <div className="grid grid-cols-6  border-t-0 border-gray-900 text-sm">
-                  <div className="col-span-4 border-r-1 border-gray-900 px-4  ">
-                    <label className="flex items-start gap-2 text-sm font-medium text-gray-700">
-                      <input type="checkbox" className="w-6 h-6  mt-8" />
-                      <div>
-                        <div className="mb-8 mt-8">Received the amount of</div>
-                        <div className="border-b border-gray-900 mt-1 w-full"></div>
-                      </div>
+          {/* Invoice Generation Modal */}
+          {showInvoiceModal && (
+            <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-2 sm:p-6">
+              <div className="bg-white rounded-xl sm:rounded-2xl max-w-2xl w-full shadow-2xl max-h-[98vh] overflow-y-auto">
+                <div className="p-4 sm:p-8 border-b border-gray-200 flex justify-between items-center">
+                  <h2 className="text-lg sm:text-2xl font-bold text-gray-900">Generate Invoice Report</h2>
+                  <button
+                    onClick={() => { setShowInvoiceModal(false); setInvoiceSubmitted(false); }}
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+                <div className="p-8 space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">Company *</label>
+                    <SearchableDropdown
+                      options={companyOptions}
+                      value={filterData.companyId}
+                      onChange={(value) => setFilterData({ ...filterData, companyId: value, branchId: '' })}
+                      placeholder="Select Company"
+                      displayKey="name"
+                      valueKey="id"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Branch (Optional - Leave empty for all branches)
                     </label>
+                    <SearchableDropdown
+                      options={filteredBranchOptions}
+                      value={filterData.branchId}
+                      onChange={(value) => setFilterData({ ...filterData, branchId: value })}
+                      placeholder="All Branches"
+                      displayKey="name"
+                      valueKey="id"
+                    />
+                    {filterData.companyId && filteredBranchOptions.length === 0 && (
+                      <p className="text-xs text-orange-600 mt-1">No branches for selected company</p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">Start Month</label>
+                      <select
+                        value={filterData.startMonth}
+                        onChange={(e) => setFilterData({ ...filterData, startMonth: parseInt(e.target.value) })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                      >
+                        {monthsFull.map((m, i) => (
+                          <option key={i} value={i + 1}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">End Month</label>
+                      <select
+                        value={filterData.endMonth}
+                        onChange={(e) => setFilterData({ ...filterData, endMonth: parseInt(e.target.value) })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                      >
+                        {monthsFull.map((m, i) => (
+                          <option key={i} value={i + 1}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">Start Year</label>
+                      <input
+                        type="number"
+                        value={filterData.startYear}
+                        onChange={(e) => setFilterData({ ...filterData, startYear: parseInt(e.target.value) })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">End Year</label>
+                      <input
+                        type="number"
+                        value={filterData.endYear}
+                        onChange={(e) => setFilterData({ ...filterData, endYear: parseInt(e.target.value) })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">Status Filter</label>
+                    <select
+                      value={filterData.status}
+                      onChange={(e) => setFilterData({ ...filterData, status: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
+                    >
+                      <option value="">Both (Confirmed & Invoiced)</option>
+                      <option value="CONFIRMED">Confirmed Only</option>
+                      <option value="INVOICED">Invoiced Only</option>
+                    </select>
+                  </div>
+                  <div className="pt-4 border-t border-gray-200">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">Tax Computation Type *</label>
+                    <div className="flex gap-3 mb-6">
+                      <button
+                        type="button"
+                        onClick={() => setTaxType('VAT')}
+                        className={`flex-1 py-3 px-4 rounded-lg border-2 text-sm font-medium transition ${taxType === 'VAT'
+                          ? 'border-blue-600 bg-blue-50 text-blue-700'
+                          : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                          }`}
+                      >
+                        <div className="font-semibold">VAT</div>
+                        <div className="text-xs mt-0.5 font-normal opacity-75">Standard VAT computation</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTaxType('PT')}
+                        className={`flex-1 py-3 px-4 rounded-lg border-2 text-sm font-medium transition ${taxType === 'PT'
+                          ? 'border-purple-600 bg-purple-50 text-purple-700'
+                          : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                          }`}
+                      >
+                        <div className="font-semibold">Percentage Tax (PT)</div>
+                        <div className="text-xs mt-0.5 font-normal opacity-75">Gross sales × 3%, EWT</div>
+                      </button>
+                    </div>
+                  </div>
+                  <div className="pt-4 border-t border-gray-200">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                      Invoice details
+                    </p>
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                          Invoice Number <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={invoiceNumber}
+                          onChange={(e) => setInvoiceNumber(e.target.value)}
+                          placeholder="e.g. SI-2025-0001"
+                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${invoiceSubmitted && !invoiceNumber.trim()
+                            ? 'border-red-400 bg-red-50'
+                            : 'border-gray-300'
+                            }`}
+                        />
+                        {invoiceSubmitted && !invoiceNumber.trim() && (
+                          <p className="text-xs text-red-500 mt-1">
+                            Invoice number is required before previewing.
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-3">Invoice Date</label>
+                        <input
+                          type="date"
+                          value={invoiceDate}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (!val) { setInvoiceDate(''); return; }
+                            const parts = val.split('-');
+                            if (parts[0] && parts[0].length > 4) {
+                              parts[0] = parts[0].slice(0, 4);
+                              setInvoiceDate(parts.join('-'));
+                            } else {
+                              setInvoiceDate(val);
+                            }
+                          }}
+                          max="9999-12-31"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-8 border-t border-gray-200 flex justify-end gap-4">
+                  <button
+                    onClick={() => { setShowInvoiceModal(false); setInvoiceSubmitted(false); }}
+                    className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      setInvoiceSubmitted(true);
+                      if (!invoiceNumber.trim()) return;
+                      handleGenerateInvoice();
+                    }}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
+                  >
+                    Preview Invoice
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Invoice Report Modal */}
+          {invoiceReport && (
+            <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+              <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
+                <div className="p-8 border-b border-gray-200 flex justify-between items-center print:hidden sticky top-0 bg-white rounded-t-2xl z-10">
+                  <h2 className="text-2xl font-bold text-gray-900">Invoice Report</h2>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        const newAdjustments = [...(invoiceReport.adjustments || []), { description: '', quantity: 1, unitCost: 0, amount: 0 }];
+                        setInvoiceReport({ ...invoiceReport, adjustments: newAdjustments });
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    >
+                      <Plus size={18} />
+                      Add Adjustment
+                    </button>
+                    <button
+                      onClick={() => setInvoiceReport(null)}
+                      className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                    >
+                      <X size={24} />
+                    </button>
+                  </div>
+                </div>
+                <div id="invoice-report" className="p-8">
+                  {/* Header Section */}
+                  <div className="flex justify-between items-start mb-5 pb-4 border-gray-900">
+                    <div className="text-left leading-none space-y-0">
+                      <div className="text-[34px] font-bold text-gray-900 -mb-0 font-serif tracking-tight">
+                        WISECART MERCHANTS CORP.
+                      </div>
+                      <div className="text-[18px] text-gray-900 font-medium space-y-[1px] tracking-tight">
+                        <div>407B 4F Tower One Plaza Magellan The Mactan Newtown</div>
+                        <div>Mactan 6015 City of Lapu-lapu Cebu, Phils.</div>
+                        <div>VAT REG. TIN 010-751-561-00000</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="inline-block text-left leading-none">
+                        <div className="text-3xl font-bold text-gray-900 tracking-widest">
+                          SALES
+                        </div>
+                        <div className="text-3xl font-bold text-gray-900 tracking-widest -mt-2">
+                          INVOICE
+                        </div>
+                      </div>
+                      <div className="text-lg font-semibold flex items-center gap-1">
+                        NO.
+                        <input
+                          type="text"
+                          value={invoiceNumber}
+                          onChange={(e) => setInvoiceNumber(e.target.value)}
+                          placeholder="_____________"
+                          className="border-b border-gray-500 w-36 text-center focus:outline-none bg-transparent print:border-0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Checkboxes and Date Section */}
+                  <div className="flex justify-between items-center mb-2 mt-11">
+                    <div className="flex gap-6">
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" className="w-6 h-6 border-2 border-gray-900" />
+                        {' '}
+                        CASH SALES
+                      </label>
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" className="w-6 h-6 border-2 border-gray-900" />
+                        {' '}
+                        CHARGE SALES
+                      </label>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center gap-2 justify-end text-black-900">
+                        <span className="font-medium">DATE:</span>
+                        <input
+                          type="date"
+                          value={invoiceDate}
+                          onChange={(e) => setInvoiceDate(e.target.value)}
+                          className="border-b border-gray-500 text-sm focus:outline-none bg-transparent print:border-0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-1 border-gray-900 p-3 mb-1.5" style={{ height: '165px' }}>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center mb-1.5">
+                        <span className="font-bold text-gray-900 w-48">SOLD TO:</span>
+                        <span className="text-black-900 flex-1 print-visible">
+                          {invoiceReport.soldTo || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center mb-1.5">
+                        <span className="font-bold text-gray-900 w-48">REGISTERED NAME:</span>
+                        <span className="text-black-900 flex-1 print-visible">
+                          {invoiceReport.registeredName || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center mb-1.5">
+                        <span className="font-bold text-gray-900 w-48">TIN:</span>
+                        <span className="text-black-900 flex-1 print-visible">
+                          {invoiceReport.tin || invoiceReport.branchTin || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-[180px_1fr] items-start gap-3">
+                        <div className="font-bold text-black-900 pt-1 self-start">
+                          BUSINESS ADDRESS:
+                        </div>
+                        <div className="text-black-900 -mt-1 leading-[1.1] tracking-tight print-visible">
+                          {invoiceReport.businessAddress || 'N/A'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Items Table */}
+                  <div className="border-1 border-b-0 border-gray-900">
+                    <table className="w-full" style={{ minHeight: '150mm' }}>
+                      <thead>
+                        <tr className="border-b border-gray-900">
+                          <th className="text-left px-4 font-bold text-gray-900 text-sm leading-tight" style={{ width: '60%' }}>
+                            ITEM DESCRIPTION / NATURE OF SERVICE
+                          </th>
+                          <th className="text-right px-4 font-bold text-gray-900 text-sm leading-tight" style={{ width: '12%' }}>
+                            QTY.
+                          </th>
+                          <th className="text-right px-4 text-gray-900 text-xs text-[11px] leading-tight" style={{ width: '12%' }}>
+                            UNIT COST / PRICE
+                          </th>
+                          <th className="text-right px-4 font-bold text-gray-900 text-sm leading-tight" style={{ width: '15%' }}>
+                            AMOUNT
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {invoiceReport.products.map((product, i) => (
+                          <tr key={i} className="align-top">
+                            <td className="py-2 px-4 text-sm text-gray-900">
+                              {product.productName}
+                              {product.variation &&
+                                `  ${product.variation.combinationDisplay ||
+                                (product.variation.variationType && product.variation.variationValue
+                                  ? `${product.variation.variationType}: ${product.variation.variationValue}`
+                                  : 'Variation')} - ${product.variation.upc || 'N/A'}`
+                              }
+                            </td>
+                            <td className="py-2 px-4 text-right text-sm text-gray-900">
+                              {product.totalQuantity.toLocaleString()}
+                            </td>
+                            <td className="py-2 px-4 text-right text-sm text-gray-900">
+                              {formatCurrency(product.totalAmount / product.totalQuantity)}
+                            </td>
+                            <td className="py-2 px-4 text-right text-sm text-gray-900">
+                              {formatCurrency(product.totalAmount)}
+                            </td>
+                          </tr>
+                        ))}
+                        {invoiceReport.adjustments && invoiceReport.adjustments.length > 0 && (
+                          <>
+                            {invoiceReport.adjustments.map((adj, i) => (
+                              <tr key={`adj-${i}`} className="align-top print:break-inside-avoid">
+                                <td className="py-1 px-2">
+                                  <input
+                                    type="text"
+                                    value={adj.description}
+                                    onChange={(e) => {
+                                      const newAdj = [...invoiceReport.adjustments];
+                                      newAdj[i].description = e.target.value;
+                                      setInvoiceReport({ ...invoiceReport, adjustments: newAdj });
+                                    }}
+                                    placeholder="Adjustment description..."
+                                    className="w-full text-sm text-gray-900 border-0 focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 print:border-0 print:p-0"
+                                  />
+                                </td>
+                                <td className="py-1 px-2">
+                                  <input
+                                    type="text"
+                                    value={adj.quantity}
+                                    onChange={(e) => {
+                                      const newAdj = [...invoiceReport.adjustments];
+                                      newAdj[i].quantity = parseFloat(e.target.value) || 0;
+                                      newAdj[i].amount = newAdj[i].quantity * newAdj[i].unitCost;
+                                      setInvoiceReport({ ...invoiceReport, adjustments: newAdj });
+                                    }}
+                                    className="w-full text-sm text-gray-900 text-right border-0 focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 print:border-0 print:p-0"
+                                  />
+                                </td>
+                                <td className="py-1 px-2 ">
+                                  <input
+                                    type="number"
+                                    value={adj.unitCost}
+                                    onChange={(e) => {
+                                      const newAdj = [...invoiceReport.adjustments];
+                                      newAdj[i].unitCost = parseFloat(e.target.value) || 0;
+                                      newAdj[i].amount = newAdj[i].quantity * newAdj[i].unitCost;
+                                      setInvoiceReport({ ...invoiceReport, adjustments: newAdj });
+                                    }}
+                                    className="w-full text-sm text-gray-900 text-right border-0 focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 mx-4 print:border-0 print:p-0"
+                                  />
+                                </td>
+                                <td className="py-2 px-4 text-right relative">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-sm text-gray-900 flex-1 text-right">
+                                      {formatCurrency(adj.amount)}
+                                    </span>
+                                    <button
+                                      onClick={() => {
+                                        const newAdj = invoiceReport.adjustments.filter((_, idx) => idx !== i);
+                                        setInvoiceReport({ ...invoiceReport, adjustments: newAdj });
+                                      }}
+                                      className="print:hidden p-1 text-red-600 hover:bg-red-50 rounded transition"
+                                      title="Remove adjustment"
+                                    >
+                                      <X size={16} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </>
+                        )}
+                        <tr className="h-full">
+                          <td colSpan={4} className="p-0"></td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
 
                   {taxType === 'VAT' ? (
-                    <div className="col-span-2 grid grid-cols-2">
-                      <div className=" border-l-0 border-1 border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
-                        <div className="mb-2">Add: VAT</div>
-                        <div className="mb-2">Less: Withholding Tax</div>
-                        <div className="" >Total Amount Due:</div>
+                    <div className="grid grid-cols-6 border-1 border-gray-900 text-sm">
+                      <div className="col-span-2 grid grid-cols-2">
+                        <div className=" border-l-0 border-1  border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[13px]">
+                          <div className="mb-2">Total Sales:</div>
+                          <div className="mb-2">VAT/PT:</div>
+                          <div className="mb-2">Zero-Rated Sales:</div>
+                          <div className="">VAT-Exempt Sales:</div>
+                        </div>
+                        <div className="border-r-1 border-gray-900 px-4 py-3 flex flex-col justify-start text-[15px]">
+                          <input readOnly value={formatCurrency(
+                            (() => {
+                              const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                              return ((invoiceReport.vatableSales || 0) + adjustmentTotal);
+                            })()
+                          )} className="w-full text-right pb-0 mb-2" />
+                          <input readOnly value={formatCurrency(
+                            (() => {
+                              const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                              const vatableSales = (invoiceReport.vatableSales || 0) + adjustmentTotal;
+                              return vatableSales * 0.12;
+                            })()
+                          )} className="w-full text-right pb-0 mb-2" />
+                          <input readOnly value={formatCurrency(invoiceReport.zeroRatedSales || 0)} className="w-full text-right pb-0 mb-2" />
+                          <input readOnly value={formatCurrency(invoiceReport.vatExemptSales || 0)} className="w-full text-right pb-0" />
+                        </div>
                       </div>
-                      <div className="px-4 border-1 flex flex-col justify-start border-t-0 border-l-0 pt-2">
-                        <input readOnly value={formatCurrency(
-                          (() => {
-                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                            const vatableSales = (invoiceReport.vatableSales || 0) + adjustmentTotal;
-                            return vatableSales * 0.12;
-                          })()
-                        )} className="w-full text-right pb-0 mb-2 text-[15px]" />
-                        <input readOnly value={formatCurrency(
-                          (() => {
-                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                            const netOfVat = (invoiceReport.netOfVat || 0) + adjustmentTotal;
-                            return netOfVat * 0.01;
-                          })()
-                        )} className="w-full text-right pb-0 mb-2 text-[15px]" />
-                        <input readOnly value={formatCurrency(
-                          (() => {
-                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                            const totalSales = (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
-                            const netOfVat = (invoiceReport.netOfVat || 0) + adjustmentTotal;
-                            const withholdingTax = netOfVat * 0.01;
-                            return totalSales - withholdingTax;
-                          })()
-                        )} className="w-full text-right font-bold pb-0 text-[16px]" />
+                      <div className="border-r-1 border-gray-900 px-3 py-3 flex flex-col justify-center text-[11px]">
+                        <div className="font-medium leading-tight">
+                          SC/PWD/NAAC/MOV/<br />SOLO PARENT ID No.:
+                        </div>
+                        <div className="font-medium leading-tight mt-9">
+                          SC/PWD/NAAC/MOV/<br />Signature:
+                        </div>
+                      </div>
+                      <div className="border-r-1 border-gray-900 px-3 py-3 flex flex-col justify-center text-[13px]">
+                        <input type="text" className="w-full pb-0 text-sm -mt-1" />
+                        <input type="text" className="w-full pb-0 text-sm mt-5" />
+                      </div>
+                      <div className="col-span-2 grid grid-cols-2">
+                        <div className=" border-l-0 border-1  border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
+                          <div className="mb-2 text-[9px]">TOTAL SALES (VAT Inclusive)</div>
+                          <div className="mb-2">Less: VAT</div>
+                          <div className="mb-2">Amount: Net of VAT</div>
+                          <div className="">Less: Discount<br /><span className="text-[10px]">(SC/PWD/NAAC/MOV/SP)</span></div>
+                        </div>
+                        <div className="px-4 border-1 flex flex-col justify-start border-t-0 border-l-0 border-r-0 pt-2">
+                          <input readOnly value={formatCurrency(
+                            (() => {
+                              const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                              return (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
+                            })()
+                          )} className="w-full text-right pb-0 mb-2 text-[15px]" />
+                          <input readOnly value={formatCurrency(
+                            (() => {
+                              const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                              const vatableSales = (invoiceReport.vatableSales || 0) + adjustmentTotal;
+                              return vatableSales * 0.12;
+                            })()
+                          )} className="w-full text-right pb-0 mb-2 text-[15px]" />
+                          <input readOnly value={formatCurrency(
+                            (() => {
+                              const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                              return (invoiceReport.netOfVat || 0) + adjustmentTotal;
+                            })()
+                          )} className="w-full text-right pb-0 mb-2 text-[15px]" />
+                          <input readOnly value={formatCurrency(invoiceReport.discount || 0)} className="w-full text-right pb-0 text-[15px]" />
+                        </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="col-span-2 grid grid-cols-2">
-                      <div className=" border-l-0 border-1 border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
-                        <div className="mb-2">VAT/PT (3%)</div>
-                        <div className="mb-2">Less: EWT</div>
-                        <div className="">Total Amount Due:</div>
+                    <div className="grid grid-cols-6 border-1 border-gray-900 text-sm">
+                      <div className="col-span-2 grid grid-cols-2">
+                        <div className=" border-l-0 border-1  border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[13px]">
+                          <div style={{ fontSize: '11px' }}>Vatable Sales:</div>
+                          <div style={{ fontSize: '11px' }}>Gross Sales (PT):</div>
+                          <div className="mb-2" style={{ fontSize: '11px' }}>&nbsp;</div>
+                          <div className="mb-2">VAT/PT:</div>
+                          <div className="mb-2">Zero-Rated Sales:</div>
+                          <div className="">VAT-Exempt Sales:</div>
+                        </div>
+                        <div className="border-r-1 border-gray-900 px-4 py-3 flex flex-col justify-start text-[15px]">
+                          <input readOnly value={formatCurrency(
+                            (() => {
+                              const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                              return (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
+                            })()
+                          )} className="w-full text-right pb-0 mb-2" />
+                          <input readOnly value="" className="w-full text-right pb-0 mb-2" />
+                          <input readOnly value="" className="w-full text-right pb-0 mb-2" />
+                          <input readOnly value="" className="w-full text-right pb-0" />
+                        </div>
                       </div>
-                      <div className="px-4 border-1 flex flex-col justify-start border-t-0 border-l-0 pt-2">
-                        <input readOnly value="" className="w-full text-right pb-0 mb-2 text-[15px]" />
-                        <input readOnly value="" className="w-full text-right pb-0 mb-2 text-[15px]" />
-                        <input readOnly value={formatCurrency(
-                          (() => {
-                            const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
-                            return (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
-                          })()
-                        )} className="w-full text-right font-bold pb-0 text-[16px]" />
+                      <div className="border-r-1 border-gray-900 px-3 py-3 flex flex-col justify-center text-[11px]">
+                        <div className="font-medium leading-tight">
+                          SC/PWD/NAAC/MOV/<br />SOLO PARENT ID No.:
+                        </div>
+                        <div className="font-medium leading-tight mt-9">
+                          SC/PWD/NAAC/MOV/<br />Signature:
+                        </div>
+                      </div>
+                      <div className="border-r-1 border-gray-900 px-3 py-3 flex flex-col justify-center text-[13px]">
+                        <input type="text" className="w-full pb-0 text-sm -mt-1" />
+                        <input type="text" className="w-full pb-0 text-sm mt-5" />
+                      </div>
+                      <div className="col-span-2 grid grid-cols-2">
+                        <div className=" border-l-0 border-1  border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
+                          <div className="mb-2 text-[9px]">TOTAL SALES (Gross Sales)</div>
+                          <div className="mb-2">Less: VAT</div>
+                          <div className="mb-2">Amount: Net of VAT</div>
+                          <div className="">Less: Discount<br /><span className="text-[10px]">(SC/PWD/NAAC/MOV/SP)</span></div>
+                        </div>
+                        <div className="px-4 border-1 flex flex-col justify-start border-t-0 border-l-0 border-r-0 pt-2">
+                          <input readOnly value={formatCurrency(
+                            (() => {
+                              const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                              return (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
+                            })()
+                          )} className="w-full text-right pb-0 mb-2 text-[15px]" />
+                          <input readOnly value="" className="w-full text-right pb-0 mb-2 text-[15px]" />
+                          <input readOnly value="" className="w-full text-right pb-0 mb-2 text-[15px]" />
+                          <input readOnly value="" className="w-full text-right pb-0 text-[15px]" />
+                        </div>
                       </div>
                     </div>
                   )}
+
+
+                  <div className="grid grid-cols-6  border-t-0 border-gray-900 text-sm">
+                    <div className="col-span-4 border-r-1 border-gray-900 px-4  ">
+                      <label className="flex items-start gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" className="w-6 h-6  mt-8" />
+                        <div>
+                          <div className="mb-8 mt-8">Received the amount of</div>
+                          <div className="border-b border-gray-900 mt-1 w-full"></div>
+                        </div>
+                      </label>
+                    </div>
+
+                    {taxType === 'VAT' ? (
+                      <div className="col-span-2 grid grid-cols-2">
+                        <div className=" border-l-0 border-1 border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
+                          <div className="mb-2">Add: VAT</div>
+                          <div className="mb-2">Less: Withholding Tax</div>
+                          <div className="" >Total Amount Due:</div>
+                        </div>
+                        <div className="px-4 border-1 flex flex-col justify-start border-t-0 border-l-0 pt-2">
+                          <input readOnly value={formatCurrency(
+                            (() => {
+                              const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                              const vatableSales = (invoiceReport.vatableSales || 0) + adjustmentTotal;
+                              return vatableSales * 0.12;
+                            })()
+                          )} className="w-full text-right pb-0 mb-2 text-[15px]" />
+                          <input readOnly value={formatCurrency(
+                            (() => {
+                              const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                              const netOfVat = (invoiceReport.netOfVat || 0) + adjustmentTotal;
+                              return netOfVat * 0.01;
+                            })()
+                          )} className="w-full text-right pb-0 mb-2 text-[15px]" />
+                          <input readOnly value={formatCurrency(
+                            (() => {
+                              const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                              const totalSales = (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
+                              const netOfVat = (invoiceReport.netOfVat || 0) + adjustmentTotal;
+                              const withholdingTax = netOfVat * 0.01;
+                              return totalSales - withholdingTax;
+                            })()
+                          )} className="w-full text-right font-bold pb-0 text-[16px]" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="col-span-2 grid grid-cols-2">
+                        <div className=" border-l-0 border-1 border-t-0 border-gray-900 px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
+                          <div className="mb-2">VAT/PT (3%)</div>
+                          <div className="mb-2">Less: EWT</div>
+                          <div className="">Total Amount Due:</div>
+                        </div>
+                        <div className="px-4 border-1 flex flex-col justify-start border-t-0 border-l-0 pt-2">
+                          <input readOnly value="" className="w-full text-right pb-0 mb-2 text-[15px]" />
+                          <input readOnly value="" className="w-full text-right pb-0 mb-2 text-[15px]" />
+                          <input readOnly value={formatCurrency(
+                            (() => {
+                              const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
+                              return (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
+                            })()
+                          )} className="w-full text-right font-bold pb-0 text-[16px]" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 border-1 border-t-1 border-gray-900 text-sm mt-6">
+                    <div className="border-gray-900 px-4 py-2">
+                      <div className="font-medium  text-m text-[16px]">PERMIT TO USE LOOSE LEAF No. : LLSI-080-1024-00002</div>
+                      <div className="font-medium text-m text-[16px]" >DATE ISSUED: OCT. 11, 2024</div>
+                    </div>
+                    <div className="px-4 py-2 pb-4">
+                      <div className="font-medium  text-[16px] text-m ">BIR AUTHORITY TO PRINT No. 080AU20240000016398</div>
+                      <div className="font-medium  text-[16px] text-m">DATE ISSUED: OCT. 23, 2024</div>
+                      <div className="font-medium  text-[16px] text-m">APPROVED SERIES: 0501-1500 • 20PADS (2X)</div>
+                    </div>
+                  </div>
+
                 </div>
 
-                <div className="grid grid-cols-2 border-1 border-t-1 border-gray-900 text-sm mt-6">
-                  <div className="border-gray-900 px-4 py-2">
-                    <div className="font-medium  text-m text-[16px]">PERMIT TO USE LOOSE LEAF No. : LLSI-080-1024-00002</div>
-                    <div className="font-medium text-m text-[16px]" >DATE ISSUED: OCT. 11, 2024</div>
-                  </div>
-                  <div className="px-4 py-2 pb-4">
-                    <div className="font-medium  text-[16px] text-m ">BIR AUTHORITY TO PRINT No. 080AU20240000016398</div>
-                    <div className="font-medium  text-[16px] text-m">DATE ISSUED: OCT. 23, 2024</div>
-                    <div className="font-medium  text-[16px] text-m">APPROVED SERIES: 0501-1500 • 20PADS (2X)</div>
-                  </div>
+                <div className="p-8 border-t border-gray-200 flex justify-end gap-3 print:hidden sticky bottom-0 bg-white rounded-b-2xl">
+                  <button
+                    onClick={() => {
+                      if (!invoiceNumber.trim()) {
+                        toast.error('Please enter an invoice number before saving.');
+                        return;
+                      }
+                      handleGenerateToProfile();
+                    }}
+                    className={`flex items-center gap-2 px-5 py-3 rounded-lg transition font-medium shadow-md ${!invoiceNumber.trim()
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-green-600 text-white hover:bg-green-700'
+                      }`}
+                  >
+                    <span>Generate</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!invoiceNumber.trim()) {
+                        toast.error('Please enter an invoice number before printing.');
+                        return;
+                      }
+                      window.print();
+                    }}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-lg transition font-medium shadow-md ${!invoiceNumber.trim()
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                  >
+                    <Printer size={20} />
+                    <span>Print Report</span>
+                  </button>
+                  <button
+                    onClick={() => setInvoiceReport(null)}
+                    className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+                  >
+                    Close
+                  </button>
                 </div>
-
-              </div>
-
-              <div className="p-8 border-t border-gray-200 flex justify-end gap-3 print:hidden sticky bottom-0 bg-white rounded-b-2xl">
-                <button
-                  onClick={() => {
-                    if (!invoiceNumber.trim()) {
-                      toast.error('Please enter an invoice number before saving.');
-                      return;
-                    }
-                    handleGenerateToProfile();
-                  }}
-                  className={`flex items-center gap-2 px-5 py-3 rounded-lg transition font-medium shadow-md ${!invoiceNumber.trim()
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-green-600 text-white hover:bg-green-700'
-                    }`}
-                >
-                  <span>Generate</span>
-                </button>
-                <button
-                  onClick={() => {
-                    if (!invoiceNumber.trim()) {
-                      toast.error('Please enter an invoice number before printing.');
-                      return;
-                    }
-                    window.print();
-                  }}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-lg transition font-medium shadow-md ${!invoiceNumber.trim()
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
-                >
-                  <Printer size={20} />
-                  <span>Print Report</span>
-                </button>
-                <button
-                  onClick={() => setInvoiceReport(null)}
-                  className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
-                >
-                  Close
-                </button>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
 
