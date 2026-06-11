@@ -1874,6 +1874,9 @@ const SalesManagement = () => {
                         <span className="text-sm font-black text-blue-700">
                           ₱{grandTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
+                        <span className="text-xs text-blue-600 border-l border-blue-400 pl-2 ml-1">
+                          Qty: {(pendingQty + confirmedQty + invoicedQty).toLocaleString()}
+                        </span>
                       </div>
                       <button
                         onClick={() => setShowSummaryModal(true)}
