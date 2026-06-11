@@ -372,10 +372,15 @@ const SalesSummaryModal = ({ onClose, filterData, statusFilter, searchTerm, comp
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={2} style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt', fontWeight: 'bold', textAlign: 'right', borderTop: '1.5pt solid #333' }}>GRAND TOTAL</td>
+                  <td colSpan={2} style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt', fontWeight: 'bold', textAlign: 'right', borderTop: '1.5pt solid #333' }}>TOTAL QTY</td>
                   <td style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt', fontWeight: 'bold', textAlign: 'right', borderTop: '1.5pt solid #333' }}>{totalQty.toLocaleString()}</td>
-                  <td style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt', borderTop: '1.5pt solid #333' }}></td>
-                  <td style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt', fontWeight: 'bold', textAlign: 'right', borderTop: '1.5pt solid #333' }}>₱{totalAmt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                  <td colSpan={2} style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt', borderTop: '1.5pt solid #333' }}></td>
+                </tr>
+                <tr>
+                  <td colSpan={2} style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt', fontWeight: 'bold', textAlign: 'right' }}>GRAND TOTAL</td>
+                  <td style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt' }}></td>
+                  <td style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt' }}></td>
+                  <td style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt', fontWeight: 'bold', textAlign: 'right' }}>₱{totalAmt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
                 </tr>
               </tfoot>
             </table>
