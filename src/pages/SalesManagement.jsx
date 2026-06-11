@@ -192,6 +192,203 @@ const SearchableDropdown = ({ options, value, onChange, placeholder, displayKey,
 };
 
 
+const SalesSummaryModal = ({ onClose, filterData, statusFilter, searchTerm, companies, branches }) => {
+  const [printRows, setPrintRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    const fetchData = async () => {
+      try {
+        const startDateObj = filterData.startDate ? new Date(filterData.startDate) : null;
+        const endDateObj = filterData.endDate ? new Date(filterData.endDate) : null;
+        const params = new URLSearchParams({
+          page: 0, size: 10000,
+          ...(filterData.companyId && { companyId: filterData.companyId }),
+          ...(filterData.branchId && { branchId: filterData.branchId }),
+          ...(statusFilter !== 'ALL' && { status: statusFilter }),
+          ...(searchTerm && { searchTerm }),
+          ...(startDateObj && { startYear: startDateObj.getFullYear(), startMonth: startDateObj.getMonth() + 1 }),
+          ...(endDateObj && { endYear: endDateObj.getFullYear(), endMonth: endDateObj.getMonth() + 1 }),
+        });
+        if (filterData.productFilters?.length > 0) {
+          filterData.productFilters.forEach(pf => {
+            if (pf.productId) params.append('productIds', pf.productId);
+            if (pf.variationId) params.append('variationIds', pf.variationId);
+          });
+        }
+        const response = await api.get(`/sales/all?${params}`);
+        const allSales = response.data?.content || [];
+        const productMap = new Map();
+        allSales.forEach(sale => {
+          (sale.items || []).forEach(item => {
+            const sku = item.variation?.sku || item.product?.sku || '—';
+            const upc = item.variation?.upc || item.product?.upc || '—';
+            const variationDisplay = item.variation
+              ? (item.variation.combinationDisplay || (item.variation.variationType && item.variation.variationValue
+                ? `${item.variation.variationType}: ${item.variation.variationValue}` : 'Variation'))
+              : '';
+            const key = `${item.product?.id}_${item.variation?.id || 'base'}`;
+            if (productMap.has(key)) {
+              const ex = productMap.get(key);
+              ex.quantity += item.quantity || 0;
+              ex.amount += item.amount || 0;
+            } else {
+              productMap.set(key, {
+                productName: item.product?.productName || '',
+                variationDisplay, sku, upc,
+                quantity: item.quantity || 0,
+                unitPrice: item.unitPrice || 0,
+                amount: item.amount || 0,
+              });
+            }
+          });
+        });
+        setPrintRows(Array.from(productMap.values()).sort((a, b) => a.productName.localeCompare(b.productName)));
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const selectedCompany = filterData.companyId ? (companies.find(c => c.id === filterData.companyId)?.companyName || 'All Companies') : 'All Companies';
+  const selectedBranch = filterData.branchId ? (branches.find(b => b.id === filterData.branchId)?.branchName || 'All Branches') : 'All Branches';
+  const statusLabel = statusFilter === 'ALL' ? 'All Status' : statusFilter;
+  const dateFrom = filterData.startDate || '—';
+  const dateTo = filterData.endDate || '—';
+  const totalQty = printRows.reduce((s, r) => s + r.quantity, 0);
+  const totalAmt = printRows.reduce((s, r) => s + r.amount, 0);
+
+  const handlePrint = () => {
+    const content = document.getElementById('sales-summary-modal-body').innerHTML;
+    const w = window.open('', '_blank');
+    w.document.write(`<!DOCTYPE html><html><head><title>Sales Summary Report</title>
+      <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: Arial, sans-serif; padding: 15px; font-size: 9pt; }
+        h2 { font-size: 13pt; font-weight: bold; margin-bottom: 8pt; }
+        .meta { display: grid; grid-template-columns: repeat(4,1fr); gap: 4pt; margin-bottom: 10pt; }
+        .meta-item { border: 0.5pt solid #ccc; padding: 3pt 5pt; border-radius: 2pt; }
+        .meta-label { display: block; font-size: 6.5pt; color: #666; text-transform: uppercase; margin-bottom: 1pt; }
+        table { width: 100%; border-collapse: collapse; font-size: 7.5pt; }
+        th { background: #f0f0f0; border: 0.5pt solid #999; padding: 3pt 4pt; text-align: left; font-size: 7pt; }
+        th.right, td.right { text-align: right; }
+        td { border: 0.5pt solid #ccc; padding: 2.5pt 4pt; }
+        tr:nth-child(even) td { background: #fafafa; }
+        tfoot td { border-top: 1.5pt solid #333; font-weight: bold; }
+        .sub { font-size: 6.5pt; color: #555; }
+        .footer { margin-top: 8pt; font-size: 7pt; color: #666; text-align: right; }
+        @page { size: A4 portrait; margin: 10mm 8mm; }
+      </style>
+    </head><body>${content}</body></html>`);
+    w.document.close();
+    w.print();
+    w.close();
+  };
+
+  const handleExcel = () => {
+    const rows = [];
+    rows.push(['COMPANY', selectedCompany]);
+    rows.push(['BRANCH', selectedBranch]);
+    rows.push(['STATUS', statusLabel]);
+    rows.push(['DATE OF COVERAGE', `${dateFrom} to ${dateTo}`]);
+    rows.push(['GENERATED AT', new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })]);
+    rows.push([]);
+    rows.push(['NO.', 'PRODUCT', 'VARIATION', 'SKU', 'UPC', 'QTY', 'UNIT PRICE', 'TOTAL']);
+    printRows.forEach((r, i) => rows.push([i + 1, r.productName, r.variationDisplay || '—', r.sku, r.upc, r.quantity, Number(r.unitPrice).toFixed(2), Number(r.amount).toFixed(2)]));
+    rows.push([]);
+    rows.push(['', '', '', '', 'TOTAL QTY', totalQty, '', '']);
+    rows.push(['', '', '', '', 'GRAND TOTAL', '', '', totalAmt.toFixed(2)]);
+    const csv = rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sales_report_${selectedCompany}_${selectedBranch}_${new Date().toISOString().split('T')[0]}.csv`.replace(/[\s/\\:*?"<>|]+/g, '_');
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[95vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 flex-shrink-0">
+          <div>
+            <h2 className="text-base font-semibold text-gray-800">Sales Summary Report</h2>
+            <p className="text-xs text-gray-500">{selectedCompany} · {selectedBranch} · {statusLabel}</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleExcel} className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+              <FileText size={14} /> Excel
+            </button>
+            <button onClick={handlePrint} className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+              <Printer size={14} /> Print
+            </button>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100"><X size={16} /></button>
+          </div>
+        </div>
+
+        <div className="overflow-auto flex-1 p-5" id="sales-summary-modal-body">
+          <h2 style={{ fontSize: '13pt', fontWeight: 'bold', marginBottom: '8pt', fontFamily: 'Arial, sans-serif' }}>
+            Sales Report — WISECART MERCHANTS CORP.
+          </h2>
+          <div className="meta" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '4pt', marginBottom: '10pt', fontFamily: 'Arial, sans-serif', fontSize: '7.5pt' }}>
+            {[['Company', selectedCompany], ['Branch', selectedBranch], ['Status', statusLabel], ['Date of Coverage', `${dateFrom} to ${dateTo}`]].map(([label, val]) => (
+              <div key={label} style={{ border: '0.5pt solid #ccc', padding: '3pt 5pt', borderRadius: '2pt' }}>
+                <span className="meta-label" style={{ display: 'block', fontSize: '6.5pt', color: '#666', textTransform: 'uppercase', marginBottom: '1pt' }}>{label}</span>
+                {val}
+              </div>
+            ))}
+          </div>
+
+          {loading ? (
+            <div className="py-16 text-center text-gray-400 text-sm animate-pulse">Loading report data...</div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '7.5pt', fontFamily: 'Arial, sans-serif' }}>
+              <thead>
+                <tr>
+                  <th style={{ border: '0.5pt solid #999', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'left', whiteSpace: 'nowrap', fontSize: '7pt', width: '30px' }}>#</th>
+                  <th style={{ border: '0.5pt solid #999', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'left', fontSize: '7pt' }}>PRODUCT / SKU / UPC</th>
+                  <th style={{ border: '0.5pt solid #999', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'right', fontSize: '7pt' }}>QTY</th>
+                  <th style={{ border: '0.5pt solid #999', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'right', fontSize: '7pt' }}>UNIT PRICE</th>
+                  <th style={{ border: '0.5pt solid #999', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'right', fontSize: '7pt' }}>TOTAL</th>
+                </tr>
+              </thead>
+              <tbody>
+                {printRows.map((row, idx) => (
+                  <tr key={idx} style={{ background: idx % 2 === 1 ? '#fafafa' : '#fff' }}>
+                    <td style={{ border: '0.5pt solid #ccc', padding: '2.5pt 4pt' }}>{idx + 1}</td>
+                    <td style={{ border: '0.5pt solid #ccc', padding: '2.5pt 4pt' }}>
+                      <div style={{ fontWeight: 600 }}>{row.productName}{row.variationDisplay ? ` — ${row.variationDisplay}` : ''}</div>
+                      <div className="sub" style={{ fontSize: '6.5pt', color: '#555' }}>SKU: {row.sku} &nbsp;|&nbsp; UPC: {row.upc}</div>
+                    </td>
+                    <td style={{ border: '0.5pt solid #ccc', padding: '2.5pt 4pt', textAlign: 'right' }}>{row.quantity.toLocaleString()}</td>
+                    <td style={{ border: '0.5pt solid #ccc', padding: '2.5pt 4pt', textAlign: 'right' }}>{Number(row.unitPrice).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                    <td style={{ border: '0.5pt solid #ccc', padding: '2.5pt 4pt', textAlign: 'right' }}>{Number(row.amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan={2} style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt', fontWeight: 'bold', textAlign: 'right', borderTop: '1.5pt solid #333' }}>GRAND TOTAL</td>
+                  <td style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt', fontWeight: 'bold', textAlign: 'right', borderTop: '1.5pt solid #333' }}>{totalQty.toLocaleString()}</td>
+                  <td style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt', borderTop: '1.5pt solid #333' }}></td>
+                  <td style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt', fontWeight: 'bold', textAlign: 'right', borderTop: '1.5pt solid #333' }}>₱{totalAmt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                </tr>
+              </tfoot>
+            </table>
+          )}
+          <div className="footer" style={{ marginTop: '8pt', fontSize: '7pt', color: '#666', textAlign: 'right', fontFamily: 'Arial, sans-serif' }}>
+            Generated: {new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })} &nbsp;|&nbsp; Total Products: {printRows.length}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const SalesManagement = () => {
   const { user } = useAuth();
   const canCreate = ['ADMIN', 'ENCODER', 'ASSISTANT_ADMIN'].includes(user?.role);
@@ -1623,7 +1820,7 @@ const SalesManagement = () => {
                     : allFilteredSales.invoicedQty || 0;
 
                   return (
-                    <div className="flex items-center gap-4 flex-wrap">
+                    <div className="flex items-center gap-3 flex-wrap">
                       <button
                         onClick={() => {
                           setSelectedStatusForModal('PENDING');
@@ -1638,7 +1835,6 @@ const SalesManagement = () => {
                         <span className="text-xs font-bold text-gray-700">{pending}</span>
                         <span className="text-xs text-gray-500 ml-1">(Qty: {pendingQty.toLocaleString()})</span>
                       </button>
-
                       <button
                         onClick={() => {
                           setSelectedStatusForModal('CONFIRMED');
@@ -1653,7 +1849,6 @@ const SalesManagement = () => {
                         <span className="text-xs font-bold text-gray-700">{confirmed}</span>
                         <span className="text-xs text-gray-500 ml-1">(Qty: {confirmedQty.toLocaleString()})</span>
                       </button>
-
                       <button
                         onClick={() => {
                           setSelectedStatusForModal('INVOICED');
@@ -1668,156 +1863,19 @@ const SalesManagement = () => {
                         <span className="text-xs font-bold text-gray-700">{invoiced}</span>
                         <span className="text-xs text-gray-500 ml-1">(Qty: {invoicedQty.toLocaleString()})</span>
                       </button>
-
-                      {/* Grand Total */}
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-2 border-2 border-blue-600 rounded-lg px-3 py-1">
-                          <span className="text-xs font-bold text-blue-700">Grand Total:</span>
-                          <span className="text-sm font-black text-blue-700">
-                            ₱{grandTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
-                        </div>
-                        <button
-                          onClick={handleDownloadReport}
-                          className="flex items-center gap-1.5 px-3 py-1 rounded-lg border-2 border-green-600 text-green-700 hover:bg-green-50 text-xs font-semibold transition-colors"
-                          title="Download all filtered sales as CSV"
-                        >
-                          <FileText size={13} />
-                          Download Report
-                        </button>
-                        <button
-                          onClick={async () => {
-                            const toastId = toast.loading('Preparing print report...');
-                            try {
-                              const startDateObj = filterData.startDate ? new Date(filterData.startDate) : null;
-                              const endDateObj = filterData.endDate ? new Date(filterData.endDate) : null;
-
-                              const params = new URLSearchParams({
-                                page: 0,
-                                size: 10000,
-                                ...(filterData.companyId && { companyId: filterData.companyId }),
-                                ...(filterData.branchId && { branchId: filterData.branchId }),
-                                ...(statusFilter !== 'ALL' && { status: statusFilter }),
-                                ...(searchTerm && { searchTerm }),
-                                ...(startDateObj && { startYear: startDateObj.getFullYear(), startMonth: startDateObj.getMonth() + 1 }),
-                                ...(endDateObj && { endYear: endDateObj.getFullYear(), endMonth: endDateObj.getMonth() + 1 }),
-                              });
-
-                              if (filterData.productFilters?.length > 0) {
-                                filterData.productFilters.forEach(pf => {
-                                  if (pf.productId) params.append('productIds', pf.productId);
-                                  if (pf.variationId) params.append('variationIds', pf.variationId);
-                                });
-                              }
-
-                              const response = await api.get(`/sales/all?${params}`);
-                              const allSales = response.data?.content || [];
-
-                              // Flatten all sales into product rows then aggregate by product+variation
-                              const productMap = new Map();
-                              allSales.forEach(sale => {
-                                (sale.items || []).forEach(item => {
-                                  const sku = item.variation?.sku || item.product?.sku || '—';
-                                  const upc = item.variation?.upc || item.product?.upc || '—';
-                                  const variationDisplay = item.variation
-                                    ? (item.variation.combinationDisplay ||
-                                      (item.variation.variationType && item.variation.variationValue
-                                        ? `${item.variation.variationType}: ${item.variation.variationValue}`
-                                        : 'Variation'))
-                                    : '';
-                                  const key = `${item.product?.id}_${item.variation?.id || 'base'}`;
-
-                                  if (productMap.has(key)) {
-                                    const existing = productMap.get(key);
-                                    existing.quantity += item.quantity || 0;
-                                    existing.amount += item.amount || 0;
-                                  } else {
-                                    productMap.set(key, {
-                                      productName: item.product?.productName || '',
-                                      variationDisplay,
-                                      sku,
-                                      upc,
-                                      quantity: item.quantity || 0,
-                                      unitPrice: item.unitPrice || 0,
-                                      amount: item.amount || 0,
-                                    });
-                                  }
-                                });
-                              });
-
-                              const productRows = Array.from(productMap.values())
-                                .sort((a, b) => a.productName.localeCompare(b.productName));
-
-                              // Build the summary print content
-                              const selectedCompany = filterData.companyId
-                                ? (companies.find(c => c.id === filterData.companyId)?.companyName || 'All Companies')
-                                : 'All Companies';
-                              const selectedBranch = filterData.branchId
-                                ? (branches.find(b => b.id === filterData.branchId)?.branchName || 'All Branches')
-                                : 'All Branches';
-                              const statusLabel = statusFilter === 'ALL' ? 'All Status' : statusFilter;
-                              const dateFrom = filterData.startDate || '—';
-                              const dateTo = filterData.endDate || '—';
-
-                              const grandTotal = productRows.reduce((sum, r) => sum + r.amount, 0);
-                              const grandQty = productRows.reduce((sum, r) => sum + r.quantity, 0);
-
-                              const printEl = document.getElementById('sales-summary-print');
-                              printEl.innerHTML = `
-      <div style="font-family: Arial, sans-serif; font-size: 9pt;">
-        <table style="width:100%; border-collapse:collapse; font-size:7.5pt;">
-          <thead>
-            <tr>
-              <th style="border:0.5pt solid #999; padding:3pt 4pt; background:#f0f0f0; text-align:left; white-space:nowrap;">#</th>
-              <th style="border:0.5pt solid #999; padding:3pt 4pt; background:#f0f0f0; text-align:left;">PRODUCT / SKU / UPC</th>
-              <th style="border:0.5pt solid #999; padding:3pt 4pt; background:#f0f0f0; text-align:right;">QTY</th>
-              <th style="border:0.5pt solid #999; padding:3pt 4pt; background:#f0f0f0; text-align:right;">UNIT PRICE</th>
-              <th style="border:0.5pt solid #999; padding:3pt 4pt; background:#f0f0f0; text-align:right;">TOTAL</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${productRows.map((row, idx) => `
-              <tr style="background:${idx % 2 === 1 ? '#fafafa' : '#fff'};">
-                <td style="border:0.5pt solid #ccc; padding:2.5pt 4pt;">${idx + 1}</td>
-                <td style="border:0.5pt solid #ccc; padding:2.5pt 4pt;">
-                  <div style="font-weight:600;">${row.productName}${row.variationDisplay ? ` — ${row.variationDisplay}` : ''}</div>
-                  <div style="font-size:6.5pt; color:#555;">SKU: ${row.sku} &nbsp;|&nbsp; UPC: ${row.upc}</div>
-                </td>
-                <td style="border:0.5pt solid #ccc; padding:2.5pt 4pt; text-align:right;">${row.quantity.toLocaleString()}</td>
-                <td style="border:0.5pt solid #ccc; padding:2.5pt 4pt; text-align:right;">${Number(row.unitPrice).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td style="border:0.5pt solid #ccc; padding:2.5pt 4pt; text-align:right;">${Number(row.amount).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colspan="2" style="border:0.5pt solid #ccc; padding:3pt 4pt; font-weight:bold; text-align:right; border-top:1.5pt solid #333;">GRAND TOTAL</td>
-              <td style="border:0.5pt solid #ccc; padding:3pt 4pt; font-weight:bold; text-align:right; border-top:1.5pt solid #333;">${grandQty.toLocaleString()}</td>
-              <td style="border:0.5pt solid #ccc; padding:3pt 4pt; border-top:1.5pt solid #333;"></td>
-              <td style="border:0.5pt solid #ccc; padding:3pt 4pt; font-weight:bold; text-align:right; border-top:1.5pt solid #333;">₱${grandTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-            </tr>
-          </tfoot>
-        </table>
-        <div style="margin-top:6pt; font-size:7pt; color:#666; text-align:right;">
-          Generated: ${new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })} &nbsp;|&nbsp; Total Products: ${productRows.length}
-        </div>
-      </div>
-    `;
-
-                              toast.success('Report ready!', { id: toastId });
-                              setTimeout(() => window.print(), 100);
-                            } catch (err) {
-                              console.error(err);
-                              toast.error('Failed to prepare print report', { id: toastId });
-                            }
-                          }}
-                          className="flex items-center gap-1.5 px-3 py-1 rounded-lg border-2 border-gray-500 text-gray-700 hover:bg-gray-50 text-xs font-semibold transition-colors"
-                          title="Print current page as A4"
-                        >
-                          <Printer size={13} />
-                          Print
-                        </button>
+                      <div className="flex items-center gap-2 border-2 border-blue-600 rounded-lg px-3 py-1">
+                        <span className="text-xs font-bold text-blue-700">Grand Total:</span>
+                        <span className="text-sm font-black text-blue-700">
+                          ₱{grandTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
                       </div>
+                      <button
+                        onClick={() => setShowSummaryModal(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-xs font-semibold transition-colors"
+                      >
+                        <FileText size={13} />
+                        View Summary
+                      </button>
                     </div>
                   );
                 })()}
@@ -3284,7 +3342,16 @@ const SalesManagement = () => {
         </div>
       </div>
 
-
+      {showSummaryModal && (
+        <SalesSummaryModal
+          onClose={() => setShowSummaryModal(false)}
+          filterData={filterData}
+          statusFilter={statusFilter}
+          searchTerm={searchTerm}
+          companies={companies}
+          branches={branches}
+        />
+      )}
 
 
 
