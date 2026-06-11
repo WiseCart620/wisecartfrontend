@@ -5,16 +5,10 @@ import {
 import Pagination from '../../components/common/Pagination';
 import toast, { Toaster } from 'react-hot-toast';
 import { api, API_BASE_URL } from '../../services/api';
-
-// Components
 import LoadingOverlay from '../../components/common/LoadingOverlay';
 import ProductRow from '../../components/tables/ProductRow';
 import ProductModal from '../../components/modals/ProductModal';
-
-// Hooks
 import useProductManagement from '../../hooks/data/useProductManagement';
-
-// Constants
 import { productCategories } from '../../constants/productConstants';
 
 const ProductManagement = () => {
