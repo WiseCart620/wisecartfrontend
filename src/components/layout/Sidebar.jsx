@@ -26,8 +26,10 @@ const Sidebar = ({ isOpen, toggle }) => {
   const isAssistantAdmin = user?.role === 'ASSISTANT_ADMIN';
   const isFinance = user?.role === 'FINANCE';
   const isEncoder = user?.role === 'ENCODER';
-  const mainMenuItems = allMainMenuItems;
-  const showDataEntry = isAdmin || isAssistantAdmin || isFinance || isEncoder;
+  const mainMenuItems = isEncoder
+    ? allMainMenuItems.filter(item => ['/sales', '/deliveries'].includes(item.to))
+    : allMainMenuItems;
+  const showDataEntry = isAdmin || isAssistantAdmin || isFinance;
 
   const [dataEntryOpen, setDataEntryOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);

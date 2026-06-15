@@ -399,6 +399,7 @@ const SalesManagement = () => {
   const canCreate = ['ADMIN', 'ENCODER', 'ASSISTANT_ADMIN'].includes(user?.role);
   const canDelete = ['ADMIN', 'ASSISTANT_ADMIN'].includes(user?.role);
   const canFinance = ['ADMIN', 'FINANCE', 'ASSISTANT_ADMIN'].includes(user?.role);
+  const isEncoder = user?.role === 'ENCODER';
   const [sales, setSales] = useState([]);
   const [branches, setBranches] = useState([]);
   const [products, setProducts] = useState([]);
@@ -1803,10 +1804,9 @@ const SalesManagement = () => {
                 )}
               </div>
 
-              {/* Summary stats — right side */}
               <div className="flex flex-col justify-start">
                 <label className="block text-xs font-medium text-gray-700 mb-1">Summary</label>
-                {(() => {
+                {!isEncoder && (() => {
                   const pending = allFilteredSales.pendingCount ?? currentSales.filter(s => s.status === 'PENDING').length;
                   const confirmed = allFilteredSales.confirmedCount ?? currentSales.filter(s => s.status === 'CONFIRMED').length;
                   const invoiced = allFilteredSales.invoicedCount ?? currentSales.filter(s => s.status === 'INVOICED').length;
