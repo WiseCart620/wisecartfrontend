@@ -3333,45 +3333,7 @@ const SalesManagement = () => {
                         toast.error('Please enter an invoice number before printing.');
                         return;
                       }
-                      const printContent = document.getElementById('invoice-report').innerHTML;
-                      const printWindow = window.open('', '_blank');
-                      printWindow.document.write(`<!DOCTYPE html>
-<html>
-<head>
-  <title>Sales Invoice - ${invoiceNumber}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; padding: 15px; font-size: 10pt; }
-    input { border: none; outline: none; background: transparent; font-family: inherit; font-size: inherit; }
-    input[type="checkbox"] { width: 14px; height: 14px; border: 2px solid #000; appearance: none; -webkit-appearance: none; display: inline-block; vertical-align: middle; }
-    input[type="checkbox"]:checked { background: #000; }
-    input[type="date"] { border-bottom: 1px solid #999; }
-    .border-1 { border: 1px solid #000; }
-    .border-b { border-bottom: 1px solid #000; }
-    .grid { display: grid; }
-    .grid-cols-6 { grid-template-columns: repeat(6, 1fr); }
-    .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
-    .col-span-2 { grid-column: span 2; }
-    .col-span-4 { grid-column: span 4; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 4px 8px; }
-    .text-right { text-align: right; }
-    .text-left { text-align: left; }
-    .font-bold { font-weight: bold; }
-    .font-serif { font-family: Georgia, serif; }
-    .print\\:hidden { display: none !important; }
-    @page { size: A4 portrait; margin: 10mm; }
-  </style>
-</head>
-<body>
-  ${printContent}
-</body>
-</html>`);
-                      printWindow.document.close();
-                      setTimeout(() => {
-                        printWindow.print();
-                        printWindow.close();
-                      }, 500);
+                      window.print();
                     }}
                     className={`flex items-center gap-2 px-6 py-3 rounded-lg transition font-medium shadow-md ${!invoiceNumber.trim()
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
