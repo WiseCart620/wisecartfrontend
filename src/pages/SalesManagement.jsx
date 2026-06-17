@@ -3328,13 +3328,65 @@ const SalesManagement = () => {
                     <span>Generate</span>
                   </button>
                   <button
-                    onClick={() => {
-                      if (!invoiceNumber.trim()) {
-                        toast.error('Please enter an invoice number before printing.');
-                        return;
-                      }
-                      window.print();
-                    }}
+onClick={() => {
+  if (!invoiceNumber.trim()) {
+    toast.error('Please enter an invoice number before printing.');
+    return;
+  }
+  const invoiceEl = document.getElementById('invoice-report');
+  if (!invoiceEl) return;
+
+  const styles = Array.from(document.styleSheets).map(sheet => {
+    try {
+      return Array.from(sheet.cssRules).map(rule => rule.cssText).join('\n');
+    } catch {
+      return sheet.href ? `@import url('${sheet.href}');` : '';
+    }
+  }).join('\n');
+
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <title>Sales Invoice</title>
+  <style>
+    ${styles}
+  </style>
+  <style>
+    @page { size: A4; margin: 0.7cm; }
+    html, body { margin: 0; padding: 0; background: white; }
+    #invoice-report {
+      display: block !important;
+      visibility: visible !important;
+      position: static !important;
+      transform: scale(0.90);
+      transform-origin: top left;
+      width: 111.11%;
+      padding: 2rem;
+    }
+    #invoice-report * {
+      visibility: visible !important;
+    }
+    input[type="checkbox"] { display: none !important; }
+    input {
+      border: none !important;
+      background: transparent !important;
+      outline: none !important;
+      padding: 0 !important;
+    }
+    button { display: none !important; }
+    .print\\:hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div id="invoice-report" class="p-8">
+    ${invoiceEl.innerHTML}
+  </div>
+</body>
+</html>`);
+  w.document.close();
+  setTimeout(() => { w.print(); w.close(); }, 600);
+}}
                     className={`flex items-center gap-2 px-6 py-3 rounded-lg transition font-medium shadow-md ${!invoiceNumber.trim()
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : 'bg-blue-600 text-white hover:bg-blue-700'
