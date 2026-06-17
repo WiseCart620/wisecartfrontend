@@ -2980,7 +2980,7 @@ const SalesManagement = () => {
                           {invoiceReport.tin || invoiceReport.branchTin || 'N/A'}
                         </span>
                       </div>
-                      <div className="grid grid-cols-[180px_1fr] items-start gap-3 mt-4">
+                      <div className="grid grid-cols-[180px_1fr] items-start gap-3">
                         <div className="font-bold text-black-900 pt-1 self-start">
                           BUSINESS ADDRESS:
                         </div>
@@ -2992,7 +2992,7 @@ const SalesManagement = () => {
                   </div>
 
                   {/* Items Table */}
-                  <div className="border-1 border-b-0 border-gray-900 mt-6">
+                  <div className="border-1 border-b-0 border-gray-900">
                     <table className="w-full" style={{ minHeight: '150mm' }}>
                       <thead>
                         <tr className="border-b border-gray-900">
@@ -3328,24 +3328,24 @@ const SalesManagement = () => {
                     <span>Generate</span>
                   </button>
                   <button
-                    onClick={() => {
-                      if (!invoiceNumber.trim()) {
-                        toast.error('Please enter an invoice number before printing.');
-                        return;
-                      }
-                      const invoiceEl = document.getElementById('invoice-report');
-                      if (!invoiceEl) return;
+onClick={() => {
+  if (!invoiceNumber.trim()) {
+    toast.error('Please enter an invoice number before printing.');
+    return;
+  }
+  const invoiceEl = document.getElementById('invoice-report');
+  if (!invoiceEl) return;
 
-                      const styles = Array.from(document.styleSheets).map(sheet => {
-                        try {
-                          return Array.from(sheet.cssRules).map(rule => rule.cssText).join('\n');
-                        } catch {
-                          return sheet.href ? `@import url('${sheet.href}');` : '';
-                        }
-                      }).join('\n');
+  const styles = Array.from(document.styleSheets).map(sheet => {
+    try {
+      return Array.from(sheet.cssRules).map(rule => rule.cssText).join('\n');
+    } catch {
+      return sheet.href ? `@import url('${sheet.href}');` : '';
+    }
+  }).join('\n');
 
-                      const w = window.open('', '_blank');
-                      w.document.write(`<!DOCTYPE html>
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html>
 <html>
 <head>
   <title>Sales Invoice</title>
@@ -3384,9 +3384,9 @@ const SalesManagement = () => {
   </div>
 </body>
 </html>`);
-                      w.document.close();
-                      setTimeout(() => { w.print(); w.close(); }, 600);
-                    }}
+  w.document.close();
+  setTimeout(() => { w.print(); w.close(); }, 600);
+}}
                     className={`flex items-center gap-2 px-6 py-3 rounded-lg transition font-medium shadow-md ${!invoiceNumber.trim()
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : 'bg-blue-600 text-white hover:bg-blue-700'
