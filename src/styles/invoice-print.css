@@ -1,22 +1,56 @@
-/* Print styles for invoice */
 @media print {
   @page {
     size: A4;
     margin: 0.7cm !important;
   }
 
-  html,
-  body {
+  html, body {
     overflow: hidden !important;
   }
 
+  /* STEP 1: Hide everything first */
   body * {
     visibility: hidden;
   }
 
+  /* STEP 2: Hide sales report elements */
+  #sales-print-area,
+  .sales-print-header,
+  .sales-print-meta,
+  #sales-summary-print {
+    display: none !important;
+  }
+
+  /* STEP 3: Hide all fixed modals */
+  body > div > .fixed {
+    display: none !important;
+  }
+
+  /* STEP 4: Show only the invoice modal container */
+  body > div > .fixed:has(#invoice-report) {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    background: none !important;
+    overflow: visible !important;
+    z-index: 9999 !important;
+  }
+
+  body > div > .fixed:has(#invoice-report) > div {
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* STEP 5: Make invoice report visible */
   #invoice-report,
   #invoice-report * {
-    visibility: visible;
+    visibility: visible !important;
   }
 
   #invoice-report {
@@ -26,12 +60,51 @@
     width: 100%;
     padding: 0;
     margin: 0;
-    height: 100vh;
     overflow: hidden;
     page-break-after: avoid;
+    transform: scale(0.90);
+    transform-origin: top left;
+    width: 111.11% !important;
   }
 
-  /* MAKE TABLE BODY DATA VISIBLE - Keep headers hidden */
+  /* STEP 6: Hide print action buttons inside invoice */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print-hidden {
+    display: none !important;
+  }
+
+  /* Remove all borders, backgrounds, shadows */
+  #invoice-report * {
+    border: none !important;
+    background: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Input styling */
+  #invoice-report input {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    visibility: visible !important;
+    position: static !important;
+    transform: none !important;
+    line-height: 1.2 !important;
+  }
+
+  #invoice-report input[type="checkbox"] {
+    visibility: hidden !important;
+  }
+
+  #invoice-report .mx-4[type="number"] {
+    margin-left: 0.75rem !important;
+    margin-right: 0.75rem !important;
+  }
+
+  /* Table body visible */
   #invoice-report tbody tr,
   #invoice-report tbody td,
   #invoice-report tbody td * {
@@ -45,82 +118,7 @@
     font-size: 0 !important;
   }
 
-  .print-hidden {
-    display: none !important;
-  }
-
-  /* Remove all borders, backgrounds, and shadows in print */
-  #invoice-report * {
-    border: none !important;
-    background: none !important;
-    box-shadow: none !important;
-  }
-
-  /* Hide input borders but keep values visible */
-  #invoice-report input {
-    border: none !important;
-    background: transparent !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    visibility: visible !important;
-    position: static !important;
-    transform: none !important;
-  }
-
-
-  /* Hide the modal backdrop and all other modals */
-  .fixed.inset-0:not(:has(#invoice-report)) {
-    display: none !important;
-  }
-
-  /* Hide everything outside the invoice modal */
-  body>*:not(:has(#invoice-report)) {
-    display: none !important;
-  }
-
-  /* Ensure the invoice modal container is not clipped */
-  .fixed.inset-0:has(#invoice-report) {
-    position: static !important;
-    background: none !important;
-    overflow: visible !important;
-    z-index: auto !important;
-  }
-
-  .fixed.inset-0:has(#invoice-report)>div {
-    max-height: none !important;
-    overflow: visible !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-  }
-
-  #invoice-report .mx-4[type="number"] {
-    margin-left: 0.75rem !important;
-    margin-right: 0.75rem !important;
-  }
-
-  /* Hide checkboxes */
-  #invoice-report input[type="checkbox"] {
-    visibility: hidden !important;
-  }
-
-  /* SPECIFICALLY TARGET THE 6-BOX SECTION TO MAINTAIN POSITION */
-  #invoice-report .grid.grid-cols-6.border-gray-900>div {
-    position: relative !important;
-    height: auto !important;
-    min-height: 0 !important;
-  }
-
-  /* Hide labels but maintain exact layout and spacing */
-  #invoice-report .border-r-1.border-gray-900:first-child div,
-  /* BOX 1 Labels */
-  #invoice-report .border-r-1.border-gray-900:nth-child(3) div,
-  /* BOX 3 Labels */
-  #invoice-report .border-r-1.border-gray-900:nth-child(5) div,
-  /* BOX 5 Labels */
-  #invoice-report .col-span-4 .font-medium,
-  /* "Received the amount of" label */
-  #invoice-report .col-span-2 .font-medium,
-  /* Right side labels */
+  /* Hide labels but keep layout */
   #invoice-report .font-bold:not(input),
   #invoice-report .font-semibold:not(input),
   #invoice-report .font-medium:not(input) {
@@ -128,12 +126,18 @@
     color: transparent !important;
   }
 
-  /* Keep the div structure but hide text content */
   #invoice-report div:not(:has(input)):not(.print-visible) {
     color: transparent !important;
   }
 
-  /* Ensure inputs maintain exact same position and spacing */
+  /* Force print-visible content to show */
+  .print-visible,
+  .print-visible * {
+    visibility: visible !important;
+    color: black !important;
+  }
+
+  /* Readonly inputs positioning */
   #invoice-report input[readonly] {
     position: relative !important;
     top: 0 !important;
@@ -145,29 +149,26 @@
     width: 100% !important;
   }
 
-  /* Specifically target the amount inputs in the 2-column section */
   #invoice-report .col-span-2 input[readonly] {
     margin-bottom: 8px !important;
-    /* Match the mb-2 spacing */
   }
 
   #invoice-report .col-span-2 input[readonly]:last-child {
     margin-bottom: 0 !important;
   }
 
-  /* Hide the border line under "Received the amount of" */
+  /* Grid sections */
+  #invoice-report .grid.grid-cols-6.border-gray-900 > div {
+    position: relative !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
   #invoice-report .border-b.border-gray-900 {
     border: none !important;
   }
 
-  /* Force visibility for date and business address */
-  .print-visible,
-  .print-visible * {
-    visibility: visible !important;
-    color: black !important;
-  }
-
-  /* Ensure proper spacing for printed text */
+  /* Table */
   #invoice-report table {
     border-collapse: collapse !important;
   }
@@ -178,58 +179,17 @@
     padding: 1px 4px !important;
   }
 
-  /* Reduce all margins and padding in print */
-  #invoice-report .mb-5 {
-    margin-bottom: 6px !important;
-  }
+  /* Spacing */
+  #invoice-report .mb-5 { margin-bottom: 6px !important; }
+  #invoice-report .mb-2 { margin-bottom: 3px !important; }
+  #invoice-report .mb-1\.5 { margin-bottom: 3px !important; }
+  #invoice-report .mt-11 { margin-top: 10px !important; }
+  #invoice-report .mt-6 { margin-top: 6px !important; }
+  #invoice-report .py-3 { padding-top: 3px !important; padding-bottom: 3px !important; }
+  #invoice-report .py-2 { padding-top: 1px !important; padding-bottom: 1px !important; }
+  #invoice-report .pb-4 { padding-bottom: 4px !important; }
+  #invoice-report .pt-2 { padding-top: 2px !important; }
 
-  #invoice-report .mb-2 {
-    margin-bottom: 3px !important;
-  }
-
-  #invoice-report .mb-1\.5 {
-    margin-bottom: 3px !important;
-  }
-
-  #invoice-report .mt-11 {
-    margin-top: 10px !important;
-  }
-
-  #invoice-report .mt-6 {
-    margin-top: 6px !important;
-  }
-
-  #invoice-report .py-3 {
-    padding-top: 3px !important;
-    padding-bottom: 3px !important;
-  }
-
-  #invoice-report .py-2 {
-    padding-top: 1px !important;
-    padding-bottom: 1px !important;
-  }
-
-  #invoice-report .pb-4 {
-    padding-bottom: 4px !important;
-  }
-
-  #invoice-report .pt-2 {
-    padding-top: 2px !important;
-  }
-
-  /* Scale down the entire invoice slightly */
-  #invoice-report {
-    transform: scale(0.90);
-    transform-origin: top left;
-    width: 111.11% !important;
-  }
-
-  /* Ensure no text is cropped */
-  #invoice-report input {
-    line-height: 1.2 !important;
-  }
-
-  /* Reduce spacing in bottom sections */
   #invoice-report .grid.grid-cols-6.border-gray-900 {
     margin-top: 4px !important;
   }
@@ -237,5 +197,4 @@
   #invoice-report .grid.grid-cols-2.border-1 {
     margin-top: 4px !important;
   }
-
 }
