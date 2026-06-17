@@ -8,88 +8,53 @@
     overflow: hidden !important;
   }
 
-  /* STEP 1: Hide everything first */
+  /* Hide everything */
   body * {
-    visibility: hidden;
+    visibility: hidden !important;
   }
 
-  /* STEP 2: Hide sales report elements */
-  #sales-print-area,
-  .sales-print-header,
-  .sales-print-meta,
-  #sales-summary-print {
-    display: none !important;
-  }
-
-  /* STEP 3: Hide all fixed modals */
-  body > div > .fixed {
-    display: none !important;
-  }
-
-  /* STEP 4: Show only the invoice modal container */
-  body > div > .fixed:has(#invoice-report) {
-    display: block !important;
+  /* Show only invoice-report and all its children */
+  #invoice-report {
+    visibility: visible !important;
     position: fixed !important;
-    inset: 0 !important;
-    background: none !important;
-    overflow: visible !important;
-    z-index: 9999 !important;
-  }
-
-  body > div > .fixed:has(#invoice-report) > div {
-    max-height: none !important;
-    overflow: visible !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 111.11% !important;
+    transform: scale(0.90) !important;
+    transform-origin: top left !important;
     padding: 0 !important;
+    margin: 0 !important;
+    z-index: 99999 !important;
+    background: white !important;
   }
 
-  /* STEP 5: Make invoice report visible */
-  #invoice-report,
   #invoice-report * {
     visibility: visible !important;
   }
 
-  #invoice-report {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    padding: 0;
-    margin: 0;
-    overflow: hidden;
-    page-break-after: avoid;
-    transform: scale(0.90);
-    transform-origin: top left;
-    width: 111.11% !important;
-  }
-
-  /* STEP 6: Hide print action buttons inside invoice */
-  .print\:hidden {
+  /* Hide buttons inside invoice */
+  #invoice-report .print\:hidden {
     display: none !important;
+    visibility: hidden !important;
   }
 
   .print-hidden {
     display: none !important;
   }
 
-  /* Remove all borders, backgrounds, shadows */
+  /* Remove borders/backgrounds/shadows */
   #invoice-report * {
     border: none !important;
     background: none !important;
     box-shadow: none !important;
   }
 
-  /* Input styling */
+  /* Inputs */
   #invoice-report input {
     border: none !important;
     background: transparent !important;
     padding: 0 !important;
     margin: 0 !important;
-    visibility: visible !important;
     position: static !important;
     transform: none !important;
     line-height: 1.2 !important;
@@ -104,7 +69,7 @@
     margin-right: 0.75rem !important;
   }
 
-  /* Table body visible */
+  /* Table body */
   #invoice-report tbody tr,
   #invoice-report tbody td,
   #invoice-report tbody td * {
@@ -118,7 +83,7 @@
     font-size: 0 !important;
   }
 
-  /* Hide labels but keep layout */
+  /* Hide text labels but keep layout */
   #invoice-report .font-bold:not(input),
   #invoice-report .font-semibold:not(input),
   #invoice-report .font-medium:not(input) {
@@ -130,14 +95,14 @@
     color: transparent !important;
   }
 
-  /* Force print-visible content to show */
+  /* Force print-visible content */
   .print-visible,
   .print-visible * {
     visibility: visible !important;
     color: black !important;
   }
 
-  /* Readonly inputs positioning */
+  /* Readonly inputs */
   #invoice-report input[readonly] {
     position: relative !important;
     top: 0 !important;
