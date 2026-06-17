@@ -212,7 +212,7 @@
   }
 
   /* ===== ADJUST SOLD TO / REGISTERED NAME / TIN / BUSINESS ADDRESS TO LEFT ===== */
-  /* Target the SOLD TO row */
+  /* Target the SOLD TO row - move left */
   #invoice-report .border-1.border-gray-900 .flex.items-center {
     padding-left: 0px !important;
     margin-left: -12px !important;
@@ -222,6 +222,7 @@
   #invoice-report .border-1.border-gray-900 .flex.items-center .font-bold.text-gray-900.w-48 {
     padding-left: 0px !important;
     margin-left: -12px !important;
+    width: 180px !important;
   }
 
   /* Target the SOLD TO value */
@@ -236,28 +237,66 @@
     margin-left: -12px !important;
   }
 
-  /* Target the BUSINESS ADDRESS section */
+  /* ===== BUSINESS ADDRESS - Move down a little below TIN ===== */
+  /* Target the BUSINESS ADDRESS section container */
   #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] {
     padding-left: 0px !important;
     margin-left: -12px !important;
+    margin-top: 6px !important;
+    padding-top: 4px !important;
   }
 
   /* Target BUSINESS ADDRESS label */
   #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] .font-bold.text-black-900.pt-1.self-start {
     padding-left: 0px !important;
     margin-left: -12px !important;
+    padding-top: 0px !important;
+    margin-top: 0px !important;
+    width: 180px !important;
+    text-align: left !important;
   }
 
   /* Target BUSINESS ADDRESS value */
   #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] .text-black-900.-mt-1.leading-\[1\.1\].tracking-tight.print-visible {
     padding-left: 0px !important;
     margin-left: -12px !important;
+    padding-top: 0px !important;
+    margin-top: 0px !important;
+    text-align: left !important;
   }
 
   /* Target the grid containing BUSINESS ADDRESS */
   #invoice-report .grid.grid-cols-\[180px_1fr\] {
     padding-left: 0px !important;
     margin-left: -12px !important;
+    display: grid !important;
+    grid-template-columns: 180px 1fr !important;
+    gap: 0 !important;
+    align-items: start !important;
+    margin-top: 6px !important;
+    padding-top: 4px !important;
+  }
+
+  /* Target BUSINESS ADDRESS label specifically */
+  #invoice-report .grid.grid-cols-\[180px_1fr\] .font-bold.text-black-900.pt-1.self-start {
+    padding-left: 0px !important;
+    margin-left: -12px !important;
+    padding-top: 0px !important;
+    margin-top: 0px !important;
+    width: 180px !important;
+  }
+
+  /* Target BUSINESS ADDRESS value specifically */
+  #invoice-report .grid.grid-cols-\[180px_1fr\] .text-black-900.-mt-1.leading-\[1\.1\].tracking-tight.print-visible {
+    padding-left: 0px !important;
+    margin-left: -12px !important;
+    padding-top: 0px !important;
+    margin-top: 0px !important;
+  }
+
+  /* Remove negative margin from BUSINESS ADDRESS value */
+  #invoice-report .grid.grid-cols-\[180px_1fr\] .text-black-900.-mt-1 {
+    margin-top: 0px !important;
   }
 
   /* ===== ADJUST ITEM DESCRIPTION / NATURE OF SERVICE / QTY / UNIT COST / AMOUNT TO TOP ===== */
@@ -453,48 +492,30 @@
     margin-left: -10px !important;
   }
 
-  /* ===== BUSINESS ADDRESS ADJUSTMENT - Move up slightly ===== */
+  /* ===== BUSINESS ADDRESS ADJUSTMENT - Move down below TIN ===== */
+  /* Add extra margin-top to push BUSINESS ADDRESS down */
   #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] {
-    margin-top: 0px !important;
-    padding-top: 0px !important;
-  }
-
-  #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] .print-visible {
-    margin-top: 0px !important;
-    padding-top: 0px !important;
-  }
-
-  #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] .font-bold.text-black-900.pt-1.self-start {
-    padding-top: 0px !important;
-    margin-top: 0px !important;
-  }
-
-  #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] .text-black-900.-mt-1.leading-\[1\.1\].tracking-tight.print-visible {
-    padding-top: 0px !important;
-    margin-top: 0px !important;
-  }
-
-  #invoice-report .grid.grid-cols-\[180px_1fr\] {
-    margin-top: 0px !important;
-    padding-top: 0px !important;
-  }
-
-  /* ===== ADJUST SOLD TO / REGISTERED NAME / TIN VALUES TO LEFT ===== */
-  /* Target the value text specifically */
-  #invoice-report .border-1.border-gray-900 .flex.items-center .text-black-900.flex-1 {
-    padding-left: 0px !important;
+    margin-top: 8px !important;
+    padding-top: 4px !important;
     margin-left: -12px !important;
+    padding-left: 0px !important;
   }
 
-  /* Target all text in the sold to section */
-  #invoice-report .border-1.border-gray-900 .flex.flex-col.gap-2 .text-black-900 {
-    padding-left: 0px !important;
-    margin-left: -12px !important;
+  /* Ensure BUSINESS ADDRESS uses grid layout */
+  #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] {
+    display: grid !important;
+    grid-template-columns: 180px 1fr !important;
+    align-items: start !important;
   }
 
-  /* Target the SOLD TO label specifically */
-  #invoice-report .border-1.border-gray-900 .flex.items-center .font-bold.text-gray-900.w-48 {
-    padding-left: 0px !important;
+  /* Target the BUSINESS ADDRESS container */
+  #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] {
     margin-left: -12px !important;
+    padding-left: 0px !important;
+  }
+
+  /* Remove negative margin from BUSINESS ADDRESS value */
+  #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] .text-black-900.-mt-1 {
+    margin-top: 0px !important;
   }
 }
