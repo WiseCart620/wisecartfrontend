@@ -381,40 +381,34 @@
     margin-top: -2px !important;
   }
 
-  /* ===== BUSINESS ADDRESS ADJUSTMENT - Move down ===== */
+  /* ===== BUSINESS ADDRESS ADJUSTMENT - Move up slightly (less spacing) ===== */
   /* Target the grid row containing BUSINESS ADDRESS */
   #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] {
-    margin-top: 6px !important;
-    padding-top: 4px !important;
+    margin-top: 2px !important;
+    padding-top: 2px !important;
   }
 
   /* Target the BUSINESS ADDRESS label and value container */
   #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] .print-visible {
-    margin-top: 4px !important;
-    padding-top: 2px !important;
-  }
-
-  /* Alternative: Target the parent container of BUSINESS ADDRESS */
-  #invoice-report .border-1.border-gray-900 .flex.flex-col.gap-2 .grid-cols-\[180px_1fr\] {
-    margin-top: 8px !important;
-    padding-top: 4px !important;
+    margin-top: 0px !important;
+    padding-top: 0px !important;
   }
 
   /* Directly target BUSINESS ADDRESS row */
   #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] .font-bold.text-black-900.pt-1.self-start {
-    padding-top: 6px !important;
-    margin-top: 4px !important;
+    padding-top: 2px !important;
+    margin-top: 0px !important;
   }
 
   /* Target the BUSINESS ADDRESS value text */
   #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] .text-black-900.-mt-1.leading-\[1\.1\].tracking-tight.print-visible {
-    padding-top: 6px !important;
-    margin-top: 4px !important;
+    padding-top: 2px !important;
+    margin-top: 0px !important;
   }
 
-  /* If the above doesn't work, target the specific grid */
+  /* Target the specific grid */
   #invoice-report .grid.grid-cols-\[180px_1fr\] {
-    margin-top: 8px !important;
-    padding-top: 4px !important;
+    margin-top: 2px !important;
+    padding-top: 2px !important;
   }
 }
