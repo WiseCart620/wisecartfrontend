@@ -8,68 +8,43 @@
     overflow: hidden !important;
   }
 
-  /* Hide everything */
+  /* Hide everything including what sales-report-print.css shows */
   body * {
     visibility: hidden !important;
   }
 
-  /* Show only invoice-report and all its children */
+  /* Force hide all sales report elements even if sales-report-print.css shows them */
+  #sales-print-area,
+  #sales-print-area *,
+  #sales-summary-print,
+  #sales-summary-print *,
+  .sales-print-header,
+  .sales-print-header *,
+  .sales-print-meta,
+  .sales-print-meta * {
+    visibility: hidden !important;
+    display: none !important;
+  }
+
+  /* Show only invoice */
+  #invoice-report,
+  #invoice-report * {
+    visibility: visible !important;
+  }
+
   #invoice-report {
-    visibility: visible !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    page-break-after: avoid;
+    transform: scale(0.90);
+    transform-origin: top left;
     width: 111.11% !important;
-    transform: scale(0.90) !important;
-    transform-origin: top left !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    z-index: 99999 !important;
-    background: white !important;
   }
 
-  #invoice-report * {
-    visibility: visible !important;
-  }
-
-  /* Hide buttons inside invoice */
-  #invoice-report .print\:hidden {
-    display: none !important;
-    visibility: hidden !important;
-  }
-
-  .print-hidden {
-    display: none !important;
-  }
-
-  /* Remove borders/backgrounds/shadows */
-  #invoice-report * {
-    border: none !important;
-    background: none !important;
-    box-shadow: none !important;
-  }
-
-  /* Inputs */
-  #invoice-report input {
-    border: none !important;
-    background: transparent !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    position: static !important;
-    transform: none !important;
-    line-height: 1.2 !important;
-  }
-
-  #invoice-report input[type="checkbox"] {
-    visibility: hidden !important;
-  }
-
-  #invoice-report .mx-4[type="number"] {
-    margin-left: 0.75rem !important;
-    margin-right: 0.75rem !important;
-  }
-
-  /* Table body */
   #invoice-report tbody tr,
   #invoice-report tbody td,
   #invoice-report tbody td * {
@@ -83,7 +58,42 @@
     font-size: 0 !important;
   }
 
-  /* Hide text labels but keep layout */
+  .print-hidden {
+    display: none !important;
+  }
+
+  #invoice-report * {
+    border: none !important;
+    background: none !important;
+    box-shadow: none !important;
+  }
+
+  #invoice-report input {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    visibility: visible !important;
+    position: static !important;
+    transform: none !important;
+    line-height: 1.2 !important;
+  }
+
+  #invoice-report .mx-4[type="number"] {
+    margin-left: 0.75rem !important;
+    margin-right: 0.75rem !important;
+  }
+
+  #invoice-report input[type="checkbox"] {
+    visibility: hidden !important;
+  }
+
+  #invoice-report .grid.grid-cols-6.border-gray-900 > div {
+    position: relative !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
   #invoice-report .font-bold:not(input),
   #invoice-report .font-semibold:not(input),
   #invoice-report .font-medium:not(input) {
@@ -95,14 +105,12 @@
     color: transparent !important;
   }
 
-  /* Force print-visible content */
   .print-visible,
   .print-visible * {
     visibility: visible !important;
     color: black !important;
   }
 
-  /* Readonly inputs */
   #invoice-report input[readonly] {
     position: relative !important;
     top: 0 !important;
@@ -122,18 +130,10 @@
     margin-bottom: 0 !important;
   }
 
-  /* Grid sections */
-  #invoice-report .grid.grid-cols-6.border-gray-900 > div {
-    position: relative !important;
-    height: auto !important;
-    min-height: 0 !important;
-  }
-
   #invoice-report .border-b.border-gray-900 {
     border: none !important;
   }
 
-  /* Table */
   #invoice-report table {
     border-collapse: collapse !important;
   }
@@ -144,7 +144,6 @@
     padding: 1px 4px !important;
   }
 
-  /* Spacing */
   #invoice-report .mb-5 { margin-bottom: 6px !important; }
   #invoice-report .mb-2 { margin-bottom: 3px !important; }
   #invoice-report .mb-1\.5 { margin-bottom: 3px !important; }
