@@ -240,13 +240,13 @@
   }
 
   /* ADJUST TOTAL SALES / VAT / ZERO-RATED / VAT-EXEMPT SECTION */
-  /* Target the VAT/PT section - move left and up */
+  /* Target the labels column - move left */
   #invoice-report .grid .border-l-0.border-1.border-t-0.border-gray-900 {
-    padding-left: 2px !important;
+    padding-left: 0px !important;
     padding-right: 2px !important;
     padding-top: 2px !important;
     padding-bottom: 2px !important;
-    margin-left: -2px !important;
+    margin-left: -4px !important;
     margin-top: -2px !important;
   }
 
@@ -254,7 +254,7 @@
   #invoice-report .grid .border-r-1.border-gray-900 input[readonly] {
     padding-left: 1px !important;
     padding-right: 1px !important;
-    margin-left: -2px !important;
+    margin-left: -4px !important;
     margin-top: -2px !important;
     padding-top: 0px !important;
     padding-bottom: 0px !important;
@@ -265,6 +265,8 @@
     padding-top: 1px !important;
     padding-bottom: 1px !important;
     margin-top: -2px !important;
+    padding-left: 0px !important;
+    margin-left: -4px !important;
   }
 
   /* Reduce gap between VAT rows */
@@ -278,7 +280,8 @@
     padding-top: 1px !important;
     padding-bottom: 1px !important;
     margin-top: -2px !important;
-    padding-left: 2px !important;
+    padding-left: 0px !important;
+    margin-left: -4px !important;
   }
 
   /* Move the right column values up */
@@ -381,34 +384,63 @@
     margin-top: -2px !important;
   }
 
-  /* ===== BUSINESS ADDRESS ADJUSTMENT - Move up slightly (less spacing) ===== */
-  /* Target the grid row containing BUSINESS ADDRESS */
+  /* ===== BUSINESS ADDRESS ADJUSTMENT - Move up slightly ===== */
   #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] {
     margin-top: 2px !important;
     padding-top: 2px !important;
   }
 
-  /* Target the BUSINESS ADDRESS label and value container */
   #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] .print-visible {
     margin-top: 0px !important;
     padding-top: 0px !important;
   }
 
-  /* Directly target BUSINESS ADDRESS row */
   #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] .font-bold.text-black-900.pt-1.self-start {
     padding-top: 2px !important;
     margin-top: 0px !important;
   }
 
-  /* Target the BUSINESS ADDRESS value text */
   #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] .text-black-900.-mt-1.leading-\[1\.1\].tracking-tight.print-visible {
     padding-top: 2px !important;
     margin-top: 0px !important;
   }
 
-  /* Target the specific grid */
   #invoice-report .grid.grid-cols-\[180px_1fr\] {
     margin-top: 2px !important;
     padding-top: 2px !important;
+  }
+
+  /* ===== MOVE TOTAL SALES / VAT / ZERO-RATED / VAT-EXEMPT LABELS MORE TO THE LEFT ===== */
+  /* Target the specific column containing these labels */
+  #invoice-report .grid.grid-cols-6.border-1.border-gray-900 .col-span-2 .border-l-0.border-1.border-t-0.border-gray-900 {
+    padding-left: 0px !important;
+    margin-left: -6px !important;
+  }
+
+  /* Target the div containers with these labels */
+  #invoice-report .grid.grid-cols-6.border-1.border-gray-900 .col-span-2 .border-l-0.border-1.border-t-0.border-gray-900 div {
+    padding-left: 0px !important;
+    margin-left: -6px !important;
+    text-align: left !important;
+  }
+
+  /* Specific target for the Total Sales, VAT/PT, Zero-Rated, VAT-Exempt text */
+  #invoice-report .grid.grid-cols-6.border-1.border-gray-900 .col-span-2 .border-l-0.border-1.border-t-0.border-gray-900 .mb-2,
+  #invoice-report .grid.grid-cols-6.border-1.border-gray-900 .col-span-2 .border-l-0.border-1.border-t-0.border-gray-900 .mb-2\:last-child,
+  #invoice-report .grid.grid-cols-6.border-1.border-gray-900 .col-span-2 .border-l-0.border-1.border-t-0.border-gray-900 div:not(:last-child) {
+    padding-left: 0px !important;
+    margin-left: -6px !important;
+  }
+
+  /* Alternative: Target the parent container and shift everything left */
+  #invoice-report .grid.grid-cols-6.border-1.border-gray-900 .col-span-2:first-child {
+    padding-left: 0px !important;
+    margin-left: -4px !important;
+  }
+
+  /* Target the container div that holds both label columns */
+  #invoice-report .grid.grid-cols-6.border-1.border-gray-900 .col-span-2 {
+    padding-left: 0px !important;
+    margin-left: -4px !important;
   }
 }
