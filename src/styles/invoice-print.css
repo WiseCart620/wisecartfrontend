@@ -211,7 +211,7 @@
     margin-top: 4px !important;
   }
 
-  /* ===== ADJUST SOLD TO / REGISTERED NAME / TIN / BUSINESS ADDRESS TO LEFT ===== */
+  /* ===== ADJUST SOLD TO / REGISTERED NAME / TIN TO LEFT ===== */
   /* Target the SOLD TO row - move left */
   #invoice-report .border-1.border-gray-900 .flex.items-center {
     padding-left: 0px !important;
@@ -237,16 +237,27 @@
     margin-left: -12px !important;
   }
 
-  /* ===== BUSINESS ADDRESS - Move down a little below TIN ===== */
+  /* Target the SOLD TO label specifically */
+  #invoice-report .border-1.border-gray-900 .flex.items-center .font-bold.text-gray-900.w-48 {
+    padding-left: 0px !important;
+    margin-left: -12px !important;
+    width: 180px !important;
+  }
+
+  /* ===== BUSINESS ADDRESS - Align with SOLD TO / REGISTERED NAME / TIN ===== */
   /* Target the BUSINESS ADDRESS section container */
   #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] {
     padding-left: 0px !important;
     margin-left: -12px !important;
-    margin-top: 6px !important;
+    display: grid !important;
+    grid-template-columns: 180px 1fr !important;
+    gap: 0 !important;
+    align-items: start !important;
+    margin-top: 8px !important;
     padding-top: 4px !important;
   }
 
-  /* Target BUSINESS ADDRESS label */
+  /* Target BUSINESS ADDRESS label - match SOLD TO label */
   #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] .font-bold.text-black-900.pt-1.self-start {
     padding-left: 0px !important;
     margin-left: -12px !important;
@@ -256,7 +267,7 @@
     text-align: left !important;
   }
 
-  /* Target BUSINESS ADDRESS value */
+  /* Target BUSINESS ADDRESS value - align with other values */
   #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] .text-black-900.-mt-1.leading-\[1\.1\].tracking-tight.print-visible {
     padding-left: 0px !important;
     margin-left: -12px !important;
@@ -273,25 +284,8 @@
     grid-template-columns: 180px 1fr !important;
     gap: 0 !important;
     align-items: start !important;
-    margin-top: 6px !important;
+    margin-top: 8px !important;
     padding-top: 4px !important;
-  }
-
-  /* Target BUSINESS ADDRESS label specifically */
-  #invoice-report .grid.grid-cols-\[180px_1fr\] .font-bold.text-black-900.pt-1.self-start {
-    padding-left: 0px !important;
-    margin-left: -12px !important;
-    padding-top: 0px !important;
-    margin-top: 0px !important;
-    width: 180px !important;
-  }
-
-  /* Target BUSINESS ADDRESS value specifically */
-  #invoice-report .grid.grid-cols-\[180px_1fr\] .text-black-900.-mt-1.leading-\[1\.1\].tracking-tight.print-visible {
-    padding-left: 0px !important;
-    margin-left: -12px !important;
-    padding-top: 0px !important;
-    margin-top: 0px !important;
   }
 
   /* Remove negative margin from BUSINESS ADDRESS value */
@@ -358,6 +352,12 @@
     margin-left: -12px !important;
   }
 
+  /* ===== ADD MARGIN TO TOTAL SALES / VAT / ZERO-RATED / VAT-EXEMPT VALUES ===== */
+  /* Add margin bottom to match spacing */
+  #invoice-report .grid .border-r-1.border-gray-900 input[readonly] {
+    margin-bottom: 4px !important;
+  }
+
   /* ===== ADJUST TOTAL SALES (VAT Inclusive) / Less: VAT / Amount: Net of VAT / Less: Discount TO TOP ===== */
   /* Move left column labels up */
   #invoice-report .grid .border-l-0.border-1.border-t-0.border-gray-900:not(.col-span-2) {
@@ -373,7 +373,7 @@
     padding-top: 0px !important;
     padding-bottom: 0px !important;
     margin-top: -6px !important;
-    margin-bottom: 1px !important;
+    margin-bottom: 4px !important;
   }
 
   /* ===== ADJUST Received the amount of / Add: VAT / Less: Withholding Tax / Total Amount Due TO TOP ===== */
@@ -396,7 +396,7 @@
     padding-top: 0px !important;
     padding-bottom: 0px !important;
     margin-top: -6px !important;
-    margin-bottom: 1px !important;
+    margin-bottom: 4px !important;
   }
 
   /* Move Add: VAT, Less: Withholding Tax, Total Amount Due labels up */
@@ -492,30 +492,32 @@
     margin-left: -10px !important;
   }
 
-  /* ===== BUSINESS ADDRESS ADJUSTMENT - Move down below TIN ===== */
-  /* Add extra margin-top to push BUSINESS ADDRESS down */
-  #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] {
-    margin-top: 8px !important;
-    padding-top: 4px !important;
-    margin-left: -12px !important;
-    padding-left: 0px !important;
+  /* ===== ADD SAME MARGIN TO ALL DATA SECTIONS ===== */
+  /* Add consistent margin to Total Sales / VAT / Zero-Rated / VAT-Exempt values */
+  #invoice-report .grid .border-r-1.border-gray-900 input[readonly] {
+    margin-bottom: 8px !important;
   }
 
-  /* Ensure BUSINESS ADDRESS uses grid layout */
-  #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] {
-    display: grid !important;
-    grid-template-columns: 180px 1fr !important;
-    align-items: start !important;
+  /* Add consistent margin to TOTAL SALES (VAT Inclusive) / Less: VAT / Amount: Net of VAT / Less: Discount values */
+  #invoice-report .grid .border-1.flex.flex-col.justify-start.border-t-0.border-l-0.border-r-0 input[readonly] {
+    margin-bottom: 8px !important;
   }
 
-  /* Target the BUSINESS ADDRESS container */
-  #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] {
-    margin-left: -12px !important;
-    padding-left: 0px !important;
+  /* Add consistent margin to Received the amount of / Add: VAT / Less: Withholding Tax / Total Amount Due values */
+  #invoice-report .col-span-2 .border-1.flex.flex-col.justify-start.border-t-0.border-l-0 input[readonly] {
+    margin-bottom: 8px !important;
   }
 
-  /* Remove negative margin from BUSINESS ADDRESS value */
-  #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] .text-black-900.-mt-1 {
-    margin-top: 0px !important;
+  /* Ensure last item in each section has no margin */
+  #invoice-report .grid .border-r-1.border-gray-900 input[readonly]:last-child {
+    margin-bottom: 0px !important;
+  }
+
+  #invoice-report .grid .border-1.flex.flex-col.justify-start.border-t-0.border-l-0.border-r-0 input[readonly]:last-child {
+    margin-bottom: 0px !important;
+  }
+
+  #invoice-report .col-span-2 .border-1.flex.flex-col.justify-start.border-t-0.border-l-0 input[readonly]:last-child {
+    margin-bottom: 0px !important;
   }
 }
