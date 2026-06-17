@@ -78,7 +78,7 @@
   }
 
   /* SPECIFICALLY TARGET THE 6-BOX SECTION TO MAINTAIN POSITION */
-  #invoice-report .grid.grid-cols-6.border-gray-900 > div {
+  #invoice-report .grid.grid-cols-6.border-gray-900>div {
     position: relative !important;
     height: auto !important;
     min-height: 0 !important;
@@ -263,10 +263,9 @@
     text-align: left !important;
   }
 
-  /* Target BUSINESS ADDRESS value - move slightly left to align */
   #invoice-report .border-1.border-gray-900 .grid-cols-\[180px_1fr\] .text-black-900.-mt-1.leading-\[1\.1\].tracking-tight.print-visible {
     padding-left: 0px !important;
-    margin-left: -4px !important;
+    margin-left: -20px !important;
     padding-top: 0px !important;
     margin-top: 0px !important;
     text-align: left !important;
@@ -298,10 +297,9 @@
     width: 180px !important;
   }
 
-  /* Target BUSINESS ADDRESS value in the grid - move slightly left */
   #invoice-report .grid.grid-cols-\[180px_1fr\] .text-black-900.-mt-1.leading-\[1\.1\].tracking-tight.print-visible {
     padding-left: 0px !important;
-    margin-left: -4px !important;
+    margin-left: -20px !important;
     padding-top: 0px !important;
     margin-top: 0px !important;
   }
