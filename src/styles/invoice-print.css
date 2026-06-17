@@ -78,23 +78,23 @@
   }
 
   /* SPECIFICALLY TARGET THE 6-BOX SECTION TO MAINTAIN POSITION */
-  #invoice-report .grid.grid-cols-6.border-gray-900>div {
+  #invoice-report .grid.grid-cols-6.border-gray-900 > div {
     position: relative !important;
     height: auto !important;
     min-height: 0 !important;
   }
 
   /* Hide labels but maintain exact layout and spacing */
-  #invoice-report .border-r-1.border-gray-900:first-child div,
   /* BOX 1 Labels */
-  #invoice-report .border-r-1.border-gray-900:nth-child(3) div,
+  #invoice-report .border-r-1.border-gray-900:first-child div,
   /* BOX 3 Labels */
-  #invoice-report .border-r-1.border-gray-900:nth-child(5) div,
+  #invoice-report .border-r-1.border-gray-900:nth-child(3) div,
   /* BOX 5 Labels */
+  #invoice-report .border-r-1.border-gray-900:nth-child(5) div,
+  /* Received the amount of label */
   #invoice-report .col-span-4 .font-medium,
-  /* "Received the amount of" label */
-  #invoice-report .col-span-2 .font-medium,
   /* Right side labels */
+  #invoice-report .col-span-2 .font-medium,
   #invoice-report .font-bold:not(input),
   #invoice-report .font-semibold:not(input),
   #invoice-report .font-medium:not(input) {
@@ -122,14 +122,13 @@
   /* Specifically target the amount inputs in the 2-column section */
   #invoice-report .col-span-2 input[readonly] {
     margin-bottom: 8px !important;
-    /* Match the mb-2 spacing */
   }
 
   #invoice-report .col-span-2 input[readonly]:last-child {
     margin-bottom: 0 !important;
   }
 
-  /* Hide the border line under "Received the amount of" */
+  /* Hide the border line under Received the amount of */
   #invoice-report .border-b.border-gray-900 {
     border: none !important;
   }
@@ -212,7 +211,7 @@
     margin-top: 4px !important;
   }
 
-  /* ==== NEW ADJUSTMENTS FOR ITEM DESCRIPTION / NATURE OF SERVICE ==== */
+  /* ADJUSTMENTS FOR ITEM DESCRIPTION / NATURE OF SERVICE */
   /* Target the table header and cells - move up slightly */
   #invoice-report table thead th {
     padding-top: 1px !important;
@@ -233,14 +232,14 @@
     padding-bottom: 1px !important;
   }
 
-  /* Move the "ITEM DESCRIPTION / NATURE OF SERVICE" text up */
+  /* Move the ITEM DESCRIPTION / NATURE OF SERVICE text up */
   #invoice-report table thead th:first-child {
     padding-top: 1px !important;
     padding-bottom: 1px !important;
     margin-top: -2px !important;
   }
 
-  /* ==== ADJUST TOTAL SALES / VAT / ZERO-RATED / VAT-EXEMPT SECTION ==== */
+  /* ADJUST TOTAL SALES / VAT / ZERO-RATED / VAT-EXEMPT SECTION */
   /* Target the VAT/PT section - move left and up */
   #invoice-report .grid .border-l-0.border-1.border-t-0.border-gray-900 {
     padding-left: 2px !important;
@@ -273,7 +272,7 @@
     margin-bottom: 1px !important;
   }
 
-  /* ==== ADJUST TOTAL SALES (VAT Inclusive) / Less: VAT / Net of VAT / Discount ==== */
+  /* ADJUST TOTAL SALES (VAT Inclusive) / Less: VAT / Net of VAT / Discount */
   /* Move the left column labels up */
   #invoice-report .grid .border-l-0.border-1.border-t-0.border-gray-900:not(.col-span-2) {
     padding-top: 1px !important;
@@ -290,21 +289,21 @@
     margin-bottom: 1px !important;
   }
 
-  /* Adjust the "TOTAL SALES (VAT Inclusive)" text */
-  #invoice-report .grid .border-l-0.border-1.border-t-0.border-gray-900 .text-\\[9px\\] {
+  /* Adjust the TOTAL SALES (VAT Inclusive) text */
+  #invoice-report .grid .border-l-0.border-1.border-t-0.border-gray-900 .text-\[9px\] {
     font-size: 8px !important;
     margin-top: -1px !important;
   }
 
-  /* ==== ADJUST Received the amount of / Add: VAT / Less: Withholding Tax / Total Amount Due ==== */
-  /* Move "Received the amount of" left column up */
+  /* ADJUST Received the amount of / Add: VAT / Less: Withholding Tax / Total Amount Due */
+  /* Move Received the amount of left column up */
   #invoice-report .col-span-4.border-r-1.border-gray-900 {
     padding-top: 1px !important;
     padding-bottom: 1px !important;
     margin-top: -2px !important;
   }
 
-  /* Move the right column (Add: VAT, Less: Withholding Tax, Total Amount Due) up */
+  /* Move the right column up */
   #invoice-report .col-span-2 .border-l-0.border-1.border-t-0.border-gray-900 {
     padding-top: 1px !important;
     padding-bottom: 1px !important;
@@ -319,14 +318,14 @@
     margin-bottom: 1px !important;
   }
 
-  /* Move "Add: VAT", "Less: Withholding Tax", "Total Amount Due" labels up */
+  /* Move Add: VAT, Less: Withholding Tax, Total Amount Due labels up */
   #invoice-report .col-span-2 .border-l-0.border-1.border-t-0.border-gray-900 div {
     padding-top: 1px !important;
     padding-bottom: 1px !important;
     margin-top: -2px !important;
   }
 
-  /* Adjust the checkbox section for "Received the amount of" */
+  /* Adjust the checkbox section for Received the amount of */
   #invoice-report .col-span-4.border-r-1.border-gray-900 label {
     margin-top: -4px !important;
   }
@@ -345,7 +344,7 @@
     padding-top: 0px !important;
   }
 
-  /* Adjust the "PERMIT TO USE LOOSE LEAF" section */
+  /* Adjust the PERMIT TO USE LOOSE LEAF section */
   #invoice-report .grid.grid-cols-2.border-1.border-t-1.border-gray-900 div {
     padding-top: 2px !important;
     padding-bottom: 2px !important;
@@ -358,7 +357,7 @@
     margin-right: -2px !important;
   }
 
-  /* Ensure "Total Amount Due" value is positioned correctly */
+  /* Ensure Total Amount Due value is positioned correctly */
   #invoice-report .col-span-2 .border-1.flex.flex-col.justify-start.border-t-0.border-l-0 input[readonly]:last-child {
     font-weight: bold !important;
     font-size: 16px !important;
@@ -376,7 +375,7 @@
     margin-top: 2px !important;
   }
 
-  /* Move "TOTAL SALES (VAT Inclusive)" row up */
+  /* Move TOTAL SALES (VAT Inclusive) row up */
   #invoice-report .grid .col-span-2 .border-l-0.border-1.border-t-0.border-gray-900:last-child {
     padding-top: 1px !important;
     margin-top: -2px !important;
