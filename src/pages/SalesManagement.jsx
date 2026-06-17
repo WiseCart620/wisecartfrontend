@@ -2960,7 +2960,7 @@ const SalesManagement = () => {
                     </div>
                   </div>
 
-                  <div className="border-1 border-gray-900 p-3 mb-1.5" style={{ height: '200px' }}>
+                  <div className="border-1 border-gray-900 p-3 mb-1.5" style={{ height: '165px' }}>
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center mb-1.5">
                         <span className="font-bold text-gray-900 w-48">SOLD TO:</span>
