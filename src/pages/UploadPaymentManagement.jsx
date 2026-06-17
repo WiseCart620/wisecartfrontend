@@ -642,6 +642,29 @@ const UploadPaymentManagement = () => {
                         getPaymentStatusBadge={getPaymentStatusBadge}
                         getFileUrl={getFileUrl}
                         getFileDownloadUrl={getFileDownloadUrl}
+                        onPaymentUpdated={async () => {
+                            try {
+                                const response = await api.get('/purchase-orders');
+                                if (response.success && response.data) {
+                                    const actualData = response.data.data || response.data;
+                                    const orders = Array.isArray(actualData) ? actualData : [];
+                                    const submitted = orders.filter(po =>
+                                        po.paymentStatus === 'PAYMENT_PENDING' ||
+                                        po.paymentStatus === 'PARTIAL_PAID' ||
+                                        po.paymentStatus === 'FULL_PAID'
+                                    );
+                                    setPurchaseOrders(orders);
+                                    setPaymentOrders(submitted);
+                                    setViewingPayments(prev => {
+                                        if (!prev) return null;
+                                        const updated = submitted.find(po => po.id === prev.po.id);
+                                        return updated ? { ...prev, po: updated } : prev;
+                                    });
+                                }
+                            } catch (e) {
+                                console.error('Failed to refresh PO data', e);
+                            }
+                        }}
                     />
                 )}
 
@@ -1209,12 +1232,12 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
     const calculateThisPaymentPercentage = () => {
         if (!po || !po.totalAmount || po.totalAmount === 0) return 0;
         const productDollar = parseFloat(formData.productDollarAmount) || 0;
-        return ((productDollar / po.totalAmount) * 100).toFixed(2);
+        return ((productDollar / po.totalAmount) * 100).toFixed(4);
     };
 
     const calculateAlreadyPaidPercentage = () => {
         if (!po || !po.totalAmount || po.totalAmount === 0) return 0;
-        return ((po.totalPaidDollar / po.totalAmount) * 100).toFixed(2);  // ✅ USD / USD
+        return ((po.totalPaidDollar / po.totalAmount) * 100).toFixed(4);
     };
 
     const calculateNewTotalPercentage = () => {
@@ -2014,9 +2037,32 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
 
 
 
-const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, getFileDownloadUrl }) => {
+const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, getFileDownloadUrl, onPaymentUpdated }) => {
     const [shippingData, setShippingData] = useState(null);
     const [othersData, setOthersData] = useState(null);
+    const [editingPaymentId, setEditingPaymentId] = useState(null);
+    const [editForm, setEditForm] = useState({});
+    const [savingPayment, setSavingPayment] = useState(false);
+    const [payments, setPayments] = useState(data.payments || []);
+    const [localPo, setLocalPo] = useState({
+        totalPaidDollar: data.po.totalPaidDollar || 0,
+        totalPaid: data.po.totalPaid || 0,
+        remainingBalance: data.po.remainingBalance || 0,
+        paymentStatus: data.po.paymentStatus,
+    });
+
+    useEffect(() => {
+        setLocalPo({
+            totalPaidDollar: data.po.totalPaidDollar || 0,
+            totalPaid: data.po.totalPaid || 0,
+            remainingBalance: data.po.remainingBalance || 0,
+            paymentStatus: data.po.paymentStatus,
+        });
+    }, [data.po]);
+
+    useEffect(() => {
+        setPayments(data.payments || []);
+    }, [data.payments]);
 
     useEffect(() => {
         const fetchExtra = async () => {
@@ -2032,6 +2078,109 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
         fetchExtra();
     }, [data.po.id]);
 
+    const startEdit = (payment) => {
+        setEditingPaymentId(payment.id);
+        setEditForm({
+            bank: payment.bank || '',
+            referenceNumber: payment.referenceNumber || '',
+            paymentDate: payment.paymentDate || '',
+            productDollarAmount: payment.productDollarAmount?.toString() || '0',
+            productPesoAmount: payment.productPesoAmount?.toString() || '0',
+            processingFeeDollar: payment.processingFeeDollar?.toString() || '0',
+            processingFeePeso: payment.processingFeePeso?.toString() || '0',
+        });
+    };
+
+    const cancelEdit = () => {
+        setEditingPaymentId(null);
+        setEditForm({});
+    };
+
+    const calcPercentage = (productDollar) => {
+        if (!data.po.totalAmount || data.po.totalAmount === 0) return '0.0000';
+        return ((parseFloat(productDollar) / data.po.totalAmount) * 100).toFixed(4);
+    };
+
+    const calcTotalPercentage = (editingId, newProductDollar) => {
+        if (!data.po.totalAmount || data.po.totalAmount === 0) return '0.0000';
+        const total = payments.reduce((sum, p) => {
+            const dollar = p.id === editingId
+                ? parseFloat(newProductDollar) || 0
+                : parseFloat(p.productDollarAmount) || 0;
+            return sum + dollar;
+        }, 0);
+        return ((total / data.po.totalAmount) * 100).toFixed(4);
+    };
+
+    const handleSavePayment = async (paymentId) => {
+        setSavingPayment(true);
+        try {
+            const productDollar = parseFloat(editForm.productDollarAmount) || 0;
+            const productPeso = parseFloat(editForm.productPesoAmount) || 0;
+            const processingDollar = parseFloat(editForm.processingFeeDollar) || 0;
+            const processingPeso = parseFloat(editForm.processingFeePeso) || 0;
+            const totalDollar = productDollar + processingDollar;
+            const totalPeso = productPeso + processingPeso;
+            const percentageOfTotal = parseFloat(calcPercentage(productDollar));
+
+            const payload = {
+                bank: editForm.bank,
+                referenceNumber: editForm.referenceNumber,
+                paymentDate: editForm.paymentDate,
+                productDollarAmount: productDollar,
+                productPesoAmount: productPeso,
+                processingFeeDollar: processingDollar,
+                processingFeePeso: processingPeso,
+                totalDollar,
+                totalPeso,
+                percentageOfTotal,
+            };
+
+            const response = await api.put(`/payments/${paymentId}`, payload);
+            if (response.success) {
+                toast.success('Payment updated successfully');
+
+                const updatedPayments = payments.map(p =>
+                    p.id === paymentId
+                        ? { ...p, ...payload }
+                        : p
+                );
+                setPayments(updatedPayments);
+
+                // Recalculate PO totals from all payments
+                const newTotalPaidDollar = updatedPayments.reduce(
+                    (sum, p) => sum + (parseFloat(p.productDollarAmount) || 0), 0
+                );
+                const newTotalPaid = updatedPayments.reduce(
+                    (sum, p) => sum + (parseFloat(p.productPesoAmount) || 0) + (parseFloat(p.processingFeePeso) || 0), 0
+                );
+                const newRemaining = Math.max((data.po.totalAmount || 0) - newTotalPaidDollar, 0);
+                const newStatus = newRemaining === 0
+                    ? 'FULL_PAID'
+                    : newTotalPaidDollar > 0
+                        ? 'PARTIAL_PAID'
+                        : 'PAYMENT_PENDING';
+
+                setLocalPo({
+                    totalPaidDollar: newTotalPaidDollar,
+                    totalPaid: newTotalPaid,
+                    remainingBalance: newRemaining,
+                    paymentStatus: newStatus,
+                });
+
+                setEditingPaymentId(null);
+                setEditForm({});
+                if (onPaymentUpdated) await onPaymentUpdated();
+            } else {
+                toast.error(response.message || 'Failed to update payment');
+            }
+        } catch (e) {
+            toast.error('Failed to update payment');
+        } finally {
+            setSavingPayment(false);
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -2045,7 +2194,7 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                     <div className="p-4 bg-blue-50 rounded-lg">
                         <div className="grid grid-cols-2 gap-3 text-sm">
                             <div><span className="text-gray-600">PO Number:</span><p className="font-medium text-gray-900">{data.po.controlNumber}</p></div>
-                            <div><span className="text-gray-600">Status:</span><div className="mt-1">{getPaymentStatusBadge(data.po.paymentStatus)}</div></div>
+                            <div><span className="text-gray-600">Status:</span><div className="mt-1">{getPaymentStatusBadge(localPo.paymentStatus)}</div></div>
                             <div><span className="text-gray-600">Total Amount (USD):</span><p className="font-medium text-gray-900">${formatNumberWithCommas(data.po.totalAmount?.toFixed(2))}</p></div>
                             <div><span className="text-gray-600">Product Paid (PHP):</span><p className="font-medium text-gray-900">₱{formatNumberWithCommas(data.po.totalPaid?.toFixed(2) || '0.00')}</p></div>
                             <div><span className="text-gray-600">Shipping Cost (PHP):</span><p className="font-medium text-gray-900">₱{formatNumberWithCommas(shippingData?.phpAmount?.toFixed(2) || '0.00')}</p></div>
@@ -2056,6 +2205,64 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                     ₱{formatNumberWithCommas(((data.po.totalPaid || 0) + (shippingData?.phpAmount || 0) + (othersData?.totalCost || 0)).toFixed(2))}
                                 </p>
                             </div>
+
+                            {/* Total Due vs Paid summary */}
+                            <div className="col-span-2 mt-2 pt-3 border-t border-blue-200">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="p-3 bg-white rounded-lg border border-blue-200">
+                                        <p className="text-xs text-gray-500 uppercase font-semibold mb-2">Total Amount Due</p>
+                                        <div className="flex flex-col gap-1">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-xs text-gray-500">USD</span>
+                                                <span className="font-bold text-gray-900 text-sm">
+                                                    ${formatNumberWithCommas((data.po.totalAmount || 0).toFixed(2))}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-xs text-gray-500">PHP (Product)</span>
+                                                <span className="font-bold text-gray-900 text-sm">
+                                                    ₱{formatNumberWithCommas(
+                                                        payments.reduce((sum, p) => sum + (p.productPesoAmount || 0) + (p.processingFeePeso || 0), 0).toFixed(2)
+                                                    )}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="p-3 bg-white rounded-lg border border-blue-200">
+                                        <p className="text-xs text-gray-500 uppercase font-semibold mb-2">Total Paid</p>
+                                        <div className="flex flex-col gap-1">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-xs text-gray-500">USD</span>
+                                                <span className="font-bold text-green-600 text-sm">
+                                                    ${formatNumberWithCommas(localPo.totalPaidDollar.toFixed(4))}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-xs text-gray-500">Remaining USD</span>
+                                                <span className={`font-bold text-sm ${localPo.remainingBalance > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                                                    ${formatNumberWithCommas(localPo.remainingBalance.toFixed(4))}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="mt-3">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-xs text-gray-500">Payment Progress (USD)</span>
+                                        <span className="text-xs font-bold text-gray-700">
+                                            {data.po.totalAmount > 0
+                                                ? ((localPo.totalPaidDollar / data.po.totalAmount) * 100).toFixed(4)
+                                                : '0.0000'}%
+                                        </span>
+                                    </div>
+                                    <div className="bg-gray-200 rounded-full h-2.5">
+                                        <div
+                                            className={`rounded-full h-2.5 transition-all duration-300 ${localPo.paymentStatus === 'FULL_PAID' ? 'bg-green-500' : 'bg-blue-500'}`}
+                                            style={{ width: `${Math.min(data.po.totalAmount > 0 ? (localPo.totalPaidDollar / data.po.totalAmount) * 100 : 0, 100)}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -2065,53 +2272,193 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                             <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">1</span>
                             Product Payments
                         </h3>
-                        {!data.payments || data.payments.length === 0 ? (
+                        {!payments || payments.length === 0 ? (
                             <p className="text-sm text-gray-400 italic">No product payments recorded.</p>
                         ) : (
                             <div className="space-y-3">
-                                {data.payments.map((payment) => (
+                                {payments.map((payment) => (
                                     <div key={payment.id} className="border border-gray-200 rounded-lg p-4">
-                                        <div className="flex items-center justify-between mb-2">
+                                        {/* Header row */}
+                                        <div className="flex items-center justify-between mb-3">
                                             <span className="font-semibold text-gray-900">Payment #{payment.paymentNumber}</span>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-blue-600 font-bold">${formatNumberWithCommas(payment.productDollarAmount?.toFixed(2) || '0.00')}</span>
-                                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{payment.percentageOfTotal?.toFixed(2) || '0.00'}%</span>
+                                                {editingPaymentId !== payment.id && (
+                                                    <>
+                                                        <span className="text-blue-600 font-bold text-sm">
+                                                            ${formatNumberWithCommas(payment.productDollarAmount?.toFixed(4) || '0.0000')}
+                                                        </span>
+                                                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                                                            {payment.percentageOfTotal?.toFixed(4) || '0.0000'}%
+                                                        </span>
+                                                    </>
+                                                )}
+                                                {editingPaymentId === payment.id ? (
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => handleSavePayment(payment.id)}
+                                                            disabled={savingPayment}
+                                                            className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 disabled:opacity-50"
+                                                        >
+                                                            {savingPayment ? 'Saving...' : 'Save'}
+                                                        </button>
+                                                        <button
+                                                            onClick={cancelEdit}
+                                                            className="flex items-center gap-1 px-3 py-1 border border-gray-300 text-gray-600 text-xs rounded-lg hover:bg-gray-50"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => startEdit(payment)}
+                                                        className="flex items-center gap-1 px-3 py-1 border border-gray-300 text-gray-600 text-xs rounded-lg hover:bg-gray-50"
+                                                    >
+                                                        <Edit2 size={12} /> Edit
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-3 gap-2 text-xs text-gray-600 mb-3">
-                                            <div><span className="text-gray-400">Bank:</span> {payment.bank || 'N/A'}</div>
-                                            <div><span className="text-gray-400">Ref #:</span> {payment.referenceNumber || 'N/A'}</div>
-                                            <div><span className="text-gray-400">Date:</span> {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : 'N/A'}</div>
-                                        </div>
-                                        <div className="bg-gray-50 rounded p-3 text-sm">
-                                            <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-gray-500 uppercase mb-1">
-                                                <div></div><div className="text-center">USD</div><div className="text-center">PHP</div>
-                                            </div>
-                                            <div className="grid grid-cols-3 gap-2 text-sm">
-                                                <div className="text-gray-600">Product Cost</div>
-                                                <div className="text-center">${formatNumberWithCommas(payment.productDollarAmount?.toFixed(2) || '0.00')}</div>
-                                                <div className="text-center">₱{formatNumberWithCommas(payment.productPesoAmount?.toFixed(2) || '0.00')}</div>
-                                            </div>
-                                            {(payment.processingFeeDollar > 0 || payment.processingFeePeso > 0) && (
-                                                <div className="grid grid-cols-3 gap-2 text-sm mt-1">
-                                                    <div className="text-gray-600">Processing Fee</div>
-                                                    <div className="text-center">${formatNumberWithCommas(payment.processingFeeDollar?.toFixed(2) || '0.00')}</div>
-                                                    <div className="text-center">₱{formatNumberWithCommas(payment.processingFeePeso?.toFixed(2) || '0.00')}</div>
+
+                                        {editingPaymentId === payment.id ? (
+                                            /* ── EDIT MODE ── */
+                                            <div className="space-y-3">
+                                                <div className="grid grid-cols-3 gap-3">
+                                                    <div>
+                                                        <label className="block text-xs font-medium text-gray-600 mb-1">Bank</label>
+                                                        <input
+                                                            type="text"
+                                                            value={editForm.bank}
+                                                            onChange={e => setEditForm(p => ({ ...p, bank: e.target.value }))}
+                                                            className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-medium text-gray-600 mb-1">Reference #</label>
+                                                        <input
+                                                            type="text"
+                                                            value={editForm.referenceNumber}
+                                                            onChange={e => setEditForm(p => ({ ...p, referenceNumber: e.target.value }))}
+                                                            className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-medium text-gray-600 mb-1">Payment Date</label>
+                                                        <input
+                                                            type="date"
+                                                            value={editForm.paymentDate}
+                                                            onChange={e => setEditForm(p => ({ ...p, paymentDate: e.target.value }))}
+                                                            className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                    </div>
                                                 </div>
-                                            )}
-                                            <div className="grid grid-cols-3 gap-2 text-sm font-bold border-t border-gray-200 mt-1 pt-1">
-                                                <div>Total</div>
-                                                <div className="text-center">${formatNumberWithCommas(payment.totalDollar?.toFixed(2) || '0.00')}</div>
-                                                <div className="text-center">₱{formatNumberWithCommas(payment.totalPeso?.toFixed(2) || '0.00')}</div>
+                                                <div className="bg-gray-50 rounded-lg p-3">
+                                                    <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-gray-500 uppercase mb-2">
+                                                        <div></div>
+                                                        <div className="text-center">USD</div>
+                                                        <div className="text-center">PHP</div>
+                                                    </div>
+                                                    <div className="grid grid-cols-3 gap-2 items-center mb-2">
+                                                        <div className="text-sm text-gray-600">Product Cost</div>
+                                                        <input
+                                                            type="number"
+                                                            step="0.0001"
+                                                            value={editForm.productDollarAmount}
+                                                            onChange={e => setEditForm(p => ({ ...p, productDollarAmount: e.target.value }))}
+                                                            className="px-2 py-1.5 border border-gray-300 rounded text-sm text-right focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            value={editForm.productPesoAmount}
+                                                            onChange={e => setEditForm(p => ({ ...p, productPesoAmount: e.target.value }))}
+                                                            className="px-2 py-1.5 border border-gray-300 rounded text-sm text-right focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                    </div>
+                                                    <div className="grid grid-cols-3 gap-2 items-center mb-2">
+                                                        <div className="text-sm text-gray-600">Processing Fee</div>
+                                                        <input
+                                                            type="number"
+                                                            step="0.0001"
+                                                            value={editForm.processingFeeDollar}
+                                                            onChange={e => setEditForm(p => ({ ...p, processingFeeDollar: e.target.value }))}
+                                                            className="px-2 py-1.5 border border-gray-300 rounded text-sm text-right focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            value={editForm.processingFeePeso}
+                                                            onChange={e => setEditForm(p => ({ ...p, processingFeePeso: e.target.value }))}
+                                                            className="px-2 py-1.5 border border-gray-300 rounded text-sm text-right focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                    </div>
+                                                    <div className="grid grid-cols-3 gap-2 items-center border-t border-gray-200 pt-2 font-bold text-sm">
+                                                        <div>Total</div>
+                                                        <div className="text-center text-gray-900">
+                                                            ${formatNumberWithCommas((
+                                                                (parseFloat(editForm.productDollarAmount) || 0) +
+                                                                (parseFloat(editForm.processingFeeDollar) || 0)
+                                                            ).toFixed(4))}
+                                                        </div>
+                                                        <div className="text-center text-gray-900">
+                                                            ₱{formatNumberWithCommas((
+                                                                (parseFloat(editForm.productPesoAmount) || 0) +
+                                                                (parseFloat(editForm.processingFeePeso) || 0)
+                                                            ).toFixed(2))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                    <span>This payment:</span>
+                                                    <span className="font-bold text-blue-600">
+                                                        {calcPercentage(editForm.productDollarAmount)}%
+                                                    </span>
+                                                    <span className="text-gray-400 mx-1">·</span>
+                                                    <span>Combined total:</span>
+                                                    <span className={`font-bold ${parseFloat(calcTotalPercentage(editingPaymentId, editForm.productDollarAmount)) > 100 ? 'text-red-600' : 'text-green-600'}`}>
+                                                        {calcTotalPercentage(editingPaymentId, editForm.productDollarAmount)}%
+                                                    </span>
+                                                    <span className="text-gray-400">of ${formatNumberWithCommas(data.po.totalAmount?.toFixed(2))}</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                        {payment.paymentProofUrl && (
-                                            <div className="mt-2 flex items-center gap-2 text-xs">
-                                                <FileText size={12} className="text-purple-500" />
-                                                <span className="text-gray-500">Proof:</span>
-                                                <a href={getFileUrl(payment.paymentProofUrl)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1"><Eye size={12} /> View</a>
-                                                <a href={getFileDownloadUrl(payment.paymentProofUrl)} download className="text-green-600 hover:underline flex items-center gap-1"><Download size={12} /> Download</a>
-                                            </div>
+                                        ) : (
+                                            /* ── VIEW MODE ── */
+                                            <>
+                                                <div className="grid grid-cols-3 gap-2 text-xs text-gray-600 mb-3">
+                                                    <div><span className="text-gray-400">Bank:</span> {payment.bank || 'N/A'}</div>
+                                                    <div><span className="text-gray-400">Ref #:</span> {payment.referenceNumber || 'N/A'}</div>
+                                                    <div><span className="text-gray-400">Date:</span> {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : 'N/A'}</div>
+                                                </div>
+                                                <div className="bg-gray-50 rounded p-3 text-sm">
+                                                    <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-gray-500 uppercase mb-1">
+                                                        <div></div><div className="text-center">USD</div><div className="text-center">PHP</div>
+                                                    </div>
+                                                    <div className="grid grid-cols-3 gap-2 text-sm">
+                                                        <div className="text-gray-600">Product Cost</div>
+                                                        <div className="text-center">${formatNumberWithCommas(payment.productDollarAmount?.toFixed(4) || '0.0000')}</div>
+                                                        <div className="text-center">₱{formatNumberWithCommas(payment.productPesoAmount?.toFixed(2) || '0.00')}</div>
+                                                    </div>
+                                                    {(payment.processingFeeDollar > 0 || payment.processingFeePeso > 0) && (
+                                                        <div className="grid grid-cols-3 gap-2 text-sm mt-1">
+                                                            <div className="text-gray-600">Processing Fee</div>
+                                                            <div className="text-center">${formatNumberWithCommas(payment.processingFeeDollar?.toFixed(4) || '0.0000')}</div>
+                                                            <div className="text-center">₱{formatNumberWithCommas(payment.processingFeePeso?.toFixed(2) || '0.00')}</div>
+                                                        </div>
+                                                    )}
+                                                    <div className="grid grid-cols-3 gap-2 text-sm font-bold border-t border-gray-200 mt-1 pt-1">
+                                                        <div>Total</div>
+                                                        <div className="text-center">${formatNumberWithCommas(payment.totalDollar?.toFixed(4) || '0.0000')}</div>
+                                                        <div className="text-center">₱{formatNumberWithCommas(payment.totalPeso?.toFixed(2) || '0.00')}</div>
+                                                    </div>
+                                                </div>
+                                                {payment.paymentProofUrl && (
+                                                    <div className="mt-2 flex items-center gap-2 text-xs">
+                                                        <FileText size={12} className="text-purple-500" />
+                                                        <span className="text-gray-500">Proof:</span>
+                                                        <a href={getFileUrl(payment.paymentProofUrl)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1"><Eye size={12} /> View</a>
+                                                        <a href={getFileDownloadUrl(payment.paymentProofUrl)} download className="text-green-600 hover:underline flex items-center gap-1"><Download size={12} /> Download</a>
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                 ))}
@@ -2131,12 +2478,12 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                             <div className="border border-gray-200 rounded-lg p-4">
                                 <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                                     <div><span className="text-gray-400 text-xs">Forwarding Agent:</span><p className="font-medium text-gray-900">{shippingData.forwarderName || `ID: ${shippingData.forwarderId}` || '-'}</p></div>
-                                    <div><span className="text-gray-400 text-xs">Date:</span><p className="font-medium text-gray-900">{shippingData.shippingDate ? new Date(shippingData.shippingDate).toLocaleDateString() : '-'}</p></div>                                    <div className="col-span-2 flex gap-4">
+                                    <div><span className="text-gray-400 text-xs">Date:</span><p className="font-medium text-gray-900">{shippingData.shippingDate ? new Date(shippingData.shippingDate).toLocaleDateString() : '-'}</p></div>
+                                    <div className="col-span-2 flex gap-4">
                                         <div><span className="text-gray-400 text-xs">USD</span><p className="font-bold text-gray-900">${formatNumberWithCommas(parseFloat(shippingData.usdAmount || 0).toFixed(2))}</p></div>
                                         <div><span className="text-gray-400 text-xs">PHP</span><p className="font-bold text-gray-900">₱{formatNumberWithCommas(parseFloat(shippingData.phpAmount || 0).toFixed(2))}</p></div>
                                     </div>
                                 </div>
-
                                 {shippingData.items && shippingData.items.length > 0 && (
                                     <div className="border rounded overflow-hidden mb-3">
                                         <table className="w-full text-xs">
@@ -2176,7 +2523,6 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                         </table>
                                     </div>
                                 )}
-
                                 <div className="flex gap-4 text-xs">
                                     {shippingData.commercialInvoiceUrl && <a href={getFileUrl(shippingData.commercialInvoiceUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline"><Eye size={12} /> Commercial Invoice</a>}
                                     {shippingData.proofOfPaymentUrl && <a href={getFileUrl(shippingData.proofOfPaymentUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline"><Eye size={12} /> Proof of Payment</a>}
@@ -2242,7 +2588,6 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
         </div>
     );
 };
-
 
 
 const ProductDetailsModal = ({ products, onClose, po }) => {

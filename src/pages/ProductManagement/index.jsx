@@ -45,6 +45,7 @@ const ProductManagement = () => {
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [selectedCategory, setSelectedCategory] = useState('');
 
   const [formData, setFormData] = useState({
     productName: '',
@@ -327,11 +328,14 @@ const ProductManagement = () => {
   };
 
   const filteredProducts = getSortedProducts(
-    products.filter(product =>
-      product.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.upc?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    products.filter(product => {
+      const matchesSearch =
+        product.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.upc?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = !selectedCategory || product.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    })
   );
 
   const existingCategories = React.useMemo(() => {
@@ -369,10 +373,32 @@ const ProductManagement = () => {
             type="text"
             placeholder="Search by name, SKU, or UPC..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
+        <div className="relative">
+          <select
+            value={selectedCategory}
+            onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
+            className="appearance-none pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm min-w-[160px]"
+          >
+            <option value="">All Categories</option>
+            {existingCategories.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+          <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
+        </div>
+        {selectedCategory && (
+          <button
+            onClick={() => { setSelectedCategory(''); setCurrentPage(1); }}
+            className="flex items-center gap-1 px-3 py-2 text-sm text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+            Clear
+          </button>
+        )}
         <button
           onClick={() => { resetForm(); setShowModal(true); }}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
@@ -388,23 +414,30 @@ const ProductManagement = () => {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-12"></th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variations</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">UPC</th>
-
-                <th
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 transition"
-                  onClick={() => handleSort('createdAt')}
-                >
-                  <div className="flex items-center gap-2">
-                    Created Date
-                    {sortConfig.key === 'createdAt' && (
-                      <span className="text-blue-600">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
-                    )}
-                  </div>
-                </th>
+                {[
+                  { key: 'productName', label: 'Product', sortable: true },
+                  { key: 'category', label: 'Category', sortable: false },
+                  { key: 'supplierName', label: 'Supplier', sortable: false },
+                  { key: null, label: 'Variations', sortable: false },
+                  { key: 'upc', label: 'UPC', sortable: false },
+                  { key: 'createdAt', label: 'Created Date', sortable: false },
+                ].map(({ key, label, sortable }) => (
+                  <th
+                    key={label}
+                    className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase ${sortable ? 'cursor-pointer hover:bg-gray-100 transition select-none' : ''}`}
+                    onClick={() => sortable && handleSort(key)}
+                  >
+                    <div className="flex items-center gap-1">
+                      {label}
+                      {sortable && (
+                        <span className="flex flex-col leading-none ml-0.5">
+                          <svg width="10" height="10" viewBox="0 0 10 10" className={sortConfig.key === key && sortConfig.direction === 'asc' ? 'text-blue-600' : 'text-gray-300'} fill="currentColor"><path d="M5 2l4 5H1z" /></svg>
+                          <svg width="10" height="10" viewBox="0 0 10 10" className={sortConfig.key === key && sortConfig.direction === 'desc' ? 'text-blue-600' : 'text-gray-300'} fill="currentColor"><path d="M5 8L1 3h8z" /></svg>
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                ))}
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
