@@ -155,19 +155,23 @@ const WarehouseStockTable = ({
   const activeCols = MOVEMENT_COLS.filter((c) => visibleCols[c.key]);
   const anyMovVisible = activeCols.length > 0;
 
-  // ── Derive unique warehouse IDs from current page data ──────────────────────
-  // We fetch movements grouped by each unique warehouseId present in the table.
+
+  const warehouseIdKey = [
+    ...new Set(
+      filteredWarehouseStocks
+        .map((s) => s.warehouseId)
+        .filter((id) => id != null)
+        .map(String)
+    ),
+  ].sort().join(',');
+
   useEffect(() => {
-    if (!filteredWarehouseStocks.length) {
+    if (!warehouseIdKey) {
       setMovementMap({});
       return;
     }
 
-    // Get distinct warehouseIds
-    const warehouseIds = [
-      ...new Set(filteredWarehouseStocks.map((s) => s.warehouseId).filter(Boolean)),
-    ];
-
+    const warehouseIds = warehouseIdKey.split(',');
     if (!warehouseIds.length) return;
 
     let cancelled = false;
@@ -175,24 +179,23 @@ const WarehouseStockTable = ({
 
     const fetchAll = async () => {
       try {
-        // Fetch movements for each warehouse in parallel
         const results = await Promise.all(
           warehouseIds.map((wid) =>
             api
               .get(`/inventories/report/movements?warehouseId=${wid}`)
-              .then((res) => ({ wid, rows: res.data || [] }))
+              .then((res) => ({ wid, rows: Array.isArray(res.data) ? res.data : [] }))
               .catch(() => ({ wid, rows: [] }))
           )
         );
 
         if (cancelled) return;
 
-        // Build lookup: "productId_variationId_warehouseId" → movement row
         const map = {};
         results.forEach(({ wid, rows }) => {
           rows.forEach((row) => {
-            const varId = row.variationId ?? 'null';
-            const k = `${row.productId}_${varId}_${wid}`;
+            const pid = String(row.productId ?? '');
+            const vid = String(row.variationId ?? '');
+            const k = `${wid}|${pid}|${vid}`;
             map[k] = {
               stockIn: Number(row.stockIn) || 0,
               transferIn: Number(row.transferIn) || 0,
@@ -204,8 +207,6 @@ const WarehouseStockTable = ({
         });
 
         setMovementMap(map);
-      } catch {
-        // silently fail — columns just show 0
       } finally {
         if (!cancelled) setMovLoading(false);
       }
@@ -213,12 +214,14 @@ const WarehouseStockTable = ({
 
     fetchAll();
     return () => { cancelled = true; };
-  }, [filteredWarehouseStocks]);
+  }, [warehouseIdKey]);
 
   const getMovements = (stock) => {
-    const varId = stock.variationId ?? 'null';
-    const k = `${stock.productId}_${varId}_${stock.warehouseId}`;
-    return movementMap[k] || {};
+    const wid = String(stock.warehouseId ?? '');
+    const pid = String(stock.productId ?? '');
+    const vid = stock.variationId != null ? String(stock.variationId) : '';
+    const k = `${wid}|${pid}|${vid}`;
+    return movementMap[k] || null;
   };
 
   const totalColSpan = 7 + activeCols.length + 2; // base cols + movement cols + last updated + actions
@@ -369,9 +372,8 @@ const WarehouseStockTable = ({
 
                     {/* Total Stock */}
                     <td className="px-3 py-3 text-center">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
-                        stock.quantity > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${stock.quantity > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
                         {(stock.quantity || 0).toLocaleString()}
                       </span>
                     </td>
@@ -399,16 +401,20 @@ const WarehouseStockTable = ({
                       </span>
                     </td>
 
-                    {/* Movement columns — per-warehouse */}
                     {activeCols.map((col) => (
                       <td key={col.key} className="px-3 py-3 text-center">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${col.badge}`}>
-                          {col.badgeIcon}
-                          {movLoading
-                            ? <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
-                            : col.getValue(mv).toLocaleString()
-                          }
-                        </span>
+                        {movLoading ? (
+                          <span className="inline-flex items-center justify-center w-6 h-5">
+                            <span className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin" />
+                          </span>
+                        ) : mv === null ? (
+                          <span className="text-gray-300 text-xs">—</span>
+                        ) : (
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${col.badge}`}>
+                            {col.badgeIcon}
+                            {col.getValue(mv).toLocaleString()}
+                          </span>
+                        )}
                       </td>
                     ))}
 
