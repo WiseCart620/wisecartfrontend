@@ -291,7 +291,7 @@ const WarehouseStockTable = ({
               {activeCols.map((col) => (
                 <th
                   key={col.key}
-                  className={`px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap ${col.bg}`}
+                  className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap"
                 >
                   <div className="flex items-center justify-center gap-1">
                     {col.icon} {col.label}
@@ -401,7 +401,7 @@ const WarehouseStockTable = ({
 
                     {/* Movement columns — per-warehouse */}
                     {activeCols.map((col) => (
-                      <td key={col.key} className={`px-3 py-3 text-center ${col.bg}`}>
+                      <td key={col.key} className="px-3 py-3 text-center">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${col.badge}`}>
                           {col.badgeIcon}
                           {movLoading
