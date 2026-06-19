@@ -554,6 +554,7 @@ const InventoryManagement = () => {
               warehouseStockTotalPages={warehouseStockTotalPages}
               setStockCurrentPage={stockPagination.setCurrentPage}
               isLoading={loading}
+              productSummaries={productSummaries}
             />
           </div>
         )}
