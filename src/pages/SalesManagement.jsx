@@ -580,6 +580,22 @@ const SalesManagement = () => {
     fetchSales(currentPage - 1);
   }, [currentPage]);
 
+
+  useEffect(() => {
+    const handleFocus = () => {
+      Promise.all([
+        api.get('/products').catch(() => null),
+        api.get('/companies').catch(() => null),
+      ]).then(([productsRes, companiesRes]) => {
+        if (productsRes?.success) setProducts(productsRes.data || []);
+        if (companiesRes?.success) setCompanies(companiesRes.data || []);
+      });
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+
   useEffect(() => {
     let es;
     let retryDelay = 5000;
