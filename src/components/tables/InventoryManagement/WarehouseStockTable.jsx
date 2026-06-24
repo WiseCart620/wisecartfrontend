@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Building, CheckCircle, Truck, Eye,
   ArrowDownCircle, ArrowUpCircle, ArrowLeftRight,
-  AlertTriangle, RotateCcw, SlidersHorizontal, X,
+  AlertTriangle, RotateCcw, SlidersHorizontal, X, Loader2,
 } from 'lucide-react';
 import Pagination from '../../common/Pagination';
 import { parseDate } from '../../../utils/dateUtils';
@@ -56,10 +56,6 @@ const MOVEMENT_COLS = [
     getValue: (mv) => mv?.damage ?? 0,
   },
 ];
-
-// ── Build a lookup key matching backend grouping ──────────────────────────────
-const mvKey = (productId, variationId) =>
-  `${productId}_${variationId ?? 'null'}`;
 
 // ── Reusable toggle panel ─────────────────────────────────────────────────────
 const ColumnTogglePanel = ({ visible, cols, onChange, onClose }) => {
@@ -135,11 +131,10 @@ const WarehouseStockTable = ({
   setStockCurrentPage,
   isLoading,
 }) => {
-  // Per-warehouse movement map: { "productId_variationId": { stockIn, transferIn, ... } }
   const [movementMap, setMovementMap] = useState({});
   const [movLoading, setMovLoading] = useState(false);
+  const [loadingId, setLoadingId] = useState(null);
 
-  // Which movement columns are visible
   const [visibleCols, setVisibleCols] = useState({
     stockIn: true,
     transferIn: true,
@@ -154,7 +149,6 @@ const WarehouseStockTable = ({
 
   const activeCols = MOVEMENT_COLS.filter((c) => visibleCols[c.key]);
   const anyMovVisible = activeCols.length > 0;
-
 
   const warehouseIdKey = [
     ...new Set(
@@ -224,7 +218,16 @@ const WarehouseStockTable = ({
     return movementMap[k] || null;
   };
 
-  const totalColSpan = 7 + activeCols.length + 2; // base cols + movement cols + last updated + actions
+  const handleView = async (stock) => {
+    setLoadingId(stock.id);
+    try {
+      await handleViewStockTransactions(stock, 'warehouse');
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  const totalColSpan = 7 + activeCols.length + 2;
 
   return (
     <div className="bg-white rounded-xl shadow overflow-hidden">
@@ -241,7 +244,6 @@ const WarehouseStockTable = ({
           )}
         </h2>
 
-        {/* Column toggle button */}
         <div className="relative">
           <button
             onClick={() => setShowColPanel((v) => !v)}
@@ -273,7 +275,6 @@ const WarehouseStockTable = ({
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
-              {/* Base columns */}
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Warehouse</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Product</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">SKU/UPC</th>
@@ -290,7 +291,6 @@ const WarehouseStockTable = ({
               </th>
               <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Available</th>
 
-              {/* Movement columns — only rendered when toggled on */}
               {activeCols.map((col) => (
                 <th
                   key={col.key}
@@ -326,6 +326,7 @@ const WarehouseStockTable = ({
             ) : (
               currentWarehouseStocks.map((stock) => {
                 const mv = getMovements(stock);
+                const isThisLoading = loadingId === stock.id;
                 return (
                   <tr key={stock.id} className="hover:bg-gray-50 transition-colors">
                     {/* Warehouse */}
@@ -372,8 +373,7 @@ const WarehouseStockTable = ({
 
                     {/* Total Stock */}
                     <td className="px-3 py-3 text-center">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${stock.quantity > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${stock.quantity > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                         {(stock.quantity || 0).toLocaleString()}
                       </span>
                     </td>
@@ -435,11 +435,20 @@ const WarehouseStockTable = ({
                     {/* Actions */}
                     <td className="px-4 py-3 text-center">
                       <button
-                        onClick={() => handleViewStockTransactions(stock, 'warehouse')}
-                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded transition"
+                        onClick={() => handleView(stock)}
+                        disabled={isThisLoading}
+                        className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition
+                          ${isThisLoading
+                            ? 'text-blue-400 cursor-wait'
+                            : 'text-blue-600 hover:bg-blue-50'
+                          }`}
                       >
-                        <Eye size={14} />
-                        View
+                        {isThisLoading ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Eye size={14} />
+                        )}
+                        {isThisLoading ? 'Loading...' : 'View'}
                       </button>
                     </td>
                   </tr>

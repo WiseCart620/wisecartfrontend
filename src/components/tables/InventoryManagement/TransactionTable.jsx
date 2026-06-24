@@ -1,5 +1,5 @@
-import React from 'react';
-import { Eye } from 'lucide-react';
+import React, { useState } from 'react';
+import { Eye, Loader2 } from 'lucide-react';
 import Pagination from '../../common/Pagination';
 import { getTransactionDisplayInfo } from '../../../utils/transactionHelpers';
 
@@ -11,12 +11,22 @@ const TransactionTable = ({
   currentPage,
   totalPages,
   setCurrentPage,
-  viewingId,
   deletingId,
   handleViewTransaction,
   calculateTotalQuantity,
   isLoading
 }) => {
+  const [loadingId, setLoadingId] = useState(null);
+
+  const handleView = async (transaction) => {
+    setLoadingId(transaction.id);
+    try {
+      await handleViewTransaction(transaction);
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
@@ -56,6 +66,8 @@ const TransactionTable = ({
               currentInventories.map((transaction) => {
                 const displayInfo = getTransactionDisplayInfo(transaction);
                 const transactionDate = new Date(transaction.verificationDate || transaction.createdAt);
+                const isThisLoading = loadingId === transaction.id;
+                const isDeleting = deletingId === transaction.id;
 
                 return (
                   <tr key={`transaction-${transaction.id}-${transaction.inventoryType}`} className="hover:bg-gray-50">
@@ -158,24 +170,20 @@ const TransactionTable = ({
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button
-                        onClick={() => handleViewTransaction(transaction)}
-                        disabled={viewingId === transaction.id || deletingId === transaction.id}
-                        className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-medium rounded transition ${viewingId === transaction.id || deletingId === transaction.id
-                          ? 'bg-gray-300 text-gray-500 cursor-wait'
-                          : 'text-blue-600 hover:bg-blue-50'
+                        onClick={() => handleView(transaction)}
+                        disabled={isThisLoading || isDeleting}
+                        className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-medium rounded transition
+                          ${isThisLoading || isDeleting
+                            ? 'text-blue-400 cursor-wait'
+                            : 'text-blue-600 hover:bg-blue-50'
                           }`}
                       >
-                        {viewingId === transaction.id ? (
-                          <>
-                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-                            Loading...
-                          </>
+                        {isThisLoading ? (
+                          <Loader2 size={14} className="animate-spin" />
                         ) : (
-                          <>
-                            <Eye size={14} />
-                            View Details
-                          </>
+                          <Eye size={14} />
                         )}
+                        {isThisLoading ? 'Loading...' : 'View Details'}
                       </button>
                     </td>
                   </tr>

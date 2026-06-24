@@ -1,5 +1,5 @@
-import React from 'react';
-import { BarChart3, CheckCircle, ShoppingCart, Truck, Clock, Eye } from 'lucide-react';
+import React, { useState } from 'react';
+import { BarChart3, CheckCircle, ShoppingCart, Truck, Clock, Eye, Loader2 } from 'lucide-react';
 import Pagination from '../../common/Pagination';
 
 const ProductSummaryTable = ({
@@ -13,6 +13,33 @@ const ProductSummaryTable = ({
   setProductCurrentPage,
   isLoading
 }) => {
+  const [loadingId, setLoadingId] = useState(null);
+
+  const handleView = async (product, displaySku, displayUpc, isVariation) => {
+    const key = isVariation
+      ? `variation-${product.variationId}-${product.productId}`
+      : `product-${product.productId}`;
+    setLoadingId(key);
+    try {
+      await handleViewTransactions(
+        {
+          ...product,
+          productId: product.productId,
+          variationId: product.variationId,
+          productName: product.productName,
+          sku: displaySku,
+          upc: displayUpc,
+          isVariation,
+          variationName: product.variationName,
+          variationSku: product.variationSku,
+        },
+        true
+      );
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow overflow-hidden mb-6">
       <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
@@ -84,6 +111,7 @@ const ProductSummaryTable = ({
 
                 const displaySku = isVariation ? (product.variationSku || product.sku) : product.sku;
                 const displayUpc = isVariation ? (product.variationUpc || product.upc) : product.upc;
+                const isThisLoading = loadingId === uniqueKey;
 
                 return (
                   <tr key={uniqueKey} className="hover:bg-gray-50">
@@ -158,24 +186,20 @@ const ProductSummaryTable = ({
                     </td>
                     <td className="px-3 py-3 text-right">
                       <button
-                        onClick={() => {
-                          const targetProduct = {
-                            ...product,
-                            productId: product.productId,
-                            variationId: product.variationId,
-                            productName: product.productName,
-                            sku: displaySku,
-                            upc: displayUpc,
-                            isVariation: isVariation,
-                            variationName: product.variationName,
-                            variationSku: product.variationSku
-                          };
-                          handleViewTransactions(targetProduct, true);
-                        }}
-                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded transition"
+                        onClick={() => handleView(product, displaySku, displayUpc, isVariation)}
+                        disabled={isThisLoading}
+                        className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition
+                          ${isThisLoading
+                            ? 'text-blue-400 cursor-wait'
+                            : 'text-blue-600 hover:bg-blue-50'
+                          }`}
                       >
-                        <Eye size={14} />
-                        View History
+                        {isThisLoading ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Eye size={14} />
+                        )}
+                        {isThisLoading ? 'Loading...' : 'View History'}
                       </button>
                     </td>
                   </tr>
