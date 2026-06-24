@@ -562,14 +562,21 @@ const SalesManagement = () => {
     }
   }, []);
 
+  const isFilterChange = useRef(false);
+
   useEffect(() => {
     if (!initialLoadDone.current) return;
+    isFilterChange.current = true;
     fetchSales(0);
     setCurrentPage(1);
   }, [filterData.companyId, filterData.branchId, statusFilter, searchTerm, filterData.startDate, filterData.endDate, JSON.stringify(filterData.productFilters)]);
 
   useEffect(() => {
-    if (!initialLoadDone.current || currentPage === 1) return;
+    if (!initialLoadDone.current) return;
+    if (isFilterChange.current) {
+      isFilterChange.current = false;
+      return;
+    }
     fetchSales(currentPage - 1);
   }, [currentPage]);
 
@@ -3328,24 +3335,24 @@ const SalesManagement = () => {
                     <span>Generate</span>
                   </button>
                   <button
-onClick={() => {
-  if (!invoiceNumber.trim()) {
-    toast.error('Please enter an invoice number before printing.');
-    return;
-  }
-  const invoiceEl = document.getElementById('invoice-report');
-  if (!invoiceEl) return;
+                    onClick={() => {
+                      if (!invoiceNumber.trim()) {
+                        toast.error('Please enter an invoice number before printing.');
+                        return;
+                      }
+                      const invoiceEl = document.getElementById('invoice-report');
+                      if (!invoiceEl) return;
 
-  const styles = Array.from(document.styleSheets).map(sheet => {
-    try {
-      return Array.from(sheet.cssRules).map(rule => rule.cssText).join('\n');
-    } catch {
-      return sheet.href ? `@import url('${sheet.href}');` : '';
-    }
-  }).join('\n');
+                      const styles = Array.from(document.styleSheets).map(sheet => {
+                        try {
+                          return Array.from(sheet.cssRules).map(rule => rule.cssText).join('\n');
+                        } catch {
+                          return sheet.href ? `@import url('${sheet.href}');` : '';
+                        }
+                      }).join('\n');
 
-  const w = window.open('', '_blank');
-  w.document.write(`<!DOCTYPE html>
+                      const w = window.open('', '_blank');
+                      w.document.write(`<!DOCTYPE html>
 <html>
 <head>
   <title>Sales Invoice</title>
@@ -3384,9 +3391,9 @@ onClick={() => {
   </div>
 </body>
 </html>`);
-  w.document.close();
-  setTimeout(() => { w.print(); w.close(); }, 600);
-}}
+                      w.document.close();
+                      setTimeout(() => { w.print(); w.close(); }, 600);
+                    }}
                     className={`flex items-center gap-2 px-6 py-3 rounded-lg transition font-medium shadow-md ${!invoiceNumber.trim()
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : 'bg-blue-600 text-white hover:bg-blue-700'
