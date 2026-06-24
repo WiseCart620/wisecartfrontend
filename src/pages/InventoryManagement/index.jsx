@@ -208,7 +208,7 @@ const InventoryManagement = () => {
   };
 
   const handleViewTransactions = (product, showStock = false) => {
-    transactionHandlers.handleViewTransactions(
+    return transactionHandlers.handleViewTransactions(
       product,
       showStock,
       setActionLoading,
@@ -217,7 +217,7 @@ const InventoryManagement = () => {
   };
 
   const handleViewStockTransactions = (stock, locationType) => {
-    transactionHandlers.handleViewStockTransactions(
+    return transactionHandlers.handleViewStockTransactions(
       stock,
       locationType,
       setActionLoading,
