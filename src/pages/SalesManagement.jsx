@@ -507,7 +507,6 @@ const SalesManagement = () => {
 
       setSales(salesResponse.data.content);
       setTotalPages(salesResponse.data.totalPages);
-      setCurrentPage(salesResponse.data.currentPage + 1);
       setTotalElements(salesResponse.data.totalElements);
 
       const summary = summaryResponse.data;
