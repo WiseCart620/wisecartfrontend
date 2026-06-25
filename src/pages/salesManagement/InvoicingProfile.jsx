@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { api } from '../services/api';
+import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import { ArrowLeft, CreditCard, X, Trash2, Eye, ChevronDown, ChevronUp, FileText } from 'lucide-react';
-import '../styles/invoice-print.css';
+import '../../styles/invoice-print.css';
 
 const fmt = (n) =>
     Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

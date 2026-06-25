@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { api } from '../services/api';
+import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import { X, FileText, Printer, ChevronDown, ChevronUp, ChevronLeft, Package } from 'lucide-react';
 
