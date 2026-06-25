@@ -95,22 +95,26 @@
     background-color: transparent !important;
   }
 
+  #delivery-receipt .grid>div {
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 1.8rem !important;
+  }
 
-
-  #delivery-receipt #prepared-by-value {
-    color: black !important;
-    display: block !important;
-    border-bottom: none !important;
+  #delivery-receipt div.text-black-900.break-words {
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    height: auto !important;
+    min-height: 1.5rem !important;
   }
 
 
-  #delivery-receipt #prepared-by-label {
-    color: transparent !important;
-  }
 
   /* Make data divs visible (the content areas) */
   #delivery-receipt div.text-black-900 {
     color: black !important;
+    display: block !important;
   }
 
   #delivery-receipt div[style*="color: black"] {
@@ -210,6 +214,11 @@
     -webkit-appearance: none !important;
     padding: 0 !important;
     margin: 0 !important;
+    color: transparent !important;
+  }
+
+  #delivery-receipt input.prepared-by-input-el {
+    display: none !important;
   }
 
   #delivery-receipt {
@@ -233,10 +242,11 @@
     padding: 0 !important;
   }
 
-  #delivery-receipt #prepared-by-label,
-  #delivery-receipt #prepared-by-value {
-    margin-top: 40px !important;
+
+  #delivery-receipt .prepared-by-label {
+    color: transparent !important;
   }
+
 
   #delivery-receipt .mb-5 {
     margin-bottom: 10px !important;
@@ -244,6 +254,48 @@
 
   #delivery-receipt .mt-12 {
     margin-top: 20px !important;
+  }
+
+  #delivery-receipt .prepared-by-wrapper {
+    margin-top: 130px !important;
+  }
+
+  #delivery-receipt .prepared-by-spacer {
+    display: none !important;
+  }
+
+  #delivery-receipt .prepared-by-container {
+    margin-top: 160px !important;
+  }
+
+  #prepared-by-data,
+  #delivery-receipt #prepared-by-data,
+  #delivery-receipt #prepared-by-data * {
+    color: black !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    overflow: visible !important;
+    line-height: normal !important;
+    min-height: 1.5rem !important;
+  }
+
+
+  .prepared-by-data-display {
+    display: block !important;
+    color: black !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    min-height: 1.5rem !important;
+  }
+
+  #delivery-receipt #prepared-by-data {
+    color: black !important;
+    -webkit-text-fill-color: black !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 }
 
@@ -255,4 +307,9 @@
   .print-hidden {
     display: inline-block !important;
   }
+
+  .prepared-by-data-display {
+    display: none;
+  }
+
 }

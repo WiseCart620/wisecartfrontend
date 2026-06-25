@@ -1,5 +1,4 @@
-// src/components/modals/DeliveryReceiptModal.jsx
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X, Printer, Check } from 'lucide-react';
 
 const DeliveryReceiptModal = ({
@@ -10,6 +9,35 @@ const DeliveryReceiptModal = ({
   const [receipt, setReceipt] = useState(receiptData);
   const [isSaving, setIsSaving] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const preparedByInputRef = useRef(null);
+  const preparedByDivRef = useRef(null);
+
+  useEffect(() => {
+    const show = () => {
+      if (preparedByInputRef.current) preparedByInputRef.current.style.display = 'none';
+      if (preparedByDivRef.current) {
+        preparedByDivRef.current.style.display = 'block';
+        const span = preparedByDivRef.current.querySelector('span');
+        if (span) {
+          span.style.setProperty('color', 'black', 'important');
+          span.style.setProperty('-webkit-text-fill-color', 'black', 'important');
+          span.style.setProperty('opacity', '1', 'important');
+          span.style.setProperty('visibility', 'visible', 'important');
+        }
+      }
+    };
+    const hide = () => {
+      if (preparedByInputRef.current) preparedByInputRef.current.style.display = 'block';
+      if (preparedByDivRef.current) preparedByDivRef.current.style.display = 'none';
+    };
+    window.addEventListener('beforeprint', show);
+    window.addEventListener('afterprint', hide);
+    return () => {
+      window.removeEventListener('beforeprint', show);
+      window.removeEventListener('afterprint', hide);
+    };
+  }, []);
+
   const handleSave = async () => {
     setIsSaving(true);
     await onSave(receipt);
@@ -17,16 +45,9 @@ const DeliveryReceiptModal = ({
   };
 
   const handlePrint = () => {
-    const onBefore = () => setIsPrinting(true);
-    const onAfter = () => {
-      setIsPrinting(false);
-      window.removeEventListener('beforeprint', onBefore);
-      window.removeEventListener('afterprint', onAfter);
-    };
-    window.addEventListener('beforeprint', onBefore);
-    window.addEventListener('afterprint', onAfter);
     window.print();
   };
+
 
   return (
     <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-6">
@@ -91,7 +112,7 @@ const DeliveryReceiptModal = ({
             </div>
           </div>
 
-          <div className="grid" style={{ gridTemplateColumns: '60% 40%', gap: '0.2rem 1rem', marginBottom: '8px', marginTop: '-8px', alignItems: 'start', paddingLeft: '0px' }}>            <div>
+          <div className="grid" style={{ gridTemplateColumns: '60% 40%', gap: '0.2rem 1rem', marginBottom: '8px', marginTop: '-8px', alignItems: 'start', paddingLeft: '0px', gridAutoRows: 'minmax(1.8rem, auto)' }}>            <div>
             <div className="flex items-start">
               <span className="font-bold text-gray-900 text-sm flex-shrink-0" style={{ width: '120px' }}>
                 DELIVERED TO:
@@ -151,7 +172,7 @@ const DeliveryReceiptModal = ({
               </div>
             </div>
 
-            <div className="flex flex-col gap-1" style={{ paddingLeft: '28px', marginTop: '8px' }}>
+            <div className="flex flex-col gap-1" style={{ paddingLeft: '28px', marginTop: '-4px' }}>
               <div className="flex items-start">
                 <span className="font-bold text-gray-900 text-sm whitespace-nowrap flex-shrink-0" style={{ width: '120px' }}>
                   TERMS OF PAYMENT:
@@ -168,7 +189,7 @@ const DeliveryReceiptModal = ({
                   </div>
                 </div>
               </div>
-              <div className="flex items-start">
+              <div className="flex items-start" style={{ marginTop: '-20px' }}>
                 <span className="font-bold text-gray-900 text-sm whitespace-nowrap flex-shrink-0" style={{ width: '100px', marginLeft: '-8px' }}>
                   P.O. NUMBER:
                 </span>
@@ -294,18 +315,31 @@ const DeliveryReceiptModal = ({
 
           <div className="grid grid-cols-2 gap-8 mt-4" style={{ marginTop: 'auto', alignItems: 'flex-end' }}>
             <div>
-              <div className="mb-3" style={{ marginTop: '96px' }}>
+              <div className="mb-3 prepared-by-container">
+                <div className="prepared-by-spacer" style={{ height: '150px' }} />
                 <div className="flex items-center mb-0">
-                  <span id="prepared-by-label" className="font-bold text-sm print:text-xs" style={{ width: '90px', flexShrink: 0 }}>Prepared by:</span>
-                  <div className="relative flex-1">
+                  <span
+                    className="font-bold text-sm prepared-by-label"
+                    style={{ width: '90px', flexShrink: 0, marginLeft: '-12px' }}
+                  >
+                    Prepared by:
+                  </span>
+                  <div className="flex-1">
                     <input
+                      ref={preparedByInputRef}
                       type="text"
                       value={receipt.preparedBy || ''}
                       onChange={(e) => setReceipt(prev => ({ ...prev, preparedBy: e.target.value }))}
-                      className="text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
+                      className="prepared-by-input-el text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-blue-500 bg-transparent"
                     />
-                    <div id="prepared-by-value" className="text-sm w-full px-2" style={{ display: isPrinting ? 'block' : 'none', borderBottom: 'none' }}>
-                      {receipt.preparedBy || '\u00A0'}
+                    <div
+                      ref={preparedByDivRef}
+                      style={{ display: 'none', minHeight: '1.5rem' }}
+                      className="text-sm border-b border-gray-300 px-2 break-words"
+                    >
+                      <span style={{ color: 'black', WebkitTextFillColor: 'black', opacity: 1, visibility: 'visible' }}>
+                        {receipt.preparedBy || '\u00A0'}
+                      </span>
                     </div>
                   </div>
                 </div>
