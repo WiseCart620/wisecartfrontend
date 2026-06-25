@@ -6,7 +6,7 @@ import WarehouseManagement from './pages/WarehouseManagement';
 import DeliveryManagement from './pages/DeliveryManagement';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
-import SalesManagement from './pages/SalesManagement/index';
+import SalesManagement from './pages/SalesManagement/index.jsx';
 import ProductManagement from './pages/ProductManagement';
 import BranchCompanyManagement from './pages/BranchCompanyManagement/index.jsx';
 import WarehouseInventory from './pages/InventoryRecordsManagement/index.jsx';
