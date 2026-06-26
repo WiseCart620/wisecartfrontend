@@ -555,6 +555,9 @@ const InventoryManagement = () => {
               setStockCurrentPage={stockPagination.setCurrentPage}
               isLoading={loading}
               productSummaries={productSummaries}
+              isAdmin={true}
+              currentUser="Admin"
+              onStockUpdated={() => loadData(inventoryPage, inventoryPageSize)}
             />
           </div>
         )}

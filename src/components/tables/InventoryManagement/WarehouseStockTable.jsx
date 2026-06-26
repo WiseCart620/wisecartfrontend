@@ -7,12 +7,14 @@ import {
 import Pagination from '../../common/Pagination';
 import { parseDate } from '../../../utils/dateUtils';
 import { api } from '../../../services/api';
+import ManualAdjustmentModal from '../../modals/ManualAdjustmentModal';
+
 
 // ── Column definitions ────────────────────────────────────────────────────────
 const MOVEMENT_COLS = [
   {
     key: 'stockIn',
-    label: 'Stock In',
+    label: 'Total Stock In',
     icon: <ArrowDownCircle size={13} className="text-blue-600" />,
     bg: 'bg-blue-50/50',
     badge: 'bg-blue-100 text-blue-800',
@@ -38,15 +40,6 @@ const MOVEMENT_COLS = [
     getValue: (mv) => mv?.transferOut ?? 0,
   },
   {
-    key: 'cancelled',
-    label: 'Cancelled Del.',
-    icon: <XCircle size={13} className="text-rose-600" />,
-    bg: 'bg-rose-50/50',
-    badge: 'bg-rose-100 text-rose-800',
-    badgeIcon: <XCircle size={11} />,
-    getValue: (mv) => mv?.cancelled ?? 0,
-  },
-  {
     key: 'returns',
     label: 'Return',
     icon: <RotateCcw size={13} className="text-green-600" />,
@@ -63,6 +56,35 @@ const MOVEMENT_COLS = [
     badge: 'bg-red-100 text-red-800',
     badgeIcon: <AlertTriangle size={11} />,
     getValue: (mv) => mv?.damage ?? 0,
+  },
+  {
+    key: 'cancelled',
+    label: 'Cancelled Del.',
+    icon: <XCircle size={13} className="text-rose-600" />,
+    bg: 'bg-rose-50/50',
+    badge: 'bg-rose-100 text-rose-800',
+    badgeIcon: <XCircle size={11} />,
+    getValue: (mv) => mv?.cancelled ?? 0,
+  },
+  {
+    key: 'manualAdjustment',
+    label: 'Adj.',
+    icon: <SlidersHorizontal size={13} className="text-violet-600" />,
+    bg: 'bg-violet-50/50',
+    badge: 'bg-violet-100 text-violet-800',
+    badgeIcon: <SlidersHorizontal size={11} />,
+    getValue: (mv) => mv?.manualAdjustment ?? 0,
+    renderCell: (mv) => {
+      const net = mv?.manualAdjustment ?? 0;
+      if (net === 0) return <span className="text-gray-300 text-xs">—</span>;
+      const isAdd = net > 0;
+      return (
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${isAdd ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          }`}>
+          {isAdd ? '+' : ''}{net.toLocaleString()}
+        </span>
+      );
+    },
   },
 ];
 
@@ -139,10 +161,15 @@ const WarehouseStockTable = ({
   warehouseStockTotalPages,
   setStockCurrentPage,
   isLoading,
+  isAdmin,
+  currentUser,
+  onStockUpdated,
 }) => {
   const [movementMap, setMovementMap] = useState({});
   const [movLoading, setMovLoading] = useState(false);
   const [loadingId, setLoadingId] = useState(null);
+  const [adjustmentStock, setAdjustmentStock] = useState(null);
+  const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
 
   const [visibleCols, setVisibleCols] = useState({
     stockIn: true,
@@ -151,6 +178,7 @@ const WarehouseStockTable = ({
     cancelled: true,
     returns: true,
     damage: true,
+    manualAdjustment: true,
   });
   const [showColPanel, setShowColPanel] = useState(false);
 
@@ -207,6 +235,7 @@ const WarehouseStockTable = ({
               cancelled: Number(row.cancelled) || 0,
               returns: Number(row.returns) || 0,
               damage: Number(row.damage) || 0,
+              manualAdjustment: row.manualAdjustment != null ? Number(row.manualAdjustment) : 0,
             };
           });
         });
@@ -282,30 +311,31 @@ const WarehouseStockTable = ({
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto border-t border-gray-100">
+        <table className="w-full text-sm" style={{ minWidth: '860px', fontSize: '11px' }}>
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Warehouse</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Product</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">SKU/UPC</th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Total Stock</th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+              <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '100px' }}>Warehouse</th>
+              <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '130px' }}>Product</th>
+              <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '100px' }}>SKU/UPC</th>
+              <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '75px' }}>Total Stock</th>
+              <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '75px' }}>
                 <div className="flex items-center justify-center gap-1">
                   <CheckCircle size={13} className="text-teal-500" /> Delivered
                 </div>
               </th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+              <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '70px' }}>
                 <div className="flex items-center justify-center gap-1">
                   <Truck size={13} className="text-orange-500" /> Pending
                 </div>
               </th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Available</th>
+              <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '75px' }}>Available</th>
 
               {activeCols.map((col) => (
                 <th
                   key={col.key}
-                  className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap"
+                  className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap"
+                  style={{ minWidth: '75px' }}
                 >
                   <div className="flex items-center justify-center gap-1">
                     {col.icon} {col.label}
@@ -313,8 +343,8 @@ const WarehouseStockTable = ({
                 </th>
               ))}
 
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Last Updated</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Actions</th>
+              <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '85px' }}>Last Updated</th>
+              <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: isAdmin ? '110px' : '60px' }}>Actions</th>
             </tr>
           </thead>
 
@@ -341,19 +371,19 @@ const WarehouseStockTable = ({
                 return (
                   <tr key={stock.id} className="hover:bg-gray-50 transition-colors">
                     {/* Warehouse */}
-                    <td className="px-4 py-3">
-                      <div className="max-w-[160px]">
-                        <div className="font-medium text-gray-900 text-sm truncate" title={stock.warehouseName}>
+                    <td className="px-2 py-2">
+                      <div style={{ maxWidth: '110px' }}>
+                        <div className="font-medium text-gray-900 text-xs truncate" title={stock.warehouseName}>
                           {stock.warehouseName}
                         </div>
-                        <div className="text-xs text-gray-400">{stock.warehouseCode}</div>
+                        <div className="text-xs text-gray-400 truncate">{stock.warehouseCode}</div>
                       </div>
                     </td>
 
                     {/* Product */}
-                    <td className="px-4 py-3">
-                      <div className="max-w-[180px]">
-                        <div className="font-medium text-gray-900 text-sm">
+                    <td className="px-2 py-2">
+                      <div style={{ maxWidth: '140px' }}>
+                        <div className="font-medium text-gray-900 text-xs leading-snug line-clamp-2">
                           {stock.fullProductName || stock.productName}
                         </div>
                         {stock.combinationDisplay && (
@@ -363,19 +393,19 @@ const WarehouseStockTable = ({
                     </td>
 
                     {/* SKU/UPC */}
-                    <td className="px-4 py-3 text-xs">
-                      <div className="space-y-0.5">
-                        <div className="font-medium">
-                          SKU: {stock.variationSku || stock.productSku || stock.sku || 'N/A'}
+                    <td className="px-2 py-2">
+                      <div className="space-y-0.5" style={{ maxWidth: '110px' }}>
+                        <div className="text-xs font-medium truncate">
+                          {stock.variationSku || stock.productSku || stock.sku || 'N/A'}
                         </div>
                         {(stock.variationUpc || stock.productUpc || stock.upc) &&
                           (stock.variationUpc || stock.productUpc || stock.upc) !== 'N/A' && (
-                            <div className="text-gray-400">
-                              UPC: {stock.variationUpc || stock.productUpc || stock.upc}
+                            <div className="text-xs text-gray-400 truncate">
+                              {stock.variationUpc || stock.productUpc || stock.upc}
                             </div>
                           )}
                         {stock.variationName && (
-                          <div className="text-blue-600 font-medium mt-0.5">
+                          <div className="text-xs text-blue-600 font-medium truncate mt-0.5">
                             {stock.variationName}
                           </div>
                         )}
@@ -383,30 +413,28 @@ const WarehouseStockTable = ({
                     </td>
 
                     {/* Total Stock */}
-                    <td className="px-3 py-3 text-center">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${stock.quantity > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    <td className="px-2 py-2 text-center">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${stock.quantity > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                         {(stock.quantity || 0).toLocaleString()}
                       </span>
                     </td>
 
                     {/* Delivered */}
-                    <td className="px-3 py-3 text-center">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
-                        <CheckCircle size={11} />
+                    <td className="px-2 py-2 text-center">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
                         {(stock.deliveredQuantity || 0).toLocaleString()}
                       </span>
                     </td>
 
                     {/* Pending */}
-                    <td className="px-3 py-3 text-center">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                        <Truck size={11} />
+                    <td className="px-2 py-2 text-center">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                         {(stock.pendingDeliveries || 0).toLocaleString()}
                       </span>
                     </td>
 
                     {/* Available */}
-                    <td className="px-3 py-3 text-center">
+                    <td className="px-2 py-2 text-center">
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         {Math.max(0, (stock.quantity || 0) - (stock.reservedQuantity || 0)).toLocaleString()}
                       </span>
@@ -420,9 +448,8 @@ const WarehouseStockTable = ({
                           </span>
                         ) : mv === null ? (
                           <span className="text-gray-300 text-xs">—</span>
-                        ) : (
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${col.badge}`}>
-                            {col.badgeIcon}
+                        ) : col.renderCell ? col.renderCell(mv) : (
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${col.badge}`}>
                             {col.getValue(mv).toLocaleString()}
                           </span>
                         )}
@@ -430,7 +457,7 @@ const WarehouseStockTable = ({
                     ))}
 
                     {/* Last Updated */}
-                    <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+                    <td className="px-2 py-2 text-xs text-gray-500 whitespace-nowrap">
                       {(() => {
                         const date = parseDate(stock.lastUpdated);
                         if (!date) return 'N/A';
@@ -444,23 +471,32 @@ const WarehouseStockTable = ({
                     </td>
 
                     {/* Actions */}
-                    <td className="px-4 py-3 text-center">
-                      <button
-                        onClick={() => handleView(stock)}
-                        disabled={isThisLoading}
-                        className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition
-                          ${isThisLoading
-                            ? 'text-blue-400 cursor-wait'
-                            : 'text-blue-600 hover:bg-blue-50'
-                          }`}
-                      >
-                        {isThisLoading ? (
-                          <Loader2 size={14} className="animate-spin" />
-                        ) : (
-                          <Eye size={14} />
+                    <td className="px-2 py-2 text-center">
+                      <div className="flex items-center justify-center gap-1 flex-nowrap">
+                        <button
+                          onClick={() => handleView(stock)}
+                          disabled={isThisLoading}
+                          className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition whitespace-nowrap
+                      ${isThisLoading ? 'text-blue-400 cursor-wait' : 'text-blue-600 hover:bg-blue-50'}`}
+                        >
+                          {isThisLoading ? <Loader2 size={13} className="animate-spin" /> : <Eye size={13} />}
+                          {isThisLoading ? 'Loading...' : 'View'}
+                        </button>
+
+                        {isAdmin && (
+                          <button
+                            onClick={() => {
+                              setAdjustmentStock(stock);
+                              setShowAdjustmentModal(true);
+                            }}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded text-red-600 hover:bg-red-50 transition whitespace-nowrap"
+                            title="Manual Adjustment (Admin)"
+                          >
+                            <SlidersHorizontal size={13} />
+                            Adjust
+                          </button>
                         )}
-                        {isThisLoading ? 'Loading...' : 'View'}
-                      </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -482,6 +518,18 @@ const WarehouseStockTable = ({
           totalItems={filteredWarehouseStocks.length}
         />
       )}
+      <ManualAdjustmentModal
+        isOpen={showAdjustmentModal}
+        onClose={() => {
+          setShowAdjustmentModal(false);
+          setAdjustmentStock(null);
+        }}
+        stock={adjustmentStock}
+        currentUser={currentUser}
+        onSuccess={() => {
+          onStockUpdated && onStockUpdated();
+        }}
+      />
     </div>
   );
 };
