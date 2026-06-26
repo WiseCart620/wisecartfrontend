@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Building, CheckCircle, Truck, Eye,
   ArrowDownCircle, ArrowUpCircle, ArrowLeftRight,
-  AlertTriangle, RotateCcw, SlidersHorizontal, X, Loader2,
+  AlertTriangle, RotateCcw, SlidersHorizontal, X, Loader2, XCircle,
 } from 'lucide-react';
 import Pagination from '../../common/Pagination';
 import { parseDate } from '../../../utils/dateUtils';
@@ -36,6 +36,15 @@ const MOVEMENT_COLS = [
     badge: 'bg-indigo-100 text-indigo-800',
     badgeIcon: <ArrowUpCircle size={11} />,
     getValue: (mv) => mv?.transferOut ?? 0,
+  },
+  {
+    key: 'cancelled',
+    label: 'Cancelled Del.',
+    icon: <XCircle size={13} className="text-rose-600" />,
+    bg: 'bg-rose-50/50',
+    badge: 'bg-rose-100 text-rose-800',
+    badgeIcon: <XCircle size={11} />,
+    getValue: (mv) => mv?.cancelled ?? 0,
   },
   {
     key: 'returns',
@@ -139,6 +148,7 @@ const WarehouseStockTable = ({
     stockIn: true,
     transferIn: true,
     transferOut: true,
+    cancelled: true,
     returns: true,
     damage: true,
   });
@@ -194,6 +204,7 @@ const WarehouseStockTable = ({
               stockIn: Number(row.stockIn) || 0,
               transferIn: Number(row.transferIn) || 0,
               transferOut: Number(row.transferOut) || 0,
+              cancelled: Number(row.cancelled) || 0,
               returns: Number(row.returns) || 0,
               damage: Number(row.damage) || 0,
             };
