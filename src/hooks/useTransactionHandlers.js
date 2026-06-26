@@ -390,10 +390,14 @@ export const useTransactionHandlers = () => {
           if (transactionType === 'DELIVERY') {
             // Normal delivery: warehouse sent stock out
             const isNormalDelivery = t.fromWarehouse?.id === stock.warehouseId && t.action === 'SUBTRACT';
+            // Cancelled delivery detection: check remarks OR reference number pattern
+            const isCancelledByRef = t.referenceNumber?.startsWith('CANCELLED-');
+            const isCancelledCheck = isCancelled || isCancelledByRef;
             // Cancelled delivery: stock returned to this warehouse
-            const isCancelledReturn = isCancelled && t.toWarehouse?.id === stock.warehouseId && t.action === 'ADD';
+            const isCancelledReturn = isCancelledCheck && t.action === 'ADD' &&
+              (t.toWarehouse?.id === stock.warehouseId || t.referenceNumber?.startsWith('CANCELLED-'));
             // Cancelled delivery: removed from branch (show in warehouse history too)
-            const isCancelledBranchRemoval = isCancelled && t.action === 'SUBTRACT' && t.fromBranch;
+            const isCancelledBranchRemoval = isCancelledCheck && t.action === 'SUBTRACT' && t.fromBranch;
             return isNormalDelivery || isCancelledReturn || isCancelledBranchRemoval;
           }
 
