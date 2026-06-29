@@ -331,7 +331,12 @@ const WarehouseStockTable = ({
               <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '65px' }}>Stock</th>
               <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '65px' }}>
                 <div className="flex items-center justify-center gap-1">
-                  <Truck size={13} className="text-orange-500" /> Pending
+                  <CheckCircle size={13} className="text-teal-500" /> Del.
+                </div>
+              </th>
+              <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '65px' }}>
+                <div className="flex items-center justify-center gap-1">
+                  <Truck size={13} className="text-orange-500" /> Pend.
                 </div>
               </th>
               <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '65px' }}>Avail.</th>
@@ -427,6 +432,13 @@ const WarehouseStockTable = ({
                       </span>
                     </td>
 
+                    {/* Delivered */}
+                    <td className="px-2 py-2 text-center">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
+                        {(stock.deliveredQuantity || 0).toLocaleString()}
+                      </span>
+                    </td>
+
                     {/* Pending */}
                     <td className="px-2 py-2 text-center">
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
@@ -457,28 +469,22 @@ const WarehouseStockTable = ({
 
                     {/* Actions */}
                     <td className="px-2 py-2 text-center">
-                      <div className="flex items-center justify-center gap-1 flex-nowrap">
+                      <div className="flex items-center justify-center gap-1">
                         <button
                           onClick={() => handleView(stock)}
                           disabled={isThisLoading}
-                          className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition whitespace-nowrap
-                      ${isThisLoading ? 'text-blue-400 cursor-wait' : 'text-blue-600 hover:bg-blue-50'}`}
+                          title="View Transactions"
+                          className={`p-1.5 rounded transition ${isThisLoading ? 'text-blue-400 cursor-wait' : 'text-blue-600 hover:bg-blue-50'}`}
                         >
-                          {isThisLoading ? <Loader2 size={13} className="animate-spin" /> : <Eye size={13} />}
-                          {isThisLoading ? 'Loading...' : 'View'}
+                          {isThisLoading ? <Loader2 size={14} className="animate-spin" /> : <Eye size={14} />}
                         </button>
-
                         {isAdmin && (
                           <button
-                            onClick={() => {
-                              setAdjustmentStock(stock);
-                              setShowAdjustmentModal(true);
-                            }}
-                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded text-red-600 hover:bg-red-50 transition whitespace-nowrap"
-                            title="Manual Adjustment (Admin)"
+                            onClick={() => { setAdjustmentStock(stock); setShowAdjustmentModal(true); }}
+                            title="Manual Adjustment"
+                            className="p-1.5 rounded text-violet-600 hover:bg-violet-50 transition"
                           >
-                            <SlidersHorizontal size={13} />
-                            Adjust
+                            <SlidersHorizontal size={14} />
                           </button>
                         )}
                       </div>
