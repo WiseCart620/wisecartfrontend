@@ -10,11 +10,10 @@ import { api } from '../../../services/api';
 import ManualAdjustmentModal from '../../modals/ManualAdjustmentModal';
 
 
-// ── Column definitions ────────────────────────────────────────────────────────
 const MOVEMENT_COLS = [
   {
     key: 'stockIn',
-    label: 'Total Stock In',
+    label: 'Stock In',
     icon: <ArrowDownCircle size={13} className="text-blue-600" />,
     bg: 'bg-blue-50/50',
     badge: 'bg-blue-100 text-blue-800',
@@ -23,21 +22,12 @@ const MOVEMENT_COLS = [
   },
   {
     key: 'transferIn',
-    label: 'Transfer In',
+    label: 'Trf In',
     icon: <ArrowLeftRight size={13} className="text-purple-600" />,
     bg: 'bg-purple-50/50',
     badge: 'bg-purple-100 text-purple-800',
     badgeIcon: <ArrowLeftRight size={11} />,
     getValue: (mv) => mv?.transferIn ?? 0,
-  },
-  {
-    key: 'transferOut',
-    label: 'Transfer Out',
-    icon: <ArrowUpCircle size={13} className="text-indigo-600" />,
-    bg: 'bg-indigo-50/50',
-    badge: 'bg-indigo-100 text-indigo-800',
-    badgeIcon: <ArrowUpCircle size={11} />,
-    getValue: (mv) => mv?.transferOut ?? 0,
   },
   {
     key: 'returns',
@@ -47,6 +37,15 @@ const MOVEMENT_COLS = [
     badge: 'bg-green-100 text-green-800',
     badgeIcon: <RotateCcw size={11} />,
     getValue: (mv) => mv?.returns ?? 0,
+  },
+  {
+    key: 'transferOut',
+    label: 'Trf Out',
+    icon: <ArrowUpCircle size={13} className="text-indigo-600" />,
+    bg: 'bg-indigo-50/50',
+    badge: 'bg-indigo-100 text-indigo-800',
+    badgeIcon: <ArrowUpCircle size={11} />,
+    getValue: (mv) => mv?.transferOut ?? 0,
   },
   {
     key: 'damage',
@@ -59,7 +58,7 @@ const MOVEMENT_COLS = [
   },
   {
     key: 'cancelled',
-    label: 'Cancelled Del.',
+    label: 'Cancelled',
     icon: <XCircle size={13} className="text-rose-600" />,
     bg: 'bg-rose-50/50',
     badge: 'bg-rose-100 text-rose-800',
@@ -79,8 +78,7 @@ const MOVEMENT_COLS = [
       if (net === 0) return <span className="text-gray-300 text-xs">—</span>;
       const isAdd = net > 0;
       return (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${isAdd ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-          }`}>
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${isAdd ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
           {isAdd ? '+' : ''}{net.toLocaleString()}
         </span>
       );
@@ -311,26 +309,13 @@ const WarehouseStockTable = ({
         </div>
       </div>
 
-      <div className="overflow-x-auto border-t border-gray-100">
-        <table className="w-full text-sm" style={{ minWidth: '860px', fontSize: '11px' }}>
+      <div className="border-t border-gray-100">
+        <table className="w-full text-sm" style={{ fontSize: '11px', tableLayout: 'fixed' }}>
           <thead className="bg-gray-50">
             <tr>
               <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '100px' }}>Warehouse</th>
               <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '130px' }}>Product</th>
               <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '100px' }}>SKU/UPC</th>
-              <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '75px' }}>Total Stock</th>
-              <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '75px' }}>
-                <div className="flex items-center justify-center gap-1">
-                  <CheckCircle size={13} className="text-teal-500" /> Delivered
-                </div>
-              </th>
-              <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '70px' }}>
-                <div className="flex items-center justify-center gap-1">
-                  <Truck size={13} className="text-orange-500" /> Pending
-                </div>
-              </th>
-              <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '75px' }}>Available</th>
-
               {activeCols.map((col) => (
                 <th
                   key={col.key}
@@ -343,7 +328,14 @@ const WarehouseStockTable = ({
                 </th>
               ))}
 
-              <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '85px' }}>Last Updated</th>
+              <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '65px' }}>Stock</th>
+              <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '65px' }}>
+                <div className="flex items-center justify-center gap-1">
+                  <Truck size={13} className="text-orange-500" /> Pending
+                </div>
+              </th>
+              <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '65px' }}>Avail.</th>
+              <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '80px' }}>Last Updated</th>
               <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: isAdmin ? '110px' : '60px' }}>Actions</th>
             </tr>
           </thead>
@@ -412,17 +404,26 @@ const WarehouseStockTable = ({
                       </div>
                     </td>
 
+                    {activeCols.map((col) => (
+                      <td key={col.key} className="px-3 py-3 text-center">
+                        {movLoading ? (
+                          <span className="inline-flex items-center justify-center w-6 h-5">
+                            <span className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin" />
+                          </span>
+                        ) : mv === null ? (
+                          <span className="text-gray-300 text-xs">—</span>
+                        ) : col.renderCell ? col.renderCell(mv) : (
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${col.badge}`}>
+                            {col.getValue(mv).toLocaleString()}
+                          </span>
+                        )}
+                      </td>
+                    ))}
+
                     {/* Total Stock */}
                     <td className="px-2 py-2 text-center">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${stock.quantity > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                         {(stock.quantity || 0).toLocaleString()}
-                      </span>
-                    </td>
-
-                    {/* Delivered */}
-                    <td className="px-2 py-2 text-center">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
-                        {(stock.deliveredQuantity || 0).toLocaleString()}
                       </span>
                     </td>
 
@@ -439,22 +440,6 @@ const WarehouseStockTable = ({
                         {Math.max(0, (stock.quantity || 0) - (stock.reservedQuantity || 0)).toLocaleString()}
                       </span>
                     </td>
-
-                    {activeCols.map((col) => (
-                      <td key={col.key} className="px-3 py-3 text-center">
-                        {movLoading ? (
-                          <span className="inline-flex items-center justify-center w-6 h-5">
-                            <span className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin" />
-                          </span>
-                        ) : mv === null ? (
-                          <span className="text-gray-300 text-xs">—</span>
-                        ) : col.renderCell ? col.renderCell(mv) : (
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${col.badge}`}>
-                            {col.getValue(mv).toLocaleString()}
-                          </span>
-                        )}
-                      </td>
-                    ))}
 
                     {/* Last Updated */}
                     <td className="px-2 py-2 text-xs text-gray-500 whitespace-nowrap">
