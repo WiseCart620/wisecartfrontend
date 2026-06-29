@@ -440,7 +440,7 @@ export const useTransactionHandlers = () => {
           }
 
           if (transactionType === 'SALE') {
-            return t.fromBranch?.id === stock.branchId && (t.action === 'SUBTRACT' || t.action === 'INVOICED');
+            return t.fromBranch?.id === stock.branchId && (t.action === 'SUBTRACT' || t.action === 'INVOICED' || t.action === 'RESERVE');
           }
 
           if (transactionType === 'RETURN') {
