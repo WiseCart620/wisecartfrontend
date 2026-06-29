@@ -429,15 +429,22 @@ export const useTransactionHandlers = () => {
           }
 
           if (transactionType === 'DELIVERY') {
-            return t.toBranch?.id === stock.branchId && t.action === 'ADD';
+            const isCancelledByRef = t.referenceNumber?.startsWith('CANCELLED-');
+            const isCancelledByRemarks = t.remarks && t.remarks.includes('Delivery cancelled');
+            const isCancelled = isCancelledByRef || isCancelledByRemarks;
+            // Normal delivery to this branch (SUBTRACT from warehouse, toBranch = this branch)
+            const isDeliveryToBranch = t.toBranch?.id === stock.branchId && t.action === 'SUBTRACT' && !isCancelled;
+            // Cancelled delivery removed from this branch
+            const isCancelledFromBranch = isCancelled && t.fromBranch?.id === stock.branchId && t.action === 'SUBTRACT';
+            return isDeliveryToBranch || isCancelledFromBranch;
           }
 
           if (transactionType === 'SALE') {
-            return t.fromBranch?.id === stock.branchId && t.action === 'SUBTRACT';
+            return t.fromBranch?.id === stock.branchId;
           }
 
           if (transactionType === 'RETURN') {
-            return t.fromBranch?.id === stock.branchId && t.action === 'SUBTRACT';
+            return t.fromBranch?.id === stock.branchId || t.toBranch?.id === stock.branchId;
           }
 
           return t.fromBranch?.id === stock.branchId ||
