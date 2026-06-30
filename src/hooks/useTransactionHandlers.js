@@ -432,9 +432,7 @@ export const useTransactionHandlers = () => {
             const isCancelledByRef = t.referenceNumber?.startsWith('CANCELLED-');
             const isCancelledByRemarks = t.remarks && t.remarks.includes('Delivery cancelled');
             const isCancelled = isCancelledByRef || isCancelledByRemarks;
-            // Normal delivery to this branch: show only the ADD (branch received stock)
             const isDeliveryToBranch = t.toBranch?.id === stock.branchId && t.action === 'ADD' && !isCancelled;
-            // Cancelled delivery removed from this branch
             const isCancelledFromBranch = isCancelled && t.fromBranch?.id === stock.branchId && t.action === 'SUBTRACT';
             return isDeliveryToBranch || isCancelledFromBranch;
           }

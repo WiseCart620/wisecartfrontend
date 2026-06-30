@@ -284,19 +284,24 @@ const ProductTransactionsModal = ({
     const totals = useMemo(() => {
         let totalIn = 0;
         let totalOut = 0;
+        let totalCancelled = 0;
         filteredTransactions.forEach((t) => {
             const qty = Math.abs(t.quantity || t.quantityChanged || 0);
             const action = t.action || '';
             const type = t.inventoryType || t.transactionType || '';
             const isDeleted = t.isDeleted === true || action === 'DELETED';
             if (isDeleted) return;
+            if (isCancellationTransaction(t) && action === 'ADD') {
+                totalCancelled += qty;
+            }
+
             if (action === 'ADD' || type === 'STOCK_IN' || type === 'RETURN') {
                 totalIn += qty;
             } else if (action === 'SUBTRACT' || type === 'DAMAGE' || type === 'SALE') {
                 totalOut += qty;
             }
         });
-        return { totalIn, totalOut };
+        return { totalIn, totalOut, totalCancelled };
     }, [filteredTransactions]);
 
     const groupedTransactionsRef = useMemo(() => {
@@ -509,6 +514,12 @@ const ProductTransactionsModal = ({
                                 {totals.totalIn - totals.totalOut >= 0 ? '+' : ''}{(totals.totalIn - totals.totalOut).toLocaleString()}
                             </span>
                         </div>
+                        {totals.totalCancelled > 0 && (
+                            <div className="flex items-center gap-2 px-4 py-2 bg-rose-50 border border-rose-200 rounded-lg">
+                                <span className="text-xs font-medium text-rose-700 uppercase tracking-wide">Cancelled (returned)</span>
+                                <span className="text-sm font-bold text-rose-800">{totals.totalCancelled.toLocaleString()}</span>
+                            </div>
+                        )}
                         <span className="text-xs text-gray-400 ml-1">
                             ({filteredTransactions.filter(t => !(t.isDeleted === true || t.action === 'DELETED')).length} active transactions)
                         </span>
