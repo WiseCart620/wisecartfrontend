@@ -252,11 +252,11 @@ const DeliveryFormModal = ({
         }
     }) : [];
 
-    const loadWarehouseStock = async (warehouseId, productId, variationId, itemIndex) => {
+    const loadWarehouseStock = async (warehouseId, productId, variationId) => {
         if (!warehouseId || !productId) return;
         const stockKey = variationId
-            ? `${itemIndex}_${productId}_${variationId}_${warehouseId}`
-            : `${itemIndex}_${productId}_${warehouseId}`;
+            ? `${productId}_${variationId}_${warehouseId}`
+            : `${productId}_${warehouseId}`;
 
         setLoadingStocks(prev => ({ ...prev, [stockKey]: true }));
         setStockErrors(prev => ({ ...prev, [stockKey]: null }));
@@ -285,7 +285,14 @@ const DeliveryFormModal = ({
                 newItems[index] = { ...newItems[index], productId: selectedOption.parentProductId, variationId: selectedOption.variationId || null, uom: selectedOption.uom || '' };
                 setFormData({ ...formData, items: newItems });
                 if (newItems[index].warehouseId) {
-                    setTimeout(() => loadWarehouseStock(newItems[index].warehouseId, selectedOption.parentProductId, selectedOption.variationId, index), 0);
+                    // Use the item's data for stock key, not the index
+                    const stockKey = newItems[index].variationId
+                        ? `${selectedOption.parentProductId}_${selectedOption.variationId}_${newItems[index].warehouseId}`
+                        : `${selectedOption.parentProductId}_${newItems[index].warehouseId}`;
+                    // Check if stock data already exists, if not, load it
+                    if (!warehouseStocks[stockKey]) {
+                        loadWarehouseStock(newItems[index].warehouseId, selectedOption.parentProductId, selectedOption.variationId, index);
+                    }
                 }
                 return;
             }
@@ -297,7 +304,12 @@ const DeliveryFormModal = ({
         if (field === 'warehouseId') {
             const item = newItems[index];
             if (item.productId && value) {
-                setTimeout(() => loadWarehouseStock(value, item.productId, item.variationId, index), 100);
+                const stockKey = item.variationId
+                    ? `${item.productId}_${item.variationId}_${value}`
+                    : `${item.productId}_${value}`;
+                if (!warehouseStocks[stockKey]) {
+                    loadWarehouseStock(value, item.productId, item.variationId, index);
+                }
             }
             newItems[index].preparedQty = '';
             newItems[index].deliveredQty = '';
@@ -318,8 +330,9 @@ const DeliveryFormModal = ({
         if (exists) { alert('This product is already in the delivery list'); return; }
         const newItem = { productId: selectedOption.parentProductId, variationId: selectedOption.variationId || null, preparedQty: '', deliveredQty: '', uom: selectedOption.uom || '', warehouseId: formData.selectedWarehouseId, originalPreparedQty: 0 };
         const newItems = [...formData.items, newItem];
+        const newIndex = newItems.length - 1;
         setFormData({ ...formData, items: newItems });
-        setTimeout(() => loadWarehouseStock(formData.selectedWarehouseId, selectedOption.parentProductId, selectedOption.variationId, newItems.length - 1), 100);
+        setTimeout(() => loadWarehouseStock(formData.selectedWarehouseId, selectedOption.parentProductId, selectedOption.variationId, newIndex), 100);
         setSelectedProductForAdd('');
     };
 
@@ -557,8 +570,8 @@ const DeliveryFormModal = ({
                                                         (item.variationId ? opt.variationId === item.variationId : !opt.variationId)
                                                     );
                                                     const stockKey = item.variationId
-                                                        ? `${i}_${item.productId}_${item.variationId}_${item.warehouseId}`
-                                                        : `${i}_${item.productId}_${item.warehouseId}`;
+                                                        ? `${item.productId}_${item.variationId}_${item.warehouseId}`
+                                                        : `${item.productId}_${item.warehouseId}`;
                                                     const stockInfo = warehouseStocks[stockKey];
                                                     const isLoadingStock = loadingStocks[stockKey];
                                                     const effectiveAvailable = mode === 'edit'
