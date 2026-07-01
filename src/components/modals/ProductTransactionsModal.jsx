@@ -291,8 +291,12 @@ const ProductTransactionsModal = ({
             const type = t.inventoryType || t.transactionType || '';
             const isDeleted = t.isDeleted === true || action === 'DELETED';
             if (isDeleted) return;
-            if (isCancellationTransaction(t) && action === 'ADD') {
+
+            const isCancelled = isCancellationTransaction(t);
+
+            if (isCancelled && action === 'ADD') {
                 totalCancelled += qty;
+                return;
             }
 
             if (action === 'ADD' || type === 'STOCK_IN' || type === 'RETURN') {
