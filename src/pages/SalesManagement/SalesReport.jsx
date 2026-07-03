@@ -155,6 +155,8 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
                         };
                     });
 
+                    const moStoreCount = new Set(moSales.map(s => s.branch?.id).filter(Boolean)).size;
+
                     return {
                         month: Number(mo),
                         amount: moAmount,
@@ -163,6 +165,7 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
                         lesEwt: moEwt,
                         due: moDue,
                         salesCount: moSales.length,
+                        storeCount: moStoreCount,
                         sales: moSales,
                         companyGroups,
                     };
@@ -390,7 +393,7 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
                                                         >
                                                             {row.products.map(p => (
                                                                 <option key={p.month} value={p.month}>
-                                                                    {monthsFull[p.month - 1]} ({p.salesCount} invoice{p.salesCount !== 1 ? 's' : ''})
+                                                                    {monthsFull[p.month - 1]} ({p.storeCount} store{p.storeCount !== 1 ? 's' : ''})
                                                                 </option>
                                                             ))}
                                                         </select>
