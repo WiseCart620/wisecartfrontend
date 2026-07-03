@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Edit2, Trash2, FileText, Check } from 'lucide-react';
+import { Eye, Edit2, Trash2, Check } from 'lucide-react';
 import Pagination from '../../components/common/Pagination';
 import { formatCurrency } from '../../utils/salesUtils';
 import { months } from '../../constants/salesConstants';
@@ -84,9 +84,6 @@ const SalesTable = ({
                           <button onClick={() => onUpdateStatus(sale.id, 'CONFIRMED')} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-green-600 hover:bg-green-50 transition" title="Confirm Sale">
                             <Check size={15} />
                           </button>
-                          <button onClick={() => onUpdateStatus(sale.id, 'INVOICED')} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-purple-600 hover:bg-purple-50 transition" title="Mark as Invoiced">
-                            <FileText size={15} />
-                          </button>
                           {canDelete && (
                             <button onClick={() => onDelete(sale.id)} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 hover:bg-red-50 transition" title="Delete">
                               <Trash2 size={15} />
@@ -97,9 +94,6 @@ const SalesTable = ({
 
                       {sale.status === 'CONFIRMED' && canCreate && (
                         <>
-                          <button onClick={() => onUpdateStatus(sale.id, 'INVOICED')} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-purple-600 hover:bg-purple-50 transition" title="Mark as Invoiced">
-                            <FileText size={15} />
-                          </button>
                           {canDelete && (
                             <button onClick={() => onDelete(sale.id)} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 hover:bg-red-50 transition" title="Delete">
                               <Trash2 size={15} />
