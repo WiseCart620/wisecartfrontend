@@ -166,23 +166,22 @@ const InvoiceReportModal = ({
             <div className="flex flex-col gap-2">
               <div className="flex items-center mb-1.5">
                 <span className="font-bold text-gray-900 w-48">SOLD TO:</span>
-                <span className="flex-1">{invoiceReport.soldTo || 'N/A'}</span>
+                <span className="flex-1 text-black-900 print-visible">{invoiceReport.soldTo || 'N/A'}</span>
               </div>
               <div className="flex items-center mb-1.5">
                 <span className="font-bold text-gray-900 w-48">REGISTERED NAME:</span>
-                <span className="flex-1">{invoiceReport.registeredName || 'N/A'}</span>
+                <span className="flex-1 text-black-900 print-visible">{invoiceReport.registeredName || 'N/A'}</span>
               </div>
               <div className="flex items-center mb-1.5">
                 <span className="font-bold text-gray-900 w-48">TIN:</span>
-                <span className="flex-1">{invoiceReport.tin || invoiceReport.branchTin || 'N/A'}</span>
+                <span className="flex-1 text-black-900 print-visible">{invoiceReport.tin || invoiceReport.branchTin || 'N/A'}</span>
               </div>
-              <div className="grid grid-cols-[180px_1fr] items-start gap-3">
-                <span className="font-bold text-gray-900 pt-1">BUSINESS ADDRESS:</span>
-                <span className="leading-tight">{invoiceReport.businessAddress || 'N/A'}</span>
+              <div className="flex items-center">
+                <span className="font-bold text-gray-900 w-48">BUSINESS ADDRESS:</span>
+                <span className="flex-1 text-black-900 print-visible">{invoiceReport.businessAddress || 'N/A'}</span>
               </div>
             </div>
           </div>
-
           {/* Items Table */}
           <div className="border border-b-0 border-gray-900">
             <table className="w-full" style={{ minHeight: '150mm' }}>
@@ -285,7 +284,7 @@ const InvoiceReportModal = ({
                   <div className="mb-2">Zero-Rated Sales:</div>
                   <div>VAT-Exempt Sales:</div>
                 </div>
-                <div className="px-4 py-3 flex flex-col justify-start text-[15px]">
+                <div className="px-4 py-3 flex flex-col justify-start text-[15px] tax-values-col">
                   <input readOnly value={formatCurrency(vals.vatableSales)} className="w-full text-right mb-2" />
                   <input readOnly value={formatCurrency(vals.vat)} className="w-full text-right mb-2" />
                   <input readOnly value={formatCurrency(invoiceReport.zeroRatedSales || 0)} className="w-full text-right mb-2" />
@@ -324,7 +323,7 @@ const InvoiceReportModal = ({
                   <div className="mb-2">Zero-Rated Sales:</div>
                   <div>VAT-Exempt Sales:</div>
                 </div>
-                <div className="px-4 py-3 flex flex-col justify-start text-[15px]">
+                <div className="px-4 py-3 flex flex-col justify-start text-[15px] tax-values-col">
                   <input readOnly value={formatCurrency(vals.grossSales)} className="w-full text-right mb-2" />
                   <input readOnly value="" className="w-full text-right mb-2" />
                   <input readOnly value="" className="w-full text-right mb-2" />
@@ -417,17 +416,15 @@ const InvoiceReportModal = ({
               if (!invoiceNumber.trim()) { alert('Please enter an invoice number before saving.'); return; }
               onGenerate();
             }}
-            className={`flex items-center gap-2 px-5 py-3 rounded-lg transition font-medium shadow-md ${
-              !invoiceNumber.trim() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'
-            }`}
+            className={`flex items-center gap-2 px-5 py-3 rounded-lg transition font-medium shadow-md ${!invoiceNumber.trim() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'
+              }`}
           >
             Generate
           </button>
           <button
             onClick={handlePrint}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg transition font-medium shadow-md ${
-              !invoiceNumber.trim() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg transition font-medium shadow-md ${!invoiceNumber.trim() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
           >
             <Printer size={20} /> Print Report
           </button>
