@@ -246,9 +246,9 @@ const ProductTransactionsModal = ({
 
             const matchesType = filterType === 'ALL' || (() => {
                 if (type === 'TRANSFER') {
-                    if (filterType === 'TRANSFER_IN') return transaction.toWarehouse || transaction.toBranch;
-                    if (filterType === 'TRANSFER_OUT') return transaction.fromWarehouse || transaction.fromBranch;
-                    if (filterType === 'TRANSFER') return true;
+                    if (filterType === 'TRANSFER_IN') return transaction.transactionType === 'TRANSFER_IN';
+                    if (filterType === 'TRANSFER_OUT') return transaction.transactionType === 'TRANSFER_OUT';
+                    if (filterType === 'TRANSFER') return transaction.transactionType === 'TRANSFER';
                 }
                 return type === filterType;
             })();

@@ -446,7 +446,7 @@ export const useTransactionHandlers = () => {
           }
 
           return t.fromBranch?.id === stock.branchId ||
-            t.toBranch?.id === stock.branchId;
+            t.toBranch?.id === stock.branchId;f
         });
       }
 
