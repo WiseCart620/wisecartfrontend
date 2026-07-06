@@ -1179,7 +1179,8 @@ const ProductModal = ({
                                                                                 step="0.01"
                                                                                 min="0"
                                                                                 id={`apply-all-price-${comboIndex}`}
-                                                                                className="w-24 px-2 py-1 text-sm border border-blue-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50"
+                                                                                onWheel={(e) => e.target.blur()}
+                                                                                className="no-spinner w-24 px-2 py-1 text-sm border border-blue-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50"
                                                                             />
                                                                         </div>
                                                                         <button
