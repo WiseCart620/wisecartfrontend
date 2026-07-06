@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Edit2, Trash2, Check } from 'lucide-react';
+import { Eye, Edit2, Trash2, Check, Loader2 } from 'lucide-react';
 import Pagination from '../../components/common/Pagination';
 import { formatCurrency } from '../../utils/salesUtils';
 import { months } from '../../constants/salesConstants';
@@ -10,6 +10,7 @@ const SalesTable = ({
   canCreate, canDelete,
   onView, onEdit, onUpdateStatus, onDelete,
   onPageChange,
+  loadingSaleId,
 }) => {
   const currentSales = Array.isArray(sales) ? sales : [];
 
@@ -62,24 +63,23 @@ const SalesTable = ({
                   <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">{sale.createdBy || sale.generatedBy || '-'}</td>
                   <td className="px-3 py-3 whitespace-nowrap text-xs font-semibold text-gray-900">{formatCurrency(sale.totalAmount)}</td>
                   <td className="px-3 py-3 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-[11px] leading-5 font-semibold rounded-full ${
-                      sale.status === 'INVOICED' ? 'bg-green-100 text-green-800' :
+                    <span className={`px-2 py-1 inline-flex text-[11px] leading-5 font-semibold rounded-full ${sale.status === 'INVOICED' ? 'bg-green-100 text-green-800' :
                       sale.status === 'CONFIRMED' ? 'bg-blue-100 text-blue-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
                       {sale.status}
                     </span>
                   </td>
                   <td className="px-2 py-3 whitespace-nowrap text-sm font-medium no-print">
                     <div className="flex items-center gap-0.5 flex-nowrap">
-                      <button onClick={() => onView(sale)} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-blue-600 hover:bg-blue-50 transition" title="View">
-                        <Eye size={15} />
+                      <button onClick={() => onView(sale)} disabled={loadingSaleId === sale.id} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-blue-600 hover:bg-blue-50 transition disabled:opacity-60" title="View">
+                        {loadingSaleId === sale.id ? <Loader2 size={15} className="animate-spin" /> : <Eye size={15} />}
                       </button>
 
                       {sale.status === 'PENDING' && canCreate && (
                         <>
-                          <button onClick={() => onEdit(sale)} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-indigo-600 hover:bg-indigo-50 transition" title="Edit">
-                            <Edit2 size={15} />
+                          <button onClick={() => onEdit(sale)} disabled={loadingSaleId === sale.id} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-indigo-600 hover:bg-indigo-50 transition disabled:opacity-60" title="Edit">
+                            {loadingSaleId === sale.id ? <Loader2 size={15} className="animate-spin" /> : <Edit2 size={15} />}
                           </button>
                           <button onClick={() => onUpdateStatus(sale.id, 'CONFIRMED')} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-green-600 hover:bg-green-50 transition" title="Confirm Sale">
                             <Check size={15} />

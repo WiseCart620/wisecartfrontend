@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import '../../styles/invoice-print.css';
 import '../../styles/sales-report-print.css';
 import '../../styles/sales-memo-print.css';
@@ -51,6 +51,7 @@ const SalesManagement = () => {
   const [taxType, setTaxType] = useState('VAT');
   const [productsByStatus, setProductsByStatus] = useState({ pending: [], confirmed: [], invoiced: [] });
   const [productsByStatusLoading, setProductsByStatusLoading] = useState(false);
+  const [loadingSaleId, setLoadingSaleId] = useState(null);
 
   // Data hook
   const {
@@ -99,6 +100,10 @@ const SalesManagement = () => {
     branchInfo,
     productPrices,
   });
+
+  useEffect(() => {
+    if (showModal) setLoadingSaleId(null);
+  }, [showModal]);
 
   const handleResetFilter = () => {
     setFilterData(DEFAULT_FILTER_DATA);
@@ -279,8 +284,9 @@ const SalesManagement = () => {
           totalElements={totalElements}
           canCreate={canCreate}
           canDelete={canDelete}
-          onView={(sale) => handleOpenModal('view', sale)}
-          onEdit={(sale) => handleOpenModal('edit', sale)}
+          onView={async (sale) => { setLoadingSaleId(sale.id); await handleOpenModal('view', sale); }}
+          onEdit={async (sale) => { setLoadingSaleId(sale.id); await handleOpenModal('edit', sale); }}
+          loadingSaleId={loadingSaleId}
           onUpdateStatus={handleUpdateStatus}
           onDelete={handleDelete}
           onPageChange={setCurrentPage}
