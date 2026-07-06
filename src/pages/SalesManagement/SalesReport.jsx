@@ -57,6 +57,41 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
         return Array.from(mergedMap.values());
     };
 
+
+    const buildJournaledPeriods = (profiles) => {
+        const set = new Set();
+        (profiles || []).forEach(p => {
+            const companyId = p.companyId;
+            const branchId = p.branchId || null;
+            const sYear = p.startYear || p.endYear;
+            const eYear = p.endYear || p.startYear;
+            const sMonth = p.startMonth || 1;
+            const eMonth = p.endMonth || 12;
+            if (!companyId || !sYear) return;
+
+            let y = sYear, m = sMonth;
+            while (y < eYear || (y === eYear && m <= eMonth)) {
+                const key = branchId ? `${companyId}_${branchId}_${y}_${m}` : `${companyId}_all_${y}_${m}`;
+                set.add(key);
+                m++;
+                if (m > 12) { m = 1; y++; }
+            }
+        });
+        return set;
+    };
+
+    const isSaleJournaled = (sale, journaledSet) => {
+        const cid = sale.company?.id;
+        const bid = sale.branch?.id;
+        const y = sale.year;
+        const m = sale.month;
+        if (!cid || !y || !m) return false;
+        if (bid && journaledSet.has(`${cid}_${bid}_${y}_${m}`)) return true;
+        if (journaledSet.has(`${cid}_all_${y}_${m}`)) return true;
+        return false;
+    };
+
+
     const generateSalesReport = async () => {
         setSalesReportLoading(true);
         try {
@@ -73,8 +108,15 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
                 params.append('endYear', d.getFullYear());
                 params.append('endMonth', d.getMonth() + 1);
             }
-            const response = await api.get(`/sales/all?${params}`);
-            const allSales = response.data?.content || [];
+            const [salesResponse, profilesResponse] = await Promise.all([
+                api.get(`/sales/all?${params}`),
+                api.get('/invoice-profiles'),
+            ]);
+
+            const rawSales = salesResponse.data?.content || [];
+            const profiles = profilesResponse.data?.data || profilesResponse.data || [];
+            const journaledSet = buildJournaledPeriods(profiles);
+            const allSales = rawSales.filter(sale => isSaleJournaled(sale, journaledSet));
 
             const grouped = {};
             allSales.forEach(sale => {

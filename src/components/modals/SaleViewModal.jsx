@@ -3,8 +3,27 @@ import { X } from 'lucide-react';
 import { formatCurrency, formatPHDateTime } from '../../utils/salesUtils';
 import { months } from '../../constants/salesConstants';
 
-const SaleViewModal = ({ sale, onClose }) => {
+const SaleViewModal = ({ sale, products, productPrices, onClose }) => {
   if (!sale) return null;
+
+  const companyId = sale.company?.id;
+
+  const getOriginalPrice = (item) => {
+    const product = products?.find(p => p.id === item.product.id);
+    if (!product) return null;
+
+    if (item.variation && Array.isArray(product.variations)) {
+      const variation = product.variations.find(v => v.id === item.variation.id);
+      const companyMatch = variation?.companyPrices?.find(cp => cp?.company?.id === companyId);
+      return companyMatch?.price ?? null;
+    }
+
+    const companyBaseMatch = product.companyBasePrices?.find(cbp => cbp?.company?.id === companyId);
+    return companyBaseMatch?.basePrice
+      ?? productPrices?.[String(product.id)]
+      ?? productPrices?.[product.id]
+      ?? null;
+  };
 
   return (
     <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-6">
@@ -32,11 +51,10 @@ const SaleViewModal = ({ sale, onClose }) => {
 
             <div className="p-4 bg-gray-50 rounded-lg">
               <h3 className="font-semibold text-gray-700 mb-2">Status</h3>
-              <span className={`px-4 py-2 inline-flex text-sm leading-5 font-semibold rounded-full ${
-                sale.status === 'INVOICED' ? 'bg-green-100 text-green-800' :
+              <span className={`px-4 py-2 inline-flex text-sm leading-5 font-semibold rounded-full ${sale.status === 'INVOICED' ? 'bg-green-100 text-green-800' :
                 sale.status === 'CONFIRMED' ? 'bg-blue-100 text-blue-800' :
-                'bg-yellow-100 text-yellow-800'
-              }`}>
+                  'bg-yellow-100 text-yellow-800'
+                }`}>
                 {sale.status}
               </span>
               {sale.status === 'INVOICED' && sale.generatedBy && (
@@ -66,24 +84,36 @@ const SaleViewModal = ({ sale, onClose }) => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {sale.items?.length > 0 ? (
-                  sale.items.map((item, i) => (
-                    <tr key={item.id || i} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4 text-center text-sm text-gray-400 font-medium">{i + 1}</td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                        {item.product.productName}
-                        {item.variation && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            {item.variation.combinationDisplay || (item.variation.variationType && item.variation.variationValue ? `${item.variation.variationType}: ${item.variation.variationValue}` : 'Variation')}
+                  sale.items.map((item, i) => {
+                    const originalPrice = getOriginalPrice(item);
+                    const hasCustomPrice = originalPrice != null && Number(originalPrice) !== Number(item.unitPrice);
+
+                    return (
+                      <tr key={item.id || i} className="hover:bg-gray-50 transition">
+                        <td className="px-6 py-4 text-center text-sm text-gray-400 font-medium">{i + 1}</td>
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                          {item.product.productName}
+                          {item.variation && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              {item.variation.combinationDisplay || (item.variation.variationType && item.variation.variationValue ? `${item.variation.variationType}: ${item.variation.variationValue}` : 'Variation')}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{item.variation ? (item.variation.sku || '—') : (item.product.sku || '—')}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{item.variation ? (item.variation.upc || '—') : (item.product.upc || '—')}</td>
+                        <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900">{item.quantity.toLocaleString()}</td>
+                        <td className="px-6 py-4 text-sm text-right text-gray-900">
+                          <div className="flex flex-col items-end gap-0.5">
+                            <span>{formatCurrency(item.unitPrice)}</span>
+                            {hasCustomPrice && (
+                              <span className="text-xs text-gray-400 line-through">{formatCurrency(originalPrice)}</span>
+                            )}
                           </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{item.variation ? (item.variation.sku || '—') : (item.product.sku || '—')}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{item.variation ? (item.variation.upc || '—') : (item.product.upc || '—')}</td>
-                      <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900">{item.quantity.toLocaleString()}</td>
-                      <td className="px-6 py-4 text-sm text-right text-gray-900">{formatCurrency(item.unitPrice)}</td>
-                      <td className="px-6 py-4 text-sm text-right font-bold text-blue-600">{formatCurrency(item.amount)}</td>
-                    </tr>
-                  ))
+                        </td>
+                        <td className="px-6 py-4 text-sm text-right font-bold text-blue-600">{formatCurrency(item.amount)}</td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr><td colSpan="7" className="px-6 py-12 text-center text-gray-500 italic">No items in this sale</td></tr>
                 )}

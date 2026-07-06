@@ -108,6 +108,8 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
     const newItems = [...formData.items];
     if (field === 'quantity') {
       newItems[index][field] = parseInt(value) || 0;
+    } else if (field === 'unitPrice') {
+      newItems[index][field] = value;
     } else if (field === 'productId' && value) {
       const selectedProduct = productOptions.find(p => p.id === value);
       if (selectedProduct) {
@@ -147,6 +149,7 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
         productId: item.product.id,
         variationId: item.variation?.id || null,
         quantity: item.quantity || 1,
+        unitPrice: item.unitPrice ?? null,
       }));
       setFormData({ branchId: sale.branch.id, month: sale.month, year: sale.year, items: sortedItems, createdBy: sale.createdBy || '' });
       setOriginalSaleItems(sortedItems);
@@ -187,6 +190,7 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
       }
     } else if (mode === 'view' && sale) {
       setSelectedSale(sale);
+      await loadProductPricesForCompany(sale.company.id);
     }
     setShowModal(true);
   };
@@ -209,10 +213,21 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
     }
 
     handleCloseModal();
+
     const toastId = toast.loading(modalMode === 'create' ? 'Creating sale...' : 'Updating sale...');
+    const payload = {
+      ...formData,
+      items: formData.items.map(item => ({
+        ...item,
+        unitPrice: item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== ''
+          ? Number(item.unitPrice)
+          : null,
+      })),
+    };
+
     try {
       if (modalMode === 'create') {
-        const response = await api.post('/sales', formData);
+        const response = await api.post('/sales', payload);
         if (response.success) {
           toast.success('Sale created successfully!', { id: toastId });
           invalidateSalesCache();
@@ -221,7 +236,7 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
           toast.error(response.message || 'Failed to create sale', { id: toastId });
         }
       } else if (modalMode === 'edit') {
-        const response = await api.put(`/sales/${selectedSale.id}`, formData);
+        const response = await api.put(`/sales/${selectedSale.id}`, payload);
         if (response.success) {
           toast.success('Sale updated successfully!', { id: toastId });
           invalidateSalesCache();

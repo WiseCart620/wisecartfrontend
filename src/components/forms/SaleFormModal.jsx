@@ -163,7 +163,10 @@ const SaleFormModal = ({
                           : null;
                         const maxAllowed = getMaxAllowedQuantity(item, stockInfo, oldItem);
                         const hasEnoughStock = maxAllowed === undefined || maxAllowed >= item.quantity;
-                        const price = selectedOption?.price ?? 0;
+                        const originalPrice = selectedOption?.price ?? 0;
+                        const price = (item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== '')
+                          ? Number(item.unitPrice)
+                          : originalPrice;
                         const amount = price * (item.quantity || 0);
 
                         return (
@@ -190,10 +193,23 @@ const SaleFormModal = ({
                               }
                             </td>
                             <td className="px-4 py-3 text-right">
-                              {price > 0
-                                ? <span className="text-sm font-semibold text-green-700">₱{Number(price).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
-                                : <span className="text-xs text-gray-400 italic">No price</span>
-                              }
+                              <div className="flex flex-col items-end gap-1">
+                                <input
+                                  type="text"
+                                  value={item.unitPrice !== undefined && item.unitPrice !== null ? item.unitPrice : (originalPrice || '')}
+                                  onChange={(e) => {
+                                    const val = e.target.value.replace(/[^0-9.]/g, '');
+                                    onItemChange(i, 'unitPrice', val);
+                                  }}
+                                  placeholder="0.00"
+                                  className="w-24 px-2 py-1 border border-gray-300 rounded-lg text-sm font-semibold text-green-700 text-right focus:ring-2 focus:ring-blue-500"
+                                />
+                                {originalPrice > 0 && Number(price) !== Number(originalPrice) && (
+                                  <span className="text-[10px] text-gray-400 line-through">
+                                    ₱{Number(originalPrice).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-4 py-3">
                               {isLoadingStock ? (
@@ -251,7 +267,10 @@ const SaleFormModal = ({
                           ₱{formData.items.reduce((sum, item) => {
                             if (!Array.isArray(productOptions)) return 0;
                             const opt = productOptions.find(o => o.parentProductId === item.productId && (item.variationId !== null ? o.variationId === item.variationId : o.variationId === null));
-                            return sum + ((opt?.price ?? 0) * (item.quantity || 0));
+                            const effectivePrice = (item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== '')
+                              ? Number(item.unitPrice)
+                              : (opt?.price ?? 0);
+                            return sum + (effectivePrice * (item.quantity || 0));
                           }, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                         </td>
                         <td />

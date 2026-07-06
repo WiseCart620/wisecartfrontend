@@ -312,7 +312,12 @@ const SalesManagement = () => {
         )}
 
         {showModal && modalMode === 'view' && selectedSale && (
-          <SaleViewModal sale={selectedSale} onClose={handleCloseModal} />
+          <SaleViewModal
+            sale={selectedSale}
+            products={products}
+            productPrices={productPrices}
+            onClose={handleCloseModal}
+          />
         )}
 
         {showInvoiceModal && (
