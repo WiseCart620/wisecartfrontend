@@ -203,6 +203,8 @@ const ProductTransactionsModal = ({
     const getTransferDirection = (transaction) => {
         const type = transaction.inventoryType || transaction.transactionType;
         if (type !== 'TRANSFER') return type;
+        if (transaction.transactionType === 'TRANSFER_IN') return 'TRANSFER_IN';
+        if (transaction.transactionType === 'TRANSFER_OUT') return 'TRANSFER_OUT';
         if ((transaction.fromWarehouse || transaction.fromBranch) && (transaction.toWarehouse || transaction.toBranch)) return 'TRANSFER';
         if ((transaction.toWarehouse || transaction.toBranch) && !(transaction.fromWarehouse || transaction.fromBranch)) return 'TRANSFER_IN';
         if ((transaction.fromWarehouse || transaction.fromBranch) && !(transaction.toWarehouse || transaction.toBranch)) return 'TRANSFER_OUT';
