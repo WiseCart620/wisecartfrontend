@@ -381,7 +381,7 @@ export const useTransactionHandlers = () => {
           const transactionType = t.transactionType || t.inventoryType;
           const isCancelled = t.remarks && t.remarks.includes('Delivery cancelled');
 
-          if (transactionType === 'TRANSFER') {
+          if (transactionType === 'TRANSFER' || transactionType === 'TRANSFER_IN' || transactionType === 'TRANSFER_OUT') {
             const isSendingOut = t.fromWarehouse?.id === stock.warehouseId && t.action === 'SUBTRACT';
             const isReceivingIn = t.toWarehouse?.id === stock.warehouseId && t.action === 'ADD';
             return isSendingOut || isReceivingIn;
@@ -424,7 +424,7 @@ export const useTransactionHandlers = () => {
         filteredTransactions = transactionsData.filter(t => {
           const transactionType = t.transactionType || t.inventoryType;
 
-          if (transactionType === 'TRANSFER') {
+          if (transactionType === 'TRANSFER' || transactionType === 'TRANSFER_IN' || transactionType === 'TRANSFER_OUT') {
             return t.toBranch?.id === stock.branchId && t.action === 'ADD';
           }
 
@@ -446,7 +446,7 @@ export const useTransactionHandlers = () => {
           }
 
           return t.fromBranch?.id === stock.branchId ||
-            t.toBranch?.id === stock.branchId;f
+            t.toBranch?.id === stock.branchId; f
         });
       }
 
