@@ -1316,7 +1316,7 @@ const ProductModal = ({
                                                                                                     value={combo.companyPrices?.[companyId] ?? ''}
                                                                                                     onChange={(e) => updateVariationCompanyPrice(comboIndex, companyId, e.target.value)}
                                                                                                     placeholder="0.00"
-                                                                                                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                                                                    className="no-spinner w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                                                                 />
                                                                                             </div>
                                                                                             <div>
