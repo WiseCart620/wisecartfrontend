@@ -1,11 +1,15 @@
 @import "tailwindcss";
 
 /* Your custom resets & fonts */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
 }
 
@@ -26,4 +30,15 @@ code {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+}
+
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.no-spinner {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
