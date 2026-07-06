@@ -10,7 +10,7 @@ const SalesTable = ({
   canCreate, canDelete,
   onView, onEdit, onUpdateStatus, onDelete,
   onPageChange,
-  loadingSaleId,
+  loadingAction,
 }) => {
   const currentSales = Array.isArray(sales) ? sales : [];
 
@@ -72,14 +72,14 @@ const SalesTable = ({
                   </td>
                   <td className="px-2 py-3 whitespace-nowrap text-sm font-medium no-print">
                     <div className="flex items-center gap-0.5 flex-nowrap">
-                      <button onClick={() => onView(sale)} disabled={loadingSaleId === sale.id} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-blue-600 hover:bg-blue-50 transition disabled:opacity-60" title="View">
-                        {loadingSaleId === sale.id ? <Loader2 size={15} className="animate-spin" /> : <Eye size={15} />}
+                      <button onClick={() => onView(sale)} disabled={loadingAction?.id === sale.id} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-blue-600 hover:bg-blue-50 transition disabled:opacity-60" title="View">
+                        {loadingAction?.id === sale.id && loadingAction?.type === 'view' ? <Loader2 size={15} className="animate-spin" /> : <Eye size={15} />}
                       </button>
 
                       {sale.status === 'PENDING' && canCreate && (
                         <>
-                          <button onClick={() => onEdit(sale)} disabled={loadingSaleId === sale.id} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-indigo-600 hover:bg-indigo-50 transition disabled:opacity-60" title="Edit">
-                            {loadingSaleId === sale.id ? <Loader2 size={15} className="animate-spin" /> : <Edit2 size={15} />}
+                          <button onClick={() => onEdit(sale)} disabled={loadingAction?.id === sale.id} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-indigo-600 hover:bg-indigo-50 transition disabled:opacity-60" title="Edit">
+                            {loadingAction?.id === sale.id && loadingAction?.type === 'edit' ? <Loader2 size={15} className="animate-spin" /> : <Edit2 size={15} />}
                           </button>
                           <button onClick={() => onUpdateStatus(sale.id, 'CONFIRMED')} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-green-600 hover:bg-green-50 transition" title="Confirm Sale">
                             <Check size={15} />

@@ -51,7 +51,7 @@ const SalesManagement = () => {
   const [taxType, setTaxType] = useState('VAT');
   const [productsByStatus, setProductsByStatus] = useState({ pending: [], confirmed: [], invoiced: [] });
   const [productsByStatusLoading, setProductsByStatusLoading] = useState(false);
-  const [loadingSaleId, setLoadingSaleId] = useState(null);
+  const [loadingAction, setLoadingAction] = useState(null);
 
   // Data hook
   const {
@@ -102,7 +102,7 @@ const SalesManagement = () => {
   });
 
   useEffect(() => {
-    if (showModal) setLoadingSaleId(null);
+    if (showModal) setLoadingAction(null);
   }, [showModal]);
 
   const handleResetFilter = () => {
@@ -284,9 +284,9 @@ const SalesManagement = () => {
           totalElements={totalElements}
           canCreate={canCreate}
           canDelete={canDelete}
-          onView={async (sale) => { setLoadingSaleId(sale.id); await handleOpenModal('view', sale); }}
-          onEdit={async (sale) => { setLoadingSaleId(sale.id); await handleOpenModal('edit', sale); }}
-          loadingSaleId={loadingSaleId}
+          onView={async (sale) => { setLoadingAction({ id: sale.id, type: 'view' }); await handleOpenModal('view', sale); }}
+          onEdit={async (sale) => { setLoadingAction({ id: sale.id, type: 'edit' }); await handleOpenModal('edit', sale); }}
+          loadingAction={loadingAction}
           onUpdateStatus={handleUpdateStatus}
           onDelete={handleDelete}
           onPageChange={setCurrentPage}
