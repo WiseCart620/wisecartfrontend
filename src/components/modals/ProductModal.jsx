@@ -1315,6 +1315,7 @@ const ProductModal = ({
                                                                                                     min="0"
                                                                                                     value={combo.companyPrices?.[companyId] ?? ''}
                                                                                                     onChange={(e) => updateVariationCompanyPrice(comboIndex, companyId, e.target.value)}
+                                                                                                    onWheel={(e) => e.target.blur()}
                                                                                                     placeholder="0.00"
                                                                                                     className="no-spinner w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                                                                 />
