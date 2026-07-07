@@ -165,7 +165,7 @@
   }
 
   #invoice-report .flex.justify-between.items-center.mb-2 {
-    margin-top: 40px !important;
+    margin-top: 28px !important;
   }
 
   #invoice-report .mt-6 {
@@ -555,13 +555,13 @@
     margin-top: 0px !important;
   }
 
-  #invoice-report .grid.grid-cols-6.pt-4 {
-    margin-top: 14px !important;
+  #invoice-report .grid.grid-cols-6.pt-2 {
+    margin-top: 6px !important;
     padding-top: 0px !important;
   }
 
-  #invoice-report .grid.grid-cols-6.border-t-0.border-gray-900.pt-4 {
-    margin-top: 14px !important;
+  #invoice-report .grid.grid-cols-6.border-t-0.border-gray-900.pt-2 {
+    margin-top: 6px !important;
     padding-top: 0px !important;
   }
 
