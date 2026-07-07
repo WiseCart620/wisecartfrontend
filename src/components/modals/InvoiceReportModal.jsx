@@ -161,8 +161,7 @@ const InvoiceReportModal = ({
             </div>
           </div>
 
-          {/* Sold To Box */}
-          <div className="border border-gray-900 p-3 mb-1.5" style={{ height: '165px', overflow: 'hidden' }}>
+          <div className="border border-gray-900 p-3 mb-1.5" style={{ height: '185px', overflow: 'visible' }}>
             <div className="flex flex-col gap-2 pt-4">
               <div className="flex items-center mb-1.5">
                 <span className="font-bold text-gray-900 w-48">SOLD TO:</span>
@@ -176,12 +175,13 @@ const InvoiceReportModal = ({
                 <span className="font-bold text-gray-900 w-48">TIN:</span>
                 <span className="flex-1 text-black-900 print-visible">{invoiceReport.tin || invoiceReport.branchTin || 'N/A'}</span>
               </div>
-              <div className="flex items-center">
-                <span className="font-bold text-gray-900 w-48">BUSINESS ADDRESS:</span>
-                <span className="flex-1 text-black-900 print-visible">{invoiceReport.businessAddress || 'N/A'}</span>
+              <div className="flex items-start">
+                <span className="font-bold text-gray-900 w-48 shrink-0">BUSINESS ADDRESS:</span>
+                <span className="flex-1 text-black-900 print-visible break-words leading-snug">{invoiceReport.businessAddress || 'N/A'}</span>
               </div>
             </div>
           </div>
+          
           {/* Items Table */}
           <div className="border border-b-0 border-gray-900 pt-3">
             <table className="w-full" style={{ minHeight: '150mm' }}>
