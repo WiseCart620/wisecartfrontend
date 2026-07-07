@@ -555,13 +555,13 @@
     margin-top: 0px !important;
   }
 
-  #invoice-report .grid.grid-cols-6.pt-2 {
-    margin-top: 6px !important;
+  #invoice-report .grid.grid-cols-6.-mt-2 {
+    margin-top: -2px !important;
     padding-top: 0px !important;
   }
 
-  #invoice-report .grid.grid-cols-6.border-t-0.border-gray-900.pt-2 {
-    margin-top: 6px !important;
+  #invoice-report .grid.grid-cols-6.border-t-0.border-gray-900.-mt-2 {
+    margin-top: -2px !important;
     padding-top: 0px !important;
   }
 
