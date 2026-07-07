@@ -141,7 +141,7 @@ const InvoiceReportModal = ({
           </div>
 
           {/* Checkboxes + Date */}
-          <div className="flex justify-between items-center mb-2 mt-16">
+          <div className="flex justify-between items-center mb-2" style={{ marginTop: '64px' }}>
             <div className="flex gap-6">
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                 <input type="checkbox" className="w-6 h-6 border-2 border-gray-900" /> CASH SALES

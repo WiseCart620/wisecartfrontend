@@ -164,8 +164,8 @@
     margin-bottom: 3px !important;
   }
 
-  #invoice-report .mt-16 {
-    margin-top: 14px !important;
+  #invoice-report .flex.justify-between.items-center.mb-2 {
+    margin-top: 40px !important;
   }
 
   #invoice-report .mt-6 {
