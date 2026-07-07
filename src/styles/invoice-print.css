@@ -537,4 +537,31 @@
     padding-left: 0px !important;
     text-align: left !important;
   }
+
+  /* ===== ADDED: PUSH SECTIONS DOWN IN PRINT ===== */
+
+  #invoice-report .border-1.border-gray-900.p-3 .flex.flex-col.gap-2.pt-4,
+  #invoice-report .border.border-gray-900.p-3 .flex.flex-col.gap-2.pt-4 {
+    padding-top: 14px !important;
+  }
+
+  #invoice-report table thead th {
+    padding-top: 10px !important;
+    margin-top: 0px !important;
+  }
+
+  #invoice-report table thead th:first-child {
+    padding-top: 10px !important;
+    margin-top: 0px !important;
+  }
+
+  #invoice-report .grid.grid-cols-6.pt-4 {
+    margin-top: 14px !important;
+    padding-top: 0px !important;
+  }
+
+  #invoice-report .grid.grid-cols-6.border-t-0.border-gray-900.pt-4 {
+    margin-top: 14px !important;
+    padding-top: 0px !important;
+  }
 }

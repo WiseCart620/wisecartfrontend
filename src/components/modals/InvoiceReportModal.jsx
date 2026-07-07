@@ -162,8 +162,8 @@ const InvoiceReportModal = ({
           </div>
 
           {/* Sold To Box */}
-          <div className="border border-gray-900 p-3 mb-1.5" style={{ height: '165px' }}>
-            <div className="flex flex-col gap-2">
+          <div className="border border-gray-900 p-3 mb-1.5" style={{ height: '165px', overflow: 'hidden' }}>
+            <div className="flex flex-col gap-2 pt-4">
               <div className="flex items-center mb-1.5">
                 <span className="font-bold text-gray-900 w-48">SOLD TO:</span>
                 <span className="flex-1 text-black-900 print-visible">{invoiceReport.soldTo || 'N/A'}</span>
@@ -183,7 +183,7 @@ const InvoiceReportModal = ({
             </div>
           </div>
           {/* Items Table */}
-          <div className="border border-b-0 border-gray-900">
+          <div className="border border-b-0 border-gray-900 pt-3">
             <table className="w-full" style={{ minHeight: '150mm' }}>
               <thead>
                 <tr className="border-b border-gray-900">
@@ -276,7 +276,7 @@ const InvoiceReportModal = ({
 
           {/* Tax Section */}
           {taxType === 'VAT' ? (
-            <div className="grid grid-cols-6 border border-gray-900 text-sm">
+            <div className="grid grid-cols-6 border border-gray-900 text-sm pt-4">
               <div className="col-span-2 grid grid-cols-2">
                 <div className="px-2 py-3 flex flex-col justify-start font-medium text-[13px]">
                   <div className="mb-2">Total Sales:</div>
@@ -315,7 +315,7 @@ const InvoiceReportModal = ({
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-6 border border-gray-900 text-sm">
+            <div className="grid grid-cols-6 border border-gray-900 text-sm pt-4">
               <div className="col-span-2 grid grid-cols-2">
                 <div className="px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
                   <div>Gross Sales (PT):</div>
@@ -356,7 +356,7 @@ const InvoiceReportModal = ({
           )}
 
           {/* Bottom Section */}
-          <div className="grid grid-cols-6 border-t-0 border-gray-900 text-sm">
+          <div className="grid grid-cols-6 border-t-0 border-gray-900 text-sm pt-4">
             <div className="col-span-4 border-r border-gray-900 px-4">
               <label className="flex items-start gap-2 text-sm font-medium text-gray-700">
                 <input type="checkbox" className="w-6 h-6 mt-8" />
