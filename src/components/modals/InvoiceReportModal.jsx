@@ -278,7 +278,7 @@ const InvoiceReportModal = ({
           {taxType === 'VAT' ? (
             <div className="grid grid-cols-6 border border-gray-900 text-sm -mt-4">
               <div className="col-span-2 grid grid-cols-2">
-                <div className="px-2 py-3 flex flex-col justify-start font-medium text-[13px]">
+                <div className="px-2 py-3 flex flex-col justify-start font-medium text-[13px] tax-labels-col">
                   <div className="mb-2">Total Sales:</div>
                   <div className="mb-2">VAT/PT:</div>
                   <div className="mb-2">Zero-Rated Sales:</div>
@@ -317,7 +317,7 @@ const InvoiceReportModal = ({
           ) : (
             <div className="grid grid-cols-6 border border-gray-900 text-sm -mt-2">
               <div className="col-span-2 grid grid-cols-2">
-                <div className="px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
+                <div className="px-2 py-3 flex flex-col justify-start font-medium text-[11px] tax-labels-col">
                   <div>Gross Sales (PT):</div>
                   <div className="mb-2">VAT/PT:</div>
                   <div className="mb-2">Zero-Rated Sales:</div>
@@ -356,7 +356,7 @@ const InvoiceReportModal = ({
           )}
 
           {/* Bottom Section */}
-          <div className="grid grid-cols-6 border-t-0 border-gray-900 text-sm -mt-4">
+          <div className="grid grid-cols-6 border-t-0 border-gray-900 text-sm -mt-1">
             <div className="col-span-4 border-r border-gray-900 px-4">
               <label className="flex items-start gap-2 text-sm font-medium text-gray-700">
                 <input type="checkbox" className="w-6 h-6 mt-8" />
@@ -367,7 +367,7 @@ const InvoiceReportModal = ({
               </label>
             </div>
             {taxType === 'VAT' ? (
-              <div className="col-span-2 grid grid-cols-2">
+              <div className="col-span-2 grid grid-cols-2 total-due-block">
                 <div className="px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
                   <div className="mb-2">Add: VAT</div>
                   <div className="mb-2">Less: Withholding Tax</div>
@@ -381,10 +381,11 @@ const InvoiceReportModal = ({
               </div>
             ) : (
               <div className="col-span-2 grid grid-cols-2">
-                <div className="px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
-                  <div className="mb-2">VAT/PT (3%)</div>
-                  <div className="mb-2">Less: EWT</div>
-                  <div>Total Amount Due:</div>
+                <div className="px-2 py-3 flex flex-col justify-start font-medium text-[13px] tax-labels-col">
+                  <div className="mb-2">Total Sales:</div>
+                  <div className="mb-2">VAT/PT:</div>
+                  <div className="mb-2">Zero-Rated Sales:</div>
+                  <div>VAT-Exempt Sales:</div>
                 </div>
                 <div className="px-4 py-2 flex flex-col justify-start">
                   <input readOnly value="" className="w-full text-right mb-2 text-[15px]" />
