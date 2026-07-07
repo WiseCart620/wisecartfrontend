@@ -565,24 +565,8 @@
     padding-top: 0px !important;
   }
 
-  /* ===== BUSINESS ADDRESS ROW: same left-alignment as SOLD TO/REGISTERED NAME/TIN, but wraps instead of cropping ===== */
-  #invoice-report .border-1.border-gray-900 .flex.flex-col.gap-2 .flex.items-start,
-  #invoice-report .border.border-gray-900 .flex.flex-col.gap-2 .flex.items-start {
-    padding-left: 0px !important;
-    margin-left: -12px !important;
-  }
-
-  #invoice-report .flex.items-start .font-bold.text-gray-900.w-48 {
-    padding-left: 0px !important;
-    margin-left: -12px !important;
-    width: 180px !important;
-    flex-shrink: 0 !important;
-  }
-
+  /* ===== BUSINESS ADDRESS ROW: wraps instead of cropping, no forced shift so it lines up naturally with SOLD TO/REGISTERED NAME/TIN ===== */
   #invoice-report .flex.items-start .text-black-900.flex-1.print-visible {
-    padding-left: 0px !important;
-    margin-left: -12px !important;
-    padding-right: 0px !important;
     white-space: normal !important;
     word-break: break-word !important;
     overflow: visible !important;
