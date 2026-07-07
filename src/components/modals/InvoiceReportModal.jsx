@@ -141,7 +141,7 @@ const InvoiceReportModal = ({
           </div>
 
           {/* Checkboxes + Date */}
-          <div className="flex justify-between items-center mb-2 mt-11">
+          <div className="flex justify-between items-center mb-2 mt-16">
             <div className="flex gap-6">
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                 <input type="checkbox" className="w-6 h-6 border-2 border-gray-900" /> CASH SALES
@@ -161,8 +161,8 @@ const InvoiceReportModal = ({
             </div>
           </div>
 
-          <div className="border border-gray-900 p-3 mb-1.5" style={{ height: '185px', overflow: 'visible' }}>
-            <div className="flex flex-col gap-2 pt-4">
+          <div className="border border-gray-900 p-3 mb-1.5" style={{ height: '195px', overflow: 'visible' }}>
+            <div className="flex flex-col gap-2 pt-8">
               <div className="flex items-center mb-1.5">
                 <span className="font-bold text-gray-900 w-48">SOLD TO:</span>
                 <span className="flex-1 text-black-900 print-visible">{invoiceReport.soldTo || 'N/A'}</span>
@@ -181,7 +181,7 @@ const InvoiceReportModal = ({
               </div>
             </div>
           </div>
-          
+
           {/* Items Table */}
           <div className="border border-b-0 border-gray-900 pt-3">
             <table className="w-full" style={{ minHeight: '150mm' }}>

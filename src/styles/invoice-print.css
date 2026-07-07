@@ -164,8 +164,8 @@
     margin-bottom: 3px !important;
   }
 
-  #invoice-report .mt-11 {
-    margin-top: 10px !important;
+  #invoice-report .mt-16 {
+    margin-top: 14px !important;
   }
 
   #invoice-report .mt-6 {
@@ -540,9 +540,9 @@
 
   /* ===== ADDED: PUSH SECTIONS DOWN IN PRINT ===== */
 
-  #invoice-report .border-1.border-gray-900.p-3 .flex.flex-col.gap-2.pt-4,
-  #invoice-report .border.border-gray-900.p-3 .flex.flex-col.gap-2.pt-4 {
-    padding-top: 14px !important;
+  #invoice-report .border-1.border-gray-900.p-3 .flex.flex-col.gap-2.pt-8,
+  #invoice-report .border.border-gray-900.p-3 .flex.flex-col.gap-2.pt-8 {
+    padding-top: 20px !important;
   }
 
   #invoice-report table thead th {
