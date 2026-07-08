@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import { X, FileText, Printer, ChevronDown, ChevronUp, ChevronLeft, Package } from 'lucide-react';
@@ -15,11 +15,19 @@ const monthsFull = ['January', 'February', 'March', 'April', 'May', 'June', 'Jul
 
 const SalesReport = ({ onBack, filterData, companies, branches }) => {
     const [salesReportFilter, setSalesReportFilter] = useState({ startDate: '', endDate: '' });
+    const [reportCompanyId, setReportCompanyId] = useState(filterData.companyId || '');
+    const [reportBranchId, setReportBranchId] = useState(filterData.branchId || '');
+
+    const filteredReportBranches = React.useMemo(() => {
+        if (!reportCompanyId) return branches;
+        return branches.filter(b => String(b.companyId ?? b.company?.id) === String(reportCompanyId));
+    }, [branches, reportCompanyId]);
     const [salesReportData, setSalesReportData] = useState(null);
     const [salesReportLoading, setSalesReportLoading] = useState(false);
     const [expandedReportMonths, setExpandedReportMonths] = useState({});
     const [selectedReportMonths, setSelectedReportMonths] = useState({});
     const [expandedCompanyProducts, setExpandedCompanyProducts] = useState({});
+    const [showPrintMenu, setShowPrintMenu] = useState(false);
 
     React.useEffect(() => {
         generateSalesReport();
@@ -92,12 +100,14 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
     };
 
 
-    const generateSalesReport = async () => {
+    const generateSalesReport = async (companyIdOverride, branchIdOverride) => {
+        const activeCompanyId = companyIdOverride !== undefined ? companyIdOverride : reportCompanyId;
+        const activeBranchId = branchIdOverride !== undefined ? branchIdOverride : reportBranchId;
         setSalesReportLoading(true);
         try {
             const params = new URLSearchParams({ page: 0, size: 9999, status: 'INVOICED' });
-            if (filterData.companyId) params.append('companyId', filterData.companyId);
-            if (filterData.branchId) params.append('branchId', filterData.branchId);
+            if (activeCompanyId) params.append('companyId', activeCompanyId);
+            if (activeBranchId) params.append('branchId', activeBranchId);
             if (salesReportFilter.startDate) {
                 const d = new Date(salesReportFilter.startDate);
                 params.append('startYear', d.getFullYear());
@@ -233,10 +243,6 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
         }
     };
 
-    React.useEffect(() => {
-        generateSalesReport();
-    }, []);
-
     const exportReportToExcel = () => {
         if (!salesReportData) return;
         const rows = [];
@@ -292,25 +298,258 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
         toast.success('Report downloaded!');
     };
 
-    const printSalesReport = () => {
-        const printContent = document.getElementById('sales-report-print-content');
-        if (!printContent) return;
+    const flattenAllSales = () => {
+        if (!salesReportData) return [];
+        const all = [];
+        salesReportData.forEach(yr => {
+            (yr.sales || []).forEach(sale => all.push(sale));
+        });
+        return all;
+    };
+
+    const buildPrintMetaHTML = () => {
+        const companyName = reportCompanyId
+            ? (companies.find(c => String(c.id) === String(reportCompanyId))?.companyName || 'Unknown')
+            : 'All Companies';
+        const branchName = reportBranchId
+            ? (branches.find(b => String(b.id) === String(reportBranchId))?.branchName || 'Unknown')
+            : 'All Branches';
+        const period = (salesReportFilter.startDate || salesReportFilter.endDate)
+            ? `${salesReportFilter.startDate || 'Start'} — ${salesReportFilter.endDate || 'End'}`
+            : 'All periods';
+        const generated = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+
+        return `
+          <div class="print-header">
+            <h1>WISECART MERCHANTS CORP.</h1>
+            <h2>Sales Report</h2>
+            <table class="print-meta-table">
+              <tr><td><strong>Company:</strong> ${companyName}</td><td><strong>Branch:</strong> ${branchName}</td></tr>
+              <tr><td><strong>Period:</strong> ${period}</td><td><strong>Generated:</strong> ${generated}</td></tr>
+            </table>
+          </div>
+        `;
+    };
+
+    const buildPrintHTMLByBranch = () => {
+        if (!salesReportData) return '';
+
+        // Flatten all sales across the currently loaded years/months, grouped by branch
+        const branchMap = new Map();
+        flattenAllSales().forEach(sale => {
+            const bId = sale.branch?.id || 'unknown';
+            if (!branchMap.has(bId)) {
+                branchMap.set(bId, { branch: sale.branch, sales: [] });
+            }
+            branchMap.get(bId).sales.push(sale);
+        });
+        const branchGroups = Array.from(branchMap.values())
+            .sort((a, b) => (a.branch?.branchName || '').localeCompare(b.branch?.branchName || ''));
+
+        const companyName = reportCompanyId
+            ? (companies.find(c => String(c.id) === String(reportCompanyId))?.companyName || 'Unknown')
+            : 'All Companies';
+
+        let html = buildPrintMetaHTML();
+
+        if (branchGroups.length === 0) {
+            html += `<p style="font-style:italic;color:#666;">No invoiced sales found for the selected filters.</p>`;
+            return html;
+        }
+
+        branchGroups.forEach(bg => {
+            html += `<h3 class="print-branch-title">Branch: ${bg.branch?.branchName || 'Unknown'}</h3>`;
+
+            bg.sales.forEach(sale => {
+                const sVatable = (Number(sale.totalAmount) || 0) / 1.12;
+                const sVat = sVatable * 0.12;
+                const sEwt = sVatable * 0.01;
+
+                html += `
+                  <table class="print-summary-table">
+                    <thead>
+                      <tr>
+                        <th>Branch</th><th>Encoded By</th><th>Status</th>
+                        <th class="text-right">Vatable</th><th class="text-right">VAT</th>
+                        <th class="text-right">EWT</th><th class="text-right">Total Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>${sale.branch?.branchName || ''}</td>
+                        <td>${sale.createdBy || '—'}</td>
+                        <td>${sale.status}</td>
+                        <td class="text-right">₱${sVatable.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                        <td class="text-right">₱${sVat.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                        <td class="text-right">₱${sEwt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                        <td class="text-right">₱${formatCurrency(sale.totalAmount)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <table class="print-items-table">
+                    <thead>
+                      <tr>
+                        <th>#</th><th>Product</th><th>Variation</th><th>SKU</th><th>UPC</th>
+                        <th class="text-right">Qty</th><th class="text-right">Unit Price</th><th class="text-right">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${(sale.items || []).map((item, i) => `
+                        <tr>
+                          <td>${i + 1}</td>
+                          <td>${item.product?.productName || '—'}</td>
+                          <td>${item.variation ? (item.variation.combinationDisplay || `${item.variation.variationType}: ${item.variation.variationValue}`) : '—'}</td>
+                          <td>${item.variation ? (item.variation.sku || '—') : (item.product?.sku || '—')}</td>
+                          <td>${item.variation ? (item.variation.upc || '—') : (item.product?.upc || '—')}</td>
+                          <td class="text-right">${(item.quantity || 0).toLocaleString()}</td>
+                          <td class="text-right">₱${formatCurrency(item.unitPrice)}</td>
+                          <td class="text-right">₱${formatCurrency(item.amount)}</td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <td colspan="5"><strong>Sale Total</strong></td>
+                        <td class="text-right"><strong>${(sale.items || []).reduce((s, i) => s + (i.quantity || 0), 0).toLocaleString()}</strong></td>
+                        <td></td>
+                        <td class="text-right"><strong>₱${formatCurrency(sale.totalAmount)}</strong></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                `;
+            });
+        });
+
+        return html;
+    };
+
+    const buildPrintHTMLByProducts = () => {
+        if (!salesReportData) return '';
+
+        // Group all sales by company, then aggregate products across ALL their sales
+        const companyMap = new Map();
+        flattenAllSales().forEach(sale => {
+            const cId = sale.company?.id || 'unknown';
+            if (!companyMap.has(cId)) {
+                companyMap.set(cId, { company: sale.company, products: new Map() });
+            }
+            const entry = companyMap.get(cId);
+            (sale.items || []).forEach(item => {
+                const key = `${item.product?.id}_${item.variation?.id || 'no-var'}`;
+                if (entry.products.has(key)) {
+                    const ex = entry.products.get(key);
+                    ex.quantity += item.quantity || 0;
+                    ex.amount += item.amount || 0;
+                } else {
+                    entry.products.set(key, {
+                        productName: item.product?.productName || '—',
+                        variationDisplay: item.variation?.combinationDisplay ||
+                            (item.variation?.variationType && item.variation?.variationValue
+                                ? `${item.variation.variationType}: ${item.variation.variationValue}`
+                                : null),
+                        sku: item.variation?.sku || item.product?.sku || '—',
+                        upc: item.variation?.upc || item.product?.upc || '—',
+                        quantity: item.quantity || 0,
+                        unitPrice: item.unitPrice,
+                        amount: item.amount || 0,
+                    });
+                }
+            });
+        });
+
+        const companyGroups = Array.from(companyMap.values())
+            .sort((a, b) => (a.company?.companyName || '').localeCompare(b.company?.companyName || ''));
+
+        let html = buildPrintMetaHTML();
+
+        if (companyGroups.length === 0) {
+            html += `<p style="font-style:italic;color:#666;">No invoiced sales found for the selected filters.</p>`;
+            return html;
+        }
+
+        companyGroups.forEach(cg => {
+            const products = Array.from(cg.products.values()).sort((a, b) => a.productName.localeCompare(b.productName));
+            const totalQty = products.reduce((s, p) => s + p.quantity, 0);
+            const totalAmount = products.reduce((s, p) => s + p.amount, 0);
+
+            html += `<h3 class="print-branch-title">Company: ${cg.company?.companyName || 'Unknown'}</h3>`;
+            html += `
+              <table class="print-items-table">
+                <thead>
+                  <tr>
+                    <th>#</th><th>Product</th><th>Variation</th><th>SKU</th><th>UPC</th>
+                    <th class="text-right">Qty</th><th class="text-right">Unit Price</th><th class="text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${products.map((p, i) => `
+                    <tr>
+                      <td>${i + 1}</td>
+                      <td>${p.productName}</td>
+                      <td>${p.variationDisplay || '—'}</td>
+                      <td>${p.sku}</td>
+                      <td>${p.upc}</td>
+                      <td class="text-right">${p.quantity.toLocaleString()}</td>
+                      <td class="text-right">₱${formatCurrency(p.unitPrice)}</td>
+                      <td class="text-right">₱${formatCurrency(p.amount)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="5"><strong>Company Total</strong></td>
+                    <td class="text-right"><strong>${totalQty.toLocaleString()}</strong></td>
+                    <td></td>
+                    <td class="text-right"><strong>₱${totalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong></td>
+                  </tr>
+                </tfoot>
+              </table>
+            `;
+        });
+
+        return html;
+    };
+
+    const printSalesReportByBranch = () => {
+        setShowPrintMenu(false);
+        const html = buildPrintHTMLByBranch();
+        if (!html) return;
+        openPrintWindow(html);
+    };
+
+    const printSalesReportByProducts = () => {
+        setShowPrintMenu(false);
+        const html = buildPrintHTMLByProducts();
+        if (!html) return;
+        openPrintWindow(html);
+    };
+
+    const openPrintWindow = (html) => {
         const printWindow = window.open('', '_blank', 'width=1200,height=800');
         printWindow.document.write(`<!DOCTYPE html><html><head><title>Sales Report</title><style>
-      * { font-family: Arial, sans-serif; }
-      body { padding: 20px; margin: 0; }
-      table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
-      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-      th { background-color: #f2f2f2; font-weight: bold; }
+      * { font-family: Arial, sans-serif; box-sizing: border-box; }
+      body { padding: 20px; margin: 0; color: #1a1a1a; }
+      .print-header h1 { font-size: 16pt; margin: 0 0 2pt 0; }
+      .print-header h2 { font-size: 12pt; margin: 0 0 8pt 0; font-weight: normal; color: #555; }
+      .print-meta-table { width: 100%; margin-bottom: 16pt; font-size: 9pt; }
+      .print-meta-table td { padding: 2pt 8pt 2pt 0; }
+      .print-branch-title { font-size: 11pt; margin: 16pt 0 6pt 0; border-bottom: 1pt solid #333; padding-bottom: 3pt; }
+      table { border-collapse: collapse; width: 100%; margin-bottom: 4pt; font-size: 8.5pt; }
+      .print-summary-table { margin-bottom: 0; }
+      .print-items-table { margin-bottom: 14pt; }
+      th, td { border: 0.5pt solid #999; padding: 4pt 6pt; text-align: left; }
+      th { background-color: #eee; font-weight: bold; }
       .text-right { text-align: right; }
+      tfoot td { background-color: #f5f5f5; }
+      @page { size: A4 landscape; margin: 12mm 8mm; }
     </style></head><body>
-      <h2>WISECART MERCHANTS CORP. — Sales Report</h2>
-      <p>Generated: ${new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-      ${printContent.outerHTML}
+      ${html}
     </body></html>`);
         printWindow.document.close();
         setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
     };
+
+
 
 
     // Report view
@@ -338,9 +577,32 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
                             <button onClick={exportReportToExcel} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">
                                 <FileText size={16} /> Export CSV
                             </button>
-                            <button onClick={printSalesReport} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
-                                <Printer size={16} /> Print
-                            </button>
+                            <div className="relative">
+                                <button onClick={() => setShowPrintMenu(p => !p)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+                                    <Printer size={16} /> Print
+                                </button>
+                                {showPrintMenu && (
+                                    <>
+                                        <div className="fixed inset-0 z-10" onClick={() => setShowPrintMenu(false)} />
+                                        <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                                            <button
+                                                onClick={printSalesReportByBranch}
+                                                className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition border-b border-gray-100"
+                                            >
+                                                <div className="font-medium text-gray-900">Print by Branch</div>
+                                                <div className="text-xs text-gray-500">Invoices grouped per branch</div>
+                                            </button>
+                                            <button
+                                                onClick={printSalesReportByProducts}
+                                                className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition"
+                                            >
+                                                <div className="font-medium text-gray-900">Print All Products</div>
+                                                <div className="text-xs text-gray-500">Aggregated products per company</div>
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </>
                     )}
                     <button onClick={onBack} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
@@ -355,6 +617,41 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
                     <h2 className="text-sm font-semibold text-gray-700 mb-3">Filter Report</h2>
                     <div className="flex flex-wrap gap-4 items-end">
                         <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Company</label>
+                            <select
+                                value={reportCompanyId}
+                                onChange={e => {
+                                    const newCompanyId = e.target.value;
+                                    setReportCompanyId(newCompanyId);
+                                    setReportBranchId('');
+                                    generateSalesReport(newCompanyId, '');
+                                }}
+                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 min-w-[160px]"
+                            >
+                                <option value="">All Companies</option>
+                                {companies.map(c => (
+                                    <option key={c.id} value={c.id}>{c.companyName}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Branch</label>
+                            <select
+                                value={reportBranchId}
+                                onChange={e => {
+                                    const newBranchId = e.target.value;
+                                    setReportBranchId(newBranchId);
+                                    generateSalesReport(reportCompanyId, newBranchId);
+                                }}
+                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 min-w-[160px]"
+                            >
+                                <option value="">All Branches</option>
+                                {filteredReportBranches.map(b => (
+                                    <option key={b.id} value={b.id}>{b.branchName}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
                             <label className="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
                             <input type="date" value={salesReportFilter.startDate}
                                 onChange={e => setSalesReportFilter(p => ({ ...p, startDate: e.target.value }))}
@@ -366,15 +663,10 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
                                 onChange={e => setSalesReportFilter(p => ({ ...p, endDate: e.target.value }))}
                                 className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
                         </div>
-                        <button onClick={generateSalesReport} disabled={salesReportLoading}
+                        <button onClick={() => generateSalesReport(reportCompanyId, reportBranchId)} disabled={salesReportLoading}
                             className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition">
                             {salesReportLoading ? 'Generating...' : 'Generate Report'}
                         </button>
-                        {filterData.companyId && (
-                            <span className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
-                                Filtered by selected company/branch
-                            </span>
-                        )}
                     </div>
 
                     {salesReportData && (
@@ -402,6 +694,8 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
                                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase w-10">#</th>
                                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase">Year</th>
                                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase">Month</th>
+                                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase">Company</th>
+                                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-600 uppercase">Branch</th>
                                     <th className="px-4 py-3 text-right text-[11px] font-semibold text-gray-600 uppercase">Gross / Vatable</th>
                                     <th className="px-4 py-3 text-right text-[11px] font-semibold text-gray-600 uppercase">VAT/PT</th>
                                     <th className="px-4 py-3 text-right text-[11px] font-semibold text-gray-600 uppercase">Less: EWT</th>
@@ -435,7 +729,7 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
                                                         >
                                                             {row.products.map(p => (
                                                                 <option key={p.month} value={p.month}>
-                                                                    {monthsFull[p.month - 1]} ({p.storeCount} store{p.storeCount !== 1 ? 's' : ''})
+                                                                    {monthsFull[p.month - 1]}
                                                                 </option>
                                                             ))}
                                                         </select>
@@ -443,6 +737,12 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
                                                             <ChevronDown size={14} strokeWidth={2.5} />
                                                         </div>
                                                     </div>
+                                                </td>
+                                                <td className="px-4 py-3 text-sm text-gray-700">
+                                                    {reportCompanyId ? (companies.find(c => String(c.id) === String(reportCompanyId))?.companyName || 'Unknown') : 'All Companies'}
+                                                </td>
+                                                <td className="px-4 py-3 text-sm text-gray-700">
+                                                    {reportBranchId ? (branches.find(b => String(b.id) === String(reportBranchId))?.branchName || 'Unknown') : 'All Branches'}
                                                 </td>
                                                 <td className="px-4 py-3 text-right text-sm text-gray-800">
                                                     {activeProd ? `₱${activeProd.vatableSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '—'}
@@ -472,7 +772,7 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
 
                                             {isInvoicesExpanded && activeProd && (
                                                 <tr>
-                                                    <td colSpan={8} className="p-0 bg-white">
+                                                    <td colSpan={10} className="p-0 bg-white">
                                                         <div className="mx-4 my-2 space-y-3">
                                                             {(activeProd.companyGroups || []).map((cg, cgIdx) => {
                                                                 const cgKey = `${monthKey}_company_${cg.company?.id}`;
