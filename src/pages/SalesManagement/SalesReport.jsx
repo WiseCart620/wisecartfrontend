@@ -514,86 +514,95 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
     const buildPrintHTMLByProducts = () => {
         if (!salesReportData) return '';
 
-        // Group all sales by company, then aggregate products across ALL their sales
-        const companyMap = new Map();
-        flattenAllSales().forEach(sale => {
-            const cId = sale.company?.id || 'unknown';
-            if (!companyMap.has(cId)) {
-                companyMap.set(cId, { company: sale.company, products: new Map() });
-            }
-            const entry = companyMap.get(cId);
-            (sale.items || []).forEach(item => {
-                const key = `${item.product?.id}_${item.variation?.id || 'no-var'}`;
-                if (entry.products.has(key)) {
-                    const ex = entry.products.get(key);
-                    ex.quantity += item.quantity || 0;
-                    ex.amount += item.amount || 0;
-                } else {
-                    entry.products.set(key, {
-                        productName: item.product?.productName || '—',
-                        variationDisplay: item.variation?.combinationDisplay ||
-                            (item.variation?.variationType && item.variation?.variationValue
-                                ? `${item.variation.variationType}: ${item.variation.variationValue}`
-                                : null),
-                        sku: item.variation?.sku || item.product?.sku || '—',
-                        upc: item.variation?.upc || item.product?.upc || '—',
-                        quantity: item.quantity || 0,
-                        unitPrice: item.unitPrice,
-                        amount: item.amount || 0,
-                    });
-                }
-            });
-        });
-
-        const companyGroups = Array.from(companyMap.values())
-            .sort((a, b) => (a.company?.companyName || '').localeCompare(b.company?.companyName || ''));
-
         let html = buildPrintMetaHTML();
 
-        if (companyGroups.length === 0) {
+        if (salesReportData.length === 0) {
             html += `<p style="font-style:italic;color:#666;">No invoiced sales found for the selected filters.</p>`;
             return html;
         }
 
-        companyGroups.forEach(cg => {
-            const products = Array.from(cg.products.values()).sort((a, b) => a.productName.localeCompare(b.productName));
-            const totalQty = products.reduce((s, p) => s + p.quantity, 0);
-            const totalAmount = products.reduce((s, p) => s + p.amount, 0);
+        const branchLabel = reportBranchId
+            ? (branches.find(b => String(b.id) === String(reportBranchId))?.branchName || 'Unknown')
+            : 'All Branches';
 
-            html += `<h3 class="print-branch-title">Company: ${cg.company?.companyName || 'Unknown'}</h3>`;
-            html += `
-              <table class="print-items-table">
-                <thead>
-                  <tr>
-                    <th>#</th><th>Product</th><th>Variation</th><th>SKU</th><th>UPC</th>
-                    <th class="text-right">Qty</th><th class="text-right">Unit Price</th><th class="text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${products.map((p, i) => `
-                    <tr>
-                      <td>${i + 1}</td>
-                      <td>${p.productName}</td>
-                      <td>${p.variationDisplay || '—'}</td>
-                      <td>${p.sku}</td>
-                      <td>${p.upc}</td>
-                      <td class="text-right">${p.quantity.toLocaleString()}</td>
-                      <td class="text-right">₱${formatCurrency(p.unitPrice)}</td>
-                      <td class="text-right">₱${formatCurrency(p.amount)}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colspan="5"><strong>Company Total</strong></td>
-                    <td class="text-right"><strong>${totalQty.toLocaleString()}</strong></td>
-                    <td></td>
-                    <td class="text-right"><strong>₱${totalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong></td>
-                  </tr>
-                </tfoot>
-              </table>
-            `;
+        let rowNum = 1;
+        let hasAnyRows = false;
+
+        salesReportData.forEach(yr => {
+            (yr.products || []).forEach(monthRow => {
+                (monthRow.companyGroups || [])
+                    .slice()
+                    .sort((a, b) => (a.company?.companyName || '').localeCompare(b.company?.companyName || ''))
+                    .forEach(cg => {
+                        hasAnyRows = true;
+                        const products = (cg.aggregatedProducts || [])
+                            .slice()
+                            .sort((a, b) => a.productName.localeCompare(b.productName));
+                        const totalQty = products.reduce((s, p) => s + p.quantity, 0);
+
+                        html += `
+                          <table class="print-summary-table">
+                            <thead>
+                              <tr>
+                                <th>#</th><th>Year</th><th>Month</th><th>Company</th><th>Branch</th>
+                                <th class="text-right">Gross / Vatable</th><th class="text-right">VAT/PT</th>
+                                <th class="text-right">Less: EWT</th><th class="text-right">Due</th>
+                                <th class="text-center">Invoices</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                <td>${rowNum++}</td>
+                                <td>${yr.year}</td>
+                                <td>${monthsFull[monthRow.month - 1]}</td>
+                                <td>${cg.company?.companyName || 'Unknown'}</td>
+                                <td>${branchLabel}</td>
+                                <td class="text-right">₱${cg.vatableSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                                <td class="text-right">₱${cg.vat.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                                <td class="text-right">₱${cg.lesEwt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                                <td class="text-right">₱${cg.due.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                                <td class="text-center">${cg.salesCount}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                          <table class="print-items-table">
+                            <thead>
+                              <tr>
+                                <th>#</th><th>Product</th><th>Variation</th><th>SKU</th><th>UPC</th>
+                                <th class="text-right">Qty</th><th class="text-right">Unit Price</th><th class="text-right">Amount</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              ${products.map((p, i) => `
+                                <tr>
+                                  <td>${i + 1}</td>
+                                  <td>${p.productName}</td>
+                                  <td>${p.variationDisplay || '—'}</td>
+                                  <td>${p.sku}</td>
+                                  <td>${p.upc}</td>
+                                  <td class="text-right">${p.quantity.toLocaleString()}</td>
+                                  <td class="text-right">₱${formatCurrency(p.unitPrice)}</td>
+                                  <td class="text-right">₱${formatCurrency(p.amount)}</td>
+                                </tr>
+                              `).join('')}
+                            </tbody>
+                            <tfoot>
+                              <tr>
+                                <td colspan="5"><strong>Company Total</strong></td>
+                                <td class="text-right"><strong>${totalQty.toLocaleString()}</strong></td>
+                                <td></td>
+                                <td class="text-right"><strong>₱${cg.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong></td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        `;
+                    });
+            });
         });
+
+        if (!hasAnyRows) {
+            html += `<p style="font-style:italic;color:#666;">No invoiced sales found for the selected filters.</p>`;
+        }
 
         return html;
     };
@@ -628,6 +637,7 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
       th, td { border: 0.5pt solid #999; padding: 4pt 6pt; text-align: left; }
       th { background-color: #eee; font-weight: bold; }
       .text-right { text-align: right; }
+      .text-center { text-align: center; }
       tfoot td { background-color: #f5f5f5; }
       @page { size: A4 landscape; margin: 12mm 8mm; }
     </style></head><body>
