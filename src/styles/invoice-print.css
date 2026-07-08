@@ -322,18 +322,22 @@
     margin-top: -6px !important;
   }
 
-  /* Move table data cells up */
+  /* Move table data cells up - EVEN MORE */
   #invoice-report table tbody td {
     padding-top: 0px !important;
-    padding-bottom: 1px !important;
-    margin-top: -6px !important;
+    padding-bottom: 0px !important;
+    margin-top: -65px !important;
+    position: relative !important;
+    top: -32px !important;
   }
 
-  /* Move the first column data up */
+  /* Move the first column data up - EVEN MORE */
   #invoice-report table tbody td:first-child {
     padding-top: 0px !important;
-    padding-bottom: 1px !important;
-    margin-top: -6px !important;
+    padding-bottom: 0px !important;
+    margin-top: -65px !important;
+    position: relative !important;
+    top: -32px !important;
   }
 
   /* Move the header text up */
@@ -343,14 +347,13 @@
     margin-top: -6px !important;
   }
 
-  /* ===== ADJUST TOTAL SALES / VAT / ZERO-RATED / VAT-EXEMPT TO TOP AND LEFT ===== */
-  /* Move labels up and left */
+  /* Move labels up and right */
   #invoice-report .grid .border-l-0.border-1.border-t-0.border-gray-900 {
     padding-left: 0px !important;
     padding-right: 2px !important;
     padding-top: 0px !important;
     padding-bottom: 2px !important;
-    margin-left: -12px !important;
+    margin-left: 30px !important;
     margin-top: -6px !important;
   }
 
@@ -389,6 +392,11 @@
     margin-left: -6px !important;
   }
 
+  /* Target the "Less: Discount" label specifically - add margin below it */
+  #invoice-report .grid .border-l-0.border-1.border-t-0.border-gray-900:not(.col-span-2) div:last-child {
+    margin-bottom: 8px !important;
+  }
+
   /* Move right column values up */
   #invoice-report .grid .border-1.flex.flex-col.justify-start.border-t-0.border-l-0.border-r-0 input[readonly] {
     padding-top: 0px !important;
@@ -401,6 +409,11 @@
     margin-bottom: 0px !important;
   }
 
+  /* Target the "Less: Discount" value specifically - add margin below it */
+  #invoice-report .grid .border-1.flex.flex-col.justify-start.border-t-0.border-l-0.border-r-0 input[readonly]:nth-child(4) {
+    margin-bottom: 16px !important;
+  }
+
   /* ===== ADJUST Received the amount of / Add: VAT / Less: Withholding Tax / Total Amount Due TO TOP ===== */
   /* Move Received the amount of left column up */
   #invoice-report .col-span-4.border-r-1.border-gray-900 {
@@ -409,30 +422,87 @@
     margin-top: -6px !important;
   }
 
-  /* Move the right column up */
-  #invoice-report .col-span-2 .border-l-0.border-1.border-t-0.border-gray-900 {
+  /* ===== FIX: MOVE ADD: VAT / LESS: WITHHOLDING TAX / TOTAL AMOUNT DUE JUST A LITTLE ABOVE ===== */
+  /* Target the entire bottom section container - slightly increased to move up */
+  #invoice-report .grid.grid-cols-6.border-t-0.border-gray-900.text-sm.-mt-1 {
+    margin-top: -28px !important;
     padding-top: 0px !important;
-    padding-bottom: 1px !important;
-    margin-top: -6px !important;
   }
 
-  /* Move the input fields in the right column up */
-  #invoice-report .col-span-2 .border-1.flex.flex-col.justify-start.border-t-0.border-l-0 input[readonly] {
+  /* Target the right column container - slightly increased to move up */
+  #invoice-report .grid.grid-cols-6.border-t-0.border-gray-900.text-sm.-mt-1 .col-span-2 {
+    margin-top: -22px !important;
     padding-top: 0px !important;
-    padding-bottom: 0px !important;
+    position: relative !important;
+    top: -14px !important;
+  }
+
+  /* Target the inner grid - slightly increased to move up */
+  #invoice-report .grid.grid-cols-6.border-t-0.border-gray-900.text-sm.-mt-1 .col-span-2 .grid.grid-cols-2 {
+    margin-top: -22px !important;
+    padding-top: 0px !important;
+    position: relative !important;
+    top: -14px !important;
+  }
+
+  /* Move the label column up - slightly increased to move up */
+  #invoice-report .grid.grid-cols-6.border-t-0.border-gray-900.text-sm.-mt-1 .col-span-2 .grid.grid-cols-2 .px-2.py-3.flex.flex-col.justify-start.font-medium.text-\[11px\] {
+    margin-top: -22px !important;
+    padding-top: 0px !important;
+    position: relative !important;
+    top: -14px !important;
+  }
+
+  /* Move the input column up - slightly increased to move up */
+  #invoice-report .grid.grid-cols-6.border-t-0.border-gray-900.text-sm.-mt-1 .col-span-2 .grid.grid-cols-2 .px-4.py-2.flex.flex-col.justify-start {
+    margin-top: -22px !important;
+    padding-top: 0px !important;
+    position: relative !important;
+    top: -14px !important;
+  }
+
+  /* Adjust individual labels - match spacing used in TOTAL SALES (VAT Inclusive) block */
+  #invoice-report .grid.grid-cols-6.border-t-0.border-gray-900.text-sm.-mt-1 .col-span-2 .grid.grid-cols-2 .px-2.py-3.flex.flex-col.justify-start.font-medium.text-\[11px\] div {
+    margin-top: 0px !important;
+    padding-top: 0px !important;
+    margin-bottom: 8px !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Use gap instead of per-input margins so nothing can silently override the spacing */
+  #invoice-report .grid.grid-cols-6.border-t-0.border-gray-900.text-sm.-mt-1 .col-span-2.total-due-block .px-4.py-2.flex.flex-col.justify-start {
+    gap: 8px !important;
+  }
+
+  #invoice-report .grid.grid-cols-6.border-t-0.border-gray-900.text-sm.-mt-1 .col-span-2.total-due-block .px-4.py-2.flex.flex-col.justify-start input[readonly] {
+    margin: 0 !important;
+    padding-top: 0px !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Override conflicting col-span-2 input rules for this specific section */
+  #invoice-report .grid.grid-cols-6.border-t-0.border-gray-900.text-sm.-mt-1 .col-span-2 input[readonly] {
+    margin-bottom: 0 !important;
+  }
+
+  /* Target the last input (Total Amount Due) specifically */
+  #invoice-report .grid.grid-cols-6.border-t-0.border-gray-900.text-sm.-mt-1 .col-span-2.total-due-block .px-4.py-2.flex.flex-col.justify-start input[readonly]:last-child {
+    font-weight: bold !important;
+    font-size: 16px !important;
+  }
+
+  /* Remove the old conflicting styles */
+  #invoice-report .col-span-2 .border-l-0.border-1.border-t-0.border-gray-900 {
+    margin-top: -30px !important;
+  }
+
+  #invoice-report .col-span-2 .border-1.flex.flex-col.justify-start.border-t-0.border-l-0 input[readonly] {
     margin-top: -6px !important;
     margin-bottom: 8px !important;
   }
 
   #invoice-report .col-span-2 .border-1.flex.flex-col.justify-start.border-t-0.border-l-0 input[readonly]:last-child {
     margin-bottom: 0px !important;
-  }
-
-  /* Move Add: VAT, Less: Withholding Tax, Total Amount Due labels up */
-  #invoice-report .col-span-2 .border-l-0.border-1.border-t-0.border-gray-900 div {
-    padding-top: 0px !important;
-    padding-bottom: 1px !important;
-    margin-top: -6px !important;
   }
 
   /* Adjust the checkbox section for Received the amount of */
@@ -475,11 +545,11 @@
     margin-bottom: 0px !important;
   }
 
-  /* Overall container adjustments for the bottom section */
-  #invoice-report .grid.grid-cols-6.border-t-0.border-gray-900 {
-    margin-top: -6px !important;
+  /* Overall container adjustments for the bottom section - REMOVED to avoid conflict */
+  /* #invoice-report .grid.grid-cols-6.border-t-0.border-gray-900 {
+    margin-top: -30px !important;
     padding-top: 0px !important;
-  }
+  } */
 
   /* Fix any spacing issues in the main grid */
   #invoice-report .grid.grid-cols-6.border-1.border-gray-900 {
@@ -492,15 +562,14 @@
     margin-top: -6px !important;
   }
 
-
-  #invoice-report .grid.grid-cols-6.border-1.border-gray-900 .col-span-2 .border-l-0.border-1.border-t-0.border-gray-900 {
+  y #invoice-report .grid.grid-cols-6.border-1.border-gray-900 .col-span-2 .border-l-0.border-1.border-t-0.border-gray-900 {
     padding-left: 0px !important;
-    margin-left: -80px !important;
+    margin-left: -30px !important;
   }
 
   #invoice-report .grid.grid-cols-6.border-1.border-gray-900 .col-span-2 .border-l-0.border-1.border-t-0.border-gray-900 div {
     padding-left: 0px !important;
-    margin-left: -60px !important;
+    margin-left: -10px !important;
     text-align: left !important;
   }
 
@@ -508,29 +577,34 @@
   #invoice-report .grid.grid-cols-6.border-1.border-gray-900 .col-span-2 .border-l-0.border-1.border-t-0.border-gray-900 .mb-2\:last-child,
   #invoice-report .grid.grid-cols-6.border-1.border-gray-900 .col-span-2 .border-l-0.border-1.border-t-0.border-gray-900 div:not(:last-child) {
     padding-left: 0px !important;
-    margin-left: -60px !important;
+    margin-left: -10px !important;
   }
 
   #invoice-report .grid.grid-cols-6.border-1.border-gray-900 .col-span-2:first-child {
     padding-left: 0px !important;
-    margin-left: -50px !important;
+    margin-left: -20px !important;
   }
 
   #invoice-report .grid.grid-cols-6.border-1.border-gray-900 .col-span-2 {
     padding-left: 0px !important;
-    margin-left: -50px !important;
+    margin-left: -20px !important;
   }
 
-  /* Move Total Sales / VAT / Zero-Rated / VAT-Exempt DATA values further left */
-  #invoice-report .tax-values-col {
+  #invoice-report .grid.grid-cols-6.border-gray-900 .col-span-2 .tax-values-col {
+    margin-left: -120px !important;
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+    position: relative !important;
+    left: -50px !important;
+  }
+
+  #invoice-report .grid.grid-cols-6.border-gray-900 .col-span-2 .tax-values-col input[readonly] {
     margin-left: 0px !important;
     padding-left: 0px !important;
-  }
-
-  #invoice-report .tax-values-col input[readonly] {
-    margin-left: -90px !important;
-    padding-left: 0px !important;
-    text-align: left !important;
+    text-align: right !important;
+    width: 100% !important;
+    position: relative !important;
+    left: -30px !important;
   }
 
   /* ===== ADDED: PUSH SECTIONS DOWN IN PRINT ===== */
@@ -541,13 +615,17 @@
   }
 
   #invoice-report table thead th {
-    padding-top: 10px !important;
-    margin-top: 0px !important;
+    padding-top: 2px !important;
+    margin-top: -10px !important;
+    position: relative !important;
+    top: -4px !important;
   }
 
   #invoice-report table thead th:first-child {
-    padding-top: 10px !important;
-    margin-top: 0px !important;
+    padding-top: 2px !important;
+    margin-top: -10px !important;
+    position: relative !important;
+    top: -4px !important;
   }
 
   #invoice-report .grid.grid-cols-6.-mt-4 {
@@ -568,22 +646,21 @@
   }
 
   #invoice-report .tax-labels-col {
-    margin-left: -40px !important;
-    transform: translateX(-40px) !important;
+    margin-left: 0px !important;
+    padding-left: 200px !important;
   }
 
-
-  #invoice-report .grid.grid-cols-6.border-1.border-gray-900 .tax-labels-col {
-    margin-left: -100px !important;
-    transform: translateX(-100px) !important;
+  #invoice-report .total-due-block .font-medium.text-\[11px\] div {
+    margin-top: -6px !important;
+    padding-top: 0px !important;
   }
 
-  #invoice-report .grid.grid-cols-6.border-1.border-gray-900 .col-span-2 .tax-labels-col {
-    margin-left: -100px !important;
-    transform: translateX(-100px) !important;
+  #invoice-report .total-due-block input[readonly] {
+    margin-top: -6px !important;
+    padding-top: 0px !important;
   }
 
   #invoice-report .total-due-block {
-    margin-top: -6px !important;
+    margin-top: -30px !important;
   }
 }
