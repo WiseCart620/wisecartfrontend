@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import { X, FileText, Printer, ChevronDown, ChevronUp, ChevronLeft, Package } from 'lucide-react';
@@ -12,6 +12,86 @@ const formatCurrency = (amount) => {
 };
 
 const monthsFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+const SearchableSelect = ({ value, onChange, options, getLabel, getValue, allLabel, placeholder = 'Search...' }) => {
+    const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState('');
+    const wrapperRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+                setOpen(false);
+                setSearch('');
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const selectedOption = options.find(o => String(getValue(o)) === String(value));
+    const displayLabel = selectedOption ? getLabel(selectedOption) : allLabel;
+
+    const filteredOptions = options.filter(o =>
+        getLabel(o).toLowerCase().includes(search.toLowerCase())
+    );
+
+    const handleSelect = (val) => {
+        onChange(val);
+        setOpen(false);
+        setSearch('');
+    };
+
+    return (
+        <div className="relative" ref={wrapperRef}>
+            <button
+                type="button"
+                onClick={() => setOpen(o => !o)}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 min-w-[160px]"
+            >
+                <span className={`truncate ${selectedOption ? 'text-gray-900' : 'text-gray-500'}`}>{displayLabel}</span>
+                <ChevronDown size={14} className="text-gray-400 shrink-0" />
+            </button>
+            {open && (
+                <div className="absolute z-30 mt-1 w-full min-w-[220px] bg-white border border-gray-200 rounded-lg shadow-lg flex flex-col">
+                    <div className="p-2 border-b border-gray-100">
+                        <input
+                            autoFocus
+                            type="text"
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder={placeholder}
+                            className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        />
+                    </div>
+                    <div className="max-h-56 overflow-y-auto">
+                        <button
+                            type="button"
+                            onClick={() => handleSelect('')}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${!value ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'}`}
+                        >
+                            {allLabel}
+                        </button>
+                        {filteredOptions.length === 0 ? (
+                            <div className="px-3 py-2 text-sm text-gray-400 italic">No matches</div>
+                        ) : (
+                            filteredOptions.map(o => (
+                                <button
+                                    key={getValue(o)}
+                                    type="button"
+                                    onClick={() => handleSelect(String(getValue(o)))}
+                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${String(value) === String(getValue(o)) ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'}`}
+                                >
+                                    {getLabel(o)}
+                                </button>
+                            ))
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 const SalesReport = ({ onBack, filterData, companies, branches }) => {
     const [salesReportFilter, setSalesReportFilter] = useState({ startDate: '', endDate: '' });
@@ -618,38 +698,34 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
                     <div className="flex flex-wrap gap-4 items-end">
                         <div>
                             <label className="block text-xs font-medium text-gray-700 mb-1">Company</label>
-                            <select
+                            <SearchableSelect
                                 value={reportCompanyId}
-                                onChange={e => {
-                                    const newCompanyId = e.target.value;
+                                onChange={(newCompanyId) => {
                                     setReportCompanyId(newCompanyId);
                                     setReportBranchId('');
                                     generateSalesReport(newCompanyId, '');
                                 }}
-                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 min-w-[160px]"
-                            >
-                                <option value="">All Companies</option>
-                                {companies.map(c => (
-                                    <option key={c.id} value={c.id}>{c.companyName}</option>
-                                ))}
-                            </select>
+                                options={companies}
+                                getLabel={c => c.companyName}
+                                getValue={c => c.id}
+                                allLabel="All Companies"
+                                placeholder="Search companies..."
+                            />
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-700 mb-1">Branch</label>
-                            <select
+                            <SearchableSelect
                                 value={reportBranchId}
-                                onChange={e => {
-                                    const newBranchId = e.target.value;
+                                onChange={(newBranchId) => {
                                     setReportBranchId(newBranchId);
                                     generateSalesReport(reportCompanyId, newBranchId);
                                 }}
-                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 min-w-[160px]"
-                            >
-                                <option value="">All Branches</option>
-                                {filteredReportBranches.map(b => (
-                                    <option key={b.id} value={b.id}>{b.branchName}</option>
-                                ))}
-                            </select>
+                                options={filteredReportBranches}
+                                getLabel={b => b.branchName}
+                                getValue={b => b.id}
+                                allLabel="All Branches"
+                                placeholder="Search branches..."
+                            />
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
