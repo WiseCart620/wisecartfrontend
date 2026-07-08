@@ -284,9 +284,9 @@ const ProductTransactionsModal = ({
 
 
     const totals = useMemo(() => {
-        let totalIn = 0;
+        let totalInRegular = 0;
+        let totalInCancelled = 0;
         let totalOut = 0;
-        let totalCancelled = 0;
         filteredTransactions.forEach((t) => {
             const qty = Math.abs(t.quantity || t.quantityChanged || 0);
             const action = t.action || '';
@@ -297,18 +297,18 @@ const ProductTransactionsModal = ({
             const isCancelled = isCancellationTransaction(t);
 
             if (isCancelled && action === 'ADD') {
-                totalCancelled += qty;
-                totalIn += qty;
+                totalInCancelled += qty;
                 return;
             }
 
             if (action === 'ADD' || type === 'STOCK_IN' || type === 'RETURN') {
-                totalIn += qty;
+                totalInRegular += qty;
             } else if (action === 'SUBTRACT' || type === 'DAMAGE' || type === 'SALE') {
                 totalOut += qty;
             }
         });
-        return { totalIn, totalOut, totalCancelled };
+        const totalIn = totalInRegular + totalInCancelled;
+        return { totalIn, totalInRegular, totalInCancelled, totalOut, totalCancelled: totalInCancelled };
     }, [filteredTransactions]);
 
     const groupedTransactionsRef = useMemo(() => {
@@ -509,6 +509,11 @@ const ProductTransactionsModal = ({
                             <ArrowDownCircle size={15} className="text-green-600" />
                             <span className="text-xs font-medium text-green-700 uppercase tracking-wide">Total In</span>
                             <span className="text-sm font-bold text-green-800">{totals.totalIn.toLocaleString()}</span>
+                            {totals.totalInCancelled > 0 && (
+                                <span className="text-[10px] text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">
+                                    ({totals.totalInRegular.toLocaleString()} regular + {totals.totalInCancelled.toLocaleString()} cancelled)
+                                </span>
+                            )}
                         </div>
                         <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg">
                             <ArrowUpCircle size={15} className="text-red-600" />
