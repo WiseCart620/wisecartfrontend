@@ -206,7 +206,7 @@ const SaleFormModal = ({
                                 />
                                 {originalPrice > 0 && Number(price) !== Number(originalPrice) && (
                                   <span className="text-[10px] text-gray-400 line-through">
-                                    ₱{Number(originalPrice).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                    ₱{Number(originalPrice).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 15 })}
                                   </span>
                                 )}
                               </div>
@@ -271,7 +271,7 @@ const SaleFormModal = ({
                               ? Number(item.unitPrice)
                               : (opt?.price ?? 0);
                             return sum + (effectivePrice * (item.quantity || 0));
-                          }, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                          }, 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 15 })}
                         </td>
                         <td />
                       </tr>
