@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, CheckCircle, ShoppingCart, Truck, Clock, Eye, Loader2 } from 'lucide-react';
+import { BarChart3, CheckCircle, ShoppingCart, Truck, Clock, Eye, Loader2, Undo2 } from 'lucide-react';
 import Pagination from '../../common/Pagination';
 
 const ProductSummaryTable = ({
@@ -65,6 +65,13 @@ const ProductSummaryTable = ({
                   Delivered
                 </div>
               </th>
+              {/* NEW: Cancelled Returns Column */}
+              <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                <div className="flex items-center justify-center gap-1">
+                  <Undo2 size={14} />
+                  Cancelled Returns
+                </div>
+              </th>
               <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">
                 <div className="flex items-center justify-center gap-1">
                   <ShoppingCart size={14} />
@@ -89,7 +96,7 @@ const ProductSummaryTable = ({
           <tbody className="divide-y divide-gray-200">
             {isLoading ? (
               <tr>
-                <td colSpan="11" className="px-6 py-16 text-center">
+                <td colSpan="12" className="px-6 py-16 text-center">
                   <div className="flex flex-col items-center gap-3 text-gray-400">
                     <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin" />
                     <span className="text-sm">Loading products...</span>
@@ -98,7 +105,7 @@ const ProductSummaryTable = ({
               </tr>
             ) : currentProductSummaries.length === 0 ? (
               <tr>
-                <td colSpan="11" className="px-6 py-8 text-center text-gray-500">
+                <td colSpan="12" className="px-6 py-8 text-center text-gray-500">
                   {filteredProductSummaries.length === 0 ? 'No products found' : 'No products on this page'}
                 </td>
               </tr>
@@ -164,6 +171,13 @@ const ProductSummaryTable = ({
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
                         <CheckCircle size={12} />
                         {(product.totalDelivered || 0).toLocaleString('en-US')}
+                      </span>
+                    </td>
+                    {/* NEW: Cancelled Returns cell */}
+                    <td className="px-2 py-3 text-center">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800">
+                        <Undo2 size={12} />
+                        {(product.totalCancelledReturns || 0).toLocaleString('en-US')}
                       </span>
                     </td>
                     <td className="px-2 py-3 text-center">
