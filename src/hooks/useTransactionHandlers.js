@@ -403,7 +403,11 @@ export const useTransactionHandlers = () => {
             // (delivery cancelled while still PENDING/PREPARING/IN_TRANSIT, before it ever left the warehouse)
             const isCancelledReservationRelease = isCancelledCheck && t.action === 'SUBTRACT' &&
               !t.fromWarehouse && !t.fromBranch && t.toWarehouse?.id === stock.warehouseId;
-            return isNormalDelivery || isCancelledReturn || isCancelledBranchRemoval || isCancelledReservationRelease;
+            // Cancelled delivery: stock written off after being marked DELIVERED
+            // (cancelDeliveredDelivery path — logged as a CANCELLED action, no warehouse qty change)
+            const isCancelledWriteOff = isCancelledCheck && t.action === 'CANCELLED' &&
+              t.toWarehouse?.id === stock.warehouseId;
+            return isNormalDelivery || isCancelledReturn || isCancelledBranchRemoval || isCancelledReservationRelease || isCancelledWriteOff;
           }
 
           if (transactionType === 'STOCK_IN' || t.action === 'ADD') {
