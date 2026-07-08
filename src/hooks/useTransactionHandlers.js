@@ -396,6 +396,8 @@ export const useTransactionHandlers = () => {
             // Cancelled delivery: stock returned to this warehouse
             const isCancelledReturn = isCancelledCheck && t.action === 'ADD' &&
               t.toWarehouse?.id === stock.warehouseId;
+            const isCancelledWriteOff = isCancelledCheck && t.action === 'CANCELLED' &&
+              t.toWarehouse?.id === stock.warehouseId;
             // Cancelled delivery: removed from branch (show in warehouse history too)
             const isCancelledBranchRemoval = isCancelledCheck && t.action === 'SUBTRACT' && t.fromBranch
               && t.fromWarehouse?.id === stock.warehouseId;
