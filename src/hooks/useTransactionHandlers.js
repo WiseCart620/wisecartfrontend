@@ -396,12 +396,14 @@ export const useTransactionHandlers = () => {
             // Cancelled delivery: stock returned to this warehouse
             const isCancelledReturn = isCancelledCheck && t.action === 'ADD' &&
               t.toWarehouse?.id === stock.warehouseId;
-            const isCancelledWriteOff = isCancelledCheck && t.action === 'CANCELLED' &&
-              t.toWarehouse?.id === stock.warehouseId;
             // Cancelled delivery: removed from branch (show in warehouse history too)
             const isCancelledBranchRemoval = isCancelledCheck && t.action === 'SUBTRACT' && t.fromBranch
               && t.fromWarehouse?.id === stock.warehouseId;
-            return isNormalDelivery || isCancelledReturn || isCancelledBranchRemoval;
+            // Cancelled delivery: reservation released back to this warehouse
+            // (delivery cancelled while still PENDING/PREPARING/IN_TRANSIT, before it ever left the warehouse)
+            const isCancelledReservationRelease = isCancelledCheck && t.action === 'SUBTRACT' &&
+              !t.fromWarehouse && !t.fromBranch && t.toWarehouse?.id === stock.warehouseId;
+            return isNormalDelivery || isCancelledReturn || isCancelledBranchRemoval || isCancelledReservationRelease;
           }
 
           if (transactionType === 'STOCK_IN' || t.action === 'ADD') {
