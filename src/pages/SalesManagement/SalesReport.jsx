@@ -119,15 +119,19 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
             const key = `${sale.year}_${sale.month}_${sale.company?.id}_${sale.branch?.id}`;
             if (mergedMap.has(key)) {
                 const existing = mergedMap.get(key);
-                const mergedItems = [...(existing.items || [])];
+                // Deep-copy each item so we never mutate objects shared with the raw sale
+                const mergedItems = existing.items.map(item => ({ ...item }));
                 (sale.items || []).forEach(newItem => {
                     const existingIndex = mergedItems.findIndex(item =>
                         item.product?.id === newItem.product?.id &&
                         (item.variation?.id || null) === (newItem.variation?.id || null)
                     );
                     if (existingIndex !== -1) {
-                        mergedItems[existingIndex].quantity += newItem.quantity;
-                        mergedItems[existingIndex].amount += newItem.amount;
+                        mergedItems[existingIndex] = {
+                            ...mergedItems[existingIndex],
+                            quantity: mergedItems[existingIndex].quantity + newItem.quantity,
+                            amount: mergedItems[existingIndex].amount + newItem.amount,
+                        };
                     } else {
                         mergedItems.push({ ...newItem });
                     }
@@ -139,7 +143,11 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
                     mergedSaleIds: [...(existing.mergedSaleIds || [existing.id]), sale.id]
                 });
             } else {
-                mergedMap.set(key, { ...sale, mergedSaleIds: [sale.id], items: [...(sale.items || [])] });
+                mergedMap.set(key, {
+                    ...sale,
+                    mergedSaleIds: [sale.id],
+                    items: (sale.items || []).map(item => ({ ...item }))
+                });
             }
         });
         return Array.from(mergedMap.values());
