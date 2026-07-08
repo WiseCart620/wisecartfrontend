@@ -298,6 +298,7 @@ const ProductTransactionsModal = ({
 
             if (isCancelled && action === 'ADD') {
                 totalCancelled += qty;
+                totalIn += qty;
                 return;
             }
 
