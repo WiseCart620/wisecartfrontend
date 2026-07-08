@@ -220,7 +220,7 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
       items: formData.items.map(item => ({
         ...item,
         unitPrice: item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== ''
-          ? Number(item.unitPrice)
+          ? item.unitPrice.toString()
           : null,
       })),
     };
