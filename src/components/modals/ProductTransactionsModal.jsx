@@ -285,6 +285,13 @@ const ProductTransactionsModal = ({
         let totalInRegular = 0;
         let totalInCancelled = 0;
         let totalOut = 0;
+        // Track which references have been cancelled
+        const cancelledRefs = new Set();
+        filteredTransactions.forEach((t) => {
+            if (isCancellationTransaction(t) && t.action === 'ADD') {
+                cancelledRefs.add(t.referenceNumber);
+            }
+        });
         filteredTransactions.forEach((t) => {
             const qty = Math.abs(t.quantity || t.quantityChanged || 0);
             const action = t.action || '';
@@ -293,6 +300,11 @@ const ProductTransactionsModal = ({
             if (isDeleted) return;
 
             const isCancelled = isCancellationTransaction(t);
+
+            // If this is a SUBTRACT that was cancelled, skip it (don't count it)
+            if (action === 'SUBTRACT' && type === 'DELIVERY' && cancelledRefs.has(t.referenceNumber)) {
+                return;
+            }
 
             if (isCancelled && action === 'ADD') {
                 totalInCancelled += qty;
