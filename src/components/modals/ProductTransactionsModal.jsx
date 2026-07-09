@@ -132,12 +132,10 @@ const ProductTransactionsModal = ({
                 if (isDeleted) {
                     refKey = `DELETED-${transaction.id}`;
                 } else {
-                    const dest = transaction.toBranch?.id || transaction.toWarehouse?.id || '';
-                    const from = transaction.fromBranch?.id || transaction.fromWarehouse?.id || '';
-                    const action = transaction.action || '';
-                    const txType = transaction.inventoryType || transaction.transactionType || '';
+                    // ✅ FIX: Use transaction ID to make each record unique
+                    // This ensures even transactions with the same reference number are shown separately
                     refKey = transaction.referenceNumber
-                        ? `${transaction.referenceNumber}-${dest}-${from}-${txType === 'TRANSFER' ? action : ''}`
+                        ? `${transaction.referenceNumber}-${transaction.id}`
                         : `REF-${transaction.referenceId || transaction.id}`;
                 }
             }
@@ -232,7 +230,7 @@ const ProductTransactionsModal = ({
     const filteredTransactions = useMemo(() => {
         if (!transactions || transactions.length === 0) return [];
         const groupedTransactions = groupTransactionsByReference(transactions);
-        const latestTransactions = Object.values(groupedTransactions).map(group => group[0]);
+        const latestTransactions = Object.values(groupedTransactions).flat();
         return latestTransactions.filter(transaction => {
             const searchLower = searchTerm.toLowerCase();
             const type = transaction.inventoryType || transaction.transactionType;
