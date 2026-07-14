@@ -6,6 +6,15 @@ export const formatCurrency = (amount) => {
   });
 };
 
+export const formatCurrencyTruncated = (amount) => {
+  if (amount === null || amount === undefined) return '0.00';
+  const truncated = Math.floor(Number(amount) * 100) / 100;
+  return truncated.toLocaleString('en-PH', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
+
 export const formatPHDateTime = (dateString) => {
   if (!dateString) return '';
   const normalized = dateString.includes('+') || dateString.endsWith('Z')
