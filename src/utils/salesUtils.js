@@ -2,7 +2,7 @@ export const formatCurrency = (amount) => {
   if (amount === null || amount === undefined) return '0.00';
   return Number(amount).toLocaleString('en-PH', {
     minimumFractionDigits: 2,
-    maximumFractionDigits: 15,
+    maximumFractionDigits: 2,
   });
 };
 
