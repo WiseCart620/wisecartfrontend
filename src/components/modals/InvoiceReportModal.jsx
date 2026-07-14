@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Plus, Printer } from 'lucide-react';
-import { formatCurrency } from '../../utils/salesUtils';
+import { formatCurrency, formatCurrencyTruncated } from '../../utils/salesUtils';
 
 const InvoiceReportModal = ({
   invoiceReport,
@@ -206,7 +206,7 @@ const InvoiceReportModal = ({
                           : 'Variation')} - ${product.variation.upc || 'N/A'}`}
                     </td>
                     <td className="py-2 px-4 text-right text-sm">{product.totalQuantity.toLocaleString()}</td>
-                    <td className="py-2 px-4 text-right text-sm">{formatCurrency(product.totalAmount / product.totalQuantity)}</td>
+                    <td className="py-2 px-4 text-right text-sm">{formatCurrencyTruncated(product.totalAmount / product.totalQuantity)}</td>
                     <td className="py-2 px-4 text-right text-sm">{formatCurrency(product.totalAmount)}</td>
                   </tr>
                 ))}

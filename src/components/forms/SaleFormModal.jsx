@@ -271,7 +271,7 @@ const SaleFormModal = ({
                               ? Number(item.unitPrice)
                               : (opt?.price ?? 0);
                             return sum + (effectivePrice * (item.quantity || 0));
-                          }, 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 15 })}
+                          }, 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                         <td />
                       </tr>
