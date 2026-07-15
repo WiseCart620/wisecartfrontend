@@ -221,8 +221,11 @@ const handleResponse = async (response) => {
             errorMessage = response.statusText || 'Request failed';
         }
 
-        if (response.status !== 429 && errorMessage.length <= 300) {
-            toast.error(`❌ ${errorMessage}`, { duration: 3000 });
+        if (response.status !== 429) {
+            const displayMsg = errorMessage.length > 300
+                ? errorMessage.slice(0, 297) + '...'
+                : errorMessage;
+            toast.error(`❌ ${displayMsg}`, { duration: 5000 });
         }
 
         return { success: false, error: errorMessage, status: response.status };
