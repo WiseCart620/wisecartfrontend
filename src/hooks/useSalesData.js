@@ -101,28 +101,39 @@ export const useSalesData = ({ filterData, statusFilter, searchTerm, currentPage
         setWarehouses(extractArray(results[4]));
         setWarehouseStocks(extractArray(results[5]));
         setProductSummaries(extractArray(results[6]));
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }, []);
 
-  // Re-fetch on filter change
-  const isFilterChange = useRef(false);
+  // Re-fetch on filter change OR page change (single source of truth)
+  const prevFilterKey = useRef(null);
   useEffect(() => {
     if (!initialLoadDone.current) return;
-    isFilterChange.current = true;
-    fetchSales(0);
+
+    const filterKey = JSON.stringify({
+      companyId: filterData.companyId,
+      branchId: filterData.branchId,
+      statusFilter,
+      searchTerm,
+      startDate: filterData.startDate,
+      endDate: filterData.endDate,
+      productFilters: filterData.productFilters,
+    });
+
+    const filterChanged = prevFilterKey.current !== null && prevFilterKey.current !== filterKey;
+    prevFilterKey.current = filterKey;
+
+    if (filterChanged) {
+      fetchSales(0);
+    } else {
+      fetchSales(currentPage - 1);
+    }
   }, [
     filterData.companyId, filterData.branchId, statusFilter, searchTerm,
     filterData.startDate, filterData.endDate,
-    JSON.stringify(filterData.productFilters)
+    JSON.stringify(filterData.productFilters),
+    currentPage,
   ]);
-
-  // Re-fetch on page change
-  useEffect(() => {
-    if (!initialLoadDone.current) return;
-    if (isFilterChange.current) { isFilterChange.current = false; return; }
-    fetchSales(currentPage - 1);
-  }, [currentPage]);
 
   // Refresh products/companies on window focus
   useEffect(() => {
