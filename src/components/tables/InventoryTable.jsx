@@ -10,6 +10,8 @@ const InventoryTable = ({
   onDelete,
   onConfirm,
   actionLoading,
+  loadingRowId,
+  loadingRowAction,
   canModifyStatus,
   indexOfFirstItem,
   indexOfLastItem
@@ -152,42 +154,53 @@ const InventoryTable = ({
 
                     <td className="px-3 py-2.5 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => onView(inventory)}
-                          disabled={actionLoading}
-                          className="flex items-center gap-1 px-2 py-1.5 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="View"
-                        >
-                          {actionLoading ? (
-                            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <Eye size={18} />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => onEdit(inventory)}
-                          disabled={actionLoading}
-                          className={`flex items-center gap-2 px-3 py-2 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-lg transition ${actionLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          title={inventory.status === 'CONFIRMED' ? 'Edit (will check if modifiable)' : 'Edit'}
-                        >
-                          {actionLoading ? (
-                            <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <Edit2 size={18} />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => onDelete(inventory.id)}
-                          disabled={actionLoading}
-                          className={`flex items-center gap-2 px-3 py-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition ${actionLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          title={inventory.status === 'CONFIRMED' ? 'Delete (will check if modifiable)' : 'Delete'}
-                        >
-                          {actionLoading ? (
-                            <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <Trash2 size={18} />
-                          )}
-                        </button>
+                        {(() => {
+                          const isThisRowLoading = loadingRowId === inventory.id;
+                          const isViewLoading = isThisRowLoading && loadingRowAction === 'view';
+                          const isEditLoading = isThisRowLoading && loadingRowAction === 'edit';
+                          const isDeleteLoading = isThisRowLoading && loadingRowAction === 'delete';
+                           const disableAll = isThisRowLoading;
+                          return (
+                            <>
+                              <button
+                                onClick={() => onView(inventory)}
+                                disabled={disableAll}
+                                className="flex items-center gap-1 px-2 py-1.5 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="View"
+                              >
+                                {isViewLoading ? (
+                                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <Eye size={18} />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => onEdit(inventory)}
+                                disabled={disableAll}
+                                className={`flex items-center gap-2 px-3 py-2 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-lg transition ${disableAll ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                title={inventory.status === 'CONFIRMED' ? 'Edit (will check if modifiable)' : 'Edit'}
+                              >
+                                {isEditLoading ? (
+                                  <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <Edit2 size={18} />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => onDelete(inventory.id)}
+                                disabled={disableAll}
+                                className={`flex items-center gap-2 px-3 py-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition ${disableAll ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                title={inventory.status === 'CONFIRMED' ? 'Delete (will check if modifiable)' : 'Delete'}
+                              >
+                                {isDeleteLoading ? (
+                                  <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <Trash2 size={18} />
+                                )}
+                              </button>
+                            </>
+                          );
+                        })()}
                       </div>
                     </td>
                   </tr>

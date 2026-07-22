@@ -431,6 +431,8 @@ const InventoryRecordsManagement = () => {
   const [selectedInventory, setSelectedInventory] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
+  const [loadingRowId, setLoadingRowId] = useState(null);
+  const [loadingRowAction, setLoadingRowAction] = useState(null);
   const [deleteErrorMessage, setDeleteErrorMessage] = useState(null);
   const [toasts, setToasts] = useState([]);
 
@@ -591,6 +593,8 @@ const InventoryRecordsManagement = () => {
       }
       try {
         setActionLoading(true);
+        setLoadingRowId(inventory.id);
+        setLoadingRowAction('edit');
         setLoadingMessage('Loading inventory details...');
         const fullInventoryRes = await api.get(`/inventories/${inventory.id}`);
         if (!fullInventoryRes.success) throw new Error(fullInventoryRes.error || 'Failed to load inventory');
@@ -620,26 +624,36 @@ const InventoryRecordsManagement = () => {
           }
         }
         setActionLoading(false);
+        setLoadingRowId(null);
+        setLoadingRowAction(null);
         setLoadingMessage('');
         setShowModal(true);
       } catch (error) {
         console.error('Failed to load inventory details');
         alert('Failed to load inventory details: ' + error.message);
         setActionLoading(false);
+        setLoadingRowId(null);
+        setLoadingRowAction(null);
         setLoadingMessage('');
       }
     } else if (mode === 'view' && inventory) {
       try {
         setActionLoading(true);
+        setLoadingRowId(inventory.id);
+        setLoadingRowAction('view');
         setLoadingMessage('Loading inventory details...');
         const fullInventoryRes = await api.get(`/inventories/${inventory.id}`);
         if (fullInventoryRes.success) setSelectedInventory(fullInventoryRes.data);
         setActionLoading(false);
+        setLoadingRowId(null);
+        setLoadingRowAction(null);
         setLoadingMessage('');
         setShowModal(true);
       } catch (error) {
         console.error('Failed to load inventory details:', error);
         setActionLoading(false);
+        setLoadingRowId(null);
+        setLoadingRowAction(null);
         setLoadingMessage('');
       }
     }
@@ -820,6 +834,8 @@ const InventoryRecordsManagement = () => {
     const currentUser = confirmedByUser || getCurrentUser() || 'System';
     try {
       setActionLoading(true);
+      setLoadingRowId(inventory.id);
+      setLoadingRowAction('confirm');
       setLoadingMessage('Confirming inventory...');
       await confirmInventory(inventory.id, currentUser);
       showToast('Inventory confirmed successfully! Stock levels have been updated.', 'success');
@@ -832,6 +848,8 @@ const InventoryRecordsManagement = () => {
       showToast(`Failed to confirm: ${errorMsg}`, 'error', 6000);
     } finally {
       setActionLoading(false);
+      setLoadingRowId(null);
+      setLoadingRowAction(null);
       setLoadingMessage('');
     }
   };
@@ -847,6 +865,8 @@ const InventoryRecordsManagement = () => {
     }
     try {
       setActionLoading(true);
+      setLoadingRowId(id);
+      setLoadingRowAction('delete');
       setLoadingMessage('Deleting inventory record...');
       const result = await deleteInventory(id);
       if (result && result.success === false) { setDeleteErrorMessage(result.error || 'Failed to delete inventory'); return; }
@@ -865,6 +885,8 @@ const InventoryRecordsManagement = () => {
       }
     } finally {
       setActionLoading(false);
+      setLoadingRowId(null);
+      setLoadingRowAction(null);
       setLoadingMessage('');
     }
   };
@@ -1013,6 +1035,8 @@ const InventoryRecordsManagement = () => {
             onDelete={handleDelete}
             onConfirm={handleConfirmInventory}
             actionLoading={actionLoading}
+            loadingRowId={loadingRowId}
+            loadingRowAction={loadingRowAction}
             canModifyStatus={canModifyStatus}
             indexOfFirstItem={indexOfFirstItem}
             indexOfLastItem={indexOfLastItem}
