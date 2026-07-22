@@ -1,166 +1,308 @@
-import React, { useState } from 'react';
-import { X, Upload, CheckCircle2, AlertTriangle } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { X, Upload, CheckCircle2, AlertTriangle, Search, Layers } from 'lucide-react';
 import SearchableDropdown from '../common/SaleSearchableDropdown';
-import { parseMassUploadReports, matchBranch, matchProductToItem } from '../../utils/massUploadParser';
+import { api } from '../../services/api';
+import toast from 'react-hot-toast';
+import {
+    parseMassUploadReports,
+    matchBranch,
+    matchProductToItem,
+    buildSaleItemsFromMatches,
+    isReportComplete,
+} from '../../utils/massUploadParser';
 
-const MassUploadModal = ({ branches, productOptions, onClose, onConfirm }) => {
+const MassUploadModal = ({ branches, productOptions, onClose, onConfirm, onBulkUploadComplete }) => {
     const [rawText, setRawText] = useState('');
-    const [reports, setReports] = useState(null); // array of parsed report blocks
+    const [reports, setReports] = useState(null); // [{ siteName, month, year, matchedRows, branchId }]
     const [activeIndex, setActiveIndex] = useState(0);
-    const [matchedRows, setMatchedRows] = useState([]);
-    const [branchId, setBranchId] = useState('');
-    const [month, setMonth] = useState(new Date().getMonth() + 1);
-    const [year, setYear] = useState(new Date().getFullYear());
+    const [search, setSearch] = useState('');
+    const [bulkRunning, setBulkRunning] = useState(false);
+    const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
+    const [bulkSummary, setBulkSummary] = useState(null);
 
     const branchOptions = branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
 
-    const loadReportIntoForm = (report) => {
-        const rows = report.items.map((item) => ({ ...item, matched: matchProductToItem(item, productOptions) }));
-        setMatchedRows(rows);
-
-        const guessedBranch = matchBranch(report.siteName, branches);
-        setBranchId(guessedBranch ? guessedBranch.id : '');
-
-        setMonth(report.month || new Date().getMonth() + 1);
-        setYear(report.year || new Date().getFullYear());
-    };
-
     const handleParse = () => {
         const results = parseMassUploadReports(rawText);
-        setReports(results);
+        const withMatches = results.map((r) => {
+            const matchedRows = r.items.map(item => ({ ...item, matched: matchProductToItem(item, productOptions) }));
+            const guessedBranch = matchBranch(r.siteName, branches);
+            return {
+                ...r,
+                matchedRows,
+                branchId: guessedBranch ? guessedBranch.id : '',
+                month: r.month || new Date().getMonth() + 1,
+                year: r.year || new Date().getFullYear(),
+            };
+        });
+        setReports(withMatches);
         setActiveIndex(0);
-        if (results.length) loadReportIntoForm(results[0]);
-    };
-
-    const handleSwitchReport = (idx) => {
-        setActiveIndex(idx);
-        loadReportIntoForm(reports[idx]);
+        setBulkSummary(null);
     };
 
     const handleFileText = async (file) => {
         if (!file) return;
         if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-            alert('PDF parsing needs the pdfjs-dist package to extract text first. Please paste the text instead for now.');
+            alert('PDF parsing needs a text-extraction step first. Please paste the report text instead for now.');
             return;
         }
         setRawText(await file.text());
     };
 
-    const matchedCount = matchedRows.filter(r => r.matched).length;
-    const unmatchedCount = matchedRows.length - matchedCount;
+    const updateActiveReport = (patch) => {
+        setReports(prev => prev.map((r, i) => (i === activeIndex ? { ...r, ...patch } : r)));
+    };
 
-    const handleConfirm = () => {
-        if (!branchId) { alert('Please select a branch'); return; }
-        const validRows = matchedRows.filter(r => r.matched);
-        if (!validRows.length) { alert('No matched products to add'); return; }
+    const active = reports && reports[activeIndex];
 
-        const items = validRows.map(r => ({
-            productId: r.matched.option.parentProductId,
-            variationId: r.matched.option.variationId || null,
-            quantity: r.qty,
-            unitPrice: r.unitCost ? r.unitCost.toString() : null,
-        }));
+    const filteredIndexes = useMemo(() => {
+        if (!reports) return [];
+        const q = search.trim().toLowerCase();
+        return reports
+            .map((r, idx) => ({ r, idx }))
+            .filter(({ r }) => !q || r.siteName.toLowerCase().includes(q))
+            .map(({ idx }) => idx);
+    }, [reports, search]);
 
-        onConfirm({ branchId, month, year, items });
+    const matchedCount = active ? active.matchedRows.filter(r => r.matched).length : 0;
+    const unmatchedCount = active ? active.matchedRows.length - matchedCount : 0;
+    const activeComplete = active ? isReportComplete(active.matchedRows) : false;
+
+    const handleConfirmSingle = () => {
+        if (!active.branchId) { toast.error('Please select a branch for this report'); return; }
+        if (!activeComplete) { toast.error('Every item must be matched to a product before this can be added'); return; }
+        const items = buildSaleItemsFromMatches(active.matchedRows);
+        onConfirm({ branchId: active.branchId, month: active.month, year: active.year, items });
+    };
+
+    const handleBulkCreate = async () => {
+        const eligible = reports.filter(r => r.branchId && isReportComplete(r.matchedRows));
+        const skipped = reports.length - eligible.length;
+
+        if (!eligible.length) {
+            toast.error('No branches have a selected branch and 100% matched products to upload');
+            return;
+        }
+        const confirmMsg = `This will create ${eligible.length} separate PENDING sale${eligible.length === 1 ? '' : 's'}, one per branch` +
+            (skipped ? `. ${skipped} branch(es) will be skipped (no branch match or incomplete product matches — nothing partial gets uploaded).` : '.') +
+            ' Continue?';
+        if (!window.confirm(confirmMsg)) return;
+
+        setBulkRunning(true);
+        setBulkSummary(null);
+        setBulkProgress({ done: 0, total: eligible.length });
+
+        const success = [];
+        const failed = [];
+
+        for (const report of eligible) {
+            const items = buildSaleItemsFromMatches(report.matchedRows);
+            try {
+                const res = await api.post('/sales', {
+                    branchId: report.branchId,
+                    month: report.month,
+                    year: report.year,
+                    items,
+                    createdBy: '',
+                });
+                if (res.success || res.id) {
+                    success.push(report.siteName);
+                } else {
+                    failed.push({ siteName: report.siteName, error: res.message || 'Unknown error' });
+                }
+            } catch (error) {
+                failed.push({
+                    siteName: report.siteName,
+                    error: error.response?.data?.message || error.response?.data || error.message || 'Failed',
+                });
+            }
+            setBulkProgress(prev => ({ ...prev, done: prev.done + 1 }));
+        }
+
+        setBulkRunning(false);
+        setBulkSummary({ success, failed, skipped });
+
+        if (success.length) toast.success(`Created ${success.length} sale(s) successfully`);
+        if (failed.length) toast.error(`${failed.length} branch(es) failed — see details below`);
+        if (onBulkUploadComplete) onBulkUploadComplete();
     };
 
     return (
-        <div className="fixed inset-0 bg-black/75 z-[60] flex items-center justify-center p-2 sm:p-6">
-            <div className="bg-white rounded-xl sm:rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
-                <div className="p-4 sm:p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-xl z-10">
-                    <h2 className="text-lg sm:text-xl font-bold text-gray-900">Mass Upload Sale Items</h2>
-                    <button onClick={onClose} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition">
-                        <X size={22} />
+        <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-2 sm:p-6">
+            <div className="bg-white rounded-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden shadow-2xl flex flex-col">
+                <div className="px-5 sm:px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-white">
+                    <div>
+                        <h2 className="text-lg font-bold text-gray-900">Mass Upload Sale Items</h2>
+                        <p className="text-xs text-gray-500 mt-0.5">Paste a consignment sales report to auto-fill branch, products, and quantities.</p>
+                    </div>
+                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition">
+                        <X size={20} />
                     </button>
                 </div>
 
-                <div className="p-4 sm:p-6 space-y-5">
-                    {!reports && (
-                        <>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Paste the sales data below (Site Name, Vendor Name, and the article table)
-                                </label>
-                                <textarea
-                                    value={rawText}
-                                    onChange={(e) => setRawText(e.target.value)}
-                                    rows={12}
-                                    placeholder={`Site Name: 2277 ABACUS - Taft\nVendor Name: 60002182 WISECART MERCHANTS CORP.\nSALES ARTICLE GTIN ARTICLE DESCRIPTION QTY UNIT COST AMOUNT\n200000294801 S200000294801 JOURNAL NB A5 80S BLACK LEATHER 17 139.29 2,367.97`}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-xs focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
+                {!reports && (
+                    <div className="p-5 sm:p-6 space-y-4 overflow-y-auto">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Paste report text</label>
+                            <textarea
+                                value={rawText}
+                                onChange={(e) => setRawText(e.target.value)}
+                                rows={12}
+                                placeholder={`Site Name: 2277 ABACUS - Taft\nVendor Name: 60002182 WISECART MERCHANTS CORP.\nSALES ARTICLE GTIN ARTICLE DESCRIPTION QTY UNIT COST AMOUNT\n200000294801 S200000294801 JOURNAL NB A5 80S BLACK LEATHER 17 139.29 2,367.97`}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <label className="flex items-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-lg cursor-pointer text-sm text-gray-600 hover:bg-gray-50 transition">
+                                <Upload size={16} />
+                                Upload .txt
+                                <input type="file" accept=".txt" className="hidden" onChange={(e) => handleFileText(e.target.files[0])} />
+                            </label>
+                            <button
+                                type="button"
+                                onClick={handleParse}
+                                disabled={!rawText.trim()}
+                                className="ml-auto px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                Parse & Preview
+                            </button>
+                        </div>
+                    </div>
+                )}
 
-                            <div className="flex items-center gap-3">
-                                <label className="flex items-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-lg cursor-pointer text-sm text-gray-600 hover:bg-gray-50">
-                                    <Upload size={16} />
-                                    Upload .txt / .pdf
-                                    <input type="file" accept=".txt,.pdf" className="hidden" onChange={(e) => handleFileText(e.target.files[0])} />
-                                </label>
+                {reports && reports.length === 0 && (
+                    <div className="p-8 text-center text-gray-500">
+                        <p>No sale items could be parsed from this text.</p>
+                        <button type="button" onClick={() => setReports(null)} className="mt-3 text-sm text-blue-600 hover:underline">← Back to paste</button>
+                    </div>
+                )}
+
+                {reports && reports.length > 0 && (
+                    <div className="flex-1 min-h-0 flex flex-col sm:flex-row overflow-hidden">
+                        {/* Left: branch list */}
+                        <div className="sm:w-72 border-b sm:border-b-0 sm:border-r border-gray-200 flex flex-col bg-gray-50 min-h-0">
+                            <div className="p-3 border-b border-gray-200 bg-white">
+                                <div className="relative">
+                                    <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <input
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        placeholder="Search branches..."
+                                        className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2">{reports.length} branch{reports.length === 1 ? '' : 'es'} detected</p>
+                            </div>
+                            <div className="flex-1 overflow-y-auto">
+                                {filteredIndexes.map((idx) => {
+                                    const r = reports[idx];
+                                    const rMatched = r.matchedRows.filter(row => row.matched).length;
+                                    const rTotal = r.matchedRows.length;
+                                    const rComplete = isReportComplete(r.matchedRows);
+                                    const isActive = idx === activeIndex;
+                                    const hasBranch = !!r.branchId;
+                                    return (
+                                        <button
+                                            key={idx}
+                                            type="button"
+                                            onClick={() => setActiveIndex(idx)}
+                                            className={`w-full text-left px-3 py-2.5 border-b border-gray-100 transition ${isActive ? 'bg-blue-50 border-l-4 border-l-blue-600' : 'hover:bg-white border-l-4 border-l-transparent'
+                                                }`}
+                                        >
+                                            <div className="text-sm font-medium text-gray-900 truncate">{r.siteName}</div>
+                                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                                {!hasBranch && (
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">No branch match</span>
+                                                )}
+                                                {!rComplete && (
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">Incomplete</span>
+                                                )}
+                                                <span className={`text-[11px] font-medium ${rComplete ? 'text-green-700' : 'text-gray-500'}`}>{rMatched}/{rTotal} matched</span>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <div className="p-3 border-t border-gray-200 bg-white">
                                 <button
                                     type="button"
-                                    onClick={handleParse}
-                                    disabled={!rawText.trim()}
-                                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50"
+                                    onClick={handleBulkCreate}
+                                    disabled={bulkRunning}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition font-medium text-sm disabled:opacity-50"
                                 >
-                                    Parse & Preview
+                                    <Layers size={15} />
+                                    {bulkRunning ? `Creating ${bulkProgress.done}/${bulkProgress.total}...` : `Create Sales for All (${reports.length})`}
                                 </button>
+                                <p className="text-[11px] text-gray-400 mt-1.5 text-center">Creates one PENDING sale per branch that has a matched branch and at least one matched product.</p>
                             </div>
-                        </>
-                    )}
+                        </div>
 
-                    {reports && reports.length > 0 && (
-                        <>
-                            {reports.length > 1 && (
-                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                                    <div className="flex flex-wrap gap-2">
-                                        {reports.map((r, idx) => (
-                                            <button
-                                                key={idx}
-                                                type="button"
-                                                onClick={() => handleSwitchReport(idx)}
-                                                className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition ${idx === activeIndex
-                                                    ? 'bg-blue-600 text-white border-blue-600'
-                                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                                                    }`}
-                                            >
-                                                {r.siteName || `Report ${idx + 1}`} ({r.items.length} items)
-                                            </button>
-                                        ))}
+                        {/* Right: active report detail */}
+                        <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-5">
+                            {bulkSummary && (
+                                <div className="p-4 rounded-lg border border-gray-200 bg-gray-50 space-y-2">
+                                    <div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                                        <Layers size={16} /> Bulk upload result
                                     </div>
+                                    <p className="text-sm text-green-700">{bulkSummary.success.length} sale(s) created successfully</p>
+                                    {bulkSummary.skipped > 0 && (
+                                        <p className="text-sm text-amber-700">{bulkSummary.skipped} branch(es) skipped (no branch match or no matched products)</p>
+                                    )}
+                                    {bulkSummary.failed.length > 0 && (
+                                        <div className="text-sm text-red-700">
+                                            <p className="font-medium">{bulkSummary.failed.length} failed:</p>
+                                            <ul className="list-disc list-inside">
+                                                {bulkSummary.failed.map((f, i) => <li key={i}>{f.siteName}: {f.error}</li>)}
+                                            </ul>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
                             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                                 <div className="sm:col-span-2">
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Branch {reports[activeIndex].siteName && <span className="text-xs text-gray-400">(detected: "{reports[activeIndex].siteName}")</span>}
+                                        Branch {active.siteName && <span className="text-xs text-gray-400 font-normal">(detected: "{active.siteName}")</span>}
                                     </label>
                                     <SearchableDropdown
                                         options={branchOptions}
-                                        value={branchId}
-                                        onChange={setBranchId}
+                                        value={active.branchId}
+                                        onChange={(val) => updateActiveReport({ branchId: val })}
                                         placeholder="Select Branch"
                                         displayKey="name" valueKey="id" required
                                     />
-                                    {!branchId && <p className="text-xs text-red-500 mt-1">Could not auto-detect branch — please select manually.</p>}
+                                    {!active.branchId && <p className="text-xs text-red-500 mt-1">Could not auto-detect branch — please select manually.</p>}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Month {reports[activeIndex].month && <span className="text-xs text-gray-400">(detected)</span>}
-                                    </label>
-                                    <input type="number" min={1} max={12} value={month} onChange={(e) => setMonth(parseInt(e.target.value) || 1)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
+                                    <input
+                                        type="number" min={1} max={12}
+                                        value={active.month}
+                                        onChange={(e) => updateActiveReport({ month: parseInt(e.target.value) || 1 })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                    />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Year {reports[activeIndex].year && <span className="text-xs text-gray-400">(detected)</span>}
-                                    </label>
-                                    <input type="number" value={year} onChange={(e) => setYear(parseInt(e.target.value) || new Date().getFullYear())} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+                                    <input
+                                        type="number"
+                                        value={active.year}
+                                        onChange={(e) => updateActiveReport({ year: parseInt(e.target.value) || new Date().getFullYear() })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                    />
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-4 text-sm">
-                                <span className="flex items-center gap-1 text-green-700"><CheckCircle2 size={16} /> {matchedCount} matched</span>
-                                {unmatchedCount > 0 && <span className="flex items-center gap-1 text-red-600"><AlertTriangle size={16} /> {unmatchedCount} not found</span>}
+                            <div className="flex items-center gap-4 text-sm flex-wrap">
+                                <span className="flex items-center gap-1 text-green-700 font-medium"><CheckCircle2 size={16} /> {matchedCount} matched</span>
+                                {unmatchedCount > 0 && (
+                                    <span className="flex items-center gap-1 text-red-600 font-medium"><AlertTriangle size={16} /> {unmatchedCount} not found</span>
+                                )}
+                                {!activeComplete && (
+                                    <span className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1">
+                                        All items must match a product before this branch can be uploaded.
+                                    </span>
+                                )}
                             </div>
 
                             <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -173,38 +315,44 @@ const MassUploadModal = ({ branches, productOptions, onClose, onConfirm }) => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200 bg-white">
-                                        {matchedRows.map((row, i) => (
+                                        {active.matchedRows.map((row, i) => (
                                             <tr key={i} className={row.matched ? '' : 'bg-red-50'}>
-                                                <td className="px-3 py-2">{row.articleCode}</td>
-                                                <td className="px-3 py-2">{row.gtin}</td>
-                                                <td className="px-3 py-2">{row.description}</td>
+                                                <td className="px-3 py-2 text-gray-700">{row.articleCode}</td>
+                                                <td className="px-3 py-2 text-gray-700">{row.gtin}</td>
+                                                <td className="px-3 py-2 text-gray-700">{row.description}</td>
                                                 <td className="px-3 py-2">
                                                     {row.matched
                                                         ? <span className="text-green-700 font-medium">{row.matched.option.fullName}</span>
                                                         : <span className="text-red-600 italic">Not found in product list</span>}
                                                 </td>
-                                                <td className="px-3 py-2">{row.qty}</td>
-                                                <td className="px-3 py-2">{row.unitCost.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                                                <td className="px-3 py-2 text-gray-700">{row.qty}</td>
+                                                <td className="px-3 py-2 text-gray-700">{row.unitCost.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
 
-                            <div className="flex justify-between pt-2">
-                                <button type="button" onClick={() => { setReports(null); setMatchedRows([]); }} className="px-4 py-2 text-sm text-gray-600 hover:underline">
+                            <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                                <button type="button" onClick={() => { setReports(null); setBulkSummary(null); }} className="text-sm text-gray-600 hover:underline">
                                     ← Re-paste data
                                 </button>
                                 <div className="flex gap-3">
-                                    <button type="button" onClick={onClose} className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium">Cancel</button>
-                                    <button type="button" onClick={handleConfirm} disabled={matchedCount === 0} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50">
-                                        Add {matchedCount} Item{matchedCount === 1 ? '' : 's'} to Sale
+                                    <button type="button" onClick={onClose} className="px-5 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm">Cancel</button>
+                                    <button
+                                        type="button"
+                                        onClick={handleConfirmSingle}
+                                        disabled={!activeComplete}
+                                        title={!activeComplete ? 'All items must be matched before this sale can be created' : undefined}
+                                        className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                        Add {matchedCount} Item{matchedCount === 1 ? '' : 's'} to This Sale
                                     </button>
                                 </div>
                             </div>
-                        </>
-                    )}
-                </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

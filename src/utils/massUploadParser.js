@@ -58,17 +58,24 @@ export const parseMassUploadText = (rawText) => {
     const { month, year } = parseAccountingPeriod(rawText);
     const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
     const items = [];
-    const headerWords = ['SALES', 'ARTICLE', 'GTIN', 'DESCRIPTION', 'QTY', 'UNIT', 'COST', 'AMOUNT'];
+    const headerWords = ['ARTICLE', 'GTIN', 'DESCRIPTION', 'QTY', 'UNIT', 'COST', 'AMOUNT'];
     let hitFooter = false;
+    let section = null;
 
     lines.forEach((line) => {
         if (hitFooter) return;
         if (/^Site Name:/i.test(line) || /^Vendor Name:/i.test(line) || /^Accounting Period/i.test(line)) return;
+
         if (/Total Item\(s\) Sold/i.test(line)) { hitFooter = true; return; }
 
         const upper = line.toUpperCase();
         const isHeaderLine = headerWords.filter(w => upper.includes(w)).length >= 4;
-        if (isHeaderLine) return;
+        if (isHeaderLine) {
+            section = upper.startsWith('RETURNS') ? 'returns' : 'sales';
+            return;
+        }
+
+        if (section !== 'sales') return;
 
         const tokens = line.split(/\s+/);
         if (tokens.length < 6) return;
@@ -101,6 +108,7 @@ export const parseMassUploadText = (rawText) => {
 };
 
 
+const normalizeSiteName = (s) => (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
 export const parseMassUploadReports = (rawText) => {
     if (!rawText || !rawText.trim()) return [];
 
@@ -111,10 +119,39 @@ export const parseMassUploadReports = (rawText) => {
 
     if (!segments.length) segments = [rawText];
 
-    return segments.map(parseMassUploadText).filter(r => r.siteName || r.items.length);
+    const parsedPages = segments.map(parseMassUploadText).filter(r => r.siteName);
+
+    const merged = [];
+    parsedPages.forEach((page) => {
+        const last = merged[merged.length - 1];
+        if (last && normalizeSiteName(last.siteName) === normalizeSiteName(page.siteName)) {
+            last.items = [...last.items, ...page.items];
+            if (!last.month && page.month) last.month = page.month;
+            if (!last.year && page.year) last.year = page.year;
+        } else {
+            merged.push({ ...page, items: [...page.items] });
+        }
+    });
+
+    // Drop branches with zero sale items (e.g. a page that was RETURNS-only)
+    return merged.filter(r => r.items.length > 0);
 };
 
-// e.g. "2277 ABACUS - Taft" -> tries branchCode "2277" first, then name match
+
+export const buildSaleItemsFromMatches = (matchedRows) =>
+    matchedRows
+        .filter(r => r.matched)
+        .map(r => ({
+            productId: r.matched.option.parentProductId,
+            variationId: r.matched.option.variationId || null,
+            quantity: r.qty,
+            unitPrice: null,
+        }));
+
+
+export const isReportComplete = (matchedRows) =>
+    matchedRows.length > 0 && matchedRows.every(r => !!r.matched);
+
 export const matchBranch = (siteName, branches) => {
     if (!siteName || !branches?.length) return null;
 
