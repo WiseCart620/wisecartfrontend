@@ -793,7 +793,7 @@ const InventoryRecordsManagement = () => {
       if (modalMode === 'create') { await createInventory(payload); alert('Inventory record created successfully as PENDING!'); }
       else { await updateInventory(selectedInventory.id, payload); alert('Inventory record updated successfully!'); }
       handleCloseModal();
-      await loadData(0, 200);
+      await loadData(0, 1000);
       setCurrentPage(1);
     } catch (error) {
       console.error('Failed to save inventory:', error);
