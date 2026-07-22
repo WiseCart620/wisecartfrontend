@@ -782,7 +782,14 @@ const InventoryRecordsManagement = () => {
     try {
       setActionLoading(true);
       setLoadingMessage(modalMode === 'create' ? 'Creating inventory record...' : 'Updating inventory record...');
-      const payload = { ...formData, status: 'PENDING' };
+      const payload = {
+        ...formData,
+        status: 'PENDING',
+        fromWarehouseId: formData.fromWarehouseId || null,
+        toWarehouseId: formData.toWarehouseId || null,
+        fromBranchId: formData.fromBranchId || null,
+        toBranchId: formData.toBranchId || null,
+      };
       if (modalMode === 'create') { await createInventory(payload); alert('Inventory record created successfully as PENDING!'); }
       else { await updateInventory(selectedInventory.id, payload); alert('Inventory record updated successfully!'); }
       handleCloseModal();
