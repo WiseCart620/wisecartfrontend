@@ -112,11 +112,6 @@ const MassUploadModal = ({ branches, productOptions, onClose, onConfirm }) => {
                         <>
                             {reports.length > 1 && (
                                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                                    <p className="text-sm text-amber-800 font-medium mb-2">
-                                        {reports.length} separate branch reports detected in this paste. Since a sale can only
-                                        be created for one branch at a time, pick which one to load into this sale below —
-                                        then repeat Mass Upload for the other branch(es) when creating their sale.
-                                    </p>
                                     <div className="flex flex-wrap gap-2">
                                         {reports.map((r, idx) => (
                                             <button
