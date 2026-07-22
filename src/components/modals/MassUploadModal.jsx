@@ -151,13 +151,13 @@ const MassUploadModal = ({ branches, productOptions, onClose, onConfirm }) => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Month {parsed.month && <span className="text-xs text-gray-400">(detected)</span>}
+                                        Month {reports[activeIndex].month && <span className="text-xs text-gray-400">(detected)</span>}
                                     </label>
                                     <input type="number" min={1} max={12} value={month} onChange={(e) => setMonth(parseInt(e.target.value) || 1)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Year {parsed.year && <span className="text-xs text-gray-400">(detected)</span>}
+                                        Year {reports[activeIndex].year && <span className="text-xs text-gray-400">(detected)</span>}
                                     </label>
                                     <input type="number" value={year} onChange={(e) => setYear(parseInt(e.target.value) || new Date().getFullYear())} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
                                 </div>
