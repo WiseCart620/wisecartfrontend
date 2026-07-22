@@ -237,8 +237,13 @@ const InventoryForm = ({
                         </label>
                         <input
                             type="date"
-                            value={formData.dateProcessed}
-                            onChange={e => setFormData(prev => ({ ...prev, dateProcessed: e.target.value }))}
+                            value={formData.dateProcessed ? formData.dateProcessed.slice(0, 10) : ''}
+                            onChange={e => {
+                                const existingTime = formData.dateProcessed?.includes('T')
+                                    ? formData.dateProcessed.slice(10)
+                                    : 'T00:00:00';
+                                setFormData(prev => ({ ...prev, dateProcessed: `${e.target.value}${existingTime}` }));
+                            }}
                             required
                             className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
                         />
