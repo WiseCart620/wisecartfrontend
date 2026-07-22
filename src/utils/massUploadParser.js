@@ -2,16 +2,46 @@ const MONTH_NAMES = [
     'january', 'february', 'march', 'april', 'may', 'june',
     'july', 'august', 'september', 'october', 'november', 'december',
 ];
+const MONTH_ABBR = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
-// Parses "Accounting Period November 2024" -> { month: 11, year: 2024 }
+const monthNameToNumber = (word) => {
+    const w = (word || '').toLowerCase().replace(/[^a-z]/g, '');
+    let idx = MONTH_NAMES.indexOf(w);
+    if (idx >= 0) return idx + 1;
+    idx = MONTH_ABBR.indexOf(w.slice(0, 3));
+    return idx >= 0 ? idx + 1 : null;
+};
+
+
 export const parseAccountingPeriod = (rawText) => {
-    const match = rawText.match(/Accounting Period[:\s]+([A-Za-z]+)\s+(\d{4})/i);
-    if (!match) return { month: null, year: null };
-    const monthIdx = MONTH_NAMES.indexOf(match[1].toLowerCase());
-    return {
-        month: monthIdx >= 0 ? monthIdx + 1 : null,
-        year: parseInt(match[2], 10),
-    };
+    if (!rawText) return { month: null, year: null };
+
+    const periodIdx = rawText.search(/Accounting\s*Period/i);
+    if (periodIdx === -1) return { month: null, year: null };
+
+    // Look at a window of text after the label (handles stray whitespace/newlines
+    // or unrelated tokens injected by PDF column extraction)
+    const window = rawText.slice(periodIdx, periodIdx + 200);
+
+    // Try "Month YYYY" or "Month, YYYY" or "Month-YYYY"
+    const monthYearMatch = window.match(/([A-Za-z]{3,9})\.?\s*,?\s*-?\s*(\d{4})/);
+    if (monthYearMatch) {
+        const month = monthNameToNumber(monthYearMatch[1]);
+        if (month) {
+            return { month, year: parseInt(monthYearMatch[2], 10) };
+        }
+    }
+
+    // Try "MM/YYYY" or "MM-YYYY"
+    const numericMatch = window.match(/(\d{1,2})[\/\-](\d{4})/);
+    if (numericMatch) {
+        const month = parseInt(numericMatch[1], 10);
+        if (month >= 1 && month <= 12) {
+            return { month, year: parseInt(numericMatch[2], 10) };
+        }
+    }
+
+    return { month: null, year: null };
 };
 
 // Parses pasted mass-upload text into { siteName, vendorName, items, month, year }
