@@ -1,8 +1,6 @@
 export const INVENTORY_TYPES = [
   { value: 'STOCK_IN', label: 'Stock In', color: 'green' },
   { value: 'TRANSFER', label: 'Transfer', color: 'blue' },
-  { value: 'TRANSFER_IN', label: 'Transfer In', color: 'blue' },
-  { value: 'TRANSFER_OUT', label: 'Transfer Out', color: 'indigo' },
   { value: 'RETURN', label: 'Return', color: 'yellow' },
   { value: 'DAMAGE', label: 'Damage', color: 'red' }
 ];
