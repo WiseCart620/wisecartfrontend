@@ -185,7 +185,9 @@ const normalizeCode = (v) => {
     return stripped || digitsOnly || '';
 };
 
-// productOptions items look like: { parentProductId, variationId, sku, upc, companySku, fullName, price }
+
+const last9Digits = (v) => (v || '').toString().replace(/\D/g, '').slice(-9);
+
 export const matchProductToItem = (item, productOptions) => {
     if (!Array.isArray(productOptions) || !productOptions.length) return null;
 
@@ -200,19 +202,34 @@ export const matchProductToItem = (item, productOptions) => {
             const val = opt[field];
             if (!val) return false;
             const normVal = normalizeCode(val);
-            // numeric-code match, ignoring letter prefixes and leading zeros
             return (normVal && (normVal === article || normVal === gtin));
         });
         if (match) return { option: match, matchedBy: `${field} (code match)` };
     }
 
-    // fallback: exact case-insensitive string match, in case SKU is alphanumeric (no digits)
     for (const field of codeFields) {
         const match = productOptions.find(opt =>
             rawSkuNorm(opt[field]) === rawSkuNorm(item.articleCode) ||
             rawSkuNorm(opt[field]) === rawSkuNorm(item.gtin)
         );
         if (match) return { option: match, matchedBy: `${field} (exact match)` };
+    }
+
+
+    const articleLast9 = last9Digits(item.articleCode);
+    const gtinLast9 = last9Digits(item.gtin);
+    if (articleLast9.length === 9 || gtinLast9.length === 9) {
+        for (const field of codeFields) {
+            const match = productOptions.find(opt => {
+                const val = opt[field];
+                if (!val) return false;
+                const valLast9 = last9Digits(val);
+                if (valLast9.length !== 9) return false;
+                return (articleLast9.length === 9 && valLast9 === articleLast9)
+                    || (gtinLast9.length === 9 && valLast9 === gtinLast9);
+            });
+            if (match) return { option: match, matchedBy: `${field} (last-9-digit match)` };
+        }
     }
 
     return null;
