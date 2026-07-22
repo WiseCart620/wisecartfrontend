@@ -4,6 +4,7 @@ import SearchableDropdown from '../../components/common/SaleSearchableDropdown';
 import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
 import { makeStockKey, formatCurrency } from '../../utils/salesUtils';
 import { months } from '../../constants/salesConstants';
+import MassUploadModal from '../modals/MassUploadModal';
 
 const SaleFormModal = ({
   modalMode,
@@ -23,6 +24,16 @@ const SaleFormModal = ({
   getMaxAllowedQuantity,
 }) => {
   const [showEncodedByDropdown, setShowEncodedByDropdown] = useState(false);
+  const [showMassUpload, setShowMassUpload] = useState(false);
+
+  const handleMassUploadConfirm = async ({ branchId, month, year, items }) => {
+    setShowMassUpload(false);
+    if (formData.branchId !== branchId) {
+      await onBranchChange(branchId);
+    }
+    setFormData(prev => ({ ...prev, branchId, month, year, items }));
+    items.forEach(item => onLoadStock(item.productId, formData.branchId || branchId, item.variationId));
+  };
 
   const branchOptions = branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
 
@@ -117,7 +128,14 @@ const SaleFormModal = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">Add Products *</label>
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-medium text-gray-700">Add Products *</label>
+                {modalMode === 'create' && (
+                  <button type="button" onClick={() => setShowMassUpload(true)} className="text-sm text-blue-600 hover:underline font-medium">
+                    Mass Upload
+                  </button>
+                )}
+              </div>
               <div className="mb-6">
                 <VariationSearchableDropdown
                   options={Array.isArray(productOptions) ? productOptions : []}
@@ -290,6 +308,15 @@ const SaleFormModal = ({
           </div>
         </form>
       </div>
+
+      {showMassUpload && (
+        <MassUploadModal
+          branches={branches}
+          productOptions={productOptions}
+          onClose={() => setShowMassUpload(false)}
+          onConfirm={handleMassUploadConfirm}
+        />
+      )}
     </div>
   );
 };
