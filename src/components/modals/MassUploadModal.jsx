@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { X, Upload, CheckCircle2, AlertTriangle } from 'lucide-react';
 import SearchableDropdown from '../common/SaleSearchableDropdown';
-import { parseMassUploadText, matchBranch, matchProductToItem } from '../../utils/massUploadParser';
+import { parseMassUploadReports, matchBranch, matchProductToItem } from '../../utils/massUploadParser';
 
 const MassUploadModal = ({ branches, productOptions, onClose, onConfirm }) => {
     const [rawText, setRawText] = useState('');
-    const [parsed, setParsed] = useState(null);
+    const [reports, setReports] = useState(null); // array of parsed report blocks
+    const [activeIndex, setActiveIndex] = useState(0);
     const [matchedRows, setMatchedRows] = useState([]);
     const [branchId, setBranchId] = useState('');
     const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -13,18 +14,27 @@ const MassUploadModal = ({ branches, productOptions, onClose, onConfirm }) => {
 
     const branchOptions = branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
 
-    const handleParse = () => {
-        const result = parseMassUploadText(rawText);
-        setParsed(result);
-
-        const rows = result.items.map((item) => ({ ...item, matched: matchProductToItem(item, productOptions) }));
+    const loadReportIntoForm = (report) => {
+        const rows = report.items.map((item) => ({ ...item, matched: matchProductToItem(item, productOptions) }));
         setMatchedRows(rows);
 
-        const guessedBranch = matchBranch(result.siteName, branches);
-        if (guessedBranch) setBranchId(guessedBranch.id);
+        const guessedBranch = matchBranch(report.siteName, branches);
+        setBranchId(guessedBranch ? guessedBranch.id : '');
 
-        if (result.month) setMonth(result.month);
-        if (result.year) setYear(result.year);
+        setMonth(report.month || new Date().getMonth() + 1);
+        setYear(report.year || new Date().getFullYear());
+    };
+
+    const handleParse = () => {
+        const results = parseMassUploadReports(rawText);
+        setReports(results);
+        setActiveIndex(0);
+        if (results.length) loadReportIntoForm(results[0]);
+    };
+
+    const handleSwitchReport = (idx) => {
+        setActiveIndex(idx);
+        loadReportIntoForm(reports[idx]);
     };
 
     const handleFileText = async (file) => {
@@ -65,7 +75,7 @@ const MassUploadModal = ({ branches, productOptions, onClose, onConfirm }) => {
                 </div>
 
                 <div className="p-4 sm:p-6 space-y-5">
-                    {!parsed && (
+                    {!reports && (
                         <>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -98,12 +108,37 @@ const MassUploadModal = ({ branches, productOptions, onClose, onConfirm }) => {
                         </>
                     )}
 
-                    {parsed && (
+                    {reports && reports.length > 0 && (
                         <>
+                            {reports.length > 1 && (
+                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                    <p className="text-sm text-amber-800 font-medium mb-2">
+                                        {reports.length} separate branch reports detected in this paste. Since a sale can only
+                                        be created for one branch at a time, pick which one to load into this sale below —
+                                        then repeat Mass Upload for the other branch(es) when creating their sale.
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {reports.map((r, idx) => (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => handleSwitchReport(idx)}
+                                                className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition ${idx === activeIndex
+                                                    ? 'bg-blue-600 text-white border-blue-600'
+                                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                                    }`}
+                                            >
+                                                {r.siteName || `Report ${idx + 1}`} ({r.items.length} items)
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                                 <div className="sm:col-span-2">
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Branch {parsed.siteName && <span className="text-xs text-gray-400">(detected: "{parsed.siteName}")</span>}
+                                        Branch {reports[activeIndex].siteName && <span className="text-xs text-gray-400">(detected: "{reports[activeIndex].siteName}")</span>}
                                     </label>
                                     <SearchableDropdown
                                         options={branchOptions}
@@ -162,7 +197,7 @@ const MassUploadModal = ({ branches, productOptions, onClose, onConfirm }) => {
                             </div>
 
                             <div className="flex justify-between pt-2">
-                                <button type="button" onClick={() => { setParsed(null); setMatchedRows([]); }} className="px-4 py-2 text-sm text-gray-600 hover:underline">
+                                <button type="button" onClick={() => { setReports(null); setMatchedRows([]); }} className="px-4 py-2 text-sm text-gray-600 hover:underline">
                                     ← Re-paste data
                                 </button>
                                 <div className="flex gap-3">

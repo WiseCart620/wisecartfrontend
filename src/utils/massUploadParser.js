@@ -59,9 +59,12 @@ export const parseMassUploadText = (rawText) => {
     const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
     const items = [];
     const headerWords = ['SALES', 'ARTICLE', 'GTIN', 'DESCRIPTION', 'QTY', 'UNIT', 'COST', 'AMOUNT'];
+    let hitFooter = false;
 
     lines.forEach((line) => {
+        if (hitFooter) return;
         if (/^Site Name:/i.test(line) || /^Vendor Name:/i.test(line) || /^Accounting Period/i.test(line)) return;
+        if (/Total Item\(s\) Sold/i.test(line)) { hitFooter = true; return; }
 
         const upper = line.toUpperCase();
         const isHeaderLine = headerWords.filter(w => upper.includes(w)).length >= 4;
@@ -95,6 +98,20 @@ export const parseMassUploadText = (rawText) => {
     });
 
     return { siteName, vendorName, items, month, year };
+};
+
+
+export const parseMassUploadReports = (rawText) => {
+    if (!rawText || !rawText.trim()) return [];
+
+    const hasPeriodMarkers = /Accounting\s*Period/i.test(rawText);
+    let segments = hasPeriodMarkers
+        ? rawText.split(/(?=Accounting\s*Period)/i).filter(seg => /Site Name:/i.test(seg))
+        : [rawText];
+
+    if (!segments.length) segments = [rawText];
+
+    return segments.map(parseMassUploadText).filter(r => r.siteName || r.items.length);
 };
 
 // e.g. "2277 ABACUS - Taft" -> tries branchCode "2277" first, then name match
