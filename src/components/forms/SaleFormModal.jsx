@@ -21,7 +21,6 @@ const SaleFormModal = ({
   onRemoveItem,
   onItemChange,
   onLoadStock,
-  onLoadStock,
   getMaxAllowedQuantity,
   onBulkUploadComplete,
   companies,

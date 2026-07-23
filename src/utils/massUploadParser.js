@@ -169,15 +169,12 @@ export const matchBranch = (siteName, branches) => {
     const codeMatch = trimmed.match(/^(\S+)\s+(.*)$/);
     const leadingCode = codeMatch ? codeMatch[1] : null;
 
-    // Tier 1: branch code (e.g. "1206"), searched only within the given
-    // (already company-scoped, if a company filter is active) branch list.
     if (leadingCode) {
         const byCode = uniqueMatch(branches.filter(b => (b.branchCode || '').toLowerCase() === leadingCode.toLowerCase()));
         if (byCode) return byCode;
     }
 
-    // Tier 2: core name only, chain prefix stripped from both sides
-    // (e.g. "NBS-Ali Mall" and "ABCC - Ali Mall" both reduce to "ali mall").
+
     const siteCore = coreBranchName(trimmed);
     if (!siteCore) return null;
 
@@ -187,8 +184,7 @@ export const matchBranch = (siteName, branches) => {
     return null;
 };
 
-// Strips everything but digits, then strips leading zeros, so
-// "S200000294801", "200000294801", and "0200000294801" all compare equal.
+
 const normalizeCode = (v) => {
     const digitsOnly = (v || '').toString().replace(/\D/g, '');
     const stripped = digitsOnly.replace(/^0+/, '');
