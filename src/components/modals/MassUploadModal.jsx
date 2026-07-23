@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { X, Upload, CheckCircle2, AlertTriangle, Search, Layers, Building2 } from 'lucide-react';
+import { X, Upload, UploadCloud, CheckCircle2, AlertTriangle, Search, Layers, Building2, Store, CalendarDays, XCircle, FileWarning, ClipboardPaste } from 'lucide-react';
 import SearchableDropdown from '../common/SaleSearchableDropdown';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -164,9 +164,14 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
         <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-2 sm:p-6">
             <div className="bg-white rounded-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden shadow-2xl flex flex-col">
                 <div className="px-5 sm:px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-white">
-                    <div>
-                        <h2 className="text-lg font-bold text-gray-900">Mass Upload Sale Items</h2>
-                        <p className="text-xs text-gray-500 mt-0.5">Paste a consignment sales report to auto-fill branch, products, and quantities.</p>
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                            <UploadCloud size={18} className="text-blue-600" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-gray-900">Mass Upload Sale Items</h2>
+                            <p className="text-xs text-gray-500 mt-0.5">Paste a consignment sales report to auto-fill branch, products, and quantities.</p>
+                        </div>
                     </div>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition">
                         <X size={20} />
@@ -190,7 +195,9 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                             </div>
                         )}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Paste report text</label>
+                            <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-2">
+                                <ClipboardPaste size={14} /> Paste report text
+                            </label>
                             <textarea
                                 value={rawText}
                                 onChange={(e) => setRawText(e.target.value)}
@@ -219,6 +226,7 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
 
                 {reports && reports.length === 0 && (
                     <div className="p-8 text-center text-gray-500">
+                        <FileWarning size={32} className="mx-auto mb-2 text-gray-300" />
                         <p>No sale items could be parsed from this text.</p>
                         <button type="button" onClick={() => setReports(null)} className="mt-3 text-sm text-blue-600 hover:underline">← Back to paste</button>
                     </div>
@@ -270,15 +278,24 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                                             className={`w-full text-left px-3 py-2.5 border-b border-gray-100 transition ${isActive ? 'bg-blue-50 border-l-4 border-l-blue-600' : 'hover:bg-white border-l-4 border-l-transparent'
                                                 }`}
                                         >
-                                            <div className="text-sm font-medium text-gray-900 truncate">{r.siteName}</div>
+                                            <div className="flex items-center gap-1.5">
+                                                <Store size={13} className="text-gray-400 flex-shrink-0" />
+                                                <span className="text-sm font-medium text-gray-900 truncate">{r.siteName}</span>
+                                            </div>
                                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                                                 {!hasBranch && (
-                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">No branch match</span>
+                                                    <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">
+                                                        <AlertTriangle size={10} /> No branch match
+                                                    </span>
                                                 )}
                                                 {!rComplete && (
-                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">Incomplete</span>
+                                                    <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">
+                                                        <XCircle size={10} /> Incomplete
+                                                    </span>
                                                 )}
-                                                <span className={`text-[11px] font-medium ${rComplete ? 'text-green-700' : 'text-gray-500'}`}>{rMatched}/{rTotal} matched</span>
+                                                <span className={`flex items-center gap-1 text-[11px] font-medium ${rComplete ? 'text-green-700' : 'text-gray-500'}`}>
+                                                    {rComplete && <CheckCircle2 size={11} />} {rMatched}/{rTotal} matched
+                                                </span>
                                             </div>
                                         </button>
                                     );
@@ -348,7 +365,9 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                                     )}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
+                                    <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-2">
+                                        <CalendarDays size={14} /> Month
+                                    </label>
                                     <input
                                         type="number" min={1} max={12}
                                         value={active.month}
@@ -357,7 +376,9 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+                                    <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-2">
+                                        <CalendarDays size={14} /> Year
+                                    </label>
                                     <input
                                         type="number"
                                         value={active.year}
@@ -383,6 +404,7 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                                 <table className="w-full text-sm">
                                     <thead className="bg-gray-50 border-b border-gray-200">
                                         <tr>
+                                            <th className="px-3 py-2 w-8"></th>
                                             {['Article', 'GTIN', 'Description', 'Matched Product', 'Qty', 'Unit Cost'].map(h => (
                                                 <th key={h} className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">{h}</th>
                                             ))}
@@ -391,6 +413,11 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                                     <tbody className="divide-y divide-gray-200 bg-white">
                                         {active.matchedRows.map((row, i) => (
                                             <tr key={i} className={row.matched ? '' : 'bg-red-50'}>
+                                                <td className="px-3 py-2">
+                                                    {row.matched
+                                                        ? <CheckCircle2 size={15} className="text-green-600" />
+                                                        : <XCircle size={15} className="text-red-500" />}
+                                                </td>
                                                 <td className="px-3 py-2 text-gray-700">{row.articleCode}</td>
                                                 <td className="px-3 py-2 text-gray-700">{row.gtin}</td>
                                                 <td className="px-3 py-2 text-gray-700">{row.description}</td>

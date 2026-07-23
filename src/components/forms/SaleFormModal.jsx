@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, Trash2 } from 'lucide-react';
+import { X, Trash2, UploadCloud } from 'lucide-react';
 import SearchableDropdown from '../../components/common/SaleSearchableDropdown';
 import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
 import { makeStockKey, formatCurrency } from '../../utils/salesUtils';
@@ -134,7 +134,8 @@ const SaleFormModal = ({
               <div className="flex items-center justify-between mb-3">
                 <label className="block text-sm font-medium text-gray-700">Add Products *</label>
                 {modalMode === 'create' && (
-                  <button type="button" onClick={() => setShowMassUpload(true)} className="text-sm text-blue-600 hover:underline font-medium">
+                  <button type="button" onClick={() => setShowMassUpload(true)} className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline font-medium">
+                    <UploadCloud size={15} />
                     Mass Upload
                   </button>
                 )}
