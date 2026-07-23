@@ -110,12 +110,32 @@ export const parseMassUploadText = (rawText) => {
 
 const normalizeSiteName = (s) => (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
 
+const normalizeCoreText = (s) => s.trim().toLowerCase().replace(/\s+/g, ' ');
+
 const coreBranchName = (name) => {
     if (!name) return '';
     const withoutLeadingCode = name.trim().replace(/^\d+\s+/, '');
     const parts = withoutLeadingCode.split('-');
     const tail = parts.length > 1 ? parts[parts.length - 1] : withoutLeadingCode;
-    return tail.trim().toLowerCase().replace(/\s+/g, ' ');
+    return normalizeCoreText(tail);
+};
+
+const coreBranchNameVariants = (name) => {
+    if (!name) return [];
+    const withoutLeadingCode = normalizeCoreText(name.trim().replace(/^\d+\s+/, ''));
+    const variants = new Set();
+    if (withoutLeadingCode) variants.add(withoutLeadingCode);
+
+    const dashTail = coreBranchName(name);
+    if (dashTail) variants.add(dashTail);
+
+    const words = withoutLeadingCode.split(' ');
+    if (words.length > 1) {
+        const withoutFirstWord = normalizeCoreText(words.slice(1).join(' '));
+        if (withoutFirstWord) variants.add(withoutFirstWord);
+    }
+
+    return Array.from(variants);
 };
 export const parseMassUploadReports = (rawText) => {
     if (!rawText || !rawText.trim()) return [];
@@ -189,6 +209,17 @@ export const matchBranch = (siteName, branches) => {
         return branchCore.includes(siteCore) || siteCore.includes(branchCore);
     }));
     if (byCoreSubstring) return byCoreSubstring;
+
+    const siteVariants = coreBranchNameVariants(trimmed);
+    if (siteVariants.length) {
+        const byVariantSubstring = uniqueMatch(branches.filter(b => {
+            const branchVariants = coreBranchNameVariants(b.branchName);
+            return branchVariants.some(bv =>
+                siteVariants.some(sv => bv.includes(sv) || sv.includes(bv))
+            );
+        }));
+        if (byVariantSubstring) return byVariantSubstring;
+    }
 
     return null;
 };
