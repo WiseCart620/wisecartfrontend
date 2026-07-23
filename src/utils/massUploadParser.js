@@ -182,6 +182,28 @@ export const isReportComplete = (matchedRows) =>
 
 const uniqueMatch = (matches) => (matches.length === 1 ? matches[0] : null);
 
+
+const levenshtein = (a, b) => {
+    const m = a.length, n = b.length;
+    if (m === 0) return n;
+    if (n === 0) return m;
+    const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            dp[i][j] = a[i - 1] === b[j - 1]
+                ? dp[i - 1][j - 1]
+                : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+        }
+    }
+    return dp[m][n];
+};
+
+// A typo tolerance of up to 2 edited characters, scaled down for short names
+// so a 4-letter name doesn't accept a wildly different 2-edit "match".
+const typoThreshold = (len) => Math.min(2, Math.max(1, Math.floor(len / 6)));
+
 export const matchBranch = (siteName, branches) => {
     if (!siteName || !branches?.length) return null;
 
@@ -210,6 +232,10 @@ export const matchBranch = (siteName, branches) => {
     }));
     if (byCoreSubstring) return byCoreSubstring;
 
+    // Tier 4: same substring check, but using every name variant (handles
+    // chain prefixes with no dash, e.g. "NBS Victory Central Mall" ->
+    // variant "victory central mall" correctly matches
+    // "ABCC - Victory Central Mall Caloocan" -> variant "victory central mall caloocan").
     const siteVariants = coreBranchNameVariants(trimmed);
     if (siteVariants.length) {
         const byVariantSubstring = uniqueMatch(branches.filter(b => {
@@ -219,6 +245,18 @@ export const matchBranch = (siteName, branches) => {
             );
         }));
         if (byVariantSubstring) return byVariantSubstring;
+
+
+        const byFuzzy = uniqueMatch(branches.filter(b => {
+            const branchVariants = coreBranchNameVariants(b.branchName);
+            return branchVariants.some(bv =>
+                siteVariants.some(sv => {
+                    const threshold = typoThreshold(Math.min(bv.length, sv.length));
+                    return levenshtein(bv, sv) <= threshold;
+                })
+            );
+        }));
+        if (byFuzzy) return byFuzzy;
     }
 
     return null;
