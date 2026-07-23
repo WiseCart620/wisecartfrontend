@@ -169,6 +169,7 @@ export const matchBranch = (siteName, branches) => {
     const codeMatch = trimmed.match(/^(\S+)\s+(.*)$/);
     const leadingCode = codeMatch ? codeMatch[1] : null;
 
+
     if (leadingCode) {
         const byCode = uniqueMatch(branches.filter(b => (b.branchCode || '').toLowerCase() === leadingCode.toLowerCase()));
         if (byCode) return byCode;
@@ -180,6 +181,14 @@ export const matchBranch = (siteName, branches) => {
 
     const byCoreExact = uniqueMatch(branches.filter(b => coreBranchName(b.branchName) === siteCore));
     if (byCoreExact) return byCoreExact;
+
+
+    const byCoreSubstring = uniqueMatch(branches.filter(b => {
+        const branchCore = coreBranchName(b.branchName);
+        if (!branchCore) return false;
+        return branchCore.includes(siteCore) || siteCore.includes(branchCore);
+    }));
+    if (byCoreSubstring) return byCoreSubstring;
 
     return null;
 };
