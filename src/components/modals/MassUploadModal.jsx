@@ -12,7 +12,10 @@ import {
 } from '../../utils/massUploadParser';
 
 
-const getBranchCompanyId = (branch) => branch?.companyId ?? branch?.company?.id ?? null;
+const getBranchCompanyId = (branch) => {
+    const id = branch?.companyId ?? branch?.company?.id ?? null;
+    return id === null || id === undefined ? null : String(id);
+};
 
 const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfirm, onBulkUploadComplete }) => {
     const [rawText, setRawText] = useState('');
@@ -27,7 +30,15 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
     const companyOptions = (companies || []).map(c => ({ id: c.id, name: c.companyName }));
     const scopedBranches = useMemo(() => {
         if (!companyFilterId) return branches;
-        return branches.filter(b => String(getBranchCompanyId(b)) === String(companyFilterId));
+        const filtered = branches.filter(b => getBranchCompanyId(b) === String(companyFilterId));
+        if (filtered.length === 0 && branches.length > 0) {
+            // eslint-disable-next-line no-console
+            console.warn(
+                '[MassUpload] Company filter matched 0 branches — check that branch.company.id (or branch.companyId) actually corresponds to the selected company id.',
+                { companyFilterId, sampleBranch: branches[0] }
+            );
+        }
+        return filtered;
     }, [branches, companyFilterId]);
 
     const branchOptions = scopedBranches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
@@ -315,6 +326,15 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Branch {active.siteName && <span className="text-xs text-gray-400 font-normal">(detected: "{active.siteName}")</span>}
                                     </label>
+                                    {companyFilterId ? (
+                                        <p className="text-xs text-blue-600 mb-1.5">
+                                            Filtering by company: <strong>{companyOptions.find(c => String(c.id) === String(companyFilterId))?.name || 'Unknown'}</strong> — showing only its {branchOptions.length} branch{branchOptions.length === 1 ? '' : 'es'}.
+                                        </p>
+                                    ) : (
+                                        <p className="text-xs text-amber-600 mb-1.5">
+                                            No company filter is active — showing all {branchOptions.length} branches across every company.
+                                        </p>
+                                    )}
                                     <SearchableDropdown
                                         options={branchOptions}
                                         value={active.branchId}
