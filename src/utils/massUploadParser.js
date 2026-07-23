@@ -109,6 +109,14 @@ export const parseMassUploadText = (rawText) => {
 
 
 const normalizeSiteName = (s) => (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+const coreBranchName = (name) => {
+    if (!name) return '';
+    const withoutLeadingCode = name.trim().replace(/^\d+\s+/, '');
+    const parts = withoutLeadingCode.split('-');
+    const tail = parts.length > 1 ? parts[parts.length - 1] : withoutLeadingCode;
+    return tail.trim().toLowerCase().replace(/\s+/g, ' ');
+};
 export const parseMassUploadReports = (rawText) => {
     if (!rawText || !rawText.trim()) return [];
 
@@ -152,29 +160,31 @@ export const buildSaleItemsFromMatches = (matchedRows) =>
 export const isReportComplete = (matchedRows) =>
     matchedRows.length > 0 && matchedRows.every(r => !!r.matched);
 
+const uniqueMatch = (matches) => (matches.length === 1 ? matches[0] : null);
+
 export const matchBranch = (siteName, branches) => {
     if (!siteName || !branches?.length) return null;
 
     const trimmed = siteName.trim();
     const codeMatch = trimmed.match(/^(\S+)\s+(.*)$/);
     const leadingCode = codeMatch ? codeMatch[1] : null;
-    const restName = codeMatch ? codeMatch[2].trim().toLowerCase() : trimmed.toLowerCase();
 
+    // Tier 1: branch code (e.g. "1206"), searched only within the given
+    // (already company-scoped, if a company filter is active) branch list.
     if (leadingCode) {
-        const byCode = branches.find(b => (b.branchCode || '').toLowerCase() === leadingCode.toLowerCase());
+        const byCode = uniqueMatch(branches.filter(b => (b.branchCode || '').toLowerCase() === leadingCode.toLowerCase()));
         if (byCode) return byCode;
     }
 
-    const byName = branches.find(b => (b.branchName || '').toLowerCase() === restName);
-    if (byName) return byName;
+    // Tier 2: core name only, chain prefix stripped from both sides
+    // (e.g. "NBS-Ali Mall" and "ABCC - Ali Mall" both reduce to "ali mall").
+    const siteCore = coreBranchName(trimmed);
+    if (!siteCore) return null;
 
-    const byIncludes = branches.find(b => restName && (b.branchName || '').toLowerCase().includes(restName));
-    if (byIncludes) return byIncludes;
+    const byCoreExact = uniqueMatch(branches.filter(b => coreBranchName(b.branchName) === siteCore));
+    if (byCoreExact) return byCoreExact;
 
-    const bySiteIncludes = branches.find(b =>
-        b.branchName && trimmed.toLowerCase().includes(b.branchName.toLowerCase())
-    );
-    return bySiteIncludes || null;
+    return null;
 };
 
 // Strips everything but digits, then strips leading zeros, so
