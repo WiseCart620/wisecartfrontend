@@ -21,8 +21,10 @@ const SaleFormModal = ({
   onRemoveItem,
   onItemChange,
   onLoadStock,
+  onLoadStock,
   getMaxAllowedQuantity,
   onBulkUploadComplete,
+  companies,
 }) => {
   const [showEncodedByDropdown, setShowEncodedByDropdown] = useState(false);
   const [showMassUpload, setShowMassUpload] = useState(false);
@@ -313,6 +315,7 @@ const SaleFormModal = ({
       {showMassUpload && (
         <MassUploadModal
           branches={branches}
+          companies={companies}
           productOptions={productOptions}
           onClose={() => setShowMassUpload(false)}
           onConfirm={handleMassUploadConfirm}

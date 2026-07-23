@@ -315,6 +315,7 @@ const SalesManagement = () => {
             onLoadStock={loadProductStock}
             getMaxAllowedQuantity={getMaxAllowedQuantity}
             onBulkUploadComplete={() => fetchSales(currentPage - 1)}
+            companies={companies}
           />
         )}
 

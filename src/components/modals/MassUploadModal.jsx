@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { X, Upload, CheckCircle2, AlertTriangle, Search, Layers } from 'lucide-react';
+import { X, Upload, CheckCircle2, AlertTriangle, Search, Layers, Building2 } from 'lucide-react';
 import SearchableDropdown from '../common/SaleSearchableDropdown';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -11,7 +11,10 @@ import {
     isReportComplete,
 } from '../../utils/massUploadParser';
 
-const MassUploadModal = ({ branches, productOptions, onClose, onConfirm, onBulkUploadComplete }) => {
+
+const getBranchCompanyId = (branch) => branch?.companyId ?? branch?.company?.id ?? null;
+
+const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfirm, onBulkUploadComplete }) => {
     const [rawText, setRawText] = useState('');
     const [reports, setReports] = useState(null); // [{ siteName, month, year, matchedRows, branchId }]
     const [activeIndex, setActiveIndex] = useState(0);
@@ -19,14 +22,21 @@ const MassUploadModal = ({ branches, productOptions, onClose, onConfirm, onBulkU
     const [bulkRunning, setBulkRunning] = useState(false);
     const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
     const [bulkSummary, setBulkSummary] = useState(null);
+    const [companyFilterId, setCompanyFilterId] = useState('');
 
-    const branchOptions = branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
+    const companyOptions = (companies || []).map(c => ({ id: c.id, name: c.companyName }));
+    const scopedBranches = useMemo(() => {
+        if (!companyFilterId) return branches;
+        return branches.filter(b => String(getBranchCompanyId(b)) === String(companyFilterId));
+    }, [branches, companyFilterId]);
 
-    const handleParse = () => {
+    const branchOptions = scopedBranches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
+
+    const runMatching = (branchPool) => {
         const results = parseMassUploadReports(rawText);
         const withMatches = results.map((r) => {
             const matchedRows = r.items.map(item => ({ ...item, matched: matchProductToItem(item, productOptions) }));
-            const guessedBranch = matchBranch(r.siteName, branches);
+            const guessedBranch = matchBranch(r.siteName, branchPool);
             return {
                 ...r,
                 matchedRows,
@@ -38,6 +48,19 @@ const MassUploadModal = ({ branches, productOptions, onClose, onConfirm, onBulkU
         setReports(withMatches);
         setActiveIndex(0);
         setBulkSummary(null);
+    };
+
+    const handleParse = () => runMatching(scopedBranches);
+
+    const handleCompanyFilterChange = (val) => {
+        setCompanyFilterId(val);
+        if (reports) {
+            const nextPool = val ? branches.filter(b => String(getBranchCompanyId(b)) === String(val)) : branches;
+            setReports(prev => prev.map(r => {
+                const guessedBranch = matchBranch(r.siteName, nextPool);
+                return { ...r, branchId: guessedBranch ? guessedBranch.id : '' };
+            }));
+        }
     };
 
     const handleFileText = async (file) => {
@@ -142,6 +165,20 @@ const MassUploadModal = ({ branches, productOptions, onClose, onConfirm, onBulkU
 
                 {!reports && (
                     <div className="p-5 sm:p-6 space-y-4 overflow-y-auto">
+                        {companyOptions.length > 0 && (
+                            <div>
+                                <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-2">
+                                    <Building2 size={14} /> Company <span className="text-xs text-gray-400 font-normal">(optional — narrows branch matching)</span>
+                                </label>
+                                <SearchableDropdown
+                                    options={companyOptions}
+                                    value={companyFilterId}
+                                    onChange={handleCompanyFilterChange}
+                                    placeholder="All companies"
+                                    displayKey="name" valueKey="id"
+                                />
+                            </div>
+                        )}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Paste report text</label>
                             <textarea
@@ -193,6 +230,20 @@ const MassUploadModal = ({ branches, productOptions, onClose, onConfirm, onBulkU
                                 </div>
                                 <p className="text-xs text-gray-500 mt-2">{reports.length} branch{reports.length === 1 ? '' : 'es'} detected</p>
                             </div>
+                            {companyOptions.length > 0 && (
+                                <div className="px-3 py-2 border-b border-gray-200 bg-white">
+                                    <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
+                                        <Building2 size={12} /> Company
+                                    </label>
+                                    <SearchableDropdown
+                                        options={companyOptions}
+                                        value={companyFilterId}
+                                        onChange={handleCompanyFilterChange}
+                                        placeholder="All companies"
+                                        displayKey="name" valueKey="id"
+                                    />
+                                </div>
+                            )}
                             <div className="flex-1 overflow-y-auto">
                                 {filteredIndexes.map((idx) => {
                                     const r = reports[idx];
@@ -268,10 +319,14 @@ const MassUploadModal = ({ branches, productOptions, onClose, onConfirm, onBulkU
                                         options={branchOptions}
                                         value={active.branchId}
                                         onChange={(val) => updateActiveReport({ branchId: val })}
-                                        placeholder="Select Branch"
+                                        placeholder={companyFilterId ? 'Select Branch (filtered by company)' : 'Select Branch'}
                                         displayKey="name" valueKey="id" required
                                     />
-                                    {!active.branchId && <p className="text-xs text-red-500 mt-1">Could not auto-detect branch — please select manually.</p>}
+                                    {!active.branchId && (
+                                        <p className="text-xs text-red-500 mt-1">
+                                            Could not auto-detect branch — please select manually{companyFilterId ? ' (only this company\'s branches are shown)' : ''}.
+                                        </p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
