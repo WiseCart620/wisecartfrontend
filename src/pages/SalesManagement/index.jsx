@@ -316,6 +316,7 @@ const SalesManagement = () => {
             getMaxAllowedQuantity={getMaxAllowedQuantity}
             onBulkUploadComplete={() => fetchSales(currentPage - 1)}
             companies={companies}
+            defaultCompanyId={filterData.companyId}
           />
         )}
 

@@ -17,7 +17,7 @@ const getBranchCompanyId = (branch) => {
     return id === null || id === undefined ? null : String(id);
 };
 
-const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfirm, onBulkUploadComplete }) => {
+const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfirm, onBulkUploadComplete, defaultCompanyId }) => {
     const [rawText, setRawText] = useState('');
     const [reports, setReports] = useState(null); // [{ siteName, month, year, matchedRows, branchId }]
     const [activeIndex, setActiveIndex] = useState(0);
@@ -25,14 +25,13 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
     const [bulkRunning, setBulkRunning] = useState(false);
     const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
     const [bulkSummary, setBulkSummary] = useState(null);
-    const [companyFilterId, setCompanyFilterId] = useState('');
+    const [companyFilterId, setCompanyFilterId] = useState(defaultCompanyId ? String(defaultCompanyId) : '');
 
     const companyOptions = (companies || []).map(c => ({ id: c.id, name: c.companyName }));
     const scopedBranches = useMemo(() => {
         if (!companyFilterId) return branches;
         const filtered = branches.filter(b => getBranchCompanyId(b) === String(companyFilterId));
         if (filtered.length === 0 && branches.length > 0) {
-            // eslint-disable-next-line no-console
             console.warn(
                 '[MassUpload] Company filter matched 0 branches — check that branch.company.id (or branch.companyId) actually corresponds to the selected company id.',
                 { companyFilterId, sampleBranch: branches[0] }
