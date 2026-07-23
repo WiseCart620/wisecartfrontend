@@ -59,7 +59,15 @@ const SaleFormModal = ({
         <form onSubmit={onSubmit} className="p-4 sm:p-8">
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">Branch *</label>
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-medium text-gray-700">Branch *</label>
+                {modalMode === 'create' && (
+                  <button type="button" onClick={() => setShowMassUpload(true)} className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline font-medium">
+                    <UploadCloud size={15} />
+                    Mass Upload
+                  </button>
+                )}
+              </div>
               <SearchableDropdown
                 options={branchOptions}
                 value={formData.branchId}
@@ -131,15 +139,7 @@ const SaleFormModal = ({
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-medium text-gray-700">Add Products *</label>
-                {modalMode === 'create' && (
-                  <button type="button" onClick={() => setShowMassUpload(true)} className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline font-medium">
-                    <UploadCloud size={15} />
-                    Mass Upload
-                  </button>
-                )}
-              </div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">Add Products *</label>
               <div className="mb-6">
                 <VariationSearchableDropdown
                   options={Array.isArray(productOptions) ? productOptions : []}
