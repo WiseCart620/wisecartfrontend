@@ -200,9 +200,17 @@ const levenshtein = (a, b) => {
     return dp[m][n];
 };
 
-// A typo tolerance of up to 2 edited characters, scaled down for short names
-// so a 4-letter name doesn't accept a wildly different 2-edit "match".
+
 const typoThreshold = (len) => Math.min(2, Math.max(1, Math.floor(len / 6)));
+
+const tokenizeWords = (s) => ((s || '').toLowerCase().match(/[a-z0-9]+/g) || []);
+
+const siteTokensDroppingPrefix = (name) => {
+    const withoutCode = (name || '').trim().replace(/^\d+\s+/, '');
+    const tokens = tokenizeWords(withoutCode);
+    return new Set(tokens.length > 1 ? tokens.slice(1) : tokens);
+};
+const allTokens = (name) => new Set(tokenizeWords((name || '').trim().replace(/^\d+\s+/, '')));
 
 export const matchBranch = (siteName, branches) => {
     if (!siteName || !branches?.length) return null;
@@ -247,6 +255,12 @@ export const matchBranch = (siteName, branches) => {
         if (byVariantSubstring) return byVariantSubstring;
 
 
+        // Tier 5: typo-tolerant fuzzy match. Catches small misspellings in the
+        // source report (e.g. "San Lanzaro" vs a branch named "San Lazaro") by
+        // allowing a couple of edited characters, scaled to name length.
+        // Compares every site-name variant against every branch-name variant,
+        // and — as with every earlier tier — only accepts the result if
+        // exactly one branch ends up within the typo tolerance of any variant.
         const byFuzzy = uniqueMatch(branches.filter(b => {
             const branchVariants = coreBranchNameVariants(b.branchName);
             return branchVariants.some(bv =>
@@ -258,10 +272,20 @@ export const matchBranch = (siteName, branches) => {
         }));
         if (byFuzzy) return byFuzzy;
     }
+    const siteTokenSet = siteTokensDroppingPrefix(trimmed);
+    if (siteTokenSet.size > 0) {
+        const byTokenSubset = uniqueMatch(branches.filter(b => {
+            const branchTokenSet = allTokens(b.branchName);
+            for (const t of siteTokenSet) {
+                if (!branchTokenSet.has(t)) return false;
+            }
+            return true;
+        }));
+        if (byTokenSubset) return byTokenSubset;
+    }
 
     return null;
 };
-
 
 const normalizeCode = (v) => {
     const digitsOnly = (v || '').toString().replace(/\D/g, '');
