@@ -295,6 +295,7 @@ const normalizeCode = (v) => {
 
 
 const last9Digits = (v) => (v || '').toString().replace(/\D/g, '').slice(-9);
+const last7Digits = (v) => (v || '').toString().replace(/\D/g, '').slice(-7);
 
 export const matchProductToItem = (item, productOptions) => {
     if (!Array.isArray(productOptions) || !productOptions.length) return null;
@@ -337,6 +338,22 @@ export const matchProductToItem = (item, productOptions) => {
                     || (gtinLast9.length === 9 && valLast9 === gtinLast9);
             });
             if (match) return { option: match, matchedBy: `${field} (last-9-digit match)` };
+        }
+    }
+
+    const articleLast7 = last7Digits(item.articleCode);
+    const gtinLast7 = last7Digits(item.gtin);
+    if (articleLast7.length === 7 || gtinLast7.length === 7) {
+        for (const field of codeFields) {
+            const match = productOptions.find(opt => {
+                const val = opt[field];
+                if (!val) return false;
+                const valLast7 = last7Digits(val);
+                if (valLast7.length !== 7) return false;
+                return (articleLast7.length === 7 && valLast7 === articleLast7)
+                    || (gtinLast7.length === 7 && valLast7 === gtinLast7);
+            });
+            if (match) return { option: match, matchedBy: `${field} (last-7-digit match)` };
         }
     }
 
