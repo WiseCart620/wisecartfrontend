@@ -585,9 +585,13 @@ const InvoicingProfile = ({ onBack }) => {
     });
 
     if (sortOrder !== 'none') {
+        const getInvoiceNum = (invoiceNumber) => {
+            const match = String(invoiceNumber || '').match(/\d+/);
+            return match ? parseInt(match[0], 10) : 0;
+        };
         filtered.sort((a, b) => {
-            const numA = parseInt(String(a.invoiceNumber || '').replace(/\D/g, ''), 10) || 0;
-            const numB = parseInt(String(b.invoiceNumber || '').replace(/\D/g, ''), 10) || 0;
+            const numA = getInvoiceNum(a.invoiceNumber);
+            const numB = getInvoiceNum(b.invoiceNumber);
             return sortOrder === 'asc' ? numA - numB : numB - numA;
         });
     }
