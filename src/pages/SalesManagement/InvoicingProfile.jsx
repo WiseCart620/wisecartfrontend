@@ -518,7 +518,7 @@ const InvoicingProfile = ({ onBack }) => {
     const [receiptProfile, setReceiptProfile] = useState(null);
     const [expandedRows, setExpandedRows] = useState({});
     const [cosData, setCosData] = useState({});
-    const [sortOrder, setSortOrder] = useState('none');
+    const [sortOrder, setSortOrder] = useState('asc');
 
     const saveDate = async (profileId) => {
         if (!editingDateValue) {
@@ -706,9 +706,9 @@ const InvoicingProfile = ({ onBack }) => {
                     onChange={(e) => setSortOrder(e.target.value)}
                     className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                    <option value="none">Sort: Default</option>
                     <option value="asc">Invoice # ↑ Ascending</option>
                     <option value="desc">Invoice # ↓ Descending</option>
+                    <option value="none">Sort: Default (unsorted)</option>
                 </select>
             </div>
 
