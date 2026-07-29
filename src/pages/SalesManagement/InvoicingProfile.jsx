@@ -518,6 +518,7 @@ const InvoicingProfile = ({ onBack }) => {
     const [receiptProfile, setReceiptProfile] = useState(null);
     const [expandedRows, setExpandedRows] = useState({});
     const [cosData, setCosData] = useState({});
+    const [sortOrder, setSortOrder] = useState('none');
 
     const saveDate = async (profileId) => {
         if (!editingDateValue) {
@@ -575,12 +576,21 @@ const InvoicingProfile = ({ onBack }) => {
         const matchSearch =
             !search ||
             p.soldTo?.toLowerCase().includes(search.toLowerCase()) ||
-            p.companyName?.toLowerCase().includes(search.toLowerCase());
+            p.companyName?.toLowerCase().includes(search.toLowerCase()) ||
+            p.invoiceNumber?.toLowerCase().includes(search.toLowerCase());
         const bal = Number(p.openBalance);
         if (statusFilter === 'PAID' && bal > 0) return false;
         if (statusFilter === 'UNPAID' && bal <= 0) return false;
         return matchSearch;
     });
+
+    if (sortOrder !== 'none') {
+        filtered.sort((a, b) => {
+            const numA = parseInt(String(a.invoiceNumber || '').replace(/\D/g, ''), 10) || 0;
+            const numB = parseInt(String(b.invoiceNumber || '').replace(/\D/g, ''), 10) || 0;
+            return sortOrder === 'asc' ? numA - numB : numB - numA;
+        });
+    }
 
     const parseTermsDays = (terms) => {
         if (!terms) return null;
@@ -691,6 +701,15 @@ const InvoicingProfile = ({ onBack }) => {
                     <option value="UNPAID">With balance</option>
                     <option value="PAID">Fully paid</option>
                 </select>
+                <select
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                    <option value="none">Sort: Default</option>
+                    <option value="asc">Invoice # ↑ Ascending</option>
+                    <option value="desc">Invoice # ↓ Descending</option>
+                </select>
             </div>
 
             <div className="bg-white rounded-xl border border-gray-200" style={{ overflow: 'visible' }}>
@@ -699,7 +718,7 @@ const InvoicingProfile = ({ onBack }) => {
                         <thead className="bg-gray-50 border-b border-gray-200" style={{ position: 'relative', zIndex: 1 }}>
                             <tr>
                                 {[
-                                    { label: 'Invoice #', align: 'left' },
+                                    { label: 'Invoice #', align: 'left', sortable: true },
                                     { label: 'Invoice Date', align: 'left' },
                                     { label: 'Period', align: 'left' },
                                     { label: 'Customer', align: 'left' },
@@ -716,13 +735,16 @@ const InvoicingProfile = ({ onBack }) => {
                                 ].map(({ label, align }) => (
                                     <th
                                         key={label}
-                                        className={`px-4 py-3 text-[11px] font-medium text-gray-500 uppercase tracking-wide text-${align}`}
+                                        onClick={label === 'Invoice #' ? () => setSortOrder(prev => prev === 'asc' ? 'desc' : prev === 'desc' ? 'none' : 'asc') : undefined}
+                                        className={`px-4 py-3 text-[11px] font-medium text-gray-500 uppercase tracking-wide text-${align} ${label === 'Invoice #' ? 'cursor-pointer select-none hover:text-gray-700' : ''}`}
                                     >
                                         {label === 'vatableSalesHeader' ? (
                                             <span className="flex flex-col items-end leading-tight">
                                                 <span>Vatable Sales /</span>
                                                 <span>Gross Sales (PT)</span>
                                             </span>
+                                        ) : label === 'Invoice #' ? (
+                                            <>{label} {sortOrder === 'asc' ? '↑' : sortOrder === 'desc' ? '↓' : ''}</>
                                         ) : label}
                                     </th>
                                 ))}
