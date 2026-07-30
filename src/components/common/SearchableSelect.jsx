@@ -5,9 +5,17 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled }) =
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredOptions = options.filter(option =>
-    option.label.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredOptions = options.filter(option => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      option.label?.toLowerCase().includes(searchLower) ||
+      option.name?.toLowerCase().includes(searchLower) ||
+      option.fullName?.toLowerCase().includes(searchLower) ||
+      option.subLabel?.toLowerCase().includes(searchLower) ||
+      option.upc?.toLowerCase().includes(searchLower) ||
+      option.sku?.toLowerCase().includes(searchLower)
+    );
+  });
 
   const selectedOption = options.find(opt => opt.value === value);
 
@@ -20,7 +28,11 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled }) =
         className={`w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex items-center justify-between ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-gray-400'
           }`}
       >
-        <span className="truncate">{selectedOption?.label || placeholder}</span>
+        <span className="truncate">
+          {selectedOption
+            ? `${selectedOption.upc || 'N/A'} - ${selectedOption.fullName || selectedOption.label} - ${selectedOption.sku || 'N/A'}`
+            : placeholder}
+        </span>
         <Search size={16} className="text-gray-400 ml-2 flex-shrink-0" />
       </button>
 
@@ -38,7 +50,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled }) =
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search..."
+                  placeholder="Search by name, UPC, SKU, or variation..."
                   className="w-full pl-9 pr-8 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                   autoFocus
                 />
@@ -65,7 +77,14 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled }) =
                     className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${value === option.value ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
                       }`}
                   >
-                    {option.label}
+                    <div className="flex flex-col">
+                      <div className="font-medium">
+                        {option.upc || 'N/A'} - {option.name || option.label} - {option.sku || 'N/A'}
+                      </div>
+                      {option.subLabel && option.subLabel !== 'No variations' && (
+                        <div className="text-xs text-gray-600 mt-0.5">Variation: {option.subLabel}</div>
+                      )}
+                    </div>
                   </button>
                 ))
               ) : (

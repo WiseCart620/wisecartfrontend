@@ -10,7 +10,7 @@ const SearchableDropdown = ({
   valueKey,
   required = false,
   disabled = false,
-  onProductUpdate // Add this optional prop
+  onProductUpdate
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
