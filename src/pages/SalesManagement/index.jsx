@@ -148,7 +148,16 @@ const SalesManagement = () => {
         const parsed = parseInt(numericPart, 10);
         return Number.isNaN(parsed) ? null : parsed;
       };
-      const numericProductIds = [...new Set(invoiceProductIds.map(toNumericProductId).filter(id => id !== null))];
+      const numericProductIds = [...new Set(
+        invoiceProductIds
+          .map(id => {
+            const opt = allOpts.find(o => o.id === id);
+            if (opt?.parentProductId != null) return Number(opt.parentProductId);
+            return toNumericProductId(id);
+          })
+          .filter(id => id !== null && !Number.isNaN(id))
+      )];
+      console.log('Selected product ids:', invoiceProductIds, '→ resolved parent ids:', numericProductIds);
       const payload = { ...filterData, branchIds: invoiceBranchIds, productIds: numericProductIds };
       const response = await api.post('/sales/invoice/generate', payload);
       toast.dismiss('invoice-loading');
