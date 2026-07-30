@@ -45,6 +45,8 @@ const SalesManagement = () => {
   const [showInvoicingProfile, setShowInvoicingProfile] = useState(false);
   const [showSalesReport, setShowSalesReport] = useState(false);
   const [invoiceReport, setInvoiceReport] = useState(null);
+  const [invoiceBranchIds, setInvoiceBranchIds] = useState([]);
+  const [invoiceProductIds, setInvoiceProductIds] = useState([]);
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
   const [invoiceSubmitted, setInvoiceSubmitted] = useState(false);
@@ -139,15 +141,16 @@ const SalesManagement = () => {
     if (!filterData.companyId) { toast.error('Please select a company first'); return; }
     toast.loading('Generating Invoice...', { id: 'invoice-loading' });
     try {
-      const response = await api.post('/sales/invoice/generate', filterData);
+      const payload = { ...filterData, branchIds: invoiceBranchIds, productIds: invoiceProductIds };
+      const response = await api.post('/sales/invoice/generate', payload);
       toast.dismiss('invoice-loading');
       if (response.success || response.data) {
         const invoiceData = response.data || response;
         if (!invoiceData.products?.length) { toast.error('No sales data found for invoice generation!'); return; }
         invoiceData.adjustments = invoiceData.adjustments || [];
         const company = companies.find(c => c.id === filterData.companyId);
-        if (filterData.branchId) {
-          const branch = branches.find(b => b.id === filterData.branchId);
+        if (invoiceBranchIds.length === 1) {
+          const branch = branches.find(b => b.id === invoiceBranchIds[0]);
           if (branch) {
             invoiceData.soldTo = branch.branchName;
             invoiceData.registeredName = company?.companyName || branch.branchName;
@@ -188,7 +191,7 @@ const SalesManagement = () => {
     }
     const payload = {
       companyId: filterData.companyId || null,
-      branchId: filterData.branchId || null,
+      branchId: invoiceBranchIds.length === 1 ? invoiceBranchIds[0] : null,
       startMonth: filterData.startMonth || null,
       endMonth: filterData.endMonth || null,
       startYear: filterData.startYear || null,
@@ -225,6 +228,8 @@ const SalesManagement = () => {
       if (res.success) {
         toast.success('Invoice saved to Sales Journal!');
         setInvoiceReport(null);
+        setInvoiceBranchIds([]);
+        setInvoiceProductIds([]);
         setShowInvoicingProfile(true);
       } else {
         toast.error(res.error || 'Failed to save to Sales Journal');
@@ -335,6 +340,11 @@ const SalesManagement = () => {
             setFilterData={setFilterData}
             companies={companies}
             branches={branches}
+            allProductOptions={allOpts}
+            selectedBranchIds={invoiceBranchIds}
+            setSelectedBranchIds={setInvoiceBranchIds}
+            selectedProductIds={invoiceProductIds}
+            setSelectedProductIds={setInvoiceProductIds}
             invoiceNumber={invoiceNumber}
             setInvoiceNumber={setInvoiceNumber}
             invoiceDate={invoiceDate}

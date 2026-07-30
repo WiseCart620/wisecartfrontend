@@ -1,21 +1,46 @@
-import React from 'react';
-import { X } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Search } from 'lucide-react';
 import SearchableDropdown from '../../components/common/SaleSearchableDropdown';
 import { monthsFull } from '../../constants/salesConstants';
 
 const InvoiceFilterModal = ({
   filterData, setFilterData,
   companies, branches,
+  allProductOptions = [],
+  selectedBranchIds, setSelectedBranchIds,
+  selectedProductIds, setSelectedProductIds,
   invoiceNumber, setInvoiceNumber,
   invoiceDate, setInvoiceDate,
   taxType, setTaxType,
   invoiceSubmitted,
   onClose, onSubmit,
 }) => {
+  const [branchSearch, setBranchSearch] = useState('');
+  const [productSearch, setProductSearch] = useState('');
+
   const companyOptions = companies.map(c => ({ id: c.id, name: c.companyName || c.name }));
-  const filteredBranchOptions = filterData.companyId
-    ? branches.filter(b => b.company?.id === filterData.companyId).map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }))
-    : branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
+
+  const companyBranches = filterData.companyId
+    ? branches.filter(b => b.company?.id === filterData.companyId)
+    : branches;
+
+  const filteredBranches = companyBranches.filter(b =>
+    !branchSearch || `${b.branchName} ${b.branchCode}`.toLowerCase().includes(branchSearch.toLowerCase())
+  );
+
+  const filteredProducts = allProductOptions.filter(p =>
+    !productSearch || (p.name || '').toLowerCase().includes(productSearch.toLowerCase())
+  );
+
+  const toggleBranch = (id) => {
+    setSelectedBranchIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+  const toggleProduct = (id) => {
+    setSelectedProductIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const allBranchesSelected = filteredBranches.length > 0 && filteredBranches.every(b => selectedBranchIds.includes(b.id));
+  const allProductsSelected = filteredProducts.length > 0 && filteredProducts.every(p => selectedProductIds.includes(p.id));
 
   return (
     <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-2 sm:p-6">
@@ -32,20 +57,127 @@ const InvoiceFilterModal = ({
             <label className="block text-sm font-medium text-gray-700 mb-3">Company *</label>
             <SearchableDropdown
               options={companyOptions} value={filterData.companyId}
-              onChange={(value) => setFilterData(prev => ({ ...prev, companyId: value, branchId: '' }))}
+              onChange={(value) => {
+                setFilterData(prev => ({ ...prev, companyId: value, branchId: '' }));
+                setSelectedBranchIds([]);
+              }}
               placeholder="Select Company" displayKey="name" valueKey="id" required
             />
           </div>
 
+          {/* Branch checkboxes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">Branch (Optional)</label>
-            <SearchableDropdown
-              options={filteredBranchOptions} value={filterData.branchId}
-              onChange={(value) => setFilterData(prev => ({ ...prev, branchId: value }))}
-              placeholder="All Branches" displayKey="name" valueKey="id"
-            />
-            {filterData.companyId && filteredBranchOptions.length === 0 && (
-              <p className="text-xs text-orange-600 mt-1">No branches for selected company</p>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Branches (leave unchecked for all)
+              </label>
+              {filteredBranches.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (allBranchesSelected) {
+                      setSelectedBranchIds(prev => prev.filter(id => !filteredBranches.some(b => b.id === id)));
+                    } else {
+                      setSelectedBranchIds(prev => [...new Set([...prev, ...filteredBranches.map(b => b.id)])]);
+                    }
+                  }}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  {allBranchesSelected ? 'Clear all' : 'Select all'}
+                </button>
+              )}
+            </div>
+
+            {companyBranches.length > 4 && (
+              <div className="relative mb-2">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search branches..."
+                  value={branchSearch}
+                  onChange={(e) => setBranchSearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            )}
+
+            <div className="border border-gray-200 rounded-lg max-h-40 overflow-y-auto divide-y divide-gray-100">
+              {filteredBranches.length === 0 ? (
+                <div className="px-3 py-4 text-xs text-gray-400 italic text-center">
+                  {filterData.companyId ? 'No branches for selected company' : 'Select a company to see branches'}
+                </div>
+              ) : (
+                filteredBranches.map(b => (
+                  <label key={b.id} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedBranchIds.includes(b.id)}
+                      onChange={() => toggleBranch(b.id)}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-gray-700">{b.branchName} <span className="text-gray-400 text-xs">({b.branchCode})</span></span>
+                  </label>
+                ))
+              )}
+            </div>
+            {selectedBranchIds.length > 0 && (
+              <p className="text-xs text-gray-500 mt-1">{selectedBranchIds.length} branch{selectedBranchIds.length > 1 ? 'es' : ''} selected</p>
+            )}
+          </div>
+
+          {/* Product checkboxes */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Products (leave unchecked for all)
+              </label>
+              {filteredProducts.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (allProductsSelected) {
+                      setSelectedProductIds(prev => prev.filter(id => !filteredProducts.some(p => p.id === id)));
+                    } else {
+                      setSelectedProductIds(prev => [...new Set([...prev, ...filteredProducts.map(p => p.id)])]);
+                    }
+                  }}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  {allProductsSelected ? 'Clear all' : 'Select all'}
+                </button>
+              )}
+            </div>
+
+            <div className="relative mb-2">
+              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={productSearch}
+                onChange={(e) => setProductSearch(e.target.value)}
+                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <div className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto divide-y divide-gray-100">
+              {filteredProducts.length === 0 ? (
+                <div className="px-3 py-4 text-xs text-gray-400 italic text-center">No products found</div>
+              ) : (
+                filteredProducts.map(p => (
+                  <label key={p.id} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedProductIds.includes(p.id)}
+                      onChange={() => toggleProduct(p.id)}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-gray-700">{p.name}</span>
+                  </label>
+                ))
+              )}
+            </div>
+            {selectedProductIds.length > 0 && (
+              <p className="text-xs text-gray-500 mt-1">{selectedProductIds.length} product{selectedProductIds.length > 1 ? 's' : ''} selected</p>
             )}
           </div>
 
