@@ -28,9 +28,16 @@ const InvoiceFilterModal = ({
     !branchSearch || `${b.branchName} ${b.branchCode}`.toLowerCase().includes(branchSearch.toLowerCase())
   );
 
-  const filteredProducts = allProductOptions.filter(p =>
-    !productSearch || (p.name || '').toLowerCase().includes(productSearch.toLowerCase())
-  );
+  const filteredProducts = allProductOptions.filter(p => {
+    if (!productSearch) return true;
+    const searchLower = productSearch.toLowerCase();
+    return (
+      (p.name || '').toLowerCase().includes(searchLower) ||
+      (p.subLabel || '').toLowerCase().includes(searchLower) ||
+      (p.upc || '').toLowerCase().includes(searchLower) ||
+      (p.sku || '').toLowerCase().includes(searchLower)
+    );
+  });
 
   const toggleBranch = (id) => {
     setSelectedBranchIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -187,7 +194,15 @@ const InvoiceFilterModal = ({
                         onChange={() => toggleProduct(p.id)}
                         className="w-4 h-4"
                       />
-                      <span className="text-gray-700">{p.name}</span>
+                      <div className="flex flex-col">
+                        <span className="text-gray-700">{p.name}</span>
+                        {p.subLabel && p.subLabel !== 'No variations' && (
+                          <span className="text-xs text-gray-500">Variation: {p.subLabel}</span>
+                        )}
+                        {p.upc && (
+                          <span className="text-xs text-gray-400">UPC: {p.upc}</span>
+                        )}
+                      </div>
                     </label>
                   );
                 })
