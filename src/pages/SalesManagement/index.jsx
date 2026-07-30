@@ -141,7 +141,15 @@ const SalesManagement = () => {
     if (!filterData.companyId) { toast.error('Please select a company first'); return; }
     toast.loading('Generating Invoice...', { id: 'invoice-loading' });
     try {
-      const payload = { ...filterData, branchIds: invoiceBranchIds, productIds: invoiceProductIds };
+      const toNumericProductId = (rawId) => {
+        if (typeof rawId === 'number') return rawId;
+        const str = String(rawId);
+        const numericPart = str.includes('_') ? str.split('_')[0] : str;
+        const parsed = parseInt(numericPart, 10);
+        return Number.isNaN(parsed) ? null : parsed;
+      };
+      const numericProductIds = [...new Set(invoiceProductIds.map(toNumericProductId).filter(id => id !== null))];
+      const payload = { ...filterData, branchIds: invoiceBranchIds, productIds: numericProductIds };
       const response = await api.post('/sales/invoice/generate', payload);
       toast.dismiss('invoice-loading');
       if (response.success || response.data) {

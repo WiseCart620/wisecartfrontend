@@ -47,28 +47,17 @@ const InvoiceFilterModal = ({
     return Number.isNaN(parsed) ? null : parsed;
   };
 
-  const groupedProducts = filteredProducts.reduce((acc, p) => {
-    const pid = toNumericProductId(p.id);
-    if (pid === null) return acc;
-    if (!acc[pid]) acc[pid] = { pid, name: p.name, variations: [] };
-    if (p.subLabel && p.subLabel !== 'No variations') {
-      acc[pid].variations.push({ subLabel: p.subLabel, upc: p.upc });
-    }
-    return acc;
-  }, {});
-  const groupedProductList = Object.values(groupedProducts);
-
   const toggleBranch = (id) => {
     setSelectedBranchIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  const toggleProduct = (pid) => {
-    if (pid === null || pid === undefined) return;
-    setSelectedProductIds(prev => prev.includes(pid) ? prev.filter(x => x !== pid) : [...prev, pid]);
+  const toggleProduct = (id) => {
+    if (id === null || id === undefined) return;
+    setSelectedProductIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
   const allBranchesSelected = filteredBranches.length > 0 && filteredBranches.every(b => selectedBranchIds.includes(b.id));
-  const allProductsSelected = groupedProductList.length > 0 && groupedProductList.every(g => selectedProductIds.includes(g.pid));
+  const allProductsSelected = filteredProducts.length > 0 && filteredProducts.every(p => selectedProductIds.includes(p.id));
 
   return (
     <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-2 sm:p-6">
@@ -163,11 +152,11 @@ const InvoiceFilterModal = ({
                 <button
                   type="button"
                   onClick={() => {
-                    const pids = groupedProductList.map(g => g.pid);
+                    const ids = filteredProducts.map(p => p.id);
                     if (allProductsSelected) {
-                      setSelectedProductIds(prev => prev.filter(id => !pids.includes(id)));
+                      setSelectedProductIds(prev => prev.filter(id => !ids.includes(id)));
                     } else {
-                      setSelectedProductIds(prev => [...new Set([...prev, ...pids])]);
+                      setSelectedProductIds(prev => [...new Set([...prev, ...ids])]);
                     }
                   }}
                   className="text-xs text-blue-600 hover:text-blue-800 font-medium"
@@ -188,23 +177,24 @@ const InvoiceFilterModal = ({
               />
             </div>
             <div className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto divide-y divide-gray-100">
-              {groupedProductList.length === 0 ? (
+              {filteredProducts.length === 0 ? (
                 <div className="px-3 py-4 text-xs text-gray-400 italic text-center">No products found</div>
               ) : (
-                groupedProductList.map(g => (
-                  <label key={g.pid} className="flex items-start gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer">
+                filteredProducts.map(p => (
+                  <label key={p.id} className="flex items-start gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={selectedProductIds.includes(g.pid)}
-                      onChange={() => toggleProduct(g.pid)}
+                      checked={selectedProductIds.includes(p.id)}
+                      onChange={() => toggleProduct(p.id)}
                       className="w-4 h-4 mt-0.5 flex-shrink-0"
                     />
                     <div className="flex flex-col">
-                      <span className="text-gray-700">{g.name}</span>
-                      {g.variations.length > 0 && (
-                        <span className="text-xs text-gray-500">
-                          Variations: {g.variations.map(v => v.subLabel).join(', ')}
-                        </span>
+                      <span className="text-gray-700">{p.name}</span>
+                      {p.subLabel && p.subLabel !== 'No variations' && (
+                        <span className="text-xs text-gray-500">Variation: {p.subLabel}</span>
+                      )}
+                      {p.upc && (
+                        <span className="text-xs text-gray-400">UPC: {p.upc}</span>
                       )}
                     </div>
                   </label>
