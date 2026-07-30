@@ -340,8 +340,17 @@ const DetailModal = ({ profile, onClose, onAddPayment, onDeletePayment }) => {
             <div className="bg-white rounded-2xl w-full max-w-lg max-h-[88vh] overflow-y-auto shadow-2xl">
                 <div className="p-5 border-b border-gray-100 flex justify-between items-start">
                     <div>
-                        <div className="font-semibold text-gray-900">{profile.soldTo}</div>
-                        <div className="text-xs text-gray-500 mt-0.5">Invoice dated {fmtDate(profile.createdAt)}</div>
+                        <div className="flex items-center gap-2">
+                            <div className="font-semibold text-gray-900">{profile.soldTo}</div>
+                            {profile.invoiceNumber && (
+                                <span className="font-mono text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                                    {profile.invoiceNumber}
+                                </span>
+                            )}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-0.5">
+                            Invoice dated {fmtDate(profile.invoiceDate || profile.createdAt)}
+                        </div>
                     </div>
                     <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 rounded-lg">
                         <X size={18} />
