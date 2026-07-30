@@ -384,7 +384,7 @@ const PaymentModal = ({ profile, onClose, onSaved }) => {
         : 0;
     const ewt = applyEwt ? (ewtOverride !== '' ? Number(ewtOverride) : autoEwt) : 0;
     const totalCharges = charges.reduce((s, c) => s + (Number(c.amount) || 0), 0);
-    const netAmount = Math.max(0, Number(amount || 0) - ewt - totalCharges);
+    const netAmount = Math.max(0, Math.round((Number(amount || 0) - ewt - totalCharges) * 100) / 100);
 
     const addCharge = () => setCharges(prev => [...prev, { label: '', amount: '' }]);
     const updateCharge = (idx, field, value) =>
