@@ -245,6 +245,7 @@ const PaymentEntry = ({ p, idx, onDelete }) => {
                         {hasEwt && (
                             <div className="text-[10px] text-gray-400">
                                 ₱{fmt(p.grossAmount)} − EWT ₱{fmt(p.ewtAmount)}
+                                {(p.charges || []).map(c => ` − ${c.label} ₱${fmt(c.amount)}`).join('')}
                             </div>
                         )}
                         <div className="text-xs text-gray-500 mt-0.5">
@@ -367,6 +368,7 @@ const PaymentModal = ({ profile, onClose, onSaved }) => {
     const [amount, setAmount] = useState('');
     const [applyEwt, setApplyEwt] = useState(true);
     const [ewtOverride, setEwtOverride] = useState('');
+    const [charges, setCharges] = useState([]); // [{ label, amount }]
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [ref, setRef] = useState('');
     const [proofFile, setProofFile] = useState(null);
@@ -376,11 +378,18 @@ const PaymentModal = ({ profile, onClose, onSaved }) => {
     const totalPaid = (profile.payments || []).reduce((s, p) => s + Number(p.amount), 0);
     const balance = Math.max(0, Number(profile.totalAmountDue) - totalPaid);
 
+    // EWT = 1% of the VAT-exclusive base of the amount typed
     const autoEwt = amount
         ? Math.round((Number(amount) / 1.12) * 0.01 * 100) / 100
         : 0;
     const ewt = applyEwt ? (ewtOverride !== '' ? Number(ewtOverride) : autoEwt) : 0;
-    const netAmount = Math.max(0, Number(amount || 0) - ewt);
+    const totalCharges = charges.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+    const netAmount = Math.max(0, Number(amount || 0) - ewt - totalCharges);
+
+    const addCharge = () => setCharges(prev => [...prev, { label: '', amount: '' }]);
+    const updateCharge = (idx, field, value) =>
+        setCharges(prev => prev.map((c, i) => (i === idx ? { ...c, [field]: value } : c)));
+    const removeCharge = (idx) => setCharges(prev => prev.filter((_, i) => i !== idx));
 
     const handleSave = async () => {
         if (!amount || Number(amount) <= 0) {
@@ -408,10 +417,15 @@ const PaymentModal = ({ profile, onClose, onSaved }) => {
 
         setSaving(true);
         try {
+            const validCharges = charges.filter(c => c.label && Number(c.amount) > 0);
+
             const formData = new FormData();
             formData.append('amount', netAmount);
             formData.append('grossAmount', amount);
             formData.append('ewtAmount', ewt);
+            if (validCharges.length > 0) {
+                formData.append('charges', JSON.stringify(validCharges.map(c => ({ label: c.label, amount: Number(c.amount) }))));
+            }
             formData.append('paymentDate', date);
             if (ref) formData.append('referenceNumber', ref);
             if (proofFile) formData.append('proofFile', proofFile);
@@ -485,10 +499,56 @@ const PaymentModal = ({ profile, onClose, onSaved }) => {
                                             className="w-24 text-right border border-gray-200 rounded px-1.5 py-0.5 text-xs"
                                         />
                                     </div>
-                                    <div className="flex items-center justify-between text-xs font-semibold">
-                                        <span className="text-gray-600">Net amount recorded</span>
-                                        <span className="text-blue-700">₱{fmt(netAmount)}</span>
-                                    </div>
+                                </div>
+                            )}
+
+                            <div className="mt-3">
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="text-xs text-gray-500 font-medium">Other less charges</label>
+                                    <button
+                                        type="button"
+                                        onClick={addCharge}
+                                        className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                                    >
+                                        + Add charge
+                                    </button>
+                                </div>
+                                {charges.length === 0 && (
+                                    <div className="text-xs text-gray-300 italic">e.g. delivery charge, bank fee</div>
+                                )}
+                                <div className="space-y-1.5">
+                                    {charges.map((c, idx) => (
+                                        <div key={idx} className="flex items-center gap-1.5">
+                                            <input
+                                                type="text"
+                                                placeholder="Less: Delivery charge"
+                                                value={c.label}
+                                                onChange={(e) => updateCharge(idx, 'label', e.target.value)}
+                                                className="flex-1 px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                            />
+                                            <input
+                                                type="number"
+                                                placeholder="0.00"
+                                                value={c.amount}
+                                                onChange={(e) => updateCharge(idx, 'amount', e.target.value)}
+                                                className="w-24 px-2 py-1.5 border border-gray-200 rounded text-xs text-right focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeCharge(idx)}
+                                                className="w-6 h-6 flex items-center justify-center text-red-400 hover:text-red-600"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {(applyEwt || charges.length > 0) && Number(amount) > 0 && (
+                                <div className="mt-2 bg-blue-50 rounded-lg p-2.5 flex items-center justify-between text-xs font-semibold">
+                                    <span className="text-gray-600">Net amount recorded</span>
+                                    <span className="text-blue-700">₱{fmt(netAmount)}</span>
                                 </div>
                             )}
                         </div>
