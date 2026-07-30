@@ -35,12 +35,26 @@ const InvoiceFilterModal = ({
   const toggleBranch = (id) => {
     setSelectedBranchIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
-  const toggleProduct = (id) => {
-    setSelectedProductIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
+  const toNumericProductId = (rawId) => {
+    if (typeof rawId === 'number') return rawId;
+    const str = String(rawId);
+    const numericPart = str.includes('_') ? str.split('_')[0] : str;
+    const parsed = parseInt(numericPart, 10);
+    return Number.isNaN(parsed) ? null : parsed;
+  };
+
+  const toggleProduct = (rawId) => {
+    const pid = toNumericProductId(rawId);
+    if (pid === null) return;
+    setSelectedProductIds(prev => prev.includes(pid) ? prev.filter(x => x !== pid) : [...prev, pid]);
   };
 
   const allBranchesSelected = filteredBranches.length > 0 && filteredBranches.every(b => selectedBranchIds.includes(b.id));
-  const allProductsSelected = filteredProducts.length > 0 && filteredProducts.every(p => selectedProductIds.includes(p.id));
+  const allProductsSelected = filteredProducts.length > 0 && filteredProducts.every(p => {
+    const pid = toNumericProductId(p.id);
+    return pid !== null && selectedProductIds.includes(pid);
+  });
 
   return (
     <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-2 sm:p-6">
@@ -135,10 +149,11 @@ const InvoiceFilterModal = ({
                 <button
                   type="button"
                   onClick={() => {
+                    const filteredPids = filteredProducts.map(p => toNumericProductId(p.id)).filter(id => id !== null);
                     if (allProductsSelected) {
-                      setSelectedProductIds(prev => prev.filter(id => !filteredProducts.some(p => p.id === id)));
+                      setSelectedProductIds(prev => prev.filter(id => !filteredPids.includes(id)));
                     } else {
-                      setSelectedProductIds(prev => [...new Set([...prev, ...filteredProducts.map(p => p.id)])]);
+                      setSelectedProductIds(prev => [...new Set([...prev, ...filteredPids])]);
                     }
                   }}
                   className="text-xs text-blue-600 hover:text-blue-800 font-medium"
@@ -158,22 +173,24 @@ const InvoiceFilterModal = ({
                 className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
-
             <div className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto divide-y divide-gray-100">
               {filteredProducts.length === 0 ? (
                 <div className="px-3 py-4 text-xs text-gray-400 italic text-center">No products found</div>
               ) : (
-                filteredProducts.map(p => (
-                  <label key={p.id} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedProductIds.includes(p.id)}
-                      onChange={() => toggleProduct(p.id)}
-                      className="w-4 h-4"
-                    />
-                    <span className="text-gray-700">{p.name}</span>
-                  </label>
-                ))
+                filteredProducts.map(p => {
+                  const pid = toNumericProductId(p.id);
+                  return (
+                    <label key={p.id} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={pid !== null && selectedProductIds.includes(pid)}
+                        onChange={() => toggleProduct(p.id)}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-gray-700">{p.name}</span>
+                    </label>
+                  );
+                })
               )}
             </div>
             {selectedProductIds.length > 0 && (
