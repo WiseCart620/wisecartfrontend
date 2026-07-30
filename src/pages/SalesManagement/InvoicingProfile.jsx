@@ -227,8 +227,9 @@ const BalanceTooltip = ({ profile, onClick }) => {
     );
 };
 
-const PaymentEntry = ({ p, idx }) => {
+const PaymentEntry = ({ p, idx, onDelete }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const hasEwt = Number(p.ewtAmount) > 0;
     return (
         <div className="bg-gray-50 rounded-xl overflow-hidden">
             <div
@@ -241,6 +242,11 @@ const PaymentEntry = ({ p, idx }) => {
                     </div>
                     <div className="flex-1">
                         <div className="text-sm font-semibold text-green-700">₱{fmt(p.amount)}</div>
+                        {hasEwt && (
+                            <div className="text-[10px] text-gray-400">
+                                ₱{fmt(p.grossAmount)} − EWT ₱{fmt(p.ewtAmount)}
+                            </div>
+                        )}
                         <div className="text-xs text-gray-500 mt-0.5">
                             {fmtDate(p.paymentDate)}
                             {p.referenceNumber && (
@@ -251,8 +257,17 @@ const PaymentEntry = ({ p, idx }) => {
                         </div>
                     </div>
                 </div>
-                <div className="text-gray-400">
-                    {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onDelete(p.id); }}
+                        title="Delete this payment"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-red-500 hover:bg-red-100 transition"
+                    >
+                        <Trash2 size={14} />
+                    </button>
+                    <div className="text-gray-400">
+                        {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </div>
                 </div>
             </div>
             {isOpen && p.proofFilePath && (
@@ -269,7 +284,7 @@ const PaymentEntry = ({ p, idx }) => {
     );
 };
 
-const DetailModal = ({ profile, onClose, onAddPayment }) => {
+const DetailModal = ({ profile, onClose, onAddPayment, onDeletePayment }) => {
     const totalPaid = (profile.payments || []).reduce((s, p) => s + Number(p.amount), 0);
     const bal = Number(profile.openBalance);
     const isPaid = bal <= 0;
@@ -307,7 +322,7 @@ const DetailModal = ({ profile, onClose, onAddPayment }) => {
                     ) : (
                         <div className="space-y-2 mb-4">
                             {profile.payments.map((p, idx) => (
-                                <PaymentEntry key={p.id} p={p} idx={idx} />
+                                <PaymentEntry key={p.id} p={p} idx={idx} onDelete={(paymentId) => onDeletePayment(profile.id, paymentId)} />
                             ))}
                         </div>
                     )}
@@ -350,6 +365,8 @@ const DetailModal = ({ profile, onClose, onAddPayment }) => {
 
 const PaymentModal = ({ profile, onClose, onSaved }) => {
     const [amount, setAmount] = useState('');
+    const [applyEwt, setApplyEwt] = useState(true);
+    const [ewtOverride, setEwtOverride] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [ref, setRef] = useState('');
     const [proofFile, setProofFile] = useState(null);
@@ -359,9 +376,19 @@ const PaymentModal = ({ profile, onClose, onSaved }) => {
     const totalPaid = (profile.payments || []).reduce((s, p) => s + Number(p.amount), 0);
     const balance = Math.max(0, Number(profile.totalAmountDue) - totalPaid);
 
+    const autoEwt = amount
+        ? Math.round((Number(amount) / 1.12) * 0.01 * 100) / 100
+        : 0;
+    const ewt = applyEwt ? (ewtOverride !== '' ? Number(ewtOverride) : autoEwt) : 0;
+    const netAmount = Math.max(0, Number(amount || 0) - ewt);
+
     const handleSave = async () => {
         if (!amount || Number(amount) <= 0) {
             toast.error('Enter a valid payment amount');
+            return;
+        }
+        if (netAmount > balance + 0.01) {
+            toast.error(`Net amount ₱${fmt(netAmount)} exceeds open balance ₱${fmt(balance)}`);
             return;
         }
         if (proofFile) {
@@ -382,7 +409,9 @@ const PaymentModal = ({ profile, onClose, onSaved }) => {
         setSaving(true);
         try {
             const formData = new FormData();
-            formData.append('amount', amount);
+            formData.append('amount', netAmount);
+            formData.append('grossAmount', amount);
+            formData.append('ewtAmount', ewt);
             formData.append('paymentDate', date);
             if (ref) formData.append('referenceNumber', ref);
             if (proofFile) formData.append('proofFile', proofFile);
@@ -439,6 +468,29 @@ const PaymentModal = ({ profile, onClose, onSaved }) => {
                                 placeholder="0.00"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
+                            <div className="flex items-center justify-between mt-2">
+                                <label className="flex items-center gap-1.5 text-xs text-gray-500">
+                                    <input type="checkbox" checked={applyEwt} onChange={(e) => setApplyEwt(e.target.checked)} />
+                                    Deduct EWT (1% of VAT-exclusive amount)
+                                </label>
+                            </div>
+                            {applyEwt && Number(amount) > 0 && (
+                                <div className="mt-2 bg-gray-50 rounded-lg p-2.5 space-y-1">
+                                    <div className="flex items-center justify-between text-xs">
+                                        <span className="text-gray-500">Less: EWT</span>
+                                        <input
+                                            type="number"
+                                            value={ewtOverride !== '' ? ewtOverride : autoEwt}
+                                            onChange={(e) => setEwtOverride(e.target.value)}
+                                            className="w-24 text-right border border-gray-200 rounded px-1.5 py-0.5 text-xs"
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between text-xs font-semibold">
+                                        <span className="text-gray-600">Net amount recorded</span>
+                                        <span className="text-blue-700">₱{fmt(netAmount)}</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             <div>
@@ -567,6 +619,23 @@ const InvoicingProfile = ({ onBack }) => {
             }
         } catch {
             toast.error('Failed to delete invoice profile');
+        }
+    };
+
+    const handleDeletePayment = async (profileId, paymentId) => {
+        if (!window.confirm('Delete this payment record? This cannot be undone.')) return;
+        try {
+            const res = await api.delete(`/invoice-profiles/${profileId}/payments/${paymentId}`);
+            if (res.success) {
+                toast.success('Payment deleted');
+                const updated = res.data?.data || res.data;
+                setProfiles(prev => prev.map(p => (p.id === profileId ? updated : p)));
+                return updated;
+            } else {
+                toast.error(res.message || 'Failed to delete payment');
+            }
+        } catch {
+            toast.error('Failed to delete payment');
         }
     };
 
@@ -1141,7 +1210,17 @@ const InvoicingProfile = ({ onBack }) => {
                 </div>
             )}
 
-            {detailProfile && <DetailModal profile={detailProfile} onClose={() => setDetailProfile(null)} onAddPayment={(p) => setPaymentProfile(p)} />}
+            {detailProfile && (
+                <DetailModal
+                    profile={detailProfile}
+                    onClose={() => setDetailProfile(null)}
+                    onAddPayment={(p) => setPaymentProfile(p)}
+                    onDeletePayment={async (profileId, paymentId) => {
+                        const updated = await handleDeletePayment(profileId, paymentId);
+                        if (updated) setDetailProfile(updated);
+                    }}
+                />
+            )}
             {paymentProfile && <PaymentModal profile={paymentProfile} onClose={() => setPaymentProfile(null)} onSaved={(updated) => { setProfiles((prev) => prev.map((p) => (p.id === updated.id ? updated : p))); setPaymentProfile(null); }} />}
         </div>
     );
