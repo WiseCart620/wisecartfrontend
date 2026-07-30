@@ -230,35 +230,38 @@ const BalanceTooltip = ({ profile, onClick }) => {
 const PaymentEntry = ({ p, idx, onDelete }) => {
     const [isOpen, setIsOpen] = useState(false);
     const hasEwt = Number(p.ewtAmount) > 0;
+    const chargesList = p.charges || [];
+    const hasDeductions = hasEwt || chargesList.length > 0;
+    const grossDisplay = p.grossAmount != null ? Number(p.grossAmount) : Number(p.amount);
+
     return (
-        <div className="bg-gray-50 rounded-xl overflow-hidden">
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
             <div
-                className="flex items-start justify-between p-3 cursor-pointer hover:bg-gray-100 transition"
+                className="flex items-start justify-between p-3 cursor-pointer hover:bg-gray-50 transition"
                 onClick={() => setIsOpen(!isOpen)}
             >
-                <div className="flex items-start gap-3 flex-1">
-                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="w-7 h-7 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
                         {idx + 1}
                     </div>
-                    <div className="flex-1">
-                        <div className="text-sm font-semibold text-green-700">₱{fmt(p.amount)}</div>
-                        {hasEwt && (
-                            <div className="text-[10px] text-gray-400">
-                                ₱{fmt(p.grossAmount)} − EWT ₱{fmt(p.ewtAmount)}
-                                {(p.charges || []).map(c => ` − ${c.label} ₱${fmt(c.amount)}`).join('')}
-                            </div>
-                        )}
-                        <div className="text-xs text-gray-500 mt-0.5">
-                            {fmtDate(p.paymentDate)}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-sm font-bold text-emerald-700">₱{fmt(p.amount)}</span>
+                            {hasDeductions && (
+                                <span className="text-[10px] text-gray-400">net of deductions</span>
+                            )}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                            <span>{fmtDate(p.paymentDate)}</span>
                             {p.referenceNumber && (
-                                <span className="ml-1 font-mono text-[10px] bg-gray-200 px-1 rounded">
+                                <span className="font-mono text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
                                     {p.referenceNumber}
                                 </span>
                             )}
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                         onClick={(e) => { e.stopPropagation(); onDelete(p.id); }}
                         title="Delete this payment"
@@ -266,19 +269,61 @@ const PaymentEntry = ({ p, idx, onDelete }) => {
                     >
                         <Trash2 size={14} />
                     </button>
-                    <div className="text-gray-400">
+                    <div className="w-7 h-7 flex items-center justify-center text-gray-400">
                         {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </div>
                 </div>
             </div>
-            {isOpen && p.proofFilePath && (
-                <div className="px-3 pb-3 pt-0 border-t border-gray-200 mt-2">
-                    <ProofImage filePath={p.proofFilePath} fileName={p.proofFileName} />
-                </div>
-            )}
-            {isOpen && !p.proofFilePath && (
-                <div className="px-3 pb-3 pt-0 text-xs text-gray-400 italic">
-                    No proof of payment uploaded
+
+            {isOpen && (
+                <div className="border-t border-gray-100 bg-gray-50/60">
+                    {/* Itemized breakdown */}
+                    <div className="px-4 py-3">
+                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                            Payment Breakdown
+                        </div>
+                        <div className="space-y-1.5">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600">Gross amount</span>
+                                <span className="font-medium text-gray-800 tabular-nums">₱{fmt(grossDisplay)}</span>
+                            </div>
+
+                            {hasEwt && (
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500">Less: EWT</span>
+                                    <span className="text-red-500 tabular-nums">− ₱{fmt(p.ewtAmount)}</span>
+                                </div>
+                            )}
+
+                            {chargesList.map((c) => (
+                                <div key={c.id ?? c.label} className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500">Less: {c.label}</span>
+                                    <span className="text-red-500 tabular-nums">− ₱{fmt(c.amount)}</span>
+                                </div>
+                            ))}
+
+                            {hasDeductions ? (
+                                <div className="flex items-center justify-between text-sm pt-1.5 mt-1.5 border-t border-gray-200">
+                                    <span className="font-semibold text-gray-700">Net amount recorded</span>
+                                    <span className="font-bold text-emerald-700 tabular-nums">₱{fmt(p.amount)}</span>
+                                </div>
+                            ) : (
+                                <div className="text-[11px] text-gray-400 italic pt-0.5">No deductions applied</div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Proof of payment */}
+                    <div className="px-4 pb-3 pt-0 border-t border-gray-100">
+                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mt-2.5 mb-1.5">
+                            Proof of Payment
+                        </div>
+                        {p.proofFilePath ? (
+                            <ProofImage filePath={p.proofFilePath} fileName={p.proofFileName} />
+                        ) : (
+                            <div className="text-xs text-gray-400 italic">No proof of payment uploaded</div>
+                        )}
+                    </div>
                 </div>
             )}
         </div>
