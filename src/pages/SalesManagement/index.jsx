@@ -148,17 +148,35 @@ const SalesManagement = () => {
         const parsed = parseInt(numericPart, 10);
         return Number.isNaN(parsed) ? null : parsed;
       };
+
+      const resolvedOptions = invoiceProductIds
+        .map(id => allOpts.find(o => o.id === id))
+        .filter(Boolean);
+
       const numericProductIds = [...new Set(
-        invoiceProductIds
-          .map(id => {
-            const opt = allOpts.find(o => o.id === id);
-            if (opt?.parentProductId != null) return Number(opt.parentProductId);
-            return toNumericProductId(id);
-          })
-          .filter(id => id !== null && !Number.isNaN(id))
+        resolvedOptions.map(opt => {
+          if (opt.parentProductId != null) return Number(opt.parentProductId);
+          return toNumericProductId(opt.id);
+        }).filter(id => id !== null && !Number.isNaN(id))
       )];
-      console.log('Selected product ids:', invoiceProductIds, '→ resolved parent ids:', numericProductIds);
-      const payload = { ...filterData, branchIds: invoiceBranchIds, productIds: numericProductIds };
+
+      const numericVariationIds = [...new Set(
+        resolvedOptions
+          .filter(opt => opt.variationId != null)
+          .map(opt => Number(opt.variationId))
+          .filter(id => !Number.isNaN(id))
+      )];
+
+      console.log('Selected ids:', invoiceProductIds);
+      console.log('Resolved options:', resolvedOptions);
+      console.log('→ productIds:', numericProductIds, '→ variationIds:', numericVariationIds);
+
+      const payload = {
+        ...filterData,
+        branchIds: invoiceBranchIds,
+        productIds: numericProductIds,
+        variationIds: numericVariationIds,
+      };
       const response = await api.post('/sales/invoice/generate', payload);
       toast.dismiss('invoice-loading');
       if (response.success || response.data) {
