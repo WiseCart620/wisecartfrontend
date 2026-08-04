@@ -35,7 +35,7 @@ const SaleFormModal = ({
       await onBranchChange(branchId);
     }
     setFormData(prev => ({ ...prev, branchId, month, year, items }));
-    items.forEach(item => onLoadStock(item.productId, branchId, item.variationId));
+    items.forEach(item => onLoadStock(item.productId, formData.branchId || branchId, item.variationId));
   };
 
   const branchOptions = branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
