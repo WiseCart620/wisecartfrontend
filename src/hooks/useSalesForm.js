@@ -26,6 +26,7 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
   const [selectedProductForAdd, setSelectedProductForAdd] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
+  const [duplicateCheck, setDuplicateCheck] = useState({ show: false, matches: [] });
 
   const loadProductPricesForCompany = async (companyId) => {
     if (!companyId) { setProductPrices({}); return; }
@@ -200,7 +201,6 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
     setSelectedSale(null);
     setBranchInfo(null);
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.branchId) { toast.error('Please select a branch'); return; }
@@ -212,6 +212,31 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
       }
     }
 
+    try {
+      const itemsParam = formData.items.map(it => `${it.productId}:${it.variationId ?? ''}`).join(',');
+      const params = new URLSearchParams({
+        branchId: formData.branchId,
+        month: formData.month,
+        year: formData.year,
+        items: itemsParam,
+      });
+      if (modalMode === 'edit' && selectedSale?.id) {
+        params.append('excludeSaleId', selectedSale.id);
+      }
+      const res = await api.get(`/sales/check-duplicate?${params}`);
+      if (res.success && res.data?.isDuplicate) {
+        setDuplicateCheck({ show: true, matches: res.data.matches || [] });
+        return; // wait for the user to confirm or cancel
+      }
+    } catch {
+      // If the duplicate check itself fails, don't block the user — fall through to submit
+    }
+
+    await performSubmit();
+  };
+
+  const performSubmit = async () => {
+    setDuplicateCheck({ show: false, matches: [] });
     handleCloseModal();
 
     const toastId = toast.loading(modalMode === 'create' ? 'Creating sale...' : 'Updating sale...');
@@ -250,6 +275,9 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
       toast.error(errorMessage, { id: toastId });
     }
   };
+
+  const cancelDuplicateSubmit = () => setDuplicateCheck({ show: false, matches: [] });
+  const confirmDuplicateSubmit = () => performSubmit();
 
   const handleUpdateStatus = async (saleId, newStatus) => {
     const action = { CONFIRMED: 'confirm', INVOICED: 'invoice' }[newStatus] || newStatus.toLowerCase();
@@ -314,6 +342,7 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
     originalSaleItems,
     selectedProductForAdd, setSelectedProductForAdd,
     actionLoading, loadingMessage,
+    duplicateCheck, cancelDuplicateSubmit, confirmDuplicateSubmit,
     handleOpenModal,
     handleCloseModal,
     handleBranchChange,

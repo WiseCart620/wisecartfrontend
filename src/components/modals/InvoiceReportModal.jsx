@@ -11,6 +11,7 @@ const InvoiceReportModal = ({
   setInvoiceDate,
   taxType,
   onGenerate,
+  invoiceNumberError,
 }) => {
   if (!invoiceReport) return null;
 
@@ -134,9 +135,15 @@ const InvoiceReportModal = ({
                   value={invoiceNumber}
                   onChange={(e) => setInvoiceNumber(e.target.value)}
                   placeholder="_____________"
-                  className="border-b border-gray-500 w-36 text-center focus:outline-none bg-transparent"
+                  className={`border-b w-36 text-center focus:outline-none bg-transparent ${invoiceNumberError ? 'border-red-500 text-red-600' : 'border-gray-500'
+                    }`}
                 />
               </div>
+              {invoiceNumberError && (
+                <p className="text-xs text-red-600 font-medium mt-1 print:hidden">
+                  {invoiceNumberError}
+                </p>
+              )}
             </div>
           </div>
 
@@ -417,7 +424,8 @@ const InvoiceReportModal = ({
               if (!invoiceNumber.trim()) { alert('Please enter an invoice number before saving.'); return; }
               onGenerate();
             }}
-            className={`flex items-center gap-2 px-5 py-3 rounded-lg transition font-medium shadow-md ${!invoiceNumber.trim() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'
+            disabled={!!invoiceNumberError}
+            className={`flex items-center gap-2 px-5 py-3 rounded-lg transition font-medium shadow-md ${!invoiceNumber.trim() || invoiceNumberError ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'
               }`}
           >
             Generate

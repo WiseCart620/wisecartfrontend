@@ -22,6 +22,7 @@ import SaleViewModal from '../../components/modals/SaleViewModal';
 import InvoiceFilterModal from '../../components/modals/InvoiceFilterModal';
 import StatusProductsModal from '../../components/modals/StatusProductsModal';
 import SalesSummaryModal from '../../components/modals/SalesSummaryModal';
+import DuplicateSaleWarningModal from '../../components/modals/DuplicateSaleWarningModal';
 import InvoicingProfile from './InvoicingProfile';
 import SalesReport from './SalesReport';
 import { LoadingOverlay } from '../../components/common/LoadingOverlay';
@@ -51,6 +52,7 @@ const SalesManagement = () => {
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
   const [invoiceSubmitted, setInvoiceSubmitted] = useState(false);
   const [taxType, setTaxType] = useState('VAT');
+  const [invoiceNumberError, setInvoiceNumberError] = useState('');
   const [productsByStatus, setProductsByStatus] = useState({ pending: [], confirmed: [], invoiced: [] });
   const [productsByStatusLoading, setProductsByStatusLoading] = useState(false);
   const [loadingAction, setLoadingAction] = useState(null);
@@ -94,6 +96,7 @@ const SalesManagement = () => {
     handleDelete,
     loadProductStock,
     getMaxAllowedQuantity,
+    duplicateCheck, cancelDuplicateSubmit, confirmDuplicateSubmit,
   } = useSalesForm({ fetchSales, currentPage, productOptions });
 
   // Product options with branchInfo from form
@@ -260,6 +263,14 @@ const SalesManagement = () => {
         })),
       ],
     };
+    const extractDuplicateMessage = (rawMsg) => {
+      if (typeof rawMsg === 'string' && rawMsg.startsWith('DUPLICATE_INVOICE_NUMBER:')) {
+        return rawMsg.replace('DUPLICATE_INVOICE_NUMBER:', '').trim();
+      }
+      return null;
+    };
+
+    setInvoiceNumberError('');
     try {
       const res = await api.post('/invoice-profiles', payload);
       if (res.success) {
@@ -269,10 +280,22 @@ const SalesManagement = () => {
         setInvoiceProductIds([]);
         setShowInvoicingProfile(true);
       } else {
-        toast.error(res.error || 'Failed to save to Sales Journal');
+        const rawMsg = res.error || res.message || 'Failed to save to Sales Journal';
+        const dupMsg = extractDuplicateMessage(rawMsg);
+        if (dupMsg) {
+          setInvoiceNumberError(dupMsg);
+        } else {
+          toast.error(rawMsg);
+        }
       }
-    } catch {
-      toast.error('Failed to save to Sales Journal');
+    } catch (err) {
+      const rawMsg = err.response?.data?.message || err.response?.data?.error || 'Failed to save to Sales Journal';
+      const dupMsg = extractDuplicateMessage(rawMsg);
+      if (dupMsg) {
+        setInvoiceNumberError(dupMsg);
+      } else {
+        toast.error(rawMsg);
+      }
     }
   };
 
@@ -362,6 +385,14 @@ const SalesManagement = () => {
           />
         )}
 
+        {duplicateCheck.show && (
+          <DuplicateSaleWarningModal
+            matches={duplicateCheck.matches}
+            onCancel={cancelDuplicateSubmit}
+            onSubmitAnyway={confirmDuplicateSubmit}
+          />
+        )}
+
         {showModal && modalMode === 'view' && selectedSale && (
           <SaleViewModal
             sale={selectedSale}
@@ -418,17 +449,17 @@ const SalesManagement = () => {
           />
         )}
 
-        {/* Invoice Report — kept inline since it has heavy inline editing logic */}
         {invoiceReport && (
           <InvoiceReportModal
             invoiceReport={invoiceReport}
             setInvoiceReport={setInvoiceReport}
             invoiceNumber={invoiceNumber}
-            setInvoiceNumber={setInvoiceNumber}
+            setInvoiceNumber={(val) => { setInvoiceNumberError(''); setInvoiceNumber(val); }}
             invoiceDate={invoiceDate}
             setInvoiceDate={setInvoiceDate}
             taxType={taxType}
             onGenerate={handleGenerateToProfile}
+            invoiceNumberError={invoiceNumberError}
           />
         )}
       </div>
