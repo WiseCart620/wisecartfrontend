@@ -61,7 +61,6 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
   const handleBranchChange = async (branchId) => {
     setFormData(prev => ({ ...prev, branchId, items: [] }));
     if (!branchId) return;
-    const loadingToast = toast.loading('Loading branch information...');
     try {
       const info = await api.get(`/sales/branch-info/${branchId}`);
       if (info.success) {
@@ -69,13 +68,12 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
         await loadProductPricesForCompany(info.data?.companyId);
         setBranchStocks({});
         setStockErrors({});
-        toast.success('Branch information loaded successfully!', { id: loadingToast });
       }
     } catch {
       setBranchInfo(null);
       setProductPrices({});
       setBranchStocks({});
-      toast.error('Failed to load branch information', { id: loadingToast });
+      toast.error('Failed to load branch information');
     }
   };
 
@@ -155,7 +153,6 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
       setFormData({ branchId: sale.branch.id, month: sale.month, year: sale.year, items: sortedItems, createdBy: sale.createdBy || '' });
       setOriginalSaleItems(sortedItems);
 
-      const loadingToast = toast.loading('Loading sale data and stock information...');
       try {
         const info = await api.get(`/sales/branch-info/${sale.branch.id}`);
         if (info.success) {
@@ -184,10 +181,9 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
           });
           setBranchStocks(stockMap);
           setStockErrors(errors);
-          toast.success('Sale data loaded successfully!', { id: loadingToast });
         }
       } catch {
-        toast.error('Failed to load sale data', { id: loadingToast });
+        toast.error('Failed to load sale data');
       }
     } else if (mode === 'view' && sale) {
       setSelectedSale(sale);
@@ -238,7 +234,6 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
   const performSubmit = async () => {
     setDuplicateCheck({ show: false, matches: [] });
 
-    const toastId = toast.loading(modalMode === 'create' ? 'Creating sale...' : 'Updating sale...');
     const payload = {
       ...formData,
       items: formData.items.map(item => ({
@@ -253,27 +248,28 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
       if (modalMode === 'create') {
         const response = await api.post('/sales', payload);
         if (response.success) {
-          toast.success('Sale created successfully!', { id: toastId });
+          toast.success('Sale created successfully!');
           invalidateSalesCache();
           await fetchSales(0);
-          handleCloseModal(); // only close after a real success
+          handleCloseModal();
         } else {
-          toast.error(response.message || 'Failed to create sale', { id: toastId });
+          toast.error(response.message || 'Failed to create sale');
         }
       } else if (modalMode === 'edit') {
         const response = await api.put(`/sales/${selectedSale.id}`, payload);
         if (response.success) {
-          toast.success('Sale updated successfully!', { id: toastId });
+          toast.success('Sale updated successfully!');
           invalidateSalesCache();
           fetchSales(currentPage - 1);
-          handleCloseModal(); // only close after a real success
+          handleCloseModal();
         } else {
-          toast.error(response.message || 'Failed to update sale', { id: toastId });
+          toast.error(response.message || 'Failed to update sale');
         }
       }
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to save sale';
-      toast.error(errorMessage, { id: toastId });
+      toast.error(errorMessage);
+      // modal stays open on error (e.g. insufficient stock) so the user can adjust quantity/branch and retry
     }
   };
 
