@@ -45,6 +45,7 @@ export const useSalesData = ({ filterData, statusFilter, searchTerm, currentPage
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [allFilteredSales, setAllFilteredSales] = useState({});
+  const [staticDataLoading, setStaticDataLoading] = useState(true);
 
   const staticDataLoaded = useRef(false);
   const initialLoadDone = useRef(false);
@@ -104,7 +105,7 @@ export const useSalesData = ({ filterData, statusFilter, searchTerm, currentPage
         setWarehouses(extractArray(results[4]));
         setWarehouseStocks(extractArray(results[5]));
         setProductSummaries(extractArray(results[6]));
-      }).catch(() => { });
+      }).catch(() => { }).finally(() => setStaticDataLoading(false));
     }
   }, []);
 
@@ -192,7 +193,7 @@ export const useSalesData = ({ filterData, statusFilter, searchTerm, currentPage
   return {
     sales, branches, companies, products,
     inventories, warehouses, warehouseStocks, productSummaries,
-    loading, totalPages, totalElements, allFilteredSales,
+    loading, staticDataLoading, totalPages, totalElements, allFilteredSales,
     fetchSales,
     setCompanies, setProducts,
   };

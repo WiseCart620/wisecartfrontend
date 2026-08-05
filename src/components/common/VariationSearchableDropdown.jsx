@@ -15,7 +15,8 @@ const VariationSearchableDropdown = ({
   loadingStocks = {},
   onAddProduct,
   hideLocationHint = false,
-  activeCompanyId = null
+  activeCompanyId = null,
+  loading = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -120,14 +121,19 @@ const VariationSearchableDropdown = ({
 
   return (
     <div ref={dropdownRef} className="relative">
-      {/* Trigger button */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition text-left flex items-center justify-between bg-white"
+        onClick={() => !loading && setIsOpen(!isOpen)}
+        disabled={loading}
+        className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition text-left flex items-center justify-between ${loading ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
       >
         <div className="flex-1 min-w-0">
-          {selectedOption ? (
+          {loading ? (
+            <span className="flex items-center gap-2 text-gray-400">
+              <span className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+              Loading products...
+            </span>
+          ) : selectedOption ? (
             <div className="text-gray-900 font-medium truncate">
               {selectedOption.upc || 'N/A'} - {selectedOption.fullName} - {selectedOption.sku || 'N/A'}
             </div>
@@ -139,7 +145,7 @@ const VariationSearchableDropdown = ({
       </button>
 
       {/* Dropdown list */}
-      {isOpen && (
+      {isOpen && !loading && (
         <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-hidden">
           <div className="p-3 border-b border-gray-200">
             <div className="relative">

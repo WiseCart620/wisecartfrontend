@@ -237,7 +237,6 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
 
   const performSubmit = async () => {
     setDuplicateCheck({ show: false, matches: [] });
-    handleCloseModal();
 
     const toastId = toast.loading(modalMode === 'create' ? 'Creating sale...' : 'Updating sale...');
     const payload = {
@@ -257,6 +256,7 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
           toast.success('Sale created successfully!', { id: toastId });
           invalidateSalesCache();
           await fetchSales(0);
+          handleCloseModal(); // only close after a real success
         } else {
           toast.error(response.message || 'Failed to create sale', { id: toastId });
         }
@@ -266,6 +266,7 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
           toast.success('Sale updated successfully!', { id: toastId });
           invalidateSalesCache();
           fetchSales(currentPage - 1);
+          handleCloseModal(); // only close after a real success
         } else {
           toast.error(response.message || 'Failed to update sale', { id: toastId });
         }

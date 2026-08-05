@@ -2,9 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Search, ChevronDown, X } from 'lucide-react';
 
 const MultiSelectDropdown = ({
-  options,           // [{ id, name }]
+  options,  
   selectedIds = [],
-  onChange,           // (newArray) => void
+  onChange, 
   placeholder = 'All',
   searchPlaceholder = 'Search...',
 }) => {

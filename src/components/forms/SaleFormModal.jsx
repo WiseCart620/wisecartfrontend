@@ -25,17 +25,27 @@ const SaleFormModal = ({
   onBulkUploadComplete,
   companies,
   defaultCompanyId,
+  dataLoading = false,
 }) => {
   const [showEncodedByDropdown, setShowEncodedByDropdown] = useState(false);
   const [showMassUpload, setShowMassUpload] = useState(false);
+  const [massUploadStockLoading, setMassUploadStockLoading] = useState(false);
 
   const handleMassUploadConfirm = async ({ branchId, month, year, items }) => {
     setShowMassUpload(false);
-    if (formData.branchId !== branchId) {
-      await onBranchChange(branchId);
+    setMassUploadStockLoading(true);
+    try {
+      if (formData.branchId !== branchId) {
+        await onBranchChange(branchId);
+      }
+      // Wait for every item's stock to load before revealing any of them
+      await Promise.all(
+        items.map(item => onLoadStock(item.productId, branchId, item.variationId))
+      );
+      setFormData(prev => ({ ...prev, branchId, month, year, items }));
+    } finally {
+      setMassUploadStockLoading(false);
     }
-    setFormData(prev => ({ ...prev, branchId, month, year, items }));
-    items.forEach(item => onLoadStock(item.productId, formData.branchId || branchId, item.variationId));
   };
 
   const branchOptions = branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
@@ -74,6 +84,7 @@ const SaleFormModal = ({
                 onChange={onBranchChange}
                 placeholder="Select Branch"
                 displayKey="name" valueKey="id" required
+                loading={dataLoading}
               />
             </div>
 
@@ -152,12 +163,20 @@ const SaleFormModal = ({
                   warehouseStocks={{}}
                   branchStocks={branchStocks}
                   loadingStocks={loadingStocks}
-                  onAddProduct={formData.branchId ? onAddProduct : undefined}
+                  onAddProduct={formData.branchId && !massUploadStockLoading ? onAddProduct : undefined}
                   activeCompanyId={branchInfo?.companyId ?? null}
+                  loading={dataLoading}
                 />
               </div>
 
-              {formData.items.length === 0 ? (
+              {massUploadStockLoading ? (
+                <div className="text-center py-10 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                  <div className="flex items-center justify-center gap-2 text-blue-600">
+                    <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                    <span className="font-medium">Loading stock for all items...</span>
+                  </div>
+                </div>
+              ) : formData.items.length === 0 ? (
                 <div className="text-center py-10 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                   <p className="font-medium text-gray-500">No products added yet</p>
                   <p className="text-sm text-gray-400">Select a product above and click "Add Product" to start</p>

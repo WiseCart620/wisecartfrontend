@@ -57,22 +57,19 @@ const SalesManagement = () => {
   const [productsByStatusLoading, setProductsByStatusLoading] = useState(false);
   const [loadingAction, setLoadingAction] = useState(null);
 
-  // Data hook
   const {
     sales, branches, companies, products,
     inventories, warehouses, warehouseStocks, productSummaries,
-    loading, totalPages, totalElements, allFilteredSales,
+    loading, staticDataLoading, totalPages, totalElements, allFilteredSales,
     fetchSales, setCompanies, setProducts,
   } = useSalesData({ filterData, statusFilter, searchTerm, currentPage });
 
-  // Product options hook
   const { allProductOptions, productOptions } = useProductOptions({
     products,
-    branchInfo: null, // will come from form hook
+    branchInfo: null,
     productPrices: {},
   });
 
-  // Form/modal hook
   const {
     formData, setFormData,
     modalMode, showModal,
@@ -382,6 +379,7 @@ const SalesManagement = () => {
             onBulkUploadComplete={() => fetchSales(currentPage - 1)}
             companies={companies}
             defaultCompanyId={filterData.companyId}
+            dataLoading={staticDataLoading}
           />
         )}
 
@@ -409,6 +407,7 @@ const SalesManagement = () => {
             companies={companies}
             branches={branches}
             allProductOptions={allOpts}
+            dataLoading={staticDataLoading}
             selectedBranchIds={invoiceBranchIds}
             setSelectedBranchIds={setInvoiceBranchIds}
             selectedProductIds={invoiceProductIds}

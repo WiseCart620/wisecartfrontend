@@ -15,6 +15,7 @@ const InvoiceFilterModal = ({
   taxType, setTaxType,
   invoiceSubmitted,
   onClose, onSubmit,
+  dataLoading = false,
 }) => {
   const [branchSearch, setBranchSearch] = useState('');
   const [productSearch, setProductSearch] = useState('');
@@ -132,6 +133,7 @@ const InvoiceFilterModal = ({
                 setSelectedBranchIds([]);
               }}
               placeholder="Select Company" displayKey="name" valueKey="id" required
+              loading={dataLoading}
             />
           </div>
 
@@ -141,7 +143,7 @@ const InvoiceFilterModal = ({
               <label className="block text-sm font-medium text-gray-700">
                 Branches (leave unchecked for all)
               </label>
-              {filteredBranches.length > 0 && (
+              {!dataLoading && filteredBranches.length > 0 && (
                 <button
                   type="button"
                   onClick={() => {
@@ -158,7 +160,7 @@ const InvoiceFilterModal = ({
               )}
             </div>
 
-            {companyBranches.length > 4 && (
+            {!dataLoading && companyBranches.length > 4 && (
               <div className="relative mb-2">
                 <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
@@ -172,7 +174,12 @@ const InvoiceFilterModal = ({
             )}
 
             <div className="border border-gray-200 rounded-lg max-h-40 overflow-y-auto divide-y divide-gray-100">
-              {sortedFilteredBranches.length === 0 ? (
+              {dataLoading ? (
+                <div className="flex items-center justify-center gap-2 px-3 py-6 text-gray-400 text-xs">
+                  <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                  Loading branches...
+                </div>
+              ) : sortedFilteredBranches.length === 0 ? (
                 <div className="px-3 py-4 text-xs text-gray-400 italic text-center">
                   {filterData.companyId ? 'No branches for selected company' : 'Select a company to see branches'}
                 </div>
@@ -201,7 +208,7 @@ const InvoiceFilterModal = ({
               <label className="block text-sm font-medium text-gray-700">
                 Products (leave unchecked for all)
               </label>
-              {filteredProducts.length > 0 && (
+              {!dataLoading && filteredProducts.length > 0 && (
                 <button
                   type="button"
                   onClick={() => {
@@ -219,18 +226,25 @@ const InvoiceFilterModal = ({
               )}
             </div>
 
-            <div className="relative mb-2">
-              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={productSearch}
-                onChange={(e) => setProductSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
+            {!dataLoading && (
+              <div className="relative mb-2">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            )}
             <div className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto divide-y divide-gray-100">
-              {sortedFilteredProducts.length === 0 ? (
+              {dataLoading ? (
+                <div className="flex items-center justify-center gap-2 px-3 py-6 text-gray-400 text-xs">
+                  <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                  Loading products...
+                </div>
+              ) : sortedFilteredProducts.length === 0 ? (
                 <div className="px-3 py-4 text-xs text-gray-400 italic text-center">No products found</div>
               ) : (
                 sortedFilteredProducts.map(p => (
