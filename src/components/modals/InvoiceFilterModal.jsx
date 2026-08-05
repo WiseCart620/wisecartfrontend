@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Search } from 'lucide-react';
 import SearchableDropdown from '../../components/common/SaleSearchableDropdown';
 import { monthsFull } from '../../constants/salesConstants';
+import { api } from '../../services/api';
 
 const InvoiceFilterModal = ({
   filterData, setFilterData,
@@ -17,6 +18,38 @@ const InvoiceFilterModal = ({
 }) => {
   const [branchSearch, setBranchSearch] = useState('');
   const [productSearch, setProductSearch] = useState('');
+  const [invoiceNumberError, setInvoiceNumberError] = useState('');
+  const [checkingInvoiceNumber, setCheckingInvoiceNumber] = useState(false);
+  const debounceRef = useRef(null);
+
+  useEffect(() => {
+    const trimmed = invoiceNumber.trim();
+    if (!trimmed) {
+      setInvoiceNumberError('');
+      setCheckingInvoiceNumber(false);
+      return;
+    }
+
+    setCheckingInvoiceNumber(true);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await api.get(`/invoice-profiles/check-invoice-number?invoiceNumber=${encodeURIComponent(trimmed)}`);
+        if (res.success && res.data?.exists) {
+          setInvoiceNumberError(`Invoice number "${trimmed}" is already in use.`);
+        } else {
+          setInvoiceNumberError('');
+        }
+      } catch {
+        setInvoiceNumberError('');
+      } finally {
+        setCheckingInvoiceNumber(false);
+      }
+    }, 500);
+
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [invoiceNumber]);
 
   const companyOptions = companies.map(c => ({ id: c.id, name: c.companyName || c.name }));
 
@@ -283,13 +316,23 @@ const InvoiceFilterModal = ({
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">Invoice Number <span className="text-red-500">*</span></label>
-                <input
-                  type="text" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)}
-                  placeholder="e.g. SI-2025-0001"
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${invoiceSubmitted && !invoiceNumber.trim() ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
-                />
+                <div className="relative">
+                  <input
+                    type="text" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)}
+                    placeholder="e.g. SI-2025-0001"
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${(invoiceSubmitted && !invoiceNumber.trim()) || invoiceNumberError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                  />
+                  {checkingInvoiceNumber && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 animate-pulse">
+                      Checking...
+                    </span>
+                  )}
+                </div>
                 {invoiceSubmitted && !invoiceNumber.trim() && (
                   <p className="text-xs text-red-500 mt-1">Invoice number is required before previewing.</p>
+                )}
+                {invoiceNumberError && (
+                  <p className="text-xs text-red-600 font-medium mt-1">{invoiceNumberError}</p>
                 )}
               </div>
               <div>
@@ -313,7 +356,16 @@ const InvoiceFilterModal = ({
 
         <div className="p-8 border-t border-gray-200 flex justify-end gap-4">
           <button onClick={onClose} className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">Cancel</button>
-          <button onClick={onSubmit} className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md">Preview Invoice</button>
+          <button
+            onClick={onSubmit}
+            disabled={!!invoiceNumberError || checkingInvoiceNumber}
+            className={`px-6 py-3 rounded-lg transition font-medium shadow-md ${invoiceNumberError || checkingInvoiceNumber
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+          >
+            Preview Invoice
+          </button>
         </div>
       </div>
     </div>
