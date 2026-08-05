@@ -15,12 +15,15 @@ const SalesSummaryModal = ({ onClose, filterData, statusFilter, searchTerm, comp
         const params = new URLSearchParams({
           page: 0, size: 10000,
           ...(filterData.companyId && { companyId: filterData.companyId }),
-          ...(filterData.branchId && { branchId: filterData.branchId }),
           ...(statusFilter !== 'ALL' && { status: statusFilter }),
           ...(searchTerm && { searchTerm }),
           ...(startDateObj && { startYear: startDateObj.getFullYear(), startMonth: startDateObj.getMonth() + 1 }),
           ...(endDateObj && { endYear: endDateObj.getFullYear(), endMonth: endDateObj.getMonth() + 1 }),
         });
+
+        if (filterData.branchIds?.length > 0) {
+          filterData.branchIds.forEach(id => params.append('branchIds', id));
+        }
 
         if (filterData.productFilters?.length > 0) {
           filterData.productFilters.forEach(pf => {
@@ -72,8 +75,10 @@ const SalesSummaryModal = ({ onClose, filterData, statusFilter, searchTerm, comp
   const selectedCompany = filterData.companyId
     ? (companies.find(c => c.id === filterData.companyId)?.companyName || 'All Companies')
     : 'All Companies';
-  const selectedBranch = filterData.branchId
-    ? (branches.find(b => b.id === filterData.branchId)?.branchName || 'All Branches')
+  const selectedBranch = filterData.branchIds?.length > 0
+    ? (filterData.branchIds.length === 1
+      ? (branches.find(b => b.id === filterData.branchIds[0])?.branchName || 'All Branches')
+      : `${filterData.branchIds.length} Branches`)
     : 'All Branches';
   const statusLabel = statusFilter === 'ALL' ? 'All Status' : statusFilter;
   const dateFrom = filterData.startDate || '—';
