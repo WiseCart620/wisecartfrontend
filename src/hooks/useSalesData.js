@@ -12,12 +12,15 @@ const buildSalesParams = (filterData, statusFilter, searchTerm, page = 0, size =
     page,
     size,
     ...(filterData.companyId && { companyId: filterData.companyId }),
-    ...(filterData.branchId && { branchId: filterData.branchId }),
     ...(statusFilter !== 'ALL' && { status: statusFilter }),
     ...(searchTerm && { searchTerm }),
     ...(startDateObj && { startYear: startDateObj.getFullYear(), startMonth: startDateObj.getMonth() + 1 }),
     ...(endDateObj && { endYear: endDateObj.getFullYear(), endMonth: endDateObj.getMonth() + 1 }),
   });
+
+  if (filterData.branchIds?.length > 0) {
+    filterData.branchIds.forEach(id => params.append('branchIds', id));
+  }
 
   if (filterData.productFilters?.length > 0) {
     filterData.productFilters.forEach(pf => {
@@ -112,7 +115,7 @@ export const useSalesData = ({ filterData, statusFilter, searchTerm, currentPage
 
     const filterKey = JSON.stringify({
       companyId: filterData.companyId,
-      branchId: filterData.branchId,
+      branchIds: filterData.branchIds,
       statusFilter,
       searchTerm,
       startDate: filterData.startDate,
@@ -129,8 +132,9 @@ export const useSalesData = ({ filterData, statusFilter, searchTerm, currentPage
       fetchSales(currentPage - 1);
     }
   }, [
-    filterData.companyId, filterData.branchId, statusFilter, searchTerm,
+    filterData.companyId, statusFilter, searchTerm,
     filterData.startDate, filterData.endDate,
+    JSON.stringify(filterData.branchIds),
     JSON.stringify(filterData.productFilters),
     currentPage,
   ]);

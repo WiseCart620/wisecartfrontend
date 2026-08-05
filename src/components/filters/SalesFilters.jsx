@@ -1,6 +1,7 @@
 import React from 'react';
 import { Search, Plus, FileText, X } from 'lucide-react';
 import SearchableDropdown from '../../components/common/SaleSearchableDropdown';
+import MultiSelectDropdown from '../../components/common/MultiSelectDropdown';
 import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
 
 const SalesFilters = ({
@@ -28,7 +29,7 @@ const SalesFilters = ({
     ? branches.filter(b => b.company?.id === filterData.companyId).map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }))
     : branchOptions;
 
-  const hasActiveFilters = filterData.companyId || filterData.branchId || filterData.startDate ||
+  const hasActiveFilters = filterData.companyId || (filterData.branchIds?.length > 0) || filterData.startDate ||
     filterData.endDate || filterData.productFilters.length > 0 || searchTerm || statusFilter !== 'ALL';
 
   const pendingAmt = allFilteredSales.pendingAmount || 0;
@@ -99,9 +100,9 @@ const SalesFilters = ({
               onChange={(value) => {
                 setFilterData(prev => {
                   const update = { ...prev, companyId: value };
-                  if (value && prev.branchId) {
-                    const branch = branches.find(b => b.id === prev.branchId);
-                    if (branch?.company?.id !== value) update.branchId = '';
+                  if (value && prev.branchIds?.length) {
+                    const validIds = branches.filter(b => b.company?.id === value).map(b => b.id);
+                    update.branchIds = prev.branchIds.filter(id => validIds.includes(id));
                   }
                   return update;
                 });
@@ -112,11 +113,12 @@ const SalesFilters = ({
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Branch</label>
-            <SearchableDropdown
+            <MultiSelectDropdown
               options={filteredBranchOptions}
-              value={filterData.branchId}
-              onChange={(value) => { setFilterData(prev => ({ ...prev, branchId: value })); setCurrentPage(1); }}
-              placeholder="All Branches" displayKey="name" valueKey="id"
+              selectedIds={filterData.branchIds || []}
+              onChange={(ids) => { setFilterData(prev => ({ ...prev, branchIds: ids })); setCurrentPage(1); }}
+              placeholder="All Branches"
+              searchPlaceholder="Search branches..."
             />
             {filterData.companyId && filteredBranchOptions.length === 0 && (
               <p className="text-xs text-orange-600 mt-1">No branches for selected company</p>

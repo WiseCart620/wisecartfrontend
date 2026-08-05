@@ -122,11 +122,13 @@ const SalesManagement = () => {
       const params = new URLSearchParams({
         status: statusToFetch,
         ...(filterData.companyId && { companyId: filterData.companyId }),
-        ...(filterData.branchId && { branchId: filterData.branchId }),
         ...(searchTerm && { searchTerm }),
         ...(startDateObj && { startYear: startDateObj.getFullYear(), startMonth: startDateObj.getMonth() + 1 }),
         ...(endDateObj && { endYear: endDateObj.getFullYear(), endMonth: endDateObj.getMonth() + 1 }),
       });
+      if (filterData.branchIds?.length) {
+        filterData.branchIds.forEach(id => params.append('branchIds', id));
+      }
       const response = await api.get(`/sales/items-by-status?${params}`);
       const sorted = (response.data?.products || []).sort((a, b) => a.productName.localeCompare(b.productName));
       setProductsByStatus(prev => ({ ...prev, [statusToFetch.toLowerCase()]: sorted }));
