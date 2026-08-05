@@ -28,6 +28,16 @@ const InvoiceFilterModal = ({
     !branchSearch || `${b.branchName} ${b.branchCode}`.toLowerCase().includes(branchSearch.toLowerCase())
   );
 
+  // Selected branches float to the top, in the order they were selected
+  const sortedFilteredBranches = [...filteredBranches].sort((a, b) => {
+    const aSel = selectedBranchIds.includes(a.id);
+    const bSel = selectedBranchIds.includes(b.id);
+    if (aSel && !bSel) return -1;
+    if (!aSel && bSel) return 1;
+    if (aSel && bSel) return selectedBranchIds.indexOf(a.id) - selectedBranchIds.indexOf(b.id);
+    return 0;
+  });
+
   const filteredProducts = allProductOptions.filter(p => {
     if (!productSearch) return true;
     const searchLower = productSearch.toLowerCase();
@@ -37,6 +47,16 @@ const InvoiceFilterModal = ({
       (p.upc || '').toLowerCase().includes(searchLower) ||
       (p.sku || '').toLowerCase().includes(searchLower)
     );
+  });
+
+  // Selected products float to the top, in the order they were selected
+  const sortedFilteredProducts = [...filteredProducts].sort((a, b) => {
+    const aSel = selectedProductIds.includes(a.id);
+    const bSel = selectedProductIds.includes(b.id);
+    if (aSel && !bSel) return -1;
+    if (!aSel && bSel) return 1;
+    if (aSel && bSel) return selectedProductIds.indexOf(a.id) - selectedProductIds.indexOf(b.id);
+    return 0;
   });
 
   const toNumericProductId = (rawId) => {
@@ -119,12 +139,12 @@ const InvoiceFilterModal = ({
             )}
 
             <div className="border border-gray-200 rounded-lg max-h-40 overflow-y-auto divide-y divide-gray-100">
-              {filteredBranches.length === 0 ? (
+              {sortedFilteredBranches.length === 0 ? (
                 <div className="px-3 py-4 text-xs text-gray-400 italic text-center">
                   {filterData.companyId ? 'No branches for selected company' : 'Select a company to see branches'}
                 </div>
               ) : (
-                filteredBranches.map(b => (
+                sortedFilteredBranches.map(b => (
                   <label key={b.id} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer">
                     <input
                       type="checkbox"
@@ -177,10 +197,10 @@ const InvoiceFilterModal = ({
               />
             </div>
             <div className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto divide-y divide-gray-100">
-              {filteredProducts.length === 0 ? (
+              {sortedFilteredProducts.length === 0 ? (
                 <div className="px-3 py-4 text-xs text-gray-400 italic text-center">No products found</div>
               ) : (
-                filteredProducts.map(p => (
+                sortedFilteredProducts.map(p => (
                   <label key={p.id} className="flex items-start gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer">
                     <input
                       type="checkbox"

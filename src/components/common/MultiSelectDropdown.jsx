@@ -24,6 +24,17 @@ const MultiSelectDropdown = ({
     !search || o.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  const sortedFiltered = [...filtered].sort((a, b) => {
+    const aSelected = selectedIds.includes(a.id);
+    const bSelected = selectedIds.includes(b.id);
+    if (aSelected && !bSelected) return -1;
+    if (!aSelected && bSelected) return 1;
+    if (aSelected && bSelected) {
+      return selectedIds.indexOf(a.id) - selectedIds.indexOf(b.id);
+    }
+    return 0;
+  });
+
   const allSelected = filtered.length > 0 && filtered.every(o => selectedIds.includes(o.id));
 
   const toggle = (id) => {
@@ -89,10 +100,10 @@ const MultiSelectDropdown = ({
           )}
 
           <div className="max-h-48 overflow-y-auto divide-y divide-gray-100">
-            {filtered.length === 0 ? (
+            {sortedFiltered.length === 0 ? (
               <div className="px-2 py-4 text-xs text-gray-400 italic text-center">No options</div>
             ) : (
-              filtered.map(o => (
+              sortedFiltered.map(o => (
                 <label key={o.id} className="flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-gray-50 cursor-pointer rounded">
                   <input
                     type="checkbox"
