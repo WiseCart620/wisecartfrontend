@@ -18,6 +18,7 @@ import WarehouseStockTable from '../../components/tables/InventoryManagement/War
 import BranchStockTable from '../../components/tables/InventoryManagement/BranchStockTable';
 import TransactionTable from '../../components/tables/InventoryManagement/TransactionTable';
 import StockRebuildPanel from '../../components/tables/InventoryManagement/StockRebuildPanel';
+import TransactionCleanupPanel from '../../components/tables/InventoryManagement/TransactionCleanupPanel';
 import ProductFilterPanel from '../../components/filters/ProductFilterPanel';
 import WarehouseFilterPanel from '../../components/filters/WarehouseFilterPanel';
 import BranchFilterPanel from '../../components/filters/BranchFilterPanel';
@@ -692,12 +693,18 @@ const InventoryManagement = () => {
         )}
 
         {activeTab === 'stock-rebuild' && (
-          <div className="mb-8">
+          <div className="mb-8 space-y-6">
             <StockRebuildPanel
               products={products}
               warehouses={warehouses}
               branches={branches}
               onRebuilt={() => {
+                loadData(inventoryPage, inventoryPageSize);
+                loadProductSummaries();
+              }}
+            />
+            <TransactionCleanupPanel
+              onCleaned={() => {
                 loadData(inventoryPage, inventoryPageSize);
                 loadProductSummaries();
               }}
