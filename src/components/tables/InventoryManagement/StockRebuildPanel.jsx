@@ -37,11 +37,22 @@ const getVariationLabel = (v) => {
     return `Variation #${v.id}`;
 };
 
-// ---- multi-select dropdown -------------------------------------------------
-
 const MultiSelect = ({ label, values, onChange, options, getLabel, getId, placeholder }) => {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
+    const containerRef = React.useRef(null);
+
+    React.useEffect(() => {
+        if (!open) return;
+        const handleClickOutside = (e) => {
+            if (containerRef.current && !containerRef.current.contains(e.target)) {
+                setOpen(false);
+                setQuery('');
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [open]);
 
     const selectedSet = useMemo(() => new Set(values.map(String)), [values]);
 
@@ -69,7 +80,7 @@ const MultiSelect = ({ label, values, onChange, options, getLabel, getId, placeh
     const clearAll = () => onChange([]);
 
     return (
-        <div className="relative">
+        <div className="relative" ref={containerRef}>
             <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
             <button
                 type="button"
@@ -242,6 +253,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     const [branchIds, setBranchIds] = useState([]);
     const [productIds, setProductIds] = useState([]);
     const [includeVariations, setIncludeVariations] = useState(true);
+    const [selectedVariationKeys, setSelectedVariationKeys] = useState([]);
     const [running, setRunning] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [progress, setProgress] = useState({ done: 0, total: 0 });
@@ -253,6 +265,23 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     const selectedProducts = products.filter((p) => productIds.map(String).includes(String(p.id)));
 
     const anyHasVariations = selectedProducts.some((p) => (p.variations || []).length > 0);
+    const allSelectedVariations = useMemo(() => {
+        const list = [];
+        for (const p of selectedProducts) {
+            for (const v of p.variations || []) {
+                list.push({
+                    key: `${p.id}_${v.id}`,
+                    productId: p.id,
+                    productName: productLabel(p),
+                    variationId: v.id,
+                    variationLabel: getVariationLabel(v),
+                    raw: v,
+                });
+            }
+        }
+        return list;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [productIds, products]);
 
     const canRun =
         productIds.length > 0 &&
@@ -265,19 +294,36 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         if (nextScope === 'BRANCH') setWarehouseIds([]);
     };
 
-    // Build the flat list of (product, variation) targets based on selection + includeVariations toggle
+
     const buildProductVariationTargets = () => {
         const targets = [];
         for (const p of selectedProducts) {
             targets.push({ productId: p.id, productName: productLabel(p), variationId: null, variationName: 'Base' });
-            if (includeVariations && p.variations && p.variations.length > 0) {
-                for (const v of p.variations) {
-                    targets.push({
-                        productId: p.id,
-                        productName: productLabel(p),
-                        variationId: v.id,
-                        variationName: getVariationLabel(v),
-                    });
+        }
+
+        if (includeVariations) {
+            if (selectedVariationKeys.length > 0) {
+                const keySet = new Set(selectedVariationKeys.map(String));
+                for (const v of allSelectedVariations) {
+                    if (keySet.has(String(v.key))) {
+                        targets.push({
+                            productId: v.productId,
+                            productName: v.productName,
+                            variationId: v.variationId,
+                            variationName: v.variationLabel,
+                        });
+                    }
+                }
+            } else {
+                for (const p of selectedProducts) {
+                    for (const v of p.variations || []) {
+                        targets.push({
+                            productId: p.id,
+                            productName: productLabel(p),
+                            variationId: v.id,
+                            variationName: getVariationLabel(v),
+                        });
+                    }
                 }
             }
         }
@@ -324,8 +370,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     const totalOperations = useMemo(() => {
         if (!canRun) return 0;
         return buildOperations().length;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [productIds, warehouseIds, branchIds, scope, includeVariations, products]);
+    }, [productIds, warehouseIds, branchIds, scope, includeVariations, selectedVariationKeys, products]);
 
     const runRebuild = async () => {
         setConfirmOpen(false);
@@ -473,18 +518,37 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                     </div>
 
                     {anyHasVariations && (
-                        <div className="sm:col-span-2 flex items-center gap-2 -mt-1">
-                            <input
-                                id="includeVariations"
-                                type="checkbox"
-                                checked={includeVariations}
-                                onChange={(e) => setIncludeVariations(e.target.checked)}
-                                className="rounded border-gray-300"
-                            />
-                            <label htmlFor="includeVariations" className="text-xs text-gray-600">
-                                Also rebuild every variation of the selected products (recommended)
-                            </label>
-                        </div>
+                        <>
+                            <div className="sm:col-span-2 flex items-center gap-2 -mt-1">
+                                <input
+                                    id="includeVariations"
+                                    type="checkbox"
+                                    checked={includeVariations}
+                                    onChange={(e) => {
+                                        setIncludeVariations(e.target.checked);
+                                        if (!e.target.checked) setSelectedVariationKeys([]);
+                                    }}
+                                    className="rounded border-gray-300"
+                                />
+                                <label htmlFor="includeVariations" className="text-xs text-gray-600">
+                                    Include variations of the selected products
+                                </label>
+                            </div>
+
+                            {includeVariations && (
+                                <div className="sm:col-span-2">
+                                    <MultiSelect
+                                        label="Which variations (leave empty to include ALL variations)"
+                                        values={selectedVariationKeys}
+                                        onChange={setSelectedVariationKeys}
+                                        options={allSelectedVariations}
+                                        getId={(v) => v.key}
+                                        getLabel={(v) => `${v.variationLabel} — ${v.productName}`}
+                                        placeholder="All variations (default) — or pick specific ones..."
+                                    />
+                                </div>
+                            )}
+                        </>
                     )}
 
                     {needsWarehouse && (
