@@ -15,13 +15,14 @@ const TransactionCleanupPanel = ({ onCleaned }) => {
         setCountError(false);
         try {
             const res = await api.get('/transactions/cleanup/deleted-count');
-            if (typeof res.count !== 'number') {
-                console.error('Unexpected response shape from deleted-count endpoint:', res);
+            const count = res.data?.count;
+            if (typeof count !== 'number') {
+                console.error('Unexpected response shape:', res);
                 setCountError(true);
                 setDeletedCount(null);
                 return;
             }
-            setDeletedCount(res.count);
+            setDeletedCount(count);
         } catch (err) {
             console.error('Failed to load deleted count', err);
             setCountError(true);
@@ -38,11 +39,11 @@ const TransactionCleanupPanel = ({ onCleaned }) => {
         setDryRunResult(null);
         try {
             const res = await api.post('/transactions/cleanup/duplicate-sales?dryRun=true');
-            setDryRunResult(res);
-            if (!res.groupsWithDuplicates) {
+            setDryRunResult(res.data);
+            if (!res.data?.groupsWithDuplicates) {
                 toast.success('No duplicate sale transactions found');
             } else {
-                toast(`Found ${res.groupsWithDuplicates} sale(s) with duplicate transactions`, { icon: '⚠️' });
+                toast(`Found ${res.data.groupsWithDuplicates} sale(s) with duplicate transactions`, { icon: '⚠️' });
             }
         } catch (err) {
             console.error('Scan failed', err);
@@ -62,7 +63,7 @@ const TransactionCleanupPanel = ({ onCleaned }) => {
         setFixing(true);
         try {
             const res = await api.post('/transactions/cleanup/duplicate-sales?dryRun=false');
-            toast.success(`Fixed: retired ${res.rowsToRetire} duplicate transaction(s)`);
+            toast.success(`Fixed: retired ${res.data?.rowsToRetire} duplicate transaction(s)`);
             setDryRunResult(null);
             await loadDeletedCount();
             if (onCleaned) onCleaned();
@@ -84,7 +85,7 @@ const TransactionCleanupPanel = ({ onCleaned }) => {
         setPurging(true);
         try {
             const res = await api.delete('/transactions/cleanup/purge-deleted');
-            toast.success(res.message || `Permanently deleted ${res.purgedCount} transaction(s)`);
+            toast.success(res.data?.message || `Permanently deleted ${res.data?.purgedCount} transaction(s)`);
             await loadDeletedCount();
             if (onCleaned) onCleaned();
         } catch (err) {
