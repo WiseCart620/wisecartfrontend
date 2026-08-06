@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
     RefreshCw, AlertTriangle, Building, Store, Layers,
-    Search, ChevronDown, CheckCircle2, XCircle, Clock, ShieldAlert
+    Search, ChevronDown, CheckCircle2, XCircle, Clock, ShieldAlert, X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../../services/api';
@@ -9,9 +9,9 @@ import { api } from '../../../services/api';
 // ---- helpers -------------------------------------------------------------
 
 const SCOPES = [
-    { id: 'WAREHOUSE', label: 'Warehouse', icon: Building, endpoint: '/admin/stock-rebuild/warehouse' },
-    { id: 'BRANCH', label: 'Branch', icon: Store, endpoint: '/admin/stock-rebuild/branch' },
-    { id: 'BOTH', label: 'Warehouse + Branch', icon: Layers, endpoint: '/admin/stock-rebuild/full' },
+    { id: 'WAREHOUSE', label: 'Warehouse', icon: Building },
+    { id: 'BRANCH', label: 'Branch', icon: Store },
+    { id: 'BOTH', label: 'Warehouse + Branch', icon: Layers },
 ];
 
 const productLabel = (p) => `${p.productName || p.name || 'Unnamed'}${p.sku ? ` · ${p.sku}` : ''}`;
@@ -37,12 +37,13 @@ const getVariationLabel = (v) => {
     return `Variation #${v.id}`;
 };
 
-// A small searchable dropdown so long product/warehouse/branch lists stay usable.
-const SearchSelect = ({ label, value, onChange, options, getLabel, getId, placeholder, disabled }) => {
+// ---- multi-select dropdown -------------------------------------------------
+
+const MultiSelect = ({ label, values, onChange, options, getLabel, getId, placeholder }) => {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
 
-    const selected = options.find((o) => String(getId(o)) === String(value));
+    const selectedSet = useMemo(() => new Set(values.map(String)), [values]);
 
     const filtered = useMemo(() => {
         if (!query) return options;
@@ -50,24 +51,69 @@ const SearchSelect = ({ label, value, onChange, options, getLabel, getId, placeh
         return options.filter((o) => getLabel(o).toLowerCase().includes(q));
     }, [options, query, getLabel]);
 
+    const toggle = (id) => {
+        const idStr = String(id);
+        if (selectedSet.has(idStr)) {
+            onChange(values.filter((v) => String(v) !== idStr));
+        } else {
+            onChange([...values, id]);
+        }
+    };
+
+    const selectAllFiltered = () => {
+        const ids = filtered.map(getId);
+        const merged = Array.from(new Set([...values.map(String), ...ids.map(String)]));
+        onChange(merged);
+    };
+
+    const clearAll = () => onChange([]);
+
     return (
         <div className="relative">
             <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
             <button
                 type="button"
-                disabled={disabled}
                 onClick={() => setOpen((o) => !o)}
-                className={`w-full flex items-center justify-between px-3 py-2 text-sm border rounded-lg text-left transition ${disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-white hover:border-gray-400'
-                    } ${open ? 'border-[#185FA5] ring-2 ring-[#185FA5]/20' : 'border-gray-300'}`}
+                className={`w-full flex items-center justify-between px-3 py-2 text-sm border rounded-lg text-left transition bg-white hover:border-gray-400 ${open ? 'border-[#185FA5] ring-2 ring-[#185FA5]/20' : 'border-gray-300'
+                    }`}
             >
-                <span className={selected ? 'text-gray-900' : 'text-gray-400'}>
-                    {selected ? getLabel(selected) : placeholder}
+                <span className={values.length ? 'text-gray-900' : 'text-gray-400'}>
+                    {values.length === 0
+                        ? placeholder
+                        : values.length === 1
+                            ? getLabel(options.find((o) => String(getId(o)) === String(values[0])) || {})
+                            : `${values.length} selected`}
                 </span>
                 <ChevronDown size={14} className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
 
-            {open && !disabled && (
-                <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-hidden flex flex-col">
+            {values.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                    {values.slice(0, 6).map((id) => {
+                        const opt = options.find((o) => String(getId(o)) === String(id));
+                        if (!opt) return null;
+                        return (
+                            <span
+                                key={id}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E6F1FB] text-[#0C447C] text-xs font-medium"
+                            >
+                                {getLabel(opt)}
+                                <button type="button" onClick={() => toggle(id)} className="hover:text-red-600">
+                                    <X size={11} />
+                                </button>
+                            </span>
+                        );
+                    })}
+                    {values.length > 6 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 text-xs">
+                            +{values.length - 6} more
+                        </span>
+                    )}
+                </div>
+            )}
+
+            {open && (
+                <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-72 overflow-hidden flex flex-col">
                     <div className="relative border-b border-gray-100">
                         <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
@@ -78,21 +124,34 @@ const SearchSelect = ({ label, value, onChange, options, getLabel, getId, placeh
                             className="w-full pl-8 pr-2 py-2 text-sm outline-none"
                         />
                     </div>
+                    <div className="flex items-center justify-between px-3 py-1.5 border-b border-gray-100 bg-gray-50 text-xs">
+                        <button type="button" onClick={selectAllFiltered} className="text-[#185FA5] font-medium hover:underline">
+                            Select all {query ? 'matching' : ''}
+                        </button>
+                        <button type="button" onClick={clearAll} className="text-gray-500 hover:underline">
+                            Clear
+                        </button>
+                    </div>
                     <div className="overflow-y-auto">
                         {filtered.length === 0 ? (
                             <div className="px-3 py-3 text-xs text-gray-400 text-center">No matches</div>
                         ) : (
-                            filtered.map((o) => (
-                                <button
-                                    key={getId(o)}
-                                    type="button"
-                                    onClick={() => { onChange(getId(o)); setOpen(false); setQuery(''); }}
-                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-[#E6F1FB] transition ${String(getId(o)) === String(value) ? 'bg-[#E6F1FB] text-[#0C447C] font-medium' : 'text-gray-700'
-                                        }`}
-                                >
-                                    {getLabel(o)}
-                                </button>
-                            ))
+                            filtered.map((o) => {
+                                const id = getId(o);
+                                const checked = selectedSet.has(String(id));
+                                return (
+                                    <button
+                                        key={id}
+                                        type="button"
+                                        onClick={() => toggle(id)}
+                                        className={`w-full flex items-center gap-2 text-left px-3 py-2 text-sm hover:bg-[#E6F1FB] transition ${checked ? 'bg-[#E6F1FB] text-[#0C447C] font-medium' : 'text-gray-700'
+                                            }`}
+                                    >
+                                        <input type="checkbox" readOnly checked={checked} className="pointer-events-none" />
+                                        {getLabel(o)}
+                                    </button>
+                                );
+                            })
                         )}
                     </div>
                 </div>
@@ -101,68 +160,73 @@ const SearchSelect = ({ label, value, onChange, options, getLabel, getId, placeh
     );
 };
 
-const StatPair = ({ label, before, after }) => {
-    const changed = before !== after;
-    return (
-        <div className="flex flex-col gap-0.5 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
-            <span className="text-[10px] uppercase tracking-wide text-gray-400 font-medium">{label}</span>
-            <div className="flex items-baseline gap-1.5">
-                <span className="text-sm text-gray-400 line-through">{before ?? '—'}</span>
-                <span className="text-gray-300">→</span>
-                <span className={`text-base font-bold ${changed ? 'text-[#0C447C]' : 'text-gray-700'}`}>{after ?? '—'}</span>
-            </div>
-        </div>
-    );
-};
+// ---- results table ---------------------------------------------------------
 
-// Renders one rebuild result block (warehouse or branch shaped payload).
-const ResultBlock = ({ title, icon: Icon, data }) => {
-    if (!data) return null;
-    if (data.error) {
+const StatusBadge = ({ status }) => {
+    if (status === 'RUNNING') {
         return (
-            <div className="border border-red-200 bg-red-50 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-red-700 font-medium text-sm mb-1">
-                    <XCircle size={16} /> {title} failed
-                </div>
-                <p className="text-xs text-red-600">{data.error}</p>
-            </div>
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+                <RefreshCw size={11} className="animate-spin" /> Running
+            </span>
+        );
+    }
+    if (status === 'ERROR') {
+        return (
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
+                <XCircle size={11} /> Failed
+            </span>
         );
     }
     return (
-        <div className="border border-gray-200 rounded-lg p-4">
-            <div className="flex items-center gap-2 text-[#0C447C] font-semibold text-sm mb-3">
-                <Icon size={16} /> {title}
-                <span className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
-                    <CheckCircle2 size={12} /> {data.status || 'REBUILT'}
-                </span>
-            </div>
+        <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
+            <CheckCircle2 size={11} /> Rebuilt
+        </span>
+    );
+};
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-                <StatPair label="Quantity" before={data.storedQuantityBefore} after={data.storedQuantityAfter} />
-                {'storedReservedBefore' in data && (
-                    <StatPair label="Reserved" before={data.storedReservedBefore} after={data.storedReservedAfter} />
-                )}
-            </div>
-
-            <div className="flex flex-wrap gap-2 text-xs">
-                <span className="px-2 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-200">
-                    Retired: {data.retiredOldTransactions ?? 0}
-                </span>
-                {'saleTransactionsRebuilt' in data && (
-                    <span className="px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                        Sales rebuilt: {data.saleTransactionsRebuilt}
-                    </span>
-                )}
-                {'inventoryTransactionsRebuilt' in data && (
-                    <span className="px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                        Inventory tx rebuilt: {data.inventoryTransactionsRebuilt}
-                    </span>
-                )}
-                {'deliveryTransactionsRebuilt' in data && (
-                    <span className="px-2 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                        Delivery tx rebuilt: {data.deliveryTransactionsRebuilt}
-                    </span>
-                )}
+const ResultsTable = ({ rows }) => {
+    if (rows.length === 0) return null;
+    return (
+        <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Variation</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Qty Before → After</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Retired</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {rows.map((r) => (
+                            <tr key={r.id} className="hover:bg-gray-50">
+                                <td className="px-3 py-2 text-gray-900">{r.productName}</td>
+                                <td className="px-3 py-2 text-gray-600">{r.variationName}</td>
+                                <td className="px-3 py-2 text-gray-600">
+                                    <span className="inline-flex items-center gap-1">
+                                        {r.locationType === 'Warehouse' ? <Building size={12} /> : <Store size={12} />}
+                                        {r.locationName}
+                                    </span>
+                                </td>
+                                <td className="px-3 py-2 text-center text-gray-700">
+                                    {r.qtyBefore ?? '—'} → <span className="font-semibold text-[#0C447C]">{r.qtyAfter ?? '—'}</span>
+                                </td>
+                                <td className="px-3 py-2 text-center text-gray-500">{r.retired ?? '—'}</td>
+                                <td className="px-3 py-2 text-center">
+                                    <StatusBadge status={r.status} />
+                                    {r.status === 'ERROR' && r.error && (
+                                        <div className="text-[10px] text-red-500 mt-0.5 max-w-[160px] truncate" title={r.error}>
+                                            {r.error}
+                                        </div>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         </div>
     );
@@ -170,89 +234,189 @@ const ResultBlock = ({ title, icon: Icon, data }) => {
 
 // ---- main component --------------------------------------------------------
 
+let rowCounter = 0;
+
 const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRebuilt }) => {
     const [scope, setScope] = useState('WAREHOUSE');
-    const [warehouseId, setWarehouseId] = useState('');
-    const [branchId, setBranchId] = useState('');
-    const [productId, setProductId] = useState('');
-    const [variationId, setVariationId] = useState('');
+    const [warehouseIds, setWarehouseIds] = useState([]);
+    const [branchIds, setBranchIds] = useState([]);
+    const [productIds, setProductIds] = useState([]);
+    const [includeVariations, setIncludeVariations] = useState(true);
     const [running, setRunning] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
-    const [lastResult, setLastResult] = useState(null);
-    const [history, setHistory] = useState([]);
-
-    const selectedProduct = products.find((p) => String(p.id) === String(productId));
-    const variationOptions = selectedProduct?.variations || [];
+    const [progress, setProgress] = useState({ done: 0, total: 0 });
+    const [results, setResults] = useState([]);
 
     const needsWarehouse = scope === 'WAREHOUSE' || scope === 'BOTH';
     const needsBranch = scope === 'BRANCH' || scope === 'BOTH';
 
+    const selectedProducts = products.filter((p) => productIds.map(String).includes(String(p.id)));
+
+    const anyHasVariations = selectedProducts.some((p) => (p.variations || []).length > 0);
+
     const canRun =
-        !!productId &&
-        (!needsWarehouse || !!warehouseId) &&
-        (!needsBranch || !!branchId);
+        productIds.length > 0 &&
+        (!needsWarehouse || warehouseIds.length > 0) &&
+        (!needsBranch || branchIds.length > 0);
 
     const resetTargets = (nextScope) => {
         setScope(nextScope);
-        if (nextScope === 'WAREHOUSE') setBranchId('');
-        if (nextScope === 'BRANCH') setWarehouseId('');
+        if (nextScope === 'WAREHOUSE') setBranchIds([]);
+        if (nextScope === 'BRANCH') setWarehouseIds([]);
     };
 
-    const describeTarget = () => {
-        const wh = warehouses.find((w) => String(w.id) === String(warehouseId));
-        const br = branches.find((b) => String(b.id) === String(branchId));
-        const parts = [];
-        if (needsWarehouse && wh) parts.push(`Warehouse "${wh.warehouseName}"`);
-        if (needsBranch && br) parts.push(`Branch "${br.branchName}"`);
-        return parts.join(' and ');
+    // Build the flat list of (product, variation) targets based on selection + includeVariations toggle
+    const buildProductVariationTargets = () => {
+        const targets = [];
+        for (const p of selectedProducts) {
+            targets.push({ productId: p.id, productName: productLabel(p), variationId: null, variationName: 'Base' });
+            if (includeVariations && p.variations && p.variations.length > 0) {
+                for (const v of p.variations) {
+                    targets.push({
+                        productId: p.id,
+                        productName: productLabel(p),
+                        variationId: v.id,
+                        variationName: getVariationLabel(v),
+                    });
+                }
+            }
+        }
+        return targets;
     };
+
+    const buildOperations = () => {
+        const pvTargets = buildProductVariationTargets();
+        const ops = [];
+
+        if (needsWarehouse) {
+            for (const pv of pvTargets) {
+                for (const wId of warehouseIds) {
+                    const wh = warehouses.find((w) => String(w.id) === String(wId));
+                    ops.push({
+                        ...pv,
+                        locationType: 'Warehouse',
+                        locationId: wId,
+                        locationName: wh?.warehouseName || `Warehouse #${wId}`,
+                        endpoint: '/admin/stock-rebuild/warehouse',
+                        locationParam: 'warehouseId',
+                    });
+                }
+            }
+        }
+        if (needsBranch) {
+            for (const pv of pvTargets) {
+                for (const bId of branchIds) {
+                    const br = branches.find((b) => String(b.id) === String(bId));
+                    ops.push({
+                        ...pv,
+                        locationType: 'Branch',
+                        locationId: bId,
+                        locationName: br?.branchName || `Branch #${bId}`,
+                        endpoint: '/admin/stock-rebuild/branch',
+                        locationParam: 'branchId',
+                    });
+                }
+            }
+        }
+        return ops;
+    };
+
+    const totalOperations = useMemo(() => {
+        if (!canRun) return 0;
+        return buildOperations().length;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [productIds, warehouseIds, branchIds, scope, includeVariations, products]);
 
     const runRebuild = async () => {
         setConfirmOpen(false);
+        const ops = buildOperations();
+        if (ops.length === 0) return;
+
         setRunning(true);
-        setLastResult(null);
-        try {
-            const params = new URLSearchParams();
-            params.append('productId', productId);
-            if (variationId) params.append('variationId', variationId);
+        setResults(ops.map((op) => ({
+            id: ++rowCounter,
+            productName: op.productName,
+            variationName: op.variationName,
+            locationType: op.locationType,
+            locationName: op.locationName,
+            status: 'RUNNING',
+            qtyBefore: null,
+            qtyAfter: null,
+            retired: null,
+            error: null,
+        })));
+        setProgress({ done: 0, total: ops.length });
 
-            const scopeMeta = SCOPES.find((s) => s.id === scope);
-            let payload;
+        const CONCURRENCY = 3;
+        let cursor = 0;
+        let successCount = 0;
+        let failCount = 0;
 
-            if (scope === 'WAREHOUSE') {
-                params.append('warehouseId', warehouseId);
-                const res = await api.post(`${scopeMeta.endpoint}?${params.toString()}`, {});
-                payload = { warehouse: res.data || res };
-            } else if (scope === 'BRANCH') {
-                params.append('branchId', branchId);
-                const res = await api.post(`${scopeMeta.endpoint}?${params.toString()}`, {});
-                payload = { branch: res.data || res };
-            } else {
-                params.append('warehouseId', warehouseId);
-                params.append('branchId', branchId);
-                const res = await api.post(`${scopeMeta.endpoint}?${params.toString()}`, {});
+        const runOne = async (op, rowId) => {
+            try {
+                const params = new URLSearchParams();
+                params.append('productId', op.productId);
+                if (op.variationId) params.append('variationId', op.variationId);
+                params.append(op.locationParam, op.locationId);
+
+                const res = await api.post(`${op.endpoint}?${params.toString()}`, {});
                 const data = res.data || res;
-                payload = { warehouse: data.warehouse, branch: data.branch };
+
+                setResults((prev) => prev.map((r) => r.id === rowId ? {
+                    ...r,
+                    status: 'DONE',
+                    qtyBefore: data.storedQuantityBefore,
+                    qtyAfter: data.storedQuantityAfter,
+                    retired: data.retiredOldTransactions,
+                } : r));
+                successCount++;
+            } catch (err) {
+                setResults((prev) => prev.map((r) => r.id === rowId ? {
+                    ...r,
+                    status: 'ERROR',
+                    error: err?.message || 'Rebuild failed',
+                } : r));
+                failCount++;
+            } finally {
+                setProgress((p) => ({ ...p, done: p.done + 1 }));
             }
+        };
 
-            setLastResult({ scope, productName: selectedProduct ? productLabel(selectedProduct) : `Product #${productId}`, target: describeTarget(), payload, at: new Date() });
-            setHistory((h) => [
-                { scope, productName: selectedProduct ? productLabel(selectedProduct) : `Product #${productId}`, target: describeTarget(), at: new Date(), success: true },
-                ...h,
-            ].slice(0, 10));
+        const rowIds = results.length === ops.length ? null : null; // placeholder, real ids captured below
 
-            toast.success('Stock rebuilt successfully');
-            if (onRebuilt) onRebuilt();
-        } catch (err) {
-            console.error('Rebuild failed', err);
-            toast.error(err?.message || 'Rebuild failed');
-            setHistory((h) => [
-                { scope, productName: selectedProduct ? productLabel(selectedProduct) : `Product #${productId}`, target: describeTarget(), at: new Date(), success: false },
-                ...h,
-            ].slice(0, 10));
-        } finally {
-            setRunning(false);
+        // Need the actual row ids we just set — re-derive by index since order matches
+        setResults((prev) => {
+            const withIds = prev.map((r, i) => ({ ...r, _opIndex: i }));
+            return withIds;
+        });
+
+        // Run with limited concurrency, matching ops[i] to the row created at the same index
+        let opsWithRowIds = [];
+        setResults((prev) => {
+            opsWithRowIds = ops.map((op, i) => ({ op, rowId: prev[i].id }));
+            return prev;
+        });
+
+        // Wait a microtask so state above committed (React batches synchronously here, safe in practice)
+        await Promise.resolve();
+
+        const worker = async () => {
+            while (cursor < opsWithRowIds.length) {
+                const idx = cursor++;
+                const { op, rowId } = opsWithRowIds[idx];
+                await runOne(op, rowId);
+            }
+        };
+
+        await Promise.all(Array.from({ length: Math.min(CONCURRENCY, ops.length) }, () => worker()));
+
+        setRunning(false);
+        if (failCount === 0) {
+            toast.success(`Rebuilt ${successCount} record${successCount !== 1 ? 's' : ''} successfully`);
+        } else {
+            toast.error(`${successCount} succeeded, ${failCount} failed — check the table for details`);
         }
+        if (onRebuilt) onRebuilt();
     };
 
     return (
@@ -263,16 +427,16 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                 <div className="text-sm text-amber-800">
                     <p className="font-semibold">This tool rewrites stock history.</p>
                     <p className="mt-0.5 text-amber-700">
-                        It permanently retires existing transactions for the selected product at the selected location(s) and
-                        regenerates them from the source Sale / Delivery / Inventory records. Run it on one product at a time and
-                        double-check the result before moving to the next.
+                        It permanently retires existing transactions for each selected product at each selected location and
+                        regenerates them from the source Sale / Delivery / Inventory records. Review the results table
+                        after running before trusting the numbers downstream.
                     </p>
                 </div>
             </div>
 
             {/* Config card */}
             <div className="border border-gray-200 rounded-xl p-5 bg-white">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4">Rebuild target</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-4">Rebuild targets</h3>
 
                 {/* Scope selector */}
                 <div className="flex gap-2 mb-5">
@@ -297,108 +461,89 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="sm:col-span-2">
-                        <SearchSelect
-                            label="Product"
-                            value={productId}
-                            onChange={(id) => { setProductId(id); setVariationId(''); }}
+                        <MultiSelect
+                            label="Products"
+                            values={productIds}
+                            onChange={setProductIds}
                             options={products}
                             getId={(p) => p.id}
                             getLabel={productLabel}
-                            placeholder="Select a product..."
+                            placeholder="Select one or more products..."
                         />
                     </div>
 
-                    {variationOptions.length > 0 && (
-                        <div className="sm:col-span-2">
-                            <SearchSelect
-                                label="Variation (optional — leave blank for base product)"
-                                value={variationId}
-                                onChange={setVariationId}
-                                options={variationOptions}
-                                getId={(v) => v.id}
-                                getLabel={getVariationLabel}
-                                placeholder="Base product (no variation)"
+                    {anyHasVariations && (
+                        <div className="sm:col-span-2 flex items-center gap-2 -mt-1">
+                            <input
+                                id="includeVariations"
+                                type="checkbox"
+                                checked={includeVariations}
+                                onChange={(e) => setIncludeVariations(e.target.checked)}
+                                className="rounded border-gray-300"
                             />
+                            <label htmlFor="includeVariations" className="text-xs text-gray-600">
+                                Also rebuild every variation of the selected products (recommended)
+                            </label>
                         </div>
                     )}
 
                     {needsWarehouse && (
-                        <SearchSelect
-                            label="Warehouse"
-                            value={warehouseId}
-                            onChange={setWarehouseId}
+                        <MultiSelect
+                            label="Warehouses"
+                            values={warehouseIds}
+                            onChange={setWarehouseIds}
                             options={warehouses}
                             getId={(w) => w.id}
                             getLabel={(w) => w.warehouseName}
-                            placeholder="Select a warehouse..."
+                            placeholder="Select one or more warehouses..."
                         />
                     )}
 
                     {needsBranch && (
-                        <SearchSelect
-                            label="Branch"
-                            value={branchId}
-                            onChange={setBranchId}
+                        <MultiSelect
+                            label="Branches"
+                            values={branchIds}
+                            onChange={setBranchIds}
                             options={branches}
                             getId={(b) => b.id}
                             getLabel={(b) => b.branchName}
-                            placeholder="Select a branch..."
+                            placeholder="Select one or more branches..."
                         />
                     )}
                 </div>
 
-                <div className="mt-5 flex justify-end">
+                <div className="mt-5 flex items-center justify-between">
+                    <span className="text-xs text-gray-500">
+                        {canRun ? `${totalOperations} rebuild operation${totalOperations !== 1 ? 's' : ''} will run` : 'Select products and at least one location'}
+                    </span>
                     <button
                         onClick={() => setConfirmOpen(true)}
                         disabled={!canRun || running}
                         className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-[#185FA5] text-white rounded-lg hover:bg-[#0C447C] disabled:opacity-40 disabled:cursor-not-allowed transition"
                     >
                         <RefreshCw size={15} className={running ? 'animate-spin' : ''} />
-                        {running ? 'Rebuilding...' : 'Rebuild Stock'}
+                        {running ? `Rebuilding ${progress.done}/${progress.total}...` : 'Rebuild Stock'}
                     </button>
                 </div>
+
+                {running && (
+                    <div className="mt-3 w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                        <div
+                            className="bg-[#185FA5] h-1.5 transition-all"
+                            style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%` }}
+                        />
+                    </div>
+                )}
             </div>
 
-            {/* Result */}
-            {lastResult && (
-                <div className="border border-gray-200 rounded-xl p-5 bg-white">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-semibold text-gray-700">
-                            Result — {lastResult.productName}
-                            <span className="ml-2 text-xs font-normal text-gray-400">
-                                {lastResult.target} · {lastResult.at.toLocaleTimeString()}
-                            </span>
-                        </h3>
-                    </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <ResultBlock title="Warehouse" icon={Building} data={lastResult.payload.warehouse} />
-                        <ResultBlock title="Branch" icon={Store} data={lastResult.payload.branch} />
-                    </div>
-                </div>
-            )}
-
-            {/* Recent activity */}
-            {history.length > 0 && (
-                <div className="border border-gray-200 rounded-xl p-5 bg-white">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                        <Clock size={14} /> Recent rebuilds (this session)
+            {/* Results */}
+            {results.length > 0 && (
+                <div className="space-y-2">
+                    <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                        <Clock size={14} /> Results ({results.filter(r => r.status === 'DONE').length} rebuilt
+                        {results.some(r => r.status === 'ERROR') && `, ${results.filter(r => r.status === 'ERROR').length} failed`})
                     </h3>
-                    <ul className="divide-y divide-gray-100">
-                        {history.map((h, i) => (
-                            <li key={i} className="flex items-center justify-between py-2 text-sm">
-                                <div className="flex items-center gap-2">
-                                    {h.success ? (
-                                        <CheckCircle2 size={14} className="text-green-600" />
-                                    ) : (
-                                        <XCircle size={14} className="text-red-600" />
-                                    )}
-                                    <span className="text-gray-700">{h.productName}</span>
-                                    <span className="text-gray-400 text-xs">· {h.target}</span>
-                                </div>
-                                <span className="text-xs text-gray-400">{h.at.toLocaleTimeString()}</span>
-                            </li>
-                        ))}
-                    </ul>
+                    <ResultsTable rows={results} />
                 </div>
             )}
 
@@ -413,14 +558,17 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                             <h3 className="text-base font-semibold text-gray-900">Confirm stock rebuild</h3>
                         </div>
                         <p className="text-sm text-gray-600 mb-1">
-                            You're about to rebuild stock for:
+                            You're about to run <span className="font-semibold text-gray-900">{totalOperations}</span> rebuild
+                            operation{totalOperations !== 1 ? 's' : ''} across:
                         </p>
-                        <p className="text-sm font-medium text-gray-900 mb-4">
-                            {selectedProduct ? productLabel(selectedProduct) : `Product #${productId}`} — {describeTarget()}
-                        </p>
+                        <ul className="text-sm text-gray-700 mb-4 mt-2 space-y-1">
+                            <li>• {productIds.length} product{productIds.length !== 1 ? 's' : ''}{includeVariations && anyHasVariations ? ' (incl. variations)' : ''}</li>
+                            {needsWarehouse && <li>• {warehouseIds.length} warehouse{warehouseIds.length !== 1 ? 's' : ''}</li>}
+                            {needsBranch && <li>• {branchIds.length} branch{branchIds.length !== 1 ? 'es' : ''}</li>}
+                        </ul>
                         <p className="text-xs text-gray-500 mb-5">
-                            Existing transactions for this product at this location will be retired and regenerated from source
-                            records. This cannot be undone.
+                            Existing transactions for each product at each selected location will be retired and regenerated
+                            from source records. This cannot be undone.
                         </p>
                         <div className="flex justify-end gap-2">
                             <button
@@ -433,7 +581,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                                 onClick={runRebuild}
                                 className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
                             >
-                                Yes, rebuild
+                                Yes, rebuild all
                             </button>
                         </div>
                     </div>
