@@ -34,7 +34,7 @@ const DeliveryManagement = () => {
     products,
     warehouses,
     companies,
-    loading,                // ← now wired up properly from the hook
+    loading,
     loadData,
     refreshDeliveries,
     updateDeliveryLocally,

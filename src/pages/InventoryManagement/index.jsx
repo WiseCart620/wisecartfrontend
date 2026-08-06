@@ -17,6 +17,7 @@ import ProductSummaryTable from '../../components/tables/InventoryManagement/Pro
 import WarehouseStockTable from '../../components/tables/InventoryManagement/WarehouseStockTable';
 import BranchStockTable from '../../components/tables/InventoryManagement/BranchStockTable';
 import TransactionTable from '../../components/tables/InventoryManagement/TransactionTable';
+import StockRebuildPanel from '../../components/tables/InventoryManagement/StockRebuildPanel';
 import ProductFilterPanel from '../../components/filters/ProductFilterPanel';
 import WarehouseFilterPanel from '../../components/filters/WarehouseFilterPanel';
 import BranchFilterPanel from '../../components/filters/BranchFilterPanel';
@@ -472,6 +473,16 @@ const InventoryManagement = () => {
                 <Package className="inline w-4 h-4 mr-2" />
                 Transactions
               </button>
+              <button
+                onClick={() => setActiveTab('stock-rebuild')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'stock-rebuild'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+              >
+                <RefreshCw className="inline w-4 h-4 mr-2" />
+                Stock Rebuild
+              </button>
             </nav>
           </div>
           <div className="mt-3 flex justify-end gap-2">
@@ -678,6 +689,20 @@ const InventoryManagement = () => {
               </div>
             )}
           </>
+        )}
+
+        {activeTab === 'stock-rebuild' && (
+          <div className="mb-8">
+            <StockRebuildPanel
+              products={products}
+              warehouses={warehouses}
+              branches={branches}
+              onRebuilt={() => {
+                loadData(inventoryPage, inventoryPageSize);
+                loadProductSummaries();
+              }}
+            />
+          </div>
         )}
 
         <InventorySummaryReportModal
