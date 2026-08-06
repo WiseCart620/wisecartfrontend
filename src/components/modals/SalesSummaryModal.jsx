@@ -13,7 +13,6 @@ const SalesSummaryModal = ({ onClose, filterData, statusFilter, searchTerm, comp
         const startDateObj = filterData.startDate ? new Date(filterData.startDate) : null;
         const endDateObj = filterData.endDate ? new Date(filterData.endDate) : null;
         const params = new URLSearchParams({
-          page: 0, size: 10000,
           ...(filterData.companyId && { companyId: filterData.companyId }),
           ...(statusFilter !== 'ALL' && { status: statusFilter }),
           ...(searchTerm && { searchTerm }),
@@ -32,37 +31,20 @@ const SalesSummaryModal = ({ onClose, filterData, statusFilter, searchTerm, comp
           });
         }
 
-        const response = await api.get(`/sales/all?${params}`);
-        const allSales = response.data?.content || [];
-        const productMap = new Map();
+        const response = await api.get(`/sales/summary-report?${params}`);
+        const rows = response.data?.rows || [];
 
-        allSales.forEach(sale => {
-          (sale.items || []).forEach(item => {
-            const sku = item.variation?.sku || item.product?.sku || '—';
-            const upc = item.variation?.upc || item.product?.upc || '—';
-            const variationDisplay = item.variation
-              ? (item.variation.combinationDisplay || (item.variation.variationType && item.variation.variationValue
-                ? `${item.variation.variationType}: ${item.variation.variationValue}` : 'Variation'))
-              : '';
-            const key = `${item.product?.id}_${item.variation?.id || 'base'}`;
-
-            if (productMap.has(key)) {
-              const ex = productMap.get(key);
-              ex.quantity += item.quantity || 0;
-              ex.amount += item.amount || 0;
-            } else {
-              productMap.set(key, {
-                productName: item.product?.productName || '',
-                variationDisplay, sku, upc,
-                quantity: item.quantity || 0,
-                unitPrice: item.unitPrice || 0,
-                amount: item.amount || 0,
-              });
-            }
-          });
-        });
-
-        setPrintRows(Array.from(productMap.values()).sort((a, b) => a.productName.localeCompare(b.productName)));
+        setPrintRows(rows
+          .map(r => ({
+            productName: r.productName || '',
+            variationDisplay: r.variationDisplay || '',
+            sku: r.sku || '—',
+            upc: r.upc || '—',
+            quantity: r.quantity || 0,
+            unitPrice: r.unitPrice || 0,
+            amount: r.amount || 0,
+          }))
+          .sort((a, b) => a.productName.localeCompare(b.productName)));
       } catch (e) {
         console.error(e);
       } finally {
