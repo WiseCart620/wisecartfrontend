@@ -16,6 +16,27 @@ const SCOPES = [
 
 const productLabel = (p) => `${p.productName || p.name || 'Unnamed'}${p.sku ? ` · ${p.sku}` : ''}`;
 
+const getVariationLabel = (v) => {
+    if (v.combinationDisplay && v.combinationDisplay.trim()) {
+        return v.combinationDisplay;
+    }
+    if (v.attributes && typeof v.attributes === 'object' && Object.keys(v.attributes).length > 0) {
+        return Object.entries(v.attributes)
+            .map(([key, val]) => `${key}: ${val}`)
+            .join(', ');
+    }
+    if (v.variationName && v.variationName.trim()) {
+        return v.variationName;
+    }
+    if (v.variationType && v.variationValue) {
+        return `${v.variationType}: ${v.variationValue}`;
+    }
+    if (v.sku) {
+        return `SKU: ${v.sku}`;
+    }
+    return `Variation #${v.id}`;
+};
+
 // A small searchable dropdown so long product/warehouse/branch lists stay usable.
 const SearchSelect = ({ label, value, onChange, options, getLabel, getId, placeholder, disabled }) => {
     const [open, setOpen] = useState(false);
@@ -263,8 +284,8 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                                 key={s.id}
                                 onClick={() => resetTargets(s.id)}
                                 className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition ${active
-                                        ? 'bg-[#185FA5] border-[#185FA5] text-white shadow-sm'
-                                        : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                                    ? 'bg-[#185FA5] border-[#185FA5] text-white shadow-sm'
+                                    : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
                                     }`}
                             >
                                 <Icon size={15} />
@@ -295,7 +316,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                                 onChange={setVariationId}
                                 options={variationOptions}
                                 getId={(v) => v.id}
-                                getLabel={(v) => v.variationName || v.name || `Variation #${v.id}`}
+                                getLabel={getVariationLabel}
                                 placeholder="Base product (no variation)"
                             />
                         </div>
