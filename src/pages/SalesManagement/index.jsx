@@ -320,6 +320,7 @@ const SalesManagement = () => {
           allFilteredSales={allFilteredSales}
           productsByStatus={productsByStatus}
           allProductOptions={allOpts}
+          dataLoading={staticDataLoading}
           canCreate={canCreate}
           canFinance={canFinance}
           isEncoder={isEncoder}

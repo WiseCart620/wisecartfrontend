@@ -12,6 +12,7 @@ const SalesFilters = ({
   allFilteredSales,
   productsByStatus,
   allProductOptions,
+  dataLoading = false,
   canCreate, canFinance, isEncoder,
   onNewSale,
   onOpenInvoice,
@@ -109,6 +110,7 @@ const SalesFilters = ({
                 setCurrentPage(1);
               }}
               placeholder="All Companies" displayKey="name" valueKey="id"
+              loading={dataLoading}
             />
           </div>
           <div>

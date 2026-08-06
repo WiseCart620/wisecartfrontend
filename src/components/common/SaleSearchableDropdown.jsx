@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown } from 'lucide-react';
 
-const SaleSearchableDropdown = ({ options, value, onChange, placeholder, displayKey, valueKey, required = false }) => {
+const SaleSearchableDropdown = ({ options, value, onChange, placeholder, displayKey, valueKey, required = false, loading = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
@@ -48,28 +48,37 @@ const SaleSearchableDropdown = ({ options, value, onChange, placeholder, display
             </div>
           </div>
           <div className="overflow-y-auto max-h-60">
-            {!required && (
-              <button
-                type="button"
-                onClick={() => { onChange(''); setIsOpen(false); setSearchTerm(''); }}
-                className="w-full px-4 py-2 text-left hover:bg-gray-50 transition text-gray-500 italic text-sm"
-              >
-                -- None --
-              </button>
-            )}
-            {filteredOptions.length === 0 ? (
-              <div className="px-4 py-6 text-center text-gray-500 text-sm">No results found</div>
+            {loading ? (
+              <div className="px-4 py-6 flex items-center justify-center gap-2 text-gray-400 text-sm">
+                <span className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                Loading...
+              </div>
             ) : (
-              filteredOptions.map((option) => (
-                <button
-                  key={option[valueKey]}
-                  type="button"
-                  onClick={() => { onChange(option[valueKey]); setIsOpen(false); setSearchTerm(''); }}
-                  className={`w-full px-4 py-2 text-left hover:bg-blue-50 transition text-sm ${value === option[valueKey] ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'}`}
-                >
-                  {option[displayKey]}
-                </button>
-              ))
+              <>
+                {!required && (
+                  <button
+                    type="button"
+                    onClick={() => { onChange(''); setIsOpen(false); setSearchTerm(''); }}
+                    className="w-full px-4 py-2 text-left hover:bg-gray-50 transition text-gray-500 italic text-sm"
+                  >
+                    -- None --
+                  </button>
+                )}
+                {filteredOptions.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-gray-500 text-sm">No results found</div>
+                ) : (
+                  filteredOptions.map((option) => (
+                    <button
+                      key={option[valueKey]}
+                      type="button"
+                      onClick={() => { onChange(option[valueKey]); setIsOpen(false); setSearchTerm(''); }}
+                      className={`w-full px-4 py-2 text-left hover:bg-blue-50 transition text-sm ${value === option[valueKey] ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'}`}
+                    >
+                      {option[displayKey]}
+                    </button>
+                  ))
+                )}
+              </>
             )}
           </div>
         </div>
