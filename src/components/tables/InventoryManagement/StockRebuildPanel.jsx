@@ -4,7 +4,7 @@ import {
     Search, ChevronDown, CheckCircle2, XCircle, Clock, ShieldAlert
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { api } from '../../services/api';
+import { api } from '../../../services/api';
 
 // ---- helpers -------------------------------------------------------------
 
