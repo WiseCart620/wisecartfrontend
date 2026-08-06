@@ -297,15 +297,28 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
 
     const buildProductVariationTargets = () => {
         const targets = [];
-        for (const p of selectedProducts) {
-            targets.push({ productId: p.id, productName: productLabel(p), variationId: null, variationName: 'Base' });
-        }
 
-        if (includeVariations) {
+        for (const p of selectedProducts) {
+            const productVariations = p.variations || [];
+            const hasVariations = productVariations.length > 0;
+
+            if (!hasVariations) {
+                // No variations exist — base is the only possible target.
+                targets.push({ productId: p.id, productName: productLabel(p), variationId: null, variationName: 'Base' });
+                continue;
+            }
+
+            // Product HAS variations — never auto-include base alongside them.
+            // Only fall back to base if the user explicitly unchecked "include variations".
+            if (!includeVariations) {
+                targets.push({ productId: p.id, productName: productLabel(p), variationId: null, variationName: 'Base' });
+                continue;
+            }
+
             if (selectedVariationKeys.length > 0) {
                 const keySet = new Set(selectedVariationKeys.map(String));
                 for (const v of allSelectedVariations) {
-                    if (keySet.has(String(v.key))) {
+                    if (v.productId === p.id && keySet.has(String(v.key))) {
                         targets.push({
                             productId: v.productId,
                             productName: v.productName,
@@ -315,15 +328,13 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                     }
                 }
             } else {
-                for (const p of selectedProducts) {
-                    for (const v of p.variations || []) {
-                        targets.push({
-                            productId: p.id,
-                            productName: productLabel(p),
-                            variationId: v.id,
-                            variationName: getVariationLabel(v),
-                        });
-                    }
+                for (const v of productVariations) {
+                    targets.push({
+                        productId: p.id,
+                        productName: productLabel(p),
+                        variationId: v.id,
+                        variationName: getVariationLabel(v),
+                    });
                 }
             }
         }
