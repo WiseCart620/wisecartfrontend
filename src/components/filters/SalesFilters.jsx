@@ -121,6 +121,7 @@ const SalesFilters = ({
               onChange={(ids) => { setFilterData(prev => ({ ...prev, branchIds: ids })); setCurrentPage(1); }}
               placeholder="All Branches"
               searchPlaceholder="Search branches..."
+              loading={dataLoading}
             />
             {filterData.companyId && filteredBranchOptions.length === 0 && (
               <p className="text-xs text-orange-600 mt-1">No branches for selected company</p>
@@ -183,6 +184,7 @@ const SalesFilters = ({
               }}
               placeholder="Add product filter..."
               hideLocationHint={true}
+              loading={dataLoading}
             />
             {filterData.productFilters.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
