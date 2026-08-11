@@ -63,7 +63,7 @@ const DeliveryFilters = ({
   return (
     <div className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 mb-4">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="w-44">
+        <div className="w-44 h-9 [&>div]:h-9 [&>button]:h-9">
           <SearchableDropdown
             options={companyOptions}
             value={filterData.companyId}
@@ -81,7 +81,7 @@ const DeliveryFilters = ({
           />
         </div>
 
-        <div className="w-44">
+        <div className="w-44 h-9 [&>div]:h-9 [&>button]:h-9">
           <SearchableDropdown
             options={filteredBranchOptions}
             value={filterData.branchId}
@@ -93,7 +93,7 @@ const DeliveryFilters = ({
           />
         </div>
 
-        <div className="w-44">
+        <div className="w-44 h-9 [&>div]:h-9 [&>button]:h-9">
           <SearchableDropdown
             options={warehouseOptions}
             value={filterData.warehouseId}
@@ -107,7 +107,7 @@ const DeliveryFilters = ({
         <select
           value={filterData.status}
           onChange={(e) => onFilterChange({ status: e.target.value })}
-          className="px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-36"
+          className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-36"
         >
           <option value="">All Status</option>
           {statusOptions.map(status => (
@@ -115,7 +115,7 @@ const DeliveryFilters = ({
           ))}
         </select>
 
-        <div className="w-56">
+        <div className="w-56 h-9 [&>div]:h-9 [&>button]:h-9">
           <VariationSearchableDropdown
             options={productOptions.filter(o =>
               !(filterData.productFilters || []).some(pf =>
@@ -149,20 +149,20 @@ const DeliveryFilters = ({
           />
         </div>
 
-        <div className="flex items-center gap-1 border border-gray-300 rounded-lg px-2 py-1">
+        <div className="h-9 flex items-center gap-1 border border-gray-300 rounded-lg px-2">
           <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
           <input
             type="date"
             value={filterData.startDate}
             onChange={(e) => onFilterChange({ startDate: e.target.value })}
-            className="w-32 px-1.5 py-1 text-sm border-0 focus:outline-none focus:ring-0"
+            className="w-32 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
           />
           <span className="text-gray-300">–</span>
           <input
             type="date"
             value={filterData.endDate}
             onChange={(e) => onFilterChange({ endDate: e.target.value })}
-            className="w-32 px-1.5 py-1 text-sm border-0 focus:outline-none focus:ring-0"
+            className="w-32 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
           />
         </div>
 
@@ -171,7 +171,7 @@ const DeliveryFilters = ({
           placeholder="Receipt #..."
           value={filterData.receiptNumber || ''}
           onChange={(e) => onFilterChange({ receiptNumber: e.target.value })}
-          className="px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-32"
+          className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-32"
         />
 
         <input
@@ -179,7 +179,7 @@ const DeliveryFilters = ({
           placeholder="PO #..."
           value={filterData.poNumber || ''}
           onChange={(e) => onFilterChange({ poNumber: e.target.value })}
-          className="px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-28"
+          className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-28"
         />
 
         {hasActiveFilters && (

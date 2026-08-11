@@ -17,7 +17,7 @@ const TransactionFilterPanel = ({
         <select
           value={filters.type}
           onChange={(e) => updateFilter('type', e.target.value)}
-          className="px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-40"
+          className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-40"
         >
           <option value="ALL">All Types</option>
           <option value="STOCK_IN">Stock In</option>
@@ -33,7 +33,7 @@ const TransactionFilterPanel = ({
           placeholder="Verified by..."
           value={filters.verifiedBy}
           onChange={(e) => updateFilter('verifiedBy', e.target.value)}
-          className="px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-36"
+          className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-36"
         />
 
         <div className="flex items-center gap-1 border border-gray-300 rounded-lg px-2 py-1">

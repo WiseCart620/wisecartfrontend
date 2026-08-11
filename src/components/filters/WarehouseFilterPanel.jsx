@@ -15,7 +15,7 @@ const WarehouseFilterPanel = ({
   return (
     <div className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 mb-4">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="w-52">
+        <div className="w-52 h-9 [&>div]:h-9 [&>button]:h-9">
           <SearchableWarehouseDropdown
             warehouses={warehouses}
             value={filters.warehouse}
