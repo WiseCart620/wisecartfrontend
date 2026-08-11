@@ -1,6 +1,6 @@
 // src/components/filters/InventoryFilters.jsx
 import React from 'react';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import SearchableLocationDropdown from '../common/SearchableLocationDropdown';
 
 const InventoryFilters = ({
@@ -26,121 +26,111 @@ const InventoryFilters = ({
   branches,
   onClearFilters
 }) => {
+  const hasActiveFilters = searchTerm || (statusFilter && statusFilter !== 'ALL') ||
+    (typeFilter && typeFilter !== 'ALL') || fromWarehouseFilter || toWarehouseFilter ||
+    fromBranchFilter || toBranchFilter || startDateFilter || endDateFilter;
+
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-      <div className="flex flex-wrap gap-4 items-center justify-between mb-4">
-        <div className="flex gap-3 items-center">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="ALL">All Status</option>
-            <option value="PENDING">Pending</option>
-            <option value="CONFIRMED">Confirmed</option>
-          </select>
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-            <input
-              type="text"
-              placeholder="Search inventory..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-12 pr-4 py-3 border border-gray-300 rounded-lg w-80 focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Advanced Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 pt-4 border-t border-gray-200">
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-2">Inventory Type</label>
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-          >
-            <option value="ALL">All Types</option>
-            <option value="STOCK_IN">Stock In</option>
-            <option value="TRANSFER">Transfer</option>
-            <option value="RETURN">Return</option>
-            <option value="DAMAGE">Damage</option>
-          </select>
+    <div className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 mb-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-56">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+          <input
+            type="text"
+            placeholder="Search inventory..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
+          />
         </div>
 
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-2">From Warehouse</label>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-36"
+        >
+          <option value="ALL">All Status</option>
+          <option value="PENDING">Pending</option>
+          <option value="CONFIRMED">Confirmed</option>
+        </select>
+
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          className="px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-36"
+        >
+          <option value="ALL">All Types</option>
+          <option value="STOCK_IN">Stock In</option>
+          <option value="TRANSFER">Transfer</option>
+          <option value="RETURN">Return</option>
+          <option value="DAMAGE">Damage</option>
+        </select>
+
+        <div className="w-40">
           <SearchableLocationDropdown
             locations={warehouses.map(wh => ({ id: wh.id, name: wh.warehouseName, code: wh.warehouseCode }))}
             value={fromWarehouseFilter}
             onChange={setFromWarehouseFilter}
-            placeholder="All Warehouses"
+            placeholder="From Warehouse"
             label="warehouses"
           />
         </div>
 
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-2">To Warehouse</label>
+        <div className="w-40">
           <SearchableLocationDropdown
             locations={warehouses.map(wh => ({ id: wh.id, name: wh.warehouseName, code: wh.warehouseCode }))}
             value={toWarehouseFilter}
             onChange={setToWarehouseFilter}
-            placeholder="All Warehouses"
+            placeholder="To Warehouse"
             label="warehouses"
           />
         </div>
 
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-2">From Branch</label>
+        <div className="w-40">
           <SearchableLocationDropdown
             locations={branches.map(br => ({ id: br.id, name: br.branchName, code: br.branchCode }))}
             value={fromBranchFilter}
             onChange={setFromBranchFilter}
-            placeholder="All Branches"
+            placeholder="From Branch"
             label="branches"
           />
         </div>
 
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-2">To Branch</label>
+        <div className="w-40">
           <SearchableLocationDropdown
             locations={branches.map(br => ({ id: br.id, name: br.branchName, code: br.branchCode }))}
             value={toBranchFilter}
             onChange={setToBranchFilter}
-            placeholder="All Branches"
+            placeholder="To Branch"
             label="branches"
           />
         </div>
 
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-2">Start Date</label>
+        <div className="flex items-center gap-1 border border-gray-300 rounded-lg px-2 py-1">
+          <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
           <input
             type="date"
             value={startDateFilter}
             onChange={(e) => setStartDateFilter(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+            className="w-32 px-1.5 py-1 text-sm border-0 focus:outline-none focus:ring-0"
           />
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-2">End Date</label>
+          <span className="text-gray-300">–</span>
           <input
             type="date"
             value={endDateFilter}
             onChange={(e) => setEndDateFilter(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+            className="w-32 px-1.5 py-1 text-sm border-0 focus:outline-none focus:ring-0"
           />
         </div>
 
-        <div className="md:col-span-3 flex items-end">
+        {hasActiveFilters && (
           <button
             onClick={onClearFilters}
-            className="px-4 py-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition font-medium"
+            className="text-sm text-blue-600 hover:text-blue-800 font-medium ml-auto whitespace-nowrap"
           >
-            Clear All Filters
+            Clear filters
           </button>
-        </div>
+        )}
       </div>
     </div>
   );

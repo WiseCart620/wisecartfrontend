@@ -2,9 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Search, ChevronDown, X } from 'lucide-react';
 
 const MultiSelectDropdown = ({
-  options,  
+  options,
   selectedIds = [],
-  onChange, 
+  onChange,
   placeholder = 'All',
   searchPlaceholder = 'Search...',
 }) => {
@@ -20,9 +20,11 @@ const MultiSelectDropdown = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filtered = options.filter(o =>
-    !search || o.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = options.filter(o => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return o.name?.toLowerCase().includes(s) || o.code?.toLowerCase().includes(s);
+  });
 
   const sortedFiltered = [...filtered].sort((a, b) => {
     const aSelected = selectedIds.includes(a.id);
@@ -111,7 +113,10 @@ const MultiSelectDropdown = ({
                     onChange={() => toggle(o.id)}
                     className="w-4 h-4"
                   />
-                  <span className="text-gray-700 truncate">{o.name}</span>
+                  <span className="text-gray-700 truncate">
+                    {o.name}
+                    {o.code && <span className="text-gray-400"> ({o.code})</span>}
+                  </span>
                 </label>
               ))
             )}

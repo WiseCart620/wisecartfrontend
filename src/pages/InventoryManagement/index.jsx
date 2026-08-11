@@ -465,7 +465,7 @@ const InventoryManagement = () => {
                   }`}
               >
                 <Store className="inline w-4 h-4 mr-2" />
-                Company Stock
+                Company Stocks
               </button>
               <button
                 onClick={() => setActiveTab('transactions')}

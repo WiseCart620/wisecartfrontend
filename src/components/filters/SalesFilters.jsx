@@ -24,10 +24,10 @@ const SalesFilters = ({
   setCurrentPage,
 }) => {
   const companyOptions = companies.map(c => ({ id: c.id, name: c.companyName || c.name }));
-  const branchOptions = branches.map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
+  const branchOptions = branches.map(b => ({ id: b.id, name: b.branchName, code: b.branchCode }));
 
   const filteredBranchOptions = filterData.companyId
-    ? branches.filter(b => b.company?.id === filterData.companyId).map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }))
+    ? branches.filter(b => b.company?.id === filterData.companyId).map(b => ({ id: b.id, name: b.branchName, code: b.branchCode }))
     : branchOptions;
 
   const hasActiveFilters = filterData.companyId || (filterData.branchIds?.length > 0) || filterData.startDate ||
@@ -91,10 +91,9 @@ const SalesFilters = ({
           </div>
         </div>
 
-        {/* Filter row */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 pt-3 border-t border-gray-200">
-          <div>
-            <label className="block text-[11px] font-medium text-gray-700 mb-1">Company</label>
+        {/* Compact filter row */}
+        <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-200">
+          <div className="w-44">
             <SearchableDropdown
               options={companyOptions}
               value={filterData.companyId}
@@ -113,53 +112,47 @@ const SalesFilters = ({
               loading={dataLoading}
             />
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Branch</label>
+
+          <div className="w-44">
             <MultiSelectDropdown
               options={filteredBranchOptions}
               selectedIds={filterData.branchIds || []}
               onChange={(ids) => { setFilterData(prev => ({ ...prev, branchIds: ids })); setCurrentPage(1); }}
               placeholder="All Branches"
-              searchPlaceholder="Search branches..."
+              searchPlaceholder="Search name or code..."
               loading={dataLoading}
             />
-            {filterData.companyId && filteredBranchOptions.length === 0 && (
-              <p className="text-xs text-orange-600 mt-1">No branches for selected company</p>
-            )}
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
-            <select
-              value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-              className="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="ALL">All Status</option>
-              <option value="PENDING">Pending</option>
-              <option value="CONFIRMED">Confirmed</option>
-              <option value="INVOICED">Invoiced</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
-            <input type="date" value={filterData.startDate}
-              onChange={(e) => { setFilterData(prev => ({ ...prev, startDate: e.target.value })); setCurrentPage(1); }}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">End Date</label>
-            <input type="date" value={filterData.endDate}
-              onChange={(e) => { setFilterData(prev => ({ ...prev, endDate: e.target.value })); setCurrentPage(1); }}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-        </div>
 
-        {/* Product filter + summary */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2 border-t border-gray-100">
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Filter by Product / UPC / SKU</label>
+          <select
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+            className="px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-36"
+          >
+            <option value="ALL">All Status</option>
+            <option value="PENDING">Pending</option>
+            <option value="CONFIRMED">Confirmed</option>
+            <option value="INVOICED">Invoiced</option>
+          </select>
+
+          <div className="flex items-center gap-1 border border-gray-300 rounded-lg px-2 py-1">
+            <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
+            <input
+              type="date"
+              value={filterData.startDate}
+              onChange={(e) => { setFilterData(prev => ({ ...prev, startDate: e.target.value })); setCurrentPage(1); }}
+              className="w-32 px-1.5 py-1 text-sm border-0 focus:outline-none focus:ring-0"
+            />
+            <span className="text-gray-300">–</span>
+            <input
+              type="date"
+              value={filterData.endDate}
+              onChange={(e) => { setFilterData(prev => ({ ...prev, endDate: e.target.value })); setCurrentPage(1); }}
+              className="w-32 px-1.5 py-1 text-sm border-0 focus:outline-none focus:ring-0"
+            />
+          </div>
+
+          <div className="w-56">
             <VariationSearchableDropdown
               options={allProductOptions.filter(o =>
                 !filterData.productFilters.some(pf =>
@@ -182,77 +175,78 @@ const SalesFilters = ({
                 }));
                 setCurrentPage(1);
               }}
-              placeholder="Add product filter..."
+              placeholder="Add product / UPC / SKU..."
               hideLocationHint={true}
               loading={dataLoading}
             />
-            {filterData.productFilters.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {filterData.productFilters.map((pf, idx) => (
-                  <span key={idx} className="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                    {pf.label}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFilterData(prev => ({ ...prev, productFilters: prev.productFilters.filter((_, i) => i !== idx) }));
-                        setCurrentPage(1);
-                      }}
-                      className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-200 hover:bg-red-200 hover:text-red-700 transition-colors"
-                    >
-                      <X size={9} strokeWidth={2.5} />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
 
-          {!isEncoder && (
-            <div className="flex flex-col justify-start">
-              <label className="block text-xs font-medium text-gray-700 mb-1">Summary</label>
-              <div className="flex items-center gap-3 flex-wrap">
-                {[
-                  { status: 'PENDING', label: 'Pending', amt: pendingAmt, count: allFilteredSales.pendingCount ?? 0, qty: pendingQty, hoverClass: 'hover:bg-yellow-50' },
-                  { status: 'CONFIRMED', label: 'Confirmed', amt: confirmedAmt, count: allFilteredSales.confirmedCount ?? 0, qty: confirmedQty, hoverClass: 'hover:bg-blue-50' },
-                  { status: 'INVOICED', label: 'Invoiced', amt: invoicedAmt, count: allFilteredSales.invoicedCount ?? 0, qty: invoicedQty, hoverClass: 'hover:bg-green-50' },
-                ].map(({ status, label, amt, count, qty, hoverClass }) => (
-                  <button
-                    key={status}
-                    onClick={() => onOpenStatusModal(status)}
-                    className={`flex items-center gap-2 border border-blue-400 rounded-lg px-3 py-1 ${hoverClass} transition-colors cursor-pointer`}
-                  >
-                    <span className="text-xs text-gray-600">{label}:</span>
-                    <span className="text-xs font-semibold text-gray-800">₱{fmt(amt)}</span>
-                    <span className="text-xs font-bold text-gray-700">{count}</span>
-                    <span className="text-xs text-gray-500 ml-1">(Qty: {qty.toLocaleString()})</span>
-                  </button>
-                ))}
-
-                <div className="flex items-center gap-2 border-2 border-blue-400 rounded-lg px-3 py-1">
-                  <span className="text-xs font-bold text-gray-700">Total Qty:</span>
-                  <span className="text-sm font-black text-gray-800">{(pendingQty + confirmedQty + invoicedQty).toLocaleString()}</span>
-                </div>
-
-                <div className="flex items-center gap-2 border-2 border-blue-600 rounded-lg px-3 py-1">
-                  <span className="text-xs font-bold text-blue-700">Grand Total:</span>
-                  <span className="text-sm font-black text-blue-700">₱{fmt(grandTotal)}</span>
-                </div>
-
-                <button
-                  onClick={onOpenSummary}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-xs font-semibold transition-colors"
-                >
-                  <FileText size={13} /> View Summary
-                </button>
-              </div>
-            </div>
+          {hasActiveFilters && (
+            <button onClick={onResetFilter} className="text-sm text-blue-600 hover:text-blue-800 font-medium ml-auto whitespace-nowrap">
+              Clear filters
+            </button>
           )}
         </div>
 
-        {hasActiveFilters && (
-          <div className="flex justify-end pt-2">
-            <button onClick={onResetFilter} className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition">
-              <X size={16} /> Clear All Filters
+        {filterData.companyId && filteredBranchOptions.length === 0 && (
+          <p className="text-xs text-orange-600">No branches for selected company</p>
+        )}
+
+        {filterData.productFilters.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 -mt-1">
+            {filterData.productFilters.map((pf, idx) => (
+              <span key={idx} className="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                {pf.label}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterData(prev => ({ ...prev, productFilters: prev.productFilters.filter((_, i) => i !== idx) }));
+                    setCurrentPage(1);
+                  }}
+                  className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-200 hover:bg-red-200 hover:text-red-700 transition-colors"
+                >
+                  <X size={9} strokeWidth={2.5} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Summary row */}
+        {!isEncoder && (
+          <div className="flex items-center gap-3 flex-wrap pt-2 border-t border-gray-100">
+            {[
+              { status: 'PENDING', label: 'Pending', amt: pendingAmt, count: allFilteredSales.pendingCount ?? 0, qty: pendingQty, hoverClass: 'hover:bg-yellow-50' },
+              { status: 'CONFIRMED', label: 'Confirmed', amt: confirmedAmt, count: allFilteredSales.confirmedCount ?? 0, qty: confirmedQty, hoverClass: 'hover:bg-blue-50' },
+              { status: 'INVOICED', label: 'Invoiced', amt: invoicedAmt, count: allFilteredSales.invoicedCount ?? 0, qty: invoicedQty, hoverClass: 'hover:bg-green-50' },
+            ].map(({ status, label, amt, count, qty, hoverClass }) => (
+              <button
+                key={status}
+                onClick={() => onOpenStatusModal(status)}
+                className={`flex items-center gap-2 border border-blue-400 rounded-lg px-3 py-1 ${hoverClass} transition-colors cursor-pointer`}
+              >
+                <span className="text-xs text-gray-600">{label}:</span>
+                <span className="text-xs font-semibold text-gray-800">₱{fmt(amt)}</span>
+                <span className="text-xs font-bold text-gray-700">{count}</span>
+                <span className="text-xs text-gray-500 ml-1">(Qty: {qty.toLocaleString()})</span>
+              </button>
+            ))}
+
+            <div className="flex items-center gap-2 border-2 border-blue-400 rounded-lg px-3 py-1">
+              <span className="text-xs font-bold text-gray-700">Total Qty:</span>
+              <span className="text-sm font-black text-gray-800">{(pendingQty + confirmedQty + invoicedQty).toLocaleString()}</span>
+            </div>
+
+            <div className="flex items-center gap-2 border-2 border-blue-600 rounded-lg px-3 py-1">
+              <span className="text-xs font-bold text-blue-700">Grand Total:</span>
+              <span className="text-sm font-black text-blue-700">₱{fmt(grandTotal)}</span>
+            </div>
+
+            <button
+              onClick={onOpenSummary}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-xs font-semibold transition-colors"
+            >
+              <FileText size={13} /> View Summary
             </button>
           </div>
         )}

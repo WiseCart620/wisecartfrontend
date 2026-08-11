@@ -10,64 +10,64 @@ const WarehouseFilterPanel = ({
 }) => {
   if (!showWarehouseFilter) return null;
 
+  const hasActiveFilters = filters.warehouse || filters.minQty || filters.maxQty || filters.startDate || filters.endDate;
+
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Warehouse</label>
+    <div className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 mb-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="w-52">
           <SearchableWarehouseDropdown
             warehouses={warehouses}
             value={filters.warehouse}
             onChange={(value) => updateFilter('warehouse', value)}
-            placeholder="Select warehouse..."
+            placeholder="All Warehouses"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Min Total Stock</label>
+
+        <div className="flex items-center gap-1 border border-gray-300 rounded-lg px-2 py-1">
+          <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Stock</span>
           <input
             type="number"
-            placeholder="Min total stock..."
+            placeholder="Min"
             value={filters.minQty}
             onChange={(e) => updateFilter('minQty', e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="w-16 px-1.5 py-1 text-sm border-0 focus:outline-none focus:ring-0"
           />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Max Total Stock</label>
+          <span className="text-gray-300">–</span>
           <input
             type="number"
-            placeholder="Max total stock..."
+            placeholder="Max"
             value={filters.maxQty}
             onChange={(e) => updateFilter('maxQty', e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="w-16 px-1.5 py-1 text-sm border-0 focus:outline-none focus:ring-0"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">From Date</label>
+
+        <div className="flex items-center gap-1 border border-gray-300 rounded-lg px-2 py-1">
+          <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
           <input
             type="date"
             value={filters.startDate}
             onChange={(e) => updateFilter('startDate', e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="w-32 px-1.5 py-1 text-sm border-0 focus:outline-none focus:ring-0"
           />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">To Date</label>
+          <span className="text-gray-300">–</span>
           <input
             type="date"
             value={filters.endDate}
             onChange={(e) => updateFilter('endDate', e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="w-32 px-1.5 py-1 text-sm border-0 focus:outline-none focus:ring-0"
           />
         </div>
-      </div>
-      <div className="flex justify-end gap-2 mt-4">
-        <button
-          onClick={clearFilters}
-          className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
-        >
-          Clear Filters
-        </button>
+
+        {hasActiveFilters && (
+          <button
+            onClick={clearFilters}
+            className="text-sm text-blue-600 hover:text-blue-800 font-medium ml-auto whitespace-nowrap"
+          >
+            Clear filters
+          </button>
+        )}
       </div>
     </div>
   );
