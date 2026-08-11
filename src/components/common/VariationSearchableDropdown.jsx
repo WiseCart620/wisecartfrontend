@@ -125,23 +125,23 @@ const VariationSearchableDropdown = ({
         type="button"
         onClick={() => !loading && setIsOpen(!isOpen)}
         disabled={loading}
-        className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition text-left flex items-center justify-between ${loading ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+        className={`w-full h-9 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition text-left flex items-center justify-between ${loading ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
       >
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 overflow-hidden">
           {loading ? (
-            <span className="flex items-center gap-2 text-gray-400">
+            <span className="flex items-center gap-2 text-gray-400 text-sm whitespace-nowrap">
               <span className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-              Loading products...
+              Loading...
             </span>
           ) : selectedOption ? (
-            <div className="text-gray-900 font-medium truncate">
+            <div className="text-gray-900 font-medium text-sm truncate">
               {selectedOption.upc || 'N/A'} - {selectedOption.fullName} - {selectedOption.sku || 'N/A'}
             </div>
           ) : (
-            <span className="text-gray-500">{placeholder}</span>
+            <span className="text-gray-500 text-sm truncate block">{placeholder}</span>
           )}
         </div>
-        <ChevronDown size={20} className={`text-gray-400 transition-transform ml-2 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={16} className={`text-gray-400 transition-transform ml-2 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Dropdown list */}

@@ -152,7 +152,7 @@ const SalesFilters = ({
             />
           </div>
 
-          <div className="w-56 h-9 [&>div]:h-9 [&>button]:h-9">
+          <div className="w-56">
             <VariationSearchableDropdown
               options={allProductOptions.filter(o =>
                 !filterData.productFilters.some(pf =>
@@ -175,7 +175,7 @@ const SalesFilters = ({
                 }));
                 setCurrentPage(1);
               }}
-              placeholder="Add product / UPC / SKU..."
+              placeholder="Product / UPC / SKU"
               hideLocationHint={true}
               loading={dataLoading}
             />

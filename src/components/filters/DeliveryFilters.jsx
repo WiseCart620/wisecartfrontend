@@ -62,7 +62,7 @@ const DeliveryFilters = ({
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 mb-4">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
         <div className="w-44 h-9 [&>div]:h-9 [&>button]:h-9">
           <SearchableDropdown
             options={companyOptions}
@@ -185,7 +185,7 @@ const DeliveryFilters = ({
         {hasActiveFilters && (
           <button
             onClick={onReset}
-            className="text-sm text-blue-600 hover:text-blue-800 font-medium ml-auto whitespace-nowrap"
+            className="col-span-2 sm:col-span-1 text-sm text-blue-600 hover:text-blue-800 font-medium sm:ml-auto whitespace-nowrap text-right sm:text-left"
           >
             Clear filters
           </button>

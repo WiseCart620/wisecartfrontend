@@ -57,7 +57,7 @@ const BranchFilterPanel = ({
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 mb-4">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
         <div className="w-44">
           <MultiSelectDropdown
             options={companies.map(c => ({ id: c.id, name: c.companyName }))}
@@ -127,7 +127,7 @@ const BranchFilterPanel = ({
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
-            className="text-sm text-blue-600 hover:text-blue-800 font-medium ml-auto whitespace-nowrap"
+            className="col-span-2 sm:col-span-1 text-sm text-blue-600 hover:text-blue-800 font-medium sm:ml-auto whitespace-nowrap text-right sm:text-left"
           >
             Clear filters
           </button>

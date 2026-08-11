@@ -32,7 +32,7 @@ const InventoryFilters = ({
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 mb-4">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
         <div className="relative w-56 h-9">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
           <input
@@ -126,7 +126,7 @@ const InventoryFilters = ({
         {hasActiveFilters && (
           <button
             onClick={onClearFilters}
-            className="text-sm text-blue-600 hover:text-blue-800 font-medium ml-auto whitespace-nowrap"
+            className="col-span-2 sm:col-span-1 text-sm text-blue-600 hover:text-blue-800 font-medium sm:ml-auto whitespace-nowrap text-right sm:text-left"
           >
             Clear filters
           </button>
