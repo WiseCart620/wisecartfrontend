@@ -125,7 +125,7 @@ const VariationSearchableDropdown = ({
         type="button"
         onClick={() => !loading && setIsOpen(!isOpen)}
         disabled={loading}
-        className={`w-full h-9 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition text-left flex items-center justify-between ${loading ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+        className={`w-full px-3 flex items-center justify-between ${fieldBase} ${loading ? 'bg-gray-100 cursor-not-allowed' : ''}`}
       >
         <div className="flex-1 min-w-0 overflow-hidden">
           {loading ? (

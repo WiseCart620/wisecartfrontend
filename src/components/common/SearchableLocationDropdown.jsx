@@ -36,8 +36,7 @@ const SearchableLocationDropdown = ({
         type="button"
         onClick={() => !disabled && !loading && setIsOpen(!isOpen)}
         disabled={disabled || loading}
-        className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition text-left flex items-center justify-between ${(disabled || loading) ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'bg-white'
-          } text-sm`}
+        className={`w-full px-3 flex items-center justify-between ${fieldBase} ${(disabled || loading) ? 'bg-gray-100 cursor-not-allowed opacity-60' : ''}`}
       >
         {loading ? (
           <span className="flex items-center gap-2 text-gray-400">

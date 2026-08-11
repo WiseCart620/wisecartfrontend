@@ -53,8 +53,7 @@ const SearchableDropdown = ({
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-left flex items-center justify-between ${disabled ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'bg-white'
-          }`}
+        className={`w-full px-3 flex items-center justify-between ${fieldBase} ${disabled ? 'bg-gray-100 cursor-not-allowed opacity-60' : ''}`}
       >
         <span className={selectedOption ? 'text-gray-900' : 'text-gray-500'}>
           {selectedOption ? selectedOption[displayKey] : placeholder}

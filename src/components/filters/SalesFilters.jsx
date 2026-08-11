@@ -93,7 +93,7 @@ const SalesFilters = ({
 
         {/* Compact filter row */}
         <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-200">
-          <div className="w-44 h-9 [&>div]:h-9 [&>button]:h-9">
+          <div className="w-44">
             <SearchableDropdown
               options={companyOptions}
               value={filterData.companyId}
@@ -113,7 +113,7 @@ const SalesFilters = ({
             />
           </div>
 
-          <div className="w-44 h-9 [&>div]:h-9 [&>button]:h-9">
+          <div className="w-44">
             <MultiSelectDropdown
               options={filteredBranchOptions}
               selectedIds={filterData.branchIds || []}

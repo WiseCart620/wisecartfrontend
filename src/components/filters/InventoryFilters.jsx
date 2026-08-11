@@ -66,7 +66,7 @@ const InventoryFilters = ({
           <option value="DAMAGE">Damage</option>
         </select>
 
-        <div className="w-40 h-9 [&>div]:h-9 [&>button]:h-9">
+        <div className="w-40">
           <SearchableLocationDropdown
             locations={warehouses.map(wh => ({ id: wh.id, name: wh.warehouseName, code: wh.warehouseCode }))}
             value={fromWarehouseFilter}
@@ -76,7 +76,7 @@ const InventoryFilters = ({
           />
         </div>
 
-        <div className="w-40 h-9 [&>div]:h-9 [&>button]:h-9">
+        <div className="w-40">
           <SearchableLocationDropdown
             locations={warehouses.map(wh => ({ id: wh.id, name: wh.warehouseName, code: wh.warehouseCode }))}
             value={toWarehouseFilter}
@@ -86,7 +86,7 @@ const InventoryFilters = ({
           />
         </div>
 
-        <div className="w-40 h-9 [&>div]:h-9 [&>button]:h-9">
+        <div className="w-40">
           <SearchableLocationDropdown
             locations={branches.map(br => ({ id: br.id, name: br.branchName, code: br.branchCode }))}
             value={fromBranchFilter}
@@ -96,7 +96,7 @@ const InventoryFilters = ({
           />
         </div>
 
-        <div className="w-40 h-9 [&>div]:h-9 [&>button]:h-9">
+        <div className="w-40">
           <SearchableLocationDropdown
             locations={branches.map(br => ({ id: br.id, name: br.branchName, code: br.branchCode }))}
             value={toBranchFilter}

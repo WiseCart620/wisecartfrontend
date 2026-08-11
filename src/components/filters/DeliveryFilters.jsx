@@ -63,7 +63,7 @@ const DeliveryFilters = ({
   return (
     <div className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 mb-4">
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
-        <div className="w-44 h-9 [&>div]:h-9 [&>button]:h-9">
+        <div className="w-44">
           <SearchableDropdown
             options={companyOptions}
             value={filterData.companyId}
@@ -81,7 +81,7 @@ const DeliveryFilters = ({
           />
         </div>
 
-        <div className="w-44 h-9 [&>div]:h-9 [&>button]:h-9">
+        <div className="w-44">
           <SearchableDropdown
             options={filteredBranchOptions}
             value={filterData.branchId}
@@ -93,7 +93,7 @@ const DeliveryFilters = ({
           />
         </div>
 
-        <div className="w-44 h-9 [&>div]:h-9 [&>button]:h-9">
+        <div className="w-44">
           <SearchableDropdown
             options={warehouseOptions}
             value={filterData.warehouseId}
@@ -115,7 +115,7 @@ const DeliveryFilters = ({
           ))}
         </select>
 
-        <div className="w-56 h-9 [&>div]:h-9 [&>button]:h-9">
+        <div className="w-56">
           <VariationSearchableDropdown
             options={productOptions.filter(o =>
               !(filterData.productFilters || []).some(pf =>
