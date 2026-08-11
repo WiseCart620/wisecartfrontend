@@ -136,6 +136,7 @@ const InventoryManagement = () => {
   const branchFilters = useFilters({
     branchIds: [],
     companyIds: [],
+    productKeys: [],
     minQty: '',
     maxQty: '',
     startDate: '',
@@ -595,6 +596,7 @@ const InventoryManagement = () => {
               showBranchFilter={showBranchFilter}
               branches={branches}
               companies={companies}
+              productSummaries={productSummaries}
               filters={branchFilters.filters}
               updateFilter={branchFilters.updateFilter}
               clearFilters={branchFilters.clearFilters}

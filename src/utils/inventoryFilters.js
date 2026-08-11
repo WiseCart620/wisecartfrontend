@@ -90,10 +90,16 @@ export const filterBranchStocks = (branchStocks, stockSearchTerm, branchFilters,
       .filter(Boolean)
   );
 
+  const selectedProductKeys = new Set(branchFilters.productKeys || []);
+
   return branchStocks.filter(stock => {
     const searchLower = stockSearchTerm.toLowerCase();
-    const effectiveSku = stock.variationSku || stock.productSku || stock.sku || '';
-    const effectiveUpc = stock.variationUpc || stock.productUpc || stock.upc || '';
+    // Check flat fields first, then nested product/variation objects, in case the API
+    // shape differs between endpoints.
+    const effectiveSku = stock.variationSku || stock.productSku || stock.sku
+      || stock.variation?.sku || stock.product?.sku || '';
+    const effectiveUpc = stock.variationUpc || stock.productUpc || stock.upc
+      || stock.variation?.upc || stock.product?.upc || '';
 
     const matchesSearch = !stockSearchTerm ||
       stock.productName?.toLowerCase().includes(searchLower) ||
@@ -109,6 +115,11 @@ export const filterBranchStocks = (branchStocks, stockSearchTerm, branchFilters,
     const matchesCompany = !branchFilters.companyIds || branchFilters.companyIds.length === 0 ||
       branchFilters.companyIds.includes(branchCompanyMap.get(stock.branchName));
 
+    const stockProductId = stock.productId ?? stock.product?.id;
+    const stockVariationId = stock.variationId ?? stock.variation?.id ?? 'base';
+    const stockProductKey = `${stockProductId}_${stockVariationId}`;
+    const matchesProduct = selectedProductKeys.size === 0 || selectedProductKeys.has(stockProductKey);
+
     const matchesMinQty = !branchFilters.minQty || (stock.quantity || 0) >= parseInt(branchFilters.minQty);
     const matchesMaxQty = !branchFilters.maxQty || (stock.quantity || 0) <= parseInt(branchFilters.maxQty);
 
@@ -116,7 +127,7 @@ export const filterBranchStocks = (branchStocks, stockSearchTerm, branchFilters,
     const matchesStartDate = !branchFilters.startDate || (stockDate && stockDate >= new Date(branchFilters.startDate));
     const matchesEndDate = !branchFilters.endDate || (stockDate && stockDate <= new Date(branchFilters.endDate + 'T23:59:59'));
 
-    return matchesSearch && matchesBranch && matchesCompany && matchesMinQty && matchesMaxQty &&
+    return matchesSearch && matchesBranch && matchesCompany && matchesProduct && matchesMinQty && matchesMaxQty &&
       matchesStartDate && matchesEndDate;
   });
 };
