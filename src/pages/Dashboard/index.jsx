@@ -74,6 +74,7 @@ const Dashboard = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [loadProgress, setLoadProgress] = useState(0);
   const [selectedCompanyForBranches, setSelectedCompanyForBranches] = useState(null);
   const [selectedCompanyForTopBranches, setSelectedCompanyForTopBranches] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -104,32 +105,43 @@ const Dashboard = () => {
   }, [sales, products, selectedYear, selectedCompany, selectedBranch, performanceYear, performanceView, performanceMonth, selectedProductId]);
 
   const loadStats = async () => {
+    const safetyTimeout = setTimeout(() => {
+      console.warn('Dashboard load timed out after 20s — forcing overlay off');
+      setDashboardLoading(false);
+    }, 20000);
+
     try {
       setDashboardLoading(true);
+      setLoadProgress(10);
 
       const salesRes = await api.get('/sales/dashboard-summary');
       const salesData = extractArray(salesRes);
       setSales(salesData);
+      setLoadProgress(35);
 
       const sortedSales = [...salesData]
         .sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0))
         .slice(0, 10);
       setRecentSales(sortedSales);
 
-      const [productsRes, companiesRes, branchesRes] = await Promise.all([
+      const [productsResult, companiesResult, branchesResult] = await Promise.allSettled([
         api.get('/products'),
         api.get('/companies'),
         api.get('/branches/list'),
       ]);
 
-      const productsData = extractArray(productsRes);
-      const companiesData = extractArray(companiesRes);
-      const branchesData = extractArray(branchesRes);
+      if (productsResult.status === 'rejected') console.error('Failed to load products', productsResult.reason);
+      if (companiesResult.status === 'rejected') console.error('Failed to load companies', companiesResult.reason);
+      if (branchesResult.status === 'rejected') console.error('Failed to load branches', branchesResult.reason);
+
+      const productsData = productsResult.status === 'fulfilled' ? extractArray(productsResult.value) : [];
+      const companiesData = companiesResult.status === 'fulfilled' ? extractArray(companiesResult.value) : [];
+      const branchesData = branchesResult.status === 'fulfilled' ? extractArray(branchesResult.value) : [];
 
       setProducts(productsData);
       setCompanies(companiesData);
       setBranches(branchesData);
-      setDashboardLoading(false); // UI is ready now
+      setLoadProgress(70);
 
       // Step 3 — deliveries loads in background, doesn't block UI
       api.get('/deliveries?page=0&size=50&sort=createdAt,desc')
@@ -210,10 +222,14 @@ const Dashboard = () => {
         salesVelocity: parseFloat(salesVelocity.toFixed(2)),
       }));
 
+      setLoadProgress(100);
+
     } catch (err) {
       console.error('Failed to load dashboard data', err);
     } finally {
+      clearTimeout(safetyTimeout);
       setDashboardLoading(false);
+      setLoadProgress(0);
     }
   };
 
@@ -722,16 +738,27 @@ const Dashboard = () => {
       <LoadingOverlay show={actionLoading && !!loadingMessage} message={loadingMessage} />
       {dashboardLoading && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/70 backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-4 px-10 py-10 bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-sm mx-4">
-            <div className="relative w-16 h-16">
+          <div className="flex flex-col items-center gap-4 px-10 py-8 bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-sm mx-4">
+            <div className="relative w-12 h-12 flex-shrink-0">
               <div className="absolute inset-0 border-4 border-blue-100 rounded-full" />
               <div className="absolute inset-0 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
             </div>
-            <div className="text-center">
+
+            <div className="w-full text-center">
               <p className="text-base font-semibold text-gray-900">Loading Dashboard</p>
-              <p className="text-sm text-gray-500 mt-1">
-                Please wait — we're loading a large amount of business data. This may take a few moments.
+              <p className="text-sm text-gray-500 mt-1 mb-4">
+                Please wait — we're loading a large amount of business data.
               </p>
+
+              <div className="w-full">
+                <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-600 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${loadProgress}%` }}
+                  />
+                </div>
+                <p className="text-xs font-semibold text-blue-600 mt-2">{loadProgress}%</p>
+              </div>
             </div>
           </div>
         </div>
