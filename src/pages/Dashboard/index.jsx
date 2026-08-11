@@ -106,15 +106,15 @@ const Dashboard = () => {
 
   const loadStats = async () => {
     const safetyTimeout = setTimeout(() => {
-      console.warn('Dashboard load timed out after 20s — forcing overlay off');
+      console.warn('Dashboard load timed out after 35s — forcing overlay off');
       setDashboardLoading(false);
-    }, 20000);
+    }, 35000);
 
     try {
       setDashboardLoading(true);
       setLoadProgress(10);
 
-      const salesRes = await api.get('/sales/dashboard-summary');
+      const salesRes = await api.get('/sales/dashboard-summary?months=18');
       const salesData = extractArray(salesRes);
       setSales(salesData);
       setLoadProgress(35);
