@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown } from 'lucide-react';
+import { fieldBase } from './filterStyles';
 
 const SearchableLocationDropdown = ({
   locations,

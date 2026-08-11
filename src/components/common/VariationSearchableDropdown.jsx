@@ -1,6 +1,7 @@
 // src/components/common/VariationSearchableDropdown.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown, Package } from 'lucide-react';
+import { fieldBase } from './filterStyles';
 
 const VariationSearchableDropdown = ({
   options,
