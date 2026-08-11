@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown } from 'lucide-react';
+import { fieldBase } from './filterStyles';
 
 const SaleSearchableDropdown = ({ options, value, onChange, placeholder, displayKey, valueKey, required = false, loading = false }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -24,7 +25,7 @@ const SaleSearchableDropdown = ({ options, value, onChange, placeholder, display
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-left flex items-center justify-between bg-white text-sm"
+        className={`w-full px-3 flex items-center justify-between ${fieldBase}`}
       >
         <span className={selectedOption ? 'text-gray-900' : 'text-gray-500'}>
           {selectedOption ? selectedOption[displayKey] : placeholder}
