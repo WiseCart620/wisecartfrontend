@@ -1,9 +1,10 @@
 import React from 'react';
-import SearchableBranchDropdown from '../common/SearchableBranchDropdown';
+import MultiSelectDropdown from '../common/MultiSelectDropdown';
 
 const BranchFilterPanel = ({
   showBranchFilter,
   branches,
+  companies = [],
   filters,
   updateFilter,
   clearFilters
@@ -15,11 +16,22 @@ const BranchFilterPanel = ({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Branch</label>
-          <SearchableBranchDropdown
-            branches={branches}
-            value={filters.branch}
-            onChange={(value) => updateFilter('branch', value)}
-            placeholder="Select branch..."
+          <MultiSelectDropdown
+            options={branches.map(b => ({ id: b.id, name: b.branchName }))}
+            selectedIds={filters.branchIds || []}
+            onChange={(ids) => updateFilter('branchIds', ids)}
+            placeholder="All Branches"
+            searchPlaceholder="Search branches..."
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
+          <MultiSelectDropdown
+            options={companies.map(c => ({ id: c.id, name: c.companyName }))}
+            selectedIds={filters.companyIds || []}
+            onChange={(ids) => updateFilter('companyIds', ids)}
+            placeholder="All Companies"
+            searchPlaceholder="Search companies..."
           />
         </div>
         <div>

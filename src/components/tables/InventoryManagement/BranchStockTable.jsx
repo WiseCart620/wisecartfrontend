@@ -30,7 +30,7 @@ const BranchStockTable = ({
       <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
         <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
           <Store size={20} />
-          Branch Stock Levels
+          Company Stock Levels
         </h2>
       </div>
 

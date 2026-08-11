@@ -79,7 +79,17 @@ export const filterWarehouseStocks = (warehouseStocks, stockSearchTerm, warehous
   });
 };
 
-export const filterBranchStocks = (branchStocks, stockSearchTerm, branchFilters) => {
+export const filterBranchStocks = (branchStocks, stockSearchTerm, branchFilters, branches = []) => {
+  const branchCompanyMap = new Map(
+    branches.map(b => [b.branchName, b.companyId ?? b.company?.id ?? null])
+  );
+
+  const selectedBranchNames = new Set(
+    (branchFilters.branchIds || [])
+      .map(id => branches.find(b => b.id === id)?.branchName)
+      .filter(Boolean)
+  );
+
   return branchStocks.filter(stock => {
     const searchLower = stockSearchTerm.toLowerCase();
     const effectiveSku = stock.variationSku || stock.productSku || stock.sku || '';
@@ -93,8 +103,11 @@ export const filterBranchStocks = (branchStocks, stockSearchTerm, branchFilters)
       stock.variationName?.toLowerCase().includes(searchLower) ||
       stock.combinationDisplay?.toLowerCase().includes(searchLower);
 
-    const matchesBranch = !branchFilters.branch ||
-      stock.branchName === branchFilters.branch;
+    const matchesBranch = selectedBranchNames.size === 0 ||
+      selectedBranchNames.has(stock.branchName);
+
+    const matchesCompany = !branchFilters.companyIds || branchFilters.companyIds.length === 0 ||
+      branchFilters.companyIds.includes(branchCompanyMap.get(stock.branchName));
 
     const matchesMinQty = !branchFilters.minQty || (stock.quantity || 0) >= parseInt(branchFilters.minQty);
     const matchesMaxQty = !branchFilters.maxQty || (stock.quantity || 0) <= parseInt(branchFilters.maxQty);
@@ -103,7 +116,7 @@ export const filterBranchStocks = (branchStocks, stockSearchTerm, branchFilters)
     const matchesStartDate = !branchFilters.startDate || (stockDate && stockDate >= new Date(branchFilters.startDate));
     const matchesEndDate = !branchFilters.endDate || (stockDate && stockDate <= new Date(branchFilters.endDate + 'T23:59:59'));
 
-    return matchesSearch && matchesBranch && matchesMinQty && matchesMaxQty &&
+    return matchesSearch && matchesBranch && matchesCompany && matchesMinQty && matchesMaxQty &&
       matchesStartDate && matchesEndDate;
   });
 };

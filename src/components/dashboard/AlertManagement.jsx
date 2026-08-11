@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, memo } from 'react';
 import { Bell, X, Download, CheckCheck, Trash2, RefreshCw, AlertCircle, AlertTriangle, Info, CheckCircle, Database, Loader2, Filter, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '../../services/api';
+import MultiSelectDropdown from '../common/MultiSelectDropdown';
 
 const PAGE_SIZE = 20;
 
@@ -152,7 +153,6 @@ const AlertRow = memo(({ alertItem, index, isThisResolving, bulkLoading, onResol
 
 AlertRow.displayName = 'AlertRow';
 
-// ── Main component ────────────────────────────────────────────────────────────
 const AlertManagement = ({
   showNotifications,
   setShowNotifications,
@@ -162,12 +162,14 @@ const AlertManagement = ({
   alertsTotalPages = 1,
   alertsTotalElements = 0,
   alertsLoading = false,
+  products = [],
 }) => {
   const [activeTab, setActiveTab] = useState('active');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSeverity, setFilterSeverity] = useState('all');
   const [filterType, setFilterType] = useState('all');
-  const [filterBranch, setFilterBranch] = useState('all');
+  const [filterBranchIds, setFilterBranchIds] = useState([]);
+  const [filterProductKeys, setFilterProductKeys] = useState([]);
   const [filterCompany, setFilterCompany] = useState('all');
   const [loadingAlertIds, setLoadingAlertIds] = useState(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -179,8 +181,44 @@ const AlertManagement = ({
     alerts.forEach(a => {
       if (a.branch?.id) map.set(a.branch.id, a.branch.branchName);
     });
-    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+    return [...map.entries()]
+      .sort((a, b) => a[1].localeCompare(b[1]))
+      .map(([id, name]) => ({ id, name }));
   }, [alerts]);
+
+  // Product options, variation-aware. Falls back to whatever's referenced
+  // in the current alerts list if a full `products` list isn't passed in.
+  const productOptions = useMemo(() => {
+    const map = new Map();
+
+    const addOption = (productId, variationId, productName, variationLabel) => {
+      const key = variationId ? `${productId}_${variationId}` : `${productId}`;
+      const name = variationLabel ? `${productName} (${variationLabel})` : productName;
+      map.set(key, name);
+    };
+
+    if (products.length > 0) {
+      products.forEach(p => {
+        if (p.variations?.length > 0) {
+          p.variations.forEach(v => {
+            addOption(p.id, v.id, p.productName, v.combinationDisplay || v.variationValue);
+          });
+        } else {
+          addOption(p.id, null, p.productName, null);
+        }
+      });
+    } else {
+      alerts.forEach(a => {
+        if (a.product?.id) {
+          addOption(a.product.id, a.variationId || null, a.product.productName, a.variationLabel);
+        }
+      });
+    }
+
+    return [...map.entries()]
+      .sort((a, b) => a[1].localeCompare(b[1]))
+      .map(([id, name]) => ({ id, name }));
+  }, [products, alerts]);
 
   const companyOptions = useMemo(() => {
     const set = new Set();
@@ -202,7 +240,8 @@ const AlertManagement = ({
     searchQuery,
     filterSeverity !== 'all' ? filterSeverity : '',
     filterType !== 'all' ? filterType : '',
-    filterBranch !== 'all' ? filterBranch : '',
+    filterBranchIds.length > 0 ? 'branch' : '',
+    filterProductKeys.length > 0 ? 'product' : '',
     filterCompany !== 'all' ? filterCompany : '',
   ].filter(Boolean).length;
 
@@ -210,7 +249,8 @@ const AlertManagement = ({
     setSearchQuery('');
     setFilterSeverity('all');
     setFilterType('all');
-    setFilterBranch('all');
+    setFilterBranchIds([]);
+    setFilterProductKeys([]);
     setFilterCompany('all');
   }, []);
 
@@ -231,13 +271,22 @@ const AlertManagement = ({
     }
     if (filterSeverity !== 'all') result = result.filter(a => a.severity === filterSeverity);
     if (filterType !== 'all') result = result.filter(a => a.alertType === filterType);
-    if (filterBranch !== 'all') result = result.filter(a => String(a.branch?.id) === filterBranch);
+    if (filterBranchIds.length > 0) {
+      result = result.filter(a => filterBranchIds.includes(a.branch?.id));
+    }
+    if (filterProductKeys.length > 0) {
+      result = result.filter(a => {
+        if (!a.product?.id) return false;
+        const key = a.variationId ? `${a.product.id}_${a.variationId}` : `${a.product.id}`;
+        return filterProductKeys.includes(key);
+      });
+    }
     if (filterCompany !== 'all') {
       const cLower = filterCompany.toLowerCase();
       result = result.filter(a => a.message?.toLowerCase().includes(cLower));
     }
     return result;
-  }, [alerts, activeTab, searchQuery, filterSeverity, filterType, filterBranch, filterCompany]);
+  }, [alerts, activeTab, searchQuery, filterSeverity, filterType, filterBranchIds, filterProductKeys, filterCompany]);
 
   const activeCount = useMemo(() => alerts.filter(a => !a.isResolved).length, [alerts]);
   const resolvedCount = useMemo(() => alerts.filter(a => a.isResolved).length, [alerts]);
@@ -442,16 +491,25 @@ const AlertManagement = ({
             </div>
 
             <div className="flex flex-col sm:flex-row gap-1.5 items-center">
-              <select
-                value={filterBranch}
-                onChange={e => setFilterBranch(e.target.value)}
-                className="flex-1 px-2 py-1.5 border border-gray-300 rounded-lg text-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
-              >
-                <option value="all">All Branches</option>
-                {branchOptions.map(([id, name]) => (
-                  <option key={id} value={String(id)}>{name}</option>
-                ))}
-              </select>
+              <div className="flex-1">
+                <MultiSelectDropdown
+                  options={branchOptions}
+                  selectedIds={filterBranchIds}
+                  onChange={setFilterBranchIds}
+                  placeholder="All Branches"
+                  searchPlaceholder="Search branches..."
+                />
+              </div>
+
+              <div className="flex-1">
+                <MultiSelectDropdown
+                  options={productOptions}
+                  selectedIds={filterProductKeys}
+                  onChange={setFilterProductKeys}
+                  placeholder="All Products"
+                  searchPlaceholder="Search products..."
+                />
+              </div>
 
               <select
                 value={filterCompany}

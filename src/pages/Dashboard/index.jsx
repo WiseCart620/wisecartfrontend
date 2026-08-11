@@ -720,6 +720,22 @@ const Dashboard = () => {
   return (
     <>
       <LoadingOverlay show={actionLoading && !!loadingMessage} message={loadingMessage} />
+      {dashboardLoading && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/70 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4 px-10 py-10 bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-sm mx-4">
+            <div className="relative w-16 h-16">
+              <div className="absolute inset-0 border-4 border-blue-100 rounded-full" />
+              <div className="absolute inset-0 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            </div>
+            <div className="text-center">
+              <p className="text-base font-semibold text-gray-900">Loading Dashboard</p>
+              <p className="text-sm text-gray-500 mt-1">
+                Please wait — we're loading a large amount of business data. This may take a few moments.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-x-hidden">
         <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-6">
           <div className="space-y-4 sm:space-y-6">
@@ -729,12 +745,6 @@ const Dashboard = () => {
                 <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900">Dashboard</h1>
                 <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">Overview of your business performance</p>
               </div>
-              {dashboardLoading && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                  <span className="text-xs text-blue-600 font-medium">Loading data...</span>
-                </div>
-              )}
             </div>
 
             <DashboardHeader
@@ -1383,6 +1393,7 @@ const Dashboard = () => {
           alertsTotalPages={alertsTotalPages}
           alertsTotalElements={alertsTotalElements}
           alertsLoading={alertsLoading}
+          products={products}
         />
       </div>
     </>

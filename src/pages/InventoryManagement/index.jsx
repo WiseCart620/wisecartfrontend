@@ -134,7 +134,8 @@ const InventoryManagement = () => {
   });
 
   const branchFilters = useFilters({
-    branch: '',
+    branchIds: [],
+    companyIds: [],
     minQty: '',
     maxQty: '',
     startDate: '',
@@ -173,7 +174,8 @@ const InventoryManagement = () => {
   const filteredBranchStocks = filterBranchStocks(
     branchStocksArray,
     stockSearchTerm,
-    branchFilters.filters
+    branchFilters.filters,
+    branches
   );
 
   const filteredInventories = filterInventories(
@@ -462,7 +464,7 @@ const InventoryManagement = () => {
                   }`}
               >
                 <Store className="inline w-4 h-4 mr-2" />
-                Branch Stocks
+                Company Stock
               </button>
               <button
                 onClick={() => setActiveTab('transactions')}
@@ -592,6 +594,7 @@ const InventoryManagement = () => {
             <BranchFilterPanel
               showBranchFilter={showBranchFilter}
               branches={branches}
+              companies={companies}
               filters={branchFilters.filters}
               updateFilter={branchFilters.updateFilter}
               clearFilters={branchFilters.clearFilters}
