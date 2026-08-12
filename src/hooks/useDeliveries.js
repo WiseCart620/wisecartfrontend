@@ -33,17 +33,14 @@ const normalizeDeliveries = (data) =>
 export const useDeliveries = () => {
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [loadingProgress, setLoadingProgress] = useState(0);
   const [error, setError] = useState(null);
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      setLoadingProgress(0);
 
       const res = await api.get('/deliveries/list');
-      setLoadingProgress(100);
 
       if (res.success) setDeliveries(res.data || []);
     } catch (err) {
@@ -51,7 +48,6 @@ export const useDeliveries = () => {
       setError(err.message || 'Failed to load data');
     } finally {
       setLoading(false);
-      setLoadingProgress(0);
     }
   }, []);
 
@@ -409,7 +405,6 @@ export const useDeliveries = () => {
   return {
     deliveries,
     loading,
-    loadingProgress,
     error,
     loadData,
     refreshDeliveries,

@@ -344,7 +344,6 @@ const DeliveryManagement = () => {
       <LoadingOverlay
         show={loading || actionLoading}
         message={loading ? 'Loading dashboard data...' : (loadingMessage || 'Please wait...')}
-        progress={loading ? loadingProgress : undefined}
       />
 
       <div className="p-2 sm:p-3 lg:p-4 max-w-full mx-auto overflow-x-hidden">
