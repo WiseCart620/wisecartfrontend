@@ -9,6 +9,7 @@ import DeliveryFormModal from '../../components/modals/DeliveryFormModal';
 import DeliveryViewModal from '../../components/modals/DeliveryViewModal';
 import DeliveryReceiptModal from '../../components/modals/DeliveryReceiptModal';
 import { useDeliveries } from '../../hooks/useDeliveries';
+import { useReferenceData } from '../../context/ReferenceDataContext';
 import { toast } from 'react-hot-toast';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -27,13 +28,8 @@ const DeliveryManagement = () => {
   const canDelete = ['ADMIN', 'ASSISTANT_ADMIN'].includes(user?.role);
   const navigate = useNavigate();
   const location = useLocation();
-
   const {
     deliveries,
-    branches,
-    products,
-    warehouses,
-    companies,
     loading,
     loadingProgress,
     loadData,
@@ -50,6 +46,8 @@ const DeliveryManagement = () => {
     sortDeliveriesByStatus,
     filterDeliveries
   } = useDeliveries();
+
+  const { branches, products, warehouses, companies } = useReferenceData();
 
   const [modalState, setModalState] = useState({ show: false, mode: null, delivery: null });
   const [receiptModalState, setReceiptModalState] = useState({ show: false, receiptData: null });

@@ -16,6 +16,7 @@ import Supplier from './pages/SupplierManagement';
 import ProcurementManagement from './pages/ProcurementManagement/index.jsx';
 import TransmittalManagement from './pages/TransmittalManagement';
 import { AuthProvider, AuthLoading, ProtectedRoute, AdminRoute, FinanceRoute, AdminOrUserRoute } from './context/AuthContext';
+import { ReferenceDataProvider } from './context/ReferenceDataContext';
 import { startActivityTracking, stopActivityTracking } from './services/api';
 import { useEffect } from 'react';
 
@@ -32,137 +33,139 @@ function App() {
     <Router>
       <AuthProvider>
         <AuthLoading>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
+          <ReferenceDataProvider>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
 
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <AdminOrUserRoute>
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <AdminOrUserRoute>
+                    <Layout>
+                      <Dashboard />
+                    </Layout>
+                  </AdminOrUserRoute>
+                </ProtectedRoute>
+              } />
+
+
+              <Route path="/supplier" element={
+                <ProtectedRoute>
+                  <AdminOrUserRoute>
+                    <Layout>
+                      <Supplier />
+                    </Layout>
+                  </AdminOrUserRoute>
+                </ProtectedRoute>
+              } />
+
+
+              <Route path="/procurement" element={
+                <ProtectedRoute>
+                  <AdminOrUserRoute>
+                    <Layout>
+                      <ProcurementManagement />
+                    </Layout>
+                  </AdminOrUserRoute>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/transmittals" element={
+                <ProtectedRoute>
+                  <AdminOrUserRoute>
+                    <Layout>
+                      <TransmittalManagement />
+                    </Layout>
+                  </AdminOrUserRoute>
+                </ProtectedRoute>
+              } />
+
+
+
+
+              <Route path="/deliveries" element={
+                <ProtectedRoute>
                   <Layout>
-                    <Dashboard />
+                    <DeliveryManagement />
                   </Layout>
-                </AdminOrUserRoute>
-              </ProtectedRoute>
-            } />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/warehouse-inventory" element={
+                <ProtectedRoute>
+                  <AdminOrUserRoute>
+                    <Layout>
+                      <WarehouseInventory />
+                    </Layout>
+                  </AdminOrUserRoute>
+                </ProtectedRoute>
+              } />
 
 
-            <Route path="/supplier" element={
-              <ProtectedRoute>
-                <AdminOrUserRoute>
+              <Route path="/users" element={
+                <ProtectedRoute>
+                  <AdminRoute>
+                    <Layout>
+                      <UserManagement />
+                    </Layout>
+                  </AdminRoute>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/inventory" element={
+                <ProtectedRoute>
+                  <AdminOrUserRoute>
+                    <Layout>
+                      <InventoryManagement />
+                    </Layout>
+                  </AdminOrUserRoute>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/sales" element={
+                <ProtectedRoute>
                   <Layout>
-                    <Supplier />
+                    <SalesManagement />
                   </Layout>
-                </AdminOrUserRoute>
-              </ProtectedRoute>
-            } />
+                </ProtectedRoute>
+              } />
 
+              <Route path="/warehouse" element={
+                <ProtectedRoute>
+                  <AdminOrUserRoute>
+                    <Layout>
+                      <WarehouseManagement />
+                    </Layout>
+                  </AdminOrUserRoute>
+                </ProtectedRoute>
+              } />
 
-            <Route path="/procurement" element={
-              <ProtectedRoute>
-                <AdminOrUserRoute>
-                  <Layout>
-                    <ProcurementManagement />
-                  </Layout>
-                </AdminOrUserRoute>
-              </ProtectedRoute>
-            } />
+              <Route path="/products" element={
+                <ProtectedRoute>
+                  <AdminOrUserRoute>
+                    <Layout>
+                      <ProductManagement />
+                    </Layout>
+                  </AdminOrUserRoute>
+                </ProtectedRoute>
+              } />
 
-            <Route path="/transmittals" element={
-              <ProtectedRoute>
-                <AdminOrUserRoute>
-                  <Layout>
-                    <TransmittalManagement />
-                  </Layout>
-                </AdminOrUserRoute>
-              </ProtectedRoute>
-            } />
+              <Route path="/branches" element={
+                <ProtectedRoute>
+                  <AdminOrUserRoute>
+                    <Layout>
+                      <BranchCompanyManagement />
+                    </Layout>
+                  </AdminOrUserRoute>
+                </ProtectedRoute>
+              } />
 
+              {/* Redirect root to dashboard */}
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-
-
-            <Route path="/deliveries" element={
-              <ProtectedRoute>
-                <Layout>
-                  <DeliveryManagement />
-                </Layout>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/warehouse-inventory" element={
-              <ProtectedRoute>
-                <AdminOrUserRoute>
-                  <Layout>
-                    <WarehouseInventory />
-                  </Layout>
-                </AdminOrUserRoute>
-              </ProtectedRoute>
-            } />
-
-
-            <Route path="/users" element={
-              <ProtectedRoute>
-                <AdminRoute>
-                  <Layout>
-                    <UserManagement />
-                  </Layout>
-                </AdminRoute>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/inventory" element={
-              <ProtectedRoute>
-                <AdminOrUserRoute>
-                  <Layout>
-                    <InventoryManagement />
-                  </Layout>
-                </AdminOrUserRoute>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/sales" element={
-              <ProtectedRoute>
-                <Layout>
-                  <SalesManagement />
-                </Layout>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/warehouse" element={
-              <ProtectedRoute>
-                <AdminOrUserRoute>
-                  <Layout>
-                    <WarehouseManagement />
-                  </Layout>
-                </AdminOrUserRoute>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/products" element={
-              <ProtectedRoute>
-                <AdminOrUserRoute>
-                  <Layout>
-                    <ProductManagement />
-                  </Layout>
-                </AdminOrUserRoute>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/branches" element={
-              <ProtectedRoute>
-                <AdminOrUserRoute>
-                  <Layout>
-                    <BranchCompanyManagement />
-                  </Layout>
-                </AdminOrUserRoute>
-              </ProtectedRoute>
-            } />
-
-            {/* Redirect root to dashboard */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
-            {/* 404 Page */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              {/* 404 Page */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </ReferenceDataProvider>
         </AuthLoading>
       </AuthProvider>
     </Router>

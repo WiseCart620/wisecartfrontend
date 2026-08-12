@@ -32,10 +32,6 @@ const normalizeDeliveries = (data) =>
 
 export const useDeliveries = () => {
   const [deliveries, setDeliveries] = useState([]);
-  const [branches, setBranches] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [warehouses, setWarehouses] = useState([]);
-  const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [error, setError] = useState(null);
@@ -46,29 +42,10 @@ export const useDeliveries = () => {
       setError(null);
       setLoadingProgress(0);
 
-      const totalRequests = 5;
-      let completed = 0;
+      const res = await api.get('/deliveries/list');
+      setLoadingProgress(100);
 
-      const trackProgress = (promise) =>
-        promise.then((res) => {
-          completed += 1;
-          setLoadingProgress(Math.round((completed / totalRequests) * 100));
-          return res;
-        });
-
-      const [deliveriesRes, branchesRes, productsRes, warehousesRes, companiesRes] = await Promise.all([
-        trackProgress(api.get('/deliveries/list')),
-        trackProgress(api.get('/branches')),
-        trackProgress(api.get('/products')),
-        trackProgress(api.get('/warehouse')),
-        trackProgress(api.get('/companies'))
-      ]);
-
-      if (deliveriesRes.success) setDeliveries(deliveriesRes.data || []);
-      if (branchesRes.success) setBranches(branchesRes.data || []);
-      if (productsRes.success) setProducts(productsRes.data || []);
-      if (warehousesRes.success) setWarehouses(warehousesRes.data || []);
-      if (companiesRes.success) setCompanies(companiesRes.data || []);
+      if (res.success) setDeliveries(res.data || []);
     } catch (err) {
       console.error('Failed to load data', err);
       setError(err.message || 'Failed to load data');
@@ -431,10 +408,6 @@ export const useDeliveries = () => {
 
   return {
     deliveries,
-    branches,
-    products,
-    warehouses,
-    companies,
     loading,
     loadingProgress,
     error,

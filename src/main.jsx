@@ -9,7 +9,6 @@ if (redirect && redirect !== location.pathname) {
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
-import { AuthProvider } from './context/AuthContext';
 import { Toaster } from 'react-hot-toast';
 import './index.css';
 
