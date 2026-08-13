@@ -320,7 +320,7 @@ const SalesManagement = () => {
           branches={branches}
           allFilteredSales={allFilteredSales}
           productsByStatus={productsByStatus}
-          allProductOptions={allOpts}
+          allProductOptions={allProductOptions}
           dataLoading={staticDataLoading}
           canCreate={canCreate}
           canFinance={canFinance}
@@ -408,7 +408,7 @@ const SalesManagement = () => {
             setFilterData={setFilterData}
             companies={companies}
             branches={branches}
-            allProductOptions={allOpts}
+            allProductOptions={allProductOptions}
             dataLoading={staticDataLoading}
             selectedBranchIds={invoiceBranchIds}
             setSelectedBranchIds={setInvoiceBranchIds}
