@@ -176,7 +176,8 @@ const InventoryManagement = () => {
     branchStocksArray,
     stockSearchTerm,
     branchFilters.filters,
-    branches
+    branches,
+    products
   );
 
   const filteredInventories = filterInventories(

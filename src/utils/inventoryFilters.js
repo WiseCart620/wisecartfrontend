@@ -79,7 +79,7 @@ export const filterWarehouseStocks = (warehouseStocks, stockSearchTerm, warehous
   });
 };
 
-export const filterBranchStocks = (branchStocks, stockSearchTerm, branchFilters, branches = []) => {
+export const filterBranchStocks = (branchStocks, stockSearchTerm, branchFilters, branches = [], products = []) => {
   const branchCompanyMap = new Map(
     branches.map(b => [b.branchName, b.companyId ?? b.company?.id ?? null])
   );
@@ -91,11 +91,29 @@ export const filterBranchStocks = (branchStocks, stockSearchTerm, branchFilters,
   );
 
   const selectedProductKeys = new Set(branchFilters.productKeys || []);
+  const selectedCompanyIds = branchFilters.companyIds || [];
+
+  let companyValidProductKeys = null;
+  if (selectedCompanyIds.length > 0 && Array.isArray(products) && products.length > 0) {
+    companyValidProductKeys = new Set();
+    products.forEach(p => {
+      if (!p) return;
+      if (p.variations && p.variations.length > 0) {
+        p.variations.forEach(v => {
+          const hasCompanyPrice = (v.companyPrices || [])
+            .some(cp => selectedCompanyIds.includes(cp.company?.id));
+          if (hasCompanyPrice) companyValidProductKeys.add(`${p.id}_${v.id}`);
+        });
+      } else {
+        const hasCompanyPrice = (p.companyBasePrices || [])
+          .some(cbp => selectedCompanyIds.includes(cbp.company?.id));
+        if (hasCompanyPrice) companyValidProductKeys.add(`${p.id}_base`);
+      }
+    });
+  }
 
   return branchStocks.filter(stock => {
     const searchLower = stockSearchTerm.toLowerCase();
-    // Check flat fields first, then nested product/variation objects, in case the API
-    // shape differs between endpoints.
     const effectiveSku = stock.variationSku || stock.productSku || stock.sku
       || stock.variation?.sku || stock.product?.sku || '';
     const effectiveUpc = stock.variationUpc || stock.productUpc || stock.upc
@@ -118,7 +136,9 @@ export const filterBranchStocks = (branchStocks, stockSearchTerm, branchFilters,
     const stockProductId = stock.productId ?? stock.product?.id;
     const stockVariationId = stock.variationId ?? stock.variation?.id ?? 'base';
     const stockProductKey = `${stockProductId}_${stockVariationId}`;
-    const matchesProduct = selectedProductKeys.size === 0 || selectedProductKeys.has(stockProductKey);
+    const matchesProduct = selectedProductKeys.size > 0
+      ? selectedProductKeys.has(stockProductKey)
+      : (companyValidProductKeys ? companyValidProductKeys.has(stockProductKey) : true);
 
     const matchesMinQty = !branchFilters.minQty || (stock.quantity || 0) >= parseInt(branchFilters.minQty);
     const matchesMaxQty = !branchFilters.maxQty || (stock.quantity || 0) <= parseInt(branchFilters.maxQty);
