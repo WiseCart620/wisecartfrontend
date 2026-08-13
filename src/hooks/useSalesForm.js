@@ -77,12 +77,14 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
     }
   };
 
-  const handleAddProductToTable = async () => {
-    if (!selectedProductForAdd) { toast.error('Please select a product first'); return; }
+  const handleAddProductToTable = async (optionArg) => {
     if (!formData.branchId) { toast.error('Please select a branch first'); return; }
 
-    const selectedOption = productOptions.find(opt => opt.id === selectedProductForAdd);
-    if (!selectedOption) { toast.error('Selected product not found'); return; }
+    const selectedOption = optionArg || productOptions.find(opt => opt.id === selectedProductForAdd);
+    if (!selectedOption) {
+      toast.error(selectedProductForAdd ? 'Selected product not found' : 'Please select a product first');
+      return;
+    }
 
     const exists = formData.items.some(item =>
       item.productId === selectedOption.parentProductId &&
