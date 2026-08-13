@@ -113,7 +113,7 @@ const SaleFormModal = ({
                 <button
                   type="button"
                   onClick={() => setShowMassUpload(true)}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-[#2CA01C] hover:text-[#248018] transition"
+                  className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 transition"
                 >
                   <UploadCloud size={14} />
                   Mass Upload
@@ -133,7 +133,7 @@ const SaleFormModal = ({
               />
 
               {branchInfo && (
-                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 p-4 bg-[#EAF7E8] rounded-lg border border-[#CDEAC9]">
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 p-4 bg-blue-50 rounded-lg border border-blue-100">
                   <div className="text-sm">
                     <span className="text-gray-500">Branch</span>
                     <div className="font-semibold text-gray-900">{branchInfo.branchName}</div>
@@ -164,7 +164,7 @@ const SaleFormModal = ({
                   <select
                     value={formData.month}
                     onChange={(e) => setFormData(prev => ({ ...prev, month: parseInt(e.target.value) }))}
-                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#2CA01C]/30 focus:border-[#2CA01C] transition outline-none"
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition outline-none"
                     required
                   >
                     {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
@@ -178,7 +178,7 @@ const SaleFormModal = ({
                     type="number"
                     value={formData.year}
                     onChange={(e) => setFormData(prev => ({ ...prev, year: parseInt(e.target.value) }))}
-                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#2CA01C]/30 focus:border-[#2CA01C] transition outline-none"
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition outline-none"
                     required
                   />
                 </div>
@@ -193,7 +193,7 @@ const SaleFormModal = ({
                     onFocus={() => setShowEncodedByDropdown(true)}
                     onBlur={() => setTimeout(() => setShowEncodedByDropdown(false), 150)}
                     placeholder="Type a name..."
-                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#2CA01C]/30 focus:border-[#2CA01C] transition outline-none"
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition outline-none"
                   />
                   {showEncodedByDropdown && encodedByOptions.filter(n => n.toLowerCase().includes(formData.createdBy.toLowerCase())).length > 0 && (
                     <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
@@ -201,7 +201,7 @@ const SaleFormModal = ({
                         <button
                           key={name} type="button"
                           onMouseDown={() => { setFormData(prev => ({ ...prev, createdBy: name })); setShowEncodedByDropdown(false); }}
-                          className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition ${formData.createdBy === name ? 'bg-[#EAF7E8] text-[#2CA01C] font-medium' : 'text-gray-900'}`}
+                          className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition ${formData.createdBy === name ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'}`}
                         >
                           {name}
                         </button>
@@ -234,8 +234,8 @@ const SaleFormModal = ({
 
               {massUploadStockLoading ? (
                 <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                  <div className="flex items-center justify-center gap-2 text-[#2CA01C]">
-                    <div className="w-5 h-5 border-2 border-[#2CA01C] border-t-transparent rounded-full animate-spin" />
+                  <div className="flex items-center justify-center gap-2 text-blue-600">
+                    <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                     <span className="font-medium text-sm">Loading stock for all items...</span>
                   </div>
                 </div>
@@ -309,7 +309,7 @@ const SaleFormModal = ({
                                     onItemChange(i, 'unitPrice', val);
                                   }}
                                   placeholder="0.00"
-                                  className="w-24 px-2 py-1.5 border border-gray-300 rounded-md text-sm font-semibold text-[#2CA01C] text-right focus:ring-2 focus:ring-[#2CA01C]/30 focus:border-[#2CA01C] outline-none transition"
+                                  className="w-24 px-2 py-1.5 border border-gray-300 rounded-md text-sm font-semibold text-blue-600 text-right focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition"
                                 />
                                 {originalPrice > 0 && Number(price) !== Number(originalPrice) && (
                                   <span className="text-[10px] text-gray-400 line-through">
@@ -320,18 +320,18 @@ const SaleFormModal = ({
                             </td>
                             <td className="px-4 py-3">
                               {isLoadingStock ? (
-                                <div className="flex items-center gap-2 text-[#2CA01C] text-xs">
-                                  <div className="w-3 h-3 border-2 border-[#2CA01C] border-t-transparent rounded-full animate-spin" />
+                                <div className="flex items-center gap-2 text-blue-600 text-xs">
+                                  <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                                   Loading...
                                 </div>
                               ) : stockInfo ? (
                                 <div className="space-y-0.5">
-                                  <div className={`font-bold text-xs ${hasEnoughStock ? 'text-[#2CA01C]' : 'text-red-600'}`}>Avail: {stockInfo.availableQuantity ?? 0}</div>
+                                  <div className={`font-bold text-xs ${hasEnoughStock ? 'text-blue-600' : 'text-red-600'}`}>Avail: {stockInfo.availableQuantity ?? 0}</div>
                                   <div className="text-[11px] text-gray-400">Total: {stockInfo.quantity ?? 0}</div>
                                   {stockInfo.reservedQuantity > 0 && <div className="text-[11px] text-orange-500">Reserved: {stockInfo.reservedQuantity}</div>}
                                 </div>
                               ) : (
-                                <button type="button" onClick={() => onLoadStock(item.productId, formData.branchId, item.variationId)} className="text-xs text-[#2CA01C] hover:underline font-medium">
+                                <button type="button" onClick={() => onLoadStock(item.productId, formData.branchId, item.variationId)} className="text-xs text-blue-600 hover:underline font-medium">
                                   Load stock
                                 </button>
                               )}
@@ -342,7 +342,7 @@ const SaleFormModal = ({
                                 value={item.quantity && item.quantity !== 0 ? Number(item.quantity).toLocaleString('en-US') : ''}
                                 onChange={(e) => onItemChange(i, 'quantity', e.target.value.replace(/,/g, ''))}
                                 placeholder="Qty"
-                                className={`w-20 px-3 py-1.5 border rounded-md text-sm font-medium outline-none transition focus:ring-2 ${!hasEnoughStock && !isLoadingStock && item.quantity > 0 ? 'border-red-300 bg-red-50 focus:ring-red-200' : 'border-gray-300 focus:ring-[#2CA01C]/30 focus:border-[#2CA01C]'}`}
+                                className={`w-20 px-3 py-1.5 border rounded-md text-sm font-medium outline-none transition focus:ring-2 ${!hasEnoughStock && !isLoadingStock && item.quantity > 0 ? 'border-red-300 bg-red-50 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-500/30 focus:border-blue-500'}`}
                                 min="1" max={maxAllowed} required disabled={isLoadingStock}
                               />
                               {!hasEnoughStock && !isLoadingStock && item.quantity > 0 && (
@@ -370,7 +370,7 @@ const SaleFormModal = ({
                         <td className="px-4 py-3 text-center text-sm font-bold text-gray-900">
                           {grandQty.toLocaleString('en-US')}
                         </td>
-                        <td className="px-4 py-3 text-right text-sm font-bold text-[#2CA01C]">
+                        <td className="px-4 py-3 text-right text-sm font-bold text-blue-600">
                           ₱{grandTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                         <td />
@@ -404,7 +404,7 @@ const SaleFormModal = ({
             <button
               type="submit"
               form="sale-form"
-              className="px-5 py-2.5 text-sm font-semibold text-white bg-[#2CA01C] rounded-md hover:bg-[#248018] active:bg-[#1F6B14] transition-colors shadow-sm"
+              className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm"
             >
               {modalMode === 'create' ? 'Create Sale' : 'Update Sale'}
             </button>

@@ -1,10 +1,24 @@
 // src/components/modals/DeliveryFormModal.jsx
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Package, ChevronDown } from 'lucide-react';
+import { X, Trash2, Package, Building2, Warehouse, FileText, Truck, ClipboardList } from 'lucide-react';
 import SearchableDropdown from '../common/SearchableDropdown';
 import VariationSearchableDropdown from '../common/VariationSearchableDropdown';
 import { api } from '../../services/api';
 import { formatDateForInput } from '../../utils/dateUtils';
+
+// Small reusable section wrapper — mirrors the "card block" pattern used in Sale forms
+const FormSection = ({ icon: Icon, title, action, children }) => (
+    <div className="bg-white border border-gray-200 rounded-lg">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+                {Icon && <Icon size={16} className="text-gray-400" />}
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{title}</h3>
+            </div>
+            {action}
+        </div>
+        <div className="p-5">{children}</div>
+    </div>
+);
 
 const DeliveryFormModal = ({
     mode,
@@ -37,8 +51,6 @@ const DeliveryFormModal = ({
     const [warehouseStocks, setWarehouseStocks] = useState({});
     const [loadingStocks, setLoadingStocks] = useState({});
     const [stockErrors, setStockErrors] = useState({});
-    const [showBranchDetails, setShowBranchDetails] = useState(true);
-    const [showWarehouseDetails, setShowWarehouseDetails] = useState(true);
     const [selectedProductForAdd, setSelectedProductForAdd] = useState('');
     const [branchStocks, setBranchStocks] = useState({});
 
@@ -59,7 +71,6 @@ const DeliveryFormModal = ({
         if (!date) return '';
         return `${date}T${time || '00:00'}:00`;
     };
-
 
     const nowDatetime = () => {
         const now = new Date();
@@ -364,7 +375,6 @@ const DeliveryFormModal = ({
         }
     };
 
-
     const handleSubmit = (e) => {
         e.preventDefault();
         if (mode === 'edit' && delivery) {
@@ -394,7 +404,6 @@ const DeliveryFormModal = ({
         onSave(formData, false);
     };
 
-
     const totalPrepared = formData.items.reduce((s, it) => s + (parseInt(it.preparedQty) || 0), 0);
     const totalDelivered = formData.items.reduce((s, it) => s + (parseInt(it.deliveredQty) || 0), 0);
     const isDeliveredStatus = formData.status === 'DELIVERED';
@@ -420,62 +429,97 @@ const DeliveryFormModal = ({
         return parts.join('-');
     };
 
-    // ── Shared input classes ──────────────────────────────────────────────
-    const dateInputClass = 'flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white';
-    const timeInputClass = 'w-36 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white';
-    const lockedDateInputClass = 'flex-1 px-4 py-3 border border-gray-200 rounded-lg bg-gray-100 cursor-not-allowed';
-    const lockedTimeInputClass = 'w-36 px-4 py-3 border border-gray-200 rounded-lg bg-gray-100 cursor-not-allowed';
+    // ── Shared input classes (blue theme) ───────────────────────────────
+    const inputClass = 'w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition outline-none';
+    const dateInputClass = 'flex-1 px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition outline-none bg-white';
+    const timeInputClass = 'w-32 px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition outline-none bg-white';
+    const lockedDateInputClass = 'flex-1 px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-100 cursor-not-allowed';
+    const lockedTimeInputClass = 'w-32 px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-100 cursor-not-allowed';
+
+    const selectedWarehouse = warehouses?.find(w => w.id === parseInt(formData.selectedWarehouseId));
 
     return (
-        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-2 sm:p-6">
-            <div className="bg-white rounded-xl sm:rounded-2xl w-full sm:max-w-[65vw] max-h-[98vh] sm:max-h-[95vh] overflow-y-auto shadow-2xl">
-                <div className="p-4 sm:p-8 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-xl sm:rounded-t-2xl z-10">
-                    <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
-                        {mode === 'create' ? 'Create New Delivery' : 'Edit Delivery'}
-                    </h2>
-                    <button onClick={onClose} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition" disabled={isLoading}>
-                        <X size={24} />
+        <div className="fixed inset-0 bg-gray-900/60 z-50 flex items-center justify-center p-2 sm:p-6">
+            <div className="bg-gray-50 rounded-xl max-w-7xl w-full max-h-[98vh] sm:max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
+
+                {/* Header */}
+                <div className="px-5 sm:px-8 py-4 sm:py-5 bg-white border-b border-gray-200 flex justify-between items-center flex-shrink-0">
+                    <div>
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+                            {mode === 'create' ? 'Create New Delivery' : 'Edit Delivery'}
+                        </h2>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                            {mode === 'create' ? 'Prepare a new delivery for shipment' : 'Update details for this delivery'}
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={isLoading}
+                        className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition disabled:opacity-50"
+                    >
+                        <X size={20} />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} onKeyDown={handleFormArrowNav} className="p-4 sm:p-8">
-                    <div className="space-y-6">
+                {/* Scrollable body */}
+                <form id="delivery-form" onSubmit={handleSubmit} onKeyDown={handleFormArrowNav} className="flex-1 overflow-y-auto px-5 sm:px-8 py-6">
+                    <div className="max-w-6xl mx-auto space-y-5">
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">
-                                    Branch *
+                        {/* Branch & Warehouse */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <FormSection icon={Building2} title="Branch">
+                                <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                                    Select Branch *
                                     {(formData.status === 'IN_TRANSIT' || formData.status === 'DELIVERED' || formData.status === 'CANCELLED') && (
-                                        <span className="ml-2 text-xs text-orange-600">(Locked - Cannot change in {formData.status} status)</span>
+                                        <span className="ml-2 normal-case text-orange-500">(Locked in {formData.status} status)</span>
                                     )}
                                 </label>
-                                <SearchableDropdown options={branchOptions} value={formData.branchId} onChange={handleBranchChange} placeholder="Select Branch" displayKey="name" valueKey="id" required disabled={formData.status === 'IN_TRANSIT' || formData.status === 'DELIVERED' || formData.status === 'CANCELLED'} />
+                                <SearchableDropdown
+                                    options={branchOptions}
+                                    value={formData.branchId}
+                                    onChange={handleBranchChange}
+                                    placeholder="Select Branch"
+                                    displayKey="name" valueKey="id" required
+                                    disabled={formData.status === 'IN_TRANSIT' || formData.status === 'DELIVERED' || formData.status === 'CANCELLED'}
+                                />
+
                                 {branchInfo && (
-                                    <div className="mt-4 bg-green-50 rounded-lg border border-green-200 p-3">
-                                        <button type="button" onClick={() => setShowBranchDetails(!showBranchDetails)} className="w-full flex items-center justify-between hover:bg-green-100 transition rounded-lg p-2 -m-2 mb-2">
-                                            <h3 className="text-sm font-bold text-green-900 flex items-center gap-2">
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                                Branch Details
-                                            </h3>
-                                            <ChevronDown size={20} className={`text-green-600 transition-transform ${showBranchDetails ? 'rotate-180' : ''}`} />
-                                        </button>
-                                        {showBranchDetails && (
-                                            <div className="space-y-1 mt-2">
-                                                <div className="flex items-start gap-2"><span className="text-xs text-green-600 font-medium w-20 flex-shrink-0">Company:</span><span className="text-sm text-green-900 font-semibold flex-1">{branchInfo.companyName}</span></div>
-                                                <div className="flex items-start gap-2"><span className="text-xs text-green-600 font-medium w-20 flex-shrink-0">Branch:</span><span className="text-sm text-green-900 font-semibold flex-1">{branchInfo.branchName} ({branchInfo.branchCode})</span></div>
-                                                {branchInfo.branchTin && <div className="flex items-start gap-2"><span className="text-xs text-green-600 font-medium w-20 flex-shrink-0">TIN:</span><span className="text-sm text-green-900 flex-1">{branchInfo.branchTin}</span></div>}
-                                                <div className="flex items-start gap-2"><span className="text-xs text-green-600 font-medium w-20 flex-shrink-0">Address:</span><span className="text-sm text-green-900 flex-1">{branchInfo.branchAddress}</span></div>
-                                                {branchInfo.branchContactNumber && <div className="flex items-start gap-2"><span className="text-xs text-green-600 font-medium w-20 flex-shrink-0">Contact:</span><span className="text-sm text-green-900 flex-1">{branchInfo.branchContactNumber}</span></div>}
+                                    <div className="mt-4 grid grid-cols-1 gap-y-2 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                                        <div className="text-sm">
+                                            <span className="text-gray-500">Company</span>
+                                            <div className="font-semibold text-gray-900">{branchInfo.companyName}</div>
+                                        </div>
+                                        <div className="text-sm">
+                                            <span className="text-gray-500">Branch</span>
+                                            <div className="font-semibold text-gray-900">{branchInfo.branchName} ({branchInfo.branchCode})</div>
+                                        </div>
+                                        {branchInfo.branchTin && (
+                                            <div className="text-sm">
+                                                <span className="text-gray-500">TIN</span>
+                                                <div className="font-semibold text-gray-900">{branchInfo.branchTin}</div>
+                                            </div>
+                                        )}
+                                        <div className="text-sm">
+                                            <span className="text-gray-500">Address</span>
+                                            <div className="font-semibold text-gray-900">{branchInfo.branchAddress}</div>
+                                        </div>
+                                        {branchInfo.branchContactNumber && (
+                                            <div className="text-sm">
+                                                <span className="text-gray-500">Contact</span>
+                                                <div className="font-semibold text-gray-900">{branchInfo.branchContactNumber}</div>
                                             </div>
                                         )}
                                     </div>
                                 )}
-                            </div>
+                            </FormSection>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">
-                                    Warehouse (applies to all items) *
-                                    {formData.status === 'PREPARING' ? <span className="ml-2 text-xs text-green-600">(Editable)</span> : <span className="ml-2 text-xs text-orange-600">(Locked in {formData.status} status)</span>}
+                            <FormSection icon={Warehouse} title="Warehouse">
+                                <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                                    Select Warehouse (applies to all items) *
+                                    {formData.status === 'PREPARING'
+                                        ? <span className="ml-2 normal-case text-blue-600">(Editable)</span>
+                                        : <span className="ml-2 normal-case text-orange-500">(Locked in {formData.status} status)</span>}
                                 </label>
                                 <SearchableDropdown
                                     options={warehouseOptions}
@@ -487,240 +531,170 @@ const DeliveryFormModal = ({
                                     required
                                     disabled={formData.status === 'IN_TRANSIT' || formData.status === 'DELIVERED'}
                                 />
+
                                 {formData.selectedWarehouseId && (
-                                    <div className="mt-4 bg-blue-50 rounded-lg border border-blue-200 p-3">
-                                        <button type="button" onClick={() => setShowWarehouseDetails(!showWarehouseDetails)} className="w-full flex items-center justify-between hover:bg-blue-100 transition rounded-lg p-2 -m-2 mb-2">
-                                            <h3 className="text-sm font-bold text-blue-900 flex items-center gap-2"><Package size={16} />Warehouse Details</h3>
-                                            <ChevronDown size={20} className={`text-blue-600 transition-transform ${showWarehouseDetails ? 'rotate-180' : ''}`} />
-                                        </button>
-                                        {showWarehouseDetails && (
-                                            <div className="space-y-1 mt-2">
-                                                {(() => {
-                                                    const selectedWarehouse = warehouses.find(w => w.id === parseInt(formData.selectedWarehouseId));
-                                                    return selectedWarehouse ? (
-                                                        <>
-                                                            <div className="flex items-start gap-2"><span className="text-xs text-blue-600 font-medium w-20 flex-shrink-0">Warehouse:</span><span className="text-sm text-blue-900 font-semibold flex-1">{selectedWarehouse.warehouseName}</span></div>
-                                                            <div className="flex items-start gap-2"><span className="text-xs text-blue-600 font-medium w-20 flex-shrink-0">Code:</span><span className="text-sm text-blue-900 flex-1">{selectedWarehouse.warehouseCode}</span></div>
-                                                            {selectedWarehouse.address && <div className="flex items-start gap-2"><span className="text-xs text-blue-600 font-medium w-20 flex-shrink-0">Address:</span><span className="text-sm text-blue-900 flex-1">{`${selectedWarehouse.address || ''}, ${selectedWarehouse.city || ''}, ${selectedWarehouse.province || ''}`.trim()}</span></div>}
-                                                        </>
-                                                    ) : <div className="text-sm text-blue-700 italic">Select a warehouse to view details</div>;
-                                                })()}
+                                    <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                                        {selectedWarehouse ? (
+                                            <div className="grid grid-cols-1 gap-y-2">
+                                                <div className="text-sm">
+                                                    <span className="text-gray-500">Warehouse</span>
+                                                    <div className="font-semibold text-gray-900">{selectedWarehouse.warehouseName}</div>
+                                                </div>
+                                                <div className="text-sm">
+                                                    <span className="text-gray-500">Code</span>
+                                                    <div className="font-semibold text-gray-900">{selectedWarehouse.warehouseCode}</div>
+                                                </div>
+                                                {selectedWarehouse.address && (
+                                                    <div className="text-sm">
+                                                        <span className="text-gray-500">Address</span>
+                                                        <div className="font-semibold text-gray-900">{`${selectedWarehouse.address || ''}, ${selectedWarehouse.city || ''}, ${selectedWarehouse.province || ''}`.trim()}</div>
+                                                    </div>
+                                                )}
                                             </div>
+                                        ) : (
+                                            <div className="text-sm text-gray-400 italic">Select a warehouse to view details</div>
                                         )}
                                     </div>
                                 )}
-                            </div>
+                            </FormSection>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">Delivery Receipt # *</label>
-                                <input type="text" value={formData.deliveryReceiptNumber} onChange={(e) => setFormData({ ...formData, deliveryReceiptNumber: e.target.value })} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" required placeholder="Enter delivery receipt number" />                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">Purchase Order #</label>
-                                <input type="text" value={formData.purchaseOrderNumber} onChange={(e) => setFormData({ ...formData, purchaseOrderNumber: e.target.value })} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">Transmittal</label>
-                                <input type="text" value={formData.transmittal} onChange={(e) => setFormData({ ...formData, transmittal: e.target.value })} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
-                            </div>
-                        </div>
-
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-3">Add Products *</label>
-                            <VariationSearchableDropdown
-                                options={productOptions}
-                                value={selectedProductForAdd}
-                                onChange={(value) => setSelectedProductForAdd(value)}
-                                placeholder="Select Product to Add..."
-                                required={false}
-                                formData={{ ...formData, fromWarehouseId: formData.selectedWarehouseId, selectedWarehouseName: warehouses.find(w => w.id === parseInt(formData.selectedWarehouseId))?.warehouseName }}
-                                index={-1}
-                                warehouseStocks={warehouseStocks}
-                                branchStocks={branchStocks}
-                                loadingStocks={loadingStocks}
-                                onAddProduct={handleAddProductToTable}
-                                activeCompanyId={branchInfo?.companyId ?? null}
-                            />
-                        </div>
-
-                        {/* Items Table */}
-                        <div>
-                            {formData.items.length === 0 ? (
-                                <div className="text-center py-10 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                                    <Package size={48} className="mx-auto mb-3 text-gray-400" />
-                                    <p className="font-medium text-gray-500">No products added yet</p>
-                                    <p className="text-sm text-gray-400">Select a product above and click "Add Product" to start</p>
+                        {/* Delivery details */}
+                        <FormSection icon={FileText} title="Delivery Details">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                                <div>
+                                    <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                                        Delivery Receipt # *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.deliveryReceiptNumber}
+                                        onChange={(e) => setFormData({ ...formData, deliveryReceiptNumber: e.target.value })}
+                                        className={inputClass}
+                                        required
+                                        placeholder="Enter delivery receipt number"
+                                    />
                                 </div>
-                            ) : (
-                                <>
-                                    <div className="overflow-x-auto rounded-lg border border-gray-200 -mx-2 sm:mx-0">
-                                        <table className="w-full min-w-[750px]">
-                                            <thead className="bg-gray-50 border-b border-gray-200">
-                                                <tr>
-                                                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase w-10">#</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase w-1/4">Product Name</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Variation</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">SKU</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">UPC</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">UOM</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Stock</th>
-                                                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Prepared Qty</th>
-                                                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Delivered Qty</th>
-                                                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Action</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-gray-200 bg-white">
-                                                {formData.items.map((item, i) => {
-                                                    const selectedOption = productOptions.find(opt =>
-                                                        opt.parentProductId === item.productId &&
-                                                        (item.variationId ? opt.variationId === item.variationId : !opt.variationId)
-                                                    );
-                                                    const stockKey = item.variationId
-                                                        ? `${item.productId}_${item.variationId}_${item.warehouseId}`
-                                                        : `${item.productId}_${item.warehouseId}`;
-                                                    const stockInfo = warehouseStocks[stockKey];
-                                                    const isLoadingStock = loadingStocks[stockKey];
-                                                    const effectiveAvailable = mode === 'edit'
-                                                        ? (stockInfo?.availableQuantity || 0) + (item.originalPreparedQty || 0)
-                                                        : (stockInfo?.availableQuantity || 0);
-                                                    const hasInsufficientStock = stockInfo && item.preparedQty > effectiveAvailable;
-                                                    const isDelivered = formData.status === 'DELIVERED';
-                                                    const isPreparing = formData.status === 'PREPARING';
-
-                                                    return (
-                                                        <tr key={`item-${i}`} className="hover:bg-gray-50">
-                                                            <td className="px-4 py-3 text-center"><span className="text-sm font-semibold text-gray-500">{i + 1}</span></td>
-                                                            <td className="px-4 py-3">
-                                                                {selectedOption
-                                                                    ? <div className="font-semibold text-gray-900 text-sm line-clamp-2">{selectedOption.fullName}</div>
-                                                                    : <div className="text-gray-500 italic text-sm">Product not found</div>}
-                                                            </td>
-                                                            <td className="px-2 py-3">
-                                                                {selectedOption?.subLabel && selectedOption.subLabel !== 'No variations'
-                                                                    ? <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{selectedOption.subLabel}</span>
-                                                                    : <span className="text-xs text-gray-500">None</span>}
-                                                            </td>
-                                                            <td className="px-4 py-3"><span className="text-sm text-gray-900">{selectedOption?.sku || 'N/A'}</span></td>
-                                                            <td className="px-4 py-3"><span className="text-sm text-gray-900">{selectedOption?.upc || 'N/A'}</span></td>
-                                                            <td className="px-4 py-3"><span className="text-sm text-gray-900 font-medium">{item.uom || 'N/A'}</span></td>
-                                                            <td className="px-4 py-3">
-                                                                {isLoadingStock ? (
-                                                                    <div className="flex items-center gap-2 text-blue-600 text-xs"><div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />Loading...</div>
-                                                                ) : stockInfo ? (
-                                                                    <div className="text-sm space-y-1">
-                                                                        <div className={`font-bold ${hasInsufficientStock ? 'text-red-600' : 'text-green-600'}`}>Available: {(stockInfo.availableQuantity || 0).toLocaleString('en-US')}</div>
-                                                                        <div className="text-xs text-gray-500">Total: {(stockInfo.quantity || 0).toLocaleString('en-US')}</div>
-                                                                        {mode === 'edit' && item.originalPreparedQty > 0 && <div className="text-xs text-blue-600">Effective: {effectiveAvailable.toLocaleString('en-US')}</div>}
-                                                                    </div>
-                                                                ) : <span className="text-xs text-gray-400 italic">No data</span>}
-                                                            </td>
-                                                            <td className="px-4 py-3 text-right">
-                                                                <input
-                                                                    type="text"
-                                                                    value={item.preparedQty !== '' && item.preparedQty != null ? Number(item.preparedQty).toLocaleString('en-US') : ''}
-                                                                    onChange={(e) => handleItemChange(i, 'preparedQty', e.target.value.replace(/,/g, ''))}
-                                                                    className={`w-24 px-3 py-2 border rounded-lg text-sm font-medium text-right ${hasInsufficientStock ? 'border-red-300 bg-red-50' : 'border-blue-300 bg-blue-50'}`}
-                                                                    min="1"
-                                                                    disabled={isDelivered}
-                                                                    required
-                                                                />
-                                                                {hasInsufficientStock && <div className="text-xs text-red-600 mt-1">Exceeds stock!</div>}
-                                                            </td>
-                                                            <td className="px-4 py-3 text-right">
-                                                                <input
-                                                                    type="text"
-                                                                    value={item.deliveredQty !== '' && item.deliveredQty != null ? Number(item.deliveredQty).toLocaleString('en-US') : ''}
-                                                                    onChange={(e) => handleItemChange(i, 'deliveredQty', e.target.value.replace(/,/g, ''))}
-                                                                    className={`w-24 px-3 py-2 border rounded-lg text-sm font-medium text-right ${isDelivered ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-100 cursor-not-allowed'}`}
-                                                                    min="0"
-                                                                    disabled={!isDelivered}
-                                                                    required={isDelivered}
-                                                                />
-                                                            </td>
-                                                            <td className="px-4 py-3 text-center">
-                                                                {isPreparing && (
-                                                                    <button type="button" onClick={() => handleRemoveItem(i)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition" title="Remove item">
-                                                                        <Trash2 size={18} />
-                                                                    </button>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                            <tfoot>
-                                                <tr className="bg-gray-50 border-t-2 border-gray-300">
-                                                    <td colSpan={8} className="px-4 py-3 text-right">
-                                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                                                            Total ({formData.items.length} item{formData.items.length !== 1 ? 's' : ''})
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right whitespace-nowrap">
-                                                        <div className="inline-flex items-center justify-end gap-1">
-                                                            <span className="text-sm font-bold text-blue-800">{totalPrepared.toLocaleString('en-US')}</span>
-                                                            <span className="text-xs text-blue-500">pcs</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right whitespace-nowrap">
-                                                        {isDeliveredStatus ? (
-                                                            <div className="inline-flex items-center justify-end gap-1">
-                                                                <span className="text-sm font-bold text-green-800">{totalDelivered.toLocaleString('en-US')}</span>
-                                                                <span className="text-xs text-green-500">pcs</span>
-                                                            </div>
-                                                        ) : <span className="text-xs text-gray-400 italic">—</span>}
-                                                    </td>
-                                                    <td className="px-4 py-3" />
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
-                                    <div className="mt-2 flex items-center justify-end gap-4 px-1">
-                                        <div className="flex items-center gap-1.5 text-sm">
-                                            <span className="text-gray-500">Total Prepared:</span>
-                                            <span className="font-bold text-blue-700">{totalPrepared.toLocaleString('en-US')} pcs</span>
-                                        </div>
-                                        {isDeliveredStatus && (
-                                            <>
-                                                <span className="text-gray-300">|</span>
-                                                <div className="flex items-center gap-1.5 text-sm">
-                                                    <span className="text-gray-500">Total Delivered:</span>
-                                                    <span className="font-bold text-green-700">{totalDelivered.toLocaleString('en-US')} pcs</span>
-                                                </div>
-                                                {totalPrepared !== totalDelivered && (
-                                                    <>
-                                                        <span className="text-gray-300">|</span>
-                                                        <div className="flex items-center gap-1.5 text-sm">
-                                                            <span className="text-gray-500">Variance:</span>
-                                                            <span className={`font-bold ${totalDelivered < totalPrepared ? 'text-red-600' : 'text-orange-600'}`}>
-                                                                {totalDelivered - totalPrepared > 0 ? '+' : ''}{totalDelivered - totalPrepared} pcs
-                                                            </span>
-                                                        </div>
-                                                    </>
-                                                )}
-                                            </>
-                                        )}
-                                    </div>
-                                </>
-                            )}
-                        </div>
-
-                        {/* Status — simplified, below items */}
-                        {mode === 'create' ? (
-                            <div className="flex items-center gap-3">
-                                <label className="text-sm font-medium text-gray-700">Status:</label>
-                                <span className="inline-flex items-center px-4 py-2 rounded-lg bg-yellow-100 text-yellow-800 font-semibold text-sm">
-                                    PREPARING
-                                </span>
-                                <span className="text-xs text-gray-400">New deliveries always start in PREPARING.</span>
+                                <div>
+                                    <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                                        Purchase Order #
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.purchaseOrderNumber}
+                                        onChange={(e) => setFormData({ ...formData, purchaseOrderNumber: e.target.value })}
+                                        className={inputClass}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                                        Transmittal
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.transmittal}
+                                        onChange={(e) => setFormData({ ...formData, transmittal: e.target.value })}
+                                        className={inputClass}
+                                    />
+                                </div>
                             </div>
-                        ) : mode === 'edit' && delivery && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-5">
+                                <div>
+                                    <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                                        Prepared By *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.preparedBy}
+                                        onChange={(e) => setFormData({ ...formData, preparedBy: e.target.value })}
+                                        className={inputClass}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                                        Date Prepared *
+                                        {mode === 'edit' && formData.status !== 'PREPARING' && <span className="ml-2 normal-case text-orange-500">(Locked)</span>}
+                                    </label>
+                                    {(() => {
+                                        const locked = mode === 'edit' && formData.status !== 'PREPARING';
+                                        return (
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="date"
+                                                    value={getDatePart(formData.datePrepared)}
+                                                    onChange={(e) => { if (!locked) setFormData({ ...formData, datePrepared: combineDatetime(clampYear(e.target.value), getTimePart(formData.datePrepared)) }); }}
+                                                    className={locked ? lockedDateInputClass : dateInputClass}
+                                                    max="9999-12-31" disabled={locked}
+                                                    required
+                                                />
+                                                <input
+                                                    type="time"
+                                                    value={getTimePart(formData.datePrepared)}
+                                                    onChange={(e) => { if (!locked) setFormData({ ...formData, datePrepared: combineDatetime(getDatePart(formData.datePrepared), e.target.value) }); }}
+                                                    className={locked ? lockedTimeInputClass : timeInputClass}
+                                                    disabled={locked}
+                                                    required
+                                                />
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
+                            </div>
+
+                            {formData.status === 'DELIVERED' && (
+                                <div className="mt-5">
+                                    <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                                        Date Delivered *
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="date"
+                                            value={getDatePart(formData.dateDelivered)}
+                                            onChange={(e) => setFormData({ ...formData, dateDelivered: combineDatetime(clampYear(e.target.value), getTimePart(formData.dateDelivered)) })}
+                                            className={dateInputClass}
+                                            max="9999-12-31"
+                                            required
+                                        />
+                                        <input
+                                            type="time"
+                                            value={getTimePart(formData.dateDelivered)}
+                                            onChange={(e) => setFormData({ ...formData, dateDelivered: combineDatetime(getDatePart(formData.dateDelivered), e.target.value) })}
+                                            className={timeInputClass}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="mt-5">
+                                <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                                    Remarks
+                                </label>
+                                <textarea
+                                    value={formData.remarks}
+                                    onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
+                                    className={inputClass}
+                                    rows="3"
+                                    placeholder="Add any additional notes or comments..."
+                                />
+                            </div>
+                        </FormSection>
+
+                        {/* Status */}
+                        <FormSection icon={Truck} title="Status">
+                            {mode === 'create' ? (
+                                <div className="flex items-center gap-3">
+                                    <span className="inline-flex items-center px-4 py-2 rounded-lg bg-yellow-100 text-yellow-800 font-semibold text-sm">
+                                        PREPARING
+                                    </span>
+                                    <span className="text-xs text-gray-400">New deliveries always start in PREPARING.</span>
+                                </div>
+                            ) : mode === 'edit' && delivery && (
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className={`inline-flex items-center px-4 py-2 rounded-lg font-semibold text-sm ${delivery.status === 'PREPARING' ? 'bg-yellow-100 text-yellow-800' :
-                                        delivery.status === 'IN_TRANSIT' ? 'bg-purple-100 text-purple-800' :
+                                        delivery.status === 'IN_TRANSIT' ? 'bg-blue-100 text-blue-800' :
                                             delivery.status === 'DELIVERED' ? 'bg-green-100 text-green-800' :
                                                 'bg-red-100 text-red-800'
                                         }`}>
@@ -734,8 +708,8 @@ const DeliveryFormModal = ({
                                                 type="button"
                                                 onClick={() => setFormData({ ...formData, status: 'IN_TRANSIT', dateDelivered: '' })}
                                                 className={`px-4 py-2 rounded-lg font-semibold text-sm border transition-all ${formData.status === 'IN_TRANSIT'
-                                                    ? 'bg-purple-500 text-white border-purple-500 ring-2 ring-purple-300'
-                                                    : 'bg-white text-purple-700 border-purple-300 hover:bg-purple-50'
+                                                    ? 'bg-blue-600 text-white border-blue-600 ring-2 ring-blue-300'
+                                                    : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-50'
                                                     }`}
                                             >
                                                 IN_TRANSIT
@@ -761,7 +735,7 @@ const DeliveryFormModal = ({
                                                     });
                                                 }}
                                                 className={`px-4 py-2 rounded-lg font-semibold text-sm border transition-all ${formData.status === 'DELIVERED'
-                                                    ? 'bg-green-500 text-white border-green-500 ring-2 ring-green-300'
+                                                    ? 'bg-green-600 text-white border-green-600 ring-2 ring-green-300'
                                                     : 'bg-white text-green-700 border-green-300 hover:bg-green-50'
                                                     }`}
                                             >
@@ -775,7 +749,7 @@ const DeliveryFormModal = ({
                                                     }
                                                 }}
                                                 className={`px-4 py-2 rounded-lg font-semibold text-sm border transition-all ${formData.status === 'CANCELLED'
-                                                    ? 'bg-red-500 text-white border-red-500 ring-2 ring-red-300'
+                                                    ? 'bg-red-600 text-white border-red-600 ring-2 ring-red-300'
                                                     : 'bg-white text-red-700 border-red-300 hover:bg-red-50'
                                                     }`}
                                             >
@@ -788,78 +762,181 @@ const DeliveryFormModal = ({
                                         <span className="text-xs text-gray-400 italic ml-1">No further changes allowed.</span>
                                     )}
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </FormSection>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">Prepared By *</label>
-                                <input type="text" value={formData.preparedBy} onChange={(e) => setFormData({ ...formData, preparedBy: e.target.value })} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" required />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">
-                                    Date Prepared *
-                                    {mode === 'edit' && formData.status !== 'PREPARING' && <span className="ml-2 text-xs text-orange-600">(Locked)</span>}
+                        {/* Products */}
+                        <FormSection icon={ClipboardList} title={`Products${formData.items.length ? ` (${formData.items.length})` : ''}`}>
+                            <div className="mb-5">
+                                <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                                    Add Products *
                                 </label>
-                                {/* ── Split date + time inputs — no year-overflow bug ── */}
-                                {(() => {
-                                    const locked = mode === 'edit' && formData.status !== 'PREPARING';
-                                    return (
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="date"
-                                                value={getDatePart(formData.datePrepared)}
-                                                onChange={(e) => { if (!locked) setFormData({ ...formData, datePrepared: combineDatetime(clampYear(e.target.value), getTimePart(formData.datePrepared)) }); }}
-                                                className={locked ? lockedDateInputClass : dateInputClass}
-                                                max="9999-12-31" disabled={locked}
-                                                required
-                                            />
-                                            <input
-                                                type="time"
-                                                value={getTimePart(formData.datePrepared)}
-                                                onChange={(e) => { if (!locked) setFormData({ ...formData, datePrepared: combineDatetime(getDatePart(formData.datePrepared), e.target.value) }); }}
-                                                className={locked ? lockedTimeInputClass : timeInputClass}
-                                                disabled={locked}
-                                                required
-                                            />
-                                        </div>
-                                    );
-                                })()}
+                                <VariationSearchableDropdown
+                                    options={productOptions}
+                                    value={selectedProductForAdd}
+                                    onChange={(value) => setSelectedProductForAdd(value)}
+                                    placeholder="Select Product to Add..."
+                                    required={false}
+                                    formData={{ ...formData, fromWarehouseId: formData.selectedWarehouseId, selectedWarehouseName: selectedWarehouse?.warehouseName }}
+                                    index={-1}
+                                    warehouseStocks={warehouseStocks}
+                                    branchStocks={branchStocks}
+                                    loadingStocks={loadingStocks}
+                                    onAddProduct={handleAddProductToTable}
+                                    activeCompanyId={branchInfo?.companyId ?? null}
+                                />
                             </div>
-                        </div>
 
-                        {/* Date Delivered */}
-                        {formData.status === 'DELIVERED' && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">Date Delivered *</label>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="date"
-                                        value={getDatePart(formData.dateDelivered)}
-                                        onChange={(e) => setFormData({ ...formData, dateDelivered: combineDatetime(clampYear(e.target.value), getTimePart(formData.dateDelivered)) })}
-                                        className={dateInputClass}
-                                        max="9999-12-31"
-                                        required
-                                    />
-                                    <input
-                                        type="time"
-                                        value={getTimePart(formData.dateDelivered)}
-                                        onChange={(e) => setFormData({ ...formData, dateDelivered: combineDatetime(getDatePart(formData.dateDelivered), e.target.value) })}
-                                        className={timeInputClass}
-                                        required
-                                    />
+                            {formData.items.length === 0 ? (
+                                <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                                    <Package size={40} className="mx-auto mb-3 text-gray-300" />
+                                    <p className="font-medium text-gray-500 text-sm">No products added yet</p>
+                                    <p className="text-xs text-gray-400 mt-1">Select a product above and click "Add Product" to start</p>
                                 </div>
-                            </div>
-                        )}
+                            ) : (
+                                <>
+                                    <div className="overflow-x-auto rounded-lg border border-gray-200">
+                                        <table className="w-full min-w-[750px] text-sm">
+                                            <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
+                                                <tr>
+                                                    {['#', 'Product Name', 'Variation', 'SKU', 'UPC', 'UOM', 'Stock', 'Prepared Qty', 'Delivered Qty', ''].map(h => (
+                                                        <th key={h} className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100 bg-white">
+                                                {formData.items.map((item, i) => {
+                                                    const selectedOption = productOptions.find(opt =>
+                                                        opt.parentProductId === item.productId &&
+                                                        (item.variationId ? opt.variationId === item.variationId : !opt.variationId)
+                                                    );
+                                                    const stockKey = item.variationId
+                                                        ? `${item.productId}_${item.variationId}_${item.warehouseId}`
+                                                        : `${item.productId}_${item.warehouseId}`;
+                                                    const stockInfo = warehouseStocks[stockKey];
+                                                    const isLoadingStock = loadingStocks[stockKey];
+                                                    const effectiveAvailable = mode === 'edit'
+                                                        ? (stockInfo?.availableQuantity || 0) + (item.originalPreparedQty || 0)
+                                                        : (stockInfo?.availableQuantity || 0);
+                                                    const hasInsufficientStock = stockInfo && item.preparedQty > effectiveAvailable;
+                                                    const isDelivered = formData.status === 'DELIVERED';
+                                                    const isPreparing = formData.status === 'PREPARING';
 
-                        {/* Remarks */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-3">Remarks</label>
-                            <textarea value={formData.remarks} onChange={(e) => setFormData({ ...formData, remarks: e.target.value })} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" rows="3" placeholder="Add any additional notes or comments..." />
-                        </div>
+                                                    return (
+                                                        <tr key={`item-${i}`} className="hover:bg-gray-50/80 transition-colors">
+                                                            <td className="px-4 py-3 text-center text-gray-400">{i + 1}</td>
+                                                            <td className="px-4 py-3">
+                                                                {selectedOption
+                                                                    ? <div className="font-semibold text-gray-900 line-clamp-2">{selectedOption.fullName}</div>
+                                                                    : <div className="text-gray-400 italic">Product not found</div>}
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                {selectedOption?.subLabel && selectedOption.subLabel !== 'No variations'
+                                                                    ? <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">{selectedOption.subLabel}</span>
+                                                                    : <span className="text-xs text-gray-400">None</span>}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-gray-700">{selectedOption?.sku || 'N/A'}</td>
+                                                            <td className="px-4 py-3 text-gray-700">{selectedOption?.upc || 'N/A'}</td>
+                                                            <td className="px-4 py-3 text-gray-700 font-medium">{item.uom || 'N/A'}</td>
+                                                            <td className="px-4 py-3">
+                                                                {isLoadingStock ? (
+                                                                    <div className="flex items-center gap-2 text-blue-600 text-xs">
+                                                                        <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                                                                        Loading...
+                                                                    </div>
+                                                                ) : stockInfo ? (
+                                                                    <div className="space-y-0.5">
+                                                                        <div className={`font-bold text-xs ${hasInsufficientStock ? 'text-red-600' : 'text-blue-600'}`}>Avail: {(stockInfo.availableQuantity || 0).toLocaleString('en-US')}</div>
+                                                                        <div className="text-[11px] text-gray-400">Total: {(stockInfo.quantity || 0).toLocaleString('en-US')}</div>
+                                                                        {mode === 'edit' && item.originalPreparedQty > 0 && <div className="text-[11px] text-blue-500">Effective: {effectiveAvailable.toLocaleString('en-US')}</div>}
+                                                                    </div>
+                                                                ) : <span className="text-xs text-gray-400 italic">No data</span>}
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <input
+                                                                    type="text"
+                                                                    value={item.preparedQty !== '' && item.preparedQty != null ? Number(item.preparedQty).toLocaleString('en-US') : ''}
+                                                                    onChange={(e) => handleItemChange(i, 'preparedQty', e.target.value.replace(/,/g, ''))}
+                                                                    className={`w-24 px-3 py-1.5 border rounded-md text-sm font-medium outline-none transition focus:ring-2 ${hasInsufficientStock ? 'border-red-300 bg-red-50 focus:ring-red-200' : 'border-blue-300 bg-blue-50 focus:ring-blue-200'}`}
+                                                                    min="1"
+                                                                    disabled={isDelivered}
+                                                                    required
+                                                                />
+                                                                {hasInsufficientStock && <div className="text-[11px] text-red-600 mt-1">Exceeds stock!</div>}
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <input
+                                                                    type="text"
+                                                                    value={item.deliveredQty !== '' && item.deliveredQty != null ? Number(item.deliveredQty).toLocaleString('en-US') : ''}
+                                                                    onChange={(e) => handleItemChange(i, 'deliveredQty', e.target.value.replace(/,/g, ''))}
+                                                                    className={`w-24 px-3 py-1.5 border rounded-md text-sm font-medium outline-none transition focus:ring-2 ${isDelivered ? 'border-green-300 bg-green-50 focus:ring-green-200' : 'border-gray-300 bg-gray-100 cursor-not-allowed'}`}
+                                                                    min="0"
+                                                                    disabled={!isDelivered}
+                                                                    required={isDelivered}
+                                                                />
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center">
+                                                                {isPreparing && (
+                                                                    <button type="button" onClick={() => handleRemoveItem(i)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition" title="Remove item">
+                                                                        <Trash2 size={16} />
+                                                                    </button>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                            <tfoot className="bg-gray-50 border-t border-gray-200">
+                                                <tr>
+                                                    <td colSpan={7} className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                                        Total ({formData.items.length} item{formData.items.length !== 1 ? 's' : ''})
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                                                        <span className="text-sm font-bold text-blue-700">{totalPrepared.toLocaleString('en-US')}</span>
+                                                        <span className="text-xs text-blue-400 ml-1">pcs</span>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                                                        {isDeliveredStatus ? (
+                                                            <>
+                                                                <span className="text-sm font-bold text-green-700">{totalDelivered.toLocaleString('en-US')}</span>
+                                                                <span className="text-xs text-green-500 ml-1">pcs</span>
+                                                            </>
+                                                        ) : <span className="text-xs text-gray-400 italic">—</span>}
+                                                    </td>
+                                                    <td />
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+
+                                    {isDeliveredStatus && totalPrepared !== totalDelivered && (
+                                        <div className="mt-2 flex items-center justify-end gap-1.5 text-sm px-1">
+                                            <span className="text-gray-500">Variance:</span>
+                                            <span className={`font-bold ${totalDelivered < totalPrepared ? 'text-red-600' : 'text-orange-600'}`}>
+                                                {totalDelivered - totalPrepared > 0 ? '+' : ''}{totalDelivered - totalPrepared} pcs
+                                            </span>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </FormSection>
                     </div>
+                </form>
 
-                    <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-gray-200">
+                {/* Sticky footer */}
+                <div className="px-5 sm:px-8 py-4 bg-white border-t border-gray-200 flex-shrink-0 flex justify-between items-center">
+                    <div className="text-sm text-gray-500 hidden sm:block">
+                        {formData.items.length > 0 && (
+                            <>
+                                <span className="font-semibold text-gray-900">{formData.items.length}</span> item{formData.items.length !== 1 ? 's' : ''} ·{' '}
+                                <span className="font-semibold text-gray-900">{totalPrepared.toLocaleString('en-US')} pcs prepared</span>
+                                {isDeliveredStatus && (
+                                    <> · <span className="font-semibold text-gray-900">{totalDelivered.toLocaleString('en-US')} pcs delivered</span></>
+                                )}
+                            </>
+                        )}
+                    </div>
+                    <div className="flex gap-3">
                         <button
                             type="button"
                             onClick={onClose}
@@ -870,13 +947,14 @@ const DeliveryFormModal = ({
                         </button>
                         <button
                             type="submit"
+                            form="delivery-form"
                             disabled={isLoading}
-                            className="px-5 py-2.5 text-sm font-semibold text-white bg-[#2CA01C] rounded-md hover:bg-[#248018] active:bg-[#1F6B14] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {mode === 'create' ? 'Create Delivery' : 'Update Delivery'}
                         </button>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     );
