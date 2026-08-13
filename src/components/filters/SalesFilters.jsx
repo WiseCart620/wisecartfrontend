@@ -93,7 +93,7 @@ const SalesFilters = ({
 
         {/* Compact filter row */}
         <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-200">
-          <div className="min-w-[140px] w-fit max-w-[260px]">
+          <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
             <SearchableDropdown
               options={companyOptions}
               value={filterData.companyId}
@@ -113,7 +113,7 @@ const SalesFilters = ({
             />
           </div>
 
-          <div className="min-w-[140px] w-fit max-w-[260px]">
+          <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
             <MultiSelectDropdown
               options={filteredBranchOptions}
               selectedIds={filterData.branchIds || []}
@@ -127,7 +127,7 @@ const SalesFilters = ({
           <select
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-            className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-36"
+            className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-36 flex-shrink-0"
           >
             <option value="ALL">All Status</option>
             <option value="PENDING">Pending</option>
@@ -135,7 +135,7 @@ const SalesFilters = ({
             <option value="INVOICED">Invoiced</option>
           </select>
 
-          <div className="h-9 flex items-center gap-1 border border-gray-300 rounded-lg px-2">
+          <div className="h-9 flex items-center gap-1 border border-gray-300 rounded-lg px-2 flex-shrink-0">
             <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
             <input
               type="date"
@@ -152,7 +152,7 @@ const SalesFilters = ({
             />
           </div>
 
-          <div className="w-56">
+          <div className="w-56 flex-shrink-0">
             <VariationSearchableDropdown
               options={allProductOptions.filter(o =>
                 !filterData.productFilters.some(pf =>

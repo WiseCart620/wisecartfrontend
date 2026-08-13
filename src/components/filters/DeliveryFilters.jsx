@@ -74,7 +74,7 @@ const DeliveryFilters = ({
   return (
     <div className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 mb-4">
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
-        <div className="min-w-[140px] w-fit max-w-[260px]">
+        <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
           <SearchableDropdown
             options={companyOptions}
             value={filterData.companyId}
@@ -92,7 +92,7 @@ const DeliveryFilters = ({
           />
         </div>
 
-        <div className="min-w-[140px] w-fit max-w-[260px]">
+        <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
           <SearchableDropdown
             options={filteredBranchOptions}
             value={filterData.branchId}
@@ -104,7 +104,7 @@ const DeliveryFilters = ({
           />
         </div>
 
-        <div className="w-44">
+        <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
           <SearchableDropdown
             options={warehouseOptions}
             value={filterData.warehouseId}
@@ -118,7 +118,7 @@ const DeliveryFilters = ({
         <select
           value={filterData.status}
           onChange={(e) => onFilterChange({ status: e.target.value })}
-          className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-36"
+          className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-36 flex-shrink-0"
         >
           <option value="">All Status</option>
           {statusOptions.map(status => (

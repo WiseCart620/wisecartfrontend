@@ -93,7 +93,7 @@ const BranchFilterPanel = ({
   return (
     <div className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 mb-4">
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
-        <div className="min-w-[140px] w-fit max-w-[260px]">
+        <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
           <MultiSelectDropdown
             options={companies.map(c => ({ id: c.id, name: c.companyName }))}
             selectedIds={filters.companyIds || []}
@@ -103,7 +103,7 @@ const BranchFilterPanel = ({
           />
         </div>
 
-        <div className="min-w-[140px] w-fit max-w-[260px]">
+        <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
           <MultiSelectDropdown
             options={availableBranches.map(b => ({ id: b.id, name: b.branchName, code: b.branchCode }))}
             selectedIds={filters.branchIds || []}
@@ -113,7 +113,7 @@ const BranchFilterPanel = ({
           />
         </div>
 
-        <div className="w-52">
+        <div className="w-52 flex-shrink-0">
           <ProductMultiSelectDropdown
             options={productOptions}
             selectedIds={filters.productKeys || []}
@@ -123,7 +123,7 @@ const BranchFilterPanel = ({
           />
         </div>
 
-        <div className="h-9 flex items-center gap-1 border border-gray-300 rounded-lg px-2">
+        <div className="h-9 flex items-center gap-1 border border-gray-300 rounded-lg px-2 flex-shrink-0">
           <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Stock</span>
           <input
             type="number"
@@ -142,7 +142,7 @@ const BranchFilterPanel = ({
           />
         </div>
 
-        <div className="h-9 flex items-center gap-1 border border-gray-300 rounded-lg px-2">
+        <div className="h-9 flex items-center gap-1 border border-gray-300 rounded-lg px-2 flex-shrink-0">
           <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
           <input
             type="date"
