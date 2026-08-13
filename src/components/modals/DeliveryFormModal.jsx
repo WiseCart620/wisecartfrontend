@@ -859,9 +859,20 @@ const DeliveryFormModal = ({
                         </div>
                     </div>
 
-                    <div className="mt-8 flex justify-end gap-4 pt-6 border-t border-gray-200">
-                        <button type="button" onClick={onClose} className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium" disabled={isLoading}>Cancel</button>
-                        <button type="submit" className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md" disabled={isLoading}>
+                    <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-gray-200">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={isLoading}
+                            className="px-5 py-2.5 text-sm font-semibold text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="px-5 py-2.5 text-sm font-semibold text-white bg-[#2CA01C] rounded-md hover:bg-[#248018] active:bg-[#1F6B14] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                             {mode === 'create' ? 'Create Delivery' : 'Update Delivery'}
                         </button>
                     </div>

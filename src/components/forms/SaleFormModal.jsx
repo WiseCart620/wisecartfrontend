@@ -194,7 +194,10 @@ const SaleFormModal = ({
                     <tbody className="divide-y divide-gray-200 bg-white">
                       {formData.items.map((item, i) => {
                         const selectedOption = Array.isArray(productOptions)
-                          ? productOptions.find(opt => opt.parentProductId === item.productId && (item.variationId !== null ? opt.variationId === item.variationId : opt.variationId === null))
+                          ? productOptions.find(opt =>
+                            opt.parentProductId === item.productId &&
+                            (opt.variationId ?? null) === (item.variationId ?? null)
+                          )
                           : null;
                         const stockKey = makeStockKey(item.productId, item.variationId, formData.branchId);
                         const stockInfo = branchStocks[stockKey];
@@ -307,7 +310,10 @@ const SaleFormModal = ({
                         <td className="px-4 py-3 text-right text-sm font-bold text-blue-700">
                           ₱{formData.items.reduce((sum, item) => {
                             if (!Array.isArray(productOptions)) return 0;
-                            const opt = productOptions.find(o => o.parentProductId === item.productId && (item.variationId !== null ? o.variationId === item.variationId : o.variationId === null));
+                            const opt = productOptions.find(o =>
+                              o.parentProductId === item.productId &&
+                              (o.variationId ?? null) === (item.variationId ?? null)
+                            );
                             const effectivePrice = (item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== '')
                               ? Number(item.unitPrice)
                               : (opt?.price ?? 0);
@@ -323,9 +329,18 @@ const SaleFormModal = ({
             </div>
           </div>
 
-          <div className="mt-8 flex justify-end gap-4 pt-6 border-t border-gray-200">
-            <button type="button" onClick={onClose} className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">Cancel</button>
-            <button type="submit" className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md">
+          <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 text-sm font-semibold text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 active:bg-gray-100 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2.5 text-sm font-semibold text-white bg-[#2CA01C] rounded-md hover:bg-[#248018] active:bg-[#1F6B14] transition-colors"
+            >
               {modalMode === 'create' ? 'Create Sale' : 'Update Sale'}
             </button>
           </div>
