@@ -597,6 +597,7 @@ const InventoryManagement = () => {
               branches={branches}
               companies={companies}
               productSummaries={productSummaries}
+              products={products}
               filters={branchFilters.filters}
               updateFilter={branchFilters.updateFilter}
               clearFilters={branchFilters.clearFilters}
