@@ -63,7 +63,7 @@ const VariationSearchableDropdown = ({
     const currentItem = formData?.items?.[index];
     if (currentItem) {
       const productMatch = currentItem.productId === opt.parentProductId;
-      const variationMatch = currentItem.variationId === opt.variationId;
+      const variationMatch = (currentItem.variationId ?? null) === (opt.variationId ?? null);
       return productMatch && variationMatch;
     }
     return opt.id === value;
@@ -172,7 +172,8 @@ const VariationSearchableDropdown = ({
                     const option = filteredOptions[highlightedIndex];
                     const isAlreadySelected = formData?.items?.some((item, idx) => {
                       if (idx === index) return false;
-                      return item.productId === option?.parentProductId && item.variationId === option?.variationId;
+                      return item.productId === option?.parentProductId &&
+                        (item.variationId ?? null) === (option?.variationId ?? null);
                     });
                     if (option && !isAlreadySelected) {
                       onChange(option.id);
@@ -207,7 +208,8 @@ const VariationSearchableDropdown = ({
               filteredOptions.map((option, optionIndex) => {
                 const isAlreadySelected = formData?.items?.some((item, idx) => {
                   if (idx === index) return false;
-                  return item.productId === option.parentProductId && item.variationId === option.variationId;
+                  return item.productId === option.parentProductId &&
+                    (item.variationId ?? null) === (option.variationId ?? null);
                 });
 
                 return (
