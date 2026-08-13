@@ -71,12 +71,6 @@ const SalesManagement = () => {
     companyId: filterData.companyId,
   });
 
-  const { allProductOptions: allOpts, productOptions: opts } = useProductOptions({
-    products,
-    branchInfo,
-    productPrices,
-  });
-
   const {
     formData, setFormData,
     modalMode, showModal,
@@ -101,7 +95,13 @@ const SalesManagement = () => {
     loadProductStock,
     getMaxAllowedQuantity,
     duplicateCheck, cancelDuplicateSubmit, confirmDuplicateSubmit,
-  } = useSalesForm({ fetchSales, currentPage, productOptions: opts });
+  } = useSalesForm({ fetchSales, currentPage, productOptions: allProductOptions });
+
+  const { allProductOptions: allOpts, productOptions: opts } = useProductOptions({
+    products,
+    branchInfo,
+    productPrices,
+  });
 
   useEffect(() => {
     if (showModal) setLoadingAction(null);
