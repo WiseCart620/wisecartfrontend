@@ -20,6 +20,8 @@ import TransactionTable from '../../components/tables/InventoryManagement/Transa
 import StockRebuildPanel from '../../components/tables/InventoryManagement/StockRebuildPanel';
 import TransactionCleanupPanel from '../../components/tables/InventoryManagement/TransactionCleanupPanel';
 import ProductFilterPanel from '../../components/filters/ProductFilterPanel';
+import ProductSummaryReportPanel from '../../components/filters/ProductSummaryReportPanel';
+import BranchSummaryReportModal from '../../components/modals/BranchSummaryReportModal';
 import WarehouseFilterPanel from '../../components/filters/WarehouseFilterPanel';
 import BranchFilterPanel from '../../components/filters/BranchFilterPanel';
 import TransactionFilterPanel from '../../components/filters/TransactionFilterPanel';
@@ -54,13 +56,20 @@ const InventoryManagement = () => {
   const [viewingId, setViewingId] = useState(null);
   const [refDataLoading, setRefDataLoading] = useState(true);
   const [showReportModal, setShowReportModal] = useState(false);
-  const [reportFilters, setReportFilters] = useState({
-    warehouse: '',
-    dateFrom: '',
-    dateTo: '',
-  });
   const [reportData, setReportData] = useState([]);
   const [reportLoading, setReportLoading] = useState(false);
+  const [showBranchReportModal, setShowBranchReportModal] = useState(false);
+  const [branchReportData, setBranchReportData] = useState([]);
+  const [branchReportLoading, setBranchReportLoading] = useState(false);
+
+  const productReportFilters = useFilters({
+    productKeys: [],
+    dateFrom: '',
+    dateTo: '',
+    warehouseId: '',
+    companyIds: [],
+    branchIds: [],
+  });
 
   const loadProductSummaries = useCallback(async () => {
     try {
@@ -266,41 +275,19 @@ const InventoryManagement = () => {
   const handleGenerateReport = async () => {
     setReportLoading(true);
     try {
+      const { warehouseId, dateFrom, dateTo, productKeys } = productReportFilters.filters;
       const params = new URLSearchParams();
-      if (reportFilters.warehouse) params.append('warehouseId', reportFilters.warehouse);
-
-      // Fix date format: Convert from MM/DD/YYYY to YYYY-MM-DD
-      let formattedDateFrom = reportFilters.dateFrom;
-      let formattedDateTo = reportFilters.dateTo;
-
-      if (formattedDateFrom && formattedDateFrom.includes('/')) {
-        const [month, day, year] = formattedDateFrom.split('/');
-        formattedDateFrom = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-      }
-      if (formattedDateTo && formattedDateTo.includes('/')) {
-        const [month, day, year] = formattedDateTo.split('/');
-        formattedDateTo = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-      }
-
-      if (formattedDateFrom) params.append('dateFrom', formattedDateFrom);
-      if (formattedDateTo) params.append('dateTo', formattedDateTo);
-
-      console.log('Report params:', params.toString());
-      console.log('Report filters:', reportFilters);
-      console.log('Formatted dateFrom:', formattedDateFrom);
-      console.log('Formatted dateTo:', formattedDateTo);
+      if (warehouseId) params.append('warehouseId', warehouseId);
+      if (dateFrom) params.append('dateFrom', dateFrom);
+      if (dateTo) params.append('dateTo', dateTo);
 
       const [movementsRes, begStockRes] = await Promise.all([
         api.get(`/inventories/report/movements?${params}`),
         api.get(`/inventories/report/beginning-stock?${params}`),
       ]);
 
-      console.log('Movements response:', movementsRes.data);
-      console.log('BegStock response:', begStockRes.data);
-
       const productMap = {};
 
-      // 1. Seed from movements
       (movementsRes.data || []).forEach(row => {
         const key = `${row.productId}_${row.variationId || 'base'}`;
         productMap[key] = {
@@ -320,7 +307,6 @@ const InventoryManagement = () => {
         };
       });
 
-      // 2. Merge begStock
       (begStockRes.data || []).forEach(row => {
         const key = `${row.productId}_${row.variationId || 'base'}`;
         if (!productMap[key]) {
@@ -349,13 +335,58 @@ const InventoryManagement = () => {
           - p.transferOut - p.damage - p.adjustment - p.qtyDelivered;
       });
 
-      setReportData(Object.values(productMap));
+      let rows = Object.entries(productMap).map(([key, row]) => ({ key, ...row }));
+      if (productKeys && productKeys.length > 0) {
+        rows = rows.filter(row => productKeys.includes(row.key));
+      }
+
+      setReportData(rows);
       setShowReportModal(true);
     } catch (err) {
       toast.error('Failed to generate report');
       console.error('Report error:', err);
     } finally {
       setReportLoading(false);
+    }
+  };
+
+  const handleGenerateBranchReport = async () => {
+    setBranchReportLoading(true);
+    try {
+      const { companyIds, branchIds, dateFrom, dateTo, productKeys } = productReportFilters.filters;
+      const params = new URLSearchParams();
+      (companyIds || []).forEach(id => params.append('companyIds', id));
+      (branchIds || []).forEach(id => params.append('branchIds', id));
+      if (dateFrom) params.append('dateFrom', dateFrom);
+      if (dateTo) params.append('dateTo', dateTo);
+
+      const res = await api.get(`/inventories/report/branch-summary?${params}`);
+      if (!res.success) {
+        toast.error(res.error || 'Failed to generate report');
+        return;
+      }
+
+      let rows = res.data || [];
+      if (productKeys && productKeys.length > 0) {
+        rows = rows.filter(row => productKeys.includes(`${row.productId}_${row.variationId || 'base'}`));
+      }
+
+      setBranchReportData(rows);
+      setShowBranchReportModal(true);
+    } catch (err) {
+      toast.error('Failed to generate company/branch report');
+      console.error('Branch report error:', err);
+    } finally {
+      setBranchReportLoading(false);
+    }
+  };
+
+  const handleGenerateProductReport = () => {
+    const { companyIds, branchIds } = productReportFilters.filters;
+    if ((companyIds && companyIds.length > 0) || (branchIds && branchIds.length > 0)) {
+      handleGenerateBranchReport();
+    } else {
+      handleGenerateReport();
     }
   };
 
@@ -390,48 +421,6 @@ const InventoryManagement = () => {
         <div className="mb-4">
           <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Inventory Management</h1>
           <p className="text-sm text-gray-600">Track stock movements across warehouses and branches</p>
-        </div>
-
-        <div className="mb-4 flex flex-wrap gap-3 items-end p-3 bg-gray-50 border border-gray-200 rounded-lg">
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Warehouse</label>
-            <select
-              value={reportFilters.warehouse}
-              onChange={e => setReportFilters(f => ({ ...f, warehouse: e.target.value }))}
-              className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Warehouses</option>
-              {warehouses.map(w => (
-                <option key={w.id} value={String(w.id)}>{w.warehouseName}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Date From</label>
-            <input
-              type="date"
-              value={reportFilters.dateFrom}
-              onChange={e => setReportFilters(f => ({ ...f, dateFrom: e.target.value }))}
-              className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Date To</label>
-            <input
-              type="date"
-              value={reportFilters.dateTo}
-              onChange={e => setReportFilters(f => ({ ...f, dateTo: e.target.value }))}
-              className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <button
-            onClick={handleGenerateReport}
-            disabled={reportLoading}
-            className="px-4 py-1.5 text-sm bg-[#185FA5] text-white rounded-lg hover:bg-[#0C447C] transition disabled:opacity-50 flex items-center gap-2"
-          >
-            <BarChart3 size={14} />
-            {reportLoading ? 'Generating...' : 'Generate Report'}
-          </button>
         </div>
 
         {/* Navigation Tabs */}
@@ -504,6 +493,17 @@ const InventoryManagement = () => {
 
         {activeTab === 'products' && (
           <div className="mb-8">
+            <ProductSummaryReportPanel
+              products={products}
+              warehouses={warehouses}
+              companies={companies}
+              branches={branches}
+              filters={productReportFilters.filters}
+              updateFilter={productReportFilters.updateFilter}
+              onGenerate={handleGenerateProductReport}
+              generating={reportLoading || branchReportLoading}
+            />
+
             <div className="flex flex-col md:flex-row gap-4 mb-6">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
@@ -723,8 +723,23 @@ const InventoryManagement = () => {
           isOpen={showReportModal}
           onClose={() => setShowReportModal(false)}
           data={reportData}
-          filters={reportFilters}
+          filters={{
+            warehouse: productReportFilters.filters.warehouseId,
+            dateFrom: productReportFilters.filters.dateFrom,
+            dateTo: productReportFilters.filters.dateTo,
+          }}
           warehouses={warehouses}
+        />
+
+        <BranchSummaryReportModal
+          isOpen={showBranchReportModal}
+          onClose={() => setShowBranchReportModal(false)}
+          data={branchReportData}
+          filters={{
+            dateFrom: productReportFilters.filters.dateFrom,
+            dateTo: productReportFilters.filters.dateTo,
+          }}
+          companies={companies}
         />
 
         <ProductTransactionsModal
