@@ -74,7 +74,7 @@ const DeliveryFilters = ({
   return (
     <div className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 mb-4">
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
-        <div className="w-44">
+        <div className="min-w-[140px] w-fit max-w-[260px]">
           <SearchableDropdown
             options={companyOptions}
             value={filterData.companyId}
@@ -92,7 +92,7 @@ const DeliveryFilters = ({
           />
         </div>
 
-        <div className="w-44">
+        <div className="min-w-[140px] w-fit max-w-[260px]">
           <SearchableDropdown
             options={filteredBranchOptions}
             value={filterData.branchId}

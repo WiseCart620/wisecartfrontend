@@ -54,16 +54,16 @@ const SearchableDropdown = ({
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`w-full px-3 flex items-center justify-between ${fieldBase} ${disabled ? 'bg-gray-100 cursor-not-allowed opacity-60' : ''}`}
+        className={`inline-flex items-center justify-between gap-2 px-3 whitespace-nowrap ${fieldBase} ${disabled ? 'bg-gray-100 cursor-not-allowed opacity-60' : ''}`}
       >
         <span className={selectedOption ? 'text-gray-900' : 'text-gray-500'}>
           {selectedOption ? selectedOption[displayKey] : placeholder}
         </span>
-        <ChevronDown size={20} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={20} className={`text-gray-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && !disabled && (
-        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-hidden">
+        <div className="absolute z-50 w-72 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-hidden">
           <div className="p-3 border-b border-gray-200">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />

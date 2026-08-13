@@ -61,7 +61,7 @@ const MultiSelectDropdown = ({
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className={`w-full flex items-center justify-between px-3 ${fieldBase}`}
+        className={`inline-flex items-center justify-between gap-2 px-3 whitespace-nowrap ${fieldBase}`}
       >
         <span className={`truncate ${selectedIds.length ? 'text-gray-900' : 'text-gray-400'}`}>{label}</span>
         <div className="flex items-center gap-1 flex-shrink-0">
