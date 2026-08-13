@@ -7,6 +7,7 @@ const BranchFilterPanel = ({
   branches,
   companies = [],
   productSummaries = [],
+  products = [],
   filters,
   updateFilter,
   clearFilters
@@ -29,26 +30,60 @@ const BranchFilterPanel = ({
     if (stillValid.length !== currentBranchIds.length) {
       updateFilter('branchIds', stillValid);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCompanyIds.join(',')]);
 
   const productOptions = useMemo(() => {
-    return productSummaries.map(p => {
-      const isVariation = p.isVariation === true || !!p.variationId;
-      const sku = p.variationSku || p.sku || 'N/A';
-      const upc = p.variationUpc || p.upc || 'N/A';
-      const variationLabel = p.combinationDisplay || p.variationName || null;
-      return {
-        id: `${p.productId ?? p.id}_${p.variationId ?? 'base'}`,
-        name: isVariation && variationLabel
-          ? `${p.productName} (${variationLabel})`
-          : p.productName,
-        sku,
-        upc,
-        subLabel: isVariation ? variationLabel : null,
-      };
+    if (!Array.isArray(products) || products.length === 0) {
+      return productSummaries.map(p => {
+        const isVariation = p.isVariation === true || !!p.variationId;
+        const sku = p.variationSku || p.sku || 'N/A';
+        const upc = p.variationUpc || p.upc || 'N/A';
+        const variationLabel = p.combinationDisplay || p.variationName || null;
+        return {
+          id: `${p.productId ?? p.id}_${p.variationId ?? 'base'}`,
+          name: isVariation && variationLabel
+            ? `${p.productName} (${variationLabel})`
+            : p.productName,
+          sku,
+          upc,
+          subLabel: isVariation ? variationLabel : null,
+        };
+      });
+    }
+
+    return products.flatMap(p => {
+      if (!p) return [];
+
+      if (p.variations && p.variations.length > 0) {
+        return p.variations
+          .filter(v => {
+            if (selectedCompanyIds.length === 0) return true;
+            return (v.companyPrices || []).some(cp => selectedCompanyIds.includes(cp.company?.id));
+          })
+          .map(v => ({
+            id: `${p.id}_${v.id}`,
+            name: `${p.productName} (${v.combinationDisplay || 'Variation'})`,
+            sku: v.sku || p.sku || 'N/A',
+            upc: v.upc || p.upc || 'N/A',
+            subLabel: v.combinationDisplay || 'Variation',
+          }));
+      }
+
+      if (selectedCompanyIds.length > 0) {
+        const hasCompanyPrice = (p.companyBasePrices || [])
+          .some(cbp => selectedCompanyIds.includes(cbp.company?.id));
+        if (!hasCompanyPrice) return [];
+      }
+
+      return [{
+        id: `${p.id}_base`,
+        name: p.productName,
+        sku: p.sku || 'N/A',
+        upc: p.upc || 'N/A',
+        subLabel: null,
+      }];
     });
-  }, [productSummaries]);
+  }, [products, productSummaries, selectedCompanyIds]);
 
   if (!showBranchFilter) return null;
 

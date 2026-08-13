@@ -20,17 +20,28 @@ const DeliveryFilters = ({
 
   const productOptions = products.flatMap(product => {
     if (product.variations && product.variations.length > 0) {
-      return product.variations.map(variation => ({
-        id: `${product.id}_${variation.id}`,
-        parentProductId: product.id,
-        variationId: variation.id,
-        name: product.productName,
-        fullName: product.productName,
-        subLabel: variation.combinationDisplay || 'Variation',
-        upc: variation.upc || product.upc || '',
-        sku: variation.sku || product.sku || '',
-        isVariation: true,
-      }));
+      return product.variations
+        .filter(variation => {
+          if (!filterData.companyId) return true;
+          return (variation.companyPrices || []).some(cp => cp.company?.id === filterData.companyId);
+        })
+        .map(variation => ({
+          id: `${product.id}_${variation.id}`,
+          parentProductId: product.id,
+          variationId: variation.id,
+          name: product.productName,
+          fullName: product.productName,
+          subLabel: variation.combinationDisplay || 'Variation',
+          upc: variation.upc || product.upc || '',
+          sku: variation.sku || product.sku || '',
+          isVariation: true,
+        }));
+    }
+
+    if (filterData.companyId) {
+      const hasCompanyPrice = (product.companyBasePrices || [])
+        .some(cbp => cbp.company?.id === filterData.companyId);
+      if (!hasCompanyPrice) return [];
     }
 
     return [{

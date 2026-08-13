@@ -68,6 +68,7 @@ const SalesManagement = () => {
     products,
     branchInfo: null,
     productPrices: {},
+    companyId: filterData.companyId,
   });
 
   const {

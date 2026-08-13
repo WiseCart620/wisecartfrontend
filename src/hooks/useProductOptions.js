@@ -1,33 +1,47 @@
 import { useMemo } from 'react';
 
-export const useProductOptions = ({ products, branchInfo, productPrices }) => {
+export const useProductOptions = ({ products, branchInfo, productPrices, companyId = null }) => {
+  const effectiveCompanyId = companyId ?? branchInfo?.companyId ?? null;
+
   const allProductOptions = useMemo(() => {
     if (!products || !Array.isArray(products)) return [];
     try {
       return products.flatMap(p => {
         if (!p) return [];
         if (p.variations && Array.isArray(p.variations) && p.variations.length > 0) {
-          return p.variations.filter(Boolean).map(v => {
-            const companySkus = {};
-            if (v.companyPrices && Array.isArray(v.companyPrices)) {
-              v.companyPrices.filter(Boolean).forEach(cp => {
-                if (cp?.company?.id != null) companySkus[cp.company.id] = cp.companySku ?? '';
-              });
-            }
-            return {
-              id: `${p.id}_${v.id}`,
-              parentProductId: p.id,
-              variationId: v.id,
-              name: p.productName || '',
-              fullName: p.productName || '',
-              subLabel: v.combinationDisplay || 'Variation',
-              upc: v.upc || '',
-              sku: v.sku || '',
-              isVariation: true,
-              companySkus,
-            };
-          });
+          return p.variations
+            .filter(Boolean)
+            .filter(v => {
+              if (effectiveCompanyId == null) return true;
+              return (v.companyPrices || []).some(cp => cp?.company?.id === effectiveCompanyId);
+            })
+            .map(v => {
+              const companySkus = {};
+              if (v.companyPrices && Array.isArray(v.companyPrices)) {
+                v.companyPrices.filter(Boolean).forEach(cp => {
+                  if (cp?.company?.id != null) companySkus[cp.company.id] = cp.companySku ?? '';
+                });
+              }
+              return {
+                id: `${p.id}_${v.id}`,
+                parentProductId: p.id,
+                variationId: v.id,
+                name: p.productName || '',
+                fullName: p.productName || '',
+                subLabel: v.combinationDisplay || 'Variation',
+                upc: v.upc || '',
+                sku: v.sku || '',
+                isVariation: true,
+                companySkus,
+              };
+            });
         }
+        if (effectiveCompanyId != null) {
+          const hasCompanyPrice = (p.companyBasePrices || [])
+            .some(cbp => cbp?.company?.id === effectiveCompanyId);
+          if (!hasCompanyPrice) return [];
+        }
+
         const companySkus = {};
         if (p.companyBasePrices && Array.isArray(p.companyBasePrices)) {
           p.companyBasePrices.filter(Boolean).forEach(cbp => {
@@ -51,7 +65,7 @@ export const useProductOptions = ({ products, branchInfo, productPrices }) => {
       console.error('allProductOptions error:', e);
       return [];
     }
-  }, [products]);
+  }, [products, effectiveCompanyId]);
 
   const productOptions = useMemo(() => {
     if (!products || !Array.isArray(products)) return [];
@@ -60,38 +74,50 @@ export const useProductOptions = ({ products, branchInfo, productPrices }) => {
       const hasVariations = p.variations && Array.isArray(p.variations) && p.variations.length > 0;
 
       if (hasVariations) {
-        return p.variations.filter(Boolean).map(v => {
-          const companyMatch = v.companyPrices?.find(cp => cp?.company?.id === branchInfo?.companyId);
-          const companyPrice = companyMatch?.price ?? 0;
-          const companySku = companyMatch?.companySku ?? null;
-          const variationLabel = v.combinationDisplay ||
-            (v.variationType && v.variationValue ? `${v.variationType}: ${v.variationValue}` : 'Variation');
-          const companySkusMap = {};
-          if (v.companyPrices && Array.isArray(v.companyPrices)) {
-            v.companyPrices.forEach(cp => {
-              if (cp?.company?.id != null) companySkusMap[cp.company.id] = cp.companySku ?? '';
-            });
-          }
-          return {
-            id: `${p.id}_${v.id}`,
-            parentProductId: p.id,
-            variationId: v.id,
-            name: p.productName || '',
-            subLabel: variationLabel,
-            fullName: p.productName || '',
-            upc: v.upc || '',
-            sku: v.sku || '',
-            price: companyPrice,
-            companySku,
-            companySkus: companySkusMap,
-            variationLabel,
-            isVariation: true,
-            hasVariations: true,
-          };
-        });
+        return p.variations
+          .filter(Boolean)
+          .filter(v => {
+            if (effectiveCompanyId == null) return true;
+            return (v.companyPrices || []).some(cp => cp?.company?.id === effectiveCompanyId);
+          })
+          .map(v => {
+            const companyMatch = v.companyPrices?.find(cp => cp?.company?.id === effectiveCompanyId);
+            const companyPrice = companyMatch?.price ?? 0;
+            const companySku = companyMatch?.companySku ?? null;
+            const variationLabel = v.combinationDisplay ||
+              (v.variationType && v.variationValue ? `${v.variationType}: ${v.variationValue}` : 'Variation');
+            const companySkusMap = {};
+            if (v.companyPrices && Array.isArray(v.companyPrices)) {
+              v.companyPrices.forEach(cp => {
+                if (cp?.company?.id != null) companySkusMap[cp.company.id] = cp.companySku ?? '';
+              });
+            }
+            return {
+              id: `${p.id}_${v.id}`,
+              parentProductId: p.id,
+              variationId: v.id,
+              name: p.productName || '',
+              subLabel: variationLabel,
+              fullName: p.productName || '',
+              upc: v.upc || '',
+              sku: v.sku || '',
+              price: companyPrice,
+              companySku,
+              companySkus: companySkusMap,
+              variationLabel,
+              isVariation: true,
+              hasVariations: true,
+            };
+          });
       }
 
-      const companyBaseMatch = p.companyBasePrices?.find(cbp => cbp?.company?.id === branchInfo?.companyId);
+      if (!hasVariations && effectiveCompanyId != null) {
+        const hasCompanyPrice = (p.companyBasePrices || [])
+          .some(cbp => cbp?.company?.id === effectiveCompanyId);
+        if (!hasCompanyPrice) return [];
+      }
+
+      const companyBaseMatch = p.companyBasePrices?.find(cbp => cbp?.company?.id === effectiveCompanyId);
       const companyBasePrice = companyBaseMatch?.basePrice ?? productPrices?.[String(p.id)] ?? productPrices?.[p.id] ?? 0;
       const companySku = companyBaseMatch?.companySku ?? null;
       const companySkusMap = {};
@@ -116,7 +142,7 @@ export const useProductOptions = ({ products, branchInfo, productPrices }) => {
         hasVariations: false,
       }];
     });
-  }, [products, branchInfo, productPrices]);
+  }, [products, branchInfo, productPrices, effectiveCompanyId]);
 
   return { allProductOptions, productOptions };
 };
