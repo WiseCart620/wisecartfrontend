@@ -25,7 +25,7 @@ const SaleSearchableDropdown = ({ options, value, onChange, placeholder, display
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`inline-flex items-center justify-between gap-2 px-3 whitespace-nowrap min-w-0 max-w-full ${fieldBase}`}
+        className={`w-full flex items-center justify-between gap-2 px-3 ${fieldBase}`}
       >
         <span className={selectedOption ? 'text-gray-900' : 'text-gray-500'}>
           {selectedOption ? selectedOption[displayKey] : placeholder}

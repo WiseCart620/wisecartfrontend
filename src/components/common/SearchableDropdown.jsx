@@ -54,7 +54,7 @@ const SearchableDropdown = ({
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`inline-flex items-center justify-between gap-2 px-3 whitespace-nowrap ${fieldBase} ${disabled ? 'bg-gray-100 cursor-not-allowed opacity-60' : ''}`}
+        className={`w-full flex items-center justify-between gap-2 px-3 ${fieldBase} ${disabled ? 'bg-gray-100 cursor-not-allowed opacity-60' : ''}`}
       >
         <span className={selectedOption ? 'text-gray-900' : 'text-gray-500'}>
           {selectedOption ? selectedOption[displayKey] : placeholder}
