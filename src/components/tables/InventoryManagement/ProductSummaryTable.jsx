@@ -56,6 +56,7 @@ const ProductSummaryTable = ({
               <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
               <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU/UPC</th>
               <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">Stock In</th>
+              <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">Transfer In</th>
               <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">Transfer Out</th>
               <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">Return</th>
               <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">Damage</th>
@@ -150,6 +151,11 @@ const ProductSummaryTable = ({
                     <td className="px-2 py-3 text-center">
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         +{(product.totalStockIn || 0).toLocaleString('en-US')}
+                      </span>
+                    </td>
+                    <td className="px-2 py-3 text-center">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                        +{(product.totalTransferIn || 0).toLocaleString('en-US')}
                       </span>
                     </td>
                     <td className="px-2 py-3 text-center">

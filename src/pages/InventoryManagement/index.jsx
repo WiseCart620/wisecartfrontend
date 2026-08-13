@@ -25,6 +25,8 @@ import BranchSummaryReportModal from '../../components/modals/BranchSummaryRepor
 import WarehouseFilterPanel from '../../components/filters/WarehouseFilterPanel';
 import BranchFilterPanel from '../../components/filters/BranchFilterPanel';
 import TransactionFilterPanel from '../../components/filters/TransactionFilterPanel';
+import WarehouseReportInlineTable from '../../components/tables/InventoryManagement/WarehouseReportInlineTable';
+import BranchReportInlineTable from '../../components/tables/InventoryManagement/BranchReportInlineTable';
 import { calculateTotalQuantity } from '../../utils/transactionHelpers';
 import {
   filterProductSummaries,
@@ -280,7 +282,7 @@ const InventoryManagement = () => {
     }
   };
 
-  const handleGenerateReport = async () => {
+  const handleGenerateReport = async (openModal = true) => {
     setReportLoading(true);
     try {
       const { warehouseId, dateFrom, dateTo, productKeys } = productReportFilters.filters;
@@ -349,7 +351,7 @@ const InventoryManagement = () => {
       }
 
       setReportData(rows);
-      setShowReportModal(true);
+      if (openModal) setShowReportModal(true);
     } catch (err) {
       toast.error('Failed to generate report');
       console.error('Report error:', err);
@@ -358,7 +360,7 @@ const InventoryManagement = () => {
     }
   };
 
-  const handleGenerateBranchReport = async () => {
+  const handleGenerateBranchReport = async (openModal = true) => {
     setBranchReportLoading(true);
     try {
       const { companyIds, branchIds, dateFrom, dateTo, productKeys } = productReportFilters.filters;
@@ -380,7 +382,7 @@ const InventoryManagement = () => {
       }
 
       setBranchReportData(rows);
-      setShowBranchReportModal(true);
+      if (openModal) setShowBranchReportModal(true);
     } catch (err) {
       toast.error('Failed to generate company/branch report');
       console.error('Branch report error:', err);
@@ -392,11 +394,32 @@ const InventoryManagement = () => {
   const handleGenerateProductReport = () => {
     const { companyIds, branchIds } = productReportFilters.filters;
     if ((companyIds && companyIds.length > 0) || (branchIds && branchIds.length > 0)) {
-      handleGenerateBranchReport();
+      handleGenerateBranchReport(true);
     } else {
-      handleGenerateReport();
+      handleGenerateReport(true);
     }
   };
+
+  useEffect(() => {
+    const { companyIds, branchIds } = productReportFilters.filters;
+    const hasCompanyFilter = (companyIds && companyIds.length > 0) || (branchIds && branchIds.length > 0);
+
+    const timer = setTimeout(() => {
+      if (hasCompanyFilter) {
+        handleGenerateBranchReport(false);
+      } else {
+        handleGenerateReport(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [
+    productReportFilters.filters.dateFrom,
+    productReportFilters.filters.dateTo,
+    productReportFilters.filters.warehouseId,
+    JSON.stringify(productReportFilters.filters.companyIds),
+    JSON.stringify(productReportFilters.filters.branchIds),
+  ]);
 
   const handleRefresh = async () => {
     setActionLoading(true);
@@ -514,17 +537,31 @@ const InventoryManagement = () => {
               setShowVariationFilter={setShowVariationFilter}
             />
 
-            <ProductSummaryTable
-              currentProductSummaries={currentProductSummaries}
-              filteredProductSummaries={filteredProductSummaries}
-              productIndexOfFirstItem={productPagination.getIndexOfFirstItem()}
-              productIndexOfLastItem={productPagination.getIndexOfLastItem(filteredProductSummaries.length)}
-              handleViewTransactions={handleViewTransactions}
-              productCurrentPage={productPagination.currentPage}
-              productTotalPages={productTotalPages}
-              setProductCurrentPage={productPagination.setCurrentPage}
-              isLoading={refDataLoading}
-            />
+            {(() => {
+              const { companyIds, branchIds, warehouseId } = productReportFilters.filters;
+              const hasCompanyFilter = (companyIds && companyIds.length > 0) || (branchIds && branchIds.length > 0);
+              const reportMode = hasCompanyFilter ? 'branch' : (warehouseId ? 'warehouse' : 'default');
+
+              if (reportMode === 'warehouse') {
+                return <WarehouseReportInlineTable rows={reportData} loading={reportLoading} />;
+              }
+              if (reportMode === 'branch') {
+                return <BranchReportInlineTable rows={branchReportData} loading={branchReportLoading} />;
+              }
+              return (
+                <ProductSummaryTable
+                  currentProductSummaries={currentProductSummaries}
+                  filteredProductSummaries={filteredProductSummaries}
+                  productIndexOfFirstItem={productPagination.getIndexOfFirstItem()}
+                  productIndexOfLastItem={productPagination.getIndexOfLastItem(filteredProductSummaries.length)}
+                  handleViewTransactions={handleViewTransactions}
+                  productCurrentPage={productPagination.currentPage}
+                  productTotalPages={productTotalPages}
+                  setProductCurrentPage={productPagination.setCurrentPage}
+                  isLoading={refDataLoading}
+                />
+              );
+            })()}
           </div>
         )}
 
@@ -730,7 +767,6 @@ const InventoryManagement = () => {
             dateFrom: productReportFilters.filters.dateFrom,
             dateTo: productReportFilters.filters.dateTo,
           }}
-          companies={companies}
         />
 
         <ProductTransactionsModal
