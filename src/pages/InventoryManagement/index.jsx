@@ -166,12 +166,20 @@ const InventoryManagement = () => {
   const stockPagination = usePaginationControl(10);
   const transactionPagination = usePaginationControl(10);
 
-  // Filtered data with safety checks
-  const filteredProductSummaries = filterProductSummaries(
+  const selectedProductKeys = productReportFilters.filters.productKeys || [];
+  const baseFilteredSummaries = filterProductSummaries(
     Array.isArray(productSummaries) ? productSummaries : [],
     productSearchTerm,
     showVariationFilter
   );
+  const filteredProductSummaries = selectedProductKeys.length > 0
+    ? baseFilteredSummaries.filter(p => {
+      const key = p.isVariation || p.variationId
+        ? `${p.productId}_${p.variationId}`
+        : `${p.productId}_base`;
+      return selectedProductKeys.includes(key);
+    })
+    : baseFilteredSummaries;
 
   const warehouseStocksArray = Array.isArray(warehouseStocks) ? warehouseStocks : [];
   const filteredWarehouseStocks = filterWarehouseStocks(
@@ -502,23 +510,6 @@ const InventoryManagement = () => {
               updateFilter={productReportFilters.updateFilter}
               onGenerate={handleGenerateProductReport}
               generating={reportLoading || branchReportLoading}
-            />
-
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                <input
-                  type="text"
-                  placeholder="Search products by name, SKU, or UPC..."
-                  value={productSearchTerm}
-                  onChange={(e) => setProductSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-              </div>
-            </div>
-
-            <ProductFilterPanel
-              productSearchTerm={productSearchTerm}
-              setProductSearchTerm={setProductSearchTerm}
               showVariationFilter={showVariationFilter}
               setShowVariationFilter={setShowVariationFilter}
             />
