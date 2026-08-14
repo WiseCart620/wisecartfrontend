@@ -3,6 +3,7 @@ import React from 'react';
 import { X } from 'lucide-react';
 import SearchableDropdown from '../common/SearchableDropdown';
 import VariationSearchableDropdown from '../common/VariationSearchableDropdown';
+import MultiSelectDropdown from '../common/MultiSelectDropdown';
 
 const DeliveryFilters = ({
   filterData,
@@ -66,7 +67,7 @@ const DeliveryFilters = ({
   const hasActiveFilters = Object.entries(filterData).some(
     ([k, v]) => {
       if (k === 'status' && v === 'HIDE_CANCELLED') return false;
-      if (k === 'productFilters') return Array.isArray(v) && v.length > 0;
+      if (k === 'productFilters' || k === 'warehouseIds') return Array.isArray(v) && v.length > 0;
       return v !== '' && v !== null && v !== undefined;
     }
   );
@@ -105,13 +106,12 @@ const DeliveryFilters = ({
         </div>
 
         <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
-          <SearchableDropdown
+          <MultiSelectDropdown
             options={warehouseOptions}
-            value={filterData.warehouseId}
-            onChange={(value) => onFilterChange({ warehouseId: value })}
+            selectedIds={filterData.warehouseIds || []}
+            onChange={(ids) => onFilterChange({ warehouseIds: ids })}
             placeholder="All Warehouses"
-            displayKey="name"
-            valueKey="id"
+            searchPlaceholder="Search warehouses..."
           />
         </div>
 

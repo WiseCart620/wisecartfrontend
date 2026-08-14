@@ -61,7 +61,7 @@ const DeliveryManagement = () => {
   const [filterData, setFilterData] = useState({
     companyId: '',
     branchId: '',
-    warehouseId: '',
+    warehouseIds: [],
     status: '',
     productId: '',
     variationId: '',
@@ -332,7 +332,7 @@ const DeliveryManagement = () => {
 
   const handleResetFilter = () => {
     setFilterData({
-      companyId: '', branchId: '', warehouseId: '', status: 'HIDE_CANCELLED',
+      companyId: '', branchId: '', warehouseIds: [], status: 'HIDE_CANCELLED',
       productId: '', variationId: '', productName: '', productFilters: [],
       startDate: '', endDate: '', receiptNumber: '', poNumber: ''
     });

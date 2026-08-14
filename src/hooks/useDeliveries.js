@@ -346,9 +346,9 @@ export const useDeliveries = () => {
         if (id !== filters.branchId) return false;
       }
 
-      if (filters.warehouseId) {
+      if (filters.warehouseIds && filters.warehouseIds.length > 0) {
         const hasWarehouse = delivery.items?.some(item =>
-          (item.warehouse?.id ?? item.warehouseId) === filters.warehouseId
+          filters.warehouseIds.includes(item.warehouse?.id ?? item.warehouseId)
         );
         if (!hasWarehouse) return false;
       }
