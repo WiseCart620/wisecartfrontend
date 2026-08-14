@@ -8,6 +8,7 @@ const MultiSelectDropdown = ({
   onChange,
   placeholder = 'All',
   searchPlaceholder = 'Search...',
+  disabled = false,
 }) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -20,6 +21,10 @@ const MultiSelectDropdown = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (disabled) setOpen(false);
+  }, [disabled]);
 
   const filtered = options.filter(o => {
     if (!search) return true;
@@ -60,12 +65,13 @@ const MultiSelectDropdown = ({
     <div className="relative" ref={ref}>
       <button
         type="button"
-        onClick={() => setOpen(o => !o)}
-        className={`w-full flex items-center justify-between gap-2 px-3 ${fieldBase}`}
+        disabled={disabled}
+        onClick={() => !disabled && setOpen(o => !o)}
+        className={`w-full flex items-center justify-between gap-2 px-3 ${fieldBase} ${disabled ? 'bg-gray-100 cursor-not-allowed text-gray-400' : ''}`}
       >
-        <span className={`truncate ${selectedIds.length ? 'text-gray-900' : 'text-gray-400'}`}>{label}</span>
+        <span className={`truncate ${disabled ? 'text-gray-400' : selectedIds.length ? 'text-gray-900' : 'text-gray-400'}`}>{label}</span>
         <div className="flex items-center gap-1 flex-shrink-0">
-          {selectedIds.length > 0 && (
+          {!disabled && selectedIds.length > 0 && (
             <X
               size={14}
               className="text-gray-400 hover:text-red-500"
@@ -76,7 +82,7 @@ const MultiSelectDropdown = ({
         </div>
       </button>
 
-      {open && (
+      {open && !disabled && (
         <div className="absolute z-20 mt-1 w-72 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
           {options.length > 4 && (
             <div className="relative mb-2">

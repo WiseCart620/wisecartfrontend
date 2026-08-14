@@ -2,11 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Search, ChevronDown, X } from 'lucide-react';
 
 const ProductMultiSelectDropdown = ({
-    options, // [{ id, name, sku, upc, subLabel }]
+    options,
     selectedIds = [],
     onChange,
     placeholder = 'All Products',
     searchPlaceholder = 'Search by name, SKU, or UPC...',
+    disabled = false,
 }) => {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState('');
@@ -19,6 +20,10 @@ const ProductMultiSelectDropdown = ({
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        if (disabled) setOpen(false);
+    }, [disabled]);
 
     const searchLower = search.toLowerCase();
     const filtered = options.filter(o =>
@@ -59,12 +64,13 @@ const ProductMultiSelectDropdown = ({
         <div className="relative" ref={ref}>
             <button
                 type="button"
-                onClick={() => setOpen(o => !o)}
-                className="w-full h-9 flex items-center justify-between px-3 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={disabled}
+                onClick={() => !disabled && setOpen(o => !o)}
+                className={`w-full h-9 flex items-center justify-between px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${disabled ? 'bg-gray-100 cursor-not-allowed text-gray-400' : 'bg-white'}`}
             >
-                <span className={`truncate ${selectedIds.length ? 'text-gray-900' : 'text-gray-400'}`}>{label}</span>
+                <span className={`truncate ${disabled ? 'text-gray-400' : selectedIds.length ? 'text-gray-900' : 'text-gray-400'}`}>{label}</span>
                 <div className="flex items-center gap-1 flex-shrink-0">
-                    {selectedIds.length > 0 && (
+                    {!disabled && selectedIds.length > 0 && (
                         <X
                             size={14}
                             className="text-gray-400 hover:text-red-500"
@@ -75,7 +81,7 @@ const ProductMultiSelectDropdown = ({
                 </div>
             </button>
 
-            {open && (
+            {open && !disabled && (
                 <div className="absolute z-20 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
                     <div className="relative mb-2">
                         <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
