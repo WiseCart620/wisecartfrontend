@@ -353,8 +353,12 @@ export const useDeliveries = () => {
         if (!hasWarehouse) return false;
       }
 
-      if (filters.status && delivery.status !== filters.status) {
-        return false;
+      if (filters.status) {
+        if (filters.status === 'HIDE_CANCELLED') {
+          if (delivery.status === 'CANCELLED') return false;
+        } else if (delivery.status !== filters.status) {
+          return false;
+        }
       }
 
       if (filters.variationId || filters.productId) {

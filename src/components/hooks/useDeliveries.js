@@ -306,9 +306,12 @@ export const useDeliveries = () => {
         return false;
       }
 
-      // Filter by status
-      if (filters.status && delivery.status !== filters.status) {
-        return false;
+      if (filters.status) {
+        if (filters.status === 'HIDE_CANCELLED') {
+          if (delivery.status === 'CANCELLED') return false;
+        } else if (delivery.status !== filters.status) {
+          return false;
+        }
       }
 
       // Filter by date range
