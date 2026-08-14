@@ -67,21 +67,6 @@ const ProductSummaryReportPanel = ({
                     />
                 </div>
 
-                {setShowVariationFilter && (
-                    <div className="w-[150px]">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Type</label>
-                        <select
-                            value={showVariationFilter}
-                            onChange={(e) => setShowVariationFilter(e.target.value)}
-                            className="w-full h-9 px-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="ALL">All Products</option>
-                            <option value="VARIATIONS">Variations Only</option>
-                            <option value="BASE">Base Only</option>
-                        </select>
-                    </div>
-                )}
-
                 <div className="w-[150px]">
                     <label className="block text-xs font-medium text-gray-500 mb-1">Date From</label>
                     <input
