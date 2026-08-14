@@ -339,6 +339,18 @@ const InventoryManagement = () => {
         productMap[key].begStock = Number(row.begStock) || 0;
       });
 
+      const productIdsWithVariations = new Set();
+      Object.keys(productMap).forEach(key => {
+        const [prodId, varPart] = key.split('_');
+        if (varPart && varPart !== 'base') productIdsWithVariations.add(prodId);
+      });
+      Object.keys(productMap).forEach(key => {
+        const [prodId, varPart] = key.split('_');
+        if (varPart === 'base' && productIdsWithVariations.has(prodId)) {
+          delete productMap[key];
+        }
+      });
+
       Object.values(productMap).forEach(p => {
         p.stockOnHand = p.begStock
           + p.stockIn + p.transferIn + p.returns
@@ -377,6 +389,12 @@ const InventoryManagement = () => {
       }
 
       let rows = res.data || [];
+
+      const productIdsWithVariations = new Set(
+        rows.filter(r => r.variationId != null).map(r => String(r.productId))
+      );
+      rows = rows.filter(r => !(r.variationId == null && productIdsWithVariations.has(String(r.productId))));
+
       if (productKeys && productKeys.length > 0) {
         rows = rows.filter(row => productKeys.includes(`${row.productId}_${row.variationId || 'base'}`));
       }
@@ -419,6 +437,8 @@ const InventoryManagement = () => {
     productReportFilters.filters.warehouseId,
     JSON.stringify(productReportFilters.filters.companyIds),
     JSON.stringify(productReportFilters.filters.branchIds),
+    JSON.stringify(productReportFilters.filters.productKeys),
+    showVariationFilter,
   ]);
 
   const handleRefresh = async () => {
@@ -538,9 +558,10 @@ const InventoryManagement = () => {
             />
 
             {(() => {
-              const { companyIds, branchIds, warehouseId } = productReportFilters.filters;
+              const { companyIds, branchIds, warehouseId, dateFrom, dateTo } = productReportFilters.filters;
               const hasCompanyFilter = (companyIds && companyIds.length > 0) || (branchIds && branchIds.length > 0);
-              const reportMode = hasCompanyFilter ? 'branch' : (warehouseId ? 'warehouse' : 'default');
+              const hasDateFilter = !!(dateFrom || dateTo);
+              const reportMode = hasCompanyFilter ? 'branch' : ((warehouseId || hasDateFilter) ? 'warehouse' : 'default');
 
               if (reportMode === 'warehouse') {
                 return <WarehouseReportInlineTable rows={reportData} loading={reportLoading} />;

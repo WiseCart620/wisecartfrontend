@@ -158,7 +158,6 @@ const BranchFilterPanel = ({
             className="w-32 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
           />
         </div>
-
         {hasActiveFilters && (
           <button
             onClick={clearFilters}

@@ -2,10 +2,16 @@ import React from 'react';
 
 const WarehouseReportInlineTable = ({ rows = [], loading }) => {
   const cols = [
-    ['Beg. Stock', 'begStock'], ['Stock In', 'stockIn'], ['Transfer In', 'transferIn'],
-    ['Transfer Out', 'transferOut'], ['Returns', 'returns'], ['Damage', 'damage'],
-    ['Adjustment', 'adjustment'], ['Delivery Qty', 'qtyDelivered'], ['No. of DR', 'drCount'],
-    ['Stock Qty', 'stockOnHand'],
+    ['Beg. Stock', 'begStock', 'bg-gray-100'],
+    ['Stock In', 'stockIn', 'bg-green-50'],
+    ['Transfer In', 'transferIn', 'bg-indigo-50'],
+    ['Transfer Out', 'transferOut', 'bg-blue-50'],
+    ['Returns', 'returns', 'bg-yellow-50'],
+    ['Damage', 'damage', 'bg-red-50'],
+    ['Adjustment', 'adjustment', 'bg-orange-50'],
+    ['Delivery Qty', 'qtyDelivered', 'bg-teal-50'],
+    ['No. of DR', 'drCount', 'bg-teal-50'],
+    ['Stock Qty', 'stockOnHand', 'bg-sky-100 font-semibold'],
   ];
 
   return (
@@ -18,8 +24,8 @@ const WarehouseReportInlineTable = ({ rows = [], loading }) => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-              {cols.map(([label]) => (
-                <th key={label} className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">{label}</th>
+              {cols.map(([label, key, colorClass]) => (
+                <th key={label} className={`px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase ${colorClass || ''}`}>{label}</th>
               ))}
             </tr>
           </thead>
@@ -40,8 +46,8 @@ const WarehouseReportInlineTable = ({ rows = [], loading }) => {
                     <div className="font-medium text-gray-900 text-sm">{row.productName}</div>
                     {row.variationName && <div className="text-xs text-blue-600">{row.variationName}</div>}
                   </td>
-                  {cols.map(([label, key]) => (
-                    <td key={key} className="px-2 py-3 text-center text-sm">{(row[key] || 0).toLocaleString()}</td>
+                  {cols.map(([label, key, colorClass]) => (
+                    <td key={key} className={`px-2 py-3 text-center text-sm ${colorClass || ''}`}>{(row[key] || 0).toLocaleString()}</td>
                   ))}
                 </tr>
               ))

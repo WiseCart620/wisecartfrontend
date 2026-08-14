@@ -27,8 +27,12 @@ const BranchReportInlineTable = ({ rows = [], loading }) => {
   }, [rows]);
 
   const cols = [
-    ['Total Stock', 'totalStock'], ['Delivered', 'delivered'], ['Total Sales', 'totalSales'],
-    ['Pending Delivery', 'pendingDelivery'], ['Pending Sale', 'pendingSale'], ['Available', 'available'],
+    ['Total Stock', 'totalStock', 'bg-sky-100 font-semibold'],
+    ['Delivered', 'delivered', 'bg-teal-50'],
+    ['Total Sales', 'totalSales', 'bg-pink-50'],
+    ['Pending Delivery', 'pendingDelivery', 'bg-orange-50'],
+    ['Pending Sale', 'pendingSale', 'bg-purple-50'],
+    ['Available', 'available', 'bg-green-50'],
   ];
 
   return (
@@ -42,8 +46,8 @@ const BranchReportInlineTable = ({ rows = [], loading }) => {
             <tr>
               <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
               <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU/UPC</th>
-              {cols.map(([label]) => (
-                <th key={label} className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">{label}</th>
+              {cols.map(([label, key, colorClass]) => (
+                <th key={label} className={`px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase ${colorClass || ''}`}>{label}</th>
               ))}
             </tr>
           </thead>
@@ -68,8 +72,8 @@ const BranchReportInlineTable = ({ rows = [], loading }) => {
                     <div>SKU: {row.sku}</div>
                     {row.upc !== 'N/A' && <div className="text-gray-500">UPC: {row.upc}</div>}
                   </td>
-                  {cols.map(([label, key]) => (
-                    <td key={key} className="px-2 py-3 text-center text-sm">{(row[key] || 0).toLocaleString()}</td>
+                  {cols.map(([label, key, colorClass]) => (
+                    <td key={key} className={`px-2 py-3 text-center text-sm ${colorClass || ''}`}>{(row[key] || 0).toLocaleString()}</td>
                   ))}
                 </tr>
               ))

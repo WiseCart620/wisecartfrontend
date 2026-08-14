@@ -242,15 +242,15 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                                                 {/* Beg. Stock */}
                                                 <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.begStock || 0).toLocaleString()}</td>
                                                 {/* Stock In */}
-                                                <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.stockIn || 0).toLocaleString()}</td>
+                                                <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', backgroundColor: '#E8F5E9' }}>{(row.stockIn || 0).toLocaleString()}</td>
                                                 {/* Transfer In */}
-                                                <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.transferIn || 0).toLocaleString()}</td>
+                                                <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', backgroundColor: '#E8EAF6' }}>{(row.transferIn || 0).toLocaleString()}</td>
                                                 {/* Transfer Out */}
-                                                <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.transferOut || 0).toLocaleString()}</td>
+                                                <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', backgroundColor: '#E3F2FD' }}>{(row.transferOut || 0).toLocaleString()}</td>
                                                 {/* Returns */}
-                                                <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.returns || 0).toLocaleString()}</td>
+                                                <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', backgroundColor: '#FFFDE7' }}>{(row.returns || 0).toLocaleString()}</td>
                                                 {/* Damage */}
-                                                <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.damage || 0).toLocaleString()}</td>
+                                                <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', backgroundColor: '#FFEBEE' }}>{(row.damage || 0).toLocaleString()}</td>
                                                 <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: (row.adjustment || 0) !== 0 ? '#E65100' : 'inherit' }}>
                                                     {(row.adjustment || 0) < 0
                                                         ? `-${Math.abs(row.adjustment).toLocaleString()}`

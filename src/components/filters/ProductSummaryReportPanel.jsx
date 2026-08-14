@@ -57,7 +57,12 @@ const ProductSummaryReportPanel = ({
                         options={productOptions}
                         selectedIds={filters.productKeys || []}
                         onChange={(ids) => updateFilter('productKeys', ids)}
-                        placeholder="All Products"
+                        disabled={!filters.warehouseId && !hasCompanyFilter}
+                        placeholder={
+                            !filters.warehouseId && !hasCompanyFilter
+                                ? 'Select a warehouse, company, or branch first'
+                                : 'All Products'
+                        }
                         searchPlaceholder="Search by name, SKU, or UPC..."
                     />
                 </div>
@@ -116,11 +121,12 @@ const ProductSummaryReportPanel = ({
                     <MultiSelectDropdown
                         options={companyOptions}
                         selectedIds={selectedCompanyIds}
+                        disabled={!!filters.warehouseId}
                         onChange={(ids) => {
                             updateFilter('companyIds', ids);
                             if (ids.length > 0) updateFilter('warehouseId', '');
                         }}
-                        placeholder="All Companies"
+                        placeholder={filters.warehouseId ? 'Disabled (warehouse selected)' : 'All Companies'}
                         searchPlaceholder="Search companies..."
                     />
                 </div>
@@ -129,11 +135,27 @@ const ProductSummaryReportPanel = ({
                     <MultiSelectDropdown
                         options={branchOptions}
                         selectedIds={filters.branchIds || []}
+                        disabled={!!filters.warehouseId}
                         onChange={(ids) => {
                             updateFilter('branchIds', ids);
-                            if (ids.length > 0) updateFilter('warehouseId', '');
+                            if (ids.length > 0) {
+                                updateFilter('warehouseId', '');
+                                const inferredCompanyIds = [...new Set(
+                                    ids
+                                        .map(id => branches.find(b => String(b.id) === String(id)))
+                                        .filter(Boolean)
+                                        .map(b => b.companyId ?? b.company?.id)
+                                        .filter(Boolean)
+                                )];
+                                if (inferredCompanyIds.length > 0) {
+                                    updateFilter(
+                                        'companyIds',
+                                        [...new Set([...(filters.companyIds || []), ...inferredCompanyIds])]
+                                    );
+                                }
+                            }
                         }}
-                        placeholder="All Branches"
+                        placeholder={filters.warehouseId ? 'Disabled (warehouse selected)' : 'All Branches'}
                         searchPlaceholder="Search name or code..."
                     />
                 </div>
