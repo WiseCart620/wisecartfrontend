@@ -23,7 +23,14 @@ const BranchReportInlineTable = ({ rows = [], loading }) => {
       e.pendingSale += Number(r.pendingSale) || 0;
       e.available += Number(r.available) || 0;
     });
-    return Array.from(map.values());
+    return Array.from(map.values()).filter(row =>
+      row.totalStock !== 0 ||
+      row.delivered !== 0 ||
+      row.totalSales !== 0 ||
+      row.pendingDelivery !== 0 ||
+      row.pendingSale !== 0 ||
+      row.available !== 0
+    );
   }, [rows]);
 
   const cols = [
