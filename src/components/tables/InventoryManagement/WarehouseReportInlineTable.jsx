@@ -24,6 +24,7 @@ const WarehouseReportInlineTable = ({ rows = [], loading }) => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU/UPC</th>
               {cols.map(([label, key, colorClass]) => (
                 <th key={label} className={`px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase ${colorClass || ''}`}>{label}</th>
               ))}
@@ -31,20 +32,24 @@ const WarehouseReportInlineTable = ({ rows = [], loading }) => {
           </thead>
           <tbody className="divide-y divide-gray-200">
             {loading ? (
-              <tr><td colSpan={cols.length + 1} className="px-6 py-16 text-center">
+              <tr><td colSpan={cols.length + 2} className="px-6 py-16 text-center">
                 <div className="flex flex-col items-center gap-3 text-gray-400">
                   <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin" />
                   <span className="text-sm">Loading...</span>
                 </div>
               </td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={cols.length + 1} className="px-6 py-8 text-center text-gray-500">No data for the selected filters</td></tr>
+              <tr><td colSpan={cols.length + 2} className="px-6 py-8 text-center text-gray-500">No data for the selected filters</td></tr>
             ) : (
               rows.map((row) => (
                 <tr key={row.key} className="hover:bg-gray-50">
                   <td className="px-3 py-3">
                     <div className="font-medium text-gray-900 text-sm">{row.productName}</div>
                     {row.variationName && <div className="text-xs text-blue-600">{row.variationName}</div>}
+                  </td>
+                  <td className="px-3 py-3 text-xs">
+                    <div>SKU: {row.sku}</div>
+                    {row.upc !== 'N/A' && <div className="text-gray-500">UPC: {row.upc}</div>}
                   </td>
                   {cols.map(([label, key, colorClass]) => (
                     <td key={key} className={`px-2 py-3 text-center text-sm ${colorClass || ''}`}>{(row[key] || 0).toLocaleString()}</td>
