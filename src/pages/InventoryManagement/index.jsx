@@ -183,14 +183,25 @@ const InventoryManagement = () => {
     })
     : baseFilteredSummaries;
 
-  const warehouseStocksArray = Array.isArray(warehouseStocks) ? warehouseStocks : [];
+  const stripRedundantBaseRows = (stocks) => {
+    const productIdsWithVariationRows = new Set(
+      stocks
+        .filter(s => s.variationId != null)
+        .map(s => String(s.productId))
+    );
+    return stocks.filter(s =>
+      s.variationId != null || !productIdsWithVariationRows.has(String(s.productId))
+    );
+  };
+
+  const warehouseStocksArray = stripRedundantBaseRows(Array.isArray(warehouseStocks) ? warehouseStocks : []);
   const filteredWarehouseStocks = filterWarehouseStocks(
     warehouseStocksArray,
     stockSearchTerm,
     warehouseFilters.filters
   );
 
-  const branchStocksArray = Array.isArray(branchStocks) ? branchStocks : [];
+  const branchStocksArray = stripRedundantBaseRows(Array.isArray(branchStocks) ? branchStocks : []);
   const filteredBranchStocks = filterBranchStocks(
     branchStocksArray,
     stockSearchTerm,
