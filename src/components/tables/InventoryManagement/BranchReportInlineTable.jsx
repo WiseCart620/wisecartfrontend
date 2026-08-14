@@ -11,35 +11,37 @@ const BranchReportInlineTable = ({ rows = [], loading }) => {
           sku: r.variationSku || r.productSku || 'N/A',
           upc: r.variationUpc || r.productUpc || 'N/A',
           variationName: r.variationName || '',
-          totalStock: 0, delivered: 0, totalSales: 0,
-          pendingDelivery: 0, pendingSale: 0, available: 0,
+          begStock: 0, transferIn: 0, returns: 0, delivered: 0, totalSales: 0,
+          pendingDelivery: 0, pendingSale: 0, stockOnHand: 0,
         });
       }
       const e = map.get(key);
-      e.totalStock += Number(r.totalStock) || 0;
+      e.begStock += Number(r.begStock) || 0;
+      e.transferIn += Number(r.transferIn) || 0;
+      e.returns += Number(r.returns) || 0;
       e.delivered += Number(r.delivered) || 0;
       e.totalSales += Number(r.totalSales) || 0;
       e.pendingDelivery += Number(r.pendingDelivery) || 0;
       e.pendingSale += Number(r.pendingSale) || 0;
-      e.available += Number(r.available) || 0;
+      e.stockOnHand += Number(r.stockOnHand) || 0;
     });
     return Array.from(map.values()).filter(row =>
-      row.totalStock !== 0 ||
-      row.delivered !== 0 ||
-      row.totalSales !== 0 ||
-      row.pendingDelivery !== 0 ||
-      row.pendingSale !== 0 ||
-      row.available !== 0
+      row.begStock !== 0 || row.transferIn !== 0 || row.returns !== 0 ||
+      row.delivered !== 0 || row.totalSales !== 0 ||
+      row.pendingDelivery !== 0 || row.pendingSale !== 0 ||
+      row.stockOnHand !== 0
     );
   }, [rows]);
 
   const cols = [
-    ['Total Stock', 'totalStock', 'bg-sky-100 font-semibold'],
+    ['Beg. Stock', 'begStock', 'bg-gray-100'],
+    ['Transfer In', 'transferIn', 'bg-indigo-50'],
+    ['Return', 'returns', 'bg-yellow-50'],
     ['Delivered', 'delivered', 'bg-teal-50'],
     ['Total Sales', 'totalSales', 'bg-pink-50'],
     ['Pending Delivery', 'pendingDelivery', 'bg-orange-50'],
     ['Pending Sale', 'pendingSale', 'bg-purple-50'],
-    ['Available', 'available', 'bg-green-50'],
+    ['Total Stock', 'stockOnHand', 'bg-sky-100 font-semibold'],
   ];
 
   return (

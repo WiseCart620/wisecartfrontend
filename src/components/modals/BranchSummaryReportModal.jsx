@@ -41,37 +41,39 @@ const BranchSummaryReportModal = ({ isOpen, onClose, data = [], filters = {} }) 
                     sku: r.variationSku || r.productSku || 'N/A',
                     upc: r.variationUpc || r.productUpc || 'N/A',
                     variationName: r.variationName || '',
-                    totalStock: 0, delivered: 0, totalSales: 0,
-                    pendingDelivery: 0, pendingSale: 0, available: 0,
+                    begStock: 0, transferIn: 0, returns: 0, delivered: 0, totalSales: 0,
+                    pendingDelivery: 0, pendingSale: 0, stockOnHand: 0,
                 });
             }
             const e = map.get(key);
-            e.totalStock += Number(r.totalStock) || 0;
+            e.begStock += Number(r.begStock) || 0;
+            e.transferIn += Number(r.transferIn) || 0;
+            e.returns += Number(r.returns) || 0;
             e.delivered += Number(r.delivered) || 0;
             e.totalSales += Number(r.totalSales) || 0;
             e.pendingDelivery += Number(r.pendingDelivery) || 0;
             e.pendingSale += Number(r.pendingSale) || 0;
-            e.available += Number(r.available) || 0;
+            e.stockOnHand += Number(r.stockOnHand) || 0;
         });
         return Array.from(map.values()).filter(row =>
-            row.totalStock !== 0 ||
-            row.delivered !== 0 ||
-            row.totalSales !== 0 ||
-            row.pendingDelivery !== 0 ||
-            row.pendingSale !== 0 ||
-            row.available !== 0
+            row.begStock !== 0 || row.transferIn !== 0 || row.returns !== 0 ||
+            row.delivered !== 0 || row.totalSales !== 0 ||
+            row.pendingDelivery !== 0 || row.pendingSale !== 0 ||
+            row.stockOnHand !== 0
         );
     }, [filteredRows]);
 
     if (!isOpen) return null;
 
     const totals = {
-        totalStock: sum(aggregated, 'totalStock'),
+        begStock: sum(aggregated, 'begStock'),
+        transferIn: sum(aggregated, 'transferIn'),
+        returns: sum(aggregated, 'returns'),
         delivered: sum(aggregated, 'delivered'),
         totalSales: sum(aggregated, 'totalSales'),
         pendingDelivery: sum(aggregated, 'pendingDelivery'),
         pendingSale: sum(aggregated, 'pendingSale'),
-        available: sum(aggregated, 'available'),
+        stockOnHand: sum(aggregated, 'stockOnHand'),
     };
 
     const today = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -114,8 +116,10 @@ const BranchSummaryReportModal = ({ isOpen, onClose, data = [], filters = {} }) 
         const rows = aggregated.map(r => ({
             Product: truncate(r.productName), Variation: r.variationName,
             SKU: r.sku, UPC: r.upc,
-            'Total Stock': r.totalStock, 'Delivered': r.delivered, 'Total Sales': r.totalSales,
-            'Pending Delivery': r.pendingDelivery, 'Pending Sale': r.pendingSale, 'Available': r.available,
+            'Beg. Stock': r.begStock, 'Transfer In': r.transferIn, 'Return': r.returns,
+            'Delivered': r.delivered, 'Total Sales': r.totalSales,
+            'Pending Delivery': r.pendingDelivery, 'Pending Sale': r.pendingSale,
+            'Total Stock': r.stockOnHand,
         }));
         rows.push({ Product: 'TOTAL', Variation: '', SKU: '', UPC: '', ...totals });
         const ws = XLSX.utils.json_to_sheet(rows);
@@ -125,8 +129,10 @@ const BranchSummaryReportModal = ({ isOpen, onClose, data = [], filters = {} }) 
     };
 
     const columns = [
-        ['Total Stock', 'totalStock'], ['Delivered', 'delivered'], ['Total Sales', 'totalSales'],
-        ['Pending Delivery', 'pendingDelivery'], ['Pending Sale', 'pendingSale'], ['Available', 'available'],
+        ['Beg. Stock', 'begStock'], ['Transfer In', 'transferIn'], ['Return', 'returns'],
+        ['Delivered', 'delivered'], ['Total Sales', 'totalSales'],
+        ['Pending Delivery', 'pendingDelivery'], ['Pending Sale', 'pendingSale'],
+        ['Total Stock', 'stockOnHand'],
     ];
 
     return (
