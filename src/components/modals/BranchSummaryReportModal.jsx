@@ -42,7 +42,7 @@ const BranchSummaryReportModal = ({ isOpen, onClose, data = [], filters = {} }) 
                     upc: r.variationUpc || r.productUpc || 'N/A',
                     variationName: r.variationName || '',
                     begStock: 0, transferIn: 0, returns: 0, delivered: 0, totalSales: 0,
-                    pendingDelivery: 0, pendingSale: 0, stockOnHand: 0,
+                    pendingDelivery: 0, pendingSale: 0, stockOnHand: 0, availableStock: 0,
                 });
             }
             const e = map.get(key);
@@ -54,12 +54,13 @@ const BranchSummaryReportModal = ({ isOpen, onClose, data = [], filters = {} }) 
             e.pendingDelivery += Number(r.pendingDelivery) || 0;
             e.pendingSale += Number(r.pendingSale) || 0;
             e.stockOnHand += Number(r.stockOnHand) || 0;
+            e.availableStock += Number(r.availableStock) || 0;
         });
         return Array.from(map.values()).filter(row =>
             row.begStock !== 0 || row.transferIn !== 0 || row.returns !== 0 ||
             row.delivered !== 0 || row.totalSales !== 0 ||
             row.pendingDelivery !== 0 || row.pendingSale !== 0 ||
-            row.stockOnHand !== 0
+            row.stockOnHand !== 0 || row.availableStock !== 0
         );
     }, [filteredRows]);
 
@@ -74,6 +75,7 @@ const BranchSummaryReportModal = ({ isOpen, onClose, data = [], filters = {} }) 
         pendingDelivery: sum(aggregated, 'pendingDelivery'),
         pendingSale: sum(aggregated, 'pendingSale'),
         stockOnHand: sum(aggregated, 'stockOnHand'),
+        availableStock: sum(aggregated, 'availableStock'),
     };
 
     const today = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -119,7 +121,7 @@ const BranchSummaryReportModal = ({ isOpen, onClose, data = [], filters = {} }) 
             'Beg. Stock': r.begStock, 'Transfer In': r.transferIn, 'Return': r.returns,
             'Delivered': r.delivered, 'Total Sales': r.totalSales,
             'Pending Delivery': r.pendingDelivery, 'Pending Sale': r.pendingSale,
-            'Total Stock': r.stockOnHand,
+            'Total Stock': r.stockOnHand, 'Available Stock': r.availableStock,
         }));
         rows.push({ Product: 'TOTAL', Variation: '', SKU: '', UPC: '', ...totals });
         const ws = XLSX.utils.json_to_sheet(rows);
@@ -132,7 +134,7 @@ const BranchSummaryReportModal = ({ isOpen, onClose, data = [], filters = {} }) 
         ['Beg. Stock', 'begStock'], ['Transfer In', 'transferIn'], ['Return', 'returns'],
         ['Delivered', 'delivered'], ['Total Sales', 'totalSales'],
         ['Pending Delivery', 'pendingDelivery'], ['Pending Sale', 'pendingSale'],
-        ['Total Stock', 'stockOnHand'],
+        ['Total Stock', 'stockOnHand'], ['Available Stock', 'availableStock'],
     ];
 
     return (

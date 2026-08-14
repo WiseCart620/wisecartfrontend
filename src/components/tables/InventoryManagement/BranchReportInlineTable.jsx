@@ -12,7 +12,7 @@ const BranchReportInlineTable = ({ rows = [], loading }) => {
           upc: r.variationUpc || r.productUpc || 'N/A',
           variationName: r.variationName || '',
           begStock: 0, transferIn: 0, returns: 0, delivered: 0, totalSales: 0,
-          pendingDelivery: 0, pendingSale: 0, stockOnHand: 0,
+          pendingDelivery: 0, pendingSale: 0, stockOnHand: 0, availableStock: 0,
         });
       }
       const e = map.get(key);
@@ -24,12 +24,13 @@ const BranchReportInlineTable = ({ rows = [], loading }) => {
       e.pendingDelivery += Number(r.pendingDelivery) || 0;
       e.pendingSale += Number(r.pendingSale) || 0;
       e.stockOnHand += Number(r.stockOnHand) || 0;
+      e.availableStock += Number(r.availableStock) || 0;
     });
     return Array.from(map.values()).filter(row =>
       row.begStock !== 0 || row.transferIn !== 0 || row.returns !== 0 ||
       row.delivered !== 0 || row.totalSales !== 0 ||
       row.pendingDelivery !== 0 || row.pendingSale !== 0 ||
-      row.stockOnHand !== 0
+      row.stockOnHand !== 0 || row.availableStock !== 0
     );
   }, [rows]);
 
@@ -42,6 +43,7 @@ const BranchReportInlineTable = ({ rows = [], loading }) => {
     ['Pending Delivery', 'pendingDelivery', 'bg-orange-50'],
     ['Pending Sale', 'pendingSale', 'bg-purple-50'],
     ['Total Stock', 'stockOnHand', 'bg-sky-100 font-semibold'],
+    ['Available Stock', 'availableStock', 'bg-emerald-50 font-semibold'],
   ];
 
   return (
