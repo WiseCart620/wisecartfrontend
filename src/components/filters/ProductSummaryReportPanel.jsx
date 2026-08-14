@@ -45,8 +45,7 @@ const ProductSummaryReportPanel = ({
 
     const hasCompanyFilter = selectedCompanyIds.length > 0 || (filters.branchIds || []).length > 0;
 
-    const canGenerate = filters.dateFrom && filters.dateTo &&
-        (filters.warehouseId || hasCompanyFilter);
+    const canGenerate = filters.warehouseId || hasCompanyFilter;
 
     return (
         <div className="bg-white rounded-lg border border-gray-200 px-4 py-3 mb-4">
