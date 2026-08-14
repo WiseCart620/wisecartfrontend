@@ -83,7 +83,7 @@ const MultiSelectDropdown = ({
       </button>
 
       {open && !disabled && (
-        <div className="absolute z-20 mt-1 w-72 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+        <div className="absolute z-50 mt-1 w-72 bg-white border border-gray-200 rounded-lg shadow-xl p-2">
           {options.length > 4 && (
             <div className="relative mb-2">
               <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
