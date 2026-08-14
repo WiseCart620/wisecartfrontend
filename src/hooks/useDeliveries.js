@@ -40,9 +40,9 @@ export const useDeliveries = () => {
       setLoading(true);
       setError(null);
 
-      const res = await api.get('/deliveries/list');
+      const res = await api.get('/deliveries');
 
-      if (res.success) setDeliveries(res.data || []);
+      if (res.success) setDeliveries(normalizeDeliveries(res.data || []));
     } catch (err) {
       console.error('Failed to load data', err);
       setError(err.message || 'Failed to load data');
@@ -336,14 +336,14 @@ export const useDeliveries = () => {
 
   const filterDeliveries = (deliveries, filters) => {
     return deliveries.filter(delivery => {
-      if (filters.companyId) {
+      if (filters.companyIds && filters.companyIds.length > 0) {
         const id = delivery.company?.id ?? delivery.companyId;
-        if (id !== filters.companyId) return false;
+        if (!filters.companyIds.includes(id)) return false;
       }
 
-      if (filters.branchId) {
+      if (filters.branchIds && filters.branchIds.length > 0) {
         const id = delivery.branch?.id ?? delivery.branchId;
-        if (id !== filters.branchId) return false;
+        if (!filters.branchIds.includes(id)) return false;
       }
 
       if (filters.warehouseIds && filters.warehouseIds.length > 0) {

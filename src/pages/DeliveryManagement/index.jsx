@@ -59,8 +59,8 @@ const DeliveryManagement = () => {
   const [cancelModal, setCancelModal] = useState({ show: false, delivery: null, remarks: '' });
 
   const [filterData, setFilterData] = useState({
-    companyId: '',
-    branchId: '',
+    companyIds: [],
+    branchIds: [],
     warehouseIds: [],
     status: '',
     productId: '',
@@ -332,7 +332,7 @@ const DeliveryManagement = () => {
 
   const handleResetFilter = () => {
     setFilterData({
-      companyId: '', branchId: '', warehouseIds: [], status: 'HIDE_CANCELLED',
+      companyIds: [], branchIds: [], warehouseIds: [], status: 'HIDE_CANCELLED',
       productId: '', variationId: '', productName: '', productFilters: [],
       startDate: '', endDate: '', receiptNumber: '', poNumber: ''
     });

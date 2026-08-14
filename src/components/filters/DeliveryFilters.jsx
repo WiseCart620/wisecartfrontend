@@ -20,11 +20,12 @@ const DeliveryFilters = ({
   const warehouseOptions = warehouses.map(w => ({ id: w.id, name: `${w.warehouseName} (${w.warehouseCode})` }));
 
   const productOptions = products.flatMap(product => {
+    const selectedCompanyIds = filterData.companyIds || [];
     if (product.variations && product.variations.length > 0) {
       return product.variations
         .filter(variation => {
-          if (!filterData.companyId) return true;
-          return (variation.companyPrices || []).some(cp => cp.company?.id === filterData.companyId);
+          if (selectedCompanyIds.length === 0) return true;
+          return (variation.companyPrices || []).some(cp => selectedCompanyIds.includes(cp.company?.id));
         })
         .map(variation => ({
           id: `${product.id}_${variation.id}`,
@@ -39,9 +40,9 @@ const DeliveryFilters = ({
         }));
     }
 
-    if (filterData.companyId) {
+    if (selectedCompanyIds.length > 0) {
       const hasCompanyPrice = (product.companyBasePrices || [])
-        .some(cbp => cbp.company?.id === filterData.companyId);
+        .some(cbp => selectedCompanyIds.includes(cbp.company?.id));
       if (!hasCompanyPrice) return [];
     }
 
@@ -58,16 +59,18 @@ const DeliveryFilters = ({
     }];
   });
 
-  const filteredBranchOptions = filterData.companyId
+  const filteredBranchOptions = (filterData.companyIds && filterData.companyIds.length > 0)
     ? branches
-      .filter(b => b.company?.id === filterData.companyId)
+      .filter(b => filterData.companyIds.includes(b.company?.id))
       .map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }))
     : branchOptions;
 
   const hasActiveFilters = Object.entries(filterData).some(
     ([k, v]) => {
       if (k === 'status' && v === 'HIDE_CANCELLED') return false;
-      if (k === 'productFilters' || k === 'warehouseIds') return Array.isArray(v) && v.length > 0;
+      if (k === 'productFilters' || k === 'warehouseIds' || k === 'companyIds' || k === 'branchIds') {
+        return Array.isArray(v) && v.length > 0;
+      }
       return v !== '' && v !== null && v !== undefined;
     }
   );
@@ -76,32 +79,34 @@ const DeliveryFilters = ({
     <div className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 mb-4">
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
         <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
-          <SearchableDropdown
+          <MultiSelectDropdown
             options={companyOptions}
-            value={filterData.companyId}
-            onChange={(value) => {
-              const currentBranch = branches.find(b => b.id === filterData.branchId);
-              const branchBelongsToCompany = currentBranch?.company?.id === value;
+            selectedIds={filterData.companyIds || []}
+            onChange={(ids) => {
+              const currentBranchIds = filterData.branchIds || [];
+              const stillValidBranchIds = ids.length === 0
+                ? currentBranchIds
+                : currentBranchIds.filter(bId => {
+                  const b = branches.find(br => br.id === bId);
+                  return b && ids.includes(b.company?.id);
+                });
               onFilterChange({
-                companyId: value,
-                branchId: branchBelongsToCompany ? filterData.branchId : ''
+                companyIds: ids,
+                branchIds: stillValidBranchIds
               });
             }}
             placeholder="All Companies"
-            displayKey="name"
-            valueKey="id"
+            searchPlaceholder="Search companies..."
           />
         </div>
 
         <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
-          <SearchableDropdown
+          <MultiSelectDropdown
             options={filteredBranchOptions}
-            value={filterData.branchId}
-            onChange={(value) => onFilterChange({ branchId: value })}
+            selectedIds={filterData.branchIds || []}
+            onChange={(ids) => onFilterChange({ branchIds: ids })}
             placeholder="All Branches"
-            displayKey="name"
-            valueKey="id"
-            searchable={true}
+            searchPlaceholder="Search branches..."
           />
         </div>
 
@@ -222,8 +227,8 @@ const DeliveryFilters = ({
         </div>
       )}
 
-      {filterData.companyId && filteredBranchOptions.length === 0 && (
-        <p className="text-xs text-orange-600 mt-2">No branches available for this company</p>
+      {(filterData.companyIds && filterData.companyIds.length > 0) && filteredBranchOptions.length === 0 && (
+        <p className="text-xs text-orange-600 mt-2">No branches available for the selected company(ies)</p>
       )}
     </div>
   );
