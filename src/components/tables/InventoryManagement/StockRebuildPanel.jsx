@@ -254,6 +254,8 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [progress, setProgress] = useState({ done: 0, total: 0 });
     const [results, setResults] = useState([]);
+    const [sequentialByBranch, setSequentialByBranch] = useState(false);
+    const [currentOpLabel, setCurrentOpLabel] = useState('');
 
     const needsWarehouse = scope === 'WAREHOUSE' || scope === 'BOTH';
     const needsBranch = scope === 'BRANCH' || scope === 'BOTH';
@@ -357,17 +359,33 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
             }
         }
         if (needsBranch) {
-            for (const pv of pvTargets) {
+            if (sequentialByBranch) {
                 for (const bId of branchIds) {
                     const br = branches.find((b) => String(b.id) === String(bId));
-                    ops.push({
-                        ...pv,
-                        locationType: 'Branch',
-                        locationId: bId,
-                        locationName: br?.branchName || `Branch #${bId}`,
-                        endpoint: '/admin/stock-rebuild/branch',
-                        locationParam: 'branchId',
-                    });
+                    for (const pv of pvTargets) {
+                        ops.push({
+                            ...pv,
+                            locationType: 'Branch',
+                            locationId: bId,
+                            locationName: br?.branchName || `Branch #${bId}`,
+                            endpoint: '/admin/stock-rebuild/branch',
+                            locationParam: 'branchId',
+                        });
+                    }
+                }
+            } else {
+                for (const pv of pvTargets) {
+                    for (const bId of branchIds) {
+                        const br = branches.find((b) => String(b.id) === String(bId));
+                        ops.push({
+                            ...pv,
+                            locationType: 'Branch',
+                            locationId: bId,
+                            locationName: br?.branchName || `Branch #${bId}`,
+                            endpoint: '/admin/stock-rebuild/branch',
+                            locationParam: 'branchId',
+                        });
+                    }
                 }
             }
         }
@@ -377,7 +395,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     const totalOperations = useMemo(() => {
         if (!canRun) return 0;
         return buildOperations().length;
-    }, [productIds, warehouseIds, branchIds, scope, includeVariations, selectedVariationKeys, products]);
+    }, [productIds, warehouseIds, branchIds, scope, includeVariations, selectedVariationKeys, products, sequentialByBranch]);
 
     const runRebuild = async () => {
         setConfirmOpen(false);
@@ -405,6 +423,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         let failCount = 0;
 
         const runOne = async (op, rowId) => {
+            setCurrentOpLabel(`${op.locationName} — ${op.productName}${op.variationName !== 'Base' ? ` (${op.variationName})` : ''}`);
             try {
                 const params = new URLSearchParams();
                 params.append('productId', op.productId);
@@ -463,6 +482,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         await Promise.all(Array.from({ length: Math.min(CONCURRENCY, ops.length) }, () => worker()));
 
         setRunning(false);
+        setCurrentOpLabel('');
         if (failCount === 0) {
             toast.success(`Rebuilt ${successCount} record${successCount !== 1 ? 's' : ''} successfully`);
         } else {
@@ -571,15 +591,28 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                     )}
 
                     {needsBranch && (
-                        <MultiSelect
-                            label="Branches"
-                            values={branchIds}
-                            onChange={setBranchIds}
-                            options={branches}
-                            getId={(b) => b.id}
-                            getLabel={(b) => b.branchName}
-                            placeholder="Select one or more branches..."
-                        />
+                        <div>
+                            <MultiSelect
+                                label="Branches"
+                                values={branchIds}
+                                onChange={setBranchIds}
+                                options={branches}
+                                getId={(b) => b.id}
+                                getLabel={(b) => b.branchName}
+                                placeholder="Select one or more branches..."
+                            />
+                            {branchIds.length > 1 && (
+                                <label className="flex items-center gap-2 mt-2 text-xs text-gray-600">
+                                    <input
+                                        type="checkbox"
+                                        checked={sequentialByBranch}
+                                        onChange={(e) => setSequentialByBranch(e.target.checked)}
+                                        className="rounded border-gray-300"
+                                    />
+                                    Finish each branch completely before starting the next
+                                </label>
+                            )}
+                        </div>
                     )}
                 </div>
 
@@ -598,12 +631,17 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                 </div>
 
                 {running && (
-                    <div className="mt-3 w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                        <div
-                            className="bg-[#185FA5] h-1.5 transition-all"
-                            style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%` }}
-                        />
-                    </div>
+                    <>
+                        <div className="mt-3 w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                            <div
+                                className="bg-[#185FA5] h-1.5 transition-all"
+                                style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%` }}
+                            />
+                        </div>
+                        {currentOpLabel && (
+                            <p className="text-xs text-gray-500 mt-1.5">Now processing: {currentOpLabel}</p>
+                        )}
+                    </>
                 )}
             </div>
 
