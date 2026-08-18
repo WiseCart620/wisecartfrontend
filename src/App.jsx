@@ -19,25 +19,37 @@ import TransmittalManagement from './pages/TransmittalManagement';
 import { AuthProvider, AuthLoading, ProtectedRoute, AdminRoute, FinanceRoute, AdminOrUserRoute } from './context/AuthContext';
 import { ReferenceDataProvider } from './context/ReferenceDataContext';
 import { startActivityTracking, stopActivityTracking, API_BASE_URL } from './services/api';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 
 const FORCE_MAINTENANCE = false;
 
 
-const HEALTH_CHECK_INTERVAL = 5000;
+// Poll fast while the backend is down, so recovery is detected quickly.
+const HEALTH_CHECK_INTERVAL_DOWN = 5000;
+// Once healthy, back off to a slow heartbeat instead of hammering the server.
+const HEALTH_CHECK_INTERVAL_UP = 120000;
 
 const HEALTH_CHECK_PATH = '/health';
 
 function App() {
   const [backendUp, setBackendUp] = useState(!FORCE_MAINTENANCE ? null : false);
+  const backendUpRef = useRef(backendUp);
+  useEffect(() => { backendUpRef.current = backendUp; }, [backendUp]);
 
   useEffect(() => {
     if (FORCE_MAINTENANCE) return;
 
     let cancelled = false;
+    let inFlight = false;
+    let timeoutId = null;
 
-    const checkHealth = async () => {
+    const scheduleNext = (delay) => {
+      if (cancelled) return;
+      timeoutId = setTimeout(runCheck, delay);
+    };
+
+    async function checkHealth() {
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 4000);
@@ -52,14 +64,24 @@ function App() {
       } catch (err) {
         if (!cancelled) setBackendUp(false);
       }
-    };
+    }
 
-    checkHealth();
-    const interval = setInterval(checkHealth, HEALTH_CHECK_INTERVAL);
+    async function runCheck() {
+      if (cancelled || inFlight) return;
+      inFlight = true;
+      try {
+        await checkHealth();
+      } finally {
+        inFlight = false;
+      }
+      scheduleNext(backendUpRef.current ? HEALTH_CHECK_INTERVAL_UP : HEALTH_CHECK_INTERVAL_DOWN);
+    }
+
+    runCheck();
 
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, []);
 
