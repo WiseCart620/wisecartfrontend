@@ -1,5 +1,6 @@
 // src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import MaintenancePage from './pages/MaintenancePage';
 import UserManagement from './pages/UserManagement';
 import InventoryManagement from './pages/InventoryManagement';
 import WarehouseManagement from './pages/WarehouseManagement';
@@ -17,10 +18,51 @@ import ProcurementManagement from './pages/ProcurementManagement/index.jsx';
 import TransmittalManagement from './pages/TransmittalManagement';
 import { AuthProvider, AuthLoading, ProtectedRoute, AdminRoute, FinanceRoute, AdminOrUserRoute } from './context/AuthContext';
 import { ReferenceDataProvider } from './context/ReferenceDataContext';
-import { startActivityTracking, stopActivityTracking } from './services/api';
-import { useEffect } from 'react';
+import { startActivityTracking, stopActivityTracking, API_BASE_URL } from './services/api';
+import { useEffect, useState } from 'react';
+
+
+const FORCE_MAINTENANCE = false;
+
+
+const HEALTH_CHECK_INTERVAL = 5000;
+
+const HEALTH_CHECK_PATH = '/health';
 
 function App() {
+  const [backendUp, setBackendUp] = useState(!FORCE_MAINTENANCE ? null : false);
+
+  useEffect(() => {
+    if (FORCE_MAINTENANCE) return;
+
+    let cancelled = false;
+
+    const checkHealth = async () => {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4000);
+
+        const response = await fetch(`${API_BASE_URL}${HEALTH_CHECK_PATH}`, {
+          method: 'GET',
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeout);
+        if (!cancelled) setBackendUp(response.ok);
+      } catch (err) {
+        if (!cancelled) setBackendUp(false);
+      }
+    };
+
+    checkHealth();
+    const interval = setInterval(checkHealth, HEALTH_CHECK_INTERVAL);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (token) {
@@ -28,6 +70,14 @@ function App() {
     }
     return () => stopActivityTracking();
   }, []);
+
+  if (backendUp === false) {
+    return <MaintenancePage />;
+  }
+
+  if (backendUp === null) {
+    return null;
+  }
 
   return (
     <Router>
