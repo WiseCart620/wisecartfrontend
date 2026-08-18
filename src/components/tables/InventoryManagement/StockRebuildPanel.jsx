@@ -7,10 +7,7 @@ import toast from 'react-hot-toast';
 import { api } from '../../../services/api';
 
 // ---- helpers -------------------------------------------------------------
-
 const SCOPES = [
-    { id: 'WAREHOUSE', label: 'Warehouse', icon: Building },
-    { id: 'BRANCH', label: 'Branch', icon: Store },
     { id: 'BOTH', label: 'Warehouse + Branch', icon: Layers },
 ];
 
@@ -248,7 +245,7 @@ const ResultsTable = ({ rows }) => {
 let rowCounter = 0;
 
 const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRebuilt }) => {
-    const [scope, setScope] = useState('WAREHOUSE');
+    const [scope, setScope] = useState('BOTH');
     const [warehouseIds, setWarehouseIds] = useState([]);
     const [branchIds, setBranchIds] = useState([]);
     const [productIds, setProductIds] = useState([]);
@@ -258,6 +255,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [progress, setProgress] = useState({ done: 0, total: 0 });
     const [results, setResults] = useState([]);
+    const [sequentialByBranch, setSequentialByBranch] = useState(true);
     const [currentOpLabel, setCurrentOpLabel] = useState('');
 
     const needsWarehouse = scope === 'WAREHOUSE' || scope === 'BOTH';
@@ -362,17 +360,33 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
             }
         }
         if (needsBranch) {
-            for (const bId of branchIds) {
-                const br = branches.find((b) => String(b.id) === String(bId));
+            if (sequentialByBranch) {
+                for (const bId of branchIds) {
+                    const br = branches.find((b) => String(b.id) === String(bId));
+                    for (const pv of pvTargets) {
+                        ops.push({
+                            ...pv,
+                            locationType: 'Branch',
+                            locationId: bId,
+                            locationName: br?.branchName || `Branch #${bId}`,
+                            endpoint: '/admin/stock-rebuild/branch',
+                            locationParam: 'branchId',
+                        });
+                    }
+                }
+            } else {
                 for (const pv of pvTargets) {
-                    ops.push({
-                        ...pv,
-                        locationType: 'Branch',
-                        locationId: bId,
-                        locationName: br?.branchName || `Branch #${bId}`,
-                        endpoint: '/admin/stock-rebuild/branch',
-                        locationParam: 'branchId',
-                    });
+                    for (const bId of branchIds) {
+                        const br = branches.find((b) => String(b.id) === String(bId));
+                        ops.push({
+                            ...pv,
+                            locationType: 'Branch',
+                            locationId: bId,
+                            locationName: br?.branchName || `Branch #${bId}`,
+                            endpoint: '/admin/stock-rebuild/branch',
+                            locationParam: 'branchId',
+                        });
+                    }
                 }
             }
         }
@@ -382,7 +396,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     const totalOperations = useMemo(() => {
         if (!canRun) return 0;
         return buildOperations().length;
-    }, [productIds, warehouseIds, branchIds, scope, includeVariations, selectedVariationKeys, products]);
+    }, [productIds, warehouseIds, branchIds, scope, includeVariations, selectedVariationKeys, products, sequentialByBranch]);
 
     const runRebuild = async () => {
         setConfirmOpen(false);
@@ -576,15 +590,28 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                     )}
 
                     {needsBranch && (
-                        <MultiSelect
-                            label="Branches"
-                            values={branchIds}
-                            onChange={setBranchIds}
-                            options={branches}
-                            getId={(b) => b.id}
-                            getLabel={(b) => b.branchName}
-                            placeholder="Select one or more branches..."
-                        />
+                        <div>
+                            <MultiSelect
+                                label="Branches"
+                                values={branchIds}
+                                onChange={setBranchIds}
+                                options={branches}
+                                getId={(b) => b.id}
+                                getLabel={(b) => b.branchName}
+                                placeholder="Select one or more branches..."
+                            />
+                            {branchIds.length > 1 && (
+                                <label className="flex items-center gap-2 mt-2 text-xs text-gray-600">
+                                    <input
+                                        type="checkbox"
+                                        checked={sequentialByBranch}
+                                        onChange={(e) => setSequentialByBranch(e.target.checked)}
+                                        className="rounded border-gray-300"
+                                    />
+                                    Finish each branch completely before starting the next
+                                </label>
+                            )}
+                        </div>
                     )}
                 </div>
 
