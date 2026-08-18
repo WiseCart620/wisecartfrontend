@@ -263,10 +263,10 @@ const BranchQueueBanner = ({ queue, activeIndex }) => {
                         <React.Fragment key={b.locationId}>
                             <span
                                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${state === 'done'
-                                        ? 'bg-green-50 border-green-200 text-green-700'
-                                        : state === 'active'
-                                            ? 'bg-[#185FA5] border-[#185FA5] text-white shadow-sm'
-                                            : 'bg-white border-gray-200 text-gray-400'
+                                    ? 'bg-green-50 border-green-200 text-green-700'
+                                    : state === 'active'
+                                        ? 'bg-[#185FA5] border-[#185FA5] text-white shadow-sm'
+                                        : 'bg-white border-gray-200 text-gray-400'
                                     }`}
                             >
                                 {state === 'done' && <CheckCircle2 size={11} />}
@@ -295,6 +295,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     const [scope, setScope] = useState('BOTH');
     const [warehouseIds, setWarehouseIds] = useState([]);
     const [branchIds, setBranchIds] = useState([]);
+    const [autoAllBranches, setAutoAllBranches] = useState(false);
     const [productIds, setProductIds] = useState([]);
     const [includeVariations, setIncludeVariations] = useState(true);
     const [selectedVariationKeys, setSelectedVariationKeys] = useState([]);
@@ -335,7 +336,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     const canRun =
         productIds.length > 0 &&
         (!needsWarehouse || warehouseIds.length > 0) &&
-        (!needsBranch || branchIds.length > 0);
+        (!needsBranch || (autoAllBranches ? branches.length > 0 : branchIds.length > 0));
 
     const resetTargets = (nextScope) => {
         setScope(nextScope);
@@ -422,7 +423,11 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         }
 
         if (needsBranch) {
-            for (const bId of branchIds) {
+            const targetBranchIds = autoAllBranches
+                ? branches.map((b) => b.id)
+                : branchIds;
+
+            for (const bId of targetBranchIds) {
                 const br = branchMap.get(String(bId));
                 for (const pv of pvTargets) {
                     ops.push({
@@ -442,8 +447,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     const totalOperations = useMemo(() => {
         if (!canRun) return 0;
         return buildOperations().length;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [productIds, warehouseIds, branchIds, scope, includeVariations, selectedVariationKeys, products]);
+    }, [productIds, warehouseIds, branchIds, scope, includeVariations, selectedVariationKeys, products, autoAllBranches, branches]);
 
     const runRebuild = async () => {
         setConfirmOpen(false);
@@ -665,19 +669,38 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
 
                     {needsBranch && (
                         <div>
-                            <MultiSelect
-                                label="Branches"
-                                values={branchIds}
-                                onChange={setBranchIds}
-                                options={branches}
-                                getId={(b) => b.id}
-                                getLabel={(b) => b.branchName}
-                                placeholder="Select one or more branches..."
-                            />
-                            {branchIds.length > 1 && (
+                            <div className="flex items-center gap-2 mb-2">
+                                <input
+                                    id="autoAllBranches"
+                                    type="checkbox"
+                                    checked={autoAllBranches}
+                                    onChange={(e) => {
+                                        setAutoAllBranches(e.target.checked);
+                                        if (e.target.checked) setBranchIds([]);
+                                    }}
+                                    className="rounded border-gray-300"
+                                />
+                                <label htmlFor="autoAllBranches" className="text-xs text-gray-600">
+                                    Auto-run through <span className="font-medium">all {branches.length} branches</span>, one at a time
+                                </label>
+                            </div>
+
+                            {!autoAllBranches && (
+                                <MultiSelect
+                                    label="Branches"
+                                    values={branchIds}
+                                    onChange={setBranchIds}
+                                    options={branches}
+                                    getId={(b) => b.id}
+                                    getLabel={(b) => b.branchName}
+                                    placeholder="Select one or more branches..."
+                                />
+                            )}
+
+                            {(autoAllBranches || branchIds.length > 1) && (
                                 <p className="text-xs text-gray-400 mt-2">
-                                    Branches always run one at a time, fully, in the order selected — the next branch starts
-                                    automatically when the current one finishes.
+                                    Branches always run one at a time, fully, {autoAllBranches ? 'in list order' : 'in the order selected'} —
+                                    the next branch starts automatically when the current one finishes.
                                 </p>
                             )}
                         </div>
@@ -748,8 +771,9 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                             {needsWarehouse && <li>• {warehouseIds.length} warehouse{warehouseIds.length !== 1 ? 's' : ''}</li>}
                             {needsBranch && (
                                 <li>
-                                    • {branchIds.length} branch{branchIds.length !== 1 ? 'es' : ''} — processed one at a time,
-                                    auto-advancing
+                                    • {autoAllBranches ? branches.length : branchIds.length} branch
+                                    {(autoAllBranches ? branches.length : branchIds.length) !== 1 ? 'es' : ''} — processed one at a
+                                    time, auto-advancing
                                 </li>
                             )}
                         </ul>
