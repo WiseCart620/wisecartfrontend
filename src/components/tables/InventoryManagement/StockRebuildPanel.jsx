@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
     RefreshCw, AlertTriangle, Building, Store, Layers,
-    Search, ChevronDown, CheckCircle2, XCircle, Clock, ShieldAlert, X
+    Search, ChevronDown, CheckCircle2, XCircle, Clock, ShieldAlert, X, ArrowRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../../services/api';
@@ -178,6 +178,13 @@ const StatusBadge = ({ status }) => {
             </span>
         );
     }
+    if (status === 'PENDING') {
+        return (
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-full">
+                <Clock size={11} /> Queued
+            </span>
+        );
+    }
     if (status === 'ERROR') {
         return (
             <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
@@ -210,7 +217,7 @@ const ResultsTable = ({ rows }) => {
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                         {rows.map((r) => (
-                            <tr key={r.id} className="hover:bg-gray-50">
+                            <tr key={r.id} className={`hover:bg-gray-50 ${r.status === 'PENDING' ? 'opacity-50' : ''}`}>
                                 <td className="px-3 py-2 text-gray-900">{r.productName}</td>
                                 <td className="px-3 py-2 text-gray-600">{r.variationName}</td>
                                 <td className="px-3 py-2 text-gray-600">
@@ -240,6 +247,46 @@ const ResultsTable = ({ rows }) => {
     );
 };
 
+// ---- branch queue banner ----------------------------------------------------
+
+const BranchQueueBanner = ({ queue, activeIndex }) => {
+    if (!queue || queue.length === 0) return null;
+    return (
+        <div className="border border-[#185FA5]/20 bg-[#E6F1FB] rounded-xl p-4">
+            <p className="text-xs font-semibold text-[#0C447C] mb-2">
+                Branch queue — processed one at a time, auto-advancing
+            </p>
+            <div className="flex flex-wrap items-center gap-1.5">
+                {queue.map((b, i) => {
+                    const state = i < activeIndex ? 'done' : i === activeIndex ? 'active' : 'pending';
+                    return (
+                        <React.Fragment key={b.locationId}>
+                            <span
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${state === 'done'
+                                        ? 'bg-green-50 border-green-200 text-green-700'
+                                        : state === 'active'
+                                            ? 'bg-[#185FA5] border-[#185FA5] text-white shadow-sm'
+                                            : 'bg-white border-gray-200 text-gray-400'
+                                    }`}
+                            >
+                                {state === 'done' && <CheckCircle2 size={11} />}
+                                {state === 'active' && <RefreshCw size={11} className="animate-spin" />}
+                                {b.locationName}
+                                {state !== 'pending' && (
+                                    <span className="opacity-80">
+                                        ({b.done}/{b.total})
+                                    </span>
+                                )}
+                            </span>
+                            {i < queue.length - 1 && <ArrowRight size={12} className="text-gray-300 shrink-0" />}
+                        </React.Fragment>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
 // ---- main component --------------------------------------------------------
 
 let rowCounter = 0;
@@ -255,8 +302,11 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [progress, setProgress] = useState({ done: 0, total: 0 });
     const [results, setResults] = useState([]);
-    const [sequentialByBranch, setSequentialByBranch] = useState(true);
     const [currentOpLabel, setCurrentOpLabel] = useState('');
+
+    // Branch auto-advance queue: [{ locationId, locationName, done, total }]
+    const [branchQueue, setBranchQueue] = useState([]);
+    const [activeBranchIndex, setActiveBranchIndex] = useState(-1);
 
     const needsWarehouse = scope === 'WAREHOUSE' || scope === 'BOTH';
     const needsBranch = scope === 'BRANCH' || scope === 'BOTH';
@@ -293,7 +343,6 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         if (nextScope === 'BRANCH') setWarehouseIds([]);
     };
 
-
     const buildProductVariationTargets = () => {
         const targets = [];
 
@@ -302,13 +351,10 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
             const hasVariations = productVariations.length > 0;
 
             if (!hasVariations) {
-                // No variations exist — base is the only possible target.
                 targets.push({ productId: p.id, productName: productLabel(p), variationId: null, variationName: 'Base' });
                 continue;
             }
 
-            // Product HAS variations — never auto-include base alongside them.
-            // Only fall back to base if the user explicitly unchecked "include variations".
             if (!includeVariations) {
                 targets.push({ productId: p.id, productName: productLabel(p), variationId: null, variationName: 'Base' });
                 continue;
@@ -340,6 +386,21 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         return targets;
     };
 
+    // Warehouse lookup maps (avoid O(n) .find() inside loops)
+    const warehouseMap = useMemo(() => {
+        const m = new Map();
+        warehouses.forEach((w) => m.set(String(w.id), w));
+        return m;
+    }, [warehouses]);
+
+    const branchMap = useMemo(() => {
+        const m = new Map();
+        branches.forEach((b) => m.set(String(b.id), b));
+        return m;
+    }, [branches]);
+
+    // Builds ops as: [ all warehouse ops ] then [ branch 1's ops, branch 2's ops, ... ]
+    // Branches are ALWAYS processed one fully-completed branch at a time — no interleaving.
     const buildOperations = () => {
         const pvTargets = buildProductVariationTargets();
         const ops = [];
@@ -347,7 +408,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         if (needsWarehouse) {
             for (const pv of pvTargets) {
                 for (const wId of warehouseIds) {
-                    const wh = warehouses.find((w) => String(w.id) === String(wId));
+                    const wh = warehouseMap.get(String(wId));
                     ops.push({
                         ...pv,
                         locationType: 'Warehouse',
@@ -359,34 +420,19 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                 }
             }
         }
+
         if (needsBranch) {
-            if (sequentialByBranch) {
-                for (const bId of branchIds) {
-                    const br = branches.find((b) => String(b.id) === String(bId));
-                    for (const pv of pvTargets) {
-                        ops.push({
-                            ...pv,
-                            locationType: 'Branch',
-                            locationId: bId,
-                            locationName: br?.branchName || `Branch #${bId}`,
-                            endpoint: '/admin/stock-rebuild/branch',
-                            locationParam: 'branchId',
-                        });
-                    }
-                }
-            } else {
+            for (const bId of branchIds) {
+                const br = branchMap.get(String(bId));
                 for (const pv of pvTargets) {
-                    for (const bId of branchIds) {
-                        const br = branches.find((b) => String(b.id) === String(bId));
-                        ops.push({
-                            ...pv,
-                            locationType: 'Branch',
-                            locationId: bId,
-                            locationName: br?.branchName || `Branch #${bId}`,
-                            endpoint: '/admin/stock-rebuild/branch',
-                            locationParam: 'branchId',
-                        });
-                    }
+                    ops.push({
+                        ...pv,
+                        locationType: 'Branch',
+                        locationId: bId,
+                        locationName: br?.branchName || `Branch #${bId}`,
+                        endpoint: '/admin/stock-rebuild/branch',
+                        locationParam: 'branchId',
+                    });
                 }
             }
         }
@@ -396,34 +442,61 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     const totalOperations = useMemo(() => {
         if (!canRun) return 0;
         return buildOperations().length;
-    }, [productIds, warehouseIds, branchIds, scope, includeVariations, selectedVariationKeys, products, sequentialByBranch]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [productIds, warehouseIds, branchIds, scope, includeVariations, selectedVariationKeys, products]);
 
     const runRebuild = async () => {
         setConfirmOpen(false);
         const ops = buildOperations();
         if (ops.length === 0) return;
 
+        // Build the branch queue for the banner (branch ops only, in the order they'll run)
+        const queue = [];
+        {
+            let current = null;
+            for (const op of ops) {
+                if (op.locationType !== 'Branch') continue;
+                if (!current || String(current.locationId) !== String(op.locationId)) {
+                    current = { locationId: op.locationId, locationName: op.locationName, done: 0, total: 0 };
+                    queue.push(current);
+                }
+                current.total++;
+            }
+        }
+        setBranchQueue(queue);
+        setActiveBranchIndex(queue.length > 0 ? 0 : -1);
+
         setRunning(true);
-        setResults(ops.map((op) => ({
-            id: ++rowCounter,
-            productName: op.productName,
-            variationName: op.variationName,
-            locationType: op.locationType,
-            locationName: op.locationName,
-            status: 'RUNNING',
-            qtyBefore: null,
-            qtyAfter: null,
-            retired: null,
-            error: null,
-        })));
         setProgress({ done: 0, total: ops.length });
 
-        const CONCURRENCY = 1;
-        let cursor = 0;
         let successCount = 0;
         let failCount = 0;
+        let currentBranchQueueIdx = queue.length > 0 ? 0 : -1;
+
+        // Generate row ids up front so ops[i] always maps to ids[i], regardless of
+        // React's async state batching.
+        const ids = ops.map(() => ++rowCounter);
+        setResults(
+            ops.map((op, i) => ({
+                id: ids[i],
+                productName: op.productName,
+                variationName: op.variationName,
+                locationType: op.locationType,
+                locationName: op.locationName,
+                status: 'PENDING',
+                qtyBefore: null,
+                qtyAfter: null,
+                retired: null,
+                error: null,
+            }))
+        );
+
+        const updateRow = (rowId, patch) => {
+            setResults((prev) => prev.map((r) => (r.id === rowId ? { ...r, ...patch } : r)));
+        };
 
         const runOne = async (op, rowId) => {
+            updateRow(rowId, { status: 'RUNNING' });
             setCurrentOpLabel(`${op.locationName} — ${op.productName}${op.variationName !== 'Base' ? ` (${op.variationName})` : ''}`);
             try {
                 const params = new URLSearchParams();
@@ -434,51 +507,51 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                 const res = await api.post(`${op.endpoint}?${params.toString()}`, {});
                 const data = res.data || res;
 
-                setResults((prev) => prev.map((r) => r.id === rowId ? {
-                    ...r,
+                updateRow(rowId, {
                     status: 'DONE',
                     qtyBefore: data.storedQuantityBefore,
                     qtyAfter: data.storedQuantityAfter,
                     retired: data.retiredOldTransactions,
-                } : r));
+                });
                 successCount++;
             } catch (err) {
-                setResults((prev) => prev.map((r) => r.id === rowId ? {
-                    ...r,
-                    status: 'ERROR',
-                    error: err?.message || 'Rebuild failed',
-                } : r));
+                updateRow(rowId, { status: 'ERROR', error: err?.message || 'Rebuild failed' });
                 failCount++;
             } finally {
                 setProgress((p) => ({ ...p, done: p.done + 1 }));
             }
         };
 
-        // Need the actual row ids we just set — re-derive by index since order matches
-        setResults((prev) => {
-            const withIds = prev.map((r, i) => ({ ...r, _opIndex: i }));
-            return withIds;
-        });
+        // Strictly sequential — one op at a time, one branch fully finished before the next starts.
+        for (let i = 0; i < ops.length; i++) {
+            const op = ops[i];
 
-        // Run with limited concurrency, matching ops[i] to the row created at the same index
-        let opsWithRowIds = [];
-        setResults((prev) => {
-            opsWithRowIds = ops.map((op, i) => ({ op, rowId: prev[i].id }));
-            return prev;
-        });
-
-        // Wait a microtask so state above committed (React batches synchronously here, safe in practice)
-        await Promise.resolve();
-
-        const worker = async () => {
-            while (cursor < opsWithRowIds.length) {
-                const idx = cursor++;
-                const { op, rowId } = opsWithRowIds[idx];
-                await runOne(op, rowId);
+            if (op.locationType === 'Branch') {
+                const q = queue[currentBranchQueueIdx];
+                if (!q || String(q.locationId) !== String(op.locationId)) {
+                    currentBranchQueueIdx++;
+                    setActiveBranchIndex(currentBranchQueueIdx);
+                }
             }
-        };
 
-        await Promise.all(Array.from({ length: Math.min(CONCURRENCY, ops.length) }, () => worker()));
+            await runOne(op, ids[i]);
+
+            if (op.locationType === 'Branch' && currentBranchQueueIdx >= 0) {
+                setBranchQueue((prev) => {
+                    const next = [...prev];
+                    if (next[currentBranchQueueIdx]) {
+                        next[currentBranchQueueIdx] = {
+                            ...next[currentBranchQueueIdx],
+                            done: next[currentBranchQueueIdx].done + 1,
+                        };
+                    }
+                    return next;
+                });
+            }
+        }
+
+        // Mark the branch queue fully past the last branch so all chips show "done"
+        setActiveBranchIndex(queue.length);
 
         setRunning(false);
         setCurrentOpLabel('');
@@ -499,8 +572,9 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                     <p className="font-semibold">This tool rewrites stock history.</p>
                     <p className="mt-0.5 text-amber-700">
                         It permanently retires existing transactions for each selected product at each selected location and
-                        regenerates them from the source Sale / Delivery / Inventory records. Review the results table
-                        after running before trusting the numbers downstream.
+                        regenerates them from the source Sale / Delivery / Inventory records. Branches are processed one at a
+                        time, in full, before the next branch starts automatically. Review the results table after running
+                        before trusting the numbers downstream.
                     </p>
                 </div>
             </div>
@@ -601,15 +675,10 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                                 placeholder="Select one or more branches..."
                             />
                             {branchIds.length > 1 && (
-                                <label className="flex items-center gap-2 mt-2 text-xs text-gray-600">
-                                    <input
-                                        type="checkbox"
-                                        checked={sequentialByBranch}
-                                        onChange={(e) => setSequentialByBranch(e.target.checked)}
-                                        className="rounded border-gray-300"
-                                    />
-                                    Finish each branch completely before starting the next
-                                </label>
+                                <p className="text-xs text-gray-400 mt-2">
+                                    Branches always run one at a time, fully, in the order selected — the next branch starts
+                                    automatically when the current one finishes.
+                                </p>
                             )}
                         </div>
                     )}
@@ -644,6 +713,11 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                 )}
             </div>
 
+            {/* Branch auto-advance queue */}
+            {running && branchQueue.length > 0 && (
+                <BranchQueueBanner queue={branchQueue} activeIndex={activeBranchIndex} />
+            )}
+
             {/* Results */}
             {results.length > 0 && (
                 <div className="space-y-2">
@@ -672,7 +746,12 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                         <ul className="text-sm text-gray-700 mb-4 mt-2 space-y-1">
                             <li>• {productIds.length} product{productIds.length !== 1 ? 's' : ''}{includeVariations && anyHasVariations ? ' (incl. variations)' : ''}</li>
                             {needsWarehouse && <li>• {warehouseIds.length} warehouse{warehouseIds.length !== 1 ? 's' : ''}</li>}
-                            {needsBranch && <li>• {branchIds.length} branch{branchIds.length !== 1 ? 'es' : ''}</li>}
+                            {needsBranch && (
+                                <li>
+                                    • {branchIds.length} branch{branchIds.length !== 1 ? 'es' : ''} — processed one at a time,
+                                    auto-advancing
+                                </li>
+                            )}
                         </ul>
                         <p className="text-xs text-gray-500 mb-5">
                             Existing transactions for each product at each selected location will be retired and regenerated
