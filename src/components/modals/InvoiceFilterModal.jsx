@@ -54,8 +54,10 @@ const InvoiceFilterModal = ({
 
   const companyOptions = companies.map(c => ({ id: c.id, name: c.companyName || c.name }));
 
-  const companyBranches = filterData.companyId
-    ? branches.filter(b => b.company?.id === filterData.companyId)
+  const selectedCompanyId = filterData.companyIds?.[0] ?? '';
+
+  const companyBranches = selectedCompanyId
+    ? branches.filter(b => b.company?.id === selectedCompanyId)
     : branches;
 
   const filteredBranches = companyBranches.filter(b =>
@@ -127,9 +129,9 @@ const InvoiceFilterModal = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">Company *</label>
             <SearchableDropdown
-              options={companyOptions} value={filterData.companyId}
+              options={companyOptions} value={selectedCompanyId}
               onChange={(value) => {
-                setFilterData(prev => ({ ...prev, companyId: value, branchId: '' }));
+                setFilterData(prev => ({ ...prev, companyIds: value ? [value] : [] }));
                 setSelectedBranchIds([]);
               }}
               placeholder="Select Company" displayKey="name" valueKey="id" required
@@ -181,7 +183,7 @@ const InvoiceFilterModal = ({
                 </div>
               ) : sortedFilteredBranches.length === 0 ? (
                 <div className="px-3 py-4 text-xs text-gray-400 italic text-center">
-                  {filterData.companyId ? 'No branches for selected company' : 'Select a company to see branches'}
+                  {selectedCompanyId ? 'No branches for selected company' : 'Select a company to see branches'}
                 </div>
               ) : (
                 sortedFilteredBranches.map(b => (

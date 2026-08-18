@@ -1,6 +1,5 @@
 import React from 'react';
 import { Search, Plus, FileText, X } from 'lucide-react';
-import SearchableDropdown from '../../components/common/SaleSearchableDropdown';
 import MultiSelectDropdown from '../../components/common/MultiSelectDropdown';
 import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
 
@@ -26,11 +25,11 @@ const SalesFilters = ({
   const companyOptions = companies.map(c => ({ id: c.id, name: c.companyName || c.name }));
   const branchOptions = branches.map(b => ({ id: b.id, name: b.branchName, code: b.branchCode }));
 
-  const filteredBranchOptions = filterData.companyId
-    ? branches.filter(b => b.company?.id === filterData.companyId).map(b => ({ id: b.id, name: b.branchName, code: b.branchCode }))
+  const filteredBranchOptions = (filterData.companyIds && filterData.companyIds.length > 0)
+    ? branches.filter(b => filterData.companyIds.includes(b.company?.id)).map(b => ({ id: b.id, name: b.branchName, code: b.branchCode }))
     : branchOptions;
 
-  const hasActiveFilters = filterData.companyId || (filterData.branchIds?.length > 0) || filterData.startDate ||
+  const hasActiveFilters = (filterData.companyIds?.length > 0) || (filterData.branchIds?.length > 0) || filterData.startDate ||
     filterData.endDate || filterData.productFilters.length > 0 || searchTerm || statusFilter !== 'ALL';
 
   const pendingAmt = allFilteredSales.pendingAmount || 0;
@@ -94,21 +93,22 @@ const SalesFilters = ({
         {/* Compact filter row */}
         <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-200">
           <div className="min-w-[140px] max-w-[260px] flex-shrink-0">
-            <SearchableDropdown
+            <MultiSelectDropdown
               options={companyOptions}
-              value={filterData.companyId}
-              onChange={(value) => {
+              selectedIds={filterData.companyIds || []}
+              onChange={(ids) => {
                 setFilterData(prev => {
-                  const update = { ...prev, companyId: value };
-                  if (value && prev.branchIds?.length) {
-                    const validIds = branches.filter(b => b.company?.id === value).map(b => b.id);
+                  const update = { ...prev, companyIds: ids };
+                  if (ids.length > 0 && prev.branchIds?.length) {
+                    const validIds = branches.filter(b => ids.includes(b.company?.id)).map(b => b.id);
                     update.branchIds = prev.branchIds.filter(id => validIds.includes(id));
                   }
                   return update;
                 });
                 setCurrentPage(1);
               }}
-              placeholder="All Companies" displayKey="name" valueKey="id"
+              placeholder="All Companies"
+              searchPlaceholder="Search companies..."
               loading={dataLoading}
             />
           </div>
@@ -188,8 +188,8 @@ const SalesFilters = ({
           )}
         </div>
 
-        {filterData.companyId && filteredBranchOptions.length === 0 && (
-          <p className="text-xs text-orange-600">No branches for selected company</p>
+        {(filterData.companyIds?.length > 0) && filteredBranchOptions.length === 0 && (
+          <p className="text-xs text-orange-600">No branches for selected company(ies)</p>
         )}
 
         {filterData.productFilters.length > 0 && (

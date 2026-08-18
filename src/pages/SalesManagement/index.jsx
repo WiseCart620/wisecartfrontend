@@ -68,7 +68,7 @@ const SalesManagement = () => {
     products,
     branchInfo: null,
     productPrices: {},
-    companyId: filterData.companyId,
+    companyId: filterData.companyIds?.[0] ?? null,
   });
 
   const {
@@ -142,7 +142,8 @@ const SalesManagement = () => {
   };
 
   const handleGenerateInvoice = async () => {
-    if (!filterData.companyId) { toast.error('Please select a company first'); return; }
+    if (!filterData.companyIds?.length) { toast.error('Please select a company first'); return; }
+    if (filterData.companyIds.length > 1) { toast.error('Please select only one company for invoice generation'); return; }
     toast.loading('Generating Invoice...', { id: 'invoice-loading' });
     try {
       const toNumericProductId = (rawId) => {
@@ -187,7 +188,7 @@ const SalesManagement = () => {
         const invoiceData = response.data || response;
         if (!invoiceData.products?.length) { toast.error('No sales data found for invoice generation!'); return; }
         invoiceData.adjustments = invoiceData.adjustments || [];
-        const company = companies.find(c => c.id === filterData.companyId);
+        const company = companies.find(c => c.id === filterData.companyIds[0]);
         if (invoiceBranchIds.length === 1) {
           const branch = branches.find(b => b.id === invoiceBranchIds[0]);
           if (branch) {
@@ -229,7 +230,7 @@ const SalesManagement = () => {
       totalAmountDue = grossSales - wht;
     }
     const payload = {
-      companyId: filterData.companyId || null,
+      companyId: filterData.companyIds?.[0] || null,
       branchId: invoiceBranchIds.length === 1 ? invoiceBranchIds[0] : null,
       startMonth: filterData.startMonth || null,
       endMonth: filterData.endMonth || null,
@@ -381,7 +382,7 @@ const SalesManagement = () => {
             getMaxAllowedQuantity={getMaxAllowedQuantity}
             onBulkUploadComplete={() => fetchSales(currentPage - 1)}
             companies={companies}
-            defaultCompanyId={filterData.companyId}
+            defaultCompanyId={filterData.companyIds?.[0]}
             dataLoading={staticDataLoading}
           />
         )}

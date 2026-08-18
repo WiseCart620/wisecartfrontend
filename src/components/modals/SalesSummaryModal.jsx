@@ -13,12 +13,15 @@ const SalesSummaryModal = ({ onClose, filterData, statusFilter, searchTerm, comp
         const startDateObj = filterData.startDate ? new Date(filterData.startDate) : null;
         const endDateObj = filterData.endDate ? new Date(filterData.endDate) : null;
         const params = new URLSearchParams({
-          ...(filterData.companyId && { companyId: filterData.companyId }),
           ...(statusFilter !== 'ALL' && { status: statusFilter }),
           ...(searchTerm && { searchTerm }),
           ...(startDateObj && { startYear: startDateObj.getFullYear(), startMonth: startDateObj.getMonth() + 1 }),
           ...(endDateObj && { endYear: endDateObj.getFullYear(), endMonth: endDateObj.getMonth() + 1 }),
         });
+
+        if (filterData.companyIds?.length > 0) {
+          filterData.companyIds.forEach(id => params.append('companyIds', id));
+        }
 
         if (filterData.branchIds?.length > 0) {
           filterData.branchIds.forEach(id => params.append('branchIds', id));
@@ -54,8 +57,10 @@ const SalesSummaryModal = ({ onClose, filterData, statusFilter, searchTerm, comp
     fetchData();
   }, []);
 
-  const selectedCompany = filterData.companyId
-    ? (companies.find(c => c.id === filterData.companyId)?.companyName || 'All Companies')
+  const selectedCompany = filterData.companyIds?.length > 0
+    ? (filterData.companyIds.length === 1
+      ? (companies.find(c => c.id === filterData.companyIds[0])?.companyName || 'All Companies')
+      : `${filterData.companyIds.length} Companies`)
     : 'All Companies';
   const selectedBranch = filterData.branchIds?.length > 0
     ? (filterData.branchIds.length === 1
