@@ -33,6 +33,8 @@ const DeliveryManagement = () => {
     loading,
     loadingProgress,
     loadData,
+    totalPages: serverTotalPages,
+    totalElements: serverTotalElements,
     refreshDeliveries,
     updateDeliveryLocally,
     createDelivery,
@@ -74,8 +76,8 @@ const DeliveryManagement = () => {
   });
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadData(currentPage - 1, itemsPerPage);
+  }, [currentPage]);
 
   const filteredDeliveries = sortDeliveriesByStatus(
     (() => {
@@ -95,10 +97,8 @@ const DeliveryManagement = () => {
     sortMode
   );
 
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentDeliveries = filteredDeliveries.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredDeliveries.length / itemsPerPage);
+  const currentDeliveries = filteredDeliveries;
+  const totalPages = serverTotalPages || 1;
 
   const handleOpenModal = async (mode, delivery = null) => {
     if (mode === 'edit' && delivery?.status === 'DELIVERED') {
@@ -342,8 +342,8 @@ const DeliveryManagement = () => {
   return (
     <>
       <LoadingOverlay
-        show={loading || actionLoading}
-        message={loading ? 'Loading dashboard data...' : (loadingMessage || 'Please wait...')}
+        show={actionLoading}
+        message={loadingMessage || 'Please wait...'}
       />
 
       <div className="p-2 sm:p-3 lg:p-4 max-w-full mx-auto overflow-x-hidden">
@@ -428,7 +428,7 @@ const DeliveryManagement = () => {
           onPageChange={setCurrentPage}
           currentPage={currentPage}
           itemsPerPage={itemsPerPage}
-          totalItems={filteredDeliveries.length}
+          totalItems={serverTotalElements}
           isLoading={loading}
           canDelete={canDelete}
           canCreate={canCreate}

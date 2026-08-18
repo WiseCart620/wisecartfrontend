@@ -1,5 +1,5 @@
 // src/hooks/data/useDeliveries.js
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../services/api';
 import { formatDateForInput } from '../utils/dateUtils';
 
@@ -34,15 +34,23 @@ export const useDeliveries = () => {
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const lastPageRef = useRef({ page: 0, size: 10 });
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (page = 0, size = 10) => {
     try {
       setLoading(true);
       setError(null);
+      lastPageRef.current = { page, size };
 
-      const res = await api.get('/deliveries');
+      const res = await api.get(`/deliveries/list?page=${page}&size=${size}`);
 
-      if (res.success) setDeliveries(normalizeDeliveries(res.data || []));
+      if (res.success) {
+        setDeliveries(normalizeDeliveries(res.data?.content || []));
+        setTotalPages(res.data?.totalPages || 0);
+        setTotalElements(res.data?.totalElements || 0);
+      }
     } catch (err) {
       console.error('Failed to load data', err);
       setError(err.message || 'Failed to load data');
@@ -53,8 +61,13 @@ export const useDeliveries = () => {
 
   const refreshDeliveries = useCallback(async () => {
     try {
-      const res = await api.get('/deliveries');
-      if (res.success) setDeliveries(normalizeDeliveries(res.data || []));
+      const { page, size } = lastPageRef.current;
+      const res = await api.get(`/deliveries/list?page=${page}&size=${size}`);
+      if (res.success) {
+        setDeliveries(normalizeDeliveries(res.data?.content || []));
+        setTotalPages(res.data?.totalPages || 0);
+        setTotalElements(res.data?.totalElements || 0);
+      }
     } catch (err) {
       console.error('Failed to refresh deliveries', err);
     }
@@ -410,6 +423,8 @@ export const useDeliveries = () => {
     deliveries,
     loading,
     error,
+    totalPages,
+    totalElements,
     loadData,
     refreshDeliveries,
     updateDeliveryLocally,
