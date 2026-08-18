@@ -11,12 +11,15 @@ const buildSalesParams = (filterData, statusFilter, searchTerm, page = 0, size =
   const params = new URLSearchParams({
     page,
     size,
-    ...(filterData.companyId && { companyId: filterData.companyId }),
     ...(statusFilter !== 'ALL' && { status: statusFilter }),
     ...(searchTerm && { searchTerm }),
     ...(startDateObj && { startYear: startDateObj.getFullYear(), startMonth: startDateObj.getMonth() + 1 }),
     ...(endDateObj && { endYear: endDateObj.getFullYear(), endMonth: endDateObj.getMonth() + 1 }),
   });
+
+  if (filterData.companyIds?.length > 0) {
+    filterData.companyIds.forEach(id => params.append('companyIds', id));
+  }
 
   if (filterData.branchIds?.length > 0) {
     filterData.branchIds.forEach(id => params.append('branchIds', id));
@@ -89,23 +92,32 @@ export const useSalesData = ({ filterData, statusFilter, searchTerm, currentPage
 
     if (!staticDataLoaded.current) {
       staticDataLoaded.current = true;
+
+      // Filter-critical data — the dropdowns need only these three,
+      // so fetch them alone and unblock the UI as soon as they land.
       Promise.all([
         api.get('/branches').catch(() => ({ data: [] })),
         api.get('/companies').catch(() => ({ data: [] })),
         api.get('/products').catch(() => ({ data: [] })),
+      ]).then(results => {
+        setBranches(extractArray(results[0]));
+        setCompanies(extractArray(results[1]));
+        setProducts(extractArray(results[2]));
+      }).catch(() => { }).finally(() => setStaticDataLoading(false));
+
+      // Everything else — not needed to open the filters, load quietly
+      // in the background so it doesn't compete for the same connections.
+      Promise.all([
         api.get('/inventories').catch(() => ({ data: [] })),
         api.get('/warehouse').catch(() => ({ data: [] })),
         api.get('/stocks/warehouses').catch(() => ({ data: [] })),
         api.get('/inventories/products/summary').catch(() => ({ data: [] })),
       ]).then(results => {
-        setBranches(extractArray(results[0]));
-        setCompanies(extractArray(results[1]));
-        setProducts(extractArray(results[2]));
-        setInventories(extractArray(results[3]));
-        setWarehouses(extractArray(results[4]));
-        setWarehouseStocks(extractArray(results[5]));
-        setProductSummaries(extractArray(results[6]));
-      }).catch(() => { }).finally(() => setStaticDataLoading(false));
+        setInventories(extractArray(results[0]));
+        setWarehouses(extractArray(results[1]));
+        setWarehouseStocks(extractArray(results[2]));
+        setProductSummaries(extractArray(results[3]));
+      }).catch(() => { });
     }
   }, []);
 
@@ -115,7 +127,7 @@ export const useSalesData = ({ filterData, statusFilter, searchTerm, currentPage
     if (!initialLoadDone.current) return;
 
     const filterKey = JSON.stringify({
-      companyId: filterData.companyId,
+      companyIds: filterData.companyIds,
       branchIds: filterData.branchIds,
       statusFilter,
       searchTerm,
@@ -133,13 +145,12 @@ export const useSalesData = ({ filterData, statusFilter, searchTerm, currentPage
       fetchSales(currentPage - 1);
     }
   }, [
-    filterData.companyId, statusFilter, searchTerm,
+    JSON.stringify(filterData.companyIds), statusFilter, searchTerm,
     filterData.startDate, filterData.endDate,
     JSON.stringify(filterData.branchIds),
     JSON.stringify(filterData.productFilters),
     currentPage,
   ]);
-
   // Refresh products/companies on window focus
   useEffect(() => {
     const handleFocus = () => {

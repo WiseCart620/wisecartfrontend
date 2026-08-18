@@ -3,6 +3,38 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../services/api';
 import { formatDateForInput } from '../utils/dateUtils';
 
+const buildDeliveryParams = (filterData, page = 0, size = 10) => {
+  const params = new URLSearchParams({ page, size });
+
+  if (filterData?.companyIds?.length > 0) {
+    filterData.companyIds.forEach(id => params.append('companyIds', id));
+  }
+  if (filterData?.branchIds?.length > 0) {
+    filterData.branchIds.forEach(id => params.append('branchIds', id));
+  }
+  if (filterData?.warehouseIds?.length > 0) {
+    filterData.warehouseIds.forEach(id => params.append('warehouseIds', id));
+  }
+  if (filterData?.status && filterData.status !== 'HIDE_CANCELLED') {
+    params.append('status', filterData.status);
+  }
+  if (filterData?.status === 'HIDE_CANCELLED') {
+    params.append('hideCancelled', 'true');
+  }
+  if (filterData?.productFilters?.length > 0) {
+    filterData.productFilters.forEach(pf => {
+      if (pf.productId) params.append('productIds', pf.productId);
+      if (pf.variationId) params.append('variationIds', pf.variationId);
+    });
+  }
+  if (filterData?.startDate) params.append('startDate', filterData.startDate);
+  if (filterData?.endDate) params.append('endDate', filterData.endDate);
+  if (filterData?.receiptNumber) params.append('receiptNumber', filterData.receiptNumber);
+  if (filterData?.poNumber) params.append('poNumber', filterData.poNumber);
+
+  return params;
+};
+
 const normalizeDeliveries = (data) =>
   data.map(d => ({
     ...d,
@@ -36,15 +68,16 @@ export const useDeliveries = () => {
   const [error, setError] = useState(null);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
-  const lastPageRef = useRef({ page: 0, size: 10 });
+  const lastPageRef = useRef({ page: 0, size: 10, filterData: {} });
 
-  const loadData = useCallback(async (page = 0, size = 10) => {
+  const loadData = useCallback(async (page = 0, size = 10, filterData = {}) => {
     try {
       setLoading(true);
       setError(null);
-      lastPageRef.current = { page, size };
+      lastPageRef.current = { page, size, filterData };
 
-      const res = await api.get(`/deliveries/list?page=${page}&size=${size}`);
+      const params = buildDeliveryParams(filterData, page, size);
+      const res = await api.get(`/deliveries/list?${params}`);
 
       if (res.success) {
         setDeliveries(normalizeDeliveries(res.data?.content || []));
@@ -61,8 +94,9 @@ export const useDeliveries = () => {
 
   const refreshDeliveries = useCallback(async () => {
     try {
-      const { page, size } = lastPageRef.current;
-      const res = await api.get(`/deliveries/list?page=${page}&size=${size}`);
+      const { page, size, filterData } = lastPageRef.current;
+      const params = buildDeliveryParams(filterData, page, size);
+      const res = await api.get(`/deliveries/list?${params}`);
       if (res.success) {
         setDeliveries(normalizeDeliveries(res.data?.content || []));
         setTotalPages(res.data?.totalPages || 0);

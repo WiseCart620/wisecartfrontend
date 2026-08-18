@@ -17,6 +17,7 @@ export const SALE_STATUS = {
 
 export const DEFAULT_FILTER_DATA = {
   companyId: '',
+  companyIds: [],
   branchIds: [],
   status: '',
   startMonth: new Date().getMonth() + 1,

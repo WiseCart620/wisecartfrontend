@@ -121,11 +121,13 @@ const SalesManagement = () => {
       const endDateObj = filterData.endDate ? new Date(filterData.endDate) : null;
       const params = new URLSearchParams({
         status: statusToFetch,
-        ...(filterData.companyId && { companyId: filterData.companyId }),
         ...(searchTerm && { searchTerm }),
         ...(startDateObj && { startYear: startDateObj.getFullYear(), startMonth: startDateObj.getMonth() + 1 }),
         ...(endDateObj && { endYear: endDateObj.getFullYear(), endMonth: endDateObj.getMonth() + 1 }),
       });
+      if (filterData.companyIds?.length) {
+        filterData.companyIds.forEach(id => params.append('companyIds', id));
+      }
       if (filterData.branchIds?.length) {
         filterData.branchIds.forEach(id => params.append('branchIds', id));
       }

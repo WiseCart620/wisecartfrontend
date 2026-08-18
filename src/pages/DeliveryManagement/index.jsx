@@ -76,8 +76,19 @@ const DeliveryManagement = () => {
   });
 
   useEffect(() => {
-    loadData(currentPage - 1, itemsPerPage);
-  }, [currentPage]);
+    loadData(currentPage - 1, itemsPerPage, filterData);
+  }, [
+    currentPage,
+    JSON.stringify(filterData.companyIds),
+    JSON.stringify(filterData.branchIds),
+    JSON.stringify(filterData.warehouseIds),
+    filterData.status,
+    JSON.stringify(filterData.productFilters),
+    filterData.startDate,
+    filterData.endDate,
+    filterData.receiptNumber,
+    filterData.poNumber,
+  ]);
 
   const filteredDeliveries = sortDeliveriesByStatus(
     (() => {
