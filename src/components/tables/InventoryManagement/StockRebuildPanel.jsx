@@ -262,7 +262,6 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     const needsBranch = scope === 'BRANCH' || scope === 'BOTH';
 
     const selectedProducts = products.filter((p) => productIds.map(String).includes(String(p.id)));
-    console.log('DEBUG selectedProducts:', selectedProducts.map(p => ({ name: p.productName, variations: p.variations })));
 
     const anyHasVariations = selectedProducts.some((p) => (p.variations || []).length > 0);
     const allSelectedVariations = useMemo(() => {
