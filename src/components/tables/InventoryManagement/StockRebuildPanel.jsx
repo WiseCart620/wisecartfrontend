@@ -6,11 +6,7 @@ import {
 import toast from 'react-hot-toast';
 import { api } from '../../../services/api';
 
-// ---- helpers -------------------------------------------------------------
-
 const SCOPES = [
-    { id: 'WAREHOUSE', label: 'Warehouse', icon: Building },
-    { id: 'BRANCH', label: 'Branch', icon: Store },
     { id: 'BOTH', label: 'Warehouse + Branch', icon: Layers },
 ];
 
@@ -248,7 +244,7 @@ const ResultsTable = ({ rows }) => {
 let rowCounter = 0;
 
 const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRebuilt }) => {
-    const [scope, setScope] = useState('WAREHOUSE');
+    const [scope, setScope] = useState('BOTH');
     const [warehouseIds, setWarehouseIds] = useState([]);
     const [branchIds, setBranchIds] = useState([]);
     const [productIds, setProductIds] = useState([]);
@@ -403,7 +399,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         })));
         setProgress({ done: 0, total: ops.length });
 
-        const CONCURRENCY = 3;
+        const CONCURRENCY = 1;
         let cursor = 0;
         let successCount = 0;
         let failCount = 0;
