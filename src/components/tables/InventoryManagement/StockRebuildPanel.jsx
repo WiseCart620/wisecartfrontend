@@ -34,7 +34,7 @@ const getVariationLabel = (v) => {
     return `Variation #${v.id}`;
 };
 
-const MultiSelect = ({ label, values, onChange, options, getLabel, getId, placeholder }) => {
+const MultiSelect = ({ label, values, onChange, options, getLabel, getSearchText, getId, placeholder }) => {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const containerRef = React.useRef(null);
@@ -56,8 +56,9 @@ const MultiSelect = ({ label, values, onChange, options, getLabel, getId, placeh
     const filtered = useMemo(() => {
         if (!query) return options;
         const q = query.toLowerCase();
-        return options.filter((o) => getLabel(o).toLowerCase().includes(q));
-    }, [options, query, getLabel]);
+        const searchFn = getSearchText || getLabel;
+        return options.filter((o) => searchFn(o).toLowerCase().includes(q));
+    }, [options, query, getLabel, getSearchText]);
 
     const toggle = (id) => {
         const idStr = String(id);
@@ -330,13 +331,13 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
             }
         }
         return list;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [productIds, products]);
+
+    const hasBranchSelection = autoAllBranches ? branches.length > 0 : branchIds.length > 0;
 
     const canRun =
         productIds.length > 0 &&
-        (!needsWarehouse || warehouseIds.length > 0) &&
-        (!needsBranch || (autoAllBranches ? branches.length > 0 : branchIds.length > 0));
+        (warehouseIds.length > 0 || hasBranchSelection);
 
     const resetTargets = (nextScope) => {
         setScope(nextScope);
@@ -617,7 +618,8 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                             options={products}
                             getId={(p) => p.id}
                             getLabel={productLabel}
-                            placeholder="Select one or more products..."
+                            getSearchText={(p) => `${p.productName || p.name || ''} ${p.sku || ''} ${p.upc || ''}`}
+                            placeholder="Select one or more products (search by name, SKU, or UPC)..."
                         />
                     </div>
 
@@ -693,7 +695,8 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                                     options={branches}
                                     getId={(b) => b.id}
                                     getLabel={(b) => b.branchName}
-                                    placeholder="Select one or more branches..."
+                                    getSearchText={(b) => `${b.branchName || ''} ${b.branchCode || ''}`}
+                                    placeholder="Select one or more branches (search by name or branch code)..."
                                 />
                             )}
 
@@ -768,8 +771,8 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                         </p>
                         <ul className="text-sm text-gray-700 mb-4 mt-2 space-y-1">
                             <li>• {productIds.length} product{productIds.length !== 1 ? 's' : ''}{includeVariations && anyHasVariations ? ' (incl. variations)' : ''}</li>
-                            {needsWarehouse && <li>• {warehouseIds.length} warehouse{warehouseIds.length !== 1 ? 's' : ''}</li>}
-                            {needsBranch && (
+                            {needsWarehouse && warehouseIds.length > 0 && <li>• {warehouseIds.length} warehouse{warehouseIds.length !== 1 ? 's' : ''}</li>}
+                            {needsBranch && (autoAllBranches ? branches.length : branchIds.length) > 0 && (
                                 <li>
                                     • {autoAllBranches ? branches.length : branchIds.length} branch
                                     {(autoAllBranches ? branches.length : branchIds.length) !== 1 ? 'es' : ''} — processed one at a
