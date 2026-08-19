@@ -421,7 +421,7 @@ const UploadPaymentManagement = () => {
         };
         const badge = statusMap[status] || statusMap['PAYMENT_PENDING'];
         return (
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${badge.bg} ${badge.text}`}>
+            <span className={`px-2 py-1 rounded-full text-xs font-medium badge-nowrap ${badge.bg} ${badge.text}`}>
                 {badge.label}
             </span>
         );
@@ -462,18 +462,18 @@ const UploadPaymentManagement = () => {
                         />
                     </div>
 
-                    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                        <div className="overflow-x-auto">
+                    <div className="bg-white rounded-xl shadow-sm overflow-hidden table-panel">
+                        <div className="overflow-x-auto table-fit">
                             <table className="w-full">
                                 <thead className="bg-gray-50 border-b">
                                     <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Control #</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Amount (WAC)</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paid</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Percentage</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Control #</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Supplier</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Total Amount (WAC)</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Paid</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Percentage</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Status</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
@@ -494,7 +494,7 @@ const UploadPaymentManagement = () => {
 
                                             return (
                                                 <tr key={po.id} className="hover:bg-gray-50">
-                                                    <td className="px-6 py-4">
+                                                    <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="flex items-center gap-2">
                                                             <span className="font-medium text-gray-900">{po.controlNumber}</span>
                                                             {po.items && po.items.length > 0 && (
@@ -508,7 +508,7 @@ const UploadPaymentManagement = () => {
                                                             )}
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 text-gray-900">{po.supplierName}</td>
+                                                    <td className="px-6 py-4 text-gray-900 max-w-[180px] truncate" title={po.supplierName}>{po.supplierName}</td>
                                                     <td className="px-6 py-4">
                                                         <div className="relative group inline-block">
                                                             <span className="font-medium text-gray-900 cursor-default">
