@@ -90,23 +90,7 @@ const DeliveryManagement = () => {
     filterData.poNumber,
   ]);
 
-  const filteredDeliveries = sortDeliveriesByStatus(
-    (() => {
-      const base = filterDeliveries(deliveries, filterData);
-      if (!filterData.productFilters || filterData.productFilters.length === 0) return base;
-      return base.filter(delivery =>
-        filterData.productFilters.every(pf =>
-          (delivery.items || []).some(item => {
-            const productMatch = (item.product?.id ?? item.productId) === pf.productId;
-            if (!productMatch) return false;
-            if (pf.variationId == null) return true;
-            return (item.variation?.id ?? item.variationId) === pf.variationId;
-          })
-        )
-      );
-    })(),
-    sortMode
-  );
+  const filteredDeliveries = sortDeliveriesByStatus(deliveries, sortMode);
 
   const currentDeliveries = filteredDeliveries;
   const totalPages = serverTotalPages || 1;
