@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, LogIn, AlertCircle, Building2 } from 'lucide-react';
+import { AlertCircle, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { LoadingOverlay } from '../components/common/LoadingOverlay';
@@ -47,7 +47,6 @@ const LoginPage = () => {
       localStorage.setItem('authToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
 
-
       const userResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/me`, {
         method: 'GET',
         headers: {
@@ -68,9 +67,7 @@ const LoginPage = () => {
         };
       }
 
-
       localStorage.setItem('user', JSON.stringify(userData));
-
 
       const userRole = userData.role || 'USER';
       localStorage.setItem('userRole', userRole);
@@ -114,104 +111,120 @@ const LoginPage = () => {
   return (
     <>
       <LoadingOverlay show={actionLoading} message={loadingMessage} />
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-800 to-indigo-900 opacity-90" />
-        <div className="absolute inset-0 bg-grid-white/5 bg-grid" />
-
-        <div className="relative w-full max-w-md">
-          <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-8 text-white text-center">
-              <div className="w-16 h-16 bg-white/20 rounded-2xl mx-auto flex items-center justify-center backdrop-blur-sm">
-                <Building2 size={36} className="text-white" />
-              </div>
+      <div className="min-h-screen bg-[#F5F7F7] flex flex-col">
+        {/* Top bar */}
+        <header className="w-full border-b border-gray-200 bg-white">
+          <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-md bg-[#2CA01C] flex items-center justify-center">
+              <Building2 size={18} className="text-white" />
             </div>
+            <span className="text-[17px] font-semibold text-gray-900 tracking-tight">
+              WiseCart <span className="font-normal text-gray-500">ERP</span>
+            </span>
+          </div>
+        </header>
 
-            <div className="px-8 py-10">
-              <h2 className="text-2xl font-semibold text-gray-900 text-center mb-2">
-                Login
-              </h2>
-              <p className="text-sm text-gray-500 text-center mb-8">
-                Enter your credentials to access your account
+        {/* Main */}
+        <div className="flex-1 flex items-center justify-center px-4 py-12">
+          <div className="w-full max-w-[440px]">
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm px-8 py-10 sm:px-10">
+              <h1 className="text-[26px] leading-tight font-semibold text-gray-900 mb-1">
+                Sign in
+              </h1>
+              <p className="text-[15px] text-gray-500 mb-7">
+                Use your company account to continue to WiseCart ERP.
               </p>
 
-              {/* Error Alert */}
               {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-700">
-                  <AlertCircle size={20} />
-                  <span className="text-sm font-medium">{error}</span>
+                <div
+                  role="alert"
+                  className="mb-6 px-4 py-3 bg-red-50 border border-red-200 rounded-md flex items-start gap-2.5 text-red-800"
+                >
+                  <AlertCircle size={18} className="shrink-0 mt-0.5" />
+                  <span className="text-sm">{error}</span>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-5" noValidate>
                 {/* Username Field */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    htmlFor="username"
+                    className="block text-[13px] font-medium text-gray-700 mb-1.5"
+                  >
                     Username
                   </label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
-                    <input
-                      type="text"
-                      name="username"
-                      value={formData.username}
-                      onChange={handleChange}
-                      required
-                      autoComplete="username"
-                      className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all duration-200 text-gray-900 placeholder-gray-400"
-                      placeholder="Enter your username"
-                    />
-                  </div>
+                  <input
+                    id="username"
+                    type="text"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleChange}
+                    required
+                    autoComplete="username"
+                    autoFocus
+                    className="w-full h-12 px-3.5 bg-white border border-gray-300 rounded-md text-[15px] text-gray-900 placeholder-gray-400 outline-none transition-colors duration-150 focus:border-[#2CA01C] focus:ring-2 focus:ring-[#2CA01C]/20"
+                    placeholder="Enter your username"
+                  />
                 </div>
 
                 {/* Password Field */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
-                    <input
-                      type="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                      autoComplete="current-password"
-                      className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all duration-200 text-gray-900 placeholder-gray-400"
-                      placeholder="Enter your password"
-                    />
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label
+                      htmlFor="password"
+                      className="text-[13px] font-medium text-gray-700"
+                    >
+                      Password
+                    </label>
+                    <a
+                      href="/forgot-password"
+                      className="text-[13px] font-medium text-[#2CA01C] hover:text-[#237c16] hover:underline"
+                    >
+                      Forgot password?
+                    </a>
                   </div>
+                  <input
+                    id="password"
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    autoComplete="current-password"
+                    className="w-full h-12 px-3.5 bg-white border border-gray-300 rounded-md text-[15px] text-gray-900 placeholder-gray-400 outline-none transition-colors duration-150 focus:border-[#2CA01C] focus:ring-2 focus:ring-[#2CA01C]/20"
+                    placeholder="Enter your password"
+                  />
                 </div>
 
                 {/* Submit Button */}
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-800 focus:ring-4 focus:ring-blue-500/30 shadow-lg transform transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3 text-lg"
+                  className="w-full h-12 mt-2 bg-[#2CA01C] text-white font-semibold text-[15px] rounded-md hover:bg-[#268F19] active:bg-[#217D16] focus:outline-none focus:ring-2 focus:ring-[#2CA01C]/40 focus:ring-offset-1 transition-colors duration-150 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
                 >
                   {loading ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Signing in...
+                      <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      Signing in
                     </>
                   ) : (
-                    <>
-                      <LogIn size={22} />
-                      Sign In
-                    </>
+                    'Sign in'
                   )}
                 </button>
               </form>
             </div>
-          </div>
 
-          {/* Bottom Branding */}
-          <div className="text-center mt-8 text-white/70">
-            <p className="text-sm">
-              © {new Date().getFullYear()} WiseCart ERP • All rights reserved
+            <p className="text-center text-[13px] text-gray-500 mt-6">
+              Trouble signing in? Contact your system administrator.
             </p>
           </div>
         </div>
+
+        {/* Footer */}
+        <footer className="py-6 text-center text-[12px] text-gray-400">
+          © {new Date().getFullYear()} WiseCart ERP · All rights reserved
+        </footer>
       </div>
     </>
   );
