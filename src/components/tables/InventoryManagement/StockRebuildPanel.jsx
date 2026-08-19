@@ -326,6 +326,8 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                     productName: productLabel(p),
                     variationId: v.id,
                     variationLabel: getVariationLabel(v),
+                    sku: v.sku || '',
+                    upc: v.upc || '',
                     raw: v,
                 });
             }
@@ -649,8 +651,9 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                                         onChange={setSelectedVariationKeys}
                                         options={allSelectedVariations}
                                         getId={(v) => v.key}
-                                        getLabel={(v) => `${v.variationLabel} — ${v.productName}`}
-                                        placeholder="All variations (default) — or pick specific ones..."
+                                        getLabel={(v) => `${v.variationLabel} — ${v.productName}${v.sku ? ` · SKU: ${v.sku}` : ''}${v.upc ? ` · UPC: ${v.upc}` : ''}`}
+                                        getSearchText={(v) => `${v.variationLabel} ${v.productName} ${v.sku} ${v.upc}`}
+                                        placeholder="All variations (search by name, SKU, or UPC)..."
                                     />
                                 </div>
                             )}
@@ -694,7 +697,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                                     onChange={setBranchIds}
                                     options={branches}
                                     getId={(b) => b.id}
-                                    getLabel={(b) => b.branchName}
+                                    getLabel={(b) => b.branchCode ? `${b.branchName} (${b.branchCode})` : b.branchName}
                                     getSearchText={(b) => `${b.branchName || ''} ${b.branchCode || ''}`}
                                     placeholder="Select one or more branches (search by name or branch code)..."
                                 />
