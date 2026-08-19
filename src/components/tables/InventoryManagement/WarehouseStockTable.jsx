@@ -268,7 +268,7 @@ const WarehouseStockTable = ({
   const totalColSpan = 7 + activeCols.length + 2;
 
   return (
-    <div className="bg-white rounded-xl shadow overflow-hidden">
+    <div className="bg-white rounded-xl shadow overflow-hidden table-panel">
       {/* Header */}
       <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -309,7 +309,7 @@ const WarehouseStockTable = ({
         </div>
       </div>
 
-      <div className="border-t border-gray-100">
+      <div className="border-t border-gray-100 overflow-x-auto table-fit">
         <table className="w-full text-sm" style={{ fontSize: '11px', tableLayout: 'fixed' }}>
           <thead className="bg-gray-50">
             <tr>

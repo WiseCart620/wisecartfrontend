@@ -58,8 +58,8 @@ const DeliveryTable = ({
   const grandTotalSKU = sortedDeliveries.reduce((s, d) => s + (d.itemCount || 0), 0);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full">
-      <div className="overflow-x-auto w-full">
+    <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full table-panel">
+      <div className="overflow-x-auto w-full table-fit">
         <table className="table-fixed min-w-[860px] w-full">
           <colgroup>
             <col className="w-[50px]" />

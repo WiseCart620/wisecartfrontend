@@ -11,6 +11,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import { Toaster } from 'react-hot-toast';
 import './index.css';
+import './styles/table-fit.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

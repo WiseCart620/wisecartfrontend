@@ -28,13 +28,13 @@ const TransactionTable = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow overflow-hidden">
+    <div className="bg-white rounded-xl shadow overflow-hidden table-panel">
       <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
         <h2 className="text-lg font-semibold text-gray-900">All Transactions</h2>
         <p className="text-sm text-gray-600 mt-1">Showing inventory, transfer in/out, delivery, and sales records</p>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto table-fit">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>

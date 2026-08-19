@@ -1,0 +1,38 @@
+/* ===== Compact, screen-fitting tables for short-height viewports (e.g. MacBook 13") ===== */
+
+.table-fit {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 260px);
+}
+
+.table-fit thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.table-panel > div:first-child {
+  transition: padding 0.15s ease;
+}
+
+@media (max-height: 850px) {
+  .table-panel > div:first-child { padding-top: 12px !important; padding-bottom: 12px !important; }
+  .table-panel h2 { font-size: 14px !important; }
+  .table-fit { max-height: calc(100vh - 230px); }
+  .table-fit th, .table-fit td { padding-top: 6px !important; padding-bottom: 6px !important; }
+}
+
+@media (max-height: 720px) {
+  .table-panel > div:first-child { padding-top: 8px !important; padding-bottom: 8px !important; }
+  .table-panel h2 { font-size: 13px !important; }
+  .table-fit { max-height: calc(100vh - 195px); }
+  .table-fit table { font-size: 11px !important; }
+  .table-fit th, .table-fit td { padding-top: 4px !important; padding-bottom: 4px !important; }
+}
+
+@media (max-height: 650px) {
+  .table-fit { max-height: calc(100vh - 170px); }
+  .table-fit th, .table-fit td { padding-top: 2px !important; padding-bottom: 2px !important; }
+  .table-fit .rounded-full { padding-top: 1px !important; padding-bottom: 1px !important; }
+}

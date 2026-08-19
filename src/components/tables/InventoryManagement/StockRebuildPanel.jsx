@@ -203,7 +203,7 @@ const ResultsTable = ({ rows }) => {
     if (rows.length === 0) return null;
     return (
         <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto table-fit" style={{ maxHeight: 'calc(100vh - 420px)' }}>
                 <table className="w-full text-sm">
                     <thead className="bg-gray-50">
                         <tr>

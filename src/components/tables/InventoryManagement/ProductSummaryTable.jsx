@@ -41,7 +41,7 @@ const ProductSummaryTable = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow overflow-hidden mb-6">
+    <div className="bg-white rounded-xl shadow overflow-hidden mb-6 table-panel">
       <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
         <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
           <BarChart3 size={20} />
@@ -49,7 +49,7 @@ const ProductSummaryTable = ({
         </h2>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto table-fit">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
