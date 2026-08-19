@@ -12,6 +12,16 @@
     z-index: 10;
 }
 
+.table-fit table {
+    border-collapse: collapse;
+}
+
+.table-fit thead th {
+    background-color: #f9fafb;
+    background-clip: padding-box;
+    box-shadow: inset 0 -1px 0 0 #e5e7eb;
+}
+
 .table-panel>div:first-child {
     transition: padding 0.15s ease;
 }
