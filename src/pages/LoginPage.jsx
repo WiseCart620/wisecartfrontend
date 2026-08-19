@@ -115,7 +115,7 @@ const LoginPage = () => {
         {/* Top bar */}
         <header className="w-full border-b border-gray-200 bg-white">
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-md bg-[#2CA01C] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-md bg-[#0B5FFF] flex items-center justify-center">
               <Building2 size={18} className="text-white" />
             </div>
             <span className="text-[17px] font-semibold text-gray-900 tracking-tight">
@@ -163,27 +163,19 @@ const LoginPage = () => {
                     required
                     autoComplete="username"
                     autoFocus
-                    className="w-full h-12 px-3.5 bg-white border border-gray-300 rounded-md text-[15px] text-gray-900 placeholder-gray-400 outline-none transition-colors duration-150 focus:border-[#2CA01C] focus:ring-2 focus:ring-[#2CA01C]/20"
+                    className="w-full h-12 px-3.5 bg-white border border-gray-300 rounded-md text-[15px] text-gray-900 placeholder-gray-400 outline-none transition-colors duration-150 focus:border-[#0B5FFF] focus:ring-2 focus:ring-[#0B5FFF]/20"
                     placeholder="Enter your username"
                   />
                 </div>
 
                 {/* Password Field */}
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label
-                      htmlFor="password"
-                      className="text-[13px] font-medium text-gray-700"
-                    >
-                      Password
-                    </label>
-                    <a
-                      href="/forgot-password"
-                      className="text-[13px] font-medium text-[#2CA01C] hover:text-[#237c16] hover:underline"
-                    >
-                      Forgot password?
-                    </a>
-                  </div>
+                  <label
+                    htmlFor="password"
+                    className="block text-[13px] font-medium text-gray-700 mb-1.5"
+                  >
+                    Password
+                  </label>
                   <input
                     id="password"
                     type="password"
@@ -192,7 +184,7 @@ const LoginPage = () => {
                     onChange={handleChange}
                     required
                     autoComplete="current-password"
-                    className="w-full h-12 px-3.5 bg-white border border-gray-300 rounded-md text-[15px] text-gray-900 placeholder-gray-400 outline-none transition-colors duration-150 focus:border-[#2CA01C] focus:ring-2 focus:ring-[#2CA01C]/20"
+                    className="w-full h-12 px-3.5 bg-white border border-gray-300 rounded-md text-[15px] text-gray-900 placeholder-gray-400 outline-none transition-colors duration-150 focus:border-[#0B5FFF] focus:ring-2 focus:ring-[#0B5FFF]/20"
                     placeholder="Enter your password"
                   />
                 </div>
@@ -201,7 +193,7 @@ const LoginPage = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-12 mt-2 bg-[#2CA01C] text-white font-semibold text-[15px] rounded-md hover:bg-[#268F19] active:bg-[#217D16] focus:outline-none focus:ring-2 focus:ring-[#2CA01C]/40 focus:ring-offset-1 transition-colors duration-150 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
+                  className="w-full h-12 mt-2 bg-[#0B5FFF] text-white font-semibold text-[15px] rounded-md hover:bg-[#0A4FD6] active:bg-[#0940B3] focus:outline-none focus:ring-2 focus:ring-[#0B5FFF]/40 focus:ring-offset-1 transition-colors duration-150 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
                 >
                   {loading ? (
                     <>
