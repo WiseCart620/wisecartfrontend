@@ -160,72 +160,74 @@ const ProductUnitCostingTab = () => {
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                <table className="w-full">
-                    <thead className="bg-gray-50 border-b">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product Name</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variation</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">UPC</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Cost (WAC)</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {filtered.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden table-panel">
+                <div className="overflow-x-auto table-fit">
+                    <table className="w-full">
+                        <thead className="bg-gray-50 border-b">
                             <tr>
-                                <td colSpan={5} className="px-6 py-10 text-center text-gray-400 text-sm">
-                                    No unit cost data found
-                                </td>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product Name</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variation</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">UPC</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Cost (WAC)</th>
                             </tr>
-                        ) : filtered.map((p) => (
-                            <tr key={p.id} className="hover:bg-gray-50">
-                                <td className="px-6 py-3 text-sm font-medium text-gray-900">{p.productName}</td>
-                                <td className="px-6 py-3 text-sm text-gray-600">{p.variationName || '-'}</td>
-                                <td className="px-6 py-3 text-sm text-gray-700">{p.sku || '-'}</td>
-                                <td className="px-6 py-3 text-sm text-gray-700">{p.upc || '-'}</td>
-                                <td className="px-6 py-3">
-                                    <span
-                                        className="text-sm font-semibold text-blue-700 cursor-pointer underline decoration-dotted hover:text-blue-900 transition"
-                                        onClick={(e) => {
-                                            if (selectedProduct?.id === p.id) {
-                                                setSelectedProduct(null);
-                                                setChartData([]);
-                                            } else {
-                                                setSelectedProduct(p);
-                                                loadHistory(p.productId, p.variationId, e);
-                                            }
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            clearTimeout(hoverTimeout.current);
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            hoverChartTimeout.current = setTimeout(() => {
-                                                setHoveredProduct(p);
-                                                setHoverPos({ x: rect.left, y: rect.top });
-                                                const params = p.variationId ? `?productId=${p.productId}&variationId=${p.variationId}` : `?productId=${p.productId}`;
-                                                api.get(`/unit-costs/history${params}`).then(res => {
-                                                    if (res.success) {
-                                                        const data = res.data?.data || res.data || [];
-                                                        setHoverChartData(Array.isArray(data) ? data : []);
-                                                    }
-                                                }).catch(() => setHoverChartData([]));
-                                            }, 300);
-                                        }}
-                                        onMouseLeave={() => {
-                                            clearTimeout(hoverChartTimeout.current);
-                                            hoverTimeout.current = setTimeout(() => {
-                                                setHoveredProduct(null);
-                                                setHoverChartData([]);
-                                            }, 200);
-                                        }}
-                                    >
-                                        {formatCost(p.unitCost)}
-                                    </span>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {filtered.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-10 text-center text-gray-400 text-sm">
+                                        No unit cost data found
+                                    </td>
+                                </tr>
+                            ) : filtered.map((p) => (
+                                <tr key={p.id} className="hover:bg-gray-50">
+                                    <td className="px-6 py-3 text-sm font-medium text-gray-900">{p.productName}</td>
+                                    <td className="px-6 py-3 text-sm text-gray-600">{p.variationName || '-'}</td>
+                                    <td className="px-6 py-3 text-sm text-gray-700">{p.sku || '-'}</td>
+                                    <td className="px-6 py-3 text-sm text-gray-700">{p.upc || '-'}</td>
+                                    <td className="px-6 py-3">
+                                        <span
+                                            className="text-sm font-semibold text-blue-700 cursor-pointer underline decoration-dotted hover:text-blue-900 transition"
+                                            onClick={(e) => {
+                                                if (selectedProduct?.id === p.id) {
+                                                    setSelectedProduct(null);
+                                                    setChartData([]);
+                                                } else {
+                                                    setSelectedProduct(p);
+                                                    loadHistory(p.productId, p.variationId, e);
+                                                }
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                clearTimeout(hoverTimeout.current);
+                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                hoverChartTimeout.current = setTimeout(() => {
+                                                    setHoveredProduct(p);
+                                                    setHoverPos({ x: rect.left, y: rect.top });
+                                                    const params = p.variationId ? `?productId=${p.productId}&variationId=${p.variationId}` : `?productId=${p.productId}`;
+                                                    api.get(`/unit-costs/history${params}`).then(res => {
+                                                        if (res.success) {
+                                                            const data = res.data?.data || res.data || [];
+                                                            setHoverChartData(Array.isArray(data) ? data : []);
+                                                        }
+                                                    }).catch(() => setHoverChartData([]));
+                                                }, 300);
+                                            }}
+                                            onMouseLeave={() => {
+                                                clearTimeout(hoverChartTimeout.current);
+                                                hoverTimeout.current = setTimeout(() => {
+                                                    setHoveredProduct(null);
+                                                    setHoverChartData([]);
+                                                }, 200);
+                                            }}
+                                        >
+                                            {formatCost(p.unitCost)}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
             {selectedProduct && chartData.length > 0 && (
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[99998] p-4">

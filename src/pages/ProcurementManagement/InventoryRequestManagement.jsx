@@ -110,8 +110,8 @@ const InventoryRequestManagement = ({ irrRequests: initialRequests, onRefresh, o
             </div>
 
             {/* IRR Table */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden table-panel">
+                <div className="overflow-x-auto table-fit">
                     <table className="w-full">
                         <thead className="bg-gray-50 border-b">
                             <tr>
