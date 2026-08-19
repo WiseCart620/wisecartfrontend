@@ -328,7 +328,10 @@ const SalesManagement = () => {
           canFinance={canFinance}
           isEncoder={isEncoder}
           onNewSale={() => handleOpenModal('create')}
-          onOpenInvoice={() => setShowInvoiceModal(true)}
+          onOpenInvoice={() => {
+            setInvoiceBranchIds(filterData.branchIds || []);
+            setShowInvoiceModal(true);
+          }}
           onOpenJournal={() => setShowInvoicingProfile(true)}
           onOpenReport={() => setShowSalesReport(true)}
           onOpenSummary={() => setShowSummaryModal(true)}
