@@ -20,13 +20,13 @@ const ProcurementTabs = ({ tabs, activeTab, onTabChange }) => {
     };
 
     return (
-        <div className="border-b border-gray-200">
-            <nav className="flex gap-4">
+        <div className="border-b border-gray-200 tabs-fit">
+            <nav className="flex gap-4 flex-nowrap">
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => onTabChange(tab.id)}
-                        className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition-colors ${activeTab === tab.id
+                        className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition-colors whitespace-nowrap shrink-0 ${activeTab === tab.id
                             ? 'border-blue-600 text-blue-600'
                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                             }`}
@@ -37,7 +37,7 @@ const ProcurementTabs = ({ tabs, activeTab, onTabChange }) => {
                         {/* Total Count */}
                         {tab.count !== undefined && (
                             <span
-                                className={`px-2 py-0.5 rounded-full text-xs font-semibold ${activeTab === tab.id
+                                className={`px-2 py-0.5 rounded-full text-xs font-semibold badge-nowrap ${activeTab === tab.id
                                     ? 'bg-blue-100 text-blue-600'
                                     : 'bg-gray-100 text-gray-600'
                                     }`}
@@ -49,7 +49,7 @@ const ProcurementTabs = ({ tabs, activeTab, onTabChange }) => {
                         {/* Pending Count Badge */}
                         {tab.pendingCount !== undefined && tab.pendingCount > 0 && (
                             <span
-                                className={`px-2 py-0.5 rounded-full text-xs font-semibold ${activeTab === tab.id
+                                className={`px-2 py-0.5 rounded-full text-xs font-semibold badge-nowrap ${activeTab === tab.id
                                     ? 'bg-amber-100 text-amber-700'
                                     : 'bg-amber-50 text-amber-600'
                                     } border border-amber-300`}

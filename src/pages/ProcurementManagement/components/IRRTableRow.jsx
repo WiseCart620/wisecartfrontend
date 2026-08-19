@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, Eye, Edit2, Trash2, Loader2 } from 'lucide-react';
 
-const IRRTableRow = ({ 
-    req, 
-    handleDeleteIrr, 
-    setViewingIrr, 
-    setEditingIrr, 
-    setShowIrrModal, 
-    suppliers, 
+const IRRTableRow = ({
+    req,
+    handleDeleteIrr,
+    setViewingIrr,
+    setEditingIrr,
+    setShowIrrModal,
+    suppliers,
     buttonLoading,
     formatNumber,
-    onProceedToRpq 
+    onProceedToRpq
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
@@ -62,11 +62,10 @@ const IRRTableRow = ({
                 {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : '-'}
             </td>
             <td className="px-6 py-4">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    req.status === 'PROCEEDED_TO_RPQ'
+                <span className={`px-2 py-1 rounded-full text-xs font-medium badge-nowrap ${req.status === 'PROCEEDED_TO_RPQ'
                         ? 'bg-green-100 text-green-800'
                         : 'bg-yellow-100 text-yellow-800'
-                }`}>
+                    }`}>
                     {req.status || 'PENDING'}
                 </span>
             </td>

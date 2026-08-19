@@ -1,16 +1,16 @@
 import React from 'react';
 import { ChevronDown, ChevronRight, Eye, Edit2, Trash2, Loader2 } from 'lucide-react';
 
-const RPQTableRow = ({ 
-    req, 
-    handleDeleteRpq, 
-    setViewingRpq, 
-    setEditingRpq, 
-    setShowRpqModal, 
-    expandedRpqRows, 
+const RPQTableRow = ({
+    req,
+    handleDeleteRpq,
+    setViewingRpq,
+    setEditingRpq,
+    setShowRpqModal,
+    expandedRpqRows,
     toggleRpqRow,
     buttonLoading,
-    formatNumber 
+    formatNumber
 }) => {
     return (
         <tr key={req.id} className="hover:bg-gray-50">
@@ -61,7 +61,7 @@ const RPQTableRow = ({
                 {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : '-'}
             </td>
             <td className="px-6 py-4">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${req.status === 'CONFIRMED'
+                <span className={`px-2 py-1 rounded-full text-xs font-medium badge-nowrap ${req.status === 'CONFIRMED'
                     ? 'bg-green-100 text-green-800'
                     : req.status === 'PENDING'
                         ? 'bg-blue-100 text-blue-800'

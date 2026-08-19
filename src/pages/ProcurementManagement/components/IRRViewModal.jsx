@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 const IRRViewModal = ({ irr, onClose, formatNumber }) => {
     return (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto modal-fit">
                 <div className="border-b px-6 py-4 flex items-center justify-between">
                     <h2 className="text-xl font-bold text-gray-900">Request Details</h2>
                     <button
@@ -72,29 +72,32 @@ const IRRViewModal = ({ irr, onClose, formatNumber }) => {
                     {irr.items && irr.items.length > 0 && (
                         <div>
                             <h3 className="font-semibold text-gray-900 mb-3">Products</h3>
-                            <div className="border rounded-lg overflow-hidden">
-                                <table className="w-full">
-                                    <thead className="bg-gray-50 border-b">
-                                        <tr>
-                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Product</th>
-                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">SKU</th>
-                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">UPC</th>
-                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Variation</th>
-                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Qty</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y">
-                                        {irr.items.map((item, idx) => (
-                                            <tr key={idx}>
-                                                <td className="px-4 py-2 text-sm">{item.productName}</td>
-                                                <td className="px-4 py-2 text-sm">{item.sku || '-'}</td>
-                                                <td className="px-4 py-2 text-sm">{item.upc || '-'}</td>
-                                                <td className="px-4 py-2 text-sm">{item.variation || '-'}</td>
-                                                <td className="px-4 py-2 text-sm">{item.qty ? formatNumber(item.qty) : '-'} PCS</td>
+                            <div className="border rounded-lg overflow-hidden table-panel">
+                                <div className="overflow-x-auto table-fit" style={{ maxHeight: '260px' }}>
+                                    <table className="w-full">
+                                        <thead className="bg-gray-50 border-b">
+                                            <tr>
+                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Product</th>
+                                                jsx
+                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">SKU</th>
+                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">UPC</th>
+                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Variation</th>
+                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Qty</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {irr.items.map((item, idx) => (
+                                                <tr key={idx}>
+                                                    <td className="px-4 py-2 text-sm">{item.productName}</td>
+                                                    <td className="px-4 py-2 text-sm">{item.sku || '-'}</td>
+                                                    <td className="px-4 py-2 text-sm">{item.upc || '-'}</td>
+                                                    <td className="px-4 py-2 text-sm">{item.variation || '-'}</td>
+                                                    <td className="px-4 py-2 text-sm">{item.qty ? formatNumber(item.qty) : '-'} PCS</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     )}

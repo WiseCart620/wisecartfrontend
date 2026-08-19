@@ -260,7 +260,7 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
 
     return (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl max-w-7xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-xl max-w-7xl w-full max-h-[90vh] overflow-y-auto modal-fit">
                 <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
                     <h2 className="text-xl font-bold text-gray-900">Edit Product Quotation Request</h2>
                     <div className="flex items-center gap-2">
@@ -367,133 +367,134 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
 
                         {/* Products Table */}
                         {rpqFormData.items && rpqFormData.items.length > 0 && (
-                            <div className="mb-4">
+                            <div className="mb-4 table-panel">
                                 <h3 className="font-bold text-gray-900 mb-2 section-title">Products</h3>
-                                <table className="w-full border-collapse border border-gray-300">
-                                    <thead className="bg-gray-100">
-                                        <tr>
-                                            <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Product Name</th>
-                                            <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Variation</th>
-                                            <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">UPC</th>
-                                            <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">UOM</th>
-                                            <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Quantity</th>
-                                            <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Unit Price</th>
-                                            <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {rpqFormData.items.map((item, idx) => (
-                                            <tr key={idx}>
-                                                <td className="px-3 py-2 border border-gray-300">
-                                                    <div className="text-xs font-medium text-gray-900">{item.productName}</div>
-                                                    <div className="text-[11px] text-gray-500 mt-0.5">SKU: {item.sku || '-'}</div>
-                                                </td>
-                                                <td className="px-3 py-2 text-xs border border-gray-300">{item.variation || '-'}</td>
-                                                <td className="px-3 py-2 text-xs border border-gray-300">{item.upc || '-'}</td>
-                                                <td className="px-3 py-2 border border-gray-300">
-                                                    <input
-                                                        type="text"
-                                                        value="PCS"
-                                                        onChange={() => { }}
-                                                        readOnly
-                                                        className="w-20 px-2 py-1 border border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed no-print text-center"
-                                                    />
-                                                    <span className="hidden print:inline text-xs">PCS</span>
-                                                </td>
-                                                <td className="px-3 py-2 border border-gray-300">
-                                                    <input
-                                                        type="text"
-                                                        value={item.qty ? parseInt(item.qty).toLocaleString('en-US') : ''}
-                                                        onChange={(e) => {
-                                                            const numericValue = e.target.value.replace(/[^0-9]/g, '');
-                                                            const newItems = [...rpqFormData.items];
-                                                            const qty = parseInt(numericValue) || 0;
-                                                            const unitPrice = parseFloat(newItems[idx].unitPrice) || 0;
-                                                            newItems[idx] = {
-                                                                ...newItems[idx],
-                                                                qty: numericValue,
-                                                                totalAmount: unitPrice * qty
-                                                            };
-                                                            setRpqFormData({ ...rpqFormData, items: newItems });
-                                                        }}
-                                                        className="w-24 px-2 py-1 border border-gray-300 rounded text-xs no-print text-right"
-                                                        placeholder="0"
-                                                    />
-                                                    <span className="hidden print:inline text-xs">{item.qty ? parseInt(item.qty).toLocaleString('en-US') : ''}</span>
-                                                </td>
-                                                <td className="px-3 py-2 border border-gray-300">
-                                                    <input
-                                                        type="text"
-                                                        value={formatNumberWithCommas(item.unitPrice || '0.0000')}
-                                                        onChange={() => { }} // Add this to silence the warning
-                                                        onKeyDown={(e) => {
-                                                            e.preventDefault();
-                                                            const newItems = [...rpqFormData.items];
-                                                            let newValue;
+                                <div className="overflow-x-auto table-fit" style={{ maxHeight: '320px' }}>
+                                    <table className="w-full border-collapse border border-gray-300">
+                                        <thead className="bg-gray-100">
+                                            <tr>
+                                                <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Product Name</th>
+                                                <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Variation</th>
+                                                <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">UPC</th>
+                                                <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">UOM</th>
+                                                <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Quantity</th>
+                                                <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Unit Price</th>
+                                                <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {rpqFormData.items.map((item, idx) => (
+                                                <tr key={idx}>
+                                                    <td className="px-3 py-2 border border-gray-300">
+                                                        <div className="text-xs font-medium text-gray-900">{item.productName}</div>
+                                                        <div className="text-[11px] text-gray-500 mt-0.5">SKU: {item.sku || '-'}</div>
+                                                    </td>
+                                                    <td className="px-3 py-2 text-xs border border-gray-300">{item.variation || '-'}</td>
+                                                    <td className="px-3 py-2 text-xs border border-gray-300">{item.upc || '-'}</td>
+                                                    <td className="px-3 py-2 border border-gray-300">
+                                                        <input
+                                                            type="text"
+                                                            value="PCS"
+                                                            onChange={() => { }}
+                                                            readOnly
+                                                            className="w-20 px-2 py-1 border border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed no-print text-center"
+                                                        />
+                                                        <span className="hidden print:inline text-xs">PCS</span>
+                                                    </td>
+                                                    <td className="px-3 py-2 border border-gray-300">
+                                                        <input
+                                                            type="text"
+                                                            value={item.qty ? parseInt(item.qty).toLocaleString('en-US') : ''}
+                                                            onChange={(e) => {
+                                                                const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                                                                const newItems = [...rpqFormData.items];
+                                                                const qty = parseInt(numericValue) || 0;
+                                                                const unitPrice = parseFloat(newItems[idx].unitPrice) || 0;
+                                                                newItems[idx] = {
+                                                                    ...newItems[idx],
+                                                                    qty: numericValue,
+                                                                    totalAmount: unitPrice * qty
+                                                                };
+                                                                setRpqFormData({ ...rpqFormData, items: newItems });
+                                                            }}
+                                                            className="w-24 px-2 py-1 border border-gray-300 rounded text-xs no-print text-right"
+                                                            placeholder="0"
+                                                        />
+                                                        <span className="hidden print:inline text-xs">{item.qty ? parseInt(item.qty).toLocaleString('en-US') : ''}</span>
+                                                    </td>
+                                                    <td className="px-3 py-2 border border-gray-300">
+                                                        <input
+                                                            type="text"
+                                                            value={formatNumberWithCommas(item.unitPrice || '0.0000')}
+                                                            onChange={() => { }} // Add this to silence the warning
+                                                            onKeyDown={(e) => {
+                                                                e.preventDefault();
+                                                                const newItems = [...rpqFormData.items];
+                                                                let newValue;
 
-                                                            if (e.key === 'Backspace' || e.key === 'Delete') {
-                                                                newValue = handleCalculatorInput(item.unitPrice || '0.0000', '', true, 4);
-                                                            } else if (e.key >= '0' && e.key <= '9') {
-                                                                newValue = handleCalculatorInput(item.unitPrice || '0.0000', e.key, false, 4);
-                                                            } else if (e.key === 'Tab' || e.key === 'Enter') {
-                                                                return;
-                                                            } else {
-                                                                return;
-                                                            }
+                                                                if (e.key === 'Backspace' || e.key === 'Delete') {
+                                                                    newValue = handleCalculatorInput(item.unitPrice || '0.0000', '', true, 4);
+                                                                } else if (e.key >= '0' && e.key <= '9') {
+                                                                    newValue = handleCalculatorInput(item.unitPrice || '0.0000', e.key, false, 4);
+                                                                } else if (e.key === 'Tab' || e.key === 'Enter') {
+                                                                    return;
+                                                                } else {
+                                                                    return;
+                                                                }
 
-                                                            const unitPrice = parseFloat(newValue);
-                                                            const qty = parseInt(newItems[idx].qty) || 0;
+                                                                const unitPrice = parseFloat(newValue);
+                                                                const qty = parseInt(newItems[idx].qty) || 0;
 
-                                                            newItems[idx] = {
-                                                                ...newItems[idx],
-                                                                unitPrice: newValue,
-                                                                totalAmount: unitPrice * qty
-                                                            };
-                                                            recalculatePaymentAmounts(newItems);
-                                                        }}
-                                                        className="w-24 px-2 py-1 border border-gray-300 rounded text-xs no-print text-right"
-                                                        placeholder="0.0000"
-                                                    />
-                                                    <span className="hidden print:inline text-xs">
-                                                        {item.unitPrice && parseFloat(item.unitPrice) > 0 ? `$${formatNumberWithCommas(parseFloat(item.unitPrice).toFixed(4))}` : ''}
-                                                    </span>
+                                                                newItems[idx] = {
+                                                                    ...newItems[idx],
+                                                                    unitPrice: newValue,
+                                                                    totalAmount: unitPrice * qty
+                                                                };
+                                                                recalculatePaymentAmounts(newItems);
+                                                            }}
+                                                            className="w-24 px-2 py-1 border border-gray-300 rounded text-xs no-print text-right"
+                                                            placeholder="0.0000"
+                                                        />
+                                                        <span className="hidden print:inline text-xs">
+                                                            {item.unitPrice && parseFloat(item.unitPrice) > 0 ? `$${formatNumberWithCommas(parseFloat(item.unitPrice).toFixed(4))}` : ''}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-3 py-2 border border-gray-300">
+                                                        <div className="px-2 py-1 bg-gray-50 text-xs font-medium text-gray-900 no-print text-right">
+                                                            {(() => {
+                                                                const total = (parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0);
+                                                                return total > 0 ? `$${formatNumberWithCommas(total.toFixed(2))}` : '';
+                                                            })()}
+                                                        </div>
+                                                        <span className="hidden print:inline text-xs font-medium">
+                                                            {(() => {
+                                                                const total = (parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0);
+                                                                return total > 0 ? `$${formatNumberWithCommas(total.toFixed(2))}` : '';
+                                                            })()}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot className="bg-gray-50">
+                                            <tr>
+                                                <td colSpan="4" className="px-3 py-2 text-right font-bold text-sm border border-gray-300">TOTAL QTY:</td>
+                                                <td className="px-3 py-2 font-bold text-sm border border-gray-300 text-right">
+                                                    {rpqFormData.items.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0).toLocaleString('en-US')}
                                                 </td>
-                                                <td className="px-3 py-2 border border-gray-300">
-                                                    <div className="px-2 py-1 bg-gray-50 text-xs font-medium text-gray-900 no-print text-right">
-                                                        {(() => {
-                                                            const total = (parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0);
-                                                            return total > 0 ? `$${formatNumberWithCommas(total.toFixed(2))}` : '';
-                                                        })()}
-                                                    </div>
-                                                    <span className="hidden print:inline text-xs font-medium">
-                                                        {(() => {
-                                                            const total = (parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0);
-                                                            return total > 0 ? `$${formatNumberWithCommas(total.toFixed(2))}` : '';
-                                                        })()}
-                                                    </span>
+                                                <td className="px-3 py-2 text-right font-bold text-sm border border-gray-300">GRAND TOTAL:</td>
+                                                <td className="px-3 py-2 font-bold text-sm border border-gray-300 text-right">
+                                                    ${formatNumberWithCommas(rpqFormData.items.reduce((sum, item) =>
+                                                        sum + ((parseFloat(parseFormattedNumber(item.unitPrice || 0)) || 0) * (parseInt(item.qty) || 0)), 0
+                                                    ).toFixed(2))}
                                                 </td>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                    <tfoot className="bg-gray-50">
-                                        <tr>
-                                            <td colSpan="4" className="px-3 py-2 text-right font-bold text-sm border border-gray-300">TOTAL QTY:</td>
-                                            <td className="px-3 py-2 font-bold text-sm border border-gray-300 text-right">
-                                                {rpqFormData.items.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0).toLocaleString('en-US')}
-                                            </td>
-                                            <td className="px-3 py-2 text-right font-bold text-sm border border-gray-300">GRAND TOTAL:</td>
-                                            <td className="px-3 py-2 font-bold text-sm border border-gray-300 text-right">
-                                                ${formatNumberWithCommas(rpqFormData.items.reduce((sum, item) =>
-                                                    sum + ((parseFloat(parseFormattedNumber(item.unitPrice || 0)) || 0) * (parseInt(item.qty) || 0)), 0
-                                                ).toFixed(2))}
-                                            </td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
+                                        </tfoot>
+                                    </table>
+                                </div>
                             </div>
                         )}
 
-                        {/* Payment Arrangement */}
                         <div className="mb-4 p-3 border border-gray-300 rounded-lg section">
                             <h3 className="font-bold text-gray-900 mb-2 section-title">Payment Arrangement</h3>
                             <div className="space-y-3">

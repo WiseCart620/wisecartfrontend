@@ -380,7 +380,7 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
 
     return (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto modal-fit">
                 <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
                     <h2 className="text-xl font-bold text-gray-900">
                         {editingIrr ? 'Edit Request' : 'New Inventory Request'}
@@ -491,10 +491,10 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
                                                         }}
                                                         disabled={isAlreadyAdded}
                                                         className={`w-full px-4 py-2.5 text-left transition border-b border-gray-100 last:border-b-0 ${isAlreadyAdded
-                                                                ? 'bg-gray-100 cursor-not-allowed opacity-60'
-                                                                : selectedProductForAdd === key
-                                                                    ? 'bg-blue-50 hover:bg-blue-100'
-                                                                    : 'hover:bg-blue-50'
+                                                            ? 'bg-gray-100 cursor-not-allowed opacity-60'
+                                                            : selectedProductForAdd === key
+                                                                ? 'bg-blue-50 hover:bg-blue-100'
+                                                                : 'hover:bg-blue-50'
                                                             }`}
                                                     >
                                                         <div className="flex items-center justify-between">
@@ -607,63 +607,65 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
 
                     {/* Products Table */}
                     {irrFormData.items.length > 0 && (
-                        <div className="border rounded-lg overflow-hidden">
-                            <table className="w-full">
-                                <thead className="bg-gray-50 border-b">
-                                    <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product Name</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">UPC</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variation</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">UOM</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
-                                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {irrFormData.items.map((item, index) => (
-                                        <tr key={index} className="hover:bg-gray-50">
-                                            <td className="px-4 py-3 text-sm text-gray-900 font-medium">
-                                                {item.productName}
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-gray-900">{item.sku || '-'}</td>
-                                            <td className="px-4 py-3 text-sm text-gray-900">{item.upc || '-'}</td>
-                                            <td className="px-4 py-3 text-sm text-gray-600">
-                                                {item.variation || '-'}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <input
-                                                    type="text"
-                                                    value="PCS"
-                                                    readOnly
-                                                    className="w-full px-2 py-1 border border-gray-300 rounded text-sm bg-gray-100 cursor-not-allowed text-center"
-                                                />
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <input
-                                                    type="text"
-                                                    value={item.qty ? parseInt(item.qty).toLocaleString('en-US') : ''}
-                                                    onChange={(e) => {
-                                                        const numericValue = e.target.value.replace(/[^0-9]/g, '');
-                                                        handleItemChange(index, 'qty', numericValue);
-                                                    }}
-                                                    className="w-20 px-2 py-1 border border-gray-300 rounded text-sm text-right"
-                                                    placeholder="0"
-                                                />
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveItem(index)}
-                                                    className="p-1 text-red-600 hover:bg-red-50 rounded"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </td>
+                        <div className="border rounded-lg overflow-hidden table-panel">
+                            <div className="overflow-x-auto table-fit" style={{ maxHeight: '260px' }}>
+                                <table className="w-full">
+                                    <thead className="bg-gray-50 border-b">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product Name</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">UPC</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variation</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">UOM</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
+                                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Action</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                        {irrFormData.items.map((item, index) => (
+                                            <tr key={index} className="hover:bg-gray-50">
+                                                <td className="px-4 py-3 text-sm text-gray-900 font-medium">
+                                                    {item.productName}
+                                                </td>
+                                                <td className="px-4 py-3 text-sm text-gray-900">{item.sku || '-'}</td>
+                                                <td className="px-4 py-3 text-sm text-gray-900">{item.upc || '-'}</td>
+                                                <td className="px-4 py-3 text-sm text-gray-600">
+                                                    {item.variation || '-'}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <input
+                                                        type="text"
+                                                        value="PCS"
+                                                        readOnly
+                                                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm bg-gray-100 cursor-not-allowed text-center"
+                                                    />
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <input
+                                                        type="text"
+                                                        value={item.qty ? parseInt(item.qty).toLocaleString('en-US') : ''}
+                                                        onChange={(e) => {
+                                                            const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                                                            handleItemChange(index, 'qty', numericValue);
+                                                        }}
+                                                        className="w-20 px-2 py-1 border border-gray-300 rounded text-sm text-right"
+                                                        placeholder="0"
+                                                    />
+                                                </td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveItem(index)}
+                                                        className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     )}
 

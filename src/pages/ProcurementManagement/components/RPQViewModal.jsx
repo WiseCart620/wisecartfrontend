@@ -158,7 +158,7 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
 
     return (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl max-w-7xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-xl max-w-7xl w-full max-h-[90vh] overflow-y-auto modal-fit">
                 <div className="border-b px-6 py-4 flex items-center justify-between">
                     <h2 className="text-xl font-bold text-gray-900">Quotation Request Details</h2>
                     <button
@@ -223,66 +223,66 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
 
                     {/* Products Table */}
                     {viewingRpq.items && viewingRpq.items.length > 0 && (
-                        <div className="mb-4">
+                        <div className="mb-4 table-panel">
                             <h3 className="font-bold text-gray-900 mb-2">Products</h3>
-                            <table className="w-full border-collapse border border-gray-300">
-                                <thead className="bg-gray-100">
-                                    <tr>
-                                        <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Product Name</th>
-                                        <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Variation</th>
-                                        <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">UPC</th>
-                                        <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">UOM</th>
-                                        <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Quantity</th>
-                                        <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Unit Price</th>
-                                        <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {viewingRpq.items.map((item, idx) => (
-                                        <tr key={idx}>
-                                            <td className="px-3 py-2 border border-gray-300">
-                                                <div className="text-xs font-medium text-gray-900">{item.productName}</div>
-                                                <div className="text-[11px] text-gray-500 mt-0.5">SKU: {item.sku || '-'}</div>
+                            <div className="overflow-x-auto table-fit" style={{ maxHeight: '320px' }}>
+                                <table className="w-full border-collapse border border-gray-300">
+                                    <thead className="bg-gray-100">
+                                        <tr>
+                                            <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Product Name</th>
+                                            <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Variation</th>
+                                            <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">UPC</th>
+                                            <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">UOM</th>
+                                            <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Quantity</th>
+                                            <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Unit Price</th>
+                                            <th className="px-3 py-2 text-left text-xs font-bold border border-gray-300">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {viewingRpq.items.map((item, idx) => (
+                                            <tr key={idx}>
+                                                <td className="px-3 py-2 border border-gray-300">
+                                                    <div className="text-xs font-medium text-gray-900">{item.productName}</div>
+                                                    <div className="text-[11px] text-gray-500 mt-0.5">SKU: {item.sku || '-'}</div>
+                                                </td>
+                                                <td className="px-3 py-2 text-xs border border-gray-300">{item.variation || '-'}</td>
+                                                <td className="px-3 py-2 text-xs border border-gray-300">{item.upc || '-'}</td>
+                                                <td className="px-3 py-2 text-xs border border-gray-300">{item.uom || 'PCS'}</td>
+                                                <td className="px-3 py-2 text-xs border border-gray-300">
+                                                    {item.qty ? parseInt(item.qty).toLocaleString('en-US') : '-'}
+                                                </td>
+                                                <td className="px-3 py-2 text-xs border border-gray-300">
+                                                    {item.unitPrice && parseFloat(item.unitPrice) > 0
+                                                        ? `$${parseFloat(item.unitPrice).toFixed(4)}`
+                                                        : '-'}
+                                                </td>
+                                                <td className="px-3 py-2 text-xs font-medium border border-gray-300">
+                                                    {(() => {
+                                                        const total = (parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0);
+                                                        return total > 0 ? `$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-';
+                                                    })()}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot className="bg-gray-50">
+                                        <tr>
+                                            <td colSpan="4" className="px-3 py-2 text-right font-bold text-sm border border-gray-300">TOTAL QTY:</td>
+                                            <td className="px-3 py-2 font-bold text-sm border border-gray-300 text-right">
+                                                {viewingRpq.items.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0).toLocaleString('en-US')}
                                             </td>
-                                            <td className="px-3 py-2 text-xs border border-gray-300">{item.variation || '-'}</td>
-                                            <td className="px-3 py-2 text-xs border border-gray-300">{item.upc || '-'}</td>
-                                            <td className="px-3 py-2 text-xs border border-gray-300">{item.uom || 'PCS'}</td>
-                                            <td className="px-3 py-2 text-xs border border-gray-300">
-                                                {item.qty ? parseInt(item.qty).toLocaleString('en-US') : '-'}
-                                            </td>
-                                            <td className="px-3 py-2 text-xs border border-gray-300">
-                                                {item.unitPrice && parseFloat(item.unitPrice) > 0
-                                                    ? `$${parseFloat(item.unitPrice).toFixed(4)}`
-                                                    : '-'}
-                                            </td>
-                                            <td className="px-3 py-2 text-xs font-medium border border-gray-300">
-                                                {(() => {
-                                                    const total = (parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0);
-                                                    return total > 0 ? `$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-';
-                                                })()}
+                                            <td className="px-3 py-2 text-right font-bold text-sm border border-gray-300">GRAND TOTAL:</td>
+                                            <td className="px-3 py-2 font-bold text-sm border border-gray-300 text-right">
+                                                ${formatNumberWithCommas(viewingRpq.items.reduce((sum, item) =>
+                                                    sum + ((parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0)), 0
+                                                ).toFixed(2))}
                                             </td>
                                         </tr>
-                                    ))}
-                                </tbody>
-                                <tfoot className="bg-gray-50">
-                                    <tr>
-                                        <td colSpan="4" className="px-3 py-2 text-right font-bold text-sm border border-gray-300">TOTAL QTY:</td>
-                                        <td className="px-3 py-2 font-bold text-sm border border-gray-300 text-right">
-                                            {viewingRpq.items.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0).toLocaleString('en-US')}
-                                        </td>
-                                        <td className="px-3 py-2 text-right font-bold text-sm border border-gray-300">GRAND TOTAL:</td>
-                                        <td className="px-3 py-2 font-bold text-sm border border-gray-300 text-right">
-                                            ${formatNumberWithCommas(viewingRpq.items.reduce((sum, item) =>
-                                                sum + ((parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0)), 0
-                                            ).toFixed(2))}
-                                        </td>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                                    </tfoot>
+                                </table>
+                            </div>
                         </div>
                     )}
-
-                    {/* Payment Arrangement */}
                     <div className="mb-4 p-3 border border-gray-300 rounded-lg">
                         <h3 className="font-bold text-gray-900 mb-2">Payment Arrangement</h3>
                         <div className="space-y-3">
@@ -433,7 +433,7 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
                         </div>
                         <div className="text-xs mt-1">
                             <span className="font-semibold">Status: </span>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${viewingRpq.status === 'CONFIRMED'
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium badge-nowrap ${viewingRpq.status === 'CONFIRMED'
                                 ? 'bg-green-100 text-green-800'
                                 : viewingRpq.status === 'PENDING'
                                     ? 'bg-blue-100 text-blue-800'
