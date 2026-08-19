@@ -78,7 +78,6 @@ const IRRViewModal = ({ irr, onClose, formatNumber }) => {
                                         <thead className="bg-gray-50 border-b">
                                             <tr>
                                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Product</th>
-                                                jsx
                                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">SKU</th>
                                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">UPC</th>
                                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Variation</th>
