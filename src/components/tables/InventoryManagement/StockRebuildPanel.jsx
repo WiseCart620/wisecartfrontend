@@ -310,15 +310,63 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     const [branchQueue, setBranchQueue] = useState([]);
     const [activeBranchIndex, setActiveBranchIndex] = useState(-1);
 
+    // On-demand full-product cache (id -> product with variations populated).
+    // The `products` prop is often a lightweight list response that omits
+    // variations; this fills the gap for whichever products get selected.
+    const [productDetailCache, setProductDetailCache] = useState({});
+    const [loadingVariationsFor, setLoadingVariationsFor] = useState(new Set());
+
+    React.useEffect(() => {
+        const idsNeedingFetch = productIds.filter((id) => {
+            if (productDetailCache[id]) return false;
+            const fromProp = products.find((p) => String(p.id) === String(id));
+            const alreadyHasVariations = fromProp && Array.isArray(fromProp.variations) && fromProp.variations.length > 0;
+            return !alreadyHasVariations && !loadingVariationsFor.has(String(id));
+        });
+
+        if (idsNeedingFetch.length === 0) return;
+
+        setLoadingVariationsFor((prev) => {
+            const next = new Set(prev);
+            idsNeedingFetch.forEach((id) => next.add(String(id)));
+            return next;
+        });
+
+        idsNeedingFetch.forEach(async (id) => {
+            try {
+                const res = await api.get(`/admin/products/${id}`); // TODO: point at your real product-detail endpoint
+                const full = res.data || res;
+                setProductDetailCache((prev) => ({ ...prev, [id]: full }));
+            } catch (err) {
+                console.error(`Failed to load variations for product ${id}`, err);
+            } finally {
+                setLoadingVariationsFor((prev) => {
+                    const next = new Set(prev);
+                    next.delete(String(id));
+                    return next;
+                });
+            }
+        });
+    }, [productIds, products]);
+
+    const resolvedProduct = (p) => productDetailCache[p.id] || p;
+
     const needsWarehouse = scope === 'WAREHOUSE' || scope === 'BOTH';
     const needsBranch = scope === 'BRANCH' || scope === 'BOTH';
 
-    const selectedProducts = products.filter((p) => productIds.map(String).includes(String(p.id)));
+    const selectedProducts = products
+        .filter((p) => productIds.map(String).includes(String(p.id)))
+        .map(resolvedProduct);
 
     const anyHasVariations = selectedProducts.some((p) => (p.variations || []).length > 0);
+    const variationsStillLoading = productIds.some((id) => loadingVariationsFor.has(String(id)));
+
     const allSelectedVariations = useMemo(() => {
         const list = [];
-        for (const p of selectedProducts) {
+        for (const id of productIds) {
+            const base = products.find((p) => String(p.id) === String(id));
+            if (!base) continue;
+            const p = resolvedProduct(base);
             for (const v of p.variations || []) {
                 list.push({
                     key: `${p.id}_${v.id}`,
@@ -333,7 +381,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
             }
         }
         return list;
-    }, [productIds, products]);
+    }, [productIds, products, productDetailCache]);
 
     const hasBranchSelection = autoAllBranches ? branches.length > 0 : branchIds.length > 0;
 
@@ -625,13 +673,14 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                         />
                     </div>
 
-                    {anyHasVariations && (
+                    {(anyHasVariations || variationsStillLoading) && (
                         <>
                             <div className="sm:col-span-2 flex items-center gap-2 -mt-1">
                                 <input
                                     id="includeVariations"
                                     type="checkbox"
                                     checked={includeVariations}
+                                    disabled={variationsStillLoading && !anyHasVariations}
                                     onChange={(e) => {
                                         setIncludeVariations(e.target.checked);
                                         if (!e.target.checked) setSelectedVariationKeys([]);
@@ -639,11 +688,13 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                                     className="rounded border-gray-300"
                                 />
                                 <label htmlFor="includeVariations" className="text-xs text-gray-600">
-                                    Include variations of the selected products
+                                    {variationsStillLoading && !anyHasVariations
+                                        ? 'Checking for variations...'
+                                        : 'Include variations of the selected products'}
                                 </label>
                             </div>
 
-                            {includeVariations && (
+                            {includeVariations && anyHasVariations && (
                                 <div className="sm:col-span-2">
                                     <MultiSelect
                                         label="Which variations (leave empty to include ALL variations)"
