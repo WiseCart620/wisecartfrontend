@@ -327,7 +327,7 @@ const DeliveryManagement = () => {
 
   const handleResetFilter = () => {
     setFilterData({
-      companyIds: [], branchIds: [], warehouseIds: [], status: 'HIDE_CANCELLED',
+      companyIds: [], branchIds: [], warehouseIds: [], status: '',
       productId: '', variationId: '', productName: '', productFilters: [],
       startDate: '', endDate: '', receiptNumber: '', poNumber: ''
     });
