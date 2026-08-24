@@ -292,6 +292,13 @@ const BranchQueueBanner = ({ queue, activeIndex }) => {
 
 let rowCounter = 0;
 
+// Set this to the real single-product detail endpoint once you have one
+// (e.g. '/products/{id}' or '/products/{id}/details'), then flip
+// PRODUCT_DETAIL_ENABLED to true. Until then, this stays off so the panel
+// doesn't fire a request per selected product against a route that 500s.
+const PRODUCT_DETAIL_ENABLED = false;
+const PRODUCT_DETAIL_ENDPOINT = (id) => `/admin/products/${id}`; // TODO: point at your real product-detail endpoint
+
 const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRebuilt }) => {
     const [scope, setScope] = useState('BOTH');
     const [warehouseIds, setWarehouseIds] = useState([]);
@@ -312,11 +319,17 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
 
     // On-demand full-product cache (id -> product with variations populated).
     // The `products` prop is often a lightweight list response that omits
-    // variations; this fills the gap for whichever products get selected.
+    // variations; when PRODUCT_DETAIL_ENABLED is true this fills the gap for
+    // whichever products get selected. Disabled by default (see above) since
+    // there's no working detail endpoint yet — products without variations
+    // already present in the `products` prop will just be treated as
+    // variation-less until this is turned back on.
     const [productDetailCache, setProductDetailCache] = useState({});
     const [loadingVariationsFor, setLoadingVariationsFor] = useState(new Set());
 
     React.useEffect(() => {
+        if (!PRODUCT_DETAIL_ENABLED) return;
+
         const idsNeedingFetch = productIds.filter((id) => {
             if (productDetailCache[id]) return false;
             const fromProp = products.find((p) => String(p.id) === String(id));
@@ -334,7 +347,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
 
         idsNeedingFetch.forEach(async (id) => {
             try {
-                const res = await api.get(`/admin/products/${id}`); // TODO: point at your real product-detail endpoint
+                const res = await api.get(PRODUCT_DETAIL_ENDPOINT(id));
                 const full = res.data || res;
                 setProductDetailCache((prev) => ({ ...prev, [id]: full }));
             } catch (err) {
