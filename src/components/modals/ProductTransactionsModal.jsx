@@ -444,7 +444,6 @@ const ProductTransactionsModal = ({
                             >
                                 <option value="ALL">All Types</option>
                                 <option value="STOCK_IN">Stock In</option>
-                                <option value="TRANSFER">Transfer</option>
                                 <option value="TRANSFER_IN">Transfer In</option>
                                 <option value="TRANSFER_OUT">Transfer Out</option>
                                 <option value="RETURN">Return</option>

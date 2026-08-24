@@ -24,7 +24,6 @@ import ProductSummaryReportPanel from '../../components/filters/ProductSummaryRe
 import BranchSummaryReportModal from '../../components/modals/BranchSummaryReportModal';
 import WarehouseFilterPanel from '../../components/filters/WarehouseFilterPanel';
 import BranchFilterPanel from '../../components/filters/BranchFilterPanel';
-import TransactionFilterPanel from '../../components/filters/TransactionFilterPanel';
 import WarehouseReportInlineTable from '../../components/tables/InventoryManagement/WarehouseReportInlineTable';
 import BranchReportInlineTable from '../../components/tables/InventoryManagement/BranchReportInlineTable';
 import { calculateTotalQuantity } from '../../utils/transactionHelpers';
@@ -43,7 +42,6 @@ const InventoryManagement = () => {
   const [showVariationFilter, setShowVariationFilter] = useState('ALL');
   const [showWarehouseFilter, setShowWarehouseFilter] = useState(true);
   const [showBranchFilter, setShowBranchFilter] = useState(true);
-  const [showTransactionFilter, setShowTransactionFilter] = useState(true);
   const [inventoryPage, setInventoryPage] = useState(0);
   const [inventoryPageSize] = useState(50);
   const [isLoadingPage, setIsLoadingPage] = useState(false);
@@ -152,15 +150,6 @@ const InventoryManagement = () => {
     maxQty: '',
     startDate: '',
     endDate: ''
-  });
-
-  const transactionFilters = useFilters({
-    type: 'ALL',
-    verifiedBy: '',
-    startDate: '',
-    endDate: '',
-    minItems: '',
-    maxItems: ''
   });
 
   // Pagination hooks
@@ -694,13 +683,6 @@ const InventoryManagement = () => {
                 />
               </div>
             </div>
-
-            <TransactionFilterPanel
-              showTransactionFilter={showTransactionFilter}
-              filters={transactionFilters.filters}
-              updateFilter={transactionFilters.updateFilter}
-              clearFilters={transactionFilters.clearFilters}
-            />
 
             <TransactionTable
               currentInventories={currentInventories}
