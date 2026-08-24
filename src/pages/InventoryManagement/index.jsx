@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, BarChart3, Building, Store, Package, RefreshCw } from 'lucide-react';
+import { Search, BarChart3, Building, Store, RefreshCw } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 // Hooks
@@ -10,32 +10,26 @@ import { usePaginationControl } from '../../hooks/ui/usePaginationControl';
 import { api } from '../../services/api';
 
 // Components
-import { LoadingOverlay } from '../../components/common/LoadingOverlay';
 import ProductTransactionsModal from '../../components/modals/ProductTransactionsModal';
 import InventorySummaryReportModal from '../../components/modals/InventorySummaryReportModal';
 import ProductSummaryTable from '../../components/tables/InventoryManagement/ProductSummaryTable';
 import WarehouseStockTable from '../../components/tables/InventoryManagement/WarehouseStockTable';
 import BranchStockTable from '../../components/tables/InventoryManagement/BranchStockTable';
-import TransactionTable from '../../components/tables/InventoryManagement/TransactionTable';
 import StockRebuildPanel from '../../components/tables/InventoryManagement/StockRebuildPanel';
 import TransactionCleanupPanel from '../../components/tables/InventoryManagement/TransactionCleanupPanel';
-import ProductFilterPanel from '../../components/filters/ProductFilterPanel';
 import ProductSummaryReportPanel from '../../components/filters/ProductSummaryReportPanel';
 import BranchSummaryReportModal from '../../components/modals/BranchSummaryReportModal';
 import WarehouseFilterPanel from '../../components/filters/WarehouseFilterPanel';
 import BranchFilterPanel from '../../components/filters/BranchFilterPanel';
 import WarehouseReportInlineTable from '../../components/tables/InventoryManagement/WarehouseReportInlineTable';
 import BranchReportInlineTable from '../../components/tables/InventoryManagement/BranchReportInlineTable';
-import { calculateTotalQuantity } from '../../utils/transactionHelpers';
 import {
   filterProductSummaries,
   filterWarehouseStocks,
-  filterBranchStocks,
-  filterInventories
+  filterBranchStocks
 } from '../../utils/inventoryFilters';
 
 const InventoryManagement = () => {
-  const [searchTerm, setSearchTerm] = useState('');
   const [productSearchTerm, setProductSearchTerm] = useState('');
   const [stockSearchTerm, setStockSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('products');
@@ -44,7 +38,6 @@ const InventoryManagement = () => {
   const [showBranchFilter, setShowBranchFilter] = useState(true);
   const [inventoryPage, setInventoryPage] = useState(0);
   const [inventoryPageSize] = useState(50);
-  const [isLoadingPage, setIsLoadingPage] = useState(false);
   const [products, setProducts] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -52,8 +45,6 @@ const InventoryManagement = () => {
   const [productSummaries, setProductSummaries] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
-  const [deletingId, setDeletingId] = useState(null);
-  const [viewingId, setViewingId] = useState(null);
   const [refDataLoading, setRefDataLoading] = useState(true);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportData, setReportData] = useState([]);
@@ -112,13 +103,11 @@ const InventoryManagement = () => {
 
 
   const {
-    inventories,
     loading,
     canModifyStatus,
     warehouseStocks,
     branchStocks,
     loadingStocks,
-    totalInventories,
     loadData,
     loadLocationStock,
     checkCanModify,
@@ -152,21 +141,8 @@ const InventoryManagement = () => {
     endDate: ''
   });
 
-  const transactionFilters = useFilters({
-    type: 'ALL',
-    verifiedBy: '',
-    startDate: '',
-    endDate: '',
-    minItems: '',
-    maxItems: ''
-  });
-
-  // Pagination hooks
-
-  // Pagination hooks
   const productPagination = usePaginationControl(10);
   const stockPagination = usePaginationControl(10);
-  const transactionPagination = usePaginationControl(10);
 
   const selectedProductKeys = productReportFilters.filters.productKeys || [];
   const baseFilteredSummaries = filterProductSummaries(
@@ -210,25 +186,13 @@ const InventoryManagement = () => {
     products
   );
 
-  const filteredInventories = filterInventories(
-    Array.isArray(inventories) ? inventories : [],
-    searchTerm,
-    transactionFilters.filters,
-    warehouses,
-    branches
-  );
-
-  // Paginated data
   const currentProductSummaries = productPagination.getPageItems(filteredProductSummaries);
   const currentWarehouseStocks = stockPagination.getPageItems(filteredWarehouseStocks);
   const currentBranchStocks = stockPagination.getPageItems(filteredBranchStocks);
-  const currentInventories = transactionPagination.getPageItems(filteredInventories);
 
-  // Total pages
   const productTotalPages = productPagination.getTotalPages(filteredProductSummaries.length);
   const warehouseStockTotalPages = stockPagination.getTotalPages(filteredWarehouseStocks.length);
   const branchStockTotalPages = stockPagination.getTotalPages(filteredBranchStocks.length);
-  const transactionTotalPages = transactionPagination.getTotalPages(filteredInventories.length);
 
   useEffect(() => {
     loadData(inventoryPage, inventoryPageSize);
@@ -238,10 +202,6 @@ const InventoryManagement = () => {
       delete window.loadData;
     };
   }, [loadData, inventoryPage, inventoryPageSize]);
-
-  const handleViewTransaction = (transaction) => {
-    setViewingId(transaction.id);
-  };
 
   const handleViewTransactions = (product, showStock = false) => {
     return transactionHandlers.handleViewTransactions(
@@ -259,38 +219,6 @@ const InventoryManagement = () => {
       setActionLoading,
       setLoadingMessage
     );
-  };
-
-  const handleDeleteTransaction = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this record? This cannot be undone.')) return;
-
-    try {
-      setDeletingId(id);
-      setActionLoading(true);
-      setLoadingMessage('Deleting transaction...');
-
-      const result = await deleteInventory(id);
-
-      if (result && result.success === false) {
-        toast.error(result.error || 'Failed to delete inventory');
-        return;
-      }
-
-      toast.success('Inventory deleted successfully');
-      // FIX: reload both inventories AND product summaries after a delete
-      await Promise.all([
-        loadData(inventoryPage, inventoryPageSize),
-        loadProductSummaries(),
-      ]);
-
-    } catch (error) {
-      console.error('Delete error:', error);
-      toast.error(error.message || 'Failed to delete inventory');
-    } finally {
-      setDeletingId(null);
-      setActionLoading(false);
-      setLoadingMessage('');
-    }
   };
 
   const handleGenerateReport = async (openModal = true) => {
@@ -462,8 +390,7 @@ const InventoryManagement = () => {
         await loadProductSummaries();
       } else if (
         activeTab === 'warehouse-stocks' ||
-        activeTab === 'branch-stocks' ||
-        activeTab === 'transactions'
+        activeTab === 'branch-stocks'
       ) {
         await loadData(inventoryPage, inventoryPageSize);
       }
@@ -520,16 +447,6 @@ const InventoryManagement = () => {
               >
                 <Store className="inline w-4 h-4 mr-2" />
                 Company Stocks
-              </button>
-              <button
-                onClick={() => setActiveTab('transactions')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'transactions'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-              >
-                <Package className="inline w-4 h-4 mr-2" />
-                Transactions
               </button>
               <button
                 onClick={() => setActiveTab('stock-rebuild')}
@@ -678,80 +595,6 @@ const InventoryManagement = () => {
               isLoading={loading}
             />
           </div>
-        )}
-
-        {activeTab === 'transactions' && (
-          <>
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                <input
-                  type="text"
-                  placeholder="Search transactions..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-
-            <TransactionTable
-              currentInventories={currentInventories}
-              filteredInventories={filteredInventories}
-              indexOfFirstItem={transactionPagination.getIndexOfFirstItem()}
-              indexOfLastItem={transactionPagination.getIndexOfLastItem(filteredInventories.length)}
-              currentPage={transactionPagination.currentPage}
-              totalPages={transactionTotalPages}
-              setCurrentPage={transactionPagination.setCurrentPage}
-              viewingId={viewingId}
-              deletingId={deletingId}
-              handleViewTransaction={handleViewTransaction}
-              handleDelete={handleDeleteTransaction}
-              calculateTotalQuantity={calculateTotalQuantity}
-              isLoading={loading}
-            />
-            {totalInventories > inventoryPageSize && (
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mt-4 pt-4 border-t border-gray-200">
-                <div className="text-xs sm:text-sm text-gray-500">
-                  Showing {inventoryPage * inventoryPageSize + 1} to{' '}
-                  {Math.min((inventoryPage + 1) * inventoryPageSize, totalInventories)} of {totalInventories} transactions
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={async () => {
-                      setIsLoadingPage(true);
-                      setInventoryPage(p => Math.max(0, p - 1));
-                      setTimeout(() => setIsLoadingPage(false), 500);
-                    }}
-                    disabled={inventoryPage === 0 || isLoadingPage}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
-                  >
-                    {isLoadingPage ? (
-                      <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
-                    ) : null}
-                    Previous
-                  </button>
-                  <span className="px-4 py-2 text-sm text-gray-600">
-                    Page {inventoryPage + 1} of {Math.ceil(totalInventories / inventoryPageSize)}
-                  </span>
-                  <button
-                    onClick={async () => {
-                      setIsLoadingPage(true);
-                      setInventoryPage(p => p + 1);
-                      setTimeout(() => setIsLoadingPage(false), 500);
-                    }}
-                    disabled={(inventoryPage + 1) * inventoryPageSize >= totalInventories || isLoadingPage}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
-                  >
-                    Next
-                    {isLoadingPage ? (
-                      <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
-                    ) : null}
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
         )}
 
         {activeTab === 'stock-rebuild' && (
