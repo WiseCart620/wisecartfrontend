@@ -14,6 +14,7 @@ const sum = (arr, key) => arr.reduce((acc, r) => acc + (Number(r[key]) || 0), 0)
 const BranchSummaryReportModal = ({ isOpen, onClose, data = [], filters = {} }) => {
     const printRef = useRef();
     const [companyFilter, setCompanyFilter] = useState('ALL');
+    const [branchFilter, setBranchFilter] = useState('ALL');
 
     const companyOptions = useMemo(() => {
         const seen = new Map();
@@ -25,11 +26,26 @@ const BranchSummaryReportModal = ({ isOpen, onClose, data = [], filters = {} }) 
         return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
     }, [data]);
 
+    // Branch options are scoped to the currently selected company, so switching
+    // company doesn't leave a stale/invalid branch selected.
+    const branchOptions = useMemo(() => {
+        const seen = new Map();
+        data.forEach(r => {
+            if (companyFilter !== 'ALL' && String(r.companyId) !== String(companyFilter)) return;
+            if (r.branchId != null && !seen.has(r.branchId)) {
+                seen.set(r.branchId, r.branchName || `Branch ${r.branchId}`);
+            }
+        });
+        return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
+    }, [data, companyFilter]);
+
     const filteredRows = useMemo(() => {
-        if (companyOptions.length === 1) return data;
-        if (companyFilter === 'ALL') return data;
-        return data.filter(r => String(r.companyId) === String(companyFilter));
-    }, [data, companyFilter, companyOptions]);
+        return data.filter(r => {
+            if (companyOptions.length > 1 && companyFilter !== 'ALL' && String(r.companyId) !== String(companyFilter)) return false;
+            if (branchOptions.length > 1 && branchFilter !== 'ALL' && String(r.branchId) !== String(branchFilter)) return false;
+            return true;
+        });
+    }, [data, companyFilter, branchFilter, companyOptions, branchOptions]);
 
     const aggregated = useMemo(() => {
         const map = new Map();
@@ -81,11 +97,21 @@ const BranchSummaryReportModal = ({ isOpen, onClose, data = [], filters = {} }) 
     const today = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
     const reportNo = `CO-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}`;
 
-    const scopeLabel = companyOptions.length === 1
+    const companyLabel = companyOptions.length === 1
         ? companyOptions[0].name
         : companyFilter === 'ALL'
             ? 'All Selected Companies'
             : companyOptions.find(c => String(c.id) === String(companyFilter))?.name || 'Company';
+
+    const branchLabel = branchOptions.length === 0
+        ? null
+        : branchOptions.length === 1
+            ? branchOptions[0].name
+            : branchFilter === 'ALL'
+                ? 'All Branches'
+                : branchOptions.find(b => String(b.id) === String(branchFilter))?.name || 'Branch';
+
+    const scopeLabel = branchLabel ? `${companyLabel} · ${branchLabel}` : companyLabel;
 
     const truncate = (text, maxLength = 40) =>
         !text ? '' : (text.length > maxLength ? text.substring(0, maxLength) + '...' : text);
@@ -149,12 +175,27 @@ const BranchSummaryReportModal = ({ isOpen, onClose, data = [], filters = {} }) 
                         {companyOptions.length > 1 && (
                             <select
                                 value={companyFilter}
-                                onChange={(e) => setCompanyFilter(e.target.value)}
+                                onChange={(e) => {
+                                    setCompanyFilter(e.target.value);
+                                    setBranchFilter('ALL'); // reset branch when company changes
+                                }}
                                 className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="ALL">All Companies</option>
                                 {companyOptions.map(c => (
                                     <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                            </select>
+                        )}
+                        {branchOptions.length > 1 && (
+                            <select
+                                value={branchFilter}
+                                onChange={(e) => setBranchFilter(e.target.value)}
+                                className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="ALL">All Branches</option>
+                                {branchOptions.map(b => (
+                                    <option key={b.id} value={b.id}>{b.name}</option>
                                 ))}
                             </select>
                         )}
