@@ -152,6 +152,17 @@ const InventoryManagement = () => {
     endDate: ''
   });
 
+  const transactionFilters = useFilters({
+    type: 'ALL',
+    verifiedBy: '',
+    startDate: '',
+    endDate: '',
+    minItems: '',
+    maxItems: ''
+  });
+
+  // Pagination hooks
+
   // Pagination hooks
   const productPagination = usePaginationControl(10);
   const stockPagination = usePaginationControl(10);
