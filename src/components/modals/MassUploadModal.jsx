@@ -19,7 +19,8 @@ const getBranchCompanyId = (branch) => {
 
 const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfirm, onBulkUploadComplete, defaultCompanyId }) => {
     const [rawText, setRawText] = useState('');
-    const [reports, setReports] = useState(null); // [{ siteName, month, year, matchedRows, branchId }]
+    const [reports, setReports] = useState(null);
+    const [totalDraft, setTotalDraft] = useState('');
     const [activeIndex, setActiveIndex] = useState(0);
     const [search, setSearch] = useState('');
     const [bulkRunning, setBulkRunning] = useState(false);
@@ -96,6 +97,34 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
             .filter(({ r }) => !q || r.siteName.toLowerCase().includes(q))
             .map(({ idx }) => idx);
     }, [reports, search]);
+
+
+    const activeTotal = active
+        ? active.matchedRows.reduce((sum, r) => sum + (Number(r.qty) || 0) * (Number(r.unitCost) || 0), 0)
+        : 0;
+    const activeQty = active
+        ? active.matchedRows.reduce((sum, r) => sum + (Number(r.qty) || 0), 0)
+        : 0;
+    const handleTotalDraftChange = (e) => {
+        setTotalDraft(e.target.value.replace(/[^0-9.]/g, ''));
+    };
+
+    const applyActiveTotal = () => {
+        const target = parseFloat(totalDraft);
+        setTotalDraft('');
+
+        if (Number.isNaN(target) || target < 0 || activeTotal <= 0) return;
+
+        const scale = target / activeTotal;
+
+        const scaledRows = active.matchedRows.map(row => {
+            const newUnitCost = (Number(row.unitCost) || 0) * scale;
+            return { ...row, unitCost: parseFloat(newUnitCost.toFixed(6)) }; // already fine as-is
+        });
+
+        updateActiveReport({ matchedRows: scaledRows });
+    };
+
 
     const matchedCount = active ? active.matchedRows.filter(r => r.matched).length : 0;
     const unmatchedCount = active ? active.matchedRows.length - matchedCount : 0;
@@ -427,10 +456,29 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                                                         : <span className="text-red-600 italic">Not found in product list</span>}
                                                 </td>
                                                 <td className="px-3 py-2 text-gray-700">{row.qty}</td>
-                                                <td className="px-3 py-2 text-gray-700">{row.unitCost.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                                                <td className="px-3 py-2 text-gray-700">{Number(row.unitCost).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</td>
                                             </tr>
                                         ))}
                                     </tbody>
+                                    <tfoot className="bg-gray-50 border-t border-gray-200">
+                                        <tr>
+                                            <td colSpan={5} className="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Grand Total</td>
+                                            <td className="px-3 py-2 text-sm font-bold text-gray-900">{activeQty.toLocaleString('en-US')}</td>
+                                            <td className="px-3 py-2">
+                                                <input
+                                                    type="text"
+                                                    value={totalDraft !== '' ? totalDraft : (activeTotal > 0 ? activeTotal.toFixed(2) : '')}
+                                                    onFocus={() => setTotalDraft(activeTotal.toFixed(2))}
+                                                    onChange={handleTotalDraftChange}
+                                                    onBlur={applyActiveTotal}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }}
+                                                    disabled={activeTotal <= 0}
+                                                    placeholder="0.00"
+                                                    className="w-28 px-2 py-1.5 border border-gray-300 rounded-md text-sm font-bold text-blue-600 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition disabled:bg-transparent disabled:border-transparent disabled:text-gray-400"
+                                                />
+                                            </td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
 

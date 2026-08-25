@@ -44,6 +44,7 @@ const SaleFormModal = ({
   const [showEncodedByDropdown, setShowEncodedByDropdown] = useState(false);
   const [showMassUpload, setShowMassUpload] = useState(false);
   const [massUploadStockLoading, setMassUploadStockLoading] = useState(false);
+  const [grandTotalInput, setGrandTotalInput] = useState('');
 
   const handleMassUploadConfirm = async ({ branchId, month, year, items }) => {
     setShowMassUpload(false);
@@ -66,6 +67,42 @@ const SaleFormModal = ({
   const encodedByOptions = useMemo(() => [], []);
 
   const grandQty = formData.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+  const handleGrandTotalInputChange = (e) => {
+    const val = e.target.value.replace(/[^0-9.]/g, '');
+    setGrandTotalInput(val);
+  };
+
+  const applyGrandTotal = () => {
+    const target = parseFloat(grandTotalInput);
+    if (Number.isNaN(target) || target < 0 || grandTotal <= 0) {
+      setGrandTotalInput('');
+      return;
+    }
+
+    const scale = target / grandTotal;
+
+    setFormData(prev => ({
+      ...prev,
+      items: prev.items.map(item => {
+        const opt = Array.isArray(productOptions)
+          ? productOptions.find(o =>
+            o.parentProductId === item.productId &&
+            (o.variationId ?? null) === (item.variationId ?? null)
+          )
+          : null;
+        const currentPrice = (item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== '')
+          ? Number(item.unitPrice)
+          : (opt?.price ?? 0);
+
+        const newPrice = currentPrice * scale;
+        const priceStr = parseFloat(newPrice.toFixed(6)).toString();
+        return { ...item, unitPrice: priceStr };
+      }),
+    }));
+
+    setGrandTotalInput('');
+  };
+
   const grandTotal = formData.items.reduce((sum, item) => {
     if (!Array.isArray(productOptions)) return 0;
     const opt = productOptions.find(o =>
@@ -370,8 +407,17 @@ const SaleFormModal = ({
                         <td className="px-4 py-3 text-center text-sm font-bold text-gray-900">
                           {grandQty.toLocaleString('en-US')}
                         </td>
-                        <td className="px-4 py-3 text-right text-sm font-bold text-blue-600">
-                          ₱{grandTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        <td className="px-4 py-3 text-right">
+                          <input
+                            type="text"
+                            value={grandTotalInput !== '' ? grandTotalInput : grandTotal.toFixed(2)}
+                            onFocus={() => setGrandTotalInput(grandTotal.toFixed(2))}
+                            onChange={handleGrandTotalInputChange}
+                            onBlur={applyGrandTotal}
+                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }}
+                            disabled={formData.items.length === 0}
+                            className="w-28 px-2 py-1.5 border border-gray-300 rounded-md text-sm font-bold text-blue-600 text-right focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition disabled:bg-transparent disabled:border-transparent"
+                          />
                         </td>
                         <td />
                       </tr>

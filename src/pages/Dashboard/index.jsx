@@ -89,7 +89,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     loadStats();
-    loadAlerts();
+    loadAlerts(0, false);
   }, []);
 
   useEffect(() => {
@@ -235,10 +235,11 @@ const Dashboard = () => {
 
   const [alertsLoading, setAlertsLoading] = useState(false);
 
-  const loadAlerts = async (page = 0) => {
+  const loadAlerts = async (page = 0, resolved) => {
     try {
-      setAlertsLoading(true); // Start loading
-      const alertsRes = await api.get(`/alerts?page=${page}&size=20&sort=createdAt,desc`);
+      setAlertsLoading(true);
+      const resolvedParam = resolved === undefined ? '' : `&resolved=${resolved}`;
+      const alertsRes = await api.get(`/alerts?page=${page}&size=20&sort=createdAt,desc${resolvedParam}`);
       if (alertsRes.success && alertsRes.data) {
         const newAlerts = alertsRes.data?.content || alertsRes.data || [];
         const totalPages = alertsRes.data?.totalPages || 1;

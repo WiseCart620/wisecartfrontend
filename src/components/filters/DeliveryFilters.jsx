@@ -1,7 +1,6 @@
 // src/components/filters/DeliveryFilters.jsx
 import React from 'react';
 import { X } from 'lucide-react';
-import SearchableDropdown from '../common/SearchableDropdown';
 import VariationSearchableDropdown from '../common/VariationSearchableDropdown';
 import MultiSelectDropdown from '../common/MultiSelectDropdown';
 
