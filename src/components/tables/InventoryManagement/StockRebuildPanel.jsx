@@ -80,11 +80,11 @@ const MultiSelect = ({ label, values, onChange, options, getLabel, getSearchText
 
     return (
         <div className="relative" ref={containerRef}>
-            <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
+            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">{label}</label>
             <button
                 type="button"
                 onClick={() => setOpen((o) => !o)}
-                className={`w-full flex items-center justify-between px-3 py-2 text-sm border rounded-lg text-left transition bg-white hover:border-gray-400 ${open ? 'border-[#185FA5] ring-2 ring-[#185FA5]/20' : 'border-gray-300'
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 text-sm border rounded-xl text-left transition bg-white hover:border-[#185FA5]/40 ${open ? 'border-[#185FA5] ring-4 ring-[#185FA5]/10' : 'border-gray-200'
                     }`}
             >
                 <span className={values.length ? 'text-gray-900' : 'text-gray-400'}>
@@ -170,6 +170,12 @@ const MultiSelect = ({ label, values, onChange, options, getLabel, getSearchText
     );
 };
 
+const SectionLabel = ({ children }) => (
+    <p className="text-[11px] font-semibold text-[#185FA5] uppercase tracking-wider mb-2">
+        {children}
+    </p>
+);
+
 
 const PasswordGate = ({ onUnlock }) => {
     const [value, setValue] = useState('');
@@ -204,31 +210,31 @@ const PasswordGate = ({ onUnlock }) => {
     };
 
     return (
-        <div className="flex items-center justify-center py-16">
+        <div className="flex items-center justify-center py-20">
             <div
-                className={`w-full max-w-sm bg-white border border-gray-200 rounded-2xl shadow-sm p-7 text-center ${shake ? 'animate-[shake_0.4s_ease-in-out]' : ''
+                className={`w-full max-w-sm bg-white border border-gray-100 rounded-3xl shadow-[0_4px_24px_rgba(24,95,165,0.08)] p-8 text-center ${shake ? 'animate-[shake_0.4s_ease-in-out]' : ''
                     }`}
             >
                 <style>{`
-                    @keyframes shake {
-                        0%, 100% { transform: translateX(0); }
-                        20%, 60% { transform: translateX(-6px); }
-                        40%, 80% { transform: translateX(6px); }
-                    }
-                `}</style>
+                @keyframes shake {
+                    0%, 100% { transform: translateX(0); }
+                    20%, 60% { transform: translateX(-6px); }
+                    40%, 80% { transform: translateX(6px); }
+                }
+            `}</style>
 
-                <div className="mx-auto mb-4 w-14 h-14 rounded-2xl bg-gradient-to-br from-[#185FA5] to-[#0C447C] flex items-center justify-center shadow-lg shadow-[#185FA5]/20">
-                    <Lock size={22} className="text-white" />
+                <div className="mx-auto mb-5 w-16 h-16 rounded-full bg-gradient-to-br from-[#2C8CE0] to-[#185FA5] flex items-center justify-center shadow-lg shadow-[#185FA5]/25">
+                    <Lock size={24} className="text-white" />
                 </div>
 
-                <h3 className="text-base font-semibold text-gray-900">Restricted panel</h3>
-                <p className="text-sm text-gray-500 mt-1 mb-5">
-                    Stock Rebuild permanently rewrites transaction history. Enter the access password to continue.
+                <h3 className="text-lg font-semibold text-gray-900">Restricted panel</h3>
+                <p className="text-sm text-gray-500 mt-1.5 mb-6 leading-relaxed">
+                    Stock Rebuild permanently rewrites transaction history.<br />Enter the access password to continue.
                 </p>
 
-                <form onSubmit={handleSubmit} className="space-y-3">
+                <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="relative">
-                        <KeyRound size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <KeyRound size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
                             type={showPassword ? 'text' : 'password'}
                             value={value}
@@ -239,29 +245,29 @@ const PasswordGate = ({ onUnlock }) => {
                                 if (error) setError('');
                             }}
                             placeholder="Access password"
-                            className={`w-full pl-9 pr-9 py-2.5 text-sm border rounded-lg outline-none transition focus:ring-2 disabled:bg-gray-50 ${error
-                                ? 'border-red-300 focus:ring-red-100'
-                                : 'border-gray-300 focus:ring-[#185FA5]/20 focus:border-[#185FA5]'
+                            className={`w-full pl-10 pr-10 py-3 text-sm border rounded-xl outline-none transition focus:ring-4 disabled:bg-gray-50 ${error
+                                ? 'border-red-300 focus:ring-red-50'
+                                : 'border-gray-200 focus:ring-[#185FA5]/10 focus:border-[#185FA5]'
                                 }`}
                         />
                         <button
                             type="button"
                             onClick={() => setShowPassword((s) => !s)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                             tabIndex={-1}
                         >
-                            {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                     </div>
 
                     {error && (
-                        <p className="text-xs text-red-600 text-left -mt-1">{error}</p>
+                        <p className="text-xs text-red-600 text-left -mt-2">{error}</p>
                     )}
 
                     <button
                         type="submit"
                         disabled={checking || !value}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-[#185FA5] text-white rounded-lg hover:bg-[#0C447C] disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold bg-[#185FA5] text-white rounded-full hover:bg-[#0C447C] disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm shadow-[#185FA5]/25"
                     >
                         {checking ? <RefreshCw size={14} className="animate-spin" /> : <Lock size={14} />}
                         {checking ? 'Verifying...' : 'Unlock panel'}
@@ -346,7 +352,7 @@ const ResultsTable = ({ rows }) => {
     const pendingCount = rows.filter((r) => r.status === 'PENDING' || r.status === 'RUNNING').length;
 
     return (
-        <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
+        <div className="border border-gray-100 rounded-3xl overflow-hidden bg-white shadow-[0_2px_16px_rgba(15,23,42,0.04)]">
             <div className="flex items-center gap-5 px-4 py-2.5 bg-gray-50 border-b border-gray-200 text-xs">
                 <span className="font-medium text-gray-500">{rows.length} total</span>
                 <span className="flex items-center gap-1.5 text-emerald-700">
@@ -419,7 +425,7 @@ const ResultsTable = ({ rows }) => {
 const BranchQueueBanner = ({ queue, activeIndex }) => {
     if (!queue || queue.length === 0) return null;
     return (
-        <div className="border border-[#185FA5]/20 bg-[#E6F1FB] rounded-xl p-4">
+        <div className="border border-[#185FA5]/15 bg-gradient-to-br from-[#E6F1FB] to-[#F0F7FD] rounded-2xl p-5">
             <p className="text-xs font-semibold text-[#0C447C] mb-2">
                 Branch queue — processed one at a time, auto-advancing
             </p>
@@ -823,7 +829,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
 
     return (
         <div className="space-y-6">
-            <div className="flex items-start justify-between gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-start justify-between gap-3 p-5 bg-amber-50/70 border-l-4 border-amber-400 rounded-r-2xl rounded-l-md">
                 <div className="flex items-start gap-3">
                     <ShieldAlert className="text-amber-600 shrink-0 mt-0.5" size={20} />
                     <div className="text-sm text-amber-800">
@@ -844,12 +850,15 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                 </button>
             </div>
 
-            <div className="border border-gray-200 rounded-2xl p-5 bg-white shadow-sm shadow-gray-100">
-                <div className="flex items-center gap-2 mb-4">
-                    <div className="w-7 h-7 rounded-lg bg-[#E6F1FB] flex items-center justify-center">
-                        <Layers size={14} className="text-[#185FA5]" />
+            <div className="border border-gray-100 rounded-3xl p-7 bg-white shadow-[0_2px_16px_rgba(15,23,42,0.04)]">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#E6F1FB] to-[#D3E8FA] flex items-center justify-center">
+                        <Layers size={16} className="text-[#185FA5]" />
                     </div>
-                    <h3 className="text-sm font-semibold text-gray-800">Rebuild targets</h3>
+                    <div>
+                        <h3 className="text-base font-semibold text-gray-900">Rebuild targets</h3>
+                        <p className="text-xs text-gray-400">Choose what to recalculate and where</p>
+                    </div>
                 </div>
 
                 {/* Scope selector */}
@@ -861,9 +870,9 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                             <button
                                 key={s.id}
                                 onClick={() => resetTargets(s.id)}
-                                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition ${active
-                                    ? 'bg-[#185FA5] border-[#185FA5] text-white shadow-sm'
-                                    : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-full border text-sm font-semibold transition ${active
+                                    ? 'bg-[#185FA5] border-[#185FA5] text-white shadow-md shadow-[#185FA5]/20'
+                                    : 'bg-white border-gray-200 text-gray-500 hover:border-[#185FA5]/30 hover:text-[#185FA5]'
                                     }`}
                             >
                                 <Icon size={15} />
@@ -985,7 +994,8 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                     <button
                         onClick={() => setConfirmOpen(true)}
                         disabled={!canRun || running}
-                        className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-gradient-to-b from-[#1E6BB8] to-[#185FA5] text-white rounded-lg shadow-sm shadow-[#185FA5]/30 hover:shadow-md hover:shadow-[#185FA5]/40 hover:-translate-y-px disabled:opacity-40 disabled:hover:translate-y-0 disabled:cursor-not-allowed transition"                    >
+                        className="flex items-center gap-2 px-6 py-3 text-sm font-semibold bg-gradient-to-b from-[#2C8CE0] to-[#185FA5] text-white rounded-full shadow-md shadow-[#185FA5]/25 hover:shadow-lg hover:shadow-[#185FA5]/35 hover:-translate-y-px disabled:opacity-40 disabled:hover:translate-y-0 disabled:cursor-not-allowed transition"
+                    >
                         <RefreshCw size={15} className={running ? 'animate-spin' : ''} />
                         {running ? `Rebuilding ${progress.done}/${progress.total}...` : 'Rebuild Stock'}
                     </button>
@@ -1024,7 +1034,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
             {/* Confirm modal */}
             {confirmOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-7">
                         <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 bg-red-50 rounded-full">
                                 <AlertTriangle className="text-red-600" size={20} />
@@ -1053,13 +1063,13 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                         <div className="flex justify-end gap-2">
                             <button
                                 onClick={() => setConfirmOpen(false)}
-                                className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition"
+                                className="px-5 py-2.5 text-sm font-medium border border-gray-200 rounded-full text-gray-600 hover:bg-gray-50 transition"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={runRebuild}
-                                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                                className="px-5 py-2.5 text-sm font-semibold bg-red-600 text-white rounded-full hover:bg-red-700 transition shadow-sm shadow-red-600/25"
                             >
                                 Yes, rebuild all
                             </button>
