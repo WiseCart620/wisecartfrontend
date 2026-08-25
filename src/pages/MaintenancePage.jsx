@@ -23,10 +23,7 @@ const MaintenancePage = () => {
       <main style={styles.main}>
         <div style={styles.card}>
           <div style={styles.iconWrap}>
-            <svg viewBox="0 0 24 24" style={styles.icon}>
-              <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" />
-              <path d="M12 2v2.5M12 19.5V22M4.93 4.93l1.77 1.77M17.3 17.3l1.77 1.77M2 12h2.5M19.5 12H22M4.93 19.07l1.77-1.77M17.3 6.7l1.77-1.77" />
-            </svg>
+            <img src="/gear.png" alt="" style={styles.icon} />
           </div>
 
           <span style={styles.pill}>
@@ -141,13 +138,9 @@ const styles = {
     animation: 'pulse 2.4s ease-in-out infinite',
   },
   icon: {
-    width: '28px',
-    height: '28px',
-    stroke: colors.accentDeep,
-    fill: 'none',
-    strokeWidth: 1.8,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round',
+    width: '32px',
+    height: '32px',
+    objectFit: 'contain',
     animation: 'spin 4s linear infinite',
     transformOrigin: '50% 50%',
   },
