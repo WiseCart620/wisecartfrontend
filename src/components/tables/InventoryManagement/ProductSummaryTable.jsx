@@ -40,64 +40,91 @@ const ProductSummaryTable = ({
     }
   };
 
+  // Compact badge: icon optional, tighter padding/text than the original
+  const Badge = ({ value, prefix = '', className, icon }) => (
+    <span
+      className={`inline-flex items-center justify-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold leading-none whitespace-nowrap ${className}`}
+    >
+      {icon}
+      {prefix}
+      {(value || 0).toLocaleString('en-US')}
+    </span>
+  );
+
   return (
     <div className="bg-white rounded-xl shadow overflow-hidden mb-6 table-panel">
-      <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-        <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <BarChart3 size={20} />
+      <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+        <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+          <BarChart3 size={18} />
           Product Inventory Summary
         </h2>
       </div>
 
+      {/* overflow-x-auto stays as a safety net for very narrow screens,
+          but table-fixed + trimmed widths below keep it inside a laptop viewport */}
       <div className="overflow-x-auto table-fit">
-        <table className="w-full">
+        <table className="w-full table-fixed text-[11px]">
+          <colgroup>
+            <col className="w-[15%]" />
+            <col className="w-[11%]" />
+            <col className="w-[7%]" />
+            <col className="w-[7%]" />
+            <col className="w-[7%]" />
+            <col className="w-[7%]" />
+            <col className="w-[7%]" />
+            <col className="w-[8%]" />
+            <col className="w-[9%]" />
+            <col className="w-[7%]" />
+            <col className="w-[8%]" />
+            <col className="w-[7%]" />
+            <col className="w-[7%]" />
+          </colgroup>
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU/UPC</th>
-              <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">Stock In</th>
-              <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">Transfer In</th>
-              <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">Transfer Out</th>
-              <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">Return</th>
-              <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">Damage</th>
-              <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                <div className="flex items-center justify-center gap-1">
-                  <CheckCircle size={14} />
+              <th className="px-2 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-tight">Product</th>
+              <th className="px-2 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-tight">SKU/UPC</th>
+              <th className="px-1 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-tight leading-tight">Stock<br />In</th>
+              <th className="px-1 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-tight leading-tight">Trans.<br />In</th>
+              <th className="px-1 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-tight leading-tight">Trans.<br />Out</th>
+              <th className="px-1 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-tight leading-tight">Return</th>
+              <th className="px-1 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-tight leading-tight">Damage</th>
+              <th className="px-1 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-tight leading-tight">
+                <div className="flex flex-col items-center justify-center">
+                  <CheckCircle size={11} />
                   Delivered
                 </div>
               </th>
-              {/* NEW: Cancelled Returns Column */}
-              <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                <div className="flex items-center justify-center gap-1">
-                  <Undo2 size={14} />
-                  Cancelled Returns
+              <th className="px-1 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-tight leading-tight">
+                <div className="flex flex-col items-center justify-center">
+                  <Undo2 size={11} />
+                  Cancel. Ret.
                 </div>
               </th>
-              <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                <div className="flex items-center justify-center gap-1">
-                  <ShoppingCart size={14} />
+              <th className="px-1 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-tight leading-tight">
+                <div className="flex flex-col items-center justify-center">
+                  <ShoppingCart size={11} />
                   Sales
                 </div>
               </th>
-              <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                <div className="flex items-center justify-center gap-1">
-                  <Truck size={14} />
-                  Pending Delivery
+              <th className="px-1 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-tight leading-tight">
+                <div className="flex flex-col items-center justify-center">
+                  <Truck size={11} />
+                  Pend. Deliv.
                 </div>
               </th>
-              <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                <div className="flex items-center justify-center gap-1">
-                  <Clock size={14} />
-                  Pending Sale
+              <th className="px-1 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-tight leading-tight">
+                <div className="flex flex-col items-center justify-center">
+                  <Clock size={11} />
+                  Pend. Sale
                 </div>
               </th>
-              <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th className="px-2 py-2 text-right text-[10px] font-medium text-gray-500 uppercase tracking-tight">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {isLoading ? (
               <tr>
-                <td colSpan="12" className="px-6 py-16 text-center">
+                <td colSpan="13" className="px-6 py-16 text-center">
                   <div className="flex flex-col items-center gap-3 text-gray-400">
                     <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin" />
                     <span className="text-sm">Loading products...</span>
@@ -106,7 +133,7 @@ const ProductSummaryTable = ({
               </tr>
             ) : currentProductSummaries.length === 0 ? (
               <tr>
-                <td colSpan="12" className="px-6 py-8 text-center text-gray-500">
+                <td colSpan="13" className="px-6 py-8 text-center text-gray-500">
                   {filteredProductSummaries.length === 0 ? 'No products found' : 'No products on this page'}
                 </td>
               </tr>
@@ -123,103 +150,81 @@ const ProductSummaryTable = ({
 
                 return (
                   <tr key={uniqueKey} className="hover:bg-gray-50">
-                    <td className="px-3 py-3">
-                      <div className="max-w-[200px]">
-                        <div className="font-medium text-gray-900 text-sm break-words whitespace-normal leading-tight">
-                          {product.productName}
-                          {isVariation && product.variationName && (
-                            <span className="ml-2 text-blue-600 font-semibold">
-                              ({product.variationName})
-                            </span>
-                          )}
+                    <td className="px-2 py-2 align-top">
+                      <div
+                        className="font-medium text-gray-900 text-[11px] truncate leading-tight"
+                        title={`${product.productName}${isVariation && product.variationName ? ` (${product.variationName})` : ''}`}
+                      >
+                        {product.productName}
+                        {isVariation && product.variationName && (
+                          <span className="ml-1 text-blue-600 font-semibold">
+                            ({product.variationName})
+                          </span>
+                        )}
+                      </div>
+                      {isVariation && product.combinationDisplay && (
+                        <div className="text-[10px] text-gray-500 truncate" title={product.combinationDisplay}>
+                          {product.combinationDisplay}
                         </div>
-                        {isVariation && product.combinationDisplay && (
-                          <div className="text-xs text-gray-600 mt-1">
-                            {product.combinationDisplay}
-                          </div>
-                        )}
+                      )}
+                    </td>
+                    <td className="px-2 py-2 align-top text-[10px]">
+                      <div className="truncate" title={`SKU: ${displaySku || 'N/A'}`}>
+                        SKU: {displaySku || 'N/A'}
                       </div>
+                      {displayUpc && displayUpc !== 'N/A' && (
+                        <div className="text-gray-500 truncate" title={`UPC: ${displayUpc}`}>
+                          UPC: {displayUpc}
+                        </div>
+                      )}
                     </td>
-                    <td className="px-3 py-3 text-xs">
-                      <div className="space-y-1">
-                        <div className="font-medium">SKU: {displaySku || 'N/A'}</div>
-                        {displayUpc && displayUpc !== 'N/A' && (
-                          <div className="text-gray-500">UPC: {displayUpc}</div>
-                        )}
-                      </div>
+                    <td className="px-1 py-2 text-center">
+                      <Badge value={product.totalStockIn} prefix="+" className="bg-green-100 text-green-800" />
                     </td>
-                    <td className="px-2 py-3 text-center">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        +{(product.totalStockIn || 0).toLocaleString('en-US')}
-                      </span>
+                    <td className="px-1 py-2 text-center">
+                      <Badge value={product.totalTransferIn} prefix="+" className="bg-indigo-100 text-indigo-800" />
                     </td>
-                    <td className="px-2 py-3 text-center">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                        +{(product.totalTransferIn || 0).toLocaleString('en-US')}
-                      </span>
+                    <td className="px-1 py-2 text-center">
+                      <Badge value={product.totalTransferOut} prefix="-" className="bg-blue-100 text-blue-800" />
                     </td>
-                    <td className="px-2 py-3 text-center">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        -{(product.totalTransferOut || 0).toLocaleString('en-US')}
-                      </span>
+                    <td className="px-1 py-2 text-center">
+                      <Badge value={product.totalReturn} prefix="+" className="bg-yellow-100 text-yellow-800" />
                     </td>
-                    <td className="px-2 py-3 text-center">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        +{(product.totalReturn || 0).toLocaleString('en-US')}
-                      </span>
+                    <td className="px-1 py-2 text-center">
+                      <Badge value={product.totalDamage} prefix="-" className="bg-red-100 text-red-800" />
                     </td>
-                    <td className="px-2 py-3 text-center">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        -{(product.totalDamage || 0).toLocaleString('en-US')}
-                      </span>
+                    <td className="px-1 py-2 text-center">
+                      <Badge value={product.totalDelivered} className="bg-teal-100 text-teal-800" />
                     </td>
-                    <td className="px-2 py-3 text-center">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
-                        <CheckCircle size={12} />
-                        {(product.totalDelivered || 0).toLocaleString('en-US')}
-                      </span>
+                    <td className="px-1 py-2 text-center">
+                      <Badge value={product.totalCancelledReturns} className="bg-rose-100 text-rose-800" />
                     </td>
-                    {/* NEW: Cancelled Returns cell */}
-                    <td className="px-2 py-3 text-center">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800">
-                        <Undo2 size={12} />
-                        {(product.totalCancelledReturns || 0).toLocaleString('en-US')}
-                      </span>
+                    <td className="px-1 py-2 text-center">
+                      <Badge value={product.totalSales} className="bg-pink-100 text-pink-800" />
                     </td>
-                    <td className="px-2 py-3 text-center">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
-                        <ShoppingCart size={12} />
-                        {(product.totalSales || 0).toLocaleString('en-US')}
-                      </span>
+                    <td className="px-1 py-2 text-center">
+                      <Badge value={product.totalPendingDelivery} className="bg-orange-100 text-orange-800" />
                     </td>
-                    <td className="px-2 py-3 text-center">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                        <Truck size={12} />
-                        {(product.totalPendingDelivery || 0).toLocaleString('en-US')}
-                      </span>
+                    <td className="px-1 py-2 text-center">
+                      <Badge value={product.totalConfirmedSales} className="bg-purple-100 text-purple-800" />
                     </td>
-                    <td className="px-2 py-3 text-center">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                        <Clock size={12} />
-                        {(product.totalConfirmedSales || 0).toLocaleString('en-US')}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-right">
+                    <td className="px-2 py-2 text-right">
                       <button
                         onClick={() => handleView(product, displaySku, displayUpc, isVariation)}
                         disabled={isThisLoading}
-                        className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition
+                        title="View History"
+                        className={`inline-flex items-center gap-1 px-1.5 py-1 text-[10px] font-medium rounded transition whitespace-nowrap
                           ${isThisLoading
                             ? 'text-blue-400 cursor-wait'
                             : 'text-blue-600 hover:bg-blue-50'
                           }`}
                       >
                         {isThisLoading ? (
-                          <Loader2 size={14} className="animate-spin" />
+                          <Loader2 size={12} className="animate-spin" />
                         ) : (
-                          <Eye size={14} />
+                          <Eye size={12} />
                         )}
-                        {isThisLoading ? 'Loading...' : 'View History'}
+                        {isThisLoading ? '...' : 'View'}
                       </button>
                     </td>
                   </tr>
@@ -244,5 +249,6 @@ const ProductSummaryTable = ({
     </div>
   );
 };
+
 
 export default ProductSummaryTable;

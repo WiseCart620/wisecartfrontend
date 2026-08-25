@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import {
     RefreshCw, AlertTriangle, Building, Store, Layers,
-    Search, ChevronDown, CheckCircle2, XCircle, Clock, ShieldAlert, X, ArrowRight
+    Search, ChevronDown, CheckCircle2, XCircle, Clock, ShieldAlert, X, ArrowRight,
+    Lock, KeyRound, Eye, EyeOff
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../../services/api';
@@ -169,75 +170,240 @@ const MultiSelect = ({ label, values, onChange, options, getLabel, getSearchText
     );
 };
 
+
+const PasswordGate = ({ onUnlock }) => {
+    const [value, setValue] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [error, setError] = useState('');
+    const [shake, setShake] = useState(false);
+    const [checking, setChecking] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!value || checking) return;
+        setChecking(true);
+        setError('');
+        try {
+            const res = await api.post('/admin/stock-rebuild/verify-access', { password: value });
+            const data = res.data || res;
+            if (data.authorized) {
+                onUnlock();
+            } else {
+                setError(data.error || 'Incorrect password.');
+                setShake(true);
+                setTimeout(() => setShake(false), 400);
+            }
+        } catch (err) {
+            const serverMessage = err?.response?.data?.error;
+            setError(serverMessage || 'Could not verify password. Try again.');
+            setShake(true);
+            setTimeout(() => setShake(false), 400);
+        } finally {
+            setChecking(false);
+        }
+    };
+
+    return (
+        <div className="flex items-center justify-center py-16">
+            <div
+                className={`w-full max-w-sm bg-white border border-gray-200 rounded-2xl shadow-sm p-7 text-center ${shake ? 'animate-[shake_0.4s_ease-in-out]' : ''
+                    }`}
+            >
+                <style>{`
+                    @keyframes shake {
+                        0%, 100% { transform: translateX(0); }
+                        20%, 60% { transform: translateX(-6px); }
+                        40%, 80% { transform: translateX(6px); }
+                    }
+                `}</style>
+
+                <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-[#E6F1FB] flex items-center justify-center">
+                    <Lock size={20} className="text-[#185FA5]" />
+                </div>
+
+                <h3 className="text-base font-semibold text-gray-900">Restricted panel</h3>
+                <p className="text-sm text-gray-500 mt-1 mb-5">
+                    Stock Rebuild permanently rewrites transaction history. Enter the access password to continue.
+                </p>
+
+                <form onSubmit={handleSubmit} className="space-y-3">
+                    <div className="relative">
+                        <KeyRound size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input
+                            type={showPassword ? 'text' : 'password'}
+                            value={value}
+                            autoFocus
+                            disabled={checking}
+                            onChange={(e) => {
+                                setValue(e.target.value);
+                                if (error) setError('');
+                            }}
+                            placeholder="Access password"
+                            className={`w-full pl-9 pr-9 py-2.5 text-sm border rounded-lg outline-none transition focus:ring-2 disabled:bg-gray-50 ${error
+                                ? 'border-red-300 focus:ring-red-100'
+                                : 'border-gray-300 focus:ring-[#185FA5]/20 focus:border-[#185FA5]'
+                                }`}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword((s) => !s)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            tabIndex={-1}
+                        >
+                            {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                        </button>
+                    </div>
+
+                    {error && (
+                        <p className="text-xs text-red-600 text-left -mt-1">{error}</p>
+                    )}
+
+                    <button
+                        type="submit"
+                        disabled={checking || !value}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-[#185FA5] text-white rounded-lg hover:bg-[#0C447C] disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                        {checking ? <RefreshCw size={14} className="animate-spin" /> : <Lock size={14} />}
+                        {checking ? 'Verifying...' : 'Unlock panel'}
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
 // ---- results table ---------------------------------------------------------
 
 const StatusBadge = ({ status }) => {
     if (status === 'RUNNING') {
         return (
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full">
                 <RefreshCw size={11} className="animate-spin" /> Running
             </span>
         );
     }
     if (status === 'PENDING') {
         return (
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-full">
-                <Clock size={11} /> Queued
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-400" /> Queued
             </span>
         );
     }
     if (status === 'ERROR') {
         return (
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">
                 <XCircle size={11} /> Failed
             </span>
         );
     }
     return (
-        <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
             <CheckCircle2 size={11} /> Rebuilt
         </span>
     );
 };
 
+const LocationChip = ({ type, name }) => {
+    const isWarehouse = type === 'Warehouse';
+    return (
+        <span className="inline-flex items-center gap-2">
+            <span
+                className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${isWarehouse ? 'bg-[#E6F1FB] text-[#185FA5]' : 'bg-violet-50 text-violet-600'
+                    }`}
+            >
+                {isWarehouse ? <Building size={12} /> : <Store size={12} />}
+            </span>
+            <span className="text-gray-700">{name}</span>
+        </span>
+    );
+};
+
+const QtyDelta = ({ before, after }) => {
+    if (before === null || after === null || before === undefined || after === undefined) {
+        return <span className="text-gray-300 tabular-nums">—</span>;
+    }
+    const diff = after - before;
+    const diffColor = diff > 0 ? 'text-emerald-600' : diff < 0 ? 'text-red-500' : 'text-gray-400';
+    return (
+        <div className="flex items-center justify-end gap-2 tabular-nums">
+            <span className="text-gray-400">{before}</span>
+            <ArrowRight size={11} className="text-gray-300 shrink-0" />
+            <span className="font-semibold text-gray-900">{after}</span>
+            {diff !== 0 && (
+                <span className={`text-[11px] font-medium ${diffColor}`}>
+                    ({diff > 0 ? '+' : ''}{diff})
+                </span>
+            )}
+        </div>
+    );
+};
+
 const ResultsTable = ({ rows }) => {
     if (rows.length === 0) return null;
+
+    const doneCount = rows.filter((r) => r.status === 'DONE').length;
+    const errorCount = rows.filter((r) => r.status === 'ERROR').length;
+    const pendingCount = rows.filter((r) => r.status === 'PENDING' || r.status === 'RUNNING').length;
+
     return (
-        <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
-            <div className="overflow-x-auto table-fit" style={{ maxHeight: 'calc(100vh - 420px)' }}>
-                <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Variation</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
-                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Qty Before → After</th>
-                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Retired</th>
-                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+        <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
+            <div className="flex items-center gap-5 px-4 py-2.5 bg-gray-50 border-b border-gray-200 text-xs">
+                <span className="font-medium text-gray-500">{rows.length} total</span>
+                <span className="flex items-center gap-1.5 text-emerald-700">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> {doneCount} rebuilt
+                </span>
+                {errorCount > 0 && (
+                    <span className="flex items-center gap-1.5 text-red-600">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> {errorCount} failed
+                    </span>
+                )}
+                {pendingCount > 0 && (
+                    <span className="flex items-center gap-1.5 text-gray-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-300" /> {pendingCount} in queue
+                    </span>
+                )}
+            </div>
+
+            <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 440px)' }}>
+                <table className="w-full text-sm border-collapse">
+                    <thead className="sticky top-0 z-10">
+                        <tr className="bg-white border-b border-gray-200 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+                            <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Product</th>
+                            <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Variation</th>
+                            <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Location</th>
+                            <th className="px-4 py-2.5 text-right text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Quantity</th>
+                            <th className="px-4 py-2.5 text-right text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Retired</th>
+                            <th className="px-4 py-2.5 text-right text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Status</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {rows.map((r) => (
-                            <tr key={r.id} className={`hover:bg-gray-50 ${r.status === 'PENDING' ? 'opacity-50' : ''}`}>
-                                <td className="px-3 py-2 text-gray-900">{r.productName}</td>
-                                <td className="px-3 py-2 text-gray-600">{r.variationName}</td>
-                                <td className="px-3 py-2 text-gray-600">
-                                    <span className="inline-flex items-center gap-1">
-                                        {r.locationType === 'Warehouse' ? <Building size={12} /> : <Store size={12} />}
-                                        {r.locationName}
-                                    </span>
+                    <tbody>
+                        {rows.map((r, i) => (
+                            <tr
+                                key={r.id}
+                                className={`border-b border-gray-100 last:border-0 transition-colors ${r.status === 'PENDING' ? 'opacity-45' : 'hover:bg-[#F7FAFD]'
+                                    } ${r.status === 'ERROR' ? 'bg-red-50/40' : ''}`}
+                            >
+                                <td className="px-4 py-2.5 text-gray-900 font-medium whitespace-nowrap">{r.productName}</td>
+                                <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">{r.variationName}</td>
+                                <td className="px-4 py-2.5 whitespace-nowrap">
+                                    <LocationChip type={r.locationType} name={r.locationName} />
                                 </td>
-                                <td className="px-3 py-2 text-center text-gray-700">
-                                    {r.qtyBefore ?? '—'} → <span className="font-semibold text-[#0C447C]">{r.qtyAfter ?? '—'}</span>
+                                <td className="px-4 py-2.5">
+                                    <QtyDelta before={r.qtyBefore} after={r.qtyAfter} />
                                 </td>
-                                <td className="px-3 py-2 text-center text-gray-500">{r.retired ?? '—'}</td>
-                                <td className="px-3 py-2 text-center">
-                                    <StatusBadge status={r.status} />
-                                    {r.status === 'ERROR' && r.error && (
-                                        <div className="text-[10px] text-red-500 mt-0.5 max-w-[160px] truncate" title={r.error}>
-                                            {r.error}
-                                        </div>
-                                    )}
+                                <td className="px-4 py-2.5 text-right text-gray-500 tabular-nums">{r.retired ?? '—'}</td>
+                                <td className="px-4 py-2.5">
+                                    <div className="flex flex-col items-end gap-1">
+                                        <StatusBadge status={r.status} />
+                                        {r.status === 'ERROR' && r.error && (
+                                            <span
+                                                className="text-[10px] text-red-500 max-w-[180px] truncate text-right"
+                                                title={r.error}
+                                            >
+                                                {r.error}
+                                            </span>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -292,14 +458,10 @@ const BranchQueueBanner = ({ queue, activeIndex }) => {
 
 let rowCounter = 0;
 
-// Set this to the real single-product detail endpoint once you have one
-// (e.g. '/products/{id}' or '/products/{id}/details'), then flip
-// PRODUCT_DETAIL_ENABLED to true. Until then, this stays off so the panel
-// doesn't fire a request per selected product against a route that 500s.
 const PRODUCT_DETAIL_ENABLED = false;
-const PRODUCT_DETAIL_ENDPOINT = (id) => `/admin/products/${id}`; // TODO: point at your real product-detail endpoint
-
+const PRODUCT_DETAIL_ENDPOINT = (id) => `/admin/products/${id}`;
 const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRebuilt }) => {
+    const [unlocked, setUnlocked] = useState(false);
     const [scope, setScope] = useState('BOTH');
     const [warehouseIds, setWarehouseIds] = useState([]);
     const [branchIds, setBranchIds] = useState([]);
@@ -631,9 +793,12 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         if (onRebuilt) onRebuilt();
     };
 
+    if (!unlocked) {
+        return <PasswordGate onUnlock={() => setUnlocked(true)} />;
+    }
+
     return (
         <div className="space-y-6">
-            {/* Warning banner */}
             <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
                 <ShieldAlert className="text-amber-600 shrink-0 mt-0.5" size={20} />
                 <div className="text-sm text-amber-800">
@@ -815,8 +980,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
             {results.length > 0 && (
                 <div className="space-y-2">
                     <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                        <Clock size={14} /> Results ({results.filter(r => r.status === 'DONE').length} rebuilt
-                        {results.some(r => r.status === 'ERROR') && `, ${results.filter(r => r.status === 'ERROR').length} failed`})
+                        <Clock size={14} /> Results
                     </h3>
                     <ResultsTable rows={results} />
                 </div>
