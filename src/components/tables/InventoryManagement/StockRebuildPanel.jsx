@@ -217,8 +217,8 @@ const PasswordGate = ({ onUnlock }) => {
                     }
                 `}</style>
 
-                <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-[#E6F1FB] flex items-center justify-center">
-                    <Lock size={20} className="text-[#185FA5]" />
+                <div className="mx-auto mb-4 w-14 h-14 rounded-2xl bg-gradient-to-br from-[#185FA5] to-[#0C447C] flex items-center justify-center shadow-lg shadow-[#185FA5]/20">
+                    <Lock size={22} className="text-white" />
                 </div>
 
                 <h3 className="text-base font-semibold text-gray-900">Restricted panel</h3>
@@ -367,7 +367,7 @@ const ResultsTable = ({ rows }) => {
             <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 440px)' }}>
                 <table className="w-full text-sm border-collapse">
                     <thead className="sticky top-0 z-10">
-                        <tr className="bg-white border-b border-gray-200 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+                        <tr className="bg-[#F7FAFD] border-b border-gray-200 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
                             <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Product</th>
                             <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Variation</th>
                             <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Location</th>
@@ -460,8 +460,17 @@ let rowCounter = 0;
 
 const PRODUCT_DETAIL_ENABLED = false;
 const PRODUCT_DETAIL_ENDPOINT = (id) => `/admin/products/${id}`;
+const REBUILD_UNLOCK_KEY = 'stockRebuildUnlockedUntil';
+const UNLOCK_TTL_MS = 30 * 60 * 1000;
 const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRebuilt }) => {
-    const [unlocked, setUnlocked] = useState(false);
+    const [unlocked, setUnlocked] = useState(() => {
+        try {
+            const expiry = sessionStorage.getItem(REBUILD_UNLOCK_KEY);
+            return expiry ? Date.now() < Number(expiry) : false;
+        } catch {
+            return false;
+        }
+    });
     const [scope, setScope] = useState('BOTH');
     const [warehouseIds, setWarehouseIds] = useState([]);
     const [branchIds, setBranchIds] = useState([]);
@@ -793,28 +802,55 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         if (onRebuilt) onRebuilt();
     };
 
+    const handleUnlock = () => {
+        try {
+            sessionStorage.setItem(REBUILD_UNLOCK_KEY, String(Date.now() + UNLOCK_TTL_MS));
+        } catch {
+        }
+        setUnlocked(true);
+    };
+
+    const handleRelock = () => {
+        try {
+            sessionStorage.removeItem(REBUILD_UNLOCK_KEY);
+        } catch { }
+        setUnlocked(false);
+    };
+
     if (!unlocked) {
-        return <PasswordGate onUnlock={() => setUnlocked(true)} />;
+        return <PasswordGate onUnlock={handleUnlock} />;
     }
 
     return (
         <div className="space-y-6">
-            <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                <ShieldAlert className="text-amber-600 shrink-0 mt-0.5" size={20} />
-                <div className="text-sm text-amber-800">
-                    <p className="font-semibold">This tool rewrites stock history.</p>
-                    <p className="mt-0.5 text-amber-700">
-                        It permanently retires existing transactions for each selected product at each selected location and
-                        regenerates them from the source Sale / Delivery / Inventory records. Branches are processed one at a
-                        time, in full, before the next branch starts automatically. Review the results table after running
-                        before trusting the numbers downstream.
-                    </p>
+            <div className="flex items-start justify-between gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                    <ShieldAlert className="text-amber-600 shrink-0 mt-0.5" size={20} />
+                    <div className="text-sm text-amber-800">
+                        <p className="font-semibold">This tool rewrites stock history.</p>
+                        <p className="mt-0.5 text-amber-700">
+                            It permanently retires existing transactions for each selected product at each selected location and
+                            regenerates them from the source Sale / Delivery / Inventory records. Branches are processed one at a
+                            time, in full, before the next branch starts automatically. Review the results table after running
+                            before trusting the numbers downstream.
+                        </p>
+                    </div>
                 </div>
+                <button
+                    onClick={handleRelock}
+                    className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 border border-amber-300 rounded-lg hover:bg-amber-100 transition"
+                >
+                    <Lock size={12} /> Lock
+                </button>
             </div>
 
-            {/* Config card */}
-            <div className="border border-gray-200 rounded-xl p-5 bg-white">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4">Rebuild targets</h3>
+            <div className="border border-gray-200 rounded-2xl p-5 bg-white shadow-sm shadow-gray-100">
+                <div className="flex items-center gap-2 mb-4">
+                    <div className="w-7 h-7 rounded-lg bg-[#E6F1FB] flex items-center justify-center">
+                        <Layers size={14} className="text-[#185FA5]" />
+                    </div>
+                    <h3 className="text-sm font-semibold text-gray-800">Rebuild targets</h3>
+                </div>
 
                 {/* Scope selector */}
                 <div className="flex gap-2 mb-5">
@@ -949,8 +985,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                     <button
                         onClick={() => setConfirmOpen(true)}
                         disabled={!canRun || running}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-[#185FA5] text-white rounded-lg hover:bg-[#0C447C] disabled:opacity-40 disabled:cursor-not-allowed transition"
-                    >
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-gradient-to-b from-[#1E6BB8] to-[#185FA5] text-white rounded-lg shadow-sm shadow-[#185FA5]/30 hover:shadow-md hover:shadow-[#185FA5]/40 hover:-translate-y-px disabled:opacity-40 disabled:hover:translate-y-0 disabled:cursor-not-allowed transition"                    >
                         <RefreshCw size={15} className={running ? 'animate-spin' : ''} />
                         {running ? `Rebuilding ${progress.done}/${progress.total}...` : 'Rebuild Stock'}
                     </button>
