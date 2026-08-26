@@ -825,20 +825,17 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
 
     return (
         <div className="space-y-6">
-            <div className="rounded-2xl border border-amber-200/70 bg-amber-50/60 overflow-hidden">
-                <div className="flex items-center justify-between gap-3 px-4 py-2.5">
-                    <button
-                        type="button"
-                        onClick={() => setWarningOpen((o) => !o)}
-                        className="flex items-center gap-2 text-sm font-medium text-amber-800 hover:text-amber-900 transition"
-                    >
-                        <ShieldAlert size={16} className="text-amber-600 shrink-0" />
-                        This tool rewrites stock history.
-                        <ChevronDown
-                            size={13}
-                            className={`text-amber-500 transition-transform ${warningOpen ? 'rotate-180' : ''}`}
-                        />
-                    </button>
+            <div className={bare ? '' : 'border border-gray-100 rounded-3xl p-7 bg-white shadow-[0_2px_16px_rgba(15,23,42,0.04)]'}>
+                <div className="flex items-center justify-between gap-3 mb-5">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#E6F1FB] to-[#D3E8FA] flex items-center justify-center">
+                            <Layers size={16} className="text-[#185FA5]" />
+                        </div>
+                        <div>
+                            <h3 className="text-base font-semibold text-gray-900">Rebuild targets</h3>
+                            <p className="text-xs text-gray-400">Choose what to recalculate and where</p>
+                        </div>
+                    </div>
                     <button
                         onClick={handleRelock}
                         className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 border border-amber-300 rounded-lg hover:bg-amber-100 transition"
@@ -846,25 +843,31 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                         <Lock size={12} /> Lock
                     </button>
                 </div>
-                {warningOpen && (
-                    <p className="px-4 pb-3.5 -mt-1 text-xs text-amber-700 leading-relaxed">
-                        It permanently retires existing transactions for each selected product at each selected location and
-                        regenerates them from the source Sale / Delivery / Inventory records. Branches are processed one at a
-                        time, in full, before the next branch starts automatically. Review the results table after running
-                        before trusting the numbers downstream.
-                    </p>
-                )}
-            </div>
 
-            <div className={bare ? '' : 'border border-gray-100 rounded-3xl p-7 bg-white shadow-[0_2px_16px_rgba(15,23,42,0.04)]'}>
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#E6F1FB] to-[#D3E8FA] flex items-center justify-center">
-                        <Layers size={16} className="text-[#185FA5]" />
-                    </div>
-                    <div>
-                        <h3 className="text-base font-semibold text-gray-900">Rebuild targets</h3>
-                        <p className="text-xs text-gray-400">Choose what to recalculate and where</p>
-                    </div>
+                {/* Collapsible warning — narrow to match form width, not full column */}
+                <div className="max-w-2xl rounded-xl border border-amber-200/70 bg-amber-50/60 overflow-hidden mb-5">
+                    <button
+                        type="button"
+                        onClick={() => setWarningOpen((o) => !o)}
+                        className="w-full flex items-center justify-between gap-3 px-3.5 py-2 text-xs font-medium text-amber-800 hover:text-amber-900 transition"
+                    >
+                        <span className="flex items-center gap-1.5">
+                            <ShieldAlert size={13} className="text-amber-600 shrink-0" />
+                            This tool rewrites stock history.
+                        </span>
+                        <ChevronDown
+                            size={12}
+                            className={`text-amber-500 transition-transform shrink-0 ${warningOpen ? 'rotate-180' : ''}`}
+                        />
+                    </button>
+                    {warningOpen && (
+                        <p className="px-3.5 pb-3 -mt-0.5 text-[11px] text-amber-700 leading-relaxed">
+                            It permanently retires existing transactions for each selected product at each selected location
+                            and regenerates them from the source Sale / Delivery / Inventory records. Branches are processed
+                            one at a time, in full, before the next branch starts automatically. Review the results table
+                            after running before trusting the numbers downstream.
+                        </p>
+                    )}
                 </div>
 
                 {/* Scope selector */}
