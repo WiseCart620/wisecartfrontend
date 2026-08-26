@@ -180,7 +180,7 @@ const SectionLabel = ({ children }) => (
     </p>
 );
 
-const PasswordGate = ({ onUnlock }) => {
+const PasswordGate = ({ onUnlock, bare = false }) => {
     const [value, setValue] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
@@ -213,12 +213,8 @@ const PasswordGate = ({ onUnlock }) => {
     };
 
     return (
-        <div className="flex items-center justify-center py-16">
-            <div
-                className={`w-full max-w-sm bg-white border border-slate-200 rounded-xl shadow-sm p-7 ${shake ? 'animate-[shake_0.4s_ease-in-out]' : ''
-                    }`}
-            >
-                <style>{`
+        <div className={bare ? 'h-full' : 'border border-slate-200 rounded-lg p-5 bg-white h-full'}>
+            <style>{`
                 @keyframes shake {
                     0%, 100% { transform: translateX(0); }
                     20%, 60% { transform: translateX(-6px); }
@@ -226,16 +222,17 @@ const PasswordGate = ({ onUnlock }) => {
                 }
             `}</style>
 
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="w-9 h-9 rounded-lg bg-[#185FA5] flex items-center justify-center shrink-0">
-                        <Lock size={16} className="text-white" />
-                    </div>
-                    <div>
-                        <h3 className="text-sm font-semibold text-slate-900">Restricted panel</h3>
-                        <p className="text-xs text-slate-500">Enter the access password to continue</p>
-                    </div>
+            <div className={`flex items-center gap-3 mb-4 pb-4 border-b border-slate-100 ${shake ? 'animate-[shake_0.4s_ease-in-out]' : ''}`}>
+                <div className="w-8 h-8 rounded-md bg-[#185FA5] flex items-center justify-center shrink-0">
+                    <Lock size={15} className="text-white" />
                 </div>
+                <div>
+                    <h3 className="text-sm font-semibold text-slate-900">Rebuild targets</h3>
+                    <p className="text-xs text-slate-400">Enter the access password to continue</p>
+                </div>
+            </div>
 
+            <div className="max-w-sm">
                 <p className="text-xs text-slate-500 mb-4 leading-relaxed border-l-2 border-amber-300 pl-2.5">
                     Stock Rebuild permanently rewrites transaction history.
                 </p>
@@ -824,12 +821,13 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     };
 
     if (!unlocked) {
-        return <PasswordGate onUnlock={handleUnlock} />;
+        return <PasswordGate onUnlock={handleUnlock} bare={bare} />;
     }
 
     return (
         <div className="space-y-4 h-full">
             <div className={bare ? 'h-full' : 'border border-slate-200 rounded-lg p-5 bg-white h-full'}>
+                <div className="max-w-2xl">
                 <div className="flex items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-md bg-[#E6F1FB] flex items-center justify-center">
@@ -849,7 +847,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                 </div>
 
                 {/* Collapsible warning */}
-                <div className="max-w-2xl rounded-md border border-amber-200 bg-amber-50 overflow-hidden mb-4">
+                <div className="rounded-md border border-amber-200 bg-amber-50 overflow-hidden mb-4">
                     <button
                         type="button"
                         onClick={() => setWarningOpen((o) => !o)}
@@ -1012,6 +1010,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                             </div>
                         )}
                     </div>
+                </div>
                 </div>
             </div>
 
