@@ -668,7 +668,7 @@ const AlertManagement = ({
         </div>
 
         {/* ── Pagination ─────────────────────────────────────────────────── */}
-        {alertsTotalPages > 1 && (
+        {activeFilterCount === 0 && alertsTotalPages > 1 && (
           <div className="px-5 py-2.5 border-t border-gray-100 bg-white flex-shrink-0 flex items-center justify-between gap-2">
             <span className="text-[11px] text-gray-400 whitespace-nowrap">
               {alertsCurrentPage * PAGE_SIZE + 1}–{Math.min((alertsCurrentPage + 1) * PAGE_SIZE, alertsTotalElements)} of {alertsTotalElements}
@@ -704,6 +704,16 @@ const AlertManagement = ({
                 <ChevronRight size={15} />
               </button>
             </div>
+          </div>
+        )}
+
+        {/* ── Filtered results note (shown instead of pager while filtering) ─ */}
+        {activeFilterCount > 0 && (
+          <div className="px-5 py-2 border-t border-gray-100 bg-white flex-shrink-0">
+            <span className="text-[11px] text-gray-400">
+              Showing {filteredAlerts.length} matching {filteredAlerts.length === 1 ? 'result' : 'results'} on this page
+              {alertsTotalPages > 1 ? ' — clear filters to browse other pages' : ''}
+            </span>
           </div>
         )}
 
