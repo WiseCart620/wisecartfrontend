@@ -598,22 +598,26 @@ const InventoryManagement = () => {
         )}
 
         {activeTab === 'stock-rebuild' && (
-          <div className="mb-8 space-y-6">
-            <StockRebuildPanel
-              products={products}
-              warehouses={warehouses}
-              branches={branches}
-              onRebuilt={() => {
-                loadData(inventoryPage, inventoryPageSize);
-                loadProductSummaries();
-              }}
-            />
-            <TransactionCleanupPanel
-              onCleaned={() => {
-                loadData(inventoryPage, inventoryPageSize);
-                loadProductSummaries();
-              }}
-            />
+          <div className="mb-8 grid grid-cols-1 xl:grid-cols-5 gap-6 items-start">
+            <div className="xl:col-span-3">
+              <StockRebuildPanel
+                products={products}
+                warehouses={warehouses}
+                branches={branches}
+                onRebuilt={() => {
+                  loadData(inventoryPage, inventoryPageSize);
+                  loadProductSummaries();
+                }}
+              />
+            </div>
+            <div className="xl:col-span-2">
+              <TransactionCleanupPanel
+                onCleaned={() => {
+                  loadData(inventoryPage, inventoryPageSize);
+                  loadProductSummaries();
+                }}
+              />
+            </div>
           </div>
         )}
 
