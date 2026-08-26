@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, BarChart3, Building, Store, RefreshCw } from 'lucide-react';
+import { Search, BarChart3, Building, Store, RefreshCw, Lock } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 // Hooks
@@ -15,7 +15,7 @@ import InventorySummaryReportModal from '../../components/modals/InventorySummar
 import ProductSummaryTable from '../../components/tables/InventoryManagement/ProductSummaryTable';
 import WarehouseStockTable from '../../components/tables/InventoryManagement/WarehouseStockTable';
 import BranchStockTable from '../../components/tables/InventoryManagement/BranchStockTable';
-import StockRebuildPanel from '../../components/tables/InventoryManagement/StockRebuildPanel';
+import StockRebuildPanel, { PasswordGate } from '../../components/tables/InventoryManagement/StockRebuildPanel';
 import TransactionCleanupPanel from '../../components/tables/InventoryManagement/TransactionCleanupPanel';
 import ProductSummaryReportPanel from '../../components/filters/ProductSummaryReportPanel';
 import BranchSummaryReportModal from '../../components/modals/BranchSummaryReportModal';
@@ -52,6 +52,31 @@ const InventoryManagement = () => {
   const [showBranchReportModal, setShowBranchReportModal] = useState(false);
   const [branchReportData, setBranchReportData] = useState([]);
   const [branchReportLoading, setBranchReportLoading] = useState(false);
+  const REBUILD_UNLOCK_KEY = 'stockToolsUnlockedUntil';
+  const UNLOCK_TTL_MS = 30 * 60 * 1000;
+
+  const [stockToolsUnlocked, setStockToolsUnlocked] = useState(() => {
+    try {
+      const expiry = sessionStorage.getItem(REBUILD_UNLOCK_KEY);
+      return expiry ? Date.now() < Number(expiry) : false;
+    } catch {
+      return false;
+    }
+  });
+
+  const handleUnlockStockTools = () => {
+    try {
+      sessionStorage.setItem(REBUILD_UNLOCK_KEY, String(Date.now() + UNLOCK_TTL_MS));
+    } catch { }
+    setStockToolsUnlocked(true);
+  };
+
+  const handleRelockStockTools = () => {
+    try {
+      sessionStorage.removeItem(REBUILD_UNLOCK_KEY);
+    } catch { }
+    setStockToolsUnlocked(false);
+  };
 
   const productReportFilters = useFilters({
     productKeys: [],
@@ -589,29 +614,48 @@ const InventoryManagement = () => {
 
         {activeTab === 'stock-rebuild' && (
           <div className="mb-8 border border-gray-100 rounded-3xl bg-white shadow-[0_2px_16px_rgba(15,23,42,0.04)] p-7">
-            <div className="grid grid-cols-1 xl:grid-cols-5 gap-7 items-start">
-              <div className="xl:col-span-3">
-                <StockRebuildPanel
-                  bare
-                  products={products}
-                  warehouses={warehouses}
-                  branches={branches}
-                  onRebuilt={() => {
-                    loadData(inventoryPage, inventoryPageSize);
-                    loadProductSummaries();
-                  }}
-                />
-              </div>
-              <div className="xl:col-span-2 xl:border-l xl:border-gray-100 xl:pl-7">
-                <TransactionCleanupPanel
-                  bare
-                  onCleaned={() => {
-                    loadData(inventoryPage, inventoryPageSize);
-                    loadProductSummaries();
-                  }}
-                />
-              </div>
-            </div>
+            {!stockToolsUnlocked ? (
+              <PasswordGate onUnlock={handleUnlockStockTools} bare />
+            ) : (
+              <>
+                <div className="flex justify-end mb-4">
+                  <button
+                    onClick={handleRelockStockTools}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50 transition"
+                  >
+                    <Lock size={12} /> Lock
+                  </button>
+                </div>
+
+                <div className="flex flex-col xl:flex-row gap-7 items-stretch">
+                  <div className="flex-[3] min-w-0">
+                    <StockRebuildPanel
+                      bare
+                      products={products}
+                      warehouses={warehouses}
+                      branches={branches}
+                      onRebuilt={() => {
+                        loadData(inventoryPage, inventoryPageSize);
+                        loadProductSummaries();
+                      }}
+                    />
+                  </div>
+
+                  <div className="hidden xl:block w-px bg-gray-100 self-stretch" />
+                  <div className="block xl:hidden h-px bg-gray-100 w-full" />
+
+                  <div className="flex-[2] min-w-0">
+                    <TransactionCleanupPanel
+                      bare
+                      onCleaned={() => {
+                        loadData(inventoryPage, inventoryPageSize);
+                        loadProductSummaries();
+                      }}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 

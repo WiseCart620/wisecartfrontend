@@ -1,122 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { AlertTriangle, Trash2, Search, CheckCircle2, Lock, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { AlertTriangle, Trash2, Search, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../../services/api';
-const REBUILD_UNLOCK_KEY = 'stockRebuildUnlockedUntil';
-const UNLOCK_TTL_MS = 30 * 60 * 1000;
-
-const PasswordGate = ({ onUnlock, bare = false }) => {
-    const [value, setValue] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState('');
-    const [shake, setShake] = useState(false);
-    const [checking, setChecking] = useState(false);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!value || checking) return;
-        setChecking(true);
-        setError('');
-        try {
-            const res = await api.post('/admin/stock-rebuild/verify-access', { password: value });
-            const data = res.data || res;
-            if (data.authorized) {
-                onUnlock();
-            } else {
-                setError(data.error || 'Incorrect password.');
-                setShake(true);
-                setTimeout(() => setShake(false), 400);
-            }
-        } catch (err) {
-            const serverMessage = err?.response?.data?.error;
-            setError(serverMessage || 'Could not verify password. Try again.');
-            setShake(true);
-            setTimeout(() => setShake(false), 400);
-        } finally {
-            setChecking(false);
-        }
-    };
-
-    return (
-        <div className={bare ? 'h-full' : 'border border-slate-200 rounded-lg p-5 bg-white h-full'}>
-            <style>{`
-                @keyframes shake {
-                    0%, 100% { transform: translateX(0); }
-                    20%, 60% { transform: translateX(-6px); }
-                    40%, 80% { transform: translateX(6px); }
-                }
-            `}</style>
-
-            <div className={`flex items-center gap-3 mb-4 pb-4 border-b border-slate-100 ${shake ? 'animate-[shake_0.4s_ease-in-out]' : ''}`}>
-                <div className="w-8 h-8 rounded-md bg-[#185FA5] flex items-center justify-center shrink-0">
-                    <Lock size={15} className="text-white" />
-                </div>
-                <div>
-                    <h3 className="text-sm font-semibold text-slate-900">Transaction cleanup</h3>
-                    <p className="text-xs text-slate-400">Enter the access password to continue</p>
-                </div>
-            </div>
-
-            <div className="max-w-sm">
-                <p className="text-xs text-slate-500 mb-4 leading-relaxed border-l-2 border-amber-300 pl-2.5">
-                    This tool permanently retires and purges transaction rows.
-                </p>
-
-                <form onSubmit={handleSubmit} className="space-y-3">
-                    <div className="relative">
-                        <KeyRound size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input
-                            type={showPassword ? 'text' : 'password'}
-                            value={value}
-                            autoFocus
-                            disabled={checking}
-                            onChange={(e) => {
-                                setValue(e.target.value);
-                                if (error) setError('');
-                            }}
-                            placeholder="Access password"
-                            className={`w-full pl-9 pr-9 py-2.5 text-sm border rounded-md outline-none transition focus:ring-2 disabled:bg-slate-50 ${error
-                                ? 'border-red-300 focus:ring-red-100'
-                                : 'border-slate-200 focus:ring-[#185FA5]/15 focus:border-[#185FA5]'
-                                }`}
-                        />
-                        <button
-                            type="button"
-                            onClick={() => setShowPassword((s) => !s)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                            tabIndex={-1}
-                        >
-                            {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                        </button>
-                    </div>
-
-                    {error && (
-                        <p className="text-xs text-red-600">{error}</p>
-                    )}
-
-                    <button
-                        type="submit"
-                        disabled={checking || !value}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-[#185FA5] text-white rounded-md hover:bg-[#0C447C] disabled:opacity-40 disabled:cursor-not-allowed transition"
-                    >
-                        <Lock size={14} />
-                        {checking ? 'Verifying...' : 'Unlock panel'}
-                    </button>
-                </form>
-            </div>
-        </div>
-    );
-};
 
 const TransactionCleanupPanel = ({ onCleaned, bare = false }) => {
-    const [unlocked, setUnlocked] = useState(() => {
-        try {
-            const expiry = sessionStorage.getItem(REBUILD_UNLOCK_KEY);
-            return expiry ? Date.now() < Number(expiry) : false;
-        } catch {
-            return false;
-        }
-    });
     const [scanning, setScanning] = useState(false);
     const [fixing, setFixing] = useState(false);
     const [purging, setPurging] = useState(false);
@@ -209,40 +96,13 @@ const TransactionCleanupPanel = ({ onCleaned, bare = false }) => {
         }
     };
 
-    const handleUnlock = () => {
-        try {
-            sessionStorage.setItem(REBUILD_UNLOCK_KEY, String(Date.now() + UNLOCK_TTL_MS));
-        } catch {
-        }
-        setUnlocked(true);
-    };
-
-    const handleRelock = () => {
-        try {
-            sessionStorage.removeItem(REBUILD_UNLOCK_KEY);
-        } catch { }
-        setUnlocked(false);
-    };
-
-    if (!unlocked) {
-        return <PasswordGate onUnlock={handleUnlock} bare={bare} />;
-    }
-
     return (
         <div className={bare ? 'h-full' : 'border border-slate-200 rounded-lg p-5 bg-white h-full'}>
-            <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-100">
-                <div>
-                    <h3 className="text-sm font-semibold text-gray-900">Transaction cleanup</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                        Find and retire duplicate sale transaction rows, then permanently purge old soft-deleted records.
-                    </p>
-                </div>
-                <button
-                    onClick={handleRelock}
-                    className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50 transition"
-                >
-                    <Lock size={12} /> Lock
-                </button>
+            <div className="mb-6 pb-4 border-b border-slate-100">
+                <h3 className="text-sm font-semibold text-gray-900">Transaction cleanup</h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                    Find and retire duplicate sale transaction rows, then permanently purge old soft-deleted records.
+                </p>
             </div>
 
             {/* Step 1: Scan + Fix duplicates */}
@@ -313,7 +173,7 @@ const TransactionCleanupPanel = ({ onCleaned, bare = false }) => {
             </div>
 
             {/* Step 2: Purge soft-deleted */}
-            <div className="border border-gray-200 rounded-lg p-3">
+            <div className="border border-gray-200 rounded-lg p-3 mt-3">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div>
                         <p className="text-sm font-medium text-gray-800">2. Purge soft-deleted transactions</p>

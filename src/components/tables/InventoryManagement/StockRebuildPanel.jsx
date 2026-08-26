@@ -8,10 +8,6 @@ import toast from 'react-hot-toast';
 import { api } from '../../../services/api';
 
 // ---- helpers -------------------------------------------------------------
-const SCOPES = [
-    { id: 'BOTH', label: 'Warehouse + Branch', icon: Layers },
-];
-
 const productLabel = (p) => `${p.productName || p.name || 'Unnamed'}${p.sku ? ` · ${p.sku}` : ''}`;
 
 const getVariationLabel = (v) => {
@@ -174,13 +170,9 @@ const MultiSelect = ({ label, values, onChange, options, getLabel, getSearchText
     );
 };
 
-const SectionLabel = ({ children }) => (
-    <p className="text-[11px] font-semibold text-[#185FA5] uppercase tracking-wider mb-2">
-        {children}
-    </p>
-);
+// ---- shared password gate (single source of truth, used once by index.jsx) ----
 
-const PasswordGate = ({ onUnlock, bare = false }) => {
+export const PasswordGate = ({ onUnlock, bare = false }) => {
     const [value, setValue] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
@@ -227,14 +219,14 @@ const PasswordGate = ({ onUnlock, bare = false }) => {
                     <Lock size={15} className="text-white" />
                 </div>
                 <div>
-                    <h3 className="text-sm font-semibold text-slate-900">Rebuild targets</h3>
+                    <h3 className="text-sm font-semibold text-slate-900">Stock tools</h3>
                     <p className="text-xs text-slate-400">Enter the access password to continue</p>
                 </div>
             </div>
 
             <div className="max-w-sm">
                 <p className="text-xs text-slate-500 mb-4 leading-relaxed border-l-2 border-amber-300 pl-2.5">
-                    Stock Rebuild permanently rewrites transaction history.
+                    These tools permanently rewrite transaction history.
                 </p>
 
                 <form onSubmit={handleSubmit} className="space-y-3">
@@ -471,18 +463,9 @@ let rowCounter = 0;
 
 const PRODUCT_DETAIL_ENABLED = false;
 const PRODUCT_DETAIL_ENDPOINT = (id) => `/admin/products/${id}`;
-const REBUILD_UNLOCK_KEY = 'stockRebuildUnlockedUntil';
-const UNLOCK_TTL_MS = 30 * 60 * 1000;
+
 const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRebuilt, bare = false }) => {
-    const [unlocked, setUnlocked] = useState(() => {
-        try {
-            const expiry = sessionStorage.getItem(REBUILD_UNLOCK_KEY);
-            return expiry ? Date.now() < Number(expiry) : false;
-        } catch {
-            return false;
-        }
-    });
-    const [scope, setScope] = useState('BOTH');
+    const [scope] = useState('BOTH');
     const [warehouseIds, setWarehouseIds] = useState([]);
     const [branchIds, setBranchIds] = useState([]);
     const [autoAllBranches, setAutoAllBranches] = useState(false);
@@ -576,12 +559,6 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         productIds.length > 0 &&
         (warehouseIds.length > 0 || hasBranchSelection);
 
-    const resetTargets = (nextScope) => {
-        setScope(nextScope);
-        if (nextScope === 'WAREHOUSE') setBranchIds([]);
-        if (nextScope === 'BRANCH') setWarehouseIds([]);
-    };
-
     const buildProductVariationTargets = () => {
         const targets = [];
 
@@ -625,7 +602,6 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         return targets;
     };
 
-    // Warehouse lookup maps (avoid O(n) .find() inside loops)
     const warehouseMap = useMemo(() => {
         const m = new Map();
         warehouses.forEach((w) => m.set(String(w.id), w));
@@ -638,8 +614,6 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         return m;
     }, [branches]);
 
-    // Builds ops as: [ all warehouse ops ] then [ branch 1's ops, branch 2's ops, ... ]
-    // Branches are ALWAYS processed one fully-completed branch at a time — no interleaving.
     const buildOperations = () => {
         const pvTargets = buildProductVariationTargets();
         const ops = [];
@@ -692,7 +666,6 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         const ops = buildOperations();
         if (ops.length === 0) return;
 
-        // Build the branch queue for the banner (branch ops only, in the order they'll run)
         const queue = [];
         {
             let current = null;
@@ -715,8 +688,6 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         let failCount = 0;
         let currentBranchQueueIdx = queue.length > 0 ? 0 : -1;
 
-        // Generate row ids up front so ops[i] always maps to ids[i], regardless of
-        // React's async state batching.
         const ids = ops.map(() => ++rowCounter);
         setResults(
             ops.map((op, i) => ({
@@ -764,7 +735,6 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
             }
         };
 
-        // Strictly sequential — one op at a time, one branch fully finished before the next starts.
         for (let i = 0; i < ops.length; i++) {
             const op = ops[i];
 
@@ -792,7 +762,6 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
             }
         }
 
-        // Mark the branch queue fully past the last branch so all chips show "done"
         setActiveBranchIndex(queue.length);
 
         setRunning(false);
@@ -805,31 +774,11 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         if (onRebuilt) onRebuilt();
     };
 
-    const handleUnlock = () => {
-        try {
-            sessionStorage.setItem(REBUILD_UNLOCK_KEY, String(Date.now() + UNLOCK_TTL_MS));
-        } catch {
-        }
-        setUnlocked(true);
-    };
-
-    const handleRelock = () => {
-        try {
-            sessionStorage.removeItem(REBUILD_UNLOCK_KEY);
-        } catch { }
-        setUnlocked(false);
-    };
-
-    if (!unlocked) {
-        return <PasswordGate onUnlock={handleUnlock} bare={bare} />;
-    }
-
     return (
         <div className="space-y-4 h-full">
             <div className={bare ? 'h-full' : 'border border-slate-200 rounded-lg p-5 bg-white h-full'}>
                 <div className="max-w-2xl">
-                <div className="flex items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-100">
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-2.5 mb-4 pb-4 border-b border-slate-100">
                         <div className="w-8 h-8 rounded-md bg-[#E6F1FB] flex items-center justify-center">
                             <Layers size={15} className="text-[#185FA5]" />
                         </div>
@@ -838,179 +787,172 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                             <p className="text-xs text-slate-400">Choose what to recalculate and where</p>
                         </div>
                     </div>
-                    <button
-                        onClick={handleRelock}
-                        className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50 transition"
-                    >
-                        <Lock size={12} /> Lock
-                    </button>
-                </div>
 
-                {/* Collapsible warning */}
-                <div className="rounded-md border border-amber-200 bg-amber-50 overflow-hidden mb-4">
-                    <button
-                        type="button"
-                        onClick={() => setWarningOpen((o) => !o)}
-                        className="w-full flex items-center justify-between gap-3 px-3 py-2 text-xs font-medium text-amber-800 hover:text-amber-900 transition"
-                    >
-                        <span className="flex items-center gap-1.5">
-                            <ShieldAlert size={13} className="text-amber-600 shrink-0" />
-                            This tool rewrites stock history
-                        </span>
-                        <ChevronDown
-                            size={12}
-                            className={`text-amber-500 transition-transform shrink-0 ${warningOpen ? 'rotate-180' : ''}`}
-                        />
-                    </button>
-                    {warningOpen && (
-                        <p className="px-3 pb-2.5 text-[11px] text-amber-700 leading-relaxed border-t border-amber-100 pt-2">
-                            It permanently retires existing transactions for each selected product at each selected location
-                            and regenerates them from the source Sale / Delivery / Inventory records. Branches are processed
-                            one at a time, in full, before the next branch starts automatically. Review the results table
-                            after running before trusting the numbers downstream.
-                        </p>
-                    )}
-                </div>
-
-                {/* Scope indicator */}
-                <div className="inline-flex items-center gap-1.5 mb-4 px-2 py-1 rounded bg-slate-50 border border-slate-100 text-xs font-medium text-slate-500">
-                    <Layers size={12} className="text-[#185FA5]" />
-                    Warehouse + Branch
-                </div>
-
-                <div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
-                        <div className="sm:col-span-2">
-                            <MultiSelect
-                                label="Products"
-                                values={productIds}
-                                onChange={setProductIds}
-                                options={products}
-                                getId={(p) => p.id}
-                                getLabel={productLabel}
-                                getSearchText={(p) => `${p.productName || p.name || ''} ${p.sku || ''} ${p.upc || ''}`}
-                                placeholder="Search products by name, SKU, or UPC..."
+                    {/* Collapsible warning */}
+                    <div className="rounded-md border border-amber-200 bg-amber-50 overflow-hidden mb-4">
+                        <button
+                            type="button"
+                            onClick={() => setWarningOpen((o) => !o)}
+                            className="w-full flex items-center justify-between gap-3 px-3 py-2 text-xs font-medium text-amber-800 hover:text-amber-900 transition"
+                        >
+                            <span className="flex items-center gap-1.5">
+                                <ShieldAlert size={13} className="text-amber-600 shrink-0" />
+                                This tool rewrites stock history
+                            </span>
+                            <ChevronDown
+                                size={12}
+                                className={`text-amber-500 transition-transform shrink-0 ${warningOpen ? 'rotate-180' : ''}`}
                             />
-                        </div>
-
-                        {(anyHasVariations || variationsStillLoading) && (
-                            <>
-                                <div className="sm:col-span-2 flex items-center gap-2">
-                                    <input
-                                        id="includeVariations"
-                                        type="checkbox"
-                                        checked={includeVariations}
-                                        disabled={variationsStillLoading && !anyHasVariations}
-                                        onChange={(e) => {
-                                            setIncludeVariations(e.target.checked);
-                                            if (!e.target.checked) setSelectedVariationKeys([]);
-                                        }}
-                                        className="rounded border-slate-300"
-                                    />
-                                    <label htmlFor="includeVariations" className="text-xs text-slate-600">
-                                        {variationsStillLoading && !anyHasVariations
-                                            ? 'Checking for variations...'
-                                            : 'Include variations of the selected products'}
-                                    </label>
-                                </div>
-
-                                {includeVariations && anyHasVariations && (
-                                    <div className="sm:col-span-2">
-                                        <MultiSelect
-                                            label="Which variations (leave empty for all)"
-                                            values={selectedVariationKeys}
-                                            onChange={setSelectedVariationKeys}
-                                            options={allSelectedVariations}
-                                            getId={(v) => v.key}
-                                            getLabel={(v) => `${v.variationLabel} — ${v.productName}${v.sku ? ` · SKU: ${v.sku}` : ''}${v.upc ? ` · UPC: ${v.upc}` : ''}`}
-                                            getSearchText={(v) => `${v.variationLabel} ${v.productName} ${v.sku} ${v.upc}`}
-                                            placeholder="Search variations..."
-                                        />
-                                    </div>
-                                )}
-                            </>
-                        )}
-
-                        {needsWarehouse && (
-                            <MultiSelect
-                                label="Warehouses"
-                                values={warehouseIds}
-                                onChange={setWarehouseIds}
-                                options={warehouses}
-                                getId={(w) => w.id}
-                                getLabel={(w) => w.warehouseName}
-                                placeholder="Select warehouses..."
-                            />
-                        )}
-
-                        {needsBranch && (
-                            <div>
-                                <MultiSelect
-                                    label="Branches"
-                                    values={branchIds}
-                                    onChange={setBranchIds}
-                                    options={branches}
-                                    getId={(b) => b.id}
-                                    getLabel={(b) => b.branchCode ? `${b.branchName} (${b.branchCode})` : b.branchName}
-                                    getSearchText={(b) => `${b.branchName || ''} ${b.branchCode || ''}`}
-                                    placeholder="Select branches..."
-                                    disabled={autoAllBranches}
-                                />
-
-                                <div className="flex items-center gap-2 mt-2">
-                                    <input
-                                        id="autoAllBranches"
-                                        type="checkbox"
-                                        checked={autoAllBranches}
-                                        onChange={(e) => {
-                                            setAutoAllBranches(e.target.checked);
-                                            if (e.target.checked) setBranchIds([]);
-                                        }}
-                                        className="rounded border-slate-300"
-                                    />
-                                    <label htmlFor="autoAllBranches" className="text-xs text-slate-600">
-                                        Auto-run through all {branches.length} branches, one at a time
-                                    </label>
-                                </div>
-
-                                {(autoAllBranches || branchIds.length > 1) && (
-                                    <p className="text-[11px] text-slate-400 mt-1.5">
-                                        Branches always run one at a time, fully, {autoAllBranches ? 'in list order' : 'in the order selected'} —
-                                        the next branch starts automatically when the current one finishes.
-                                    </p>
-                                )}
-
-                                <div className="mt-4 pt-4 border-t border-slate-100">
-                                    <button
-                                        onClick={() => setConfirmOpen(true)}
-                                        disabled={!canRun || running}
-                                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-[#185FA5] text-white rounded-md hover:bg-[#0C447C] disabled:opacity-40 disabled:cursor-not-allowed transition"
-                                    >
-                                        <RefreshCw size={14} className={running ? 'animate-spin' : ''} />
-                                        {running ? `Rebuilding ${progress.done}/${progress.total}...` : 'Rebuild stock'}
-                                    </button>
-                                    <p className="text-xs text-slate-500 mt-2 text-center">
-                                        {canRun ? `${totalOperations} rebuild operation${totalOperations !== 1 ? 's' : ''} will run` : 'Select products and at least one location'}
-                                    </p>
-
-                                    {running && (
-                                        <>
-                                            <div className="mt-3 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                                                <div
-                                                    className="bg-[#185FA5] h-1.5 transition-all"
-                                                    style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%` }}
-                                                />
-                                            </div>
-                                            {currentOpLabel && (
-                                                <p className="text-xs text-slate-500 mt-1.5">Now processing: {currentOpLabel}</p>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                            </div>
+                        </button>
+                        {warningOpen && (
+                            <p className="px-3 pb-2.5 text-[11px] text-amber-700 leading-relaxed border-t border-amber-100 pt-2">
+                                It permanently retires existing transactions for each selected product at each selected location
+                                and regenerates them from the source Sale / Delivery / Inventory records. Branches are processed
+                                one at a time, in full, before the next branch starts automatically. Review the results table
+                                after running before trusting the numbers downstream.
+                            </p>
                         )}
                     </div>
-                </div>
+
+                    {/* Scope indicator */}
+                    <div className="inline-flex items-center gap-1.5 mb-4 px-2 py-1 rounded bg-slate-50 border border-slate-100 text-xs font-medium text-slate-500">
+                        <Layers size={12} className="text-[#185FA5]" />
+                        Warehouse + Branch
+                    </div>
+
+                    <div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
+                            <div className="sm:col-span-2">
+                                <MultiSelect
+                                    label="Products"
+                                    values={productIds}
+                                    onChange={setProductIds}
+                                    options={products}
+                                    getId={(p) => p.id}
+                                    getLabel={productLabel}
+                                    getSearchText={(p) => `${p.productName || p.name || ''} ${p.sku || ''} ${p.upc || ''}`}
+                                    placeholder="Search products by name, SKU, or UPC..."
+                                />
+                            </div>
+
+                            {(anyHasVariations || variationsStillLoading) && (
+                                <>
+                                    <div className="sm:col-span-2 flex items-center gap-2">
+                                        <input
+                                            id="includeVariations"
+                                            type="checkbox"
+                                            checked={includeVariations}
+                                            disabled={variationsStillLoading && !anyHasVariations}
+                                            onChange={(e) => {
+                                                setIncludeVariations(e.target.checked);
+                                                if (!e.target.checked) setSelectedVariationKeys([]);
+                                            }}
+                                            className="rounded border-slate-300"
+                                        />
+                                        <label htmlFor="includeVariations" className="text-xs text-slate-600">
+                                            {variationsStillLoading && !anyHasVariations
+                                                ? 'Checking for variations...'
+                                                : 'Include variations of the selected products'}
+                                        </label>
+                                    </div>
+
+                                    {includeVariations && anyHasVariations && (
+                                        <div className="sm:col-span-2">
+                                            <MultiSelect
+                                                label="Which variations (leave empty for all)"
+                                                values={selectedVariationKeys}
+                                                onChange={setSelectedVariationKeys}
+                                                options={allSelectedVariations}
+                                                getId={(v) => v.key}
+                                                getLabel={(v) => `${v.variationLabel} — ${v.productName}${v.sku ? ` · SKU: ${v.sku}` : ''}${v.upc ? ` · UPC: ${v.upc}` : ''}`}
+                                                getSearchText={(v) => `${v.variationLabel} ${v.productName} ${v.sku} ${v.upc}`}
+                                                placeholder="Search variations..."
+                                            />
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            {needsWarehouse && (
+                                <MultiSelect
+                                    label="Warehouses"
+                                    values={warehouseIds}
+                                    onChange={setWarehouseIds}
+                                    options={warehouses}
+                                    getId={(w) => w.id}
+                                    getLabel={(w) => w.warehouseName}
+                                    placeholder="Select warehouses..."
+                                />
+                            )}
+
+                            {needsBranch && (
+                                <div>
+                                    <MultiSelect
+                                        label="Branches"
+                                        values={branchIds}
+                                        onChange={setBranchIds}
+                                        options={branches}
+                                        getId={(b) => b.id}
+                                        getLabel={(b) => b.branchCode ? `${b.branchName} (${b.branchCode})` : b.branchName}
+                                        getSearchText={(b) => `${b.branchName || ''} ${b.branchCode || ''}`}
+                                        placeholder="Select branches..."
+                                        disabled={autoAllBranches}
+                                    />
+
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <input
+                                            id="autoAllBranches"
+                                            type="checkbox"
+                                            checked={autoAllBranches}
+                                            onChange={(e) => {
+                                                setAutoAllBranches(e.target.checked);
+                                                if (e.target.checked) setBranchIds([]);
+                                            }}
+                                            className="rounded border-slate-300"
+                                        />
+                                        <label htmlFor="autoAllBranches" className="text-xs text-slate-600">
+                                            Auto-run through all {branches.length} branches, one at a time
+                                        </label>
+                                    </div>
+
+                                    {(autoAllBranches || branchIds.length > 1) && (
+                                        <p className="text-[11px] text-slate-400 mt-1.5">
+                                            Branches always run one at a time, fully, {autoAllBranches ? 'in list order' : 'in the order selected'} —
+                                            the next branch starts automatically when the current one finishes.
+                                        </p>
+                                    )}
+
+                                    <div className="mt-4 pt-4 border-t border-slate-100">
+                                        <button
+                                            onClick={() => setConfirmOpen(true)}
+                                            disabled={!canRun || running}
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-[#185FA5] text-white rounded-md hover:bg-[#0C447C] disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                        >
+                                            <RefreshCw size={14} className={running ? 'animate-spin' : ''} />
+                                            {running ? `Rebuilding ${progress.done}/${progress.total}...` : 'Rebuild stock'}
+                                        </button>
+                                        <p className="text-xs text-slate-500 mt-2 text-center">
+                                            {canRun ? `${totalOperations} rebuild operation${totalOperations !== 1 ? 's' : ''} will run` : 'Select products and at least one location'}
+                                        </p>
+
+                                        {running && (
+                                            <>
+                                                <div className="mt-3 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                                    <div
+                                                        className="bg-[#185FA5] h-1.5 transition-all"
+                                                        style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%` }}
+                                                    />
+                                                </div>
+                                                {currentOpLabel && (
+                                                    <p className="text-xs text-slate-500 mt-1.5">Now processing: {currentOpLabel}</p>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
 
