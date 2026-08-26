@@ -118,8 +118,9 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
         const scale = target / activeTotal;
 
         const scaledRows = active.matchedRows.map(row => {
-            const newUnitCost = (Number(row.unitCost) || 0) * scale;
-            return { ...row, unitCost: parseFloat(newUnitCost.toFixed(6)) };
+            const currentCost = Number(row.unitCost) || 0;
+            const newUnitCost = Math.round(currentCost * scale * 100) / 100;
+            return { ...row, unitCost: newUnitCost };
         });
 
         updateActiveReport({ matchedRows: scaledRows });
@@ -467,14 +468,14 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                                             <td className="px-3 py-2">
                                                 <input
                                                     type="text"
-                                                    value={totalDraft !== '' ? totalDraft : (activeTotal > 0 ? activeTotal.toFixed(2) : '')}
+                                                    value={totalDraft !== '' ? totalDraft : activeTotal.toFixed(2)}
                                                     onFocus={() => setTotalDraft(activeTotal.toFixed(2))}
                                                     onChange={handleTotalDraftChange}
                                                     onBlur={applyActiveTotal}
                                                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }}
-                                                    disabled={activeTotal <= 0}
+                                                    disabled={active.matchedRows.length === 0}
                                                     placeholder="0.00"
-                                                    className="w-28 px-2 py-1.5 border border-gray-300 rounded-md text-sm font-bold text-blue-600 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition disabled:bg-transparent disabled:border-transparent disabled:text-gray-400"
+                                                    className="w-28 px-2 py-1.5 border border-gray-300 rounded-md text-sm font-bold text-blue-600 text-right focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition disabled:bg-transparent disabled:border-transparent"
                                                 />
                                             </td>
                                         </tr>
