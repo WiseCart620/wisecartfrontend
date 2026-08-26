@@ -818,6 +818,7 @@ const InvoicingProfile = ({ onBack }) => {
     };
 
     useEffect(() => { load(); }, [load]);
+    useEffect(() => { loadAllCosData(); }, []);
 
     const companyOptions = useMemo(() => {
         const names = new Set();
@@ -897,6 +898,17 @@ const InvoicingProfile = ({ onBack }) => {
             }
         } catch {
             setCosData(prev => ({ ...prev, [profileId]: { items: [], productCost: 0, shipping: 0, others: 0, totalCos: 0 } }));
+        }
+    };
+
+    const loadAllCosData = async () => {
+        try {
+            const res = await api.get('/invoice-profiles/cos-summary-all');
+            if (res.success) {
+                const map = res.data?.data || res.data || {};
+                setCosData(prev => ({ ...prev, ...map }));
+            }
+        } catch {
         }
     };
 
@@ -1145,7 +1157,7 @@ const InvoicingProfile = ({ onBack }) => {
                                                         ) : (
                                                             <ChevronDown size={12} className="text-blue-500" />
                                                         )}
-                                                        {cosData[p.id] === undefined ? '—' :
+                                                        {cosData[p.id] === undefined ? '...' :
                                                             cosData[p.id] === null ? '...' :
                                                                 `₱${fmt(
                                                                     (cosData[p.id].items || []).reduce((s, item) => {
