@@ -628,7 +628,7 @@ const InventoryManagement = () => {
                 </div>
 
                 <div className="flex flex-col xl:flex-row gap-7 items-stretch">
-                  <div className="flex-[3] min-w-0">
+                  <div className="flex-1 min-w-0">
                     <StockRebuildPanel
                       bare
                       products={products}
@@ -644,7 +644,7 @@ const InventoryManagement = () => {
                   <div className="hidden xl:block w-px bg-gray-200 self-stretch" />
                   <div className="block xl:hidden h-px bg-gray-200 w-full" />
 
-                  <div className="flex-[2] min-w-0">
+                  <div className="flex-1 min-w-0">
                     <TransactionCleanupPanel
                       bare
                       onCleaned={() => {
