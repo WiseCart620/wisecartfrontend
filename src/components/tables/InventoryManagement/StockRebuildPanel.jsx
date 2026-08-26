@@ -977,40 +977,40 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                                         the next branch starts automatically when the current one finishes.
                                     </p>
                                 )}
+
+                                <div className="mt-4">
+                                    <button
+                                        onClick={() => setConfirmOpen(true)}
+                                        disabled={!canRun || running}
+                                        className="w-full flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold bg-gradient-to-b from-[#2C8CE0] to-[#185FA5] text-white rounded-full shadow-md shadow-[#185FA5]/25 hover:shadow-lg hover:shadow-[#185FA5]/35 hover:-translate-y-px disabled:opacity-40 disabled:hover:translate-y-0 disabled:cursor-not-allowed transition"
+                                    >
+                                        <RefreshCw size={15} className={running ? 'animate-spin' : ''} />
+                                        {running ? `Rebuilding ${progress.done}/${progress.total}...` : 'Rebuild Stock'}
+                                    </button>
+                                    <p className="text-xs text-gray-500 mt-2 text-center">
+                                        {canRun ? `${totalOperations} rebuild operation${totalOperations !== 1 ? 's' : ''} will run` : 'Select products and at least one location'}
+                                    </p>
+
+                                    {running && (
+                                        <>
+                                            <div className="mt-3 w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                                                <div
+                                                    className="bg-[#185FA5] h-1.5 transition-all"
+                                                    style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%` }}
+                                                />
+                                            </div>
+                                            {currentOpLabel && (
+                                                <p className="text-xs text-gray-500 mt-1.5">Now processing: {currentOpLabel}</p>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
                 </div>
-
-                <div className="mt-5 flex items-center justify-between">
-                    <span className="text-xs text-gray-500">
-                        {canRun ? `${totalOperations} rebuild operation${totalOperations !== 1 ? 's' : ''} will run` : 'Select products and at least one location'}
-                    </span>
-                    <button
-                        onClick={() => setConfirmOpen(true)}
-                        disabled={!canRun || running}
-                        className="flex items-center gap-2 px-6 py-3 text-sm font-semibold bg-gradient-to-b from-[#2C8CE0] to-[#185FA5] text-white rounded-full shadow-md shadow-[#185FA5]/25 hover:shadow-lg hover:shadow-[#185FA5]/35 hover:-translate-y-px disabled:opacity-40 disabled:hover:translate-y-0 disabled:cursor-not-allowed transition"
-                    >
-                        <RefreshCw size={15} className={running ? 'animate-spin' : ''} />
-                        {running ? `Rebuilding ${progress.done}/${progress.total}...` : 'Rebuild Stock'}
-                    </button>
-                </div>
-
-                {running && (
-                    <>
-                        <div className="mt-3 w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                            <div
-                                className="bg-[#185FA5] h-1.5 transition-all"
-                                style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%` }}
-                            />
-                        </div>
-                        {currentOpLabel && (
-                            <p className="text-xs text-gray-500 mt-1.5">Now processing: {currentOpLabel}</p>
-                        )}
-                    </>
-                )}
             </div>
-
+            
             {/* Branch auto-advance queue */}
             {running && branchQueue.length > 0 && (
                 <BranchQueueBanner queue={branchQueue} activeIndex={activeBranchIndex} />
