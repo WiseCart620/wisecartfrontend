@@ -472,7 +472,7 @@ const PRODUCT_DETAIL_ENABLED = false;
 const PRODUCT_DETAIL_ENDPOINT = (id) => `/admin/products/${id}`;
 const REBUILD_UNLOCK_KEY = 'stockRebuildUnlockedUntil';
 const UNLOCK_TTL_MS = 30 * 60 * 1000;
-const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRebuilt }) => {
+const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRebuilt, bare = false }) => {
     const [unlocked, setUnlocked] = useState(() => {
         try {
             const expiry = sessionStorage.getItem(REBUILD_UNLOCK_KEY);
@@ -493,18 +493,10 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     const [progress, setProgress] = useState({ done: 0, total: 0 });
     const [results, setResults] = useState([]);
     const [currentOpLabel, setCurrentOpLabel] = useState('');
+    const [warningOpen, setWarningOpen] = useState(false);
 
-    // Branch auto-advance queue: [{ locationId, locationName, done, total }]
     const [branchQueue, setBranchQueue] = useState([]);
     const [activeBranchIndex, setActiveBranchIndex] = useState(-1);
-
-    // On-demand full-product cache (id -> product with variations populated).
-    // The `products` prop is often a lightweight list response that omits
-    // variations; when PRODUCT_DETAIL_ENABLED is true this fills the gap for
-    // whichever products get selected. Disabled by default (see above) since
-    // there's no working detail endpoint yet — products without variations
-    // already present in the `products` prop will just be treated as
-    // variation-less until this is turned back on.
     const [productDetailCache, setProductDetailCache] = useState({});
     const [loadingVariationsFor, setLoadingVariationsFor] = useState(new Set());
 
@@ -833,28 +825,38 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
 
     return (
         <div className="space-y-6">
-            <div className="flex items-start justify-between gap-3 p-5 bg-amber-50/70 border-l-4 border-amber-400 rounded-r-2xl rounded-l-md">
-                <div className="flex items-start gap-3">
-                    <ShieldAlert className="text-amber-600 shrink-0 mt-0.5" size={20} />
-                    <div className="text-sm text-amber-800">
-                        <p className="font-semibold">This tool rewrites stock history.</p>
-                        <p className="mt-0.5 text-amber-700">
-                            It permanently retires existing transactions for each selected product at each selected location and
-                            regenerates them from the source Sale / Delivery / Inventory records. Branches are processed one at a
-                            time, in full, before the next branch starts automatically. Review the results table after running
-                            before trusting the numbers downstream.
-                        </p>
-                    </div>
+            <div className="rounded-2xl border border-amber-200/70 bg-amber-50/60 overflow-hidden">
+                <div className="flex items-center justify-between gap-3 px-4 py-2.5">
+                    <button
+                        type="button"
+                        onClick={() => setWarningOpen((o) => !o)}
+                        className="flex items-center gap-2 text-sm font-medium text-amber-800 hover:text-amber-900 transition"
+                    >
+                        <ShieldAlert size={16} className="text-amber-600 shrink-0" />
+                        This tool rewrites stock history.
+                        <ChevronDown
+                            size={13}
+                            className={`text-amber-500 transition-transform ${warningOpen ? 'rotate-180' : ''}`}
+                        />
+                    </button>
+                    <button
+                        onClick={handleRelock}
+                        className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 border border-amber-300 rounded-lg hover:bg-amber-100 transition"
+                    >
+                        <Lock size={12} /> Lock
+                    </button>
                 </div>
-                <button
-                    onClick={handleRelock}
-                    className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 border border-amber-300 rounded-lg hover:bg-amber-100 transition"
-                >
-                    <Lock size={12} /> Lock
-                </button>
+                {warningOpen && (
+                    <p className="px-4 pb-3.5 -mt-1 text-xs text-amber-700 leading-relaxed">
+                        It permanently retires existing transactions for each selected product at each selected location and
+                        regenerates them from the source Sale / Delivery / Inventory records. Branches are processed one at a
+                        time, in full, before the next branch starts automatically. Review the results table after running
+                        before trusting the numbers downstream.
+                    </p>
+                )}
             </div>
 
-            <div className="border border-gray-100 rounded-3xl p-7 bg-white shadow-[0_2px_16px_rgba(15,23,42,0.04)]">
+            <div className={bare ? '' : 'border border-gray-100 rounded-3xl p-7 bg-white shadow-[0_2px_16px_rgba(15,23,42,0.04)]'}>
                 <div className="flex items-center gap-3 mb-6">
                     <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#E6F1FB] to-[#D3E8FA] flex items-center justify-center">
                         <Layers size={16} className="text-[#185FA5]" />

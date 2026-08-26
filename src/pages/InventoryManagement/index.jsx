@@ -460,16 +460,6 @@ const InventoryManagement = () => {
               </button>
             </nav>
           </div>
-          <div className="mt-3 flex justify-end gap-2">
-            <button
-              onClick={handleRefresh}
-              disabled={actionLoading}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              <RefreshCw size={14} className={actionLoading ? 'animate-spin' : ''} />
-              Refresh
-            </button>
-          </div>
         </div>
 
         {activeTab === 'products' && (
@@ -598,25 +588,29 @@ const InventoryManagement = () => {
         )}
 
         {activeTab === 'stock-rebuild' && (
-          <div className="mb-8 grid grid-cols-1 xl:grid-cols-5 gap-6 items-start">
-            <div className="xl:col-span-3">
-              <StockRebuildPanel
-                products={products}
-                warehouses={warehouses}
-                branches={branches}
-                onRebuilt={() => {
-                  loadData(inventoryPage, inventoryPageSize);
-                  loadProductSummaries();
-                }}
-              />
-            </div>
-            <div className="xl:col-span-2">
-              <TransactionCleanupPanel
-                onCleaned={() => {
-                  loadData(inventoryPage, inventoryPageSize);
-                  loadProductSummaries();
-                }}
-              />
+          <div className="mb-8 border border-gray-100 rounded-3xl bg-white shadow-[0_2px_16px_rgba(15,23,42,0.04)] p-7">
+            <div className="grid grid-cols-1 xl:grid-cols-5 gap-7 items-start">
+              <div className="xl:col-span-3">
+                <StockRebuildPanel
+                  bare
+                  products={products}
+                  warehouses={warehouses}
+                  branches={branches}
+                  onRebuilt={() => {
+                    loadData(inventoryPage, inventoryPageSize);
+                    loadProductSummaries();
+                  }}
+                />
+              </div>
+              <div className="xl:col-span-2 xl:border-l xl:border-gray-100 xl:pl-7">
+                <TransactionCleanupPanel
+                  bare
+                  onCleaned={() => {
+                    loadData(inventoryPage, inventoryPageSize);
+                    loadProductSummaries();
+                  }}
+                />
+              </div>
             </div>
           </div>
         )}

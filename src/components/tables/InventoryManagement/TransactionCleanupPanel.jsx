@@ -3,7 +3,7 @@ import { AlertTriangle, Trash2, Search, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../../services/api';
 
-const TransactionCleanupPanel = ({ onCleaned }) => {
+const TransactionCleanupPanel = ({ onCleaned, bare = false }) => {
     const [scanning, setScanning] = useState(false);
     const [fixing, setFixing] = useState(false);
     const [purging, setPurging] = useState(false);
@@ -97,8 +97,8 @@ const TransactionCleanupPanel = ({ onCleaned }) => {
     };
 
     return (
-        <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-5">
-            <div>
+        <div className={bare ? '' : 'border border-gray-100 rounded-3xl p-7 bg-white shadow-[0_2px_16px_rgba(15,23,42,0.04)]'}>
+            <div className="flex items-center gap-3 mb-6">
                 <h3 className="text-sm font-semibold text-gray-900">Transaction cleanup</h3>
                 <p className="text-xs text-gray-500 mt-0.5">
                     Find and retire duplicate sale transaction rows, then permanently purge old soft-deleted records.
