@@ -530,7 +530,7 @@ const InventoryManagement = () => {
                 return <WarehouseReportInlineTable rows={reportData} loading={reportLoading} />;
               }
               if (reportMode === 'branch') {
-                return <BranchReportInlineTable rows={branchReportData} loading={branchReportLoading} />;
+                return <BranchReportInlineTable rows={branchReportData} loading={branchReportLoading} hasDateFilter={hasDateFilter} />;
               }
               return (
                 <ProductSummaryTable

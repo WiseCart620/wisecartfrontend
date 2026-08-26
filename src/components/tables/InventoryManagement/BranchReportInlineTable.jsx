@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
-
-const BranchReportInlineTable = ({ rows = [], loading }) => {
+const BranchReportInlineTable = ({ rows = [], loading, hasDateFilter = false }) => {
   const aggregated = useMemo(() => {
     const map = new Map();
     rows.forEach(r => {
@@ -13,6 +12,7 @@ const BranchReportInlineTable = ({ rows = [], loading }) => {
           variationName: r.variationName || '',
           begStock: 0, transferIn: 0, returns: 0, delivered: 0, totalSales: 0,
           pendingDelivery: 0, pendingSale: 0, stockOnHand: 0, availableStock: 0,
+          periodStock: 0, periodAvailableStock: 0,
         });
       }
       const e = map.get(key);
@@ -25,6 +25,8 @@ const BranchReportInlineTable = ({ rows = [], loading }) => {
       e.pendingSale += Number(r.pendingSale) || 0;
       e.stockOnHand += Number(r.stockOnHand) || 0;
       e.availableStock += Number(r.availableStock) || 0;
+      e.periodStock += Number(r.periodStock) || 0;
+      e.periodAvailableStock += Number(r.periodAvailableStock) || 0;
     });
     return Array.from(map.values()).filter(row =>
       row.begStock !== 0 || row.transferIn !== 0 || row.returns !== 0 ||
@@ -34,7 +36,7 @@ const BranchReportInlineTable = ({ rows = [], loading }) => {
     );
   }, [rows]);
 
-  const cols = [
+  const baseCols = [
     ['Beg. Stock', 'begStock', 'bg-gray-100'],
     ['Transfer In', 'transferIn', 'bg-indigo-50'],
     ['Return', 'returns', 'bg-yellow-50'],
@@ -45,6 +47,13 @@ const BranchReportInlineTable = ({ rows = [], loading }) => {
     ['Total Stock', 'stockOnHand', 'bg-sky-100 font-semibold'],
     ['Available Stock', 'availableStock', 'bg-emerald-50 font-semibold'],
   ];
+
+  const dateRangeCols = [
+    ['Total Stock (Date Range)', 'periodStock', 'bg-sky-50 font-semibold'],
+    ['Available Stock (Date Range)', 'periodAvailableStock', 'bg-emerald-100 font-semibold'],
+  ];
+
+  const cols = hasDateFilter ? [...baseCols, ...dateRangeCols] : baseCols;
 
   return (
     <div className="bg-white rounded-xl shadow overflow-hidden mb-6 table-panel">
