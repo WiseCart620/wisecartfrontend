@@ -1411,7 +1411,6 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-
         <AlertManagement
           showNotifications={showNotifications}
           setShowNotifications={setShowNotifications}
@@ -1422,6 +1421,7 @@ const Dashboard = () => {
           alertsTotalElements={alertsTotalElements}
           alertsLoading={alertsLoading}
           products={products}
+          branches={branches}
         />
       </div>
     </>

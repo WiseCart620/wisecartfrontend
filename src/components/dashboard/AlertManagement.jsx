@@ -178,6 +178,11 @@ const AlertManagement = ({
   const [toast, setToast] = useState(null);
 
   const branchOptions = useMemo(() => {
+    if (branches.length > 0) {
+      return [...branches]
+        .sort((a, b) => a.branchName.localeCompare(b.branchName))
+        .map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
+    }
     const map = new Map();
     alerts.forEach(a => {
       if (a.branch?.id) map.set(a.branch.id, a.branch.branchName);
@@ -185,10 +190,9 @@ const AlertManagement = ({
     return [...map.entries()]
       .sort((a, b) => a[1].localeCompare(b[1]))
       .map(([id, name]) => ({ id, name }));
-  }, [alerts]);
+  }, [branches, alerts]);
 
-  // Product options, variation-aware. Falls back to whatever's referenced
-  // in the current alerts list if a full `products` list isn't passed in.
+
   const productOptions = useMemo(() => {
     const map = new Map();
 
@@ -225,7 +229,7 @@ const AlertManagement = ({
   const companyOptions = useMemo(() => {
     const map = new Map();
     branches.forEach(b => {
-      if (b.company?.id) map.set(b.company.id, b.company.companyName);
+      if (b.companyId) map.set(b.companyId, b.companyName);
     });
     return [...map.entries()]
       .sort((a, b) => a[1].localeCompare(b[1]))
@@ -234,7 +238,7 @@ const AlertManagement = ({
 
   const branchIdToCompanyId = useMemo(() => {
     const map = new Map();
-    branches.forEach(b => map.set(b.id, b.company?.id ?? null));
+    branches.forEach(b => map.set(b.id, b.companyId ?? null));
     return map;
   }, [branches]);
 
