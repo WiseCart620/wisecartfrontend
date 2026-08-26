@@ -170,6 +170,24 @@ const InventoryManagement = () => {
   const stockPagination = usePaginationControl(10);
 
   const selectedProductKeys = productReportFilters.filters.productKeys || [];
+
+  useEffect(() => {
+    productPagination.setCurrentPage(1);
+  }, [
+    productSearchTerm,
+    showVariationFilter,
+    JSON.stringify(selectedProductKeys),
+  ]);
+
+  useEffect(() => {
+    stockPagination.setCurrentPage(1);
+  }, [
+    stockSearchTerm,
+    activeTab,
+    JSON.stringify(warehouseFilters.filters),
+    JSON.stringify(branchFilters.filters),
+  ]);
+
   const baseFilteredSummaries = filterProductSummaries(
     Array.isArray(productSummaries) ? productSummaries : [],
     productSearchTerm,
