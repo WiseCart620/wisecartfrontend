@@ -35,7 +35,7 @@ const getVariationLabel = (v) => {
     return `Variation #${v.id}`;
 };
 
-const MultiSelect = ({ label, values, onChange, options, getLabel, getSearchText, getId, placeholder }) => {
+const MultiSelect = ({ label, values, onChange, options, getLabel, getSearchText, getId, placeholder, disabled = false }) => {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const containerRef = React.useRef(null);
@@ -80,11 +80,15 @@ const MultiSelect = ({ label, values, onChange, options, getLabel, getSearchText
 
     return (
         <div className="relative" ref={containerRef}>
-            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">{label}</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">{label}</label>
             <button
                 type="button"
-                onClick={() => setOpen((o) => !o)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 text-sm border rounded-xl text-left transition bg-white hover:border-[#185FA5]/40 ${open ? 'border-[#185FA5] ring-4 ring-[#185FA5]/10' : 'border-gray-200'
+                disabled={disabled}
+                onClick={() => !disabled && setOpen((o) => !o)}
+                className={`w-full flex items-center justify-between px-3 py-2 text-[13px] border rounded-lg text-left transition ${disabled
+                    ? 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed'
+                    : 'bg-white hover:border-[#185FA5]/40'
+                    } ${open ? 'border-[#185FA5] ring-2 ring-[#185FA5]/10' : 'border-gray-200'
                     }`}
             >
                 <span className={values.length ? 'text-gray-900' : 'text-gray-400'}>
@@ -105,7 +109,7 @@ const MultiSelect = ({ label, values, onChange, options, getLabel, getSearchText
                         return (
                             <span
                                 key={id}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E6F1FB] text-[#0C447C] text-xs font-medium"
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#E6F1FB] text-[#0C447C] text-[11px] font-medium"
                             >
                                 {getLabel(opt)}
                                 <button type="button" onClick={() => toggle(id)} className="hover:text-red-600">
@@ -862,109 +866,78 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                 </div>
 
                 {/* Scope selector */}
-                <div className="flex gap-2 mb-5">
-                    {SCOPES.map((s) => {
-                        const Icon = s.icon;
-                        const active = scope === s.id;
-                        return (
-                            <button
-                                key={s.id}
-                                onClick={() => resetTargets(s.id)}
-                                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-full border text-sm font-semibold transition ${active
-                                    ? 'bg-[#185FA5] border-[#185FA5] text-white shadow-md shadow-[#185FA5]/20'
-                                    : 'bg-white border-gray-200 text-gray-500 hover:border-[#185FA5]/30 hover:text-[#185FA5]'
-                                    }`}
-                            >
-                                <Icon size={15} />
-                                {s.label}
-                            </button>
-                        );
-                    })}
+                <div className="inline-flex items-center gap-1.5 mb-5 px-2.5 py-1 rounded-md bg-gray-50 border border-gray-100 text-xs font-medium text-gray-500">
+                    <Layers size={12} className="text-[#185FA5]" />
+                    Warehouse + Branch
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="sm:col-span-2">
-                        <MultiSelect
-                            label="Products"
-                            values={productIds}
-                            onChange={setProductIds}
-                            options={products}
-                            getId={(p) => p.id}
-                            getLabel={productLabel}
-                            getSearchText={(p) => `${p.productName || p.name || ''} ${p.sku || ''} ${p.upc || ''}`}
-                            placeholder="Select one or more products (search by name, SKU, or UPC)..."
-                        />
-                    </div>
+                <div className="max-w-2xl">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="sm:col-span-2">
+                            <MultiSelect
+                                label="Products"
+                                values={productIds}
+                                onChange={setProductIds}
+                                options={products}
+                                getId={(p) => p.id}
+                                getLabel={productLabel}
+                                getSearchText={(p) => `${p.productName || p.name || ''} ${p.sku || ''} ${p.upc || ''}`}
+                                placeholder="Search products by name, SKU, or UPC..."
+                            />
+                        </div>
 
-                    {(anyHasVariations || variationsStillLoading) && (
-                        <>
-                            <div className="sm:col-span-2 flex items-center gap-2 -mt-1">
-                                <input
-                                    id="includeVariations"
-                                    type="checkbox"
-                                    checked={includeVariations}
-                                    disabled={variationsStillLoading && !anyHasVariations}
-                                    onChange={(e) => {
-                                        setIncludeVariations(e.target.checked);
-                                        if (!e.target.checked) setSelectedVariationKeys([]);
-                                    }}
-                                    className="rounded border-gray-300"
-                                />
-                                <label htmlFor="includeVariations" className="text-xs text-gray-600">
-                                    {variationsStillLoading && !anyHasVariations
-                                        ? 'Checking for variations...'
-                                        : 'Include variations of the selected products'}
-                                </label>
-                            </div>
-
-                            {includeVariations && anyHasVariations && (
-                                <div className="sm:col-span-2">
-                                    <MultiSelect
-                                        label="Which variations (leave empty to include ALL variations)"
-                                        values={selectedVariationKeys}
-                                        onChange={setSelectedVariationKeys}
-                                        options={allSelectedVariations}
-                                        getId={(v) => v.key}
-                                        getLabel={(v) => `${v.variationLabel} — ${v.productName}${v.sku ? ` · SKU: ${v.sku}` : ''}${v.upc ? ` · UPC: ${v.upc}` : ''}`}
-                                        getSearchText={(v) => `${v.variationLabel} ${v.productName} ${v.sku} ${v.upc}`}
-                                        placeholder="All variations (search by name, SKU, or UPC)..."
+                        {(anyHasVariations || variationsStillLoading) && (
+                            <>
+                                <div className="sm:col-span-2 flex items-center gap-2 -mt-1">
+                                    <input
+                                        id="includeVariations"
+                                        type="checkbox"
+                                        checked={includeVariations}
+                                        disabled={variationsStillLoading && !anyHasVariations}
+                                        onChange={(e) => {
+                                            setIncludeVariations(e.target.checked);
+                                            if (!e.target.checked) setSelectedVariationKeys([]);
+                                        }}
+                                        className="rounded border-gray-300"
                                     />
+                                    <label htmlFor="includeVariations" className="text-xs text-gray-600">
+                                        {variationsStillLoading && !anyHasVariations
+                                            ? 'Checking for variations...'
+                                            : 'Include variations of the selected products'}
+                                    </label>
                                 </div>
-                            )}
-                        </>
-                    )}
 
-                    {needsWarehouse && (
-                        <MultiSelect
-                            label="Warehouses"
-                            values={warehouseIds}
-                            onChange={setWarehouseIds}
-                            options={warehouses}
-                            getId={(w) => w.id}
-                            getLabel={(w) => w.warehouseName}
-                            placeholder="Select one or more warehouses..."
-                        />
-                    )}
+                                {includeVariations && anyHasVariations && (
+                                    <div className="sm:col-span-2">
+                                        <MultiSelect
+                                            label="Which variations (leave empty for all)"
+                                            values={selectedVariationKeys}
+                                            onChange={setSelectedVariationKeys}
+                                            options={allSelectedVariations}
+                                            getId={(v) => v.key}
+                                            getLabel={(v) => `${v.variationLabel} — ${v.productName}${v.sku ? ` · SKU: ${v.sku}` : ''}${v.upc ? ` · UPC: ${v.upc}` : ''}`}
+                                            getSearchText={(v) => `${v.variationLabel} ${v.productName} ${v.sku} ${v.upc}`}
+                                            placeholder="Search variations..."
+                                        />
+                                    </div>
+                                )}
+                            </>
+                        )}
 
-                    {needsBranch && (
-                        <div>
-                            <div className="flex items-center gap-2 mb-2">
-                                <input
-                                    id="autoAllBranches"
-                                    type="checkbox"
-                                    checked={autoAllBranches}
-                                    onChange={(e) => {
-                                        setAutoAllBranches(e.target.checked);
-                                        if (e.target.checked) setBranchIds([]);
-                                    }}
-                                    className="rounded border-gray-300"
-                                />
-                                <label htmlFor="autoAllBranches" className="text-xs text-gray-600">
-                                    Auto-run through <span className="font-medium">all {branches.length} branches</span>, one at a time
-                                </label>
-                            </div>
+                        {needsWarehouse && (
+                            <MultiSelect
+                                label="Warehouses"
+                                values={warehouseIds}
+                                onChange={setWarehouseIds}
+                                options={warehouses}
+                                getId={(w) => w.id}
+                                getLabel={(w) => w.warehouseName}
+                                placeholder="Select warehouses..."
+                            />
+                        )}
 
-                            {!autoAllBranches && (
+                        {needsBranch && (
+                            <div>
                                 <MultiSelect
                                     label="Branches"
                                     values={branchIds}
@@ -973,18 +946,35 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                                     getId={(b) => b.id}
                                     getLabel={(b) => b.branchCode ? `${b.branchName} (${b.branchCode})` : b.branchName}
                                     getSearchText={(b) => `${b.branchName || ''} ${b.branchCode || ''}`}
-                                    placeholder="Select one or more branches (search by name or branch code)..."
+                                    placeholder="Select branches..."
+                                    disabled={autoAllBranches}
                                 />
-                            )}
 
-                            {(autoAllBranches || branchIds.length > 1) && (
-                                <p className="text-xs text-gray-400 mt-2">
-                                    Branches always run one at a time, fully, {autoAllBranches ? 'in list order' : 'in the order selected'} —
-                                    the next branch starts automatically when the current one finishes.
-                                </p>
-                            )}
-                        </div>
-                    )}
+                                <div className="flex items-center gap-2 mt-2">
+                                    <input
+                                        id="autoAllBranches"
+                                        type="checkbox"
+                                        checked={autoAllBranches}
+                                        onChange={(e) => {
+                                            setAutoAllBranches(e.target.checked);
+                                            if (e.target.checked) setBranchIds([]);
+                                        }}
+                                        className="rounded border-gray-300"
+                                    />
+                                    <label htmlFor="autoAllBranches" className="text-xs text-gray-600">
+                                        Auto-run through all {branches.length} branches, one at a time
+                                    </label>
+                                </div>
+
+                                {(autoAllBranches || branchIds.length > 1) && (
+                                    <p className="text-xs text-gray-400 mt-2">
+                                        Branches always run one at a time, fully, {autoAllBranches ? 'in list order' : 'in the order selected'} —
+                                        the next branch starts automatically when the current one finishes.
+                                    </p>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <div className="mt-5 flex items-center justify-between">
