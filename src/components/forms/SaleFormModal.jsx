@@ -282,12 +282,23 @@ const SaleFormModal = ({
                   <p className="text-xs text-gray-400 mt-1">Select a product above and click "Add to List" to start</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-lg border border-gray-200">
-                  <table className="w-full text-sm">
+                <div className="rounded-lg border border-gray-200">
+                  <table className="w-full text-sm table-fixed">
+                    <colgroup>
+                      <col className="w-8" />
+                      <col className="w-[22%]" />
+                      <col className="w-[12%]" />
+                      <col className="w-[14%]" />
+                      <col className="w-[10%]" />
+                      <col className="w-[13%]" />
+                      <col className="w-[9%]" />
+                      <col className="w-[12%]" />
+                      <col className="w-8" />
+                    </colgroup>
                     <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
                       <tr>
-                        {['#', 'Product Name', 'Variation', 'SKU', 'UPC', 'Company SKU', 'Unit Price', 'Stock', 'Quantity', 'Amount', ''].map(h => (
-                          <th key={h} className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
+                        {['#', 'Product', 'Variation', 'SKU / UPC', 'Price', 'Stock', 'Qty', 'Amount', ''].map(h => (
+                          <th key={h} className="px-2 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wide truncate">{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -315,29 +326,28 @@ const SaleFormModal = ({
 
                         return (
                           <tr key={`${item.productId}_${item.variationId ?? 'base'}`} className="hover:bg-gray-50/80 transition-colors">
-                            <td className="px-4 py-3 text-center text-gray-400">{i + 1}</td>
-                            <td className="px-4 py-3">
+                            <td className="px-2 py-2 text-center text-gray-400">{i + 1}</td>
+                            <td className="px-2 py-2">
                               {selectedOption
-                                ? <div className="font-semibold text-gray-900">{selectedOption.fullName}</div>
-                                : <div className="text-gray-400 italic">Product not found</div>
+                                ? <div className="font-semibold text-gray-900 text-xs leading-tight break-words">{selectedOption.fullName}</div>
+                                : <div className="text-gray-400 italic text-xs">Product not found</div>
                               }
+                              {selectedOption?.companySku && (
+                                <div className="text-[10px] text-gray-400 mt-0.5 truncate">CSKU: {selectedOption.companySku}</div>
+                              )}
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-2 py-2">
                               {selectedOption?.variationLabel && selectedOption.variationLabel !== 'No variations'
-                                ? <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">{selectedOption.variationLabel}</span>
-                                : <span className="text-xs text-gray-400">None</span>
+                                ? <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100 truncate max-w-full">{selectedOption.variationLabel}</span>
+                                : <span className="text-[10px] text-gray-400">None</span>
                               }
                             </td>
-                            <td className="px-4 py-3 text-gray-700">{selectedOption?.sku || 'N/A'}</td>
-                            <td className="px-4 py-3 text-gray-700">{selectedOption?.upc || 'N/A'}</td>
-                            <td className="px-4 py-3">
-                              {selectedOption?.companySku
-                                ? <span className="font-medium text-gray-700">{selectedOption.companySku}</span>
-                                : <span className="text-xs text-gray-400 italic">—</span>
-                              }
+                            <td className="px-2 py-2 text-[11px] text-gray-600 leading-tight">
+                              <div className="truncate">{selectedOption?.sku || 'N/A'}</div>
+                              <div className="truncate text-gray-400">{selectedOption?.upc || 'N/A'}</div>
                             </td>
-                            <td className="px-4 py-3 text-right">
-                              <div className="flex flex-col items-end gap-1">
+                            <td className="px-2 py-2 text-right">
+                              <div className="flex flex-col items-end gap-0.5">
                                 <input
                                   type="text"
                                   value={item.unitPrice !== undefined && item.unitPrice !== null ? item.unitPrice : (originalPrice || '')}
@@ -346,55 +356,55 @@ const SaleFormModal = ({
                                     onItemChange(i, 'unitPrice', val);
                                   }}
                                   placeholder="0.00"
-                                  className="w-24 px-2 py-1.5 border border-gray-300 rounded-md text-sm font-semibold text-blue-600 text-right focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition"
+                                  className="w-full min-w-0 px-1.5 py-1 border border-gray-300 rounded-md text-xs font-semibold text-blue-600 text-right focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition"
                                 />
                                 {originalPrice > 0 && Number(price) !== Number(originalPrice) && (
-                                  <span className="text-[10px] text-gray-400 line-through">
+                                  <span className="text-[9px] text-gray-400 line-through">
                                     ₱{Number(originalPrice).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 15 })}
                                   </span>
                                 )}
                               </div>
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-2 py-2">
                               {isLoadingStock ? (
-                                <div className="flex items-center gap-2 text-blue-600 text-xs">
+                                <div className="flex items-center gap-1 text-blue-600 text-[10px]">
                                   <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                                  Loading...
+                                  ...
                                 </div>
                               ) : stockInfo ? (
-                                <div className="space-y-0.5">
-                                  <div className={`font-bold text-xs ${hasEnoughStock ? 'text-blue-600' : 'text-red-600'}`}>Avail: {stockInfo.availableQuantity ?? 0}</div>
-                                  <div className="text-[11px] text-gray-400">Total: {stockInfo.quantity ?? 0}</div>
-                                  {stockInfo.reservedQuantity > 0 && <div className="text-[11px] text-orange-500">Reserved: {stockInfo.reservedQuantity}</div>}
+                                <div className="space-y-0 leading-tight">
+                                  <div className={`font-bold text-[10px] ${hasEnoughStock ? 'text-blue-600' : 'text-red-600'}`}>Avail: {stockInfo.availableQuantity ?? 0}</div>
+                                  <div className="text-[9px] text-gray-400">Tot: {stockInfo.quantity ?? 0}</div>
+                                  {stockInfo.reservedQuantity > 0 && <div className="text-[9px] text-orange-500">Res: {stockInfo.reservedQuantity}</div>}
                                 </div>
                               ) : (
-                                <button type="button" onClick={() => onLoadStock(item.productId, formData.branchId, item.variationId)} className="text-xs text-blue-600 hover:underline font-medium">
-                                  Load stock
+                                <button type="button" onClick={() => onLoadStock(item.productId, formData.branchId, item.variationId)} className="text-[10px] text-blue-600 hover:underline font-medium">
+                                  Load
                                 </button>
                               )}
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-2 py-2">
                               <input
                                 type="text"
                                 value={item.quantity && item.quantity !== 0 ? Number(item.quantity).toLocaleString('en-US') : ''}
                                 onChange={(e) => onItemChange(i, 'quantity', e.target.value.replace(/,/g, ''))}
                                 placeholder="Qty"
-                                className={`w-20 px-3 py-1.5 border rounded-md text-sm font-medium outline-none transition focus:ring-2 ${!hasEnoughStock && !isLoadingStock && item.quantity > 0 ? 'border-red-300 bg-red-50 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-500/30 focus:border-blue-500'}`}
+                                className={`w-full min-w-0 px-1.5 py-1 border rounded-md text-xs font-medium outline-none transition focus:ring-2 ${!hasEnoughStock && !isLoadingStock && item.quantity > 0 ? 'border-red-300 bg-red-50 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-500/30 focus:border-blue-500'}`}
                                 min="1" max={maxAllowed} required disabled={isLoadingStock}
                               />
                               {!hasEnoughStock && !isLoadingStock && item.quantity > 0 && (
-                                <div className="text-[11px] text-red-600 mt-1">Max: {maxAllowed}</div>
+                                <div className="text-[9px] text-red-600 mt-0.5">Max: {maxAllowed}</div>
                               )}
                             </td>
-                            <td className="px-4 py-3 text-right">
+                            <td className="px-2 py-2 text-right">
                               {amount > 0
-                                ? <span className="font-bold text-gray-900">₱{amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+                                ? <span className="font-bold text-gray-900 text-xs">₱{amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
                                 : <span className="text-xs text-gray-300">—</span>
                               }
                             </td>
-                            <td className="px-4 py-3 text-center">
-                              <button type="button" onClick={() => onRemoveItem(i)} disabled={isLoadingStock} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition">
-                                <Trash2 size={16} />
+                            <td className="px-1 py-2 text-center">
+                              <button type="button" onClick={() => onRemoveItem(i)} disabled={isLoadingStock} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition">
+                                <Trash2 size={14} />
                               </button>
                             </td>
                           </tr>
@@ -403,11 +413,11 @@ const SaleFormModal = ({
                     </tbody>
                     <tfoot className="bg-gray-50 border-t border-gray-200">
                       <tr>
-                        <td colSpan={8} className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Grand Total</td>
-                        <td className="px-4 py-3 text-center text-sm font-bold text-gray-900">
+                        <td colSpan={6} className="px-2 py-2 text-right text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Grand Total</td>
+                        <td className="px-2 py-2 text-center text-xs font-bold text-gray-900">
                           {grandQty.toLocaleString('en-US')}
                         </td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-2 py-2 text-right">
                           <input
                             type="text"
                             value={grandTotalInput !== '' ? grandTotalInput : grandTotal.toFixed(2)}
@@ -416,7 +426,7 @@ const SaleFormModal = ({
                             onBlur={applyGrandTotal}
                             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }}
                             disabled={formData.items.length === 0}
-                            className="w-28 px-2 py-1.5 border border-gray-300 rounded-md text-sm font-bold text-blue-600 text-right focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition disabled:bg-transparent disabled:border-transparent"
+                            className="w-full min-w-0 px-1.5 py-1 border border-gray-300 rounded-md text-xs font-bold text-blue-600 text-right focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition disabled:bg-transparent disabled:border-transparent"
                           />
                         </td>
                         <td />
