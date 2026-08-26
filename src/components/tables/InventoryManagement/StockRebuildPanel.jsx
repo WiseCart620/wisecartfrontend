@@ -828,8 +828,8 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     }
 
     return (
-        <div className="space-y-4 self-start h-fit">
-            <div className={bare ? 'h-fit' : 'border border-slate-200 rounded-lg p-5 bg-white h-fit self-start'}>
+        <div className="space-y-4 h-full">
+            <div className={bare ? 'h-full' : 'border border-slate-200 rounded-lg p-5 bg-white h-full'}>
                 <div className="flex items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-md bg-[#E6F1FB] flex items-center justify-center">
