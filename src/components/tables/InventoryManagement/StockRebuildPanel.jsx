@@ -225,10 +225,9 @@ export const PasswordGate = ({ onUnlock, bare = false }) => {
             </div>
 
             <div className="max-w-sm">
-                <p className="text-xs text-slate-500 mb-4 leading-relaxed border-l-2 border-amber-300 pl-2.5">
+                <p className="text-xs text-slate-500 mb-4 leading-relaxed text-center">
                     These tools permanently rewrite transaction history.
                 </p>
-
                 <form onSubmit={handleSubmit} className="space-y-3">
                     <div className="relative">
                         <KeyRound size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
