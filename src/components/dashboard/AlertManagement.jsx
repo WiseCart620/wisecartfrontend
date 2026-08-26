@@ -163,6 +163,7 @@ const AlertManagement = ({
   alertsTotalElements = 0,
   alertsLoading = false,
   products = [],
+  branches = [],
 }) => {
   const [activeTab, setActiveTab] = useState('active');
   const [searchQuery, setSearchQuery] = useState('');
@@ -220,14 +221,22 @@ const AlertManagement = ({
       .map(([id, name]) => ({ id, name }));
   }, [products, alerts]);
 
+
   const companyOptions = useMemo(() => {
-    const set = new Set();
-    alerts.forEach(a => {
-      const m = a.message?.match(/(?:Company:|companies\s+')([^,']+)/i);
-      if (m) set.add(m[1].trim());
+    const map = new Map();
+    branches.forEach(b => {
+      if (b.company?.id) map.set(b.company.id, b.company.companyName);
     });
-    return [...set].sort();
-  }, [alerts]);
+    return [...map.entries()]
+      .sort((a, b) => a[1].localeCompare(b[1]))
+      .map(([id, name]) => ({ id, name }));
+  }, [branches]);
+
+  const branchIdToCompanyId = useMemo(() => {
+    const map = new Map();
+    branches.forEach(b => map.set(b.id, b.company?.id ?? null));
+    return map;
+  }, [branches]);
 
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type });
@@ -286,11 +295,10 @@ const AlertManagement = ({
       });
     }
     if (filterCompany !== 'all') {
-      const cLower = filterCompany.toLowerCase();
-      result = result.filter(a => a.message?.toLowerCase().includes(cLower));
+      result = result.filter(a => a.branch?.id && branchIdToCompanyId.get(a.branch.id) === filterCompany);
     }
     return result;
-  }, [alerts, activeTab, searchQuery, filterSeverity, filterType, filterBranchIds, filterProductKeys, filterCompany]);
+  }, [alerts, activeTab, searchQuery, filterSeverity, filterType, filterBranchIds, filterProductKeys, filterCompany, branchIdToCompanyId]);
 
   const activeCount = useMemo(() => alerts.filter(a => !a.isResolved).length, [alerts]);
   const resolvedCount = useMemo(() => alerts.filter(a => a.isResolved).length, [alerts]);
@@ -547,12 +555,12 @@ const AlertManagement = ({
 
             <select
               value={filterCompany}
-              onChange={e => setFilterCompany(e.target.value)}
+              onChange={e => setFilterCompany(e.target.value === 'all' ? 'all' : Number(e.target.value))}
               className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-[12px] bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 text-gray-700 min-w-[130px]"
             >
               <option value="all">All Companies</option>
-              {companyOptions.map(name => (
-                <option key={name} value={name}>{name}</option>
+              {companyOptions.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
 
