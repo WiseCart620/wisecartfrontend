@@ -828,9 +828,9 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     }
 
     return (
-        <div className="space-y-4">
-            <div className={bare ? '' : 'border border-slate-200 rounded-lg p-5 bg-white'}>
-                <div className="flex items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-100">
+        <div className="space-y-4 self-start h-fit">
+            <div className={bare ? 'h-fit' : 'border border-slate-200 rounded-lg p-5 bg-white h-fit self-start'}>
+                <div className="flex items-center justify-between gap-3 mb-4">
                     <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-md bg-[#E6F1FB] flex items-center justify-center">
                             <Layers size={15} className="text-[#185FA5]" />
@@ -875,13 +875,15 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                 </div>
 
                 {/* Scope indicator */}
-                <div className="inline-flex items-center gap-1.5 mb-4 px-2 py-1 rounded bg-slate-50 border border-slate-100 text-xs font-medium text-slate-500">
-                    <Layers size={12} className="text-[#185FA5]" />
-                    Warehouse + Branch
+                <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100">
+                    <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-slate-50 border border-slate-100 text-xs font-medium text-slate-500">
+                        <Layers size={12} className="text-[#185FA5]" />
+                        Warehouse + Branch
+                    </div>
                 </div>
 
                 <div className="max-w-2xl">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
                         <div className="sm:col-span-2">
                             <MultiSelect
                                 label="Products"
