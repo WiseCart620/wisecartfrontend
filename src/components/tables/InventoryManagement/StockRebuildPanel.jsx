@@ -478,11 +478,72 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     const [results, setResults] = useState([]);
     const [currentOpLabel, setCurrentOpLabel] = useState('');
     const [warningOpen, setWarningOpen] = useState(false);
+    const [jobId, setJobId] = useState(null);
+    const pollRef = React.useRef(null);
 
     const [branchQueue, setBranchQueue] = useState([]);
     const [activeBranchIndex, setActiveBranchIndex] = useState(-1);
     const [productDetailCache, setProductDetailCache] = useState({});
     const [loadingVariationsFor, setLoadingVariationsFor] = useState(new Set());
+
+    React.useEffect(() => {
+        const checkActive = async () => {
+            try {
+                const res = await api.get('/admin/stock-rebuild/jobs/active');
+                if (res.status === 204 || !res.data) return;
+                const data = res.data || res;
+                if (data.jobId) {
+                    setJobId(data.jobId);
+                    hydrateFromJob(data);
+                    startPolling(data.jobId);
+                }
+            } catch (err) {
+                // no active job — fine
+            }
+        };
+        checkActive();
+        return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    }, []);
+
+    const hydrateFromJob = (data) => {
+        setRunning(data.status === 'PENDING' || data.status === 'RUNNING');
+        setProgress({ done: data.doneOps, total: data.totalOps });
+        setResults(
+            (data.results || []).map((r) => ({
+                id: ++rowCounter,
+                productName: r.productName,
+                variationName: r.variationName || 'Base',
+                locationType: r.locationType === 'WAREHOUSE' ? 'Warehouse' : 'Branch',
+                locationName: r.locationName,
+                status: r.status,
+                qtyBefore: r.qtyBefore,
+                qtyAfter: r.qtyAfter,
+                retired: r.retired,
+                error: r.error,
+            }))
+        );
+        if (data.status === 'DONE') {
+            toast.success(`Rebuild finished — ${data.successCount} succeeded, ${data.failCount} failed`);
+            if (onRebuilt) onRebuilt();
+        }
+    };
+
+    const startPolling = (id) => {
+        if (pollRef.current) clearInterval(pollRef.current);
+        pollRef.current = setInterval(async () => {
+            try {
+                const res = await api.get(`/admin/stock-rebuild/jobs/${id}`);
+                const data = res.data || res;
+                hydrateFromJob(data);
+                if (data.status === 'DONE') {
+                    clearInterval(pollRef.current);
+                    pollRef.current = null;
+                }
+            } catch (err) {
+                console.error('Job poll failed', err);
+            }
+        }, 2000);
+    };
 
     React.useEffect(() => {
         if (!PRODUCT_DETAIL_ENABLED) return;
@@ -665,6 +726,38 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         setConfirmOpen(false);
         const ops = buildOperations();
         if (ops.length === 0) return;
+
+        setRunning(true);
+        setProgress({ done: 0, total: ops.length });
+        setResults(
+            ops.map(() => ({
+                id: ++rowCounter,
+                productName: '', variationName: '', locationType: '', locationName: '',
+                status: 'PENDING', qtyBefore: null, qtyAfter: null, retired: null, error: null,
+            }))
+        );
+
+        try {
+            const payload = ops.map((op) => ({
+                productId: op.productId,
+                productName: op.productName,
+                variationId: op.variationId,
+                variationName: op.variationName,
+                locationType: op.locationType === 'Warehouse' ? 'WAREHOUSE' : 'BRANCH',
+                locationId: op.locationId,
+                locationName: op.locationName,
+            }));
+
+            const res = await api.post('/admin/stock-rebuild/jobs', payload);
+            const data = res.data || res;
+            setJobId(data.jobId);
+            startPolling(data.jobId);
+            toast.success('Rebuild started in the background — you can close this tab, it will keep running.');
+        } catch (err) {
+            setRunning(false);
+            toast.error('Failed to start rebuild job');
+        }
+        return;
 
         const queue = [];
         {
