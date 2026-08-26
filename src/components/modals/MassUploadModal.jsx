@@ -119,7 +119,7 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
 
         const scaledRows = active.matchedRows.map(row => {
             const newUnitCost = (Number(row.unitCost) || 0) * scale;
-            return { ...row, unitCost: parseFloat(newUnitCost.toFixed(6)) }; // already fine as-is
+            return { ...row, unitCost: parseFloat(newUnitCost.toFixed(6)) };
         });
 
         updateActiveReport({ matchedRows: scaledRows });
