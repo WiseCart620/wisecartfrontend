@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, memo } from 'react';
+import React, { useState, useMemo, useCallback, memo, useEffect, useRef } from 'react';
 import { Bell, X, Download, CheckCheck, Trash2, RefreshCw, AlertCircle, AlertTriangle, Info, CheckCircle, Database, Loader2, Filter, XCircle, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { api } from '../../services/api';
 import MultiSelectDropdown from '../common/MultiSelectDropdown';
@@ -171,60 +171,35 @@ const AlertManagement = ({
   const [filterType, setFilterType] = useState('all');
   const [filterBranchIds, setFilterBranchIds] = useState([]);
   const [filterProductKeys, setFilterProductKeys] = useState([]);
-  const [filterCompany, setFilterCompany] = useState('all');
+  const [filterCompanyIds, setFilterCompanyIds] = useState([]);
   const [loadingAlertIds, setLoadingAlertIds] = useState(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(false);
   const [toast, setToast] = useState(null);
 
   const branchOptions = useMemo(() => {
-    if (branches.length > 0) {
-      return [...branches]
-        .sort((a, b) => a.branchName.localeCompare(b.branchName))
-        .map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
-    }
+    return [...branches]
+      .sort((a, b) => a.branchName.localeCompare(b.branchName))
+      .map(b => ({ id: b.id, name: `${b.branchName} (${b.branchCode})` }));
+  }, [branches]);
+
+  const productOptions = useMemo(() => {
     const map = new Map();
-    alerts.forEach(a => {
-      if (a.branch?.id) map.set(a.branch.id, a.branch.branchName);
+    products.forEach(p => {
+      if (p.variations?.length > 0) {
+        p.variations.forEach(v => {
+          const key = `${p.id}_${v.id}`;
+          const label = v.combinationDisplay || v.variationValue;
+          map.set(key, `${p.productName} (${label})`);
+        });
+      } else {
+        map.set(`${p.id}`, p.productName);
+      }
     });
     return [...map.entries()]
       .sort((a, b) => a[1].localeCompare(b[1]))
       .map(([id, name]) => ({ id, name }));
-  }, [branches, alerts]);
-
-
-  const productOptions = useMemo(() => {
-    const map = new Map();
-
-    const addOption = (productId, variationId, productName, variationLabel) => {
-      const key = variationId ? `${productId}_${variationId}` : `${productId}`;
-      const name = variationLabel ? `${productName} (${variationLabel})` : productName;
-      map.set(key, name);
-    };
-
-    if (products.length > 0) {
-      products.forEach(p => {
-        if (p.variations?.length > 0) {
-          p.variations.forEach(v => {
-            addOption(p.id, v.id, p.productName, v.combinationDisplay || v.variationValue);
-          });
-        } else {
-          addOption(p.id, null, p.productName, null);
-        }
-      });
-    } else {
-      alerts.forEach(a => {
-        if (a.product?.id) {
-          addOption(a.product.id, a.variationId || null, a.product.productName, a.variationLabel);
-        }
-      });
-    }
-
-    return [...map.entries()]
-      .sort((a, b) => a[1].localeCompare(b[1]))
-      .map(([id, name]) => ({ id, name }));
-  }, [products, alerts]);
-
+  }, [products]);
 
   const companyOptions = useMemo(() => {
     const map = new Map();
@@ -236,24 +211,18 @@ const AlertManagement = ({
       .map(([id, name]) => ({ id, name }));
   }, [branches]);
 
-  const branchIdToCompanyId = useMemo(() => {
-    const map = new Map();
-    branches.forEach(b => map.set(b.id, b.companyId ?? null));
-    return map;
-  }, [branches]);
+  const getResolvedParam = useCallback(() => {
+    return activeTab === 'active' ? false : activeTab === 'resolved' ? true : undefined;
+  }, [activeTab]);
 
-  const showToast = useCallback((message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
-  }, []);
-
-  const handleTabChange = useCallback(async (tab) => {
-    setActiveTab(tab);
-    const resolved = tab === 'active' ? false : tab === 'resolved' ? true : undefined;
-    setPageLoading(true);
-    try { await loadAlerts(0, resolved); }
-    finally { setPageLoading(false); }
-  }, [loadAlerts]);
+  const currentFilters = useMemo(() => ({
+    severity: filterSeverity !== 'all' ? filterSeverity : undefined,
+    alertType: filterType !== 'all' ? filterType : undefined,
+    branchIds: filterBranchIds,
+    companyIds: filterCompanyIds,
+    productKeys: filterProductKeys,
+    search: searchQuery || undefined,
+  }), [filterSeverity, filterType, filterBranchIds, filterCompanyIds, filterProductKeys, searchQuery]);
 
   const activeFilterCount = [
     searchQuery,
@@ -261,59 +230,53 @@ const AlertManagement = ({
     filterType !== 'all' ? filterType : '',
     filterBranchIds.length > 0 ? 'branch' : '',
     filterProductKeys.length > 0 ? 'product' : '',
-    filterCompany !== 'all' ? filterCompany : '',
+    filterCompanyIds.length > 0 ? 'company' : '',
   ].filter(Boolean).length;
 
-  const clearAllFilters = useCallback(() => {
+  const searchDebounceRef = useRef(null);
+  const isFirstRun = useRef(true);
+
+  useEffect(() => {
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      return;
+    }
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      loadAlerts(0, getResolvedParam(), currentFilters);
+    }, 350);
+    return () => clearTimeout(searchDebounceRef.current);
+  }, [filterSeverity, filterType, filterBranchIds, filterProductKeys, filterCompanyIds, searchQuery]);
+
+  const activeCount = alertsTotalElements; // header count reflects filtered total now
+  const resolvedCount = alertsTotalElements;
+
+  const handleTabChange = useCallback(async (tab) => {
+    setActiveTab(tab);
+    const resolved = tab === 'active' ? false : tab === 'resolved' ? true : undefined;
+    setPageLoading(true);
+    try { await loadAlerts(0, resolved, currentFilters); }
+    finally { setPageLoading(false); }
+  }, [loadAlerts, currentFilters]);
+
+  const clearAllFilters = useCallback(async () => {
     setSearchQuery('');
     setFilterSeverity('all');
     setFilterType('all');
     setFilterBranchIds([]);
     setFilterProductKeys([]);
-    setFilterCompany('all');
-  }, []);
-
-  const filteredAlerts = useMemo(() => {
-    let result = alerts;
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(a =>
-        a.title?.toLowerCase().includes(q) ||
-        a.message?.toLowerCase().includes(q) ||
-        a.branch?.branchName?.toLowerCase().includes(q) ||
-        a.product?.productName?.toLowerCase().includes(q) ||
-        a.severity?.toLowerCase().includes(q) ||
-        a.alertType?.toLowerCase().includes(q)
-      );
-    }
-    if (filterSeverity !== 'all') result = result.filter(a => a.severity === filterSeverity);
-    if (filterType !== 'all') result = result.filter(a => a.alertType === filterType);
-    if (filterBranchIds.length > 0) {
-      result = result.filter(a => filterBranchIds.includes(a.branch?.id));
-    }
-    if (filterProductKeys.length > 0) {
-      result = result.filter(a => {
-        if (!a.product?.id) return false;
-        const key = a.variationId ? `${a.product.id}_${a.variationId}` : `${a.product.id}`;
-        return filterProductKeys.includes(key);
-      });
-    }
-    if (filterCompany !== 'all') {
-      result = result.filter(a => a.branch?.id && branchIdToCompanyId.get(a.branch.id) === filterCompany);
-    }
-    return result;
-  }, [alerts, activeTab, searchQuery, filterSeverity, filterType, filterBranchIds, filterProductKeys, filterCompany, branchIdToCompanyId]);
-
-  const activeCount = useMemo(() => alerts.filter(a => !a.isResolved).length, [alerts]);
-  const resolvedCount = useMemo(() => alerts.filter(a => a.isResolved).length, [alerts]);
+    setFilterCompanyIds([]);
+    setPageLoading(true);
+    try { await loadAlerts(0, getResolvedParam(), {}); }
+    finally { setPageLoading(false); }
+  }, [loadAlerts, getResolvedParam]);
 
   const goToPage = useCallback(async (page) => {
     if (page < 0 || page >= alertsTotalPages || pageLoading) return;
     setPageLoading(true);
-    const resolved = activeTab === 'active' ? false : activeTab === 'resolved' ? true : undefined;
-    try { await loadAlerts(page, resolved); }
+    try { await loadAlerts(page, getResolvedParam(), currentFilters); }
     finally { setPageLoading(false); }
-  }, [alertsTotalPages, loadAlerts, pageLoading, activeTab]);
+  }, [alertsTotalPages, loadAlerts, pageLoading, getResolvedParam, currentFilters]);
 
   const pageButtons = useMemo(() => {
     if (alertsTotalPages <= 1) return [];
@@ -331,6 +294,15 @@ const AlertManagement = ({
     return pages;
   }, [alertsCurrentPage, alertsTotalPages]);
 
+  const showToast = useCallback((message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  }, []);
+
+  const refreshAfterMutation = useCallback(async () => {
+    await loadAlerts(alertsCurrentPage, getResolvedParam(), currentFilters);
+  }, [loadAlerts, alertsCurrentPage, getResolvedParam, currentFilters]);
+
   const handleResolveOne = useCallback(async (alertItem) => {
     setLoadingAlertIds(prev => new Set(prev).add(alertItem.id));
     try {
@@ -338,8 +310,7 @@ const AlertManagement = ({
         resolvedBy: 'admin', notes: 'Resolved manually'
       });
       if (response.success) {
-        const resolved = activeTab === 'active' ? false : activeTab === 'resolved' ? true : undefined;
-        await loadAlerts(alertsCurrentPage, resolved);
+        await refreshAfterMutation();
         showToast('Alert resolved successfully');
       }
       else showToast('Failed to resolve alert', 'error');
@@ -348,7 +319,7 @@ const AlertManagement = ({
     } finally {
       setLoadingAlertIds(prev => { const n = new Set(prev); n.delete(alertItem.id); return n; });
     }
-  }, [loadAlerts, showToast, alertsCurrentPage]);
+  }, [refreshAfterMutation, showToast]);
 
   const handleResolveAll = useCallback(async () => {
     if (!window.confirm(`Resolve all active alerts?`)) return;
@@ -358,15 +329,14 @@ const AlertManagement = ({
         resolvedBy: 'admin', notes: 'Resolved all via dashboard'
       });
       if (response.success) {
-        const resolved = activeTab === 'active' ? false : activeTab === 'resolved' ? true : undefined;
-        await loadAlerts(0, resolved);
+        await refreshAfterMutation();
         showToast('All active alerts resolved');
       }
       else showToast('Failed to resolve all alerts', 'error');
     } catch (err) {
       showToast('Failed to resolve alerts: ' + err.message, 'error');
     } finally { setBulkLoading(false); }
-  }, [loadAlerts, showToast]);
+  }, [refreshAfterMutation, showToast]);
 
   const handleDownloadAndClear = useCallback(async () => {
     setBulkLoading(true);
@@ -382,15 +352,14 @@ const AlertManagement = ({
         window.URL.revokeObjectURL(url); document.body.removeChild(a);
         const del = await api.delete('/alerts/resolved');
         if (del.success) {
-          const resolved = activeTab === 'active' ? false : activeTab === 'resolved' ? true : undefined;
-          await loadAlerts(0, resolved);
+          await refreshAfterMutation();
           showToast(`Downloaded and cleared resolved alerts`);
         }
       }
     } catch (err) {
       showToast('Failed to process resolved alerts: ' + err.message, 'error');
     } finally { setBulkLoading(false); }
-  }, [loadAlerts, showToast]);
+  }, [refreshAfterMutation, showToast]);
 
   const handleDeleteAllResolved = useCallback(async () => {
     if (!window.confirm(`Delete all resolved alerts?`)) return;
@@ -398,29 +367,26 @@ const AlertManagement = ({
     try {
       const response = await api.delete('/alerts/resolved');
       if (response.success) {
-        const resolved = activeTab === 'active' ? false : activeTab === 'resolved' ? true : undefined;
-        await loadAlerts(0, resolved);
+        await refreshAfterMutation();
         showToast('Deleted resolved alerts');
       }
     } catch (err) {
       showToast('Failed to delete resolved alerts: ' + err.message, 'error');
     } finally { setBulkLoading(false); }
-  }, [loadAlerts, showToast]);
+  }, [refreshAfterMutation, showToast]);
 
   if (!showNotifications) return null;
 
-  // Active filter chips (for the "clear one at a time" row)
   const filterChips = [];
   if (searchQuery) filterChips.push({ key: 'search', label: `"${searchQuery}"`, clear: () => setSearchQuery('') });
   if (filterSeverity !== 'all') filterChips.push({ key: 'severity', label: filterSeverity, clear: () => setFilterSeverity('all') });
   if (filterType !== 'all') filterChips.push({ key: 'type', label: filterType.replace(/_/g, ' '), clear: () => setFilterType('all') });
   if (filterBranchIds.length > 0) filterChips.push({ key: 'branch', label: `${filterBranchIds.length} branch${filterBranchIds.length > 1 ? 'es' : ''}`, clear: () => setFilterBranchIds([]) });
   if (filterProductKeys.length > 0) filterChips.push({ key: 'product', label: `${filterProductKeys.length} product${filterProductKeys.length > 1 ? 's' : ''}`, clear: () => setFilterProductKeys([]) });
-  if (filterCompany !== 'all') filterChips.push({ key: 'company', label: filterCompany, clear: () => setFilterCompany('all') });
+  if (filterCompanyIds.length > 0) filterChips.push({ key: 'company', label: `${filterCompanyIds.length} compan${filterCompanyIds.length > 1 ? 'ies' : 'y'}`, clear: () => setFilterCompanyIds([]) });
 
   return (
     <>
-      {/* Toast */}
       {toast && (
         <div className={`fixed top-6 right-6 z-[9999] flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-white text-sm font-medium
           ${toast.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'}`}>
@@ -429,23 +395,20 @@ const AlertManagement = ({
         </div>
       )}
 
-      {/* Overlay */}
       <div
         className="fixed inset-0 bg-gray-900/50 backdrop-blur-[2px] z-40 transition-opacity"
         onClick={() => !bulkLoading && setShowNotifications(false)}
       />
 
-      {/* Modal */}
       <div
         className="fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-6xl bg-white rounded-2xl shadow-2xl z-50 border border-gray-100 overflow-hidden flex flex-col"
         style={{ height: 'min(90vh, 900px)', minHeight: '500px' }}
       >
-        {/* Loading overlay */}
         {(bulkLoading || pageLoading) && (
           <div className="absolute inset-0 bg-white/85 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-3 rounded-2xl">
             <Loader2 className="animate-spin text-blue-600" size={36} />
             <p className="text-gray-700 font-medium text-sm">
-              {pageLoading ? 'Loading page…' : 'Processing alerts…'}
+              {pageLoading ? 'Loading…' : 'Processing alerts…'}
             </p>
             {!pageLoading && <p className="text-gray-400 text-xs">Please wait, do not close this window</p>}
           </div>
@@ -471,12 +434,12 @@ const AlertManagement = ({
             <div className="flex items-center gap-2">
               <button
                 onClick={handleDownloadAndClear}
-                disabled={bulkLoading || resolvedCount === 0}
+                disabled={bulkLoading}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-[11px] font-medium"
               >
                 <Download size={13} /> Download & Clear
               </button>
-              {activeCount > 0 && (
+              {activeTab === 'active' && alertsTotalElements > 0 && (
                 <button
                   onClick={handleResolveAll}
                   disabled={bulkLoading}
@@ -495,7 +458,7 @@ const AlertManagement = ({
             </div>
           </div>
 
-          {/* ── Filter bar — compact single row, Intuit-style pills ────────── */}
+          {/* ── Filter bar ────────────────────────────────────────────── */}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <div className="relative flex-1 min-w-[160px]">
               <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -510,7 +473,13 @@ const AlertManagement = ({
 
             <select
               value={filterSeverity}
-              onChange={e => setFilterSeverity(e.target.value)}
+              onChange={async e => {
+                setFilterSeverity(e.target.value);
+                setPageLoading(true);
+                try {
+                  await loadAlerts(0, getResolvedParam(), { ...currentFilters, severity: e.target.value !== 'all' ? e.target.value : undefined });
+                } finally { setPageLoading(false); }
+              }}
               className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-[12px] bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 text-gray-700"
             >
               <option value="all">All Severities</option>
@@ -522,7 +491,13 @@ const AlertManagement = ({
 
             <select
               value={filterType}
-              onChange={e => setFilterType(e.target.value)}
+              onChange={async e => {
+                setFilterType(e.target.value);
+                setPageLoading(true);
+                try {
+                  await loadAlerts(0, getResolvedParam(), { ...currentFilters, alertType: e.target.value !== 'all' ? e.target.value : undefined });
+                } finally { setPageLoading(false); }
+              }}
               className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-[12px] bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 text-gray-700"
             >
               <option value="all">All Types</option>
@@ -541,7 +516,12 @@ const AlertManagement = ({
               <MultiSelectDropdown
                 options={branchOptions}
                 selectedIds={filterBranchIds}
-                onChange={setFilterBranchIds}
+                onChange={async ids => {
+                  setFilterBranchIds(ids);
+                  setPageLoading(true);
+                  try { await loadAlerts(0, getResolvedParam(), { ...currentFilters, branchIds: ids }); }
+                  finally { setPageLoading(false); }
+                }}
                 placeholder="All Branches"
                 searchPlaceholder="Search branches..."
               />
@@ -551,22 +531,31 @@ const AlertManagement = ({
               <MultiSelectDropdown
                 options={productOptions}
                 selectedIds={filterProductKeys}
-                onChange={setFilterProductKeys}
+                onChange={async keys => {
+                  setFilterProductKeys(keys);
+                  setPageLoading(true);
+                  try { await loadAlerts(0, getResolvedParam(), { ...currentFilters, productKeys: keys }); }
+                  finally { setPageLoading(false); }
+                }}
                 placeholder="All Products"
                 searchPlaceholder="Search products..."
               />
             </div>
 
-            <select
-              value={filterCompany}
-              onChange={e => setFilterCompany(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-              className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-[12px] bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 text-gray-700 min-w-[130px]"
-            >
-              <option value="all">All Companies</option>
-              {companyOptions.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+            <div className="min-w-[150px] w-fit max-w-[220px]">
+              <MultiSelectDropdown
+                options={companyOptions}
+                selectedIds={filterCompanyIds}
+                onChange={async ids => {
+                  setFilterCompanyIds(ids);
+                  setPageLoading(true);
+                  try { await loadAlerts(0, getResolvedParam(), { ...currentFilters, companyIds: ids }); }
+                  finally { setPageLoading(false); }
+                }}
+                placeholder="All Companies"
+                searchPlaceholder="Search companies..."
+              />
+            </div>
 
             {activeFilterCount > 0 && (
               <button
@@ -579,7 +568,6 @@ const AlertManagement = ({
             )}
           </div>
 
-          {/* Active filter chips */}
           {filterChips.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2">
               {filterChips.map(chip => (
@@ -587,7 +575,12 @@ const AlertManagement = ({
                   <span className="leading-none capitalize">{chip.label}</span>
                   <button
                     type="button"
-                    onClick={chip.clear}
+                    onClick={async () => {
+                      chip.clear();
+                      setPageLoading(true);
+                      try { await loadAlerts(0, getResolvedParam(), {}); }
+                      finally { setPageLoading(false); }
+                    }}
                     className="inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-blue-200 hover:text-blue-900 transition-colors flex-shrink-0"
                   >
                     <X size={9} strokeWidth={2.5} />
@@ -598,23 +591,23 @@ const AlertManagement = ({
           )}
         </div>
 
-        {/* ── Tabs — pill style ─────────────────────────────────────────── */}
+        {/* ── Tabs ──────────────────────────────────────────────────── */}
         <div className="flex items-center gap-1.5 px-5 py-2.5 bg-gray-50/70 border-b border-gray-100 flex-shrink-0">
           <button
             className={`px-3.5 py-1.5 rounded-lg font-semibold text-[12px] transition-colors ${activeTab === 'active' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}`}
             onClick={() => handleTabChange('active')}
           >
-            Active Alerts{activeCount > 0 ? ` · ${activeCount}` : ''}
+            Active Alerts
           </button>
           <button
             className={`px-3.5 py-1.5 rounded-lg font-semibold text-[12px] transition-colors ${activeTab === 'resolved' ? 'bg-emerald-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}`}
             onClick={() => handleTabChange('resolved')}
           >
-            Resolved{resolvedCount > 0 ? ` · ${resolvedCount}` : ''}
+            Resolved
           </button>
         </div>
 
-        {/* ── Alert list ─────────────────────────────────────────────────── */}
+        {/* ── Alert list ─────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto bg-gray-50/30">
           {alertsLoading ? (
             <div className="p-6 space-y-3 animate-pulse">
@@ -654,18 +647,9 @@ const AlertManagement = ({
                 </>
               )}
             </div>
-          ) : filteredAlerts.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center p-8">
-              <Filter className="text-gray-300 mb-4" size={64} />
-              <p className="text-lg font-semibold text-gray-700">No alerts match your filters</p>
-              <p className="text-gray-400 text-sm mt-1.5">Try adjusting or clearing your filters</p>
-              <button onClick={clearAllFilters} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm">
-                Clear all filters
-              </button>
-            </div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {filteredAlerts.map((alertItem, index) => (
+              {alerts.map((alertItem, index) => (
                 <AlertRow
                   key={alertItem.id ?? index}
                   alertItem={alertItem}
@@ -679,8 +663,8 @@ const AlertManagement = ({
           )}
         </div>
 
-        {/* ── Pagination ─────────────────────────────────────────────────── */}
-        {activeFilterCount === 0 && alertsTotalPages > 1 && (
+        {/* ── Pagination — always server-driven now, filters included ── */}
+        {alertsTotalPages > 1 && (
           <div className="px-5 py-2.5 border-t border-gray-100 bg-white flex-shrink-0 flex items-center justify-between gap-2">
             <span className="text-[11px] text-gray-400 whitespace-nowrap">
               {alertsCurrentPage * PAGE_SIZE + 1}–{Math.min((alertsCurrentPage + 1) * PAGE_SIZE, alertsTotalElements)} of {alertsTotalElements}
@@ -719,17 +703,7 @@ const AlertManagement = ({
           </div>
         )}
 
-        {/* ── Filtered results note (shown instead of pager while filtering) ─ */}
-        {activeFilterCount > 0 && (
-          <div className="px-5 py-2 border-t border-gray-100 bg-white flex-shrink-0">
-            <span className="text-[11px] text-gray-400">
-              Showing {filteredAlerts.length} matching {filteredAlerts.length === 1 ? 'result' : 'results'} on this page
-              {alertsTotalPages > 1 ? ' — clear filters to browse other pages' : ''}
-            </span>
-          </div>
-        )}
-
-        {/* ── Footer ─────────────────────────────────────────────────────── */}
+        {/* ── Footer ─────────────────────────────────────────────────── */}
         <div className="px-5 py-2.5 border-t border-gray-100 bg-gray-50/70 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="text-[10px] text-gray-400 font-medium">
@@ -737,10 +711,7 @@ const AlertManagement = ({
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => {
-                  const resolved = activeTab === 'active' ? false : activeTab === 'resolved' ? true : undefined;
-                  loadAlerts(alertsCurrentPage, resolved);
-                }}
+                onClick={() => loadAlerts(alertsCurrentPage, getResolvedParam(), currentFilters)}
                 disabled={bulkLoading}
                 className="flex items-center gap-1 px-2.5 py-1 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors text-[10px] font-medium disabled:opacity-50 text-gray-600"
               >

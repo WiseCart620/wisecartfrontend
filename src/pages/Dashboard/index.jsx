@@ -234,12 +234,22 @@ const Dashboard = () => {
   };
 
   const [alertsLoading, setAlertsLoading] = useState(false);
-
-  const loadAlerts = async (page = 0, resolved) => {
+  const loadAlerts = async (page = 0, resolved, filters = {}) => {
     try {
       setAlertsLoading(true);
-      const resolvedParam = resolved === undefined ? '' : `&resolved=${resolved}`;
-      const alertsRes = await api.get(`/alerts?page=${page}&size=20&sort=createdAt,desc${resolvedParam}`);
+      const params = new URLSearchParams();
+      params.set('page', page);
+      params.set('size', '20');
+      params.set('sort', 'createdAt,desc');
+      if (resolved !== undefined) params.set('resolved', resolved);
+      if (filters.severity) params.set('severity', filters.severity);
+      if (filters.alertType) params.set('alertType', filters.alertType);
+      if (filters.branchIds?.length) params.set('branchIds', filters.branchIds.join(','));
+      if (filters.companyIds?.length) params.set('companyIds', filters.companyIds.join(','));
+      if (filters.productKeys?.length) params.set('productKeys', filters.productKeys.join(','));
+      if (filters.search) params.set('search', filters.search);
+
+      const alertsRes = await api.get(`/alerts?${params.toString()}`);
       if (alertsRes.success && alertsRes.data) {
         const newAlerts = alertsRes.data?.content || alertsRes.data || [];
         const totalPages = alertsRes.data?.totalPages || 1;
@@ -254,9 +264,10 @@ const Dashboard = () => {
       console.error('Failed to load alerts', err);
       setAlerts([]);
     } finally {
-      setAlertsLoading(false); // End loading
+      setAlertsLoading(false);
     }
   };
+
   const getMonthlySalesData = () => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const monthlyData = months.map((month, index) => ({
