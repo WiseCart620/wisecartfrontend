@@ -21,42 +21,6 @@ const FormSection = ({ icon: Icon, title, action, children }) => (
 
 
 
-const distributeRemainder = (prices, quantities, remainder) => {
-  const result = [...prices];
-  const remainderCents = Math.round(remainder * 100);
-  if (remainderCents === 0) return result;
-
-  const eligible = quantities
-    .map((qty, i) => ({ i, qty: qty || 0 }))
-    .filter(x => x.qty > 0);
-  if (eligible.length === 0) return result;
-
-  const qtyOne = eligible.find(x => x.qty === 1);
-  if (qtyOne) {
-    result[qtyOne.i] = Math.round((result[qtyOne.i] + remainderCents / 100) * 100) / 100;
-    return result;
-  }
-
-  const divisor = eligible.find(x => remainderCents % x.qty === 0);
-  if (divisor) {
-    const deltaPerUnit = (remainderCents / divisor.qty) / 100;
-    result[divisor.i] = Math.round((result[divisor.i] + deltaPerUnit) * 100) / 100;
-    return result;
-  }
-
-
-  const sorted = [...eligible].sort((a, b) => a.qty - b.qty);
-  let remaining = remainderCents;
-  for (const x of sorted) {
-    if (remaining === 0) break;
-    const wholeUnits = Math.trunc(remaining / x.qty);
-    if (wholeUnits === 0) continue;
-    const deltaPerUnit = wholeUnits / 100;
-    result[x.i] = Math.round((result[x.i] + deltaPerUnit) * 100) / 100;
-    remaining -= wholeUnits * x.qty;
-  }
-  return result;
-};
 
 const SaleFormModal = ({
   modalMode,
@@ -117,32 +81,32 @@ const SaleFormModal = ({
       return;
     }
 
+    // scale is exact, so scaling every item's price by it (without rounding)
+    // makes sum(price * qty) land on `target` exactly — no remainder-patching needed.
     const scale = target / grandTotal;
-    const quantities = formData.items.map(item => item.quantity || 0);
-
-    let newPrices = formData.items.map(item => {
-      const opt = Array.isArray(productOptions)
-        ? productOptions.find(o =>
-          o.parentProductId === item.productId &&
-          (o.variationId ?? null) === (item.variationId ?? null)
-        )
-        : null;
-      const currentPrice = (item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== '')
-        ? Number(item.unitPrice)
-        : (opt?.price ?? 0);
-
-      return Math.round(currentPrice * scale * 100) / 100;
-    });
-
-    const roundedTotal = newPrices.reduce((sum, price, i) => sum + price * quantities[i], 0);
-    const remainder = Math.round((target - roundedTotal) * 100) / 100;
-    if (remainder !== 0) {
-      newPrices = distributeRemainder(newPrices, quantities, remainder);
-    }
 
     setFormData(prev => ({
       ...prev,
-      items: prev.items.map((item, i) => ({ ...item, unitPrice: newPrices[i].toFixed(2) })),
+      items: prev.items.map(item => {
+        const opt = Array.isArray(productOptions)
+          ? productOptions.find(o =>
+            o.parentProductId === item.productId &&
+            (o.variationId ?? null) === (item.variationId ?? null)
+          )
+          : null;
+        const currentPrice = (item.unitPriceExact !== undefined && item.unitPriceExact !== null)
+          ? item.unitPriceExact
+          : ((item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== '')
+            ? Number(item.unitPrice)
+            : (opt?.price ?? 0));
+
+        const exactPrice = currentPrice * scale; // full precision, kept unrounded
+        return {
+          ...item,
+          unitPrice: exactPrice.toFixed(2), // rounded value shown in the editable input
+          unitPriceExact: exactPrice,       // full-precision value used for Amount/Grand Total math
+        };
+      }),
     }));
 
     setGrandTotalInput('');
@@ -154,9 +118,11 @@ const SaleFormModal = ({
       o.parentProductId === item.productId &&
       (o.variationId ?? null) === (item.variationId ?? null)
     );
-    const effectivePrice = (item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== '')
-      ? Number(item.unitPrice)
-      : (opt?.price ?? 0);
+    const effectivePrice = (item.unitPriceExact !== undefined && item.unitPriceExact !== null)
+      ? item.unitPriceExact
+      : ((item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== '')
+        ? Number(item.unitPrice)
+        : (opt?.price ?? 0));
     return sum + (effectivePrice * (item.quantity || 0));
   }, 0);
 
@@ -364,9 +330,11 @@ const SaleFormModal = ({
                         const maxAllowed = getMaxAllowedQuantity(item, stockInfo, oldItem);
                         const hasEnoughStock = maxAllowed === undefined || maxAllowed >= item.quantity;
                         const originalPrice = selectedOption?.price ?? 0;
-                        const price = (item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== '')
-                          ? Number(item.unitPrice)
-                          : originalPrice;
+                        const price = (item.unitPriceExact !== undefined && item.unitPriceExact !== null)
+                          ? item.unitPriceExact
+                          : ((item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== '')
+                            ? Number(item.unitPrice)
+                            : originalPrice);
                         const amount = price * (item.quantity || 0);
 
                         return (
@@ -399,6 +367,7 @@ const SaleFormModal = ({
                                   onChange={(e) => {
                                     const val = e.target.value.replace(/[^0-9.]/g, '');
                                     onItemChange(i, 'unitPrice', val);
+                                    onItemChange(i, 'unitPriceExact', undefined);
                                   }}
                                   placeholder="0.00"
                                   className="w-full min-w-0 px-1.5 py-1 border border-gray-300 rounded-md text-xs font-semibold text-blue-600 text-right focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition"
