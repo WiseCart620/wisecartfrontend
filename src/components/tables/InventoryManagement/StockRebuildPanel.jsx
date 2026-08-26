@@ -80,25 +80,25 @@ const MultiSelect = ({ label, values, onChange, options, getLabel, getSearchText
 
     return (
         <div className="relative" ref={containerRef}>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">{label}</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1">{label}</label>
             <button
                 type="button"
                 disabled={disabled}
                 onClick={() => !disabled && setOpen((o) => !o)}
-                className={`w-full flex items-center justify-between px-3 py-2 text-[13px] border rounded-lg text-left transition ${disabled
-                    ? 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed'
-                    : 'bg-white hover:border-[#185FA5]/40'
-                    } ${open ? 'border-[#185FA5] ring-2 ring-[#185FA5]/10' : 'border-gray-200'
+                className={`w-full flex items-center justify-between px-3 py-2 text-[13px] border rounded-md text-left transition ${disabled
+                    ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
+                    : 'bg-white hover:border-[#185FA5]/50'
+                    } ${open ? 'border-[#185FA5] ring-2 ring-[#185FA5]/10' : 'border-slate-200'
                     }`}
             >
-                <span className={values.length ? 'text-gray-900' : 'text-gray-400'}>
+                <span className={values.length ? 'text-slate-900' : 'text-slate-400'}>
                     {values.length === 0
                         ? placeholder
                         : values.length === 1
                             ? getLabel(options.find((o) => String(getId(o)) === String(values[0])) || {})
                             : `${values.length} selected`}
                 </span>
-                <ChevronDown size={14} className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+                <ChevronDown size={14} className={`text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
 
             {values.length > 0 && (
@@ -109,7 +109,7 @@ const MultiSelect = ({ label, values, onChange, options, getLabel, getSearchText
                         return (
                             <span
                                 key={id}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#E6F1FB] text-[#0C447C] text-[11px] font-medium"
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#E6F1FB] text-[#0C447C] text-[11px] font-medium"
                             >
                                 {getLabel(opt)}
                                 <button type="button" onClick={() => toggle(id)} className="hover:text-red-600">
@@ -119,7 +119,7 @@ const MultiSelect = ({ label, values, onChange, options, getLabel, getSearchText
                         );
                     })}
                     {values.length > 6 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 text-xs">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-[11px]">
                             +{values.length - 6} more
                         </span>
                     )}
@@ -127,9 +127,9 @@ const MultiSelect = ({ label, values, onChange, options, getLabel, getSearchText
             )}
 
             {open && (
-                <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-72 overflow-hidden flex flex-col">
-                    <div className="relative border-b border-gray-100">
-                        <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <div className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-md shadow-lg max-h-72 overflow-hidden flex flex-col">
+                    <div className="relative border-b border-slate-100">
+                        <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input
                             autoFocus
                             value={query}
@@ -138,17 +138,17 @@ const MultiSelect = ({ label, values, onChange, options, getLabel, getSearchText
                             className="w-full pl-8 pr-2 py-2 text-sm outline-none"
                         />
                     </div>
-                    <div className="flex items-center justify-between px-3 py-1.5 border-b border-gray-100 bg-gray-50 text-xs">
+                    <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-100 bg-slate-50 text-xs">
                         <button type="button" onClick={selectAllFiltered} className="text-[#185FA5] font-medium hover:underline">
                             Select all {query ? 'matching' : ''}
                         </button>
-                        <button type="button" onClick={clearAll} className="text-gray-500 hover:underline">
+                        <button type="button" onClick={clearAll} className="text-slate-500 hover:underline">
                             Clear
                         </button>
                     </div>
                     <div className="overflow-y-auto">
                         {filtered.length === 0 ? (
-                            <div className="px-3 py-3 text-xs text-gray-400 text-center">No matches</div>
+                            <div className="px-3 py-3 text-xs text-slate-400 text-center">No matches</div>
                         ) : (
                             filtered.map((o) => {
                                 const id = getId(o);
@@ -158,7 +158,7 @@ const MultiSelect = ({ label, values, onChange, options, getLabel, getSearchText
                                         key={id}
                                         type="button"
                                         onClick={() => toggle(id)}
-                                        className={`w-full flex items-center gap-2 text-left px-3 py-2 text-sm hover:bg-[#E6F1FB] transition ${checked ? 'bg-[#E6F1FB] text-[#0C447C] font-medium' : 'text-gray-700'
+                                        className={`w-full flex items-center gap-2 text-left px-3 py-1.5 text-sm hover:bg-[#E6F1FB] transition ${checked ? 'bg-[#E6F1FB] text-[#0C447C] font-medium' : 'text-slate-700'
                                             }`}
                                     >
                                         <input type="checkbox" readOnly checked={checked} className="pointer-events-none" />
@@ -179,7 +179,6 @@ const SectionLabel = ({ children }) => (
         {children}
     </p>
 );
-
 
 const PasswordGate = ({ onUnlock }) => {
     const [value, setValue] = useState('');
@@ -214,9 +213,9 @@ const PasswordGate = ({ onUnlock }) => {
     };
 
     return (
-        <div className="flex items-center justify-center py-20">
+        <div className="flex items-center justify-center py-16">
             <div
-                className={`w-full max-w-sm bg-white border border-gray-100 rounded-3xl shadow-[0_4px_24px_rgba(24,95,165,0.08)] p-8 text-center ${shake ? 'animate-[shake_0.4s_ease-in-out]' : ''
+                className={`w-full max-w-sm bg-white border border-slate-200 rounded-xl shadow-sm p-7 ${shake ? 'animate-[shake_0.4s_ease-in-out]' : ''
                     }`}
             >
                 <style>{`
@@ -227,18 +226,23 @@ const PasswordGate = ({ onUnlock }) => {
                 }
             `}</style>
 
-                <div className="mx-auto mb-5 w-16 h-16 rounded-full bg-gradient-to-br from-[#2C8CE0] to-[#185FA5] flex items-center justify-center shadow-lg shadow-[#185FA5]/25">
-                    <Lock size={24} className="text-white" />
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="w-9 h-9 rounded-lg bg-[#185FA5] flex items-center justify-center shrink-0">
+                        <Lock size={16} className="text-white" />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-semibold text-slate-900">Restricted panel</h3>
+                        <p className="text-xs text-slate-500">Enter the access password to continue</p>
+                    </div>
                 </div>
 
-                <h3 className="text-lg font-semibold text-gray-900">Restricted panel</h3>
-                <p className="text-sm text-gray-500 mt-1.5 mb-6 leading-relaxed">
-                    Stock Rebuild permanently rewrites transaction history.<br />Enter the access password to continue.
+                <p className="text-xs text-slate-500 mb-4 leading-relaxed border-l-2 border-amber-300 pl-2.5">
+                    Stock Rebuild permanently rewrites transaction history.
                 </p>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-3">
                     <div className="relative">
-                        <KeyRound size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <KeyRound size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input
                             type={showPassword ? 'text' : 'password'}
                             value={value}
@@ -249,29 +253,29 @@ const PasswordGate = ({ onUnlock }) => {
                                 if (error) setError('');
                             }}
                             placeholder="Access password"
-                            className={`w-full pl-10 pr-10 py-3 text-sm border rounded-xl outline-none transition focus:ring-4 disabled:bg-gray-50 ${error
-                                ? 'border-red-300 focus:ring-red-50'
-                                : 'border-gray-200 focus:ring-[#185FA5]/10 focus:border-[#185FA5]'
+                            className={`w-full pl-9 pr-9 py-2.5 text-sm border rounded-md outline-none transition focus:ring-2 disabled:bg-slate-50 ${error
+                                ? 'border-red-300 focus:ring-red-100'
+                                : 'border-slate-200 focus:ring-[#185FA5]/15 focus:border-[#185FA5]'
                                 }`}
                         />
                         <button
                             type="button"
                             onClick={() => setShowPassword((s) => !s)}
-                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                             tabIndex={-1}
                         >
-                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                            {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                         </button>
                     </div>
 
                     {error && (
-                        <p className="text-xs text-red-600 text-left -mt-2">{error}</p>
+                        <p className="text-xs text-red-600">{error}</p>
                     )}
 
                     <button
                         type="submit"
                         disabled={checking || !value}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold bg-[#185FA5] text-white rounded-full hover:bg-[#0C447C] disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm shadow-[#185FA5]/25"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-[#185FA5] text-white rounded-md hover:bg-[#0C447C] disabled:opacity-40 disabled:cursor-not-allowed transition"
                     >
                         {checking ? <RefreshCw size={14} className="animate-spin" /> : <Lock size={14} />}
                         {checking ? 'Verifying...' : 'Unlock panel'}
@@ -287,27 +291,27 @@ const PasswordGate = ({ onUnlock }) => {
 const StatusBadge = ({ status }) => {
     if (status === 'RUNNING') {
         return (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
                 <RefreshCw size={11} className="animate-spin" /> Running
             </span>
         );
     }
     if (status === 'PENDING') {
         return (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-gray-400" /> Queued
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" /> Queued
             </span>
         );
     }
     if (status === 'ERROR') {
         return (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded">
                 <XCircle size={11} /> Failed
             </span>
         );
     }
     return (
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
             <CheckCircle2 size={11} /> Rebuilt
         </span>
     );
@@ -318,27 +322,27 @@ const LocationChip = ({ type, name }) => {
     return (
         <span className="inline-flex items-center gap-2">
             <span
-                className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${isWarehouse ? 'bg-[#E6F1FB] text-[#185FA5]' : 'bg-violet-50 text-violet-600'
+                className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${isWarehouse ? 'bg-[#E6F1FB] text-[#185FA5]' : 'bg-violet-50 text-violet-600'
                     }`}
             >
-                {isWarehouse ? <Building size={12} /> : <Store size={12} />}
+                {isWarehouse ? <Building size={11} /> : <Store size={11} />}
             </span>
-            <span className="text-gray-700">{name}</span>
+            <span className="text-slate-700">{name}</span>
         </span>
     );
 };
 
 const QtyDelta = ({ before, after }) => {
     if (before === null || after === null || before === undefined || after === undefined) {
-        return <span className="text-gray-300 tabular-nums">—</span>;
+        return <span className="text-slate-300 tabular-nums">—</span>;
     }
     const diff = after - before;
-    const diffColor = diff > 0 ? 'text-emerald-600' : diff < 0 ? 'text-red-500' : 'text-gray-400';
+    const diffColor = diff > 0 ? 'text-emerald-600' : diff < 0 ? 'text-red-500' : 'text-slate-400';
     return (
         <div className="flex items-center justify-end gap-2 tabular-nums">
-            <span className="text-gray-400">{before}</span>
-            <ArrowRight size={11} className="text-gray-300 shrink-0" />
-            <span className="font-semibold text-gray-900">{after}</span>
+            <span className="text-slate-400">{before}</span>
+            <ArrowRight size={11} className="text-slate-300 shrink-0" />
+            <span className="font-semibold text-slate-900">{after}</span>
             {diff !== 0 && (
                 <span className={`text-[11px] font-medium ${diffColor}`}>
                     ({diff > 0 ? '+' : ''}{diff})
@@ -356,9 +360,9 @@ const ResultsTable = ({ rows }) => {
     const pendingCount = rows.filter((r) => r.status === 'PENDING' || r.status === 'RUNNING').length;
 
     return (
-        <div className="border border-gray-100 rounded-3xl overflow-hidden bg-white shadow-[0_2px_16px_rgba(15,23,42,0.04)]">
-            <div className="flex items-center gap-5 px-4 py-2.5 bg-gray-50 border-b border-gray-200 text-xs">
-                <span className="font-medium text-gray-500">{rows.length} total</span>
+        <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
+            <div className="flex items-center gap-4 px-4 py-2 bg-slate-50 border-b border-slate-200 text-xs">
+                <span className="font-medium text-slate-500">{rows.length} total</span>
                 <span className="flex items-center gap-1.5 text-emerald-700">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> {doneCount} rebuilt
                 </span>
@@ -368,41 +372,41 @@ const ResultsTable = ({ rows }) => {
                     </span>
                 )}
                 {pendingCount > 0 && (
-                    <span className="flex items-center gap-1.5 text-gray-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-gray-300" /> {pendingCount} in queue
+                    <span className="flex items-center gap-1.5 text-slate-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300" /> {pendingCount} in queue
                     </span>
                 )}
             </div>
 
-            <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 440px)' }}>
+            <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 420px)' }}>
                 <table className="w-full text-sm border-collapse">
                     <thead className="sticky top-0 z-10">
-                        <tr className="bg-[#F7FAFD] border-b border-gray-200 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
-                            <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Product</th>
-                            <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Variation</th>
-                            <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Location</th>
-                            <th className="px-4 py-2.5 text-right text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Quantity</th>
-                            <th className="px-4 py-2.5 text-right text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Retired</th>
-                            <th className="px-4 py-2.5 text-right text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Status</th>
+                        <tr className="bg-slate-50 border-b border-slate-200">
+                            <th className="px-4 py-2 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Product</th>
+                            <th className="px-4 py-2 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Variation</th>
+                            <th className="px-4 py-2 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Location</th>
+                            <th className="px-4 py-2 text-right text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Quantity</th>
+                            <th className="px-4 py-2 text-right text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Retired</th>
+                            <th className="px-4 py-2 text-right text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Status</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {rows.map((r, i) => (
+                        {rows.map((r) => (
                             <tr
                                 key={r.id}
-                                className={`border-b border-gray-100 last:border-0 transition-colors ${r.status === 'PENDING' ? 'opacity-45' : 'hover:bg-[#F7FAFD]'
+                                className={`border-b border-slate-100 last:border-0 transition-colors ${r.status === 'PENDING' ? 'opacity-45' : 'hover:bg-slate-50'
                                     } ${r.status === 'ERROR' ? 'bg-red-50/40' : ''}`}
                             >
-                                <td className="px-4 py-2.5 text-gray-900 font-medium whitespace-nowrap">{r.productName}</td>
-                                <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">{r.variationName}</td>
-                                <td className="px-4 py-2.5 whitespace-nowrap">
+                                <td className="px-4 py-2 text-slate-900 font-medium whitespace-nowrap">{r.productName}</td>
+                                <td className="px-4 py-2 text-slate-500 whitespace-nowrap">{r.variationName}</td>
+                                <td className="px-4 py-2 whitespace-nowrap">
                                     <LocationChip type={r.locationType} name={r.locationName} />
                                 </td>
-                                <td className="px-4 py-2.5">
+                                <td className="px-4 py-2">
                                     <QtyDelta before={r.qtyBefore} after={r.qtyAfter} />
                                 </td>
-                                <td className="px-4 py-2.5 text-right text-gray-500 tabular-nums">{r.retired ?? '—'}</td>
-                                <td className="px-4 py-2.5">
+                                <td className="px-4 py-2 text-right text-slate-500 tabular-nums">{r.retired ?? '—'}</td>
+                                <td className="px-4 py-2">
                                     <div className="flex flex-col items-end gap-1">
                                         <StatusBadge status={r.status} />
                                         {r.status === 'ERROR' && r.error && (
@@ -429,9 +433,9 @@ const ResultsTable = ({ rows }) => {
 const BranchQueueBanner = ({ queue, activeIndex }) => {
     if (!queue || queue.length === 0) return null;
     return (
-        <div className="border border-[#185FA5]/15 bg-gradient-to-br from-[#E6F1FB] to-[#F0F7FD] rounded-2xl p-5">
-            <p className="text-xs font-semibold text-[#0C447C] mb-2">
-                Branch queue — processed one at a time, auto-advancing
+        <div className="border border-slate-200 bg-slate-50 rounded-lg p-4">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                Branch queue — processed one at a time
             </p>
             <div className="flex flex-wrap items-center gap-1.5">
                 {queue.map((b, i) => {
@@ -439,11 +443,11 @@ const BranchQueueBanner = ({ queue, activeIndex }) => {
                     return (
                         <React.Fragment key={b.locationId}>
                             <span
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${state === 'done'
-                                    ? 'bg-green-50 border-green-200 text-green-700'
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border ${state === 'done'
+                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                                     : state === 'active'
-                                        ? 'bg-[#185FA5] border-[#185FA5] text-white shadow-sm'
-                                        : 'bg-white border-gray-200 text-gray-400'
+                                        ? 'bg-[#185FA5] border-[#185FA5] text-white'
+                                        : 'bg-white border-slate-200 text-slate-400'
                                     }`}
                             >
                                 {state === 'done' && <CheckCircle2 size={11} />}
@@ -455,7 +459,7 @@ const BranchQueueBanner = ({ queue, activeIndex }) => {
                                     </span>
                                 )}
                             </span>
-                            {i < queue.length - 1 && <ArrowRight size={12} className="text-gray-300 shrink-0" />}
+                            {i < queue.length - 1 && <ArrowRight size={12} className="text-slate-300 shrink-0" />}
                         </React.Fragment>
                     );
                 })}
@@ -824,36 +828,36 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     }
 
     return (
-        <div className="space-y-6">
-            <div className={bare ? '' : 'border border-gray-100 rounded-3xl p-7 bg-white shadow-[0_2px_16px_rgba(15,23,42,0.04)]'}>
-                <div className="flex items-center justify-between gap-3 mb-5">
-                    <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#E6F1FB] to-[#D3E8FA] flex items-center justify-center">
-                            <Layers size={16} className="text-[#185FA5]" />
+        <div className="space-y-4">
+            <div className={bare ? '' : 'border border-slate-200 rounded-lg p-5 bg-white'}>
+                <div className="flex items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-100">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-md bg-[#E6F1FB] flex items-center justify-center">
+                            <Layers size={15} className="text-[#185FA5]" />
                         </div>
                         <div>
-                            <h3 className="text-base font-semibold text-gray-900">Rebuild targets</h3>
-                            <p className="text-xs text-gray-400">Choose what to recalculate and where</p>
+                            <h3 className="text-sm font-semibold text-slate-900">Rebuild targets</h3>
+                            <p className="text-xs text-slate-400">Choose what to recalculate and where</p>
                         </div>
                     </div>
                     <button
                         onClick={handleRelock}
-                        className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 border border-amber-300 rounded-lg hover:bg-amber-100 transition"
+                        className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50 transition"
                     >
                         <Lock size={12} /> Lock
                     </button>
                 </div>
 
-                {/* Collapsible warning — narrow to match form width, not full column */}
-                <div className="max-w-2xl rounded-xl border border-amber-200/70 bg-amber-50/60 overflow-hidden mb-5">
+                {/* Collapsible warning */}
+                <div className="max-w-2xl rounded-md border border-amber-200 bg-amber-50 overflow-hidden mb-4">
                     <button
                         type="button"
                         onClick={() => setWarningOpen((o) => !o)}
-                        className="w-full flex items-center justify-between gap-3 px-3.5 py-2 text-xs font-medium text-amber-800 hover:text-amber-900 transition"
+                        className="w-full flex items-center justify-between gap-3 px-3 py-2 text-xs font-medium text-amber-800 hover:text-amber-900 transition"
                     >
                         <span className="flex items-center gap-1.5">
                             <ShieldAlert size={13} className="text-amber-600 shrink-0" />
-                            This tool rewrites stock history.
+                            This tool rewrites stock history
                         </span>
                         <ChevronDown
                             size={12}
@@ -861,7 +865,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                         />
                     </button>
                     {warningOpen && (
-                        <p className="px-3.5 pb-3 -mt-0.5 text-[11px] text-amber-700 leading-relaxed">
+                        <p className="px-3 pb-2.5 text-[11px] text-amber-700 leading-relaxed border-t border-amber-100 pt-2">
                             It permanently retires existing transactions for each selected product at each selected location
                             and regenerates them from the source Sale / Delivery / Inventory records. Branches are processed
                             one at a time, in full, before the next branch starts automatically. Review the results table
@@ -870,14 +874,14 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                     )}
                 </div>
 
-                {/* Scope selector */}
-                <div className="inline-flex items-center gap-1.5 mb-5 px-2.5 py-1 rounded-md bg-gray-50 border border-gray-100 text-xs font-medium text-gray-500">
+                {/* Scope indicator */}
+                <div className="inline-flex items-center gap-1.5 mb-4 px-2 py-1 rounded bg-slate-50 border border-slate-100 text-xs font-medium text-slate-500">
                     <Layers size={12} className="text-[#185FA5]" />
                     Warehouse + Branch
                 </div>
 
                 <div className="max-w-2xl">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="sm:col-span-2">
                             <MultiSelect
                                 label="Products"
@@ -893,7 +897,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
 
                         {(anyHasVariations || variationsStillLoading) && (
                             <>
-                                <div className="sm:col-span-2 flex items-center gap-2 -mt-1">
+                                <div className="sm:col-span-2 flex items-center gap-2">
                                     <input
                                         id="includeVariations"
                                         type="checkbox"
@@ -903,9 +907,9 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                                             setIncludeVariations(e.target.checked);
                                             if (!e.target.checked) setSelectedVariationKeys([]);
                                         }}
-                                        className="rounded border-gray-300"
+                                        className="rounded border-slate-300"
                                     />
-                                    <label htmlFor="includeVariations" className="text-xs text-gray-600">
+                                    <label htmlFor="includeVariations" className="text-xs text-slate-600">
                                         {variationsStillLoading && !anyHasVariations
                                             ? 'Checking for variations...'
                                             : 'Include variations of the selected products'}
@@ -964,43 +968,43 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                                             setAutoAllBranches(e.target.checked);
                                             if (e.target.checked) setBranchIds([]);
                                         }}
-                                        className="rounded border-gray-300"
+                                        className="rounded border-slate-300"
                                     />
-                                    <label htmlFor="autoAllBranches" className="text-xs text-gray-600">
+                                    <label htmlFor="autoAllBranches" className="text-xs text-slate-600">
                                         Auto-run through all {branches.length} branches, one at a time
                                     </label>
                                 </div>
 
                                 {(autoAllBranches || branchIds.length > 1) && (
-                                    <p className="text-xs text-gray-400 mt-2">
+                                    <p className="text-[11px] text-slate-400 mt-1.5">
                                         Branches always run one at a time, fully, {autoAllBranches ? 'in list order' : 'in the order selected'} —
                                         the next branch starts automatically when the current one finishes.
                                     </p>
                                 )}
 
-                                <div className="mt-4">
+                                <div className="mt-4 pt-4 border-t border-slate-100">
                                     <button
                                         onClick={() => setConfirmOpen(true)}
                                         disabled={!canRun || running}
-                                        className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold bg-gradient-to-b from-[#2C8CE0] to-[#185FA5] text-white rounded-lg shadow-sm hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-[#185FA5] text-white rounded-md hover:bg-[#0C447C] disabled:opacity-40 disabled:cursor-not-allowed transition"
                                     >
                                         <RefreshCw size={14} className={running ? 'animate-spin' : ''} />
-                                        {running ? `Rebuilding ${progress.done}/${progress.total}...` : 'Rebuild Stock'}
+                                        {running ? `Rebuilding ${progress.done}/${progress.total}...` : 'Rebuild stock'}
                                     </button>
-                                    <p className="text-xs text-gray-500 mt-2 text-center">
+                                    <p className="text-xs text-slate-500 mt-2 text-center">
                                         {canRun ? `${totalOperations} rebuild operation${totalOperations !== 1 ? 's' : ''} will run` : 'Select products and at least one location'}
                                     </p>
 
                                     {running && (
                                         <>
-                                            <div className="mt-3 w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                                            <div className="mt-3 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                                                 <div
                                                     className="bg-[#185FA5] h-1.5 transition-all"
                                                     style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%` }}
                                                 />
                                             </div>
                                             {currentOpLabel && (
-                                                <p className="text-xs text-gray-500 mt-1.5">Now processing: {currentOpLabel}</p>
+                                                <p className="text-xs text-slate-500 mt-1.5">Now processing: {currentOpLabel}</p>
                                             )}
                                         </>
                                     )}
@@ -1019,7 +1023,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
             {/* Results */}
             {results.length > 0 && (
                 <div className="space-y-2">
-                    <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                         <Clock size={14} /> Results
                     </h3>
                     <ResultsTable rows={results} />
@@ -1029,18 +1033,18 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
             {/* Confirm modal */}
             {confirmOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-7">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
                         <div className="flex items-center gap-3 mb-3">
-                            <div className="p-2 bg-red-50 rounded-full">
-                                <AlertTriangle className="text-red-600" size={20} />
+                            <div className="p-1.5 bg-red-50 rounded-md">
+                                <AlertTriangle className="text-red-600" size={18} />
                             </div>
-                            <h3 className="text-base font-semibold text-gray-900">Confirm stock rebuild</h3>
+                            <h3 className="text-sm font-semibold text-slate-900">Confirm stock rebuild</h3>
                         </div>
-                        <p className="text-sm text-gray-600 mb-1">
-                            You're about to run <span className="font-semibold text-gray-900">{totalOperations}</span> rebuild
+                        <p className="text-sm text-slate-600 mb-1">
+                            You're about to run <span className="font-semibold text-slate-900">{totalOperations}</span> rebuild
                             operation{totalOperations !== 1 ? 's' : ''} across:
                         </p>
-                        <ul className="text-sm text-gray-700 mb-4 mt-2 space-y-1">
+                        <ul className="text-sm text-slate-700 mb-3 mt-2 space-y-1">
                             <li>• {productIds.length} product{productIds.length !== 1 ? 's' : ''}{includeVariations && anyHasVariations ? ' (incl. variations)' : ''}</li>
                             {needsWarehouse && warehouseIds.length > 0 && <li>• {warehouseIds.length} warehouse{warehouseIds.length !== 1 ? 's' : ''}</li>}
                             {needsBranch && (autoAllBranches ? branches.length : branchIds.length) > 0 && (
@@ -1051,20 +1055,20 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                                 </li>
                             )}
                         </ul>
-                        <p className="text-xs text-gray-500 mb-5">
+                        <p className="text-xs text-slate-500 mb-5">
                             Existing transactions for each product at each selected location will be retired and regenerated
                             from source records. This cannot be undone.
                         </p>
                         <div className="flex justify-end gap-2">
                             <button
                                 onClick={() => setConfirmOpen(false)}
-                                className="px-5 py-2.5 text-sm font-medium border border-gray-200 rounded-full text-gray-600 hover:bg-gray-50 transition"
+                                className="px-4 py-2 text-sm font-medium border border-slate-200 rounded-md text-slate-600 hover:bg-slate-50 transition"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={runRebuild}
-                                className="px-5 py-2.5 text-sm font-semibold bg-red-600 text-white rounded-full hover:bg-red-700 transition shadow-sm shadow-red-600/25"
+                                className="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-md hover:bg-red-700 transition"
                             >
                                 Yes, rebuild all
                             </button>
