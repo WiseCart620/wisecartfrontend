@@ -421,37 +421,37 @@ const ResultsTable = ({ rows }) => {
 
 const BranchQueueBanner = ({ queue, activeIndex }) => {
     if (!queue || queue.length === 0) return null;
+
+    const active = queue[activeIndex];
+    const completed = activeIndex;
+    const remaining = queue.length - activeIndex - 1;
+
+    if (!active) {
+        return (
+            <div className="border border-emerald-200 bg-emerald-50 rounded-lg p-4">
+                <p className="text-sm font-medium text-emerald-700 flex items-center gap-2">
+                    <CheckCircle2 size={14} /> All {queue.length} branches complete
+                </p>
+            </div>
+        );
+    }
+
     return (
         <div className="border border-slate-200 bg-slate-50 rounded-lg p-4">
             <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                Branch queue — processed one at a time
+                Branch {activeIndex + 1} of {queue.length} — {remaining} remaining
             </p>
-            <div className="flex flex-wrap items-center gap-1.5">
-                {queue.map((b, i) => {
-                    const state = i < activeIndex ? 'done' : i === activeIndex ? 'active' : 'pending';
-                    return (
-                        <React.Fragment key={b.locationId}>
-                            <span
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border ${state === 'done'
-                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                                    : state === 'active'
-                                        ? 'bg-[#185FA5] border-[#185FA5] text-white'
-                                        : 'bg-white border-slate-200 text-slate-400'
-                                    }`}
-                            >
-                                {state === 'done' && <CheckCircle2 size={11} />}
-                                {state === 'active' && <RefreshCw size={11} className="animate-spin" />}
-                                {b.locationName}
-                                {state !== 'pending' && (
-                                    <span className="opacity-80">
-                                        ({b.done}/{b.total})
-                                    </span>
-                                )}
-                            </span>
-                            {i < queue.length - 1 && <ArrowRight size={12} className="text-slate-300 shrink-0" />}
-                        </React.Fragment>
-                    );
-                })}
+            <div className="flex items-center gap-3">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border bg-[#185FA5] border-[#185FA5] text-white">
+                    <RefreshCw size={11} className="animate-spin" />
+                    {active.locationName}
+                    <span className="opacity-80">({active.done}/{active.total})</span>
+                </span>
+                {completed > 0 && (
+                    <span className="text-xs text-emerald-600 flex items-center gap-1">
+                        <CheckCircle2 size={11} /> {completed} branch{completed !== 1 ? 'es' : ''} done
+                    </span>
+                )}
             </div>
         </div>
     );
@@ -775,8 +775,8 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     };
 
     return (
-        <div className="space-y-4 h-full">
-            <div className={bare ? 'h-full' : 'border border-slate-200 rounded-lg p-5 bg-white h-full'}>
+        <div className="space-y-4">
+            <div className={bare ? '' : 'border border-slate-200 rounded-lg p-5 bg-white'}>
                 <div className="max-w-2xl">
                     <div className="flex items-center gap-2.5 mb-4 pb-4 border-b border-slate-100">
                         <div className="w-8 h-8 rounded-md bg-[#E6F1FB] flex items-center justify-center">
