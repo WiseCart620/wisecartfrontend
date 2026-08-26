@@ -94,8 +94,8 @@ const SaleFormModal = ({
           ? Number(item.unitPrice)
           : (opt?.price ?? 0);
 
-        const newPrice = currentPrice * scale;
-        const priceStr = parseFloat(newPrice.toFixed(6)).toString();
+        const newPrice = Math.round(currentPrice * scale * 100) / 100;
+        const priceStr = newPrice.toFixed(2);
         return { ...item, unitPrice: priceStr };
       }),
     }));
