@@ -1001,10 +1001,10 @@ const InvoicingProfile = ({ onBack }) => {
                 </select>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200" style={{ overflow: 'visible' }}>
-                <div className="overflow-x-auto" style={{ overflowY: 'visible' }}>
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="overflow-auto" style={{ maxHeight: '70vh' }}>
                     <table className="w-full min-w-[1100px]" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
-                        <thead className="bg-gray-50 border-b border-gray-200" style={{ position: 'relative', zIndex: 1 }}>
+                        <thead className="bg-gray-50 border-b border-gray-200">
                             <tr>
                                 {[
                                     { label: 'Invoice #', align: 'left', sortable: true },
@@ -1025,7 +1025,7 @@ const InvoicingProfile = ({ onBack }) => {
                                     <th
                                         key={label}
                                         onClick={label === 'Invoice #' ? () => setSortOrder(prev => prev === 'asc' ? 'desc' : prev === 'desc' ? 'none' : 'asc') : undefined}
-                                        className={`px-4 py-3 text-[11px] font-medium text-gray-500 uppercase tracking-wide text-${align} ${label === 'Invoice #' ? 'cursor-pointer select-none hover:text-gray-700' : ''}`}
+                                        className={`sticky top-0 z-10 bg-gray-50 px-4 py-3 text-[11px] font-medium text-gray-500 uppercase tracking-wide text-${align} ${label === 'Invoice #' ? 'cursor-pointer select-none hover:text-gray-700' : ''}`}
                                     >
                                         {label === 'vatableSalesHeader' ? (
                                             <span className="flex flex-col items-end leading-tight">
