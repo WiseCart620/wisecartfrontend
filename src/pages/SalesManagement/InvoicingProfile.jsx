@@ -693,7 +693,7 @@ const MultiSelectDropdown = ({ label, options, selected, onChange }) => {
             <button
                 type="button"
                 onClick={() => setOpen((o) => !o)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50 transition flex items-center gap-2 min-w-[150px] justify-between"
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50 transition flex items-center gap-2 min-w-[220px] justify-between"
             >
                 <span className="truncate text-gray-700">
                     {selected.length === 0 ? label : `${label} (${selected.length})`}
@@ -702,7 +702,7 @@ const MultiSelectDropdown = ({ label, options, selected, onChange }) => {
             </button>
 
             {open && (
-                <div className="absolute z-20 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                <div className="absolute z-20 mt-1 w-72 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
                     {selected.length > 0 && (
                         <button
                             type="button"
@@ -725,7 +725,7 @@ const MultiSelectDropdown = ({ label, options, selected, onChange }) => {
                                     checked={selected.includes(opt.value)}
                                     onChange={() => toggle(opt.value)}
                                 />
-                                <span className="truncate">{opt.label}</span>
+                                <span className="whitespace-nowrap">{opt.label}</span>
                             </label>
                         ))
                     )}
@@ -964,7 +964,7 @@ const InvoicingProfile = ({ onBack }) => {
                     options={[
                         { value: 'PAID', label: 'Paid' },
                         { value: 'UNPAID', label: 'Unpaid' },
-                        { value: 'PARTIAL', label: 'Have Balance' },
+                        { value: 'PARTIAL', label: 'Partial' },
                     ]}
                     selected={statusFilter}
                     onChange={setStatusFilter}
