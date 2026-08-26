@@ -826,22 +826,14 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     return (
         <div className="space-y-6">
             <div className={bare ? '' : 'border border-gray-100 rounded-3xl p-7 bg-white shadow-[0_2px_16px_rgba(15,23,42,0.04)]'}>
-                <div className="flex items-center justify-between gap-3 mb-5">
-                    <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#E6F1FB] to-[#D3E8FA] flex items-center justify-center">
-                            <Layers size={16} className="text-[#185FA5]" />
-                        </div>
-                        <div>
-                            <h3 className="text-base font-semibold text-gray-900">Rebuild targets</h3>
-                            <p className="text-xs text-gray-400">Choose what to recalculate and where</p>
-                        </div>
+                <div className="flex items-center gap-3 mb-5">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#E6F1FB] to-[#D3E8FA] flex items-center justify-center">
+                        <Layers size={16} className="text-[#185FA5]" />
                     </div>
-                    <button
-                        onClick={handleRelock}
-                        className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 border border-amber-300 rounded-lg hover:bg-amber-100 transition"
-                    >
-                        <Lock size={12} /> Lock
-                    </button>
+                    <div>
+                        <h3 className="text-base font-semibold text-gray-900">Rebuild targets</h3>
+                        <p className="text-xs text-gray-400">Choose what to recalculate and where</p>
+                    </div>
                 </div>
 
                 {/* Collapsible warning — narrow to match form width, not full column */}
@@ -979,14 +971,22 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                                 )}
 
                                 <div className="mt-4">
-                                    <button
-                                        onClick={() => setConfirmOpen(true)}
-                                        disabled={!canRun || running}
-                                        className="w-full flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold bg-gradient-to-b from-[#2C8CE0] to-[#185FA5] text-white rounded-full shadow-md shadow-[#185FA5]/25 hover:shadow-lg hover:shadow-[#185FA5]/35 hover:-translate-y-px disabled:opacity-40 disabled:hover:translate-y-0 disabled:cursor-not-allowed transition"
-                                    >
-                                        <RefreshCw size={15} className={running ? 'animate-spin' : ''} />
-                                        {running ? `Rebuilding ${progress.done}/${progress.total}...` : 'Rebuild Stock'}
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setConfirmOpen(true)}
+                                            disabled={!canRun || running}
+                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold bg-gradient-to-b from-[#2C8CE0] to-[#185FA5] text-white rounded-lg shadow-sm hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                        >
+                                            <RefreshCw size={14} className={running ? 'animate-spin' : ''} />
+                                            {running ? `Rebuilding ${progress.done}/${progress.total}...` : 'Rebuild Stock'}
+                                        </button>
+                                        <button
+                                            onClick={handleRelock}
+                                            className="shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-amber-700 border border-amber-300 rounded-lg hover:bg-amber-100 transition"
+                                        >
+                                            <Lock size={12} /> Lock
+                                        </button>
+                                    </div>
                                     <p className="text-xs text-gray-500 mt-2 text-center">
                                         {canRun ? `${totalOperations} rebuild operation${totalOperations !== 1 ? 's' : ''} will run` : 'Select products and at least one location'}
                                     </p>
@@ -1010,7 +1010,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                     </div>
                 </div>
             </div>
-            
+
             {/* Branch auto-advance queue */}
             {running && branchQueue.length > 0 && (
                 <BranchQueueBanner queue={branchQueue} activeIndex={activeBranchIndex} />
