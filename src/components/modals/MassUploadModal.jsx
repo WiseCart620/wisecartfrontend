@@ -17,6 +17,40 @@ const getBranchCompanyId = (branch) => {
     return id === null || id === undefined ? null : String(id);
 };
 
+// Spreads a leftover currency amount across all eligible rows, proportional to
+// each row's current amount (unitCost * qty), so no single row absorbs it all.
+const distributeRemainder = (costs, quantities, remainder) => {
+    const result = [...costs];
+    if (!remainder) return result;
+
+    const eligible = quantities
+        .map((qty, i) => ({ i, qty: qty || 0, amount: costs[i] * (qty || 0) }))
+        .filter(x => x.qty > 0);
+
+    if (eligible.length === 0) return result;
+
+    const totalAmount = eligible.reduce((s, x) => s + x.amount, 0);
+    if (totalAmount <= 0) return result;
+
+    let allocated = 0;
+    eligible.forEach(x => {
+        const share = x.amount / totalAmount;
+        const rawDelta = remainder * share;
+        const costDelta = Math.round((rawDelta / x.qty) * 100) / 100;
+        result[x.i] = Math.round((result[x.i] + costDelta) * 100) / 100;
+        allocated += costDelta * x.qty;
+    });
+
+    const leftover = Math.round((remainder - allocated) * 100) / 100;
+    if (leftover !== 0) {
+        const biggest = eligible.reduce((a, b) => (b.qty > a.qty ? b : a));
+        const extraPerUnit = Math.round((leftover / biggest.qty) * 100) / 100;
+        result[biggest.i] = Math.round((result[biggest.i] + extraPerUnit) * 100) / 100;
+    }
+
+    return result;
+};
+
 const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfirm, onBulkUploadComplete, defaultCompanyId }) => {
     const [rawText, setRawText] = useState('');
     const [reports, setReports] = useState(null);
@@ -116,16 +150,23 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
         if (Number.isNaN(target) || target < 0 || activeTotal <= 0) return;
 
         const scale = target / activeTotal;
+        const quantities = active.matchedRows.map(row => Number(row.qty) || 0);
 
-        const scaledRows = active.matchedRows.map(row => {
+        let newCosts = active.matchedRows.map(row => {
             const currentCost = Number(row.unitCost) || 0;
-            const newUnitCost = Math.round(currentCost * scale * 100) / 100;
-            return { ...row, unitCost: newUnitCost };
+            return Math.round(currentCost * scale * 100) / 100;
         });
+
+        const roundedTotal = newCosts.reduce((sum, cost, i) => sum + cost * quantities[i], 0);
+        const remainder = Math.round((target - roundedTotal) * 100) / 100;
+        if (remainder !== 0) {
+            newCosts = distributeRemainder(newCosts, quantities, remainder);
+        }
+
+        const scaledRows = active.matchedRows.map((row, i) => ({ ...row, unitCost: newCosts[i] }));
 
         updateActiveReport({ matchedRows: scaledRows });
     };
-
 
     const matchedCount = active ? active.matchedRows.filter(r => r.matched).length : 0;
     const unmatchedCount = active ? active.matchedRows.length - matchedCount : 0;

@@ -6,7 +6,6 @@ import { makeStockKey, formatCurrency } from '../../utils/salesUtils';
 import { months } from '../../constants/salesConstants';
 import MassUploadModal from '../modals/MassUploadModal';
 
-// Small reusable section wrapper — mirrors the "card block" pattern used in QBO forms
 const FormSection = ({ icon: Icon, title, action, children }) => (
   <div className="bg-white border border-gray-200 rounded-lg">
     <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
@@ -19,6 +18,39 @@ const FormSection = ({ icon: Icon, title, action, children }) => (
     <div className="p-5">{children}</div>
   </div>
 );
+
+
+const distributeRemainder = (prices, quantities, remainder) => {
+  const result = [...prices];
+  if (!remainder) return result;
+
+  const eligible = quantities
+    .map((qty, i) => ({ i, qty: qty || 0, amount: prices[i] * (qty || 0) }))
+    .filter(x => x.qty > 0);
+
+  if (eligible.length === 0) return result;
+
+  const totalAmount = eligible.reduce((s, x) => s + x.amount, 0);
+  if (totalAmount <= 0) return result;
+
+  let allocated = 0;
+  eligible.forEach(x => {
+    const share = x.amount / totalAmount;
+    const rawDelta = remainder * share;
+    const priceDelta = Math.round((rawDelta / x.qty) * 100) / 100;
+    result[x.i] = Math.round((result[x.i] + priceDelta) * 100) / 100;
+    allocated += priceDelta * x.qty;
+  });
+
+  const leftover = Math.round((remainder - allocated) * 100) / 100;
+  if (leftover !== 0) {
+    const biggest = eligible.reduce((a, b) => (b.qty > a.qty ? b : a));
+    const extraPerUnit = Math.round((leftover / biggest.qty) * 100) / 100;
+    result[biggest.i] = Math.round((result[biggest.i] + extraPerUnit) * 100) / 100;
+  }
+
+  return result;
+};
 
 const SaleFormModal = ({
   modalMode,
@@ -80,24 +112,31 @@ const SaleFormModal = ({
     }
 
     const scale = target / grandTotal;
+    const quantities = formData.items.map(item => item.quantity || 0);
+
+    let newPrices = formData.items.map(item => {
+      const opt = Array.isArray(productOptions)
+        ? productOptions.find(o =>
+          o.parentProductId === item.productId &&
+          (o.variationId ?? null) === (item.variationId ?? null)
+        )
+        : null;
+      const currentPrice = (item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== '')
+        ? Number(item.unitPrice)
+        : (opt?.price ?? 0);
+
+      return Math.round(currentPrice * scale * 100) / 100;
+    });
+
+    const roundedTotal = newPrices.reduce((sum, price, i) => sum + price * quantities[i], 0);
+    const remainder = Math.round((target - roundedTotal) * 100) / 100;
+    if (remainder !== 0) {
+      newPrices = distributeRemainder(newPrices, quantities, remainder);
+    }
 
     setFormData(prev => ({
       ...prev,
-      items: prev.items.map(item => {
-        const opt = Array.isArray(productOptions)
-          ? productOptions.find(o =>
-            o.parentProductId === item.productId &&
-            (o.variationId ?? null) === (item.variationId ?? null)
-          )
-          : null;
-        const currentPrice = (item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== '')
-          ? Number(item.unitPrice)
-          : (opt?.price ?? 0);
-
-        const newPrice = Math.round(currentPrice * scale * 100) / 100;
-        const priceStr = newPrice.toFixed(2);
-        return { ...item, unitPrice: priceStr };
-      }),
+      items: prev.items.map((item, i) => ({ ...item, unitPrice: newPrices[i].toFixed(2) })),
     }));
 
     setGrandTotalInput('');
