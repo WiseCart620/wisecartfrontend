@@ -205,29 +205,30 @@ export const PasswordGate = ({ onUnlock, bare = false }) => {
     };
 
     return (
-        <div className={bare ? 'h-full' : 'border border-slate-200 rounded-lg p-5 bg-white h-full'}>
+        <div className={bare ? 'h-full flex items-center justify-center py-12' : 'border border-slate-200 rounded-lg p-5 bg-white h-full flex items-center justify-center'}>
             <style>{`
-                @keyframes shake {
-                    0%, 100% { transform: translateX(0); }
-                    20%, 60% { transform: translateX(-6px); }
-                    40%, 80% { transform: translateX(6px); }
-                }
-            `}</style>
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                20%, 60% { transform: translateX(-6px); }
+                40%, 80% { transform: translateX(6px); }
+            }
+        `}</style>
 
-            <div className={`flex items-center gap-3 mb-4 pb-4 border-b border-slate-100 ${shake ? 'animate-[shake_0.4s_ease-in-out]' : ''}`}>
-                <div className="w-8 h-8 rounded-md bg-[#185FA5] flex items-center justify-center shrink-0">
-                    <Lock size={15} className="text-white" />
+            <div className="w-full max-w-sm">
+                <div className={`flex items-center gap-3 mb-4 pb-4 border-b border-slate-100 ${shake ? 'animate-[shake_0.4s_ease-in-out]' : ''}`}>
+                    <div className="w-8 h-8 rounded-md bg-[#185FA5] flex items-center justify-center shrink-0">
+                        <Lock size={15} className="text-white" />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-semibold text-slate-900">Stock tools</h3>
+                        <p className="text-xs text-slate-400">Enter the access password to continue</p>
+                    </div>
                 </div>
-                <div>
-                    <h3 className="text-sm font-semibold text-slate-900">Stock tools</h3>
-                    <p className="text-xs text-slate-400">Enter the access password to continue</p>
-                </div>
-            </div>
 
-            <div className="max-w-sm">
                 <p className="text-xs text-slate-500 mb-4 leading-relaxed text-center">
                     These tools permanently rewrite transaction history.
                 </p>
+
                 <form onSubmit={handleSubmit} className="space-y-3">
                     <div className="relative">
                         <KeyRound size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
