@@ -205,7 +205,7 @@ export const PasswordGate = ({ onUnlock, bare = false }) => {
     };
 
     return (
-        <div className={bare ? 'h-full flex items-center justify-center py-12' : 'border border-slate-200 rounded-lg p-5 bg-white h-full flex items-center justify-center'}>
+        <div className={bare ? 'h-full flex items-center justify-center py-12' : 'h-full flex items-center justify-center p-5'}>
             <style>{`
             @keyframes shake {
                 0%, 100% { transform: translateX(0); }
@@ -214,7 +214,7 @@ export const PasswordGate = ({ onUnlock, bare = false }) => {
             }
         `}</style>
 
-            <div className="w-full max-w-sm">
+            <div className="w-full max-w-sm border border-slate-200 rounded-lg p-6 bg-white shadow-sm">
                 <div className={`flex items-center gap-3 mb-4 pb-4 border-b border-slate-100 ${shake ? 'animate-[shake_0.4s_ease-in-out]' : ''}`}>
                     <div className="w-8 h-8 rounded-md bg-[#185FA5] flex items-center justify-center shrink-0">
                         <Lock size={15} className="text-white" />

@@ -641,8 +641,8 @@ const InventoryManagement = () => {
                     />
                   </div>
 
-                  <div className="hidden xl:block w-px bg-gray-100 self-stretch" />
-                  <div className="block xl:hidden h-px bg-gray-100 w-full" />
+                  <div className="hidden xl:block w-px bg-gray-200 self-stretch" />
+                  <div className="block xl:hidden h-px bg-gray-200 w-full" />
 
                   <div className="flex-[2] min-w-0">
                     <TransactionCleanupPanel
