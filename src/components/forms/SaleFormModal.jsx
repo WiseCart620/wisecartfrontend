@@ -398,7 +398,7 @@ const SaleFormModal = ({
                             </td>
                             <td className="px-2 py-2 text-right">
                               {amount > 0
-                                ? <span className="font-bold text-gray-900 text-xs">₱{amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+                                ? <span className="font-bold text-gray-900 text-xs">₱{amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 : <span className="text-xs text-gray-300">—</span>
                               }
                             </td>
