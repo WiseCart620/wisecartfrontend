@@ -17,37 +17,39 @@ const getBranchCompanyId = (branch) => {
     return id === null || id === undefined ? null : String(id);
 };
 
-// Spreads a leftover currency amount across all eligible rows, proportional to
-// each row's current amount (unitCost * qty), so no single row absorbs it all.
 const distributeRemainder = (costs, quantities, remainder) => {
     const result = [...costs];
-    if (!remainder) return result;
+    const remainderCents = Math.round(remainder * 100);
+    if (remainderCents === 0) return result;
 
     const eligible = quantities
-        .map((qty, i) => ({ i, qty: qty || 0, amount: costs[i] * (qty || 0) }))
+        .map((qty, i) => ({ i, qty: qty || 0 }))
         .filter(x => x.qty > 0);
-
     if (eligible.length === 0) return result;
 
-    const totalAmount = eligible.reduce((s, x) => s + x.amount, 0);
-    if (totalAmount <= 0) return result;
-
-    let allocated = 0;
-    eligible.forEach(x => {
-        const share = x.amount / totalAmount;
-        const rawDelta = remainder * share;
-        const costDelta = Math.round((rawDelta / x.qty) * 100) / 100;
-        result[x.i] = Math.round((result[x.i] + costDelta) * 100) / 100;
-        allocated += costDelta * x.qty;
-    });
-
-    const leftover = Math.round((remainder - allocated) * 100) / 100;
-    if (leftover !== 0) {
-        const biggest = eligible.reduce((a, b) => (b.qty > a.qty ? b : a));
-        const extraPerUnit = Math.round((leftover / biggest.qty) * 100) / 100;
-        result[biggest.i] = Math.round((result[biggest.i] + extraPerUnit) * 100) / 100;
+    const qtyOne = eligible.find(x => x.qty === 1);
+    if (qtyOne) {
+        result[qtyOne.i] = Math.round((result[qtyOne.i] + remainderCents / 100) * 100) / 100;
+        return result;
     }
 
+    const divisor = eligible.find(x => remainderCents % x.qty === 0);
+    if (divisor) {
+        const deltaPerUnit = (remainderCents / divisor.qty) / 100;
+        result[divisor.i] = Math.round((result[divisor.i] + deltaPerUnit) * 100) / 100;
+        return result;
+    }
+
+    const sorted = [...eligible].sort((a, b) => a.qty - b.qty);
+    let remaining = remainderCents;
+    for (const x of sorted) {
+        if (remaining === 0) break;
+        const wholeUnits = Math.trunc(remaining / x.qty);
+        if (wholeUnits === 0) continue;
+        const deltaPerUnit = wholeUnits / 100;
+        result[x.i] = Math.round((result[x.i] + deltaPerUnit) * 100) / 100;
+        remaining -= wholeUnits * x.qty;
+    }
     return result;
 };
 
