@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import { ArrowLeft, CreditCard, X, Trash2, Eye, ChevronDown, ChevronUp, FileText } from 'lucide-react';
@@ -672,11 +672,75 @@ const PaymentModal = ({ profile, onClose, onSaved }) => {
     );
 };
 
+const MultiSelectDropdown = ({ label, options, selected, onChange }) => {
+    const [open, setOpen] = useState(false);
+    const ref = useRef();
+
+    useEffect(() => {
+        const handler = (e) => {
+            if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    const toggle = (value) => {
+        onChange(selected.includes(value) ? selected.filter((v) => v !== value) : [...selected, value]);
+    };
+
+    return (
+        <div className="relative" ref={ref}>
+            <button
+                type="button"
+                onClick={() => setOpen((o) => !o)}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50 transition flex items-center gap-2 min-w-[150px] justify-between"
+            >
+                <span className="truncate text-gray-700">
+                    {selected.length === 0 ? label : `${label} (${selected.length})`}
+                </span>
+                <ChevronDown size={14} className={`text-gray-400 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
+            </button>
+
+            {open && (
+                <div className="absolute z-20 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                    {selected.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => onChange([])}
+                            className="w-full text-left px-3 py-2 text-xs text-blue-600 hover:bg-blue-50 border-b border-gray-100"
+                        >
+                            Clear all
+                        </button>
+                    )}
+                    {options.length === 0 ? (
+                        <div className="px-3 py-2 text-xs text-gray-400 italic">No options</div>
+                    ) : (
+                        options.map((opt) => (
+                            <label
+                                key={opt.value}
+                                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={selected.includes(opt.value)}
+                                    onChange={() => toggle(opt.value)}
+                                />
+                                <span className="truncate">{opt.label}</span>
+                            </label>
+                        ))
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const InvoicingProfile = ({ onBack }) => {
     const [profiles, setProfiles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState('ALL');
+    const [statusFilter, setStatusFilter] = useState([]);
+    const [companyFilter, setCompanyFilter] = useState([]);
     const [detailProfile, setDetailProfile] = useState(null);
     const [paymentProfile, setPaymentProfile] = useState(null);
     const [editingDateId, setEditingDateId] = useState(null);
@@ -755,16 +819,32 @@ const InvoicingProfile = ({ onBack }) => {
 
     useEffect(() => { load(); }, [load]);
 
+    const companyOptions = useMemo(() => {
+        const names = new Set();
+        profiles.forEach((p) => { if (p.companyName) names.add(p.companyName); });
+        return Array.from(names).sort().map((name) => ({ value: name, label: name }));
+    }, [profiles]);
+
+    const getStatusCode = (p) => {
+        const totalPaid = (p.payments || []).reduce((s, pay) => s + Number(pay.amount), 0);
+        const bal = Number(p.openBalance);
+        if (bal <= 0) return 'PAID';
+        if (totalPaid > 0) return 'PARTIAL'; // has some payment but still owes = "Have Balance"
+        return 'UNPAID';
+    };
+
     const filtered = profiles.filter((p) => {
         const matchSearch =
             !search ||
             p.soldTo?.toLowerCase().includes(search.toLowerCase()) ||
             p.companyName?.toLowerCase().includes(search.toLowerCase()) ||
             p.invoiceNumber?.toLowerCase().includes(search.toLowerCase());
-        const bal = Number(p.openBalance);
-        if (statusFilter === 'PAID' && bal > 0) return false;
-        if (statusFilter === 'UNPAID' && bal <= 0) return false;
-        return matchSearch;
+
+        const matchCompany = companyFilter.length === 0 || companyFilter.includes(p.companyName);
+
+        const matchStatus = statusFilter.length === 0 || statusFilter.includes(getStatusCode(p));
+
+        return matchSearch && matchCompany && matchStatus;
     });
 
     if (sortOrder !== 'none') {
@@ -873,15 +953,31 @@ const InvoicingProfile = ({ onBack }) => {
                     onChange={(e) => setSearch(e.target.value)}
                     className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-48 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                    <option value="ALL">All status</option>
-                    <option value="UNPAID">With balance</option>
-                    <option value="PAID">Fully paid</option>
-                </select>
+                <MultiSelectDropdown
+                    label="Company"
+                    options={companyOptions}
+                    selected={companyFilter}
+                    onChange={setCompanyFilter}
+                />
+                <MultiSelectDropdown
+                    label="Status"
+                    options={[
+                        { value: 'PAID', label: 'Paid' },
+                        { value: 'UNPAID', label: 'Unpaid' },
+                        { value: 'PARTIAL', label: 'Have Balance' },
+                    ]}
+                    selected={statusFilter}
+                    onChange={setStatusFilter}
+                />
+                {(companyFilter.length > 0 || statusFilter.length > 0 || search) && (
+                    <button
+                        type="button"
+                        onClick={() => { setCompanyFilter([]); setStatusFilter([]); setSearch(''); }}
+                        className="text-xs text-gray-500 hover:text-red-600 underline"
+                    >
+                        Clear filters
+                    </button>
+                )}
                 <select
                     value={sortOrder}
                     onChange={(e) => setSortOrder(e.target.value)}
