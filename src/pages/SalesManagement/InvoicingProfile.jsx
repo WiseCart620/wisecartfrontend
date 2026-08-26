@@ -805,12 +805,6 @@ const InvoicingProfile = ({ onBack }) => {
         return { label: 'Unpaid', cls: 'bg-red-100 text-red-800' };
     };
 
-    useEffect(() => {
-        if (profiles && profiles.length > 0) {
-            profiles.forEach(p => loadCosData(p.id));
-        }
-    }, [profiles]);
-
     const loadCosData = async (profileId) => {
         if (cosData[profileId] !== undefined) return;
         setCosData(prev => ({ ...prev, [profileId]: null }));
