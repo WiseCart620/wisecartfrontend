@@ -529,6 +529,10 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     };
 
     const startPolling = (id) => {
+        if (!id) {
+            console.error('startPolling called with invalid id:', id);
+            return;
+        }
         if (pollRef.current) clearInterval(pollRef.current);
         pollRef.current = setInterval(async () => {
             try {
@@ -541,10 +545,11 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                 }
             } catch (err) {
                 console.error('Job poll failed', err);
+                clearInterval(pollRef.current);
+                pollRef.current = null;
             }
         }, 2000);
     };
-
     React.useEffect(() => {
         if (!PRODUCT_DETAIL_ENABLED) return;
 
@@ -750,6 +755,12 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
 
             const res = await api.post('/admin/stock-rebuild/jobs', payload);
             const data = res.data || res;
+            if (!data.jobId) {
+                console.error('createJob response missing jobId:', data);
+                toast.error('Failed to start rebuild job — no job ID returned');
+                setRunning(false);
+                return;
+            }
             setJobId(data.jobId);
             startPolling(data.jobId);
             toast.success('Rebuild started in the background — you can close this tab, it will keep running.');
