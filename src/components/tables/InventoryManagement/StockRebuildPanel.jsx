@@ -761,11 +761,13 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                         done: Math.min(prev.total, offset + (data.doneOps || 0)),
                     }));
 
+                    console.log('[poll]', id, 'doneOps=', data.doneOps, 'offset=', offset, 'status=', data.status);
                     if (data.status === 'DONE') {
                         clearInterval(interval);
                         resolve(data);
                     }
                 } catch (err) {
+                    console.error('[poll] error', err);
                     clearInterval(interval);
                     reject(err);
                 }
