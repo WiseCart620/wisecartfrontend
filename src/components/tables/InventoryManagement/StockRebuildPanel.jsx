@@ -552,6 +552,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         tick();
         pollRef.current = setInterval(tick, 750);
     };
+
     React.useEffect(() => {
         if (!PRODUCT_DETAIL_ENABLED) return;
 
