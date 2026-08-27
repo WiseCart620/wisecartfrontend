@@ -481,8 +481,6 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     const [jobId, setJobId] = useState(null);
     const pollRef = React.useRef(null);
 
-    const [branchQueue, setBranchQueue] = useState([]);
-    const [activeBranchIndex, setActiveBranchIndex] = useState(-1);
     const [productDetailCache, setProductDetailCache] = useState({});
     const [loadingVariationsFor, setLoadingVariationsFor] = useState(new Set());
 
@@ -683,6 +681,22 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         return m;
     }, [branches]);
 
+    const branchQueue = useMemo(() => {
+        const map = new Map();
+        for (const r of results) {
+            if (r.locationType !== 'Branch') continue;
+            if (!map.has(r.locationName)) {
+                map.set(r.locationName, { locationName: r.locationName, done: 0, total: 0 });
+            }
+            const entry = map.get(r.locationName);
+            entry.total++;
+            if (r.status === 'DONE' || r.status === 'ERROR') entry.done++;
+        }
+        return Array.from(map.values());
+    }, [results]);
+
+    const activeBranchIndex = branchQueue.findIndex((b) => b.done < b.total);
+
     const buildOperations = () => {
         const pvTargets = buildProductVariationTargets();
         const ops = [];
@@ -730,52 +744,6 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         return buildOperations().length;
     }, [productIds, warehouseIds, branchIds, scope, includeVariations, selectedVariationKeys, products, autoAllBranches, branches]);
 
-    const pollJobToCompletion = (id, offset, batchTotal) => {
-        return new Promise((resolve, reject) => {
-            const tick = async () => {
-                try {
-                    const res = await api.get(`/admin/stock-rebuild/jobs/${id}`);
-                    const data = res.data || res;
-
-                    const batchResults = (data.results || []).map((r) => ({
-                        productName: r.productName,
-                        variationName: r.variationName || 'Base',
-                        locationType: r.locationType === 'WAREHOUSE' ? 'Warehouse' : 'Branch',
-                        locationName: r.locationName,
-                        status: r.status,
-                        qtyBefore: r.qtyBefore,
-                        qtyAfter: r.qtyAfter,
-                        retired: r.retired,
-                        error: r.error,
-                    }));
-                    setResults((prev) => {
-                        const next = [...prev];
-                        for (let i = 0; i < batchResults.length; i++) {
-                            const idx = offset + i;
-                            if (next[idx]) next[idx] = { ...next[idx], ...batchResults[i] };
-                        }
-                        return next;
-                    });
-                    setProgress((prev) => ({
-                        ...prev,
-                        done: Math.min(prev.total, offset + (data.doneOps || 0)),
-                    }));
-
-                    console.log('[poll]', id, 'doneOps=', data.doneOps, 'offset=', offset, 'status=', data.status);
-                    if (data.status === 'DONE') {
-                        clearInterval(interval);
-                        resolve(data);
-                    }
-                } catch (err) {
-                    console.error('[poll] error', err);
-                    clearInterval(interval);
-                    reject(err);
-                }
-            };
-            tick();
-            const interval = setInterval(tick, 750);
-        });
-    };
     const runRebuild = async () => {
         setConfirmOpen(false);
         const ops = buildOperations();
@@ -793,7 +761,6 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         }
         const batches = batchOrder.map((k) => batchMap.get(k));
         const flattenedOps = batches.flatMap((b) => b.ops);
-
 
         setRunning(true);
         setProgress({ done: 0, total: flattenedOps.length });
