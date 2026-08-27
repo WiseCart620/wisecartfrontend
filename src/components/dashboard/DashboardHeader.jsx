@@ -17,12 +17,12 @@ const DashboardHeader = ({
       <div className="flex flex-wrap items-center gap-4">
         <button
           onClick={() => setShowInsights(!showInsights)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:opacity-90 transition-all"
+          className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
         >
           <Info size={18} />
           Business Insights
           {businessInsights.length > 0 && (
-            <span className="bg-white text-blue-700 text-xs rounded-full px-2 py-1">
+            <span className="bg-white text-gray-900 text-xs rounded-full px-2 py-1">
               {businessInsights.length}
             </span>
           )}

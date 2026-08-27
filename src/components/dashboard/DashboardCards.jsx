@@ -59,10 +59,10 @@ const DashboardCards = ({ stats, totalAlerts, isLoading = false }) => {
         return (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 w-full overflow-hidden">
                 {[...Array(4)].map((_, i) => (
-                    <div key={i} className="bg-blue-50 bg-opacity-60 rounded-lg shadow-sm p-2 border border-blue-200 animate-pulse">
-                        <div className="h-3 bg-blue-200 rounded w-2/3 mb-2" />
-                        <div className="h-6 bg-blue-200 rounded w-3/4 mb-1" />
-                        <div className="h-2 bg-blue-100 rounded w-1/2" />
+                    <div key={i} className="bg-white rounded-lg shadow-sm p-2 border border-gray-200 animate-pulse">
+                        <div className="h-3 bg-gray-200 rounded w-2/3 mb-2" />
+                        <div className="h-6 bg-gray-200 rounded w-3/4 mb-1" />
+                        <div className="h-2 bg-gray-100 rounded w-1/2" />
                     </div>
                 ))}
             </div>
@@ -77,9 +77,9 @@ const DashboardCards = ({ stats, totalAlerts, isLoading = false }) => {
                     card.trend < 0 ? <ArrowDownRight className="text-red-500" size={10} /> : null;
 
                 return (
-                    <div key={i} className="bg-blue-50 bg-opacity-60 rounded-lg shadow-sm p-2 border border-blue-200 w-full min-w-0">
+                    <div key={i} className="bg-white rounded-lg shadow-sm p-2 border border-gray-200 w-full min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                            <p className="text-[9px] sm:text-xs text-blue-600 font-medium uppercase tracking-wide truncate">{card.title}</p>
+                            <p className="text-[9px] sm:text-xs text-gray-500 font-medium uppercase tracking-wide truncate">{card.title}</p>
                             {card.trend !== undefined && trendIcon && (
                                 <div className="flex items-center gap-0.5 flex-shrink-0">
                                     {trendIcon}
@@ -91,13 +91,13 @@ const DashboardCards = ({ stats, totalAlerts, isLoading = false }) => {
                         </div>
 
                         <div className="mb-0.5">
-                            <p className="text-sm sm:text-lg md:text-xl font-bold text-blue-800 truncate">{card.mainValue}</p>
+                            <p className="text-sm sm:text-lg md:text-xl font-bold text-gray-900 truncate">{card.mainValue}</p>
                             {card.subValue && (
-                                <p className="text-[8px] sm:text-[10px] text-blue-600 mt-0.5 truncate">≈ {card.subValue}</p>
+                                <p className="text-[8px] sm:text-[10px] text-gray-500 mt-0.5 truncate">≈ {card.subValue}</p>
                             )}
                         </div>
 
-                        <p className="text-[8px] sm:text-[10px] text-blue-400 truncate leading-tight">{card.description}</p>
+                        <p className="text-[8px] sm:text-[10px] text-gray-400 truncate leading-tight">{card.description}</p>
                     </div>
                 );
             })}
