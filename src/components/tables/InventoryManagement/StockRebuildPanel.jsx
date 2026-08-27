@@ -1043,6 +1043,20 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                                                 {currentOpLabel && (
                                                     <p className="text-xs text-slate-500 mt-1.5">Now processing: {currentOpLabel}</p>
                                                 )}
+                                                {(() => {
+                                                    const lastDone = [...results].reverse().find(
+                                                        (r) => r.status === 'DONE' || r.status === 'ERROR'
+                                                    );
+                                                    if (!lastDone) return null;
+                                                    return (
+                                                        <p className="text-xs text-slate-400 mt-1">
+                                                            Last finished: {lastDone.productName}
+                                                            {lastDone.variationName && lastDone.variationName !== 'Base' ? ` (${lastDone.variationName})` : ''}
+                                                            {' — '}{lastDone.locationName}
+                                                            {lastDone.status === 'ERROR' ? ' (failed)' : ''}
+                                                        </p>
+                                                    );
+                                                })()}
                                             </>
                                         )}
                                     </div>
