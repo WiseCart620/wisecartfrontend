@@ -727,12 +727,37 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         return buildOperations().length;
     }, [productIds, warehouseIds, branchIds, scope, includeVariations, selectedVariationKeys, products, autoAllBranches, branches]);
 
-    const pollJobToCompletion = (id) => {
+    const pollJobToCompletion = (id, offset, batchTotal) => {
         return new Promise((resolve, reject) => {
             const interval = setInterval(async () => {
                 try {
                     const res = await api.get(`/admin/stock-rebuild/jobs/${id}`);
                     const data = res.data || res;
+
+                    const batchResults = (data.results || []).map((r) => ({
+                        productName: r.productName,
+                        variationName: r.variationName || 'Base',
+                        locationType: r.locationType === 'WAREHOUSE' ? 'Warehouse' : 'Branch',
+                        locationName: r.locationName,
+                        status: r.status,
+                        qtyBefore: r.qtyBefore,
+                        qtyAfter: r.qtyAfter,
+                        retired: r.retired,
+                        error: r.error,
+                    }));
+                    setResults((prev) => {
+                        const next = [...prev];
+                        for (let i = 0; i < batchResults.length; i++) {
+                            const idx = offset + i;
+                            if (next[idx]) next[idx] = { ...next[idx], ...batchResults[i] };
+                        }
+                        return next;
+                    });
+                    setProgress((prev) => ({
+                        ...prev,
+                        done: Math.min(prev.total, offset + (data.doneOps || 0)),
+                    }));
+
                     if (data.status === 'DONE') {
                         clearInterval(interval);
                         resolve(data);
@@ -750,9 +775,6 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         const ops = buildOperations();
         if (ops.length === 0) return;
 
-        // Group ops into one batch per location, so each job we submit stays
-        // small (same size as a single branch/warehouse run) instead of one
-        // giant job covering every selected location at once.
         const batchMap = new Map();
         const batchOrder = [];
         for (const op of ops) {
@@ -764,6 +786,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
             batchMap.get(key).ops.push(op);
         }
         const batches = batchOrder.map((k) => batchMap.get(k));
+        const flattenedOps = batches.flatMap((b) => b.ops); // matches the order batches actually run in
 
         const queue = batches
             .filter((b) => b.locationType === 'Branch')
@@ -772,16 +795,19 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
         setActiveBranchIndex(queue.length > 0 ? 0 : -1);
 
         setRunning(true);
-        setProgress({ done: 0, total: ops.length });
+        setProgress({ done: 0, total: flattenedOps.length });
         setResults(
-            ops.map(() => ({
+            flattenedOps.map((op) => ({
                 id: ++rowCounter,
-                productName: '', variationName: '', locationType: '', locationName: '',
+                productName: op.productName,
+                variationName: op.variationName,
+                locationType: op.locationType,
+                locationName: op.locationName,
                 status: 'PENDING', qtyBefore: null, qtyAfter: null, retired: null, error: null,
             }))
         );
 
-        let overallDone = 0, overallSuccess = 0, overallFail = 0, branchQueueIdx = 0;
+        let overallDone = 0, overallSuccess = 0, overallFail = 0, branchQueueIdx = 0, opOffset = 0;
 
         for (const batch of batches) {
             if (batch.locationType === 'Branch') setActiveBranchIndex(branchQueueIdx);
@@ -803,15 +829,16 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                 if (!data.jobId) {
                     toast.error(`Failed to start rebuild for ${batch.locationName}`);
                     overallFail += batch.ops.length;
+                    opOffset += batch.ops.length;
                     continue;
                 }
                 setJobId(data.jobId);
 
-                const finished = await pollJobToCompletion(data.jobId);
+                const finished = await pollJobToCompletion(data.jobId, opOffset, batch.ops.length);
                 overallDone += batch.ops.length;
                 overallSuccess += finished.successCount || 0;
                 overallFail += finished.failCount || 0;
-                setProgress({ done: overallDone, total: ops.length });
+                setProgress((prev) => ({ ...prev, done: overallDone }));
 
                 if (batch.locationType === 'Branch') {
                     setBranchQueue((prev) => {
@@ -825,7 +852,9 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                 toast.error(`Rebuild failed for ${batch.locationName}`);
                 overallFail += batch.ops.length;
             }
+            opOffset += batch.ops.length;
         }
+
 
         setActiveBranchIndex(queue.length);
         setRunning(false);
