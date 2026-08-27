@@ -792,13 +792,8 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
             batchMap.get(key).ops.push(op);
         }
         const batches = batchOrder.map((k) => batchMap.get(k));
-        const flattenedOps = batches.flatMap((b) => b.ops); // matches the order batches actually run in
+        const flattenedOps = batches.flatMap((b) => b.ops);
 
-        const queue = batches
-            .filter((b) => b.locationType === 'Branch')
-            .map((b) => ({ locationId: b.locationId, locationName: b.locationName, done: 0, total: b.ops.length }));
-        setBranchQueue(queue);
-        setActiveBranchIndex(queue.length > 0 ? 0 : -1);
 
         setRunning(true);
         setProgress({ done: 0, total: flattenedOps.length });
@@ -813,64 +808,34 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
             }))
         );
 
-        let overallDone = 0, overallSuccess = 0, overallFail = 0, branchQueueIdx = 0, opOffset = 0;
+        setCurrentOpLabel(`${batches.length} location(s) — ${flattenedOps.length} operations`);
 
-        for (const batch of batches) {
-            if (batch.locationType === 'Branch') setActiveBranchIndex(branchQueueIdx);
-            setCurrentOpLabel(`${batch.locationName} — ${batch.ops.length} operations`);
+        const payload = flattenedOps.map((op) => ({
+            productId: op.productId,
+            productName: op.productName,
+            variationId: op.variationId,
+            variationName: op.variationName,
+            locationType: op.locationType === 'Warehouse' ? 'WAREHOUSE' : 'BRANCH',
+            locationId: op.locationId,
+            locationName: op.locationName,
+        }));
 
-            const payload = batch.ops.map((op) => ({
-                productId: op.productId,
-                productName: op.productName,
-                variationId: op.variationId,
-                variationName: op.variationName,
-                locationType: op.locationType === 'Warehouse' ? 'WAREHOUSE' : 'BRANCH',
-                locationId: op.locationId,
-                locationName: op.locationName,
-            }));
-
-            try {
-                const res = await api.post('/admin/stock-rebuild/jobs', payload);
-                const data = res.data || res;
-                if (!data.jobId) {
-                    toast.error(`Failed to start rebuild for ${batch.locationName}`);
-                    overallFail += batch.ops.length;
-                    opOffset += batch.ops.length;
-                    continue;
-                }
-                setJobId(data.jobId);
-
-                const finished = await pollJobToCompletion(data.jobId, opOffset, batch.ops.length);
-                overallDone += batch.ops.length;
-                overallSuccess += finished.successCount || 0;
-                overallFail += finished.failCount || 0;
-                setProgress((prev) => ({ ...prev, done: overallDone }));
-
-                if (batch.locationType === 'Branch') {
-                    setBranchQueue((prev) => {
-                        const next = [...prev];
-                        if (next[branchQueueIdx]) next[branchQueueIdx] = { ...next[branchQueueIdx], done: batch.ops.length };
-                        return next;
-                    });
-                    branchQueueIdx++;
-                }
-            } catch (err) {
-                toast.error(`Rebuild failed for ${batch.locationName}`);
-                overallFail += batch.ops.length;
+        try {
+            const res = await api.post('/admin/stock-rebuild/jobs', payload);
+            const data = res.data || res;
+            if (!data.jobId) {
+                toast.error('Failed to start rebuild');
+                setRunning(false);
+                setCurrentOpLabel('');
+                return;
             }
-            opOffset += batch.ops.length;
+            setJobId(data.jobId);
+            startPolling(data.jobId);
+        } catch (err) {
+            toast.error('Failed to start rebuild');
+            setRunning(false);
+            setCurrentOpLabel('');
         }
-
-
-        setActiveBranchIndex(queue.length);
-        setRunning(false);
-        setCurrentOpLabel('');
-        if (overallFail === 0) {
-            toast.success(`Rebuilt ${overallSuccess} record(s) across ${batches.length} location(s)`);
-        } else {
-            toast.error(`${overallSuccess} succeeded, ${overallFail} failed across ${batches.length} location(s)`);
-        }
-        if (onRebuilt) onRebuilt();
     };
 
     return (
