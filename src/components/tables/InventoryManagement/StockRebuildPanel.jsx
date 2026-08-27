@@ -534,7 +534,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
             return;
         }
         if (pollRef.current) clearInterval(pollRef.current);
-        pollRef.current = setInterval(async () => {
+        const tick = async () => {
             try {
                 const res = await api.get(`/admin/stock-rebuild/jobs/${id}`);
                 const data = res.data || res;
@@ -548,7 +548,9 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                 clearInterval(pollRef.current);
                 pollRef.current = null;
             }
-        }, 2000);
+        };
+        tick();
+        pollRef.current = setInterval(tick, 750);
     };
     React.useEffect(() => {
         if (!PRODUCT_DETAIL_ENABLED) return;
@@ -729,7 +731,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
 
     const pollJobToCompletion = (id, offset, batchTotal) => {
         return new Promise((resolve, reject) => {
-            const interval = setInterval(async () => {
+            const tick = async () => {
                 try {
                     const res = await api.get(`/admin/stock-rebuild/jobs/${id}`);
                     const data = res.data || res;
@@ -766,10 +768,11 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                     clearInterval(interval);
                     reject(err);
                 }
-            }, 2000);
+            };
+            tick();
+            const interval = setInterval(tick, 750);
         });
     };
-
     const runRebuild = async () => {
         setConfirmOpen(false);
         const ops = buildOperations();
