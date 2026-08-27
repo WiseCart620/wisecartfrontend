@@ -682,6 +682,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
     }, [branches]);
 
     const branchQueue = useMemo(() => {
+        if (results.length > 500) return [];
         const map = new Map();
         for (const r of results) {
             if (r.locationType !== 'Branch') continue;
@@ -1012,7 +1013,20 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                     <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                         <Clock size={14} /> Results
                     </h3>
-                    <ResultsTable rows={results} />
+                    {results.length > 500 ? (
+                        <div className="border border-slate-200 rounded-lg p-4 bg-white text-sm text-slate-600">
+                            <p className="mb-1">
+                                <span className="font-semibold text-slate-900">{results.length.toLocaleString()}</span> operations total —
+                                too many to list live without slowing down your browser.
+                            </p>
+                            <p className="text-xs text-slate-400">
+                                {progress.done.toLocaleString()} / {progress.total.toLocaleString()} done.
+                                Full row-by-row results will be available once the job completes, or check the database directly for live progress.
+                            </p>
+                        </div>
+                    ) : (
+                        <ResultsTable rows={results} />
+                    )}
                 </div>
             )}
 
@@ -1045,6 +1059,12 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                             Existing transactions for each product at each selected location will be retired and regenerated
                             from source records. This cannot be undone.
                         </p>
+                        {totalOperations > 5000 && (
+                            <p className="text-xs text-red-600 font-medium mb-5 bg-red-50 border border-red-200 rounded p-2">
+                                ⚠️ This is a very large batch ({totalOperations.toLocaleString()} operations).
+                                It may take a long time and the live results table will be summarized instead of row-by-row to protect browser performance.
+                            </p>
+                        )}
                         <div className="flex justify-end gap-2">
                             <button
                                 onClick={() => setConfirmOpen(false)}
