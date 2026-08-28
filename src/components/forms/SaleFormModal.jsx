@@ -42,6 +42,7 @@ const SaleFormModal = ({
   companies,
   defaultCompanyId,
   dataLoading = false,
+  productFilters = [],
 }) => {
   const [showEncodedByDropdown, setShowEncodedByDropdown] = useState(false);
   const [showMassUpload, setShowMassUpload] = useState(false);
@@ -68,7 +69,20 @@ const SaleFormModal = ({
 
   const encodedByOptions = useMemo(() => [], []);
 
-  const grandQty = formData.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+  const hasActiveProductFilter = modalMode === 'edit' && productFilters && productFilters.length > 0;
+
+  const visibleItemsWithIndex = formData.items
+    .map((item, i) => ({ item, originalIndex: i }))
+    .filter(({ item }) =>
+      !hasActiveProductFilter ||
+      productFilters.some(pf =>
+        pf.productId === item.productId && (pf.variationId ?? null) === (item.variationId ?? null)
+      )
+    );
+
+  const itemsForTotals = hasActiveProductFilter ? visibleItemsWithIndex.map(v => v.item) : formData.items;
+
+  const grandQty = itemsForTotals.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const handleGrandTotalInputChange = (e) => {
     const val = e.target.value.replace(/[^0-9.]/g, '');
     setGrandTotalInput(val);
@@ -112,7 +126,7 @@ const SaleFormModal = ({
     setGrandTotalInput('');
   };
 
-  const grandTotal = formData.items.reduce((sum, item) => {
+  const grandTotal = itemsForTotals.reduce((sum, item) => {
     if (!Array.isArray(productOptions)) return 0;
     const opt = productOptions.find(o =>
       o.parentProductId === item.productId &&
@@ -261,7 +275,7 @@ const SaleFormModal = ({
             </FormSection>
 
             {/* Products */}
-            <FormSection icon={PackagePlus} title={`Products${formData.items.length ? ` (${formData.items.length})` : ''}`}>
+            <FormSection icon={PackagePlus} title={`Products${formData.items.length ? ` (${hasActiveProductFilter ? `${visibleItemsWithIndex.length} of ${formData.items.length}` : formData.items.length})` : ''}`}>
               <div className="mb-5">
                 <VariationSearchableDropdown
                   options={Array.isArray(productOptions) ? productOptions : []}
@@ -292,6 +306,11 @@ const SaleFormModal = ({
                   <p className="font-medium text-gray-500 text-sm">No products added yet</p>
                   <p className="text-xs text-gray-400 mt-1">Select a product above and click "Add to List" to start</p>
                 </div>
+              ) : visibleItemsWithIndex.length === 0 ? (
+                <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                  <p className="font-medium text-gray-500 text-sm">No products match the active filter</p>
+                  <p className="text-xs text-gray-400 mt-1">Clear the product filter to see all items in this sale</p>
+                </div>
               ) : (
                 <div className="rounded-lg border border-gray-200">
                   <table className="w-full text-sm table-fixed">
@@ -314,7 +333,7 @@ const SaleFormModal = ({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 bg-white">
-                      {formData.items.map((item, i) => {
+                      {visibleItemsWithIndex.map(({ item, originalIndex: i }) => {
                         const selectedOption = Array.isArray(productOptions)
                           ? productOptions.find(opt =>
                             opt.parentProductId === item.productId &&

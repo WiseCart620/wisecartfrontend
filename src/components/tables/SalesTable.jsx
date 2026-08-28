@@ -11,8 +11,25 @@ const SalesTable = ({
   onView, onEdit, onUpdateStatus, onDelete,
   onPageChange,
   loadingAction,
+  productFilters = [],
 }) => {
   const currentSales = Array.isArray(sales) ? sales : [];
+
+  const getRowTotals = (sale) => {
+    const items = sale.items || [];
+    if (!productFilters || productFilters.length === 0) {
+      const qty = items.reduce((sum, it) => sum + (it.quantity || 0), 0);
+      return { qty, amount: sale.totalAmount || 0 };
+    }
+    const matchingItems = items.filter(item =>
+      productFilters.some(pf =>
+        pf.productId === item.product?.id && (pf.variationId ?? null) === (item.variation?.id ?? null)
+      )
+    );
+    const qty = matchingItems.reduce((sum, it) => sum + (it.quantity || 0), 0);
+    const amount = matchingItems.reduce((sum, it) => sum + (it.amount || 0), 0);
+    return { qty, amount };
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden table-panel">
@@ -25,6 +42,7 @@ const SalesTable = ({
               <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Company</th>
               <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Period</th>
               <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Encoded By</th>
+              <th className="px-3 py-3 text-right text-[11px] font-medium text-gray-500 uppercase tracking-wider">Qty</th>
               <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Total</th>
               <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Status</th>
               <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider no-print">Actions</th>
@@ -39,6 +57,7 @@ const SalesTable = ({
                   <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-24" /></td>
                   <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-16" /></td>
                   <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-20" /></td>
+                  <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-10 ml-auto" /></td>
                   <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-20" /></td>
                   <td className="px-3 py-3"><div className="h-6 bg-gray-100 rounded-full w-16" /></td>
                   <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-20" /></td>
@@ -46,7 +65,7 @@ const SalesTable = ({
               ))
             ) : currentSales.length === 0 ? (
               <tr>
-                <td colSpan="8" className="px-6 py-12 text-center text-gray-500">No sales found</td>
+                <td colSpan="9" className="px-6 py-12 text-center text-gray-500">No sales found</td>
               </tr>
             ) : (
               currentSales.map((sale, idx) => (
@@ -61,7 +80,8 @@ const SalesTable = ({
                   <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">{sale.company.companyName}</td>
                   <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">{months[sale.month - 1]} {sale.year}</td>
                   <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">{sale.createdBy || sale.generatedBy || '-'}</td>
-                  <td className="px-3 py-3 whitespace-nowrap text-xs font-semibold text-gray-900">{formatCurrency(sale.totalAmount)}</td>
+                  <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-700 text-right">{getRowTotals(sale).qty.toLocaleString()}</td>
+                  <td className="px-3 py-3 whitespace-nowrap text-xs font-semibold text-gray-900">{formatCurrency(getRowTotals(sale).amount)}</td>
                   <td className="px-3 py-3 whitespace-nowrap">
                     <span className={`px-2 py-1 inline-flex text-[11px] leading-5 font-semibold rounded-full ${sale.status === 'INVOICED' ? 'bg-green-100 text-green-800' :
                       sale.status === 'CONFIRMED' ? 'bg-blue-100 text-blue-800' :

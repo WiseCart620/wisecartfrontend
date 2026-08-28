@@ -359,6 +359,7 @@ const SalesManagement = () => {
           onUpdateStatus={handleUpdateStatus}
           onDelete={handleDelete}
           onPageChange={setCurrentPage}
+          productFilters={filterData.productFilters}
         />
 
         {showModal && (modalMode === 'create' || modalMode === 'edit') && (
@@ -387,6 +388,7 @@ const SalesManagement = () => {
             companies={companies}
             defaultCompanyId={filterData.companyIds?.[0]}
             dataLoading={staticDataLoading}
+            productFilters={filterData.productFilters}
           />
         )}
 
@@ -404,6 +406,7 @@ const SalesManagement = () => {
             products={products}
             productPrices={productPrices}
             onClose={handleCloseModal}
+            productFilters={filterData.productFilters}
           />
         )}
 

@@ -3,10 +3,22 @@ import { X } from 'lucide-react';
 import { formatCurrency, formatPHDateTime } from '../../utils/salesUtils';
 import { months } from '../../constants/salesConstants';
 
-const SaleViewModal = ({ sale, products, productPrices, onClose }) => {
+const SaleViewModal = ({ sale, products, productPrices, onClose, productFilters = [] }) => {
   if (!sale) return null;
 
   const companyId = sale.company?.id;
+
+  const hasActiveProductFilter = productFilters && productFilters.length > 0;
+  const displayItems = hasActiveProductFilter
+    ? (sale.items || []).filter(item =>
+      productFilters.some(pf =>
+        pf.productId === item.product?.id && (pf.variationId ?? null) === (item.variation?.id ?? null)
+      )
+    )
+    : (sale.items || []);
+  const displayTotal = hasActiveProductFilter
+    ? displayItems.reduce((sum, item) => sum + (item.amount || 0), 0)
+    : sale.totalAmount;
 
   const getOriginalPrice = (item) => {
     const product = products?.find(p => p.id === item.product.id);
@@ -72,7 +84,9 @@ const SaleViewModal = ({ sale, products, productPrices, onClose }) => {
             </div>
           </div>
 
-          <h3 className="font-semibold text-gray-700 mb-4 text-lg">Items</h3>
+          <h3 className="font-semibold text-gray-700 mb-4 text-lg">
+            Items{hasActiveProductFilter ? ` (filtered: ${displayItems.length} of ${sale.items?.length || 0})` : ''}
+          </h3>
           <div className="overflow-x-auto rounded-lg border border-gray-200">
             <table className="w-full">
               <thead className="bg-gray-50">
@@ -83,8 +97,8 @@ const SaleViewModal = ({ sale, products, productPrices, onClose }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {sale.items?.length > 0 ? (
-                  sale.items.map((item, i) => {
+                {displayItems.length > 0 ? (
+                  displayItems.map((item, i) => {
                     const originalPrice = getOriginalPrice(item);
                     const hasCustomPrice = originalPrice != null && Number(originalPrice) !== Number(item.unitPrice);
 
@@ -122,7 +136,7 @@ const SaleViewModal = ({ sale, products, productPrices, onClose }) => {
           </div>
 
           <div className="mt-8 pt-6 border-t border-gray-200 text-right">
-            <p className="text-3xl font-bold text-gray-900">Total: {formatCurrency(sale.totalAmount)}</p>
+            <p className="text-3xl font-bold text-gray-900">Total: {formatCurrency(displayTotal)}</p>
           </div>
         </div>
 
