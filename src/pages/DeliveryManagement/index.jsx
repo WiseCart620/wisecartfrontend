@@ -427,6 +427,7 @@ const DeliveryManagement = () => {
           isLoading={loading}
           canDelete={canDelete}
           canCreate={canCreate}
+          productFilters={filterData.productFilters}
         />
 
         {modalState.show && modalState.mode === 'view' && modalState.delivery && (
@@ -436,6 +437,7 @@ const DeliveryManagement = () => {
             onEdit={() => { handleCloseModal(); setTimeout(() => handleOpenModal('edit', modalState.delivery), 100); }}
             onPrint={handleGenerateReceipt}
             isLoading={actionLoading}
+            productFilters={filterData.productFilters}
           />
         )}
         {modalState.show && (modalState.mode === 'create' || modalState.mode === 'edit') && (
@@ -449,6 +451,7 @@ const DeliveryManagement = () => {
             warehouses={warehouses}
             companies={companies}
             isLoading={actionLoading}
+            productFilters={filterData.productFilters}
           />
         )}
         {receiptModalState.show && receiptModalState.receiptData && (

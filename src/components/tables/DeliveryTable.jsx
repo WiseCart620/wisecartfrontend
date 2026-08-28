@@ -14,7 +14,8 @@ const DeliveryTable = ({
   currentPage = 1,
   itemsPerPage = 10,
   totalItems = 0,
-  isLoading = false
+  isLoading = false,
+  productFilters = []
 }) => {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const indexOfFirstItem = (currentPage - 1) * itemsPerPage + 1;
@@ -54,8 +55,25 @@ const DeliveryTable = ({
     return (b.id || 0) - (a.id || 0);
   });
 
-  const grandTotalPrepared = sortedDeliveries.reduce((s, d) => s + (d.totalPreparedQty || 0), 0);
-  const grandTotalSKU = sortedDeliveries.reduce((s, d) => s + (d.itemCount || 0), 0);
+  const getRowTotals = (delivery) => {
+    const items = delivery.items || [];
+    if (!productFilters || productFilters.length === 0) {
+      return { sku: delivery.itemCount || 0, qty: delivery.totalPreparedQty || 0 };
+    }
+    const matchingItems = items.filter(item => {
+      const itemProductId = item.product?.id ?? item.productId;
+      const itemVariationId = item.variation?.id ?? item.variationId ?? null;
+      return productFilters.some(pf =>
+        Number(pf.productId) === Number(itemProductId) &&
+        (pf.variationId == null ? null : Number(pf.variationId)) === (itemVariationId == null ? null : Number(itemVariationId))
+      );
+    });
+    const qty = matchingItems.reduce((sum, it) => sum + (it.preparedQty || it.quantity || 0), 0);
+    return { sku: matchingItems.length, qty };
+  };
+
+  const grandTotalPrepared = sortedDeliveries.reduce((s, d) => s + getRowTotals(d).qty, 0);
+  const grandTotalSKU = sortedDeliveries.reduce((s, d) => s + getRowTotals(d).sku, 0);
 
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full table-panel">
@@ -151,7 +169,7 @@ const DeliveryTable = ({
               </tr>
             ) : (
               sortedDeliveries.map((delivery, index) => {
-                const drTotalPrepared = delivery.totalPreparedQty || 0;
+                const rowTotals = getRowTotals(delivery);
 
                 const isDelivered = delivery.status === 'DELIVERED';
                 const isPending = delivery.status === 'PENDING';
@@ -226,15 +244,15 @@ const DeliveryTable = ({
                     <td className="px-2 py-2.5 text-center">
                       <span className="inline-flex items-center gap-1">
                         <Package size={13} className="text-gray-400" />
-                        <span className="text-sm font-bold text-gray-800">{delivery.itemCount}</span>
+                        <span className="text-sm font-bold text-gray-800">{rowTotals.sku}</span>
                       </span>
                     </td>
 
                     {/* Qty */}
                     <td className="px-2 py-2.5 text-right">
-                      {drTotalPrepared > 0 ? (
+                      {rowTotals.qty > 0 ? (
                         <span className="text-sm font-bold text-blue-700">
-                          {drTotalPrepared.toLocaleString('en-US')}
+                          {rowTotals.qty.toLocaleString('en-US')}
                         </span>
                       ) : (
                         '—'

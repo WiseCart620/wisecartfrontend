@@ -29,7 +29,8 @@ const DeliveryFormModal = ({
     products,
     warehouses,
     companies,
-    isLoading = false
+    isLoading = false,
+    productFilters = []
 }) => {
     const [formData, setFormData] = useState({
         branchId: '',
@@ -404,8 +405,22 @@ const DeliveryFormModal = ({
         onSave(formData, false);
     };
 
-    const totalPrepared = formData.items.reduce((s, it) => s + (parseInt(it.preparedQty) || 0), 0);
-    const totalDelivered = formData.items.reduce((s, it) => s + (parseInt(it.deliveredQty) || 0), 0);
+    const hasActiveProductFilter = mode === 'edit' && productFilters && productFilters.length > 0;
+
+    const visibleItemsWithIndex = formData.items
+        .map((item, i) => ({ item, originalIndex: i }))
+        .filter(({ item }) =>
+            !hasActiveProductFilter ||
+            productFilters.some(pf =>
+                Number(pf.productId) === Number(item.productId) &&
+                (pf.variationId == null ? null : Number(pf.variationId)) === (item.variationId == null ? null : Number(item.variationId))
+            )
+        );
+
+    const itemsForTotals = hasActiveProductFilter ? visibleItemsWithIndex.map(v => v.item) : formData.items;
+
+    const totalPrepared = itemsForTotals.reduce((s, it) => s + (parseInt(it.preparedQty) || 0), 0);
+    const totalDelivered = itemsForTotals.reduce((s, it) => s + (parseInt(it.deliveredQty) || 0), 0);
     const isDeliveredStatus = formData.status === 'DELIVERED';
 
     const handleFormArrowNav = (e) => {
@@ -766,7 +781,7 @@ const DeliveryFormModal = ({
                         </FormSection>
 
                         {/* Products */}
-                        <FormSection icon={ClipboardList} title={`Products${formData.items.length ? ` (${formData.items.length})` : ''}`}>
+                        <FormSection icon={ClipboardList} title={`Products${formData.items.length ? ` (${hasActiveProductFilter ? `${visibleItemsWithIndex.length} of ${formData.items.length}` : formData.items.length})` : ''}`}>
                             <div className="mb-5">
                                 <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
                                     Add Products *
@@ -793,6 +808,12 @@ const DeliveryFormModal = ({
                                     <p className="font-medium text-gray-500 text-sm">No products added yet</p>
                                     <p className="text-xs text-gray-400 mt-1">Select a product above and click "Add Product" to start</p>
                                 </div>
+                            ) : visibleItemsWithIndex.length === 0 ? (
+                                <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                                    <Package size={40} className="mx-auto mb-3 text-gray-300" />
+                                    <p className="font-medium text-gray-500 text-sm">No products match the active filter</p>
+                                    <p className="text-xs text-gray-400 mt-1">Clear the product filter to see all items in this delivery</p>
+                                </div>
                             ) : (
                                 <>
                                     <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -805,7 +826,7 @@ const DeliveryFormModal = ({
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-100 bg-white">
-                                                {formData.items.map((item, i) => {
+                                                {visibleItemsWithIndex.map(({ item, originalIndex: i }) => {
                                                     const selectedOption = productOptions.find(opt =>
                                                         opt.parentProductId === item.productId &&
                                                         (item.variationId ? opt.variationId === item.variationId : !opt.variationId)
@@ -889,7 +910,7 @@ const DeliveryFormModal = ({
                                             <tfoot className="bg-gray-50 border-t border-gray-200">
                                                 <tr>
                                                     <td colSpan={7} className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                                        Total ({formData.items.length} item{formData.items.length !== 1 ? 's' : ''})
+                                                        Total ({itemsForTotals.length} item{itemsForTotals.length !== 1 ? 's' : ''})
                                                     </td>
                                                     <td className="px-4 py-3 text-right whitespace-nowrap">
                                                         <span className="text-sm font-bold text-blue-700">{totalPrepared.toLocaleString('en-US')}</span>

@@ -7,7 +7,8 @@ const DeliveryViewModal = ({
   onClose,
   onEdit,
   onPrint,
-  isLoading = false
+  isLoading = false,
+  productFilters = []
 }) => {
   const getStatusColor = (status) => {
     const colors = {
@@ -34,8 +35,19 @@ const DeliveryViewModal = ({
   }
 
   // ── Compute totals ───────────────────────────────────────────────────────
-  const totalPrepared = (delivery.items || []).reduce((s, it) => s + (it.preparedQty ?? 0), 0);
-  const totalDelivered = (delivery.items || []).reduce((s, it) => s + (it.deliveredQty ?? 0), 0);
+  const hasActiveProductFilter = productFilters && productFilters.length > 0;
+  const displayItems = hasActiveProductFilter
+    ? (delivery.items || []).filter(item => {
+      const itemProductId = item.product?.id ?? item.productId;
+      const itemVariationId = item.variation?.id ?? item.variationId ?? null;
+      return productFilters.some(pf =>
+        Number(pf.productId) === Number(itemProductId) &&
+        (pf.variationId == null ? null : Number(pf.variationId)) === (itemVariationId == null ? null : Number(itemVariationId))
+      );
+    })
+    : (delivery.items || []);
+  const totalPrepared = displayItems.reduce((s, it) => s + (it.preparedQty ?? 0), 0);
+  const totalDelivered = displayItems.reduce((s, it) => s + (it.deliveredQty ?? 0), 0);
   const isDelivered = delivery.status === 'DELIVERED';
   const hasVariance = isDelivered && totalPrepared !== totalDelivered;
 
@@ -168,10 +180,10 @@ const DeliveryViewModal = ({
             <div>
               <div className="flex items-center justify-between mb-3">
                 <label className="block text-sm font-medium text-gray-700">
-                  Delivery Items ({delivery.items?.length || 0} items)
+                  Delivery Items ({displayItems.length}{hasActiveProductFilter ? ` of ${delivery.items?.length || 0}` : ''} items)
                 </label>
                 {/* Quick totals summary */}
-                {(delivery.items?.length ?? 0) > 0 && (
+                {displayItems.length > 0 && (
                   <div className="flex items-center gap-3 text-sm">
                     <div className="flex items-center gap-1">
                       <span className="text-gray-500">Prepared:</span>
@@ -216,8 +228,8 @@ const DeliveryViewModal = ({
                   </thead>
 
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {delivery.items && delivery.items.length > 0 ? (
-                      delivery.items.map((item, index) => (
+                    {displayItems.length > 0 ? (
+                      displayItems.map((item, index) => (
                         <tr key={index} className="hover:bg-gray-50">
                           <td className="px-4 py-3 text-center text-sm text-gray-400 font-medium">{index + 1}</td>
                           <td className="px-4 py-3 text-sm font-medium text-gray-900">
@@ -251,18 +263,20 @@ const DeliveryViewModal = ({
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="6" className="px-4 py-8 text-center text-gray-500 italic">No items found</td>
+                        <td colSpan="6" className="px-4 py-8 text-center text-gray-500 italic">
+                          {hasActiveProductFilter ? 'No items match the active product filter' : 'No items found'}
+                        </td>
                       </tr>
                     )}
                   </tbody>
 
                   {/* ── Totals footer ─────────────────────────────────────── */}
-                  {delivery.items && delivery.items.length > 0 && (
+                  {displayItems.length > 0 && (
                     <tfoot>
                       <tr className="bg-gray-50 border-t-2 border-gray-300">
                         <td colSpan={4} className="px-4 py-3 text-right">
                           <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                            Total ({delivery.items.length} item{delivery.items.length !== 1 ? 's' : ''})
+                            Total ({displayItems.length} item{displayItems.length !== 1 ? 's' : ''})
                           </span>
                         </td>
                         {/* Prepared total */}
