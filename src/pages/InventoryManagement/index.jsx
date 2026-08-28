@@ -148,7 +148,6 @@ const InventoryManagement = () => {
 
   const transactionHandlers = useTransactionHandlers();
 
-  // Filter hooks
   const warehouseFilters = useFilters({
     warehouse: '',
     minQty: '',
