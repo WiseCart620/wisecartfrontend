@@ -97,6 +97,7 @@ const SaleFormModal = ({
 
     const keyOf = (item) => `${item.productId}_${item.variationId ?? 'base'}`;
 
+    // Step 1: natural amount per row = current price * qty
     const naturalAmounts = {};
     let naturalTotal = 0;
     itemsForTotals.forEach(item => {
@@ -121,20 +122,27 @@ const SaleFormModal = ({
       return;
     }
 
-
     setFormData(prev => ({
       ...prev,
       items: prev.items.map(item => {
         const key = keyOf(item);
         if (!(key in naturalAmounts) || !item.quantity) return item;
 
+        // Step 2: distribute target across rows, proportional to natural amount
         const distributedAmount = target * (naturalAmounts[key] / naturalTotal);
-        const exactPrice = distributedAmount / item.quantity;
+
+        // Step 3: derive price from amount ÷ qty
+        let finalPrice = distributedAmount / item.quantity;
+
+        const check = finalPrice * item.quantity;
+        if (Math.abs(check - distributedAmount) > 0.0000001) {
+          finalPrice = distributedAmount / item.quantity;
+        }
 
         return {
           ...item,
-          unitPrice: exactPrice.toFixed(2),
-          unitPriceExact: exactPrice,
+          unitPrice: finalPrice.toFixed(2),   // rounded for the input display
+          unitPriceExact: finalPrice,          // exact value — THIS is what amount/grand total math uses
         };
       }),
     }));
