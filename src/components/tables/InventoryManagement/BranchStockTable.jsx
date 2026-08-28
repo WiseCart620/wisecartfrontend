@@ -46,16 +46,28 @@ const BranchStockTable = ({
           Company Stock Levels
         </h2>
         {!isLoading && filteredBranchStocks.length > 0 && (
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
             <span className="text-gray-500">
               Grand Total ({filteredBranchStocks.length.toLocaleString('en-US')} rows):
             </span>
-            <span className="text-gray-700">Stock <b className="text-gray-900">{grandTotals.quantity.toLocaleString('en-US')}</b></span>
-            <span className="text-gray-700">Delivered <b className="text-teal-800">{grandTotals.delivered.toLocaleString('en-US')}</b></span>
-            <span className="text-gray-700">Sales <b className="text-pink-800">{grandTotals.totalSales.toLocaleString('en-US')}</b></span>
-            <span className="text-gray-700">Pend. Delivery <b className="text-orange-800">{grandTotals.pendingDelivery.toLocaleString('en-US')}</b></span>
-            <span className="text-gray-700">Pend. Sale <b className="text-purple-800">{grandTotals.pendingSale.toLocaleString('en-US')}</b></span>
-            <span className="text-gray-700">Available <b className="text-blue-800">{grandTotals.available.toLocaleString('en-US')}</b></span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-800">
+              Stock {grandTotals.quantity.toLocaleString('en-US')}
+            </span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-teal-100 text-teal-800">
+              Delivered {grandTotals.delivered.toLocaleString('en-US')}
+            </span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-pink-100 text-pink-800">
+              Sales {grandTotals.totalSales.toLocaleString('en-US')}
+            </span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-orange-100 text-orange-800">
+              Pend. Delivery {grandTotals.pendingDelivery.toLocaleString('en-US')}
+            </span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-purple-100 text-purple-800">
+              Pend. Sale {grandTotals.pendingSale.toLocaleString('en-US')}
+            </span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-800">
+              Available {grandTotals.available.toLocaleString('en-US')}
+            </span>
           </div>
         )}
       </div>
