@@ -19,11 +19,8 @@ export const parseAccountingPeriod = (rawText) => {
     const periodIdx = rawText.search(/Accounting\s*Period/i);
     if (periodIdx === -1) return { month: null, year: null };
 
-    // Look at a window of text after the label (handles stray whitespace/newlines
-    // or unrelated tokens injected by PDF column extraction)
     const window = rawText.slice(periodIdx, periodIdx + 200);
 
-    // Try "Month YYYY" or "Month, YYYY" or "Month-YYYY"
     const monthYearMatch = window.match(/([A-Za-z]{3,9})\.?\s*,?\s*-?\s*(\d{4})/);
     if (monthYearMatch) {
         const month = monthNameToNumber(monthYearMatch[1]);
@@ -169,13 +166,16 @@ export const parseMassUploadReports = (rawText) => {
 export const buildSaleItemsFromMatches = (matchedRows) =>
     matchedRows
         .filter(r => r.matched)
-        .map(r => ({
-            productId: r.matched.option.parentProductId,
-            variationId: r.matched.option.variationId || null,
-            quantity: r.qty,
-            unitPrice: null,
-        }));
-
+        .map(r => {
+            const exactPrice = Number(r.unitCost) || 0;
+            return {
+                productId: r.matched.option.parentProductId,
+                variationId: r.matched.option.variationId || null,
+                quantity: r.qty,
+                unitPrice: exactPrice > 0 ? exactPrice.toFixed(2) : null,
+                unitPriceExact: exactPrice > 0 ? exactPrice : undefined,
+            };
+        });
 
 export const isReportComplete = (matchedRows) =>
     matchedRows.length > 0 && matchedRows.every(r => !!r.matched);

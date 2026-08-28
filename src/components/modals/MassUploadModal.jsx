@@ -56,7 +56,6 @@ const distributeRemainder = (costs, quantities, remainder) => {
 const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfirm, onBulkUploadComplete, defaultCompanyId }) => {
     const [rawText, setRawText] = useState('');
     const [reports, setReports] = useState(null);
-    const [totalDraft, setTotalDraft] = useState('');
     const [activeIndex, setActiveIndex] = useState(0);
     const [search, setSearch] = useState('');
     const [bulkRunning, setBulkRunning] = useState(false);
@@ -519,18 +518,8 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                                         <tr>
                                             <td colSpan={5} className="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Grand Total</td>
                                             <td className="px-3 py-2 text-sm font-bold text-gray-900">{activeQty.toLocaleString('en-US')}</td>
-                                            <td className="px-3 py-2">
-                                                <input
-                                                    type="text"
-                                                    value={totalDraft !== '' ? totalDraft : activeTotal.toFixed(2)}
-                                                    onFocus={() => setTotalDraft(activeTotal.toFixed(2))}
-                                                    onChange={handleTotalDraftChange}
-                                                    onBlur={applyActiveTotal}
-                                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }}
-                                                    disabled={active.matchedRows.length === 0}
-                                                    placeholder="0.00"
-                                                    className="w-28 px-2 py-1.5 border border-gray-300 rounded-md text-sm font-bold text-blue-600 text-right focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition disabled:bg-transparent disabled:border-transparent"
-                                                />
+                                            <td className="px-3 py-2 text-sm font-bold text-gray-900">
+                                                {activeTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </td>
                                         </tr>
                                     </tfoot>
