@@ -48,12 +48,7 @@ const BranchReportInlineTable = ({ rows = [], loading, hasDateFilter = false }) 
     ['Available Stock', 'availableStock', 'bg-emerald-50 font-semibold'],
   ];
 
-  const dateRangeCols = [
-    ['Total Stock (Date Range)', 'periodStock', 'bg-sky-50 font-semibold'],
-    ['Available Stock (Date Range)', 'periodAvailableStock', 'bg-emerald-100 font-semibold'],
-  ];
-
-  const cols = hasDateFilter ? [...baseCols, ...dateRangeCols] : baseCols;
+  const cols = baseCols;
 
   return (
     <div className="bg-white rounded-xl shadow overflow-hidden mb-6 table-panel">
