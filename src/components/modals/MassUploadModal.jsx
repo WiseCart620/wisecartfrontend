@@ -82,7 +82,18 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
     const runMatching = (branchPool) => {
         const results = parseMassUploadReports(rawText);
         const withMatches = results.map((r) => {
-            const matchedRows = r.items.map(item => ({ ...item, matched: matchProductToItem(item, productOptions) }));
+            const matchedRows = r.items.map(item => {
+                const qty = Number(item.qty) || 0;
+                const amount = Number(item.amount);
+                const exactUnitCost = (!Number.isNaN(amount) && qty > 0)
+                    ? amount / qty
+                    : (Number(item.unitCost) || 0);
+                return {
+                    ...item,
+                    unitCost: exactUnitCost,
+                    matched: matchProductToItem(item, productOptions),
+                };
+            });
             const guessedBranch = matchBranch(r.siteName, branchPool);
             return {
                 ...r,
