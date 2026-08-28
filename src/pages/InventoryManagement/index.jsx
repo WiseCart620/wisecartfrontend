@@ -23,7 +23,7 @@ import WarehouseFilterPanel from '../../components/filters/WarehouseFilterPanel'
 import BranchFilterPanel from '../../components/filters/BranchFilterPanel';
 import WarehouseReportInlineTable from '../../components/tables/InventoryManagement/WarehouseReportInlineTable';
 import BranchReportInlineTable from '../../components/tables/InventoryManagement/BranchReportInlineTable';
-import BranchStockTable from '../../components/tables/InventoryManagement/BranchStockTable';
+import BranchStockExportButton from '../../components/tables/InventoryManagement/BranchStockExportButton';
 import {
   filterProductSummaries,
   filterWarehouseStocks,
