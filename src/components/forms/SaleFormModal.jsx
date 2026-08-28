@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, Trash2, UploadCloud, Building2, Calendar, User, PackagePlus } from 'lucide-react';
+import { X, Trash2, UploadCloud, Building2, Calendar, User, PackagePlus, ClipboardPaste } from 'lucide-react';
 import SearchableDropdown from '../../components/common/SaleSearchableDropdown';
 import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
 import { makeStockKey, formatCurrency } from '../../utils/salesUtils';
@@ -49,6 +49,7 @@ const SaleFormModal = ({
   const [massUploadStockLoading, setMassUploadStockLoading] = useState(false);
   const [bulkPasteInput, setBulkPasteInput] = useState('');
   const [bulkPasteResult, setBulkPasteResult] = useState(null);
+  const [showPasteDropdown, setShowPasteDropdown] = useState(false);
 
   const handleMassUploadConfirm = async ({ branchId, month, year, items }) => {
     setShowMassUpload(false);
@@ -313,39 +314,41 @@ const SaleFormModal = ({
                 />
               </div>
 
-              <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
-                  Paste Consignment Report (Article / GTIN / Description / Qty / Unit Cost / Amount)
-                </label>
-                <textarea
-                  value={bulkPasteInput}
-                  onChange={(e) => setBulkPasteInput(e.target.value)}
-                  placeholder="Paste the full report block here, including header row — it will be parsed automatically."
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={applyBulkPaste}
-                  disabled={!bulkPasteInput.trim()}
-                  className="mt-2 px-4 py-2 text-xs font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Apply Amounts to Table
-                </button>
-                {bulkPasteResult && (
-                  <div className="mt-2 text-xs">
-                    {bulkPasteResult.matched.length > 0 && (
-                      <div className="text-green-700">✓ Matched and updated {bulkPasteResult.matched.length} row(s).</div>
-                    )}
-                    {bulkPasteResult.unmatched.length > 0 && (
-                      <div className="text-orange-600 mt-1">
-                        ⚠ {bulkPasteResult.unmatched.length} row(s) didn't match any product in this sale: {bulkPasteResult.unmatched.map(u => u.article).join(', ')}
-                      </div>
-                    )}
-                    {bulkPasteResult.error && <div className="text-red-600">{bulkPasteResult.error}</div>}
-                  </div>
-                )}
-              </div>
+              {formData.items.length === 0 && (
+                <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                  <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                    Paste Consignment Report (Article / GTIN / Description / Qty / Unit Cost / Amount)
+                  </label>
+                  <textarea
+                    value={bulkPasteInput}
+                    onChange={(e) => setBulkPasteInput(e.target.value)}
+                    placeholder="Paste the full report block here, including header row — it will be parsed automatically."
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={applyBulkPaste}
+                    disabled={!bulkPasteInput.trim()}
+                    className="mt-2 px-4 py-2 text-xs font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Apply Amounts to Table
+                  </button>
+                  {bulkPasteResult && (
+                    <div className="mt-2 text-xs">
+                      {bulkPasteResult.matched.length > 0 && (
+                        <div className="text-green-700">✓ Matched and updated {bulkPasteResult.matched.length} row(s).</div>
+                      )}
+                      {bulkPasteResult.unmatched.length > 0 && (
+                        <div className="text-orange-600 mt-1">
+                          ⚠ {bulkPasteResult.unmatched.length} row(s) didn't match any product in this sale: {bulkPasteResult.unmatched.map(u => u.article).join(', ')}
+                        </div>
+                      )}
+                      {bulkPasteResult.error && <div className="text-red-600">{bulkPasteResult.error}</div>}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {massUploadStockLoading ? (
                 <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
@@ -381,7 +384,58 @@ const SaleFormModal = ({
                     <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
                       <tr>
                         {['#', 'Product', 'Variation', 'SKU / UPC', 'Price', 'Stock', 'Qty', 'Amount', ''].map(h => (
-                          <th key={h} className="px-2 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wide truncate">{h}</th>
+                          h === 'Amount' ? (
+                            <th key={h} className="px-2 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wide truncate relative">
+                              <div className="flex items-center gap-1">
+                                <span>{h}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPasteDropdown(prev => !prev)}
+                                  title="Paste consignment report to set amounts"
+                                  className="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition normal-case"
+                                >
+                                  <ClipboardPaste size={12} />
+                                </button>
+                              </div>
+                              {showPasteDropdown && (
+                                <div className="absolute z-50 top-full right-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg p-3 normal-case">
+                                  <label className="block text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                                    Paste Report (Article / GTIN / Description / Qty / Unit Cost / Amount)
+                                  </label>
+                                  <textarea
+                                    value={bulkPasteInput}
+                                    onChange={(e) => setBulkPasteInput(e.target.value)}
+                                    placeholder="Paste the full report block here, including header row."
+                                    rows={4}
+                                    className="w-full px-2 py-1.5 border border-gray-300 rounded-md text-[11px] font-mono focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => { applyBulkPaste(); setShowPasteDropdown(false); }}
+                                    disabled={!bulkPasteInput.trim()}
+                                    className="mt-2 w-full px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                                  >
+                                    Apply Amounts to Table
+                                  </button>
+                                  {bulkPasteResult && (
+                                    <div className="mt-2 text-[11px]">
+                                      {bulkPasteResult.matched.length > 0 && (
+                                        <div className="text-green-700">✓ Matched {bulkPasteResult.matched.length} row(s).</div>
+                                      )}
+                                      {bulkPasteResult.unmatched.length > 0 && (
+                                        <div className="text-orange-600 mt-1">
+                                          ⚠ {bulkPasteResult.unmatched.length} unmatched: {bulkPasteResult.unmatched.map(u => u.article).join(', ')}
+                                        </div>
+                                      )}
+                                      {bulkPasteResult.error && <div className="text-red-600">{bulkPasteResult.error}</div>}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </th>
+                          ) : (
+                            <th key={h} className="px-2 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wide truncate">{h}</th>
+                          )
                         ))}
                       </tr>
                     </thead>
