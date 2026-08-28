@@ -16,6 +16,19 @@ const BranchStockTable = ({
 }) => {
   const [loadingId, setLoadingId] = useState(null);
 
+  const grandTotals = filteredBranchStocks.reduce((acc, s) => {
+    const available = s.availableQuantity != null
+      ? s.availableQuantity
+      : Math.max(0, (s.quantity || 0) - (s.reservedQuantity || 0));
+    acc.quantity += s.quantity || 0;
+    acc.delivered += s.deliveredQuantity || 0;
+    acc.totalSales += s.totalSales || 0;
+    acc.pendingDelivery += s.pendingDeliveries || 0;
+    acc.pendingSale += s.pendingSales || 0;
+    acc.available += available;
+    return acc;
+  }, { quantity: 0, delivered: 0, totalSales: 0, pendingDelivery: 0, pendingSale: 0, available: 0 });
+
   const handleView = async (stock) => {
     setLoadingId(stock.id);
     try {
@@ -205,6 +218,36 @@ const BranchStockTable = ({
               })
             )}
           </tbody>
+          {!isLoading && filteredBranchStocks.length > 0 && (
+            <tfoot>
+              <tr className="bg-gray-100 border-t-2 border-gray-300">
+                <td colSpan={3} className="px-4 py-3">
+                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                    Grand Total ({filteredBranchStocks.length.toLocaleString('en-US')} rows)
+                  </span>
+                </td>
+                <td className="px-3 py-3 text-center">
+                  <span className="text-sm font-bold text-gray-800">{grandTotals.quantity.toLocaleString('en-US')}</span>
+                </td>
+                <td className="px-3 py-3 text-center">
+                  <span className="text-sm font-bold text-teal-800">{grandTotals.delivered.toLocaleString('en-US')}</span>
+                </td>
+                <td className="px-3 py-3 text-center">
+                  <span className="text-sm font-bold text-pink-800">{grandTotals.totalSales.toLocaleString('en-US')}</span>
+                </td>
+                <td className="px-3 py-3 text-center">
+                  <span className="text-sm font-bold text-orange-800">{grandTotals.pendingDelivery.toLocaleString('en-US')}</span>
+                </td>
+                <td className="px-3 py-3 text-center">
+                  <span className="text-sm font-bold text-purple-800">{grandTotals.pendingSale.toLocaleString('en-US')}</span>
+                </td>
+                <td className="px-3 py-3 text-center">
+                  <span className="text-sm font-bold text-blue-800">{grandTotals.available.toLocaleString('en-US')}</span>
+                </td>
+                <td colSpan={2} />
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
       {filteredBranchStocks.length > 0 && (

@@ -26,8 +26,6 @@ const BranchSummaryReportModal = ({ isOpen, onClose, data = [], filters = {} }) 
         return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
     }, [data]);
 
-    // Branch options are scoped to the currently selected company, so switching
-    // company doesn't leave a stale/invalid branch selected.
     const branchOptions = useMemo(() => {
         const seen = new Map();
         data.forEach(r => {

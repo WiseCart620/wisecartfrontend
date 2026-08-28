@@ -23,6 +23,7 @@ import WarehouseFilterPanel from '../../components/filters/WarehouseFilterPanel'
 import BranchFilterPanel from '../../components/filters/BranchFilterPanel';
 import WarehouseReportInlineTable from '../../components/tables/InventoryManagement/WarehouseReportInlineTable';
 import BranchReportInlineTable from '../../components/tables/InventoryManagement/BranchReportInlineTable';
+import BranchStockTable from '../../components/tables/InventoryManagement/BranchStockTable';
 import {
   filterProductSummaries,
   filterWarehouseStocks,
@@ -221,13 +222,25 @@ const InventoryManagement = () => {
   );
 
   const branchStocksArray = stripRedundantBaseRows(Array.isArray(branchStocks) ? branchStocks : []);
-  const filteredBranchStocks = filterBranchStocks(
+  const filteredBranchStocksAll = filterBranchStocks(
     branchStocksArray,
     stockSearchTerm,
     branchFilters.filters,
     branches,
     products
   );
+  const filteredBranchStocks = filteredBranchStocksAll.filter(stock => {
+    const totalStock = stock.quantity || 0;
+    const delivered = stock.deliveredQuantity || 0;
+    const totalSales = stock.totalSales || 0;
+    const pendingDelivery = stock.pendingDeliveries || 0;
+    const pendingSale = stock.pendingSales || 0;
+    const available = stock.availableQuantity != null
+      ? stock.availableQuantity
+      : Math.max(0, totalStock - (stock.reservedQuantity || 0));
+    return totalStock !== 0 || delivered !== 0 || totalSales !== 0 ||
+      pendingDelivery !== 0 || pendingSale !== 0 || available !== 0;
+  });
 
   const currentProductSummaries = productPagination.getPageItems(filteredProductSummaries);
   const currentWarehouseStocks = stockPagination.getPageItems(filteredWarehouseStocks);
@@ -603,6 +616,7 @@ const InventoryManagement = () => {
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              <BranchStockExportButton data={filteredBranchStocks} />
             </div>
 
             <BranchFilterPanel
