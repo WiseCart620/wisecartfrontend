@@ -307,12 +307,12 @@ const Dashboard = () => {
         {
           label: 'Active Revenue',
           data: data.map(d => d.activeRevenue),
-          borderColor: '#10B981',
-          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          borderColor: '#2563EB',
+          backgroundColor: 'rgba(37, 99, 235, 0.08)',
           borderWidth: 3,
           tension: 0.4,
           fill: true,
-          pointBackgroundColor: '#10B981',
+          pointBackgroundColor: '#2563EB',
           pointBorderColor: '#ffffff',
           pointBorderWidth: 2,
           pointRadius: 4,
@@ -1055,7 +1055,7 @@ const Dashboard = () => {
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
                     <div>
                       <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 flex items-center gap-2">
-                        <Package className="text-purple-600" size={16} />
+                        <Package className="text-blue-600" size={16} />
                         Product Sales ({selectedYear})
                       </h3>
                       <p className="text-xs text-gray-500 mt-1 max-w-[250px] sm:max-w-none truncate">
@@ -1185,7 +1185,7 @@ const Dashboard = () => {
                           {selectedCategoryForMonthly !== 'all' && (
                             <button
                               onClick={() => setSelectedCategoryForMonthly('all')}
-                              className="mt-3 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-xs"
+                              className="mt-3 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs"
                             >
                               View All Categories
                             </button>
@@ -1197,11 +1197,11 @@ const Dashboard = () => {
                     const topProductsForChart = productStats.slice(0, 5);
 
                     const colors = [
-                      { border: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.1)' },
-                      { border: '#EC4899', bg: 'rgba(236, 72, 153, 0.1)' },
-                      { border: '#F59E0B', bg: 'rgba(245, 158, 11, 0.1)' },
-                      { border: '#10B981', bg: 'rgba(16, 185, 129, 0.1)' },
+                      { border: '#1D4ED8', bg: 'rgba(29, 78, 216, 0.1)' },
+                      { border: '#2563EB', bg: 'rgba(37, 99, 235, 0.1)' },
                       { border: '#3B82F6', bg: 'rgba(59, 130, 246, 0.1)' },
+                      { border: '#60A5FA', bg: 'rgba(96, 165, 250, 0.1)' },
+                      { border: '#93C5FD', bg: 'rgba(147, 197, 253, 0.1)' },
                     ];
 
                     const productChartData = {
@@ -1228,7 +1228,7 @@ const Dashboard = () => {
                         <div className="mt-6 pt-6 border-t border-gray-200">
                           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
                             <h4 className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center gap-2">
-                              <Target size={14} className="text-purple-600" />
+                              <Target size={14} className="text-blue-600" />
                               Top Products
                               {selectedCategoryForMonthly !== 'all' && (
                                 <span className="text-xs font-normal text-purple-600">- {selectedCategoryForMonthly}</span>
@@ -1240,8 +1240,7 @@ const Dashboard = () => {
                                 <select
                                   value={selectedCategoryForMonthly}
                                   onChange={(e) => setSelectedCategoryForMonthly(e.target.value)}
-                                  className="w-full sm:w-auto px-3 py-1.5 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 appearance-none pr-8"
-                                >
+                                  className="w-full sm:w-auto px-3 py-1.5 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8"                                >
                                   <option value="all">All Categories</option>
                                   {productCategories.map((category, idx) => (
                                     <option key={idx} value={category}>
@@ -1263,12 +1262,11 @@ const Dashboard = () => {
                               return (
                                 <div
                                   key={product.id}
-                                  className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all"
-                                >
+                                  className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all"                                >
                                   <div className="flex-shrink-0">
-                                    <span className={`flex items-center justify-center w-7 h-7 rounded-full font-bold text-xs ${idx === 0 ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-400' :
-                                      idx === 1 ? 'bg-gray-200 text-gray-600 border-2 border-gray-400' :
-                                        idx === 2 ? 'bg-orange-100 text-orange-700 border-2 border-orange-400' :
+                                    <span className={`flex items-center justify-center w-7 h-7 rounded-full font-bold text-xs ${idx === 0 ? 'bg-blue-100 text-blue-700 border-2 border-blue-400' :
+                                      idx === 1 ? 'bg-blue-50 text-blue-600 border-2 border-blue-300' :
+                                        idx === 2 ? 'bg-gray-100 text-gray-600 border-2 border-gray-300' :
                                           'bg-gray-100 text-gray-500'
                                       }`}>
                                       #{idx + 1}
@@ -1279,7 +1277,7 @@ const Dashboard = () => {
                                     <p className="font-semibold text-gray-900 text-sm truncate">{product.name}</p>
                                     <p className="text-xs text-gray-500">{product.salesCount} transactions</p>
                                     {product.category && product.category !== 'Uncategorized' && (
-                                      <span className="inline-flex items-center px-1.5 py-0.5 mt-1 rounded text-xs bg-purple-100 text-purple-600">
+                                      <span className="inline-flex items-center px-1.5 py-0.5 mt-1 rounded text-xs bg-blue-100 text-blue-600">
                                         {product.category}
                                       </span>
                                     )}
@@ -1293,7 +1291,7 @@ const Dashboard = () => {
 
                                     <div className="text-left sm:text-right">
                                       <p className="text-xs text-gray-500">Qty</p>
-                                      <p className="font-bold text-purple-600 text-sm">{formatNumber(product.quantity)}</p>
+                                      <p className="font-bold text-indigo-600 text-sm">{formatNumber(product.quantity)}</p>
                                     </div>
 
                                     <div className="flex-1 sm:w-24">
@@ -1341,7 +1339,7 @@ const Dashboard = () => {
                                           <p className="font-semibold text-gray-900 text-sm truncate">{product.name}</p>
                                           <p className="text-xs text-gray-500">{product.salesCount} transactions</p>
                                           {product.category && product.category !== 'Uncategorized' && (
-                                            <span className="inline-flex items-center px-1.5 py-0.5 mt-1 rounded text-xs bg-purple-100 text-purple-600">
+                                            <span className="inline-flex items-center px-1.5 py-0.5 mt-1 rounded text-xs bg-blue-100 text-blue-600">
                                               {product.category}
                                             </span>
                                           )}
@@ -1364,7 +1362,7 @@ const Dashboard = () => {
                                             </div>
                                             <div className="w-full bg-gray-200 rounded-full h-1.5">
                                               <div
-                                                className="bg-gradient-to-r from-purple-500 to-purple-600 h-1.5 rounded-full transition-all duration-500"
+                                                className="bg-gradient-to-r from-blue-400 to-blue-600 h-1.5 rounded-full transition-all duration-500"
                                                 style={{ width: `${percentage}%` }}
                                               ></div>
                                             </div>
@@ -1379,10 +1377,10 @@ const Dashboard = () => {
                           </div>
 
                           {productStats.length > 0 && (
-                            <div className="mt-4 pt-4 border-t border-gray-200 bg-purple-50 rounded-lg p-3 sm:p-4">
+                            <div className="mt-4 pt-4 border-t border-gray-200 bg-blue-50 rounded-lg p-3 sm:p-4">
                               {selectedCategoryForMonthly !== 'all' && (
                                 <div className="mb-2 text-center">
-                                  <span className="text-xs font-semibold text-purple-700">
+                                  <span className="text-xs font-semibold text-blue-700">
                                     Showing: {selectedCategoryForMonthly}
                                   </span>
                                 </div>
@@ -1390,7 +1388,7 @@ const Dashboard = () => {
                               <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
                                 <div>
                                   <p className="text-xs text-gray-600">Products</p>
-                                  <p className="text-sm sm:text-base md:text-lg font-bold text-purple-700">{productStats.length}</p>
+                                  <p className="text-sm sm:text-base md:text-lg font-bold text-blue-700">{productStats.length}</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-600">Sales</p>

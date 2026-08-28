@@ -23,16 +23,16 @@ const BusinessInsights = ({ insights, showInsights, setShowInsights }) => {
         {insights.map((insight, idx) => {
           const Icon = insight.icon;
           const typeColors = {
-            positive: 'bg-white border-gray-200 text-green-700',
-            warning: 'bg-white border-gray-200 text-amber-700',
+            positive: 'bg-white border-gray-200 text-blue-700',
+            warning: 'bg-white border-gray-200 text-gray-700',
             info: 'bg-white border-gray-200 text-gray-700',
           };
 
           return (
             <div key={idx} className={`p-4 rounded-lg border ${typeColors[insight.type]}`}>
               <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-lg ${insight.type === 'positive' ? 'bg-green-50' :
-                  insight.type === 'warning' ? 'bg-amber-50' : 'bg-gray-100'
+                <div className={`p-2 rounded-lg ${insight.type === 'positive' ? 'bg-blue-50' :
+                  insight.type === 'warning' ? 'bg-gray-100' : 'bg-gray-100'
                   }`}>
                   <Icon size={20} />
                 </div>
