@@ -172,7 +172,7 @@ export const buildSaleItemsFromMatches = (matchedRows) =>
                 productId: r.matched.option.parentProductId,
                 variationId: r.matched.option.variationId || null,
                 quantity: r.qty,
-                unitPrice: exactPrice > 0 ? exactPrice.toFixed(2) : null,
+                unitPrice: exactPrice > 0 ? String(exactPrice) : null,
                 unitPriceExact: exactPrice > 0 ? exactPrice : undefined,
             };
         });
