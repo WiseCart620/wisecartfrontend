@@ -42,17 +42,19 @@ const normalizeDeliveries = (data) =>
     branchName: d.branch?.branchName ?? d.branchName,
     companyId: d.company?.id ?? d.companyId,
     companyName: d.company?.companyName ?? d.companyName,
-    warehouses: d.items
-      ? [...new Map(
-        d.items
-          .filter(item => item.warehouse)
-          .map(item => [item.warehouse.id, {
-            id: item.warehouse.id,
-            warehouseName: item.warehouse.warehouseName,
-            warehouseCode: item.warehouse.warehouseCode
-          }])
-      ).values()]
-      : d.warehouses || [],
+    warehouses: d.warehouses && d.warehouses.length > 0
+      ? d.warehouses
+      : (d.items
+        ? [...new Map(
+          d.items
+            .filter(item => item.warehouse)
+            .map(item => [item.warehouse.id, {
+              id: item.warehouse.id,
+              warehouseName: item.warehouse.warehouseName,
+              warehouseCode: item.warehouse.warehouseCode
+            }])
+        ).values()]
+        : []),
     totalPreparedQty: d.items
       ? d.items.reduce((sum, item) => sum + (item.preparedQty || 0), 0)
       : d.totalPreparedQty || 0,
