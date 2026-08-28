@@ -134,10 +134,11 @@ const SaleFormModal = ({
         const found = matched.find(m => m.item === it);
         if (!found) return it;
         const exactPrice = found.amount / found.qty;
+        const truncatedPrice = Math.trunc(exactPrice * 100) / 100;
         return {
           ...it,
-          unitPrice: String(exactPrice),
-          unitPriceExact: exactPrice,
+          unitPrice: truncatedPrice.toFixed(2),
+          unitPriceExact: exactPrice, // full precision kept for Amount math
           pastedQtyMismatch: found.qty !== it.quantity,
         };
       }),

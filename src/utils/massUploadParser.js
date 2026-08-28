@@ -168,11 +168,12 @@ export const buildSaleItemsFromMatches = (matchedRows) =>
         .filter(r => r.matched)
         .map(r => {
             const exactPrice = Number(r.unitCost) || 0;
+            const truncatedPrice = Math.trunc(exactPrice * 100) / 100;
             return {
                 productId: r.matched.option.parentProductId,
                 variationId: r.matched.option.variationId || null,
                 quantity: r.qty,
-                unitPrice: exactPrice > 0 ? String(exactPrice) : null,
+                unitPrice: exactPrice > 0 ? truncatedPrice.toFixed(2) : null,
                 unitPriceExact: exactPrice > 0 ? exactPrice : undefined,
             };
         });
