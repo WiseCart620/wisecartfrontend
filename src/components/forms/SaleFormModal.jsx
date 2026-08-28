@@ -135,7 +135,6 @@ const SaleFormModal = ({
         const exactPrice = found.amount / found.qty;
         return {
           ...it,
-          unitPrice: exactPrice.toFixed(2),
           unitPriceExact: exactPrice,
           pastedQtyMismatch: found.qty !== it.quantity,
         };
