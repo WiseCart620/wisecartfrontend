@@ -47,7 +47,8 @@ const SaleFormModal = ({
   const [showEncodedByDropdown, setShowEncodedByDropdown] = useState(false);
   const [showMassUpload, setShowMassUpload] = useState(false);
   const [massUploadStockLoading, setMassUploadStockLoading] = useState(false);
-  const [grandTotalInput, setGrandTotalInput] = useState('');
+  const [bulkPasteInput, setBulkPasteInput] = useState('');
+  const [bulkPasteResult, setBulkPasteResult] = useState(null);
 
   const handleMassUploadConfirm = async ({ branchId, month, year, items }) => {
     setShowMassUpload(false);
@@ -83,71 +84,66 @@ const SaleFormModal = ({
   const itemsForTotals = hasActiveProductFilter ? visibleItemsWithIndex.map(v => v.item) : formData.items;
 
   const grandQty = itemsForTotals.reduce((sum, item) => sum + (item.quantity || 0), 0);
-  const handleGrandTotalInputChange = (e) => {
-    const val = e.target.value.replace(/[^0-9.]/g, '');
-    setGrandTotalInput(val);
-  };
+  const normalizeCode = (str) => (str || '').replace(/\D/g, '').replace(/^0+/, '');
 
-  const applyGrandTotal = () => {
-    const target = parseFloat(grandTotalInput);
-    if (Number.isNaN(target) || target < 0 || grandTotal <= 0) {
-      setGrandTotalInput('');
-      return;
+  const applyBulkPaste = () => {
+    const rowPattern = /(\d{6,})\s+(S?\d{6,})\s+(.+?)\s+(\d+)\s+(\d+\.\d{2})\s+([\d,]+\.\d{2})/g;
+
+    const matched = [];
+    const unmatched = [];
+    let match;
+
+    while ((match = rowPattern.exec(bulkPasteInput)) !== null) {
+      const [, article, gtin, description, qtyStr, , amountStr] = match;
+      const qty = parseInt(qtyStr, 10);
+      const amount = parseFloat(amountStr.replace(/,/g, ''));
+      if (!qty || Number.isNaN(amount)) continue;
+
+      const articleNorm = normalizeCode(article);
+      const gtinNorm = normalizeCode(gtin);
+
+      const item = formData.items.find(it => {
+        const opt = Array.isArray(productOptions)
+          ? productOptions.find(o =>
+            o.parentProductId === it.productId &&
+            (o.variationId ?? null) === (it.variationId ?? null)
+          )
+          : null;
+        if (!opt) return false;
+        const optSku = normalizeCode(opt.companySku || opt.sku);
+        const optUpc = normalizeCode(opt.upc);
+        return optSku === articleNorm || optUpc === gtinNorm || optSku === gtinNorm || optUpc === articleNorm;
+      });
+
+      if (item) {
+        matched.push({ article, description: description.trim(), qty, amount, item });
+      } else {
+        unmatched.push({ article, description: description.trim(), qty, amount });
+      }
     }
 
-    const keyOf = (item) => `${item.productId}_${item.variationId ?? 'base'}`;
-
-    // Step 1: natural amount per row = current price * qty
-    const naturalAmounts = {};
-    let naturalTotal = 0;
-    itemsForTotals.forEach(item => {
-      const opt = Array.isArray(productOptions)
-        ? productOptions.find(o =>
-          o.parentProductId === item.productId &&
-          (o.variationId ?? null) === (item.variationId ?? null)
-        )
-        : null;
-      const currentPrice = (item.unitPriceExact !== undefined && item.unitPriceExact !== null)
-        ? item.unitPriceExact
-        : ((item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== '')
-          ? Number(item.unitPrice)
-          : (opt?.price ?? 0));
-      const amount = currentPrice * (item.quantity || 0);
-      naturalAmounts[keyOf(item)] = amount;
-      naturalTotal += amount;
-    });
-
-    if (naturalTotal <= 0) {
-      setGrandTotalInput('');
+    if (matched.length === 0) {
+      setBulkPasteResult({ matched: [], unmatched, error: 'No rows matched products in this sale.' });
       return;
     }
 
     setFormData(prev => ({
       ...prev,
-      items: prev.items.map(item => {
-        const key = keyOf(item);
-        if (!(key in naturalAmounts) || !item.quantity) return item;
-
-        // Step 2: distribute target across rows, proportional to natural amount
-        const distributedAmount = target * (naturalAmounts[key] / naturalTotal);
-
-        // Step 3: derive price from amount ÷ qty
-        let finalPrice = distributedAmount / item.quantity;
-
-        const check = finalPrice * item.quantity;
-        if (Math.abs(check - distributedAmount) > 0.0000001) {
-          finalPrice = distributedAmount / item.quantity;
-        }
-
+      items: prev.items.map(it => {
+        const found = matched.find(m => m.item === it);
+        if (!found) return it;
+        const exactPrice = found.amount / found.qty;
         return {
-          ...item,
-          unitPrice: finalPrice.toFixed(2),   // rounded for the input display
-          unitPriceExact: finalPrice,          // exact value — THIS is what amount/grand total math uses
+          ...it,
+          unitPrice: exactPrice.toFixed(2),
+          unitPriceExact: exactPrice,
+          pastedQtyMismatch: found.qty !== it.quantity,
         };
       }),
     }));
 
-    setGrandTotalInput('');
+    setBulkPasteResult({ matched, unmatched, error: null });
+    setBulkPasteInput('');
   };
 
   const grandTotal = itemsForTotals.reduce((sum, item) => {
@@ -318,6 +314,40 @@ const SaleFormModal = ({
                 />
               </div>
 
+              <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                  Paste Consignment Report (Article / GTIN / Description / Qty / Unit Cost / Amount)
+                </label>
+                <textarea
+                  value={bulkPasteInput}
+                  onChange={(e) => setBulkPasteInput(e.target.value)}
+                  placeholder="Paste the full report block here, including header row — it will be parsed automatically."
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={applyBulkPaste}
+                  disabled={!bulkPasteInput.trim()}
+                  className="mt-2 px-4 py-2 text-xs font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Apply Amounts to Table
+                </button>
+                {bulkPasteResult && (
+                  <div className="mt-2 text-xs">
+                    {bulkPasteResult.matched.length > 0 && (
+                      <div className="text-green-700">✓ Matched and updated {bulkPasteResult.matched.length} row(s).</div>
+                    )}
+                    {bulkPasteResult.unmatched.length > 0 && (
+                      <div className="text-orange-600 mt-1">
+                        ⚠ {bulkPasteResult.unmatched.length} row(s) didn't match any product in this sale: {bulkPasteResult.unmatched.map(u => u.article).join(', ')}
+                      </div>
+                    )}
+                    {bulkPasteResult.error && <div className="text-red-600">{bulkPasteResult.error}</div>}
+                  </div>
+                )}
+              </div>
+
               {massUploadStockLoading ? (
                 <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
                   <div className="flex items-center justify-center gap-2 text-blue-600">
@@ -474,17 +504,8 @@ const SaleFormModal = ({
                         <td className="px-2 py-2 text-center text-xs font-bold text-gray-900">
                           {grandQty.toLocaleString('en-US')}
                         </td>
-                        <td className="px-2 py-2 text-right">
-                          <input
-                            type="text"
-                            value={grandTotalInput !== '' ? grandTotalInput : grandTotal.toFixed(2)}
-                            onFocus={() => setGrandTotalInput(grandTotal.toFixed(2))}
-                            onChange={handleGrandTotalInputChange}
-                            onBlur={applyGrandTotal}
-                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }}
-                            disabled={formData.items.length === 0}
-                            className="w-full min-w-0 px-1.5 py-1 border border-gray-300 rounded-md text-xs font-bold text-blue-600 text-right focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition disabled:bg-transparent disabled:border-transparent"
-                          />
+                        <td className="px-2 py-2 text-right text-xs font-bold text-gray-900">
+                          ₱{grandTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                         <td />
                       </tr>
