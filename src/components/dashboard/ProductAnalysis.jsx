@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { BarChart2, Package, Users, Building, ChevronDown, ChevronRight, X, Target, BarChart, TrendingUpIcon } from 'lucide-react';
 import { Bar } from 'react-chartjs-2';
 import { formatCurrency, formatNumber } from '../../utils/currencyUtils';
-import PesoIcon from '../common/PesoIcon';
 
 const ProductAnalysis = ({
   performanceData,

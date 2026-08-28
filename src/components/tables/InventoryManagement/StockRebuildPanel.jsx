@@ -1060,9 +1060,10 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                             from source records. This cannot be undone.
                         </p>
                         {totalOperations > 5000 && (
-                            <p className="text-xs text-red-600 font-medium mb-5 bg-red-50 border border-red-200 rounded p-2">
-                                ⚠️ This is a very large batch ({totalOperations.toLocaleString()} operations).
-                                It may take a long time and the live results table will be summarized instead of row-by-row to protect browser performance.
+                            <p className="text-xs text-amber-700 font-medium mb-5 bg-amber-50 border border-amber-200 rounded p-2">
+                                ℹ️ This is a large batch ({totalOperations.toLocaleString()} operations). It will run safely as one background
+                                job that automatically self-paces — no action needed from you. It may take a while; you can close this tab or
+                                reload anytime and progress will keep going and pick back up.
                             </p>
                         )}
                         <div className="flex justify-end gap-2">
