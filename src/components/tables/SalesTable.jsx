@@ -41,8 +41,8 @@ const SalesTable = ({
             <col className="w-[16%]" />
             <col className="w-[11%]" />
             <col className="w-[13%]" />
-            <col className="w-[9%]" />
-            <col className="w-[13%]" />
+            <col className="w-[10%]" />
+            <col className="w-[12%]" />
             <col className="w-[9%]" />
             <col className="w-[10%]" />
           </colgroup>
@@ -53,8 +53,8 @@ const SalesTable = ({
               <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider truncate">Company</th>
               <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Period</th>
               <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider truncate">Encoded By</th>
-              <th className="pl-3 pr-6 py-3 text-right text-[11px] font-medium text-gray-500 uppercase tracking-wider">Qty</th>
-              <th className="pl-3 pr-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Total</th>
+              <th className="pl-3 pr-10 py-3 text-right text-[11px] font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+              <th className="pl-6 pr-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Total</th>
               <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Status</th>
               <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider no-print">Actions</th>
             </tr>
@@ -91,8 +91,8 @@ const SalesTable = ({
                   <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">{sale.company.companyName}</td>
                   <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">{months[sale.month - 1]} {sale.year}</td>
                   <td className="px-3 py-3 truncate text-xs text-gray-900">{sale.createdBy || sale.generatedBy || '-'}</td>
-                  <td className="pl-3 pr-6 py-3 whitespace-nowrap text-xs text-gray-700 text-right">{getRowTotals(sale).qty.toLocaleString()}</td>
-                  <td className="pl-3 pr-3 py-3 whitespace-nowrap text-xs font-semibold text-gray-900">{formatCurrency(getRowTotals(sale).amount)}</td>
+                  <td className="pl-3 pr-10 py-3 whitespace-nowrap text-xs text-gray-700 text-right">{getRowTotals(sale).qty.toLocaleString()}</td>
+                  <td className="pl-6 pr-3 py-3 whitespace-nowrap text-xs font-semibold text-gray-900">{formatCurrency(getRowTotals(sale).amount)}</td>
                   <td className="px-3 py-3 whitespace-nowrap">
                     <span className={`px-2 py-1 inline-flex text-[11px] leading-5 font-semibold rounded-full ${sale.status === 'INVOICED' ? 'bg-green-100 text-green-800' :
                       sale.status === 'CONFIRMED' ? 'bg-blue-100 text-blue-800' :
