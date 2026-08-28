@@ -194,7 +194,7 @@ const InventoryManagement = () => {
     productSearchTerm,
     showVariationFilter
   );
-  const filteredProductSummaries = selectedProductKeys.length > 0
+  const filteredProductSummariesUnsorted = selectedProductKeys.length > 0
     ? baseFilteredSummaries.filter(p => {
       const key = p.isVariation || p.variationId
         ? `${p.productId}_${p.variationId}`
@@ -202,6 +202,14 @@ const InventoryManagement = () => {
       return selectedProductKeys.includes(key);
     })
     : baseFilteredSummaries;
+
+  const filteredProductSummaries = [...filteredProductSummariesUnsorted].sort((a, b) => {
+    const nameCompare = (a.productName || '').localeCompare(b.productName || '', undefined, { sensitivity: 'base' });
+    if (nameCompare !== 0) return nameCompare;
+    const varA = a.variationName || a.combinationDisplay || '';
+    const varB = b.variationName || b.combinationDisplay || '';
+    return varA.localeCompare(varB, undefined, { sensitivity: 'base' });
+  });
 
   const stripRedundantBaseRows = (stocks) => {
     const productIdsWithVariationRows = new Set(
