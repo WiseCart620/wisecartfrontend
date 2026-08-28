@@ -34,16 +34,27 @@ const SalesTable = ({
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden table-panel">
       <div className="overflow-x-auto table-fit">
-        <table className="w-full min-w-[680px] sales-print-table">
+        <table className="w-full min-w-[680px] sales-print-table table-fixed">
+          <colgroup>
+            <col className="w-10" />
+            <col className="w-[20%]" />
+            <col className="w-[18%]" />
+            <col className="w-[12%]" />
+            <col className="w-[14%]" />
+            <col className="w-[8%]" />
+            <col className="w-[12%]" />
+            <col className="w-[10%]" />
+            <col className="w-[10%]" />
+          </colgroup>
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-3 py-3 text-center text-[11px] font-medium text-gray-500 uppercase tracking-wider w-10">#</th>
+              <th className="px-3 py-3 text-center text-[11px] font-medium text-gray-500 uppercase tracking-wider">#</th>
               <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Branch</th>
-              <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Company</th>
+              <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider truncate">Company</th>
               <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Period</th>
-              <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Encoded By</th>
-              <th className="px-3 py-3 text-right text-[11px] font-medium text-gray-500 uppercase tracking-wider">Qty</th>
-              <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Total</th>
+              <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider truncate">Encoded By</th>
+              <th className="px-2 py-3 text-right text-[11px] font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+              <th className="px-2 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Total</th>
               <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Status</th>
               <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider no-print">Actions</th>
             </tr>
@@ -79,9 +90,9 @@ const SalesTable = ({
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">{sale.company.companyName}</td>
                   <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">{months[sale.month - 1]} {sale.year}</td>
-                  <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">{sale.createdBy || sale.generatedBy || '-'}</td>
-                  <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-700 text-right">{getRowTotals(sale).qty.toLocaleString()}</td>
-                  <td className="px-3 py-3 whitespace-nowrap text-xs font-semibold text-gray-900">{formatCurrency(getRowTotals(sale).amount)}</td>
+                  <td className="px-3 py-3 truncate text-xs text-gray-900">{sale.createdBy || sale.generatedBy || '-'}</td>
+                  <td className="px-2 py-3 whitespace-nowrap text-xs text-gray-700 text-right">{getRowTotals(sale).qty.toLocaleString()}</td>
+                  <td className="px-2 py-3 whitespace-nowrap text-xs font-semibold text-gray-900">{formatCurrency(getRowTotals(sale).amount)}</td>
                   <td className="px-3 py-3 whitespace-nowrap">
                     <span className={`px-2 py-1 inline-flex text-[11px] leading-5 font-semibold rounded-full ${sale.status === 'INVOICED' ? 'bg-green-100 text-green-800' :
                       sale.status === 'CONFIRMED' ? 'bg-blue-100 text-blue-800' :
