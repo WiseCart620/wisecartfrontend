@@ -95,30 +95,46 @@ const SaleFormModal = ({
       return;
     }
 
-    // scale is exact, so scaling every item's price by it (without rounding)
-    // makes sum(price * qty) land on `target` exactly — no remainder-patching needed.
-    const scale = target / grandTotal;
+    const keyOf = (item) => `${item.productId}_${item.variationId ?? 'base'}`;
+
+    const naturalAmounts = {};
+    let naturalTotal = 0;
+    itemsForTotals.forEach(item => {
+      const opt = Array.isArray(productOptions)
+        ? productOptions.find(o =>
+          o.parentProductId === item.productId &&
+          (o.variationId ?? null) === (item.variationId ?? null)
+        )
+        : null;
+      const currentPrice = (item.unitPriceExact !== undefined && item.unitPriceExact !== null)
+        ? item.unitPriceExact
+        : ((item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== '')
+          ? Number(item.unitPrice)
+          : (opt?.price ?? 0));
+      const amount = currentPrice * (item.quantity || 0);
+      naturalAmounts[keyOf(item)] = amount;
+      naturalTotal += amount;
+    });
+
+    if (naturalTotal <= 0) {
+      setGrandTotalInput('');
+      return;
+    }
+
 
     setFormData(prev => ({
       ...prev,
       items: prev.items.map(item => {
-        const opt = Array.isArray(productOptions)
-          ? productOptions.find(o =>
-            o.parentProductId === item.productId &&
-            (o.variationId ?? null) === (item.variationId ?? null)
-          )
-          : null;
-        const currentPrice = (item.unitPriceExact !== undefined && item.unitPriceExact !== null)
-          ? item.unitPriceExact
-          : ((item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== '')
-            ? Number(item.unitPrice)
-            : (opt?.price ?? 0));
+        const key = keyOf(item);
+        if (!(key in naturalAmounts) || !item.quantity) return item;
 
-        const exactPrice = currentPrice * scale; // full precision, kept unrounded
+        const distributedAmount = target * (naturalAmounts[key] / naturalTotal);
+        const exactPrice = distributedAmount / item.quantity;
+
         return {
           ...item,
-          unitPrice: exactPrice.toFixed(2), // rounded value shown in the editable input
-          unitPriceExact: exactPrice,       // full-precision value used for Amount/Grand Total math
+          unitPrice: exactPrice.toFixed(2),
+          unitPriceExact: exactPrice,
         };
       }),
     }));
