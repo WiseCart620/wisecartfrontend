@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { parseDate } from '../../utils/dateUtils';
 import Pagination from '../../components/common/Pagination';
+import * as XLSX from 'xlsx';
 
 const ProductTransactionsModal = ({
     product,
@@ -401,6 +402,90 @@ const ProductTransactionsModal = ({
         setCurrentPage(1);
     };
 
+    const handleExportExcel = () => {
+        if (filteredTransactions.length === 0) {
+            toast.error('No transactions to export');
+            return;
+        }
+
+        const rows = filteredTransactions.map((t) => {
+            const { userEnteredDate, systemDate } = getTransactionDates(t);
+            const qtyInfo = getQuantityDisplayLocal(t);
+            const type = getTransferDirection(t);
+            const isDeleted = t.isDeleted === true || t.action === 'DELETED';
+            const fromLoc = t.fromWarehouse?.warehouseName || t.fromBranch?.branchName || '';
+            const toLoc = t.toWarehouse?.warehouseName || t.toBranch?.branchName || '';
+
+            return {
+                [getUserDateLabel(t)]: userEnteredDate ? formatDate(userEnteredDate) : '',
+                'System Timestamp': systemDate ? formatDate(systemDate) : '',
+                'Type': type.replace('_', ' '),
+                'From': fromLoc,
+                'To': toLoc,
+                'Quantity': `${qtyInfo.sign}${qtyInfo.quantity}`,
+                'Reference': t.referenceNumber || `INV-${t.referenceId || t.id}`,
+                'Action': isDeleted ? 'DELETED' : (t.action || 'PROCESS'),
+                'Remarks': t.remarks || '',
+            };
+        });
+
+        const ws = XLSX.utils.json_to_sheet(rows);
+        ws['!cols'] = [
+            { wch: 20 }, { wch: 20 }, { wch: 14 }, { wch: 20 }, { wch: 20 },
+            { wch: 12 }, { wch: 20 }, { wch: 12 }, { wch: 40 },
+        ];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+
+        const productLabel = (product?.productName || 'Product').replace(/[^a-z0-9]+/gi, '_');
+        const fileName = `Transactions_${productLabel}_${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+        toast.success('Exported to Excel');
+    };
+
+    const handleExportCsv = () => {
+        if (filteredTransactions.length === 0) {
+            toast.error('No transactions to export');
+            return;
+        }
+
+        const rows = filteredTransactions.map((t) => {
+            const { userEnteredDate, systemDate } = getTransactionDates(t);
+            const qtyInfo = getQuantityDisplayLocal(t);
+            const type = getTransferDirection(t);
+            const isDeleted = t.isDeleted === true || t.action === 'DELETED';
+            const fromLoc = t.fromWarehouse?.warehouseName || t.fromBranch?.branchName || '';
+            const toLoc = t.toWarehouse?.warehouseName || t.toBranch?.branchName || '';
+
+            return {
+                [getUserDateLabel(t)]: userEnteredDate ? formatDate(userEnteredDate) : '',
+                'System Timestamp': systemDate ? formatDate(systemDate) : '',
+                'Type': type.replace('_', ' '),
+                'From': fromLoc,
+                'To': toLoc,
+                'Quantity': `${qtyInfo.sign}${qtyInfo.quantity}`,
+                'Reference': t.referenceNumber || `INV-${t.referenceId || t.id}`,
+                'Action': isDeleted ? 'DELETED' : (t.action || 'PROCESS'),
+                'Remarks': t.remarks || '',
+            };
+        });
+
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const csv = XLSX.utils.sheet_to_csv(ws);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const productLabel = (product?.productName || 'Product').replace(/[^a-z0-9]+/gi, '_');
+        link.href = url;
+        link.download = `Transactions_${productLabel}_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast.success('Exported to CSV');
+    };
+
     return (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-2xl max-w-[1600px] w-full max-h-[95vh] overflow-hidden flex flex-col">
@@ -532,6 +617,22 @@ const ProductTransactionsModal = ({
                         <span className="text-xs text-gray-400 ml-1">
                             ({filteredTransactions.filter(t => !(t.isDeleted === true || t.action === 'DELETED')).length} active transactions)
                         </span>
+                        <div className="ml-auto flex items-center gap-2">
+                            <button
+                                onClick={handleExportCsv}
+                                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                            >
+                                <FileText size={14} />
+                                CSV
+                            </button>
+                            <button
+                                onClick={handleExportExcel}
+                                className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                            >
+                                <FileText size={14} />
+                                Excel
+                            </button>
+                        </div>
                     </div>
 
                     {/* Page Size Selector */}
