@@ -678,6 +678,8 @@ const InventoryManagement = () => {
                       onRebuilt={() => {
                         loadData(inventoryPage, inventoryPageSize);
                         loadProductSummaries();
+                        handleGenerateReport(false);
+                        handleGenerateBranchReport(false);
                       }}
                     />
                   </div>
