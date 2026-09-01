@@ -29,7 +29,6 @@ import {
   filterWarehouseStocks,
   filterBranchStocks
 } from '../../utils/inventoryFilters';
-
 const InventoryManagement = () => {
   const [productSearchTerm, setProductSearchTerm] = useState('');
   const [stockSearchTerm, setStockSearchTerm] = useState('');
@@ -316,8 +315,10 @@ const InventoryManagement = () => {
           adjustment: Number(row.adjustment) || 0,
           qtyDelivered: Number(row.qtyDelivered) || 0,
           drCount: Number(row.drCount) || 0,
+          pendingDelivery: Number(row.pendingDelivery) || 0,
           begStock: 0,
           stockOnHand: 0,
+          availableStock: 0,
         };
       });
 
@@ -359,6 +360,7 @@ const InventoryManagement = () => {
         p.stockOnHand = p.begStock
           + p.stockIn + p.transferIn + p.returns
           - p.transferOut - p.damage - p.adjustment - p.qtyDelivered;
+        p.availableStock = p.stockOnHand - (p.pendingDelivery || 0);
       });
 
       let rows = Object.entries(productMap).map(([key, row]) => ({ key, ...row }));

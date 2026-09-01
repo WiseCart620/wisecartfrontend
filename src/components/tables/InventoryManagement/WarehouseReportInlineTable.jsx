@@ -11,7 +11,9 @@ const WarehouseReportInlineTable = ({ rows = [], loading }) => {
     ['Adjustment', 'adjustment', 'bg-orange-50'],
     ['Delivery Qty', 'qtyDelivered', 'bg-teal-50'],
     ['No. of DR', 'drCount', 'bg-teal-50'],
-    ['Stock Qty', 'stockOnHand', 'bg-sky-100 font-semibold'],
+    ['Pending Delivery', 'pendingDelivery', 'bg-purple-50'],
+    ['Total Stock', 'stockOnHand', 'bg-sky-100 font-semibold'],
+    ['Available Stock', 'availableStock', 'bg-emerald-50 font-semibold'],
   ];
 
   return (
