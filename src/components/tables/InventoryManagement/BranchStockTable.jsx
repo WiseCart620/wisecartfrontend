@@ -46,29 +46,9 @@ const BranchStockTable = ({
           Company Stock Levels
         </h2>
         {!isLoading && filteredBranchStocks.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-gray-500">
-              Grand Total ({filteredBranchStocks.length.toLocaleString('en-US')} rows):
-            </span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-800">
-              Stock {grandTotals.quantity.toLocaleString('en-US')}
-            </span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-teal-100 text-teal-800">
-              Delivered {grandTotals.delivered.toLocaleString('en-US')}
-            </span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-pink-100 text-pink-800">
-              Sales {grandTotals.totalSales.toLocaleString('en-US')}
-            </span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-orange-100 text-orange-800">
-              Pend. Delivery {grandTotals.pendingDelivery.toLocaleString('en-US')}
-            </span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-purple-100 text-purple-800">
-              Pend. Sale {grandTotals.pendingSale.toLocaleString('en-US')}
-            </span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-800">
-              Available {grandTotals.available.toLocaleString('en-US')}
-            </span>
-          </div>
+          <span className="text-xs text-gray-500">
+            Grand Total ({filteredBranchStocks.length.toLocaleString('en-US')} rows)
+          </span>
         )}
       </div>
 
@@ -108,6 +88,44 @@ const BranchStockTable = ({
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Updated</th>
               <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
+            {!isLoading && filteredBranchStocks.length > 0 && (
+              <tr className="bg-gray-50 border-t border-gray-200">
+                <td className="px-4 py-2 text-xs font-semibold text-gray-700" colSpan={3}>
+                  Grand Total
+                </td>
+                <td className="px-3 py-2 text-center">
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    {grandTotals.quantity.toLocaleString('en-US')}
+                  </span>
+                </td>
+                <td className="px-3 py-2 text-center">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
+                    {grandTotals.delivered.toLocaleString('en-US')}
+                  </span>
+                </td>
+                <td className="px-3 py-2 text-center">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
+                    {grandTotals.totalSales.toLocaleString('en-US')}
+                  </span>
+                </td>
+                <td className="px-3 py-2 text-center">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                    {grandTotals.pendingDelivery.toLocaleString('en-US')}
+                  </span>
+                </td>
+                <td className="px-3 py-2 text-center">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                    {grandTotals.pendingSale.toLocaleString('en-US')}
+                  </span>
+                </td>
+                <td className="px-3 py-2 text-center">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    {grandTotals.available.toLocaleString('en-US')}
+                  </span>
+                </td>
+                <td className="px-4 py-2" colSpan={2}></td>
+              </tr>
+            )}
           </thead>
           <tbody className="divide-y divide-gray-200">
             {isLoading ? (

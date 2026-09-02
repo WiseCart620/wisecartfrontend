@@ -676,7 +676,7 @@ const InventoryManagement = () => {
                       warehouses={warehouses}
                       branches={branches}
                       onRebuilt={() => {
-                        loadData(inventoryPage, inventoryPageSize);
+                        loadData(inventoryPage, inventoryPageSize); 
                         loadProductSummaries();
                       }}
                     />
