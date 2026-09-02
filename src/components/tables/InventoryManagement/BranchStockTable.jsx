@@ -55,41 +55,8 @@ const BranchStockTable = ({
       <div className="overflow-x-auto table-fit">
         <table className="w-full">
           <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Branch</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU/UPC</th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Total Stock</th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                <div className="flex items-center justify-center gap-1">
-                  <CheckCircle size={14} />
-                  Delivered
-                </div>
-              </th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                <div className="flex items-center justify-center gap-1">
-                  <ShoppingCart size={14} />
-                  Total Sales
-                </div>
-              </th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                <div className="flex items-center justify-center gap-1">
-                  <Truck size={14} />
-                  Pending Delivery
-                </div>
-              </th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                <div className="flex items-center justify-center gap-1">
-                  <Clock size={14} />
-                  Pending Sale
-                </div>
-              </th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Available</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Updated</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
             {!isLoading && filteredBranchStocks.length > 0 && (
-              <tr className="bg-gray-50 border-t border-gray-200">
+              <tr className="bg-gray-50 border-b border-gray-200">
                 <td className="px-4 py-2 text-xs font-semibold text-gray-700" colSpan={3}>
                   Grand Total
                 </td>
@@ -126,7 +93,41 @@ const BranchStockTable = ({
                 <td className="px-4 py-2" colSpan={2}></td>
               </tr>
             )}
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Branch</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU/UPC</th>
+              <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Total Stock</th>
+              <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                <div className="flex items-center justify-center gap-1">
+                  <CheckCircle size={14} />
+                  Delivered
+                </div>
+              </th>
+              <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                <div className="flex items-center justify-center gap-1">
+                  <ShoppingCart size={14} />
+                  Total Sales
+                </div>
+              </th>
+              <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                <div className="flex items-center justify-center gap-1">
+                  <Truck size={14} />
+                  Pending Delivery
+                </div>
+              </th>
+              <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                <div className="flex items-center justify-center gap-1">
+                  <Clock size={14} />
+                  Pending Sale
+                </div>
+              </th>
+              <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Available</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Updated</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+            </tr>
           </thead>
+
           <tbody className="divide-y divide-gray-200">
             {isLoading ? (
               <tr>
