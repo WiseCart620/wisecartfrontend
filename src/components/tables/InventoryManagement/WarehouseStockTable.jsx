@@ -362,136 +362,148 @@ const WarehouseStockTable = ({
                 </td>
               </tr>
             ) : (
-              currentWarehouseStocks.map((stock) => {
-                const mv = getMovements(stock);
-                const isThisLoading = loadingId === stock.id;
-                return (
-                  <tr key={stock.id} className="hover:bg-gray-50 transition-colors">
-                    {/* Warehouse */}
-                    <td className="px-2 py-2">
-                      <div style={{ maxWidth: '110px' }}>
-                        <div className="font-medium text-gray-900 text-xs truncate" title={stock.warehouseName}>
-                          {stock.warehouseName}
+              currentWarehouseStocks
+                .filter((stock) => {
+                  const mv = getMovements(stock);
+                  const hasStockActivity =
+                    (stock.quantity || 0) > 0 ||
+                    (stock.deliveredQuantity || 0) > 0 ||
+                    (stock.pendingDeliveries || 0) > 0 ||
+                    (stock.reservedQuantity || 0) > 0;
+                  const hasMovementActivity =
+                    mv && Object.values(mv).some((v) => Number(v) !== 0);
+                  return hasStockActivity || hasMovementActivity;
+                })
+                .map((stock) => {
+                  const mv = getMovements(stock);
+                  const isThisLoading = loadingId === stock.id;
+                  return (
+                    <tr key={stock.id} className="hover:bg-gray-50 transition-colors">
+                      {/* Warehouse */}
+                      <td className="px-2 py-2">
+                        <div style={{ maxWidth: '110px' }}>
+                          <div className="font-medium text-gray-900 text-xs truncate" title={stock.warehouseName}>
+                            {stock.warehouseName}
+                          </div>
+                          <div className="text-xs text-gray-400 truncate">{stock.warehouseCode}</div>
                         </div>
-                        <div className="text-xs text-gray-400 truncate">{stock.warehouseCode}</div>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Product */}
-                    <td className="px-2 py-2">
-                      <div style={{ maxWidth: '140px' }}>
-                        <div className="font-medium text-gray-900 text-xs leading-snug line-clamp-2">
-                          {stock.fullProductName || stock.productName}
+                      {/* Product */}
+                      <td className="px-2 py-2">
+                        <div style={{ maxWidth: '140px' }}>
+                          <div className="font-medium text-gray-900 text-xs leading-snug line-clamp-2">
+                            {stock.fullProductName || stock.productName}
+                          </div>
+                          {stock.combinationDisplay && (
+                            <div className="text-xs text-gray-500 mt-0.5">{stock.combinationDisplay}</div>
+                          )}
                         </div>
-                        {stock.combinationDisplay && (
-                          <div className="text-xs text-gray-500 mt-0.5">{stock.combinationDisplay}</div>
-                        )}
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* SKU/UPC */}
-                    <td className="px-2 py-2">
-                      <div className="space-y-0.5" style={{ maxWidth: '110px' }}>
-                        <div className="text-xs font-medium truncate">
-                          {stock.variationSku || stock.productSku || stock.sku || 'N/A'}
-                        </div>
-                        {(stock.variationUpc || stock.productUpc || stock.upc) &&
-                          (stock.variationUpc || stock.productUpc || stock.upc) !== 'N/A' && (
-                            <div className="text-xs text-gray-400 truncate">
-                              {stock.variationUpc || stock.productUpc || stock.upc}
+                      {/* SKU/UPC */}
+                      <td className="px-2 py-2">
+                        <div className="space-y-0.5" style={{ maxWidth: '110px' }}>
+                          <div className="text-xs font-medium truncate">
+                            {stock.variationSku || stock.productSku || stock.sku || 'N/A'}
+                          </div>
+                          {(stock.variationUpc || stock.productUpc || stock.upc) &&
+                            (stock.variationUpc || stock.productUpc || stock.upc) !== 'N/A' && (
+                              <div className="text-xs text-gray-400 truncate">
+                                {stock.variationUpc || stock.productUpc || stock.upc}
+                              </div>
+                            )}
+                          {stock.variationName && (
+                            <div className="text-xs text-blue-600 font-medium truncate mt-0.5">
+                              {stock.variationName}
                             </div>
                           )}
-                        {stock.variationName && (
-                          <div className="text-xs text-blue-600 font-medium truncate mt-0.5">
-                            {stock.variationName}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-
-                    {activeCols.map((col) => (
-                      <td key={col.key} className="px-3 py-3 text-center">
-                        {movLoading ? (
-                          <span className="inline-flex items-center justify-center w-6 h-5">
-                            <span className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin" />
-                          </span>
-                        ) : mv === null ? (
-                          <span className="text-gray-300 text-xs">—</span>
-                        ) : col.renderCell ? col.renderCell(mv) : (
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${col.badge}`}>
-                            {col.getValue(mv).toLocaleString()}
-                          </span>
-                        )}
+                        </div>
                       </td>
-                    ))}
 
-                    {/* Total Stock */}
-                    <td className="px-2 py-2 text-center">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${stock.quantity > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        {(stock.quantity || 0).toLocaleString()}
-                      </span>
-                    </td>
+                      {activeCols.map((col) => (
+                        <td key={col.key} className="px-3 py-3 text-center">
+                          {movLoading ? (
+                            <span className="inline-flex items-center justify-center w-6 h-5">
+                              <span className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin" />
+                            </span>
+                          ) : mv === null ? (
+                            <span className="text-gray-300 text-xs">—</span>
+                          ) : col.renderCell ? col.renderCell(mv) : (
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${col.badge}`}>
+                              {col.getValue(mv).toLocaleString()}
+                            </span>
+                          )}
+                        </td>
+                      ))}
 
-                    {/* Delivered */}
-                    <td className="px-2 py-2 text-center">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
-                        {(stock.deliveredQuantity || 0).toLocaleString()}
-                      </span>
-                    </td>
+                      {/* Total Stock */}
+                      <td className="px-2 py-2 text-center">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${stock.quantity > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {(stock.quantity || 0).toLocaleString()}
+                        </span>
+                      </td>
 
-                    {/* Pending */}
-                    <td className="px-2 py-2 text-center">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                        {(stock.pendingDeliveries || 0).toLocaleString()}
-                      </span>
-                    </td>
+                      {/* Delivered */}
+                      <td className="px-2 py-2 text-center">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
+                          {(stock.deliveredQuantity || 0).toLocaleString()}
+                        </span>
+                      </td>
 
-                    {/* Available */}
-                    <td className="px-2 py-2 text-center">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {Math.max(0, (stock.quantity || 0) - (stock.reservedQuantity || 0)).toLocaleString()}
-                      </span>
-                    </td>
+                      {/* Pending */}
+                      <td className="px-2 py-2 text-center">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                          {(stock.pendingDeliveries || 0).toLocaleString()}
+                        </span>
+                      </td>
 
-                    {/* Last Updated */}
-                    <td className="px-2 py-2 text-xs text-gray-500 whitespace-nowrap">
-                      {(() => {
-                        const date = parseDate(stock.lastUpdated);
-                        if (!date) return 'N/A';
-                        return (
-                          <>
-                            {date.toLocaleDateString()}<br />
-                            <span className="text-gray-400">{date.toLocaleTimeString()}</span>
-                          </>
-                        );
-                      })()}
-                    </td>
+                      {/* Available */}
+                      <td className="px-2 py-2 text-center">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {Math.max(0, (stock.quantity || 0) - (stock.reservedQuantity || 0)).toLocaleString()}
+                        </span>
+                      </td>
 
-                    {/* Actions */}
-                    <td className="px-2 py-2 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <button
-                          onClick={() => handleView(stock)}
-                          disabled={isThisLoading}
-                          title="View Transactions"
-                          className={`p-1.5 rounded transition ${isThisLoading ? 'text-blue-400 cursor-wait' : 'text-blue-600 hover:bg-blue-50'}`}
-                        >
-                          {isThisLoading ? <Loader2 size={14} className="animate-spin" /> : <Eye size={14} />}
-                        </button>
-                        {isAdmin && (
+                      {/* Last Updated */}
+                      <td className="px-2 py-2 text-xs text-gray-500 whitespace-nowrap">
+                        {(() => {
+                          const date = parseDate(stock.lastUpdated);
+                          if (!date) return 'N/A';
+                          return (
+                            <>
+                              {date.toLocaleDateString()}<br />
+                              <span className="text-gray-400">{date.toLocaleTimeString()}</span>
+                            </>
+                          );
+                        })()}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-2 py-2 text-center">
+                        <div className="flex items-center justify-center gap-1">
                           <button
-                            onClick={() => { setAdjustmentStock(stock); setShowAdjustmentModal(true); }}
-                            title="Manual Adjustment"
-                            className="p-1.5 rounded text-violet-600 hover:bg-violet-50 transition"
+                            onClick={() => handleView(stock)}
+                            disabled={isThisLoading}
+                            title="View Transactions"
+                            className={`p-1.5 rounded transition ${isThisLoading ? 'text-blue-400 cursor-wait' : 'text-blue-600 hover:bg-blue-50'}`}
                           >
-                            <SlidersHorizontal size={14} />
+                            {isThisLoading ? <Loader2 size={14} className="animate-spin" /> : <Eye size={14} />}
                           </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
+                          {isAdmin && (
+                            <button
+                              onClick={() => { setAdjustmentStock(stock); setShowAdjustmentModal(true); }}
+                              title="Manual Adjustment"
+                              className="p-1.5 rounded text-violet-600 hover:bg-violet-50 transition"
+                            >
+                              <SlidersHorizontal size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
             )}
           </tbody>
         </table>
