@@ -54,6 +54,8 @@ const InventoryManagement = () => {
   const [branchReportLoading, setBranchReportLoading] = useState(false);
   const REBUILD_UNLOCK_KEY = 'stockToolsUnlockedUntil';
   const UNLOCK_TTL_MS = 30 * 60 * 1000;
+  const [warehouseMovementMap, setWarehouseMovementMap] = useState({});
+  const [warehouseMovLoading, setWarehouseMovLoading] = useState(false);
 
   const [stockToolsUnlocked, setStockToolsUnlocked] = useState(() => {
     try {
@@ -226,6 +228,78 @@ const InventoryManagement = () => {
     stockSearchTerm,
     warehouseFilters.filters
   );
+  const getWarehouseMovement = (stock, map) => {
+    const wid = String(stock.warehouseId ?? '');
+    const pid = String(stock.productId ?? '');
+    const vid = stock.variationId != null ? String(stock.variationId) : '';
+    return map[`${wid}|${pid}|${vid}`] || null;
+  };
+
+  const warehouseIdKey = [
+    ...new Set(
+      filteredWarehouseStocks
+        .map((s) => s.warehouseId)
+        .filter((id) => id != null)
+        .map(String)
+    ),
+  ].sort().join(',');
+
+  useEffect(() => {
+    if (!warehouseIdKey) {
+      setWarehouseMovementMap({});
+      return;
+    }
+    const warehouseIds = warehouseIdKey.split(',');
+    let cancelled = false;
+    setWarehouseMovLoading(true);
+
+    const fetchAll = async () => {
+      try {
+        const results = await Promise.all(
+          warehouseIds.map((wid) =>
+            api
+              .get(`/inventories/report/movements?warehouseId=${wid}`)
+              .then((res) => ({ wid, rows: Array.isArray(res.data) ? res.data : [] }))
+              .catch(() => ({ wid, rows: [] }))
+          )
+        );
+        if (cancelled) return;
+        const map = {};
+        results.forEach(({ wid, rows }) => {
+          rows.forEach((row) => {
+            const pid = String(row.productId ?? '');
+            const vid = String(row.variationId ?? '');
+            map[`${wid}|${pid}|${vid}`] = {
+              stockIn: Number(row.stockIn) || 0,
+              transferIn: Number(row.transferIn) || 0,
+              transferOut: Number(row.transferOut) || 0,
+              cancelled: Number(row.cancelled) || 0,
+              returns: Number(row.returns) || 0,
+              damage: Number(row.damage) || 0,
+              manualAdjustment: row.manualAdjustment != null ? Number(row.manualAdjustment) : 0,
+            };
+          });
+        });
+        setWarehouseMovementMap(map);
+      } finally {
+        if (!cancelled) setWarehouseMovLoading(false);
+      }
+    };
+
+    fetchAll();
+    return () => { cancelled = true; };
+  }, [warehouseIdKey]);
+
+  const filteredWarehouseStocksActive = filteredWarehouseStocks.filter((stock) => {
+    const mv = getWarehouseMovement(stock, warehouseMovementMap);
+    const hasStockActivity =
+      (stock.quantity || 0) > 0 ||
+      (stock.deliveredQuantity || 0) > 0 ||
+      (stock.pendingDeliveries || 0) > 0 ||
+      (stock.reservedQuantity || 0) > 0;
+    const hasMovementActivity = mv && Object.values(mv).some((v) => Number(v) !== 0);
+    return hasStockActivity || hasMovementActivity;
+  });
 
   const branchStocksArray = stripRedundantBaseRows(Array.isArray(branchStocks) ? branchStocks : []);
   const filteredBranchStocksAll = filterBranchStocks(
@@ -249,12 +323,18 @@ const InventoryManagement = () => {
   });
 
   const currentProductSummaries = productPagination.getPageItems(filteredProductSummaries);
-  const currentWarehouseStocks = stockPagination.getPageItems(filteredWarehouseStocks);
+  const currentWarehouseStocks = stockPagination.getPageItems(filteredWarehouseStocksActive);
   const currentBranchStocks = stockPagination.getPageItems(filteredBranchStocks);
 
   const productTotalPages = productPagination.getTotalPages(filteredProductSummaries.length);
-  const warehouseStockTotalPages = stockPagination.getTotalPages(filteredWarehouseStocks.length);
+  const warehouseStockTotalPages = stockPagination.getTotalPages(filteredWarehouseStocksActive.length);
   const branchStockTotalPages = stockPagination.getTotalPages(filteredBranchStocks.length);
+
+  useEffect(() => {
+    if (activeTab === 'warehouse-stocks' && stockPagination.currentPage > warehouseStockTotalPages) {
+      stockPagination.setCurrentPage(Math.max(1, warehouseStockTotalPages));
+    }
+  }, [warehouseStockTotalPages, activeTab]);
 
   useEffect(() => {
     loadData(inventoryPage, inventoryPageSize);
@@ -596,9 +676,9 @@ const InventoryManagement = () => {
 
             <WarehouseStockTable
               currentWarehouseStocks={currentWarehouseStocks}
-              filteredWarehouseStocks={filteredWarehouseStocks}
+              filteredWarehouseStocks={filteredWarehouseStocksActive}
               stockIndexOfFirstItem={stockPagination.getIndexOfFirstItem()}
-              stockIndexOfLastItem={stockPagination.getIndexOfLastItem(filteredWarehouseStocks.length)}
+              stockIndexOfLastItem={stockPagination.getIndexOfLastItem(filteredWarehouseStocksActive.length)}
               handleViewStockTransactions={handleViewStockTransactions}
               stockCurrentPage={stockPagination.currentPage}
               warehouseStockTotalPages={warehouseStockTotalPages}
@@ -608,6 +688,8 @@ const InventoryManagement = () => {
               isAdmin={true}
               currentUser="Admin"
               onStockUpdated={() => loadData(inventoryPage, inventoryPageSize)}
+              movementMap={warehouseMovementMap}
+              movLoading={warehouseMovLoading}
             />
           </div>
         )}
@@ -676,7 +758,7 @@ const InventoryManagement = () => {
                       warehouses={warehouses}
                       branches={branches}
                       onRebuilt={() => {
-                        loadData(inventoryPage, inventoryPageSize); 
+                        loadData(inventoryPage, inventoryPageSize);
                         loadProductSummaries();
                       }}
                     />
