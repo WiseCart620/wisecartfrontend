@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, X } from 'lucide-react';
 
-const SearchableSelect = ({ value, onChange, options, placeholder, disabled, loading = false }) => {
+const SearchableSelect = ({ value, onChange, options, placeholder, disabled, loading = false, searchPlaceholder }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -19,6 +19,19 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled, loa
 
   const selectedOption = options.find(opt => opt.value === value);
 
+  // Only use the "UPC - name - SKU" product-style format when the option
+  // actually carries product identifiers. Plain options (companies, branches,
+  // etc.) just show their label.
+  const isProductLike = (option) => option && (option.upc !== undefined || option.sku !== undefined);
+
+  const getDisplayLabel = (option) => {
+    if (!option) return '';
+    if (isProductLike(option)) {
+      return `${option.upc || 'N/A'} - ${option.fullName || option.label} - ${option.sku || 'N/A'}`;
+    }
+    return option.fullName || option.name || option.label;
+  };
+
   return (
     <div className="relative">
       <button
@@ -35,9 +48,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled, loa
           </span>
         ) : (
           <span className="truncate">
-            {selectedOption
-              ? `${selectedOption.upc || 'N/A'} - ${selectedOption.fullName || selectedOption.label} - ${selectedOption.sku || 'N/A'}`
-              : placeholder}
+            {selectedOption ? getDisplayLabel(selectedOption) : placeholder}
           </span>
         )}
         <Search size={16} className="text-gray-400 ml-2 flex-shrink-0" />
@@ -57,7 +68,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled, loa
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search by name, UPC, SKU, or variation..."
+                  placeholder={searchPlaceholder || 'Search...'}
                   className="w-full pl-9 pr-8 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                   autoFocus
                 />
@@ -86,7 +97,9 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled, loa
                   >
                     <div className="flex flex-col">
                       <div className="font-medium">
-                        {option.upc || 'N/A'} - {option.name || option.label} - {option.sku || 'N/A'}
+                        {isProductLike(option)
+                          ? `${option.upc || 'N/A'} - ${option.name || option.label} - ${option.sku || 'N/A'}`
+                          : (option.name || option.label)}
                       </div>
                       {option.subLabel && option.subLabel !== 'No variations' && (
                         <div className="text-xs text-gray-600 mt-0.5">Variation: {option.subLabel}</div>
