@@ -290,16 +290,29 @@ const InventoryManagement = () => {
     return () => { cancelled = true; };
   }, [warehouseIdKey]);
 
-  const filteredWarehouseStocksActive = filteredWarehouseStocks.filter((stock) => {
-    const mv = getWarehouseMovement(stock, warehouseMovementMap);
-    const hasStockActivity =
-      (stock.quantity || 0) > 0 ||
-      (stock.deliveredQuantity || 0) > 0 ||
-      (stock.pendingDeliveries || 0) > 0 ||
-      (stock.reservedQuantity || 0) > 0;
-    const hasMovementActivity = mv && Object.values(mv).some((v) => Number(v) !== 0);
-    return hasStockActivity || hasMovementActivity;
-  });
+  const filteredWarehouseStocksActive = filteredWarehouseStocks
+    .filter((stock) => {
+      const mv = getWarehouseMovement(stock, warehouseMovementMap);
+      const hasStockActivity =
+        (stock.quantity || 0) > 0 ||
+        (stock.deliveredQuantity || 0) > 0 ||
+        (stock.pendingDeliveries || 0) > 0 ||
+        (stock.reservedQuantity || 0) > 0;
+      const hasMovementActivity = mv && Object.values(mv).some((v) => Number(v) !== 0);
+      return hasStockActivity || hasMovementActivity;
+    })
+    .sort((a, b) => {
+      const warehouseCompare = (a.warehouseName || '').localeCompare(
+        b.warehouseName || '',
+        undefined,
+        { sensitivity: 'base' }
+      );
+      if (warehouseCompare !== 0) return warehouseCompare;
+
+      const productA = a.fullProductName || a.productName || '';
+      const productB = b.fullProductName || b.productName || '';
+      return productA.localeCompare(productB, undefined, { sensitivity: 'base' });
+    });
 
   const branchStocksArray = stripRedundantBaseRows(Array.isArray(branchStocks) ? branchStocks : []);
   const filteredBranchStocksAll = filterBranchStocks(
