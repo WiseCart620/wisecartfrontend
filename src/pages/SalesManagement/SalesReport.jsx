@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { X, FileText, Printer, ChevronDown, ChevronUp, ChevronLeft, Package } from 'lucide-react';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
-import { X, FileText, Printer, ChevronDown, ChevronUp, ChevronLeft, Package } from 'lucide-react';
+import MultiSelectDropdown from '../../components/common/MultiSelectDropdown';
+import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
 
 const formatCurrency = (amount) => {
     if (amount === null || amount === undefined) return '0.00';
@@ -13,101 +15,46 @@ const formatCurrency = (amount) => {
 
 const monthsFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-const SearchableSelect = ({ value, onChange, options, getLabel, getValue, allLabel, placeholder = 'Search...' }) => {
-    const [open, setOpen] = useState(false);
-    const [search, setSearch] = useState('');
-    const wrapperRef = useRef(null);
-
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
-                setOpen(false);
-                setSearch('');
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    const selectedOption = options.find(o => String(getValue(o)) === String(value));
-    const displayLabel = selectedOption ? getLabel(selectedOption) : allLabel;
-
-    const filteredOptions = options.filter(o =>
-        getLabel(o).toLowerCase().includes(search.toLowerCase())
-    );
-
-    const handleSelect = (val) => {
-        onChange(val);
-        setOpen(false);
-        setSearch('');
-    };
-
-    return (
-        <div className="relative" ref={wrapperRef}>
-            <button
-                type="button"
-                onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 min-w-[160px]"
-            >
-                <span className={`truncate ${selectedOption ? 'text-gray-900' : 'text-gray-500'}`}>{displayLabel}</span>
-                <ChevronDown size={14} className="text-gray-400 shrink-0" />
-            </button>
-            {open && (
-                <div className="absolute z-30 mt-1 w-full min-w-[220px] bg-white border border-gray-200 rounded-lg shadow-lg flex flex-col">
-                    <div className="p-2 border-b border-gray-100">
-                        <input
-                            autoFocus
-                            type="text"
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            placeholder={placeholder}
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
-                        />
-                    </div>
-                    <div className="max-h-56 overflow-y-auto">
-                        <button
-                            type="button"
-                            onClick={() => handleSelect('')}
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${!value ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'}`}
-                        >
-                            {allLabel}
-                        </button>
-                        {filteredOptions.length === 0 ? (
-                            <div className="px-3 py-2 text-sm text-gray-400 italic">No matches</div>
-                        ) : (
-                            filteredOptions.map(o => (
-                                <button
-                                    key={getValue(o)}
-                                    type="button"
-                                    onClick={() => handleSelect(String(getValue(o)))}
-                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${String(value) === String(getValue(o)) ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'}`}
-                                >
-                                    {getLabel(o)}
-                                </button>
-                            ))
-                        )}
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
-const SalesReport = ({ onBack, filterData, companies, branches }) => {
+const SalesReport = ({ onBack, filterData, companies, branches, allProductOptions = [] }) => {
     const [salesReportFilter, setSalesReportFilter] = useState({ startDate: '', endDate: '' });
-    const [reportCompanyId, setReportCompanyId] = useState(filterData.companyId || '');
-    const [reportBranchId, setReportBranchId] = useState(filterData.branchId || '');
+
+    // Multi-select filters — seeded from whatever was active on the main Sales screen
+    const [reportCompanyIds, setReportCompanyIds] = useState(filterData.companyIds || []);
+    const [reportBranchIds, setReportBranchIds] = useState(filterData.branchIds || []);
+    const [reportProductFilters, setReportProductFilters] = useState(filterData.productFilters || []);
+    const [productSearchValue, setProductSearchValue] = useState('');
 
     const filteredReportBranches = React.useMemo(() => {
-        if (!reportCompanyId) return branches;
-        return branches.filter(b => String(b.companyId ?? b.company?.id) === String(reportCompanyId));
-    }, [branches, reportCompanyId]);
+        if (!reportCompanyIds || reportCompanyIds.length === 0) return branches;
+        return branches.filter(b => reportCompanyIds.includes(b.companyId ?? b.company?.id));
+    }, [branches, reportCompanyIds]);
+
     const [salesReportData, setSalesReportData] = useState(null);
     const [salesReportLoading, setSalesReportLoading] = useState(false);
     const [expandedReportMonths, setExpandedReportMonths] = useState({});
     const [selectedReportMonths, setSelectedReportMonths] = useState({});
     const [expandedCompanyProducts, setExpandedCompanyProducts] = useState({});
     const [showPrintMenu, setShowPrintMenu] = useState(false);
+
+    // Human-readable labels for whatever is currently selected — used in the table header,
+    // the summary strip, and every print/export output so they always match the active filter.
+    const companyLabel = (!reportCompanyIds || reportCompanyIds.length === 0)
+        ? 'All Companies'
+        : reportCompanyIds.length === 1
+            ? (companies.find(c => c.id === reportCompanyIds[0])?.companyName || 'Unknown')
+            : `${reportCompanyIds.length} Companies`;
+
+    const branchLabel = (!reportBranchIds || reportBranchIds.length === 0)
+        ? 'All Branches'
+        : reportBranchIds.length === 1
+            ? (branches.find(b => b.id === reportBranchIds[0])?.branchName || 'Unknown')
+            : `${reportBranchIds.length} Branches`;
+
+    const productLabel = (!reportProductFilters || reportProductFilters.length === 0)
+        ? 'All Products'
+        : reportProductFilters.length === 1
+            ? reportProductFilters[0].label
+            : `${reportProductFilters.length} Products`;
 
     React.useEffect(() => {
         generateSalesReport();
@@ -187,15 +134,45 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
         return false;
     };
 
+    // Narrows each sale down to only the items matching the selected product filters,
+    // and recomputes totalAmount so every downstream VAT/EWT/due calculation stays consistent.
+    const applyProductFilterToSales = (salesList, productFilters) => {
+        if (!productFilters || productFilters.length === 0) return salesList;
+        return salesList
+            .map(sale => {
+                const filteredItems = (sale.items || []).filter(item =>
+                    productFilters.some(pf =>
+                        pf.productId === item.product?.id && (pf.variationId ?? null) === (item.variation?.id ?? null)
+                    )
+                );
+                if (filteredItems.length === 0) return null;
+                const filteredTotal = filteredItems.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+                return { ...sale, items: filteredItems, totalAmount: filteredTotal };
+            })
+            .filter(Boolean);
+    };
 
-    const generateSalesReport = async (companyIdOverride, branchIdOverride) => {
-        const activeCompanyId = companyIdOverride !== undefined ? companyIdOverride : reportCompanyId;
-        const activeBranchId = branchIdOverride !== undefined ? branchIdOverride : reportBranchId;
+    const generateSalesReport = async (companyIdsOverride, branchIdsOverride, productFiltersOverride) => {
+        const activeCompanyIds = companyIdsOverride !== undefined ? companyIdsOverride : reportCompanyIds;
+        const activeBranchIds = branchIdsOverride !== undefined ? branchIdsOverride : reportBranchIds;
+        const activeProductFilters = productFiltersOverride !== undefined ? productFiltersOverride : reportProductFilters;
+
         setSalesReportLoading(true);
         try {
             const params = new URLSearchParams({ page: 0, size: 9999, status: 'INVOICED' });
-            if (activeCompanyId) params.append('companyId', activeCompanyId);
-            if (activeBranchId) params.append('branchId', activeBranchId);
+
+            if (activeCompanyIds?.length) {
+                activeCompanyIds.forEach(id => params.append('companyIds', id));
+            }
+            if (activeBranchIds?.length) {
+                activeBranchIds.forEach(id => params.append('branchIds', id));
+            }
+            if (activeProductFilters?.length) {
+                activeProductFilters.forEach(pf => {
+                    if (pf.productId) params.append('productIds', pf.productId);
+                    if (pf.variationId) params.append('variationIds', pf.variationId);
+                });
+            }
             if (salesReportFilter.startDate) {
                 const d = new Date(salesReportFilter.startDate);
                 params.append('startYear', d.getFullYear());
@@ -214,7 +191,11 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
             const rawSales = salesResponse.data?.content || [];
             const profiles = profilesResponse.data?.data || profilesResponse.data || [];
             const journaledSet = buildJournaledPeriods(profiles);
-            const allSales = rawSales.filter(sale => isSaleJournaled(sale, journaledSet));
+            let allSales = rawSales.filter(sale => isSaleJournaled(sale, journaledSet));
+
+            // Narrow items down to the selected products (backend only guarantees the sale
+            // contains at least one matching item — it can still return non-matching items too).
+            allSales = applyProductFilterToSales(allSales, activeProductFilters);
 
             const grouped = {};
             allSales.forEach(sale => {
@@ -331,11 +312,37 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
         }
     };
 
+    const addProductFilter = (optionId) => {
+        if (!optionId) return;
+        const option = allProductOptions.find(o => o.id === optionId);
+        if (!option) return;
+        const alreadyAdded = reportProductFilters.some(pf =>
+            pf.productId === option.parentProductId && (pf.variationId ?? '') === (option.variationId ?? '')
+        );
+        if (alreadyAdded) return;
+        const label = option.subLabel && option.subLabel !== 'No variations'
+            ? `${option.fullName} — ${option.subLabel}`
+            : option.fullName;
+        const newFilters = [...reportProductFilters, { productId: option.parentProductId, variationId: option.variationId ?? null, label }];
+        setReportProductFilters(newFilters);
+        setProductSearchValue('');
+        generateSalesReport(reportCompanyIds, reportBranchIds, newFilters);
+    };
+
+    const removeProductFilter = (idx) => {
+        const newFilters = reportProductFilters.filter((_, i) => i !== idx);
+        setReportProductFilters(newFilters);
+        generateSalesReport(reportCompanyIds, reportBranchIds, newFilters);
+    };
+
     const exportReportToExcel = () => {
         if (!salesReportData) return;
         const rows = [];
         rows.push(['WISECART MERCHANTS CORP.']);
         rows.push(['Sales Report']);
+        rows.push([`Company: ${companyLabel}`]);
+        rows.push([`Branch: ${branchLabel}`]);
+        rows.push([`Products: ${productLabel}`]);
         rows.push([`Generated: ${new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}`]);
         rows.push([]);
 
@@ -396,12 +403,6 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
     };
 
     const buildPrintMetaHTML = () => {
-        const companyName = reportCompanyId
-            ? (companies.find(c => String(c.id) === String(reportCompanyId))?.companyName || 'Unknown')
-            : 'All Companies';
-        const branchName = reportBranchId
-            ? (branches.find(b => String(b.id) === String(reportBranchId))?.branchName || 'Unknown')
-            : 'All Branches';
         const period = (salesReportFilter.startDate || salesReportFilter.endDate)
             ? `${salesReportFilter.startDate || 'Start'} — ${salesReportFilter.endDate || 'End'}`
             : 'All periods';
@@ -412,8 +413,9 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
             <h1>WISECART MERCHANTS CORP.</h1>
             <h2>Sales Report</h2>
             <table class="print-meta-table">
-              <tr><td><strong>Company:</strong> ${companyName}</td><td><strong>Branch:</strong> ${branchName}</td></tr>
-              <tr><td><strong>Period:</strong> ${period}</td><td><strong>Generated:</strong> ${generated}</td></tr>
+              <tr><td><strong>Company:</strong> ${companyLabel}</td><td><strong>Branch:</strong> ${branchLabel}</td></tr>
+              <tr><td><strong>Products:</strong> ${productLabel}</td><td><strong>Period:</strong> ${period}</td></tr>
+              <tr><td colspan="2"><strong>Generated:</strong> ${generated}</td></tr>
             </table>
           </div>
         `;
@@ -433,10 +435,6 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
         });
         const branchGroups = Array.from(branchMap.values())
             .sort((a, b) => (a.branch?.branchName || '').localeCompare(b.branch?.branchName || ''));
-
-        const companyName = reportCompanyId
-            ? (companies.find(c => String(c.id) === String(reportCompanyId))?.companyName || 'Unknown')
-            : 'All Companies';
 
         let html = buildPrintMetaHTML();
 
@@ -521,10 +519,6 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
             return html;
         }
 
-        const branchLabel = reportBranchId
-            ? (branches.find(b => String(b.id) === String(reportBranchId))?.branchName || 'Unknown')
-            : 'All Branches';
-
         let rowNum = 1;
         let hasAnyRows = false;
 
@@ -539,6 +533,14 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
                             .slice()
                             .sort((a, b) => a.productName.localeCompare(b.productName));
                         const totalQty = products.reduce((s, p) => s + p.quantity, 0);
+
+                        // Branches actually represented within this company's sales for this month
+                        const branchNames = [...new Set(cg.sales.map(s => s.branch?.branchName).filter(Boolean))];
+                        const branchCell = branchNames.length === 0
+                            ? '—'
+                            : branchNames.length === 1
+                                ? branchNames[0]
+                                : `${branchNames.length} branches`;
 
                         html += `
                           <table class="print-summary-table">
@@ -556,7 +558,7 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
                                 <td>${yr.year}</td>
                                 <td>${monthsFull[monthRow.month - 1]}</td>
                                 <td>${cg.company?.companyName || 'Unknown'}</td>
-                                <td>${branchLabel}</td>
+                                <td>${branchCell}</td>
                                 <td class="text-right">₱${cg.vatableSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
                                 <td class="text-right">₱${cg.vat.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
                                 <td class="text-right">₱${cg.lesEwt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
@@ -647,8 +649,15 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
         setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
     };
 
+    const companyOptions = companies.map(c => ({ id: c.id, name: c.companyName || c.name }));
+    const branchOptions = filteredReportBranches.map(b => ({ id: b.id, name: b.branchName, code: b.branchCode }));
 
-
+    // Product options with anything already selected filtered out, so the dropdown only offers new picks
+    const availableProductOptions = allProductOptions.filter(o =>
+        !reportProductFilters.some(pf =>
+            pf.productId === o.parentProductId && (pf.variationId ?? null) === (o.variationId ?? null)
+        )
+    );
 
     // Report view
     return (
@@ -716,33 +725,44 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
                     <div className="flex flex-wrap gap-4 items-end">
                         <div>
                             <label className="block text-xs font-medium text-gray-700 mb-1">Company</label>
-                            <SearchableSelect
-                                value={reportCompanyId}
-                                onChange={(newCompanyId) => {
-                                    setReportCompanyId(newCompanyId);
-                                    setReportBranchId('');
-                                    generateSalesReport(newCompanyId, '');
+                            <MultiSelectDropdown
+                                options={companyOptions}
+                                selectedIds={reportCompanyIds}
+                                onChange={(ids) => {
+                                    // Drop any selected branch that no longer belongs to the selected companies
+                                    const validBranchIds = ids.length > 0
+                                        ? branches.filter(b => ids.includes(b.companyId ?? b.company?.id)).map(b => b.id)
+                                        : branches.map(b => b.id);
+                                    const newBranchIds = reportBranchIds.filter(id => validBranchIds.includes(id));
+                                    setReportCompanyIds(ids);
+                                    setReportBranchIds(newBranchIds);
+                                    generateSalesReport(ids, newBranchIds);
                                 }}
-                                options={companies}
-                                getLabel={c => c.companyName}
-                                getValue={c => c.id}
-                                allLabel="All Companies"
-                                placeholder="Search companies..."
+                                placeholder="All Companies"
+                                searchPlaceholder="Search companies..."
                             />
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-700 mb-1">Branch</label>
-                            <SearchableSelect
-                                value={reportBranchId}
-                                onChange={(newBranchId) => {
-                                    setReportBranchId(newBranchId);
-                                    generateSalesReport(reportCompanyId, newBranchId);
+                            <MultiSelectDropdown
+                                options={branchOptions}
+                                selectedIds={reportBranchIds}
+                                onChange={(ids) => {
+                                    setReportBranchIds(ids);
+                                    generateSalesReport(reportCompanyIds, ids);
                                 }}
-                                options={filteredReportBranches}
-                                getLabel={b => b.branchName}
-                                getValue={b => b.id}
-                                allLabel="All Branches"
-                                placeholder="Search branches..."
+                                placeholder="All Branches"
+                                searchPlaceholder="Search name or code..."
+                            />
+                        </div>
+                        <div className="w-64">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Product</label>
+                            <VariationSearchableDropdown
+                                options={availableProductOptions}
+                                value={productSearchValue}
+                                onChange={addProductFilter}
+                                placeholder="Product / UPC / SKU"
+                                hideLocationHint={true}
                             />
                         </div>
                         <div>
@@ -757,11 +777,28 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
                                 onChange={e => setSalesReportFilter(p => ({ ...p, endDate: e.target.value }))}
                                 className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
                         </div>
-                        <button onClick={() => generateSalesReport(reportCompanyId, reportBranchId)} disabled={salesReportLoading}
+                        <button onClick={() => generateSalesReport(reportCompanyIds, reportBranchIds, reportProductFilters)} disabled={salesReportLoading}
                             className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition">
                             {salesReportLoading ? 'Generating...' : 'Generate Report'}
                         </button>
                     </div>
+
+                    {reportProductFilters.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-3">
+                            {reportProductFilters.map((pf, idx) => (
+                                <span key={idx} className="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                    {pf.label}
+                                    <button
+                                        type="button"
+                                        onClick={() => removeProductFilter(idx)}
+                                        className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-200 hover:bg-red-200 hover:text-red-700 transition-colors"
+                                    >
+                                        <X size={9} strokeWidth={2.5} />
+                                    </button>
+                                </span>
+                            ))}
+                        </div>
+                    )}
 
                     {salesReportData && (
                         <div className="flex flex-wrap gap-6 text-sm mt-4 pt-4 border-t border-gray-100">
@@ -780,7 +817,7 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
             {salesReportData && (
                 <div className="px-4 pb-4" id="sales-report-print-content">
                     {salesReportData.length === 0 ? (
-                        <div className="text-center py-20 text-gray-400 italic">No sales data found for the selected period.</div>
+                        <div className="text-center py-20 text-gray-400 italic">No sales data found for the selected filters.</div>
                     ) : (
                         <table className="w-full text-sm border-collapse bg-white rounded-b-xl shadow-sm overflow-hidden border border-gray-200">
                             <thead className="bg-gray-100">
@@ -832,12 +869,8 @@ const SalesReport = ({ onBack, filterData, companies, branches }) => {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-3 text-sm text-gray-700">
-                                                    {reportCompanyId ? (companies.find(c => String(c.id) === String(reportCompanyId))?.companyName || 'Unknown') : 'All Companies'}
-                                                </td>
-                                                <td className="px-4 py-3 text-sm text-gray-700">
-                                                    {reportBranchId ? (branches.find(b => String(b.id) === String(reportBranchId))?.branchName || 'Unknown') : 'All Branches'}
-                                                </td>
+                                                <td className="px-4 py-3 text-sm text-gray-700">{companyLabel}</td>
+                                                <td className="px-4 py-3 text-sm text-gray-700">{branchLabel}</td>
                                                 <td className="px-4 py-3 text-right text-sm text-gray-800">
                                                     {activeProd ? `₱${activeProd.vatableSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '—'}
                                                 </td>

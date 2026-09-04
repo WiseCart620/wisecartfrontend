@@ -300,7 +300,7 @@ const SalesManagement = () => {
   };
 
   if (showInvoicingProfile) return <InvoicingProfile onBack={() => setShowInvoicingProfile(false)} />;
-  if (showSalesReport) return <SalesReport onBack={() => setShowSalesReport(false)} filterData={filterData} companies={companies} branches={branches} />;
+  if (showSalesReport) return <SalesReport onBack={() => setShowSalesReport(false)} filterData={filterData} companies={companies} branches={branches} allProductOptions={allProductOptions} />;
 
   return (
     <div className="min-h-screen bg-gray-50 p-2 sm:p-3 lg:p-4">
