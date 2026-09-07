@@ -34,9 +34,6 @@ const useInventory = () => {
         }
       }
 
-      // FIX: Do NOT filter out DELIVERY/SALE — keep all transaction types
-      // so the Transactions tab shows the full picture. Filtering by type
-      // is handled at the UI layer (TransactionFilterPanel / filterInventories).
       setInventories(inventoriesData);
       setTotalInventories(totalElements);
 
