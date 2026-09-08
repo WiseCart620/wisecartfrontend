@@ -12,7 +12,7 @@ const allMainMenuItems = [
   { to: '/dashboard',           label: 'Dashboard',        icon: Home,          userHidden: true  },
   { to: '/sales',               label: 'Sales',            icon: ShoppingCart,  userHidden: false },
   { to: '/deliveries',          label: 'Deliveries',       icon: Truck,         userHidden: false },
-  { to: '/warehouse-inventory', label: 'Warehouse',        icon: PackageOpen,   userHidden: true  },
+  { to: '/warehouse-inventory', label: 'Warehouse Inventory', icon: PackageOpen,   userHidden: true  },
   { to: '/inventory',           label: 'Inventory Record', icon: PackageSearch, userHidden: true  },
   { to: '/procurement',         label: 'Procurement',      icon: ClipboardList, userHidden: true  },
 ];
