@@ -129,11 +129,19 @@ const getBalance = (profile) => {
     return bal > 0 ? Math.round(bal * 100) / 100 : 0;
 };
 
+// Positive number = how much has been paid beyond the total amount due, 0 if not overpaid.
+const getOverpaidAmount = (profile) => {
+    const totalPaid = (profile.payments || []).reduce((s, p) => s + Number(p.amount || 0), 0);
+    const over = totalPaid - Number(profile.totalAmountDue || 0);
+    return over > 0.004 ? Math.round(over * 100) / 100 : 0;
+};
+
 const BalanceTooltip = ({ profile, onClick }) => {
     const [hovered, setHovered] = useState(false);
     const [pos, setPos] = useState({ x: 0, y: 0 });
     const paid = (profile.payments || []).reduce((s, p) => s + Number(p.amount), 0);
     const bal = getBalance(profile);
+    const overpaid = getOverpaidAmount(profile);
     const isPaid = bal <= 0;
     const payments = profile.payments || [];
 
@@ -148,8 +156,13 @@ const BalanceTooltip = ({ profile, onClick }) => {
             <button
                 onClick={onClick}
                 className="text-right w-full text-xs text-black underline decoration-dashed underline-offset-2 cursor-pointer transition-colors hover:text-gray-700"            >
-                {isPaid ? '✓ Paid' : '₱' + fmt(bal)}
+                {overpaid > 0 ? '⚠ Overpaid' : isPaid ? '✓ Paid' : '₱' + fmt(bal)}
             </button>
+            {overpaid > 0 && (
+                <div className="text-xs text-orange-600 text-right mt-0.5 tabular-nums font-medium">
+                    +₱{fmt(overpaid)} over
+                </div>
+            )}
             {payments.length > 0 && (
                 <div className="text-xs text-black text-right mt-0.5 tabular-nums">
                     {payments.length} payment{payments.length > 1 ? 's' : ''} · ₱{fmt(paid)}
@@ -170,9 +183,9 @@ const BalanceTooltip = ({ profile, onClick }) => {
                 >
                     <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
                         <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Payment Summary</span>
-                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${isPaid ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
+                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${overpaid > 0 ? 'bg-orange-50 text-orange-600' : isPaid ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
                             }`}>
-                            {isPaid ? 'Settled' : 'Outstanding'}
+                            {overpaid > 0 ? 'Overpaid' : isPaid ? 'Settled' : 'Outstanding'}
                         </span>
                     </div>
 
@@ -215,9 +228,9 @@ const BalanceTooltip = ({ profile, onClick }) => {
                                 <span className="text-xs font-semibold text-emerald-600 tabular-nums">₱{fmt(paid)}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                                <span className="text-[11px] text-gray-500">Remaining</span>
-                                <span className={`text-xs font-bold tabular-nums ${isPaid ? 'text-emerald-600' : 'text-red-500'}`}>
-                                    {isPaid ? '₱0.00' : '₱' + fmt(bal)}
+                                <span className="text-[11px] text-gray-500">{overpaid > 0 ? 'Overpaid by' : 'Remaining'}</span>
+                                <span className={`text-xs font-bold tabular-nums ${overpaid > 0 ? 'text-orange-600' : isPaid ? 'text-emerald-600' : 'text-red-500'}`}>
+                                    {overpaid > 0 ? '₱' + fmt(overpaid) : isPaid ? '₱0.00' : '₱' + fmt(bal)}
                                 </span>
                             </div>
                         </div>
@@ -349,6 +362,7 @@ const PaymentEntry = ({ p, idx, onDelete, onEdit, isAdmin }) => {
 const DetailModal = ({ profile, onClose, onAddPayment, onEditPayment, onDeletePayment, isAdmin }) => {
     const totalPaid = (profile.payments || []).reduce((s, p) => s + Number(p.amount), 0);
     const bal = getBalance(profile);
+    const overpaid = getOverpaidAmount(profile);
     const isPaid = bal <= 0;
 
     return (
@@ -405,10 +419,10 @@ const DetailModal = ({ profile, onClose, onAddPayment, onEditPayment, onDeletePa
                         </div>
                     )}
 
-                    <div className="rounded-md p-4 flex justify-between items-center mb-4 bg-gray-50 border border-gray-200">
+                    <div className={`rounded-md p-4 flex justify-between items-center mb-4 border ${overpaid > 0 ? 'bg-orange-50 border-orange-200' : 'bg-gray-50 border-gray-200'}`}>
                         <div>
                             <div className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                                Open balance
+                                {overpaid > 0 ? 'Overpaid' : 'Open balance'}
                             </div>
                             {(profile.payments || []).length > 0 && (
                                 <div className="text-xs mt-0.5 text-gray-500">
@@ -416,8 +430,8 @@ const DetailModal = ({ profile, onClose, onAddPayment, onEditPayment, onDeletePa
                                 </div>
                             )}
                         </div>
-                        <div className="text-xl font-medium text-black">
-                            {isPaid ? '✓ Fully paid' : '₱' + fmt(bal)}
+                        <div className={`text-xl font-medium ${overpaid > 0 ? 'text-orange-600' : 'text-black'}`}>
+                            {overpaid > 0 ? '⚠ +₱' + fmt(overpaid) : isPaid ? '✓ Fully paid' : '₱' + fmt(bal)}
                         </div>
                     </div>
 
@@ -456,13 +470,16 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
     const fileRef = useRef();
     const otherPayments = (profile.payments || []).filter(p => !isEditing || p.id !== editingPayment.id);
     const totalPaid = otherPayments.reduce((s, p) => s + Number(p.amount), 0);
-    const balance = Math.max(0, Number(profile.totalAmountDue) - totalPaid);
+    const rawBalance = Number(profile.totalAmountDue) - totalPaid;
+    const balance = Math.max(0, rawBalance);
     const autoEwt = amount
         ? Math.round((Number(amount) / 1.12) * 0.01 * 100) / 100
         : 0;
     const ewt = applyEwt ? (ewtOverride !== '' ? Number(ewtOverride) : autoEwt) : 0;
     const totalCharges = charges.reduce((s, c) => s + (Number(c.amount) || 0), 0);
     const netAmount = Math.max(0, Math.round((Number(amount || 0) - ewt - totalCharges) * 100) / 100);
+    const overpayAmount = Number(amount) > 0 ? Math.round((netAmount - rawBalance) * 100) / 100 : 0;
+    const willOverpay = overpayAmount > 0.004;
 
     const addCharge = () => setCharges(prev => [...prev, { label: '', amount: '' }]);
     const updateCharge = (idx, field, value) =>
@@ -474,9 +491,8 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
             toast.error('Enter a valid payment amount');
             return;
         }
-        if (netAmount > balance + 0.01) {
-            toast.error(`Net amount ₱${fmt(netAmount)} exceeds open balance ₱${fmt(balance)}`);
-            return;
+        if (willOverpay) {
+            toast(`Recorded as an overpayment of ₱${fmt(overpayAmount)}`, { icon: '⚠️' });
         }
         if (proofFile) {
             const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
@@ -557,7 +573,9 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
                         {[
                             ['Total due', '₱' + fmt(profile.totalAmountDue), ''],
                             ['Paid', '₱' + fmt(totalPaid), 'text-green-600'],
-                            ['Balance', '₱' + fmt(balance), balance > 0 ? 'text-red-600' : 'text-green-600'],
+                            rawBalance < 0
+                                ? ['Overpaid by', '₱' + fmt(Math.abs(rawBalance)), 'text-orange-600']
+                                : ['Balance', '₱' + fmt(balance), balance > 0 ? 'text-red-600' : 'text-green-600'],
                         ].map(([l, v, cls]) => (
                             <div key={l} className="bg-gray-50 rounded-xl p-3">
                                 <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">{l}</div>
@@ -643,6 +661,11 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
                                 <div className="mt-2 bg-blue-50 rounded-lg p-2.5 flex items-center justify-between text-xs font-semibold">
                                     <span className="text-gray-600">Net amount recorded</span>
                                     <span className="text-blue-700">₱{fmt(netAmount)}</span>
+                                </div>
+                            )}
+                            {willOverpay && (
+                                <div className="mt-2 bg-orange-50 border border-orange-200 rounded-lg p-2.5 text-xs text-orange-700 font-medium flex items-center gap-1.5">
+                                    ⚠ This exceeds the open balance by ₱{fmt(overpayAmount)}. It will be recorded as an overpayment.
                                 </div>
                             )}
                         </div>
@@ -1211,7 +1234,14 @@ const InvoicingProfile = ({ onBack }) => {
                                                     ) : <span className="text-xs text-black">—</span>}
                                                 </td>
                                                 <td className="px-4 py-3 text-xs text-right text-black whitespace-nowrap">
-                                                    {totalPaid > 0 ? `₱${fmt(totalPaid)}` : <span className="text-black">—</span>}
+                                                    {totalPaid > 0 ? (
+                                                        <>
+                                                            ₱{fmt(totalPaid)}
+                                                            {getOverpaidAmount(p) > 0 && (
+                                                                <div className="text-orange-600 font-medium">⚠ +₱{fmt(getOverpaidAmount(p))} over</div>
+                                                            )}
+                                                        </>
+                                                    ) : <span className="text-black">—</span>}
                                                 </td>
                                                 <td className="px-4 py-3 text-xs text-right text-black whitespace-nowrap" style={{ overflow: 'visible', position: 'relative' }}>
                                                     <BalanceTooltip profile={p} onClick={() => setDetailProfile(p)} />
