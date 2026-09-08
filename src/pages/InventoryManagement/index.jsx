@@ -91,7 +91,7 @@ const InventoryManagement = () => {
 
   const loadProductSummaries = useCallback(async () => {
     try {
-      const res = await api.get('/inventories/products/summary');
+      const res = await api.get('/inventory-reports/products/summary');
       if (res.success) {
         setProductSummaries(res.data || []);
       } else {
@@ -258,7 +258,7 @@ const InventoryManagement = () => {
         const results = await Promise.all(
           warehouseIds.map((wid) =>
             api
-              .get(`/inventories/report/movements?warehouseId=${wid}`)
+              .get(`/inventory-reports/report/movements?warehouseId=${wid}`)
               .then((res) => ({ wid, rows: Array.isArray(res.data) ? res.data : [] }))
               .catch(() => ({ wid, rows: [] }))
           )
@@ -386,8 +386,8 @@ const InventoryManagement = () => {
       if (dateTo) params.append('dateTo', dateTo);
 
       const [movementsRes, begStockRes] = await Promise.all([
-        api.get(`/inventories/report/movements?${params}`),
-        api.get(`/inventories/report/beginning-stock?${params}`),
+        api.get(`/inventory-reports/report/movements?${params}`),
+        api.get(`/inventory-reports/report/beginning-stock?${params}`),
       ]);
 
       const productMap = {};
@@ -481,7 +481,7 @@ const InventoryManagement = () => {
       if (dateFrom) params.append('dateFrom', dateFrom);
       if (dateTo) params.append('dateTo', dateTo);
 
-      const res = await api.get(`/inventories/report/branch-summary?${params}`);
+      const res = await api.get(`/inventory-reports/report/branch-summary?${params}`);
       if (!res.success) {
         toast.error(res.error || 'Failed to generate report');
         return;

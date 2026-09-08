@@ -105,13 +105,11 @@ export const useSalesData = ({ filterData, statusFilter, searchTerm, currentPage
         setProducts(extractArray(results[2]));
       }).catch(() => { }).finally(() => setStaticDataLoading(false));
 
-      // Everything else — not needed to open the filters, load quietly
-      // in the background so it doesn't compete for the same connections.
       Promise.all([
         api.get('/inventories').catch(() => ({ data: [] })),
         api.get('/warehouse').catch(() => ({ data: [] })),
         api.get('/stocks/warehouses').catch(() => ({ data: [] })),
-        api.get('/inventories/products/summary').catch(() => ({ data: [] })),
+        api.get('/inventory-reports/products/summary').catch(() => ({ data: [] })),
       ]).then(results => {
         setInventories(extractArray(results[0]));
         setWarehouses(extractArray(results[1]));

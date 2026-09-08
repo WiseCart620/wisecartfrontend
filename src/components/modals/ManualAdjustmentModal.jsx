@@ -70,7 +70,7 @@ const ManualAdjustmentModal = ({ isOpen, onClose, stock, onSuccess, currentUser 
     setLoading(true);
     try {
       const res = await api.post(
-        `/inventories/manual-adjustment?userRole=ADMIN`,
+        `/inventory-reports/manual-adjustment?userRole=ADMIN`,
         {
           warehouseId:  stock.warehouseId,
           productId:    stock.productId,

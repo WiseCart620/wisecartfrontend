@@ -120,7 +120,7 @@ export const useInventoryData = () => {
       }
 
       try {
-        const summaryRes = await api.get('/inventories/products/summary');
+        const summaryRes = await api.get('/inventory-reports/products/summary');
         if (summaryRes.success) {
           setProductSummaries(summaryRes.data || []);
         }
@@ -168,7 +168,7 @@ export const useInventoryData = () => {
             if (branchStocksRes.success) {
               setBranchStocks(branchStocksRes.data || []);
             }
-            const summaryRes = await api.get(`/inventories/products/summary?_t=${timestamp}`);
+            const summaryRes = await api.get(`/inventory-reports/products/summary?_t=${timestamp}`);
             if (summaryRes.success) {
               setProductSummaries(summaryRes.data || []);
             }

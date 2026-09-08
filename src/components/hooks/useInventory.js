@@ -42,7 +42,7 @@ export const useInventory = () => {
         api.get('/stocks/branches'),
         api.get('/sales'),
         api.get('/companies'),
-        api.get('/inventories/products/summary')
+        api.get('/inventory-reports/products/summary')
       ]);
 
       setInventories(invRes.success ? (invRes.data?.content || invRes.data || []) : []);
