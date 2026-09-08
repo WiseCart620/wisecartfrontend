@@ -147,11 +147,11 @@ const BalanceTooltip = ({ profile, onClick }) => {
         >
             <button
                 onClick={onClick}
-                className="text-right w-full font-medium text-sm text-black underline decoration-dashed underline-offset-2 cursor-pointer transition-colors hover:text-gray-700"            >
+                className="text-right w-full text-xs text-black underline decoration-dashed underline-offset-2 cursor-pointer transition-colors hover:text-gray-700"            >
                 {isPaid ? '✓ Paid' : '₱' + fmt(bal)}
             </button>
             {payments.length > 0 && (
-                <div className="text-[10px] text-gray-400 text-right mt-0.5 tabular-nums">
+                <div className="text-xs text-black text-right mt-0.5 tabular-nums">
                     {payments.length} payment{payments.length > 1 ? 's' : ''} · ₱{fmt(paid)}
                 </div>
             )}
@@ -271,7 +271,7 @@ const PaymentEntry = ({ p, idx, onDelete, onEdit, isAdmin }) => {
                         <button
                             onClick={(e) => { e.stopPropagation(); onEdit(p); }}
                             title="Edit this payment"
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-black transition"
                         >
                             <Pencil size={14} />
                         </button>
@@ -280,12 +280,12 @@ const PaymentEntry = ({ p, idx, onDelete, onEdit, isAdmin }) => {
                         <button
                             onClick={(e) => { e.stopPropagation(); onDelete(p.id); }}
                             title="Delete this payment"
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-red-600 transition"
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-black hover:bg-gray-100 hover:text-red-600 transition"
                         >
                             <Trash2 size={14} />
                         </button>
                     )}
-                    <div className="w-7 h-7 flex items-center justify-center text-gray-400">
+                    <div className="w-7 h-7 flex items-center justify-center text-gray-600">
                         {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </div>
                 </div>
@@ -368,7 +368,7 @@ const DetailModal = ({ profile, onClose, onAddPayment, onEditPayment, onDeletePa
                             Invoice dated {fmtDate(profile.invoiceDate || profile.createdAt)}
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 rounded-lg">
+                    <button onClick={onClose} className="p-1 text-gray-600 hover:text-black rounded-lg">
                         <X size={18} />
                     </button>
                 </div>
@@ -547,7 +547,7 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
                         <div className="font-medium text-black">{isEditing ? 'Edit payment' : 'Record payment'}</div>
                         <div className="text-xs text-gray-500 mt-0.5">{profile.soldTo}</div>
                     </div>
-                    <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 rounded-lg">
+                    <button onClick={onClose} className="p-1 text-gray-600 hover:text-black rounded-lg">
                         <X size={18} />
                     </button>
                 </div>
@@ -630,7 +630,7 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
                                             <button
                                                 type="button"
                                                 onClick={() => removeCharge(idx)}
-                                                className="w-6 h-6 flex items-center justify-center text-red-400 hover:text-red-600"
+                                                className="w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700"
                                             >
                                                 <X size={14} />
                                             </button>
@@ -738,7 +738,7 @@ const MultiSelectDropdown = ({ label, options, selected, onChange }) => {
                 <span className="truncate text-gray-700">
                     {selected.length === 0 ? label : `${label} (${selected.length})`}
                 </span>
-                <ChevronDown size={14} className={`text-gray-400 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
+                <ChevronDown size={14} className={`text-gray-600 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
             </button>
 
             {open && (
@@ -1147,20 +1147,20 @@ const InvoicingProfile = ({ onBack }) => {
                                     return (
                                         <React.Fragment key={p.id}>
                                             <tr className={`${rowBg} transition`}>
-                                                <td className="px-4 py-3 text-xs font-mono whitespace-nowrap">
+                                                <td className="px-4 py-3 text-xs text-black whitespace-nowrap">
                                                     {p.invoiceNumber ? (
                                                         <button
                                                             onClick={() => setReceiptProfile(p)}
-                                                            className="text-black hover:underline font-mono font-medium"
+                                                            className="text-black hover:underline"
                                                             title="View Invoice Receipt"
                                                         >
                                                             {p.invoiceNumber}
                                                         </button>
                                                     ) : (
-                                                        <span className="text-gray-300 italic">—</span>
+                                                        <span className="text-black italic">—</span>
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">
+                                                <td className="px-4 py-3 text-xs text-black whitespace-nowrap">
                                                     {editingDateId === p.id ? (
                                                         <input
                                                             type="date"
@@ -1172,7 +1172,7 @@ const InvoicingProfile = ({ onBack }) => {
                                                                 if (e.key === 'Enter') saveDate(p.id);
                                                                 if (e.key === 'Escape') { setEditingDateId(null); setEditingDateValue(''); }
                                                             }}
-                                                            className="border border-blue-400 rounded px-1 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                            className="border border-blue-400 rounded px-1 py-0.5 text-xs text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
                                                         />
                                                     ) : (
                                                         <button
@@ -1188,32 +1188,32 @@ const InvoicingProfile = ({ onBack }) => {
                                                         </button>
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">{fmtPeriod(p)}</td>
-                                                <td className="px-4 py-3 text-sm font-medium text-black max-w-[160px] truncate">
+                                                <td className="px-4 py-3 text-xs text-black whitespace-nowrap">{fmtPeriod(p)}</td>
+                                                <td className="px-4 py-3 text-xs text-black max-w-[160px] truncate">
                                                     {p.soldTo}
                                                     {p.companyName && p.companyName !== p.soldTo && (
-                                                        <div className="text-[10px] text-gray-400 font-normal">{p.companyName}</div>
+                                                        <div className="text-xs text-black">{p.companyName}</div>
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-3 text-xs text-right font-medium text-black whitespace-nowrap">₱{fmt(p.vatableSales)}</td>
-                                                <td className="px-4 py-3 text-xs text-right font-medium text-black whitespace-nowrap">₱{fmt(p.vat)}</td>
-                                                <td className="px-4 py-3 text-xs text-right font-medium text-black whitespace-nowrap">₱{fmt(p.withholdingTax)}</td>
-                                                <td className="px-4 py-3 text-xs text-right font-medium text-black whitespace-nowrap">₱{fmt(p.totalAmountDue)}</td>
-                                                <td className="px-4 py-3 text-center text-xs text-gray-600 whitespace-nowrap">
-                                                    {termsDays !== null ? p.companyTerms : <span className="text-gray-300">—</span>}
+                                                <td className="px-4 py-3 text-xs text-right text-black whitespace-nowrap">₱{fmt(p.vatableSales)}</td>
+                                                <td className="px-4 py-3 text-xs text-right text-black whitespace-nowrap">₱{fmt(p.vat)}</td>
+                                                <td className="px-4 py-3 text-xs text-right text-black whitespace-nowrap">₱{fmt(p.withholdingTax)}</td>
+                                                <td className="px-4 py-3 text-xs text-right text-black whitespace-nowrap">₱{fmt(p.totalAmountDue)}</td>
+                                                <td className="px-4 py-3 text-center text-xs text-black whitespace-nowrap">
+                                                    {termsDays !== null ? p.companyTerms : <span className="text-black">—</span>}
                                                 </td>
                                                 <td className="px-4 py-3 text-center whitespace-nowrap">
                                                     {termsDays !== null ? (
-                                                        overdueDays === null ? <span className="text-[10px] text-gray-300">—</span>
-                                                            : overdueDays === 0 ? <span className="text-[10px] font-medium text-black">Due today</span>
-                                                                : overdueDays < 0 ? <span className="text-[10px] font-medium text-black">{Math.abs(overdueDays)}d</span>
-                                                                    : <span className="text-[10px] font-medium text-black">{overdueDays}d</span>
-                                                    ) : <span className="text-[10px] text-gray-300">—</span>}
+                                                        overdueDays === null ? <span className="text-xs text-black">—</span>
+                                                            : overdueDays === 0 ? <span className="text-xs text-black">Due today</span>
+                                                                : overdueDays < 0 ? <span className="text-xs text-black">{Math.abs(overdueDays)}d</span>
+                                                                    : <span className="text-xs text-black">{overdueDays}d</span>
+                                                    ) : <span className="text-xs text-black">—</span>}
                                                 </td>
-                                                <td className="px-4 py-3 text-xs text-right font-medium text-black whitespace-nowrap">
-                                                    {totalPaid > 0 ? `₱${fmt(totalPaid)}` : <span className="text-gray-300">—</span>}
+                                                <td className="px-4 py-3 text-xs text-right text-black whitespace-nowrap">
+                                                    {totalPaid > 0 ? `₱${fmt(totalPaid)}` : <span className="text-black">—</span>}
                                                 </td>
-                                                <td className="px-4 py-3 text-xs text-right font-semibold whitespace-nowrap" style={{ overflow: 'visible', position: 'relative' }}>
+                                                <td className="px-4 py-3 text-xs text-right text-black whitespace-nowrap" style={{ overflow: 'visible', position: 'relative' }}>
                                                     <BalanceTooltip profile={p} onClick={() => setDetailProfile(p)} />
                                                 </td>
                                                 {/* Cost of Sales */}
@@ -1226,12 +1226,12 @@ const InvoicingProfile = ({ onBack }) => {
                                                                 loadCosData(p.id);
                                                             }
                                                         }}
-                                                        className="text-black font-medium hover:underline inline-flex items-center gap-1"
+                                                        className="text-xs text-black hover:underline inline-flex items-center gap-1"
                                                     >
                                                         {expandedRows[p.id] ? (
-                                                            <ChevronUp size={12} className="text-gray-500" />
+                                                            <ChevronUp size={12} className="text-black" />
                                                         ) : (
-                                                            <ChevronDown size={12} className="text-gray-500" />
+                                                            <ChevronDown size={12} className="text-black" />
                                                         )}
                                                         {cosData[p.id] === undefined ? '...' :
                                                             cosData[p.id] === null ? '...' :
@@ -1248,10 +1248,10 @@ const InvoicingProfile = ({ onBack }) => {
                                                     <div className="flex items-center justify-center gap-1">
                                                         {isAdmin && (
                                                             <button onClick={() => { setEditingPayment(null); setPaymentProfile(p); }} title="Record payment" className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200 transition">
-                                                                <img src="/money.png" alt="Record payment" className="w-4 h-4 opacity-70" />
+                                                                <img src="/money.png" alt="Record payment" className="w-4 h-4" style={{ filter: 'grayscale(1) brightness(0)' }} />
                                                             </button>
                                                         )}
-                                                        <button onClick={() => handleDelete(p.id)} title="Delete" className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200 transition">
+                                                        <button onClick={() => handleDelete(p.id)} title="Delete" className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 text-black hover:bg-gray-200 hover:text-red-600 transition">
                                                             <Trash2 size={15} />
                                                         </button>
                                                     </div>
@@ -1362,14 +1362,14 @@ const InvoicingProfile = ({ onBack }) => {
                             <h2 className="text-xl font-bold text-gray-900">Invoice Report</h2>
                             <div className="flex gap-3">
                                 <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">🖨️ Print</button>
-                                <button onClick={() => setReceiptProfile(null)} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"><X size={24} /></button>
+                                <button onClick={() => setReceiptProfile(null)} className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-lg transition"><X size={24} /></button>
                             </div>
                         </div>
-                        <div className="p-8" id="invoice-report">
+                        <div className="p-8 text-sm text-black" id="invoice-report">
                             <div className="flex justify-between items-start mb-5 pb-4 border-gray-900">
                                 <div className="text-left leading-none space-y-0">
-                                    <div className="text-[34px] font-bold text-gray-900 -mb-0 font-serif tracking-tight">WISECART MERCHANTS CORP.</div>
-                                    <div className="text-[18px] text-gray-900 font-medium space-y-[1px] tracking-tight">
+                                    <div className="text-sm font-bold text-black -mb-0 font-serif tracking-tight">WISECART MERCHANTS CORP.</div>
+                                    <div className="text-sm text-black font-medium space-y-[1px] tracking-tight">
                                         <div>407B 4F Tower One Plaza Magellan The Mactan Newtown</div>
                                         <div>Mactan 6015 City of Lapu-lapu Cebu, Phils.</div>
                                         <div>VAT REG. TIN 010-751-561-00000</div>
@@ -1377,105 +1377,105 @@ const InvoicingProfile = ({ onBack }) => {
                                 </div>
                                 <div className="text-right">
                                     <div className="inline-block text-left leading-none">
-                                        <div className="text-3xl font-bold text-gray-900 tracking-widest">SALES</div>
-                                        <div className="text-3xl font-bold text-gray-900 tracking-widest -mt-2">INVOICE</div>
+                                        <div className="text-sm font-bold text-black tracking-widest">SALES</div>
+                                        <div className="text-sm font-bold text-black tracking-widest">INVOICE</div>
                                     </div>
-                                    <div className="text-lg font-semibold flex items-center gap-1">
+                                    <div className="text-sm font-semibold flex items-center gap-1">
                                         NO.
-                                        <input type="text" readOnly value={receiptProfile.invoiceNumber || ''} placeholder="_____________" className="border-b border-gray-500 w-36 text-center focus:outline-none bg-transparent print:border-0" />
+                                        <input type="text" readOnly value={receiptProfile.invoiceNumber || ''} placeholder="_____________" className="border-b border-gray-500 w-36 text-center focus:outline-none bg-transparent print:border-0 text-sm text-black" />
                                     </div>
                                 </div>
                             </div>
                             <div className="flex justify-between items-center mb-2 mt-11">
                                 <div className="flex gap-6">
-                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700"><input type="checkbox" className="w-6 h-6 border-2 border-gray-900" /> CASH SALES</label>
-                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700"><input type="checkbox" className="w-6 h-6 border-2 border-gray-900" /> CHARGE SALES</label>
+                                    <label className="flex items-center gap-2 text-sm font-medium text-black"><input type="checkbox" className="w-6 h-6 border-2 border-gray-900" /> CASH SALES</label>
+                                    <label className="flex items-center gap-2 text-sm font-medium text-black"><input type="checkbox" className="w-6 h-6 border-2 border-gray-900" /> CHARGE SALES</label>
                                 </div>
                                 <div className="text-right">
-                                    <div className="flex items-center gap-2 justify-end text-gray-900">
+                                    <div className="flex items-center gap-2 justify-end text-black">
                                         <span className="font-medium">DATE:</span>
-                                        <input type="text" readOnly value={receiptProfile.invoiceDate ? new Date(receiptProfile.invoiceDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : receiptProfile.createdAt ? new Date(receiptProfile.createdAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : ''} className="border-b border-gray-500 text-sm focus:outline-none bg-transparent print:border-0" />
+                                        <input type="text" readOnly value={receiptProfile.invoiceDate ? new Date(receiptProfile.invoiceDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : receiptProfile.createdAt ? new Date(receiptProfile.createdAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : ''} className="border-b border-gray-500 text-sm focus:outline-none bg-transparent print:border-0 text-black" />
                                     </div>
                                 </div>
                             </div>
                             <div className="border border-gray-900 p-3 mb-1.5" style={{ height: '165px' }}>
                                 <div className="flex flex-col gap-2">
-                                    <div className="flex items-center mb-1.5"><span className="font-bold text-gray-900 w-48">SOLD TO:</span><span className="text-black-900 flex-1 print-visible">{receiptProfile.soldTo || 'N/A'}</span></div>
-                                    <div className="flex items-center mb-1.5"><span className="font-bold text-gray-900 w-48">REGISTERED NAME:</span><span className="text-black-900 flex-1 print-visible">{receiptProfile.registeredName || 'N/A'}</span></div>
-                                    <div className="flex items-center mb-1.5"><span className="font-bold text-gray-900 w-48">TIN:</span><span className="text-black-900 flex-1 print-visible">{receiptProfile.tin || 'N/A'}</span></div>
-                                    <div className="grid grid-cols-[180px_1fr] items-start gap-3"><div className="font-bold text-gray-900 pt-1 self-start">BUSINESS ADDRESS:</div><div className="text-black-900 -mt-1 leading-[1.1] tracking-tight print-visible">{receiptProfile.businessAddress || 'N/A'}</div></div>
+                                    <div className="flex items-center mb-1.5"><span className="font-bold text-black w-48 text-sm">SOLD TO:</span><span className="text-black flex-1 text-sm print-visible">{receiptProfile.soldTo || 'N/A'}</span></div>
+                                    <div className="flex items-center mb-1.5"><span className="font-bold text-black w-48 text-sm">REGISTERED NAME:</span><span className="text-black flex-1 text-sm print-visible">{receiptProfile.registeredName || 'N/A'}</span></div>
+                                    <div className="flex items-center mb-1.5"><span className="font-bold text-black w-48 text-sm">TIN:</span><span className="text-black flex-1 text-sm print-visible">{receiptProfile.tin || 'N/A'}</span></div>
+                                    <div className="grid grid-cols-[180px_1fr] items-start gap-3"><div className="font-bold text-black pt-1 self-start text-sm">BUSINESS ADDRESS:</div><div className="text-black -mt-1 leading-[1.1] tracking-tight text-sm print-visible">{receiptProfile.businessAddress || 'N/A'}</div></div>
                                 </div>
                             </div>
                             <div className="border border-b-0 border-gray-900">
                                 <table className="w-full" style={{ borderCollapse: 'collapse', minHeight: '150mm' }}>
                                     <thead>
                                         <tr className="border-b border-gray-900">
-                                            <th className="text-left px-4 py-1 font-bold text-gray-900 text-sm leading-tight" style={{ width: '60%' }}>ITEM DESCRIPTION / NATURE OF SERVICE</th>
-                                            <th className="text-right px-4 py-1 font-bold text-gray-900 text-sm leading-tight" style={{ width: '12%' }}>QTY.</th>
-                                            <th className="text-right px-4 py-1 text-gray-900 text-xs text-[11px] leading-tight" style={{ width: '12%' }}>UNIT COST / PRICE</th>
-                                            <th className="text-right px-4 py-1 font-bold text-gray-900 text-sm leading-tight" style={{ width: '15%' }}>AMOUNT</th>
+                                            <th className="text-left px-4 py-1 font-bold text-black text-sm leading-tight" style={{ width: '60%' }}>ITEM DESCRIPTION / NATURE OF SERVICE</th>
+                                            <th className="text-right px-4 py-1 font-bold text-black text-sm leading-tight" style={{ width: '12%' }}>QTY.</th>
+                                            <th className="text-right px-4 py-1 font-bold text-black text-sm leading-tight" style={{ width: '12%' }}>UNIT COST / PRICE</th>
+                                            <th className="text-right px-4 py-1 font-bold text-black text-sm leading-tight" style={{ width: '15%' }}>AMOUNT</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {(receiptProfile.items || []).map((item, i) => (
                                             <tr key={i} className="align-top">
-                                                <td className="py-1 px-4 text-sm text-gray-900 leading-tight">{item.productName}{item.variationDisplay && item.variationDisplay !== 'Adjustment' && <span> {item.variationDisplay}{item.upc ? ` - ${item.upc}` : ''}</span>}{item.variationDisplay === 'Adjustment' && <span className="ml-2 text-xs text-blue-600 italic">(Adjustment)</span>}</td>
-                                                <td className="py-1 px-4 text-right text-sm text-gray-900 leading-tight">{Number(item.totalQuantity).toLocaleString()}</td>
-                                                <td className="py-1 px-4 text-right text-sm text-gray-900 leading-tight">{fmt(item.unitCost)}</td>
-                                                <td className="py-1 px-4 text-right text-sm text-gray-900 leading-tight">{fmt(item.totalAmount)}</td>
+                                                <td className="py-1 px-4 text-sm text-black leading-tight">{item.productName}{item.variationDisplay && item.variationDisplay !== 'Adjustment' && <span> {item.variationDisplay}{item.upc ? ` - ${item.upc}` : ''}</span>}{item.variationDisplay === 'Adjustment' && <span className="ml-2 text-sm text-black italic">(Adjustment)</span>}</td>
+                                                <td className="py-1 px-4 text-right text-sm text-black leading-tight">{Number(item.totalQuantity).toLocaleString()}</td>
+                                                <td className="py-1 px-4 text-right text-sm text-black leading-tight">{fmt(item.unitCost)}</td>
+                                                <td className="py-1 px-4 text-right text-sm text-black leading-tight">{fmt(item.totalAmount)}</td>
                                             </tr>
                                         ))}
                                         {(!receiptProfile.items || receiptProfile.items.length === 0) && (
-                                            <tr><td colSpan={4} className="py-8 text-center text-gray-400 italic text-sm">No item data saved for this invoice.</td></tr>
+                                            <tr><td colSpan={4} className="py-8 text-center text-black italic text-sm">No item data saved for this invoice.</td></tr>
                                         )}
                                         <tr className="h-full"><td colSpan={4} className="p-0"></td></tr>
                                     </tbody>
                                 </table>
                             </div>
                             {/* VAT Summary Section */}
-                            <div className="grid grid-cols-6 border border-gray-900 text-sm">
+                            <div className="grid grid-cols-6 border border-gray-900 text-sm text-black">
                                 <div className="col-span-2 grid grid-cols-2">
-                                    <div className="px-2 py-3 flex flex-col justify-start font-medium text-[13px]">
+                                    <div className="px-2 py-3 flex flex-col justify-start font-medium text-sm">
                                         <div className="mb-2">Total Sales:</div>
                                         <div className="mb-2">VAT/PT:</div>
                                         <div className="mb-2">Zero-Rated Sales:</div>
                                         <div>VAT-Exempt Sales:</div>
                                     </div>
-                                    <div className="px-4 py-3 flex flex-col justify-start text-[15px]">
-                                        <input readOnly value={fmt(receiptProfile.vatableSales || 0)} className="w-full text-right pb-0 mb-2 bg-transparent" />
-                                        <input readOnly value={fmt(receiptProfile.vat || 0)} className="w-full text-right pb-0 mb-2 bg-transparent" />
-                                        <input readOnly value={fmt(0)} className="w-full text-right pb-0 mb-2 bg-transparent" />
-                                        <input readOnly value={fmt(0)} className="w-full text-right pb-0 bg-transparent" />
+                                    <div className="px-4 py-3 flex flex-col justify-start text-sm">
+                                        <input readOnly value={fmt(receiptProfile.vatableSales || 0)} className="w-full text-right pb-0 mb-2 bg-transparent text-black" />
+                                        <input readOnly value={fmt(receiptProfile.vat || 0)} className="w-full text-right pb-0 mb-2 bg-transparent text-black" />
+                                        <input readOnly value={fmt(0)} className="w-full text-right pb-0 mb-2 bg-transparent text-black" />
+                                        <input readOnly value={fmt(0)} className="w-full text-right pb-0 bg-transparent text-black" />
                                     </div>
                                 </div>
-                                <div className="border-l border-r border-gray-900 px-3 py-3 flex flex-col justify-center text-[11px]">
+                                <div className="border-l border-r border-gray-900 px-3 py-3 flex flex-col justify-center text-sm">
                                     <div className="font-medium leading-tight">SC/PWD/NAAC/MOV/<br />SOLO PARENT ID No.:</div>
                                     <div className="font-medium leading-tight mt-9">SC/PWD/NAAC/MOV/<br />Signature:</div>
                                 </div>
-                                <div className="border-r border-gray-900 px-3 py-3 flex flex-col justify-center text-[13px]">
-                                    <input type="text" readOnly className="w-full pb-0 text-sm -mt-1 bg-transparent" />
-                                    <input type="text" readOnly className="w-full pb-0 text-sm mt-5 bg-transparent" />
+                                <div className="border-r border-gray-900 px-3 py-3 flex flex-col justify-center text-sm">
+                                    <input type="text" readOnly className="w-full pb-0 text-sm -mt-1 bg-transparent text-black" />
+                                    <input type="text" readOnly className="w-full pb-0 text-sm mt-5 bg-transparent text-black" />
                                 </div>
                                 <div className="col-span-2 grid grid-cols-2">
-                                    <div className="px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
-                                        <div className="mb-2 text-[9px]">TOTAL SALES (VAT Inclusive)</div>
+                                    <div className="px-2 py-3 flex flex-col justify-start font-medium text-sm">
+                                        <div className="mb-2 text-sm">TOTAL SALES (VAT Inclusive)</div>
                                         <div className="mb-2">Less: VAT</div>
                                         <div className="mb-2">Amount: Net of VAT</div>
-                                        <div>Less: Discount<br /><span className="text-[10px]">(SC/PWD/NAAC/MOV/SP)</span></div>
+                                        <div>Less: Discount<br /><span className="text-sm">(SC/PWD/NAAC/MOV/SP)</span></div>
                                     </div>
                                     <div className="px-4 pt-2 flex flex-col justify-start">
-                                        <input readOnly value={fmt((receiptProfile.vatableSales || 0) + (receiptProfile.vat || 0))} className="w-full text-right pb-0 mb-2 text-[15px] bg-transparent" />
-                                        <input readOnly value={fmt(receiptProfile.vat || 0)} className="w-full text-right pb-0 mb-2 text-[15px] bg-transparent" />
-                                        <input readOnly value={fmt(receiptProfile.vatableSales || 0)} className="w-full text-right pb-0 mb-2 text-[15px] bg-transparent" />
-                                        <input readOnly value={fmt(0)} className="w-full text-right pb-0 text-[15px] bg-transparent" />
+                                        <input readOnly value={fmt((receiptProfile.vatableSales || 0) + (receiptProfile.vat || 0))} className="w-full text-right pb-0 mb-2 text-sm bg-transparent text-black" />
+                                        <input readOnly value={fmt(receiptProfile.vat || 0)} className="w-full text-right pb-0 mb-2 text-sm bg-transparent text-black" />
+                                        <input readOnly value={fmt(receiptProfile.vatableSales || 0)} className="w-full text-right pb-0 mb-2 text-sm bg-transparent text-black" />
+                                        <input readOnly value={fmt(0)} className="w-full text-right pb-0 text-sm bg-transparent text-black" />
                                     </div>
                                 </div>
                             </div>
 
                             {/* Total Amount Due Section */}
-                            <div className="grid grid-cols-6 border-l border-r border-b border-gray-900 text-sm">
+                            <div className="grid grid-cols-6 border-l border-r border-b border-gray-900 text-sm text-black">
                                 <div className="col-span-4 border-r border-gray-900 px-4">
-                                    <label className="flex items-start gap-2 text-sm font-medium text-gray-700">
+                                    <label className="flex items-start gap-2 text-sm font-medium text-black">
                                         <input type="checkbox" className="w-6 h-6 mt-8" />
                                         <div>
                                             <div className="mb-8 mt-8">Received the amount of</div>
@@ -1484,22 +1484,22 @@ const InvoicingProfile = ({ onBack }) => {
                                     </label>
                                 </div>
                                 <div className="col-span-2 grid grid-cols-2">
-                                    <div className="px-2 py-3 flex flex-col justify-start font-medium text-[11px]">
+                                    <div className="px-2 py-3 flex flex-col justify-start font-medium text-sm">
                                         <div className="mb-2">Add: VAT</div>
                                         <div className="mb-2">Less: Withholding Tax</div>
                                         <div>Total Amount Due:</div>
                                     </div>
                                     <div className="px-4 pt-2 flex flex-col justify-start">
-                                        <input readOnly value={fmt(receiptProfile.vat || 0)} className="w-full text-right pb-0 mb-2 text-[15px] bg-transparent" />
-                                        <input readOnly value={fmt(receiptProfile.withholdingTax || 0)} className="w-full text-right pb-0 mb-2 text-[15px] bg-transparent" />
-                                        <input readOnly value={fmt(receiptProfile.totalAmountDue || 0)} className="w-full text-right font-bold pb-0 text-[16px] bg-transparent" />
+                                        <input readOnly value={fmt(receiptProfile.vat || 0)} className="w-full text-right pb-0 mb-2 text-sm bg-transparent text-black" />
+                                        <input readOnly value={fmt(receiptProfile.withholdingTax || 0)} className="w-full text-right pb-0 mb-2 text-sm bg-transparent text-black" />
+                                        <input readOnly value={fmt(receiptProfile.totalAmountDue || 0)} className="w-full text-right font-bold pb-0 text-sm bg-transparent text-black" />
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 border border-gray-900 text-sm mt-6">
-                                <div className="border-gray-900 px-4 py-2"><div className="font-medium text-[16px]">PERMIT TO USE LOOSE LEAF No. : LLSI-080-1024-00002</div><div className="font-medium text-[16px]">DATE ISSUED: OCT. 11, 2024</div></div>
-                                <div className="px-4 py-2 pb-4"><div className="font-medium text-[16px]">BIR AUTHORITY TO PRINT No. 080AU20240000016398</div><div className="font-medium text-[16px]">DATE ISSUED: OCT. 23, 2024</div><div className="font-medium text-[16px]">APPROVED SERIES: 0501-1500 • 20PADS (2X)</div></div>
+                            <div className="grid grid-cols-2 border border-gray-900 text-sm text-black mt-6">
+                                <div className="border-gray-900 px-4 py-2"><div className="font-medium text-sm">PERMIT TO USE LOOSE LEAF No. : LLSI-080-1024-00002</div><div className="font-medium text-sm">DATE ISSUED: OCT. 11, 2024</div></div>
+                                <div className="px-4 py-2 pb-4"><div className="font-medium text-sm">BIR AUTHORITY TO PRINT No. 080AU20240000016398</div><div className="font-medium text-sm">DATE ISSUED: OCT. 23, 2024</div><div className="font-medium text-sm">APPROVED SERIES: 0501-1500 • 20PADS (2X)</div></div>
                             </div>
                         </div>
                     </div>
