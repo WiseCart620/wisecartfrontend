@@ -147,8 +147,7 @@ const BalanceTooltip = ({ profile, onClick }) => {
         >
             <button
                 onClick={onClick}
-                className={`text-right w-full font-semibold text-sm underline decoration-dashed underline-offset-2 cursor-pointer transition-colors ${isPaid ? 'text-emerald-600 hover:text-emerald-700' : 'text-red-500 hover:text-red-600'
-                    }`}
+                className="text-right w-full font-medium text-sm text-gray-800 underline decoration-dashed underline-offset-2 cursor-pointer transition-colors hover:text-gray-600"
             >
                 {isPaid ? '✓ Paid' : '₱' + fmt(bal)}
             </button>
@@ -1043,17 +1042,17 @@ const InvoicingProfile = ({ onBack }) => {
                     <table className="w-full min-w-[1100px]" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
                         <thead className="bg-gray-50 border-b border-gray-200">
                             <tr className="bg-gray-100 border-b border-gray-200">
-                                <th colSpan={4} className="px-4 py-2 text-[11px] font-semibold text-gray-600 uppercase tracking-wide text-left">
+                                <th colSpan={4} className="px-4 py-2 text-[11px] font-medium text-gray-800 uppercase tracking-wide text-left">
                                     Totals ({filtered.length} invoice{filtered.length !== 1 ? 's' : ''})
                                 </th>
-                                <th className="px-4 py-2 text-xs font-bold text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.vatableSales)}</th>
-                                <th className="px-4 py-2 text-xs font-bold text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.vat)}</th>
-                                <th className="px-4 py-2 text-xs font-bold text-gray-600 text-right whitespace-nowrap">−₱{fmt(totals.withholdingTax)}</th>
-                                <th className="px-4 py-2 text-xs font-bold text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.totalAmountDue)}</th>
+                                <th className="px-4 py-2 text-xs font-medium text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.vatableSales)}</th>
+                                <th className="px-4 py-2 text-xs font-medium text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.vat)}</th>
+                                <th className="px-4 py-2 text-xs font-medium text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.withholdingTax)}</th>
+                                <th className="px-4 py-2 text-xs font-medium text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.totalAmountDue)}</th>
                                 <th colSpan={2}></th>
-                                <th className="px-4 py-2 text-xs font-bold text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.paid)}</th>
-                                <th className="px-4 py-2 text-xs font-bold text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.balance)}</th>
-                                <th className="px-4 py-2 text-xs font-bold text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.cos)}</th>
+                                <th className="px-4 py-2 text-xs font-medium text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.paid)}</th>
+                                <th className="px-4 py-2 text-xs font-medium text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.balance)}</th>
+                                <th className="px-4 py-2 text-xs font-medium text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.cos)}</th>
                                 <th></th>
                             </tr>
                             <tr>
@@ -1122,7 +1121,7 @@ const InvoicingProfile = ({ onBack }) => {
                                                     {p.invoiceNumber ? (
                                                         <button
                                                             onClick={() => setReceiptProfile(p)}
-                                                            className="text-blue-600 hover:underline font-mono font-semibold"
+                                                            className="text-gray-800 hover:underline font-mono font-medium"
                                                             title="View Invoice Receipt"
                                                         >
                                                             {p.invoiceNumber}
@@ -1152,7 +1151,7 @@ const InvoicingProfile = ({ onBack }) => {
                                                                 const d = p.invoiceDate || (p.createdAt ? new Date(p.createdAt).toISOString().split('T')[0] : '');
                                                                 setEditingDateValue(d);
                                                             }}
-                                                            className="text-left hover:text-blue-600 hover:underline decoration-dashed underline-offset-2 transition"
+                                                            className="text-left text-gray-800 hover:underline decoration-dashed underline-offset-2 transition"
                                                             title="Click to edit date"
                                                         >
                                                             {fmtDate(p.invoiceDate || p.createdAt)}
@@ -1166,22 +1165,22 @@ const InvoicingProfile = ({ onBack }) => {
                                                         <div className="text-[10px] text-gray-400 font-normal">{p.companyName}</div>
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-3 text-xs text-right whitespace-nowrap">₱{fmt(p.vatableSales)}</td>
-                                                <td className="px-4 py-3 text-xs text-right whitespace-nowrap">₱{fmt(p.vat)}</td>
-                                                <td className="px-4 py-3 text-xs text-right text-red-600 whitespace-nowrap">−₱{fmt(p.withholdingTax)}</td>
-                                                <td className="px-4 py-3 text-xs text-right font-semibold whitespace-nowrap">₱{fmt(p.totalAmountDue)}</td>
+                                                <td className="px-4 py-3 text-xs text-right font-medium text-gray-800 whitespace-nowrap">₱{fmt(p.vatableSales)}</td>
+                                                <td className="px-4 py-3 text-xs text-right font-medium text-gray-800 whitespace-nowrap">₱{fmt(p.vat)}</td>
+                                                <td className="px-4 py-3 text-xs text-right font-medium text-gray-800 whitespace-nowrap">₱{fmt(p.withholdingTax)}</td>
+                                                <td className="px-4 py-3 text-xs text-right font-medium text-gray-800 whitespace-nowrap">₱{fmt(p.totalAmountDue)}</td>
                                                 <td className="px-4 py-3 text-center text-xs text-gray-600 whitespace-nowrap">
                                                     {termsDays !== null ? p.companyTerms : <span className="text-gray-300">—</span>}
                                                 </td>
                                                 <td className="px-4 py-3 text-center whitespace-nowrap">
                                                     {termsDays !== null ? (
                                                         overdueDays === null ? <span className="text-[10px] text-gray-300">—</span>
-                                                            : overdueDays === 0 ? <span className="text-[10px] font-semibold text-green-600">Due today</span>
-                                                                : overdueDays < 0 ? <span className="text-[10px] font-semibold text-yellow-600">{Math.abs(overdueDays)}d</span>
-                                                                    : <span className="text-[10px] font-semibold text-red-600">{overdueDays}d</span>
+                                                            : overdueDays === 0 ? <span className="text-[10px] font-medium text-gray-800">Due today</span>
+                                                                : overdueDays < 0 ? <span className="text-[10px] font-medium text-gray-800">{Math.abs(overdueDays)}d</span>
+                                                                    : <span className="text-[10px] font-medium text-gray-800">{overdueDays}d</span>
                                                     ) : <span className="text-[10px] text-gray-300">—</span>}
                                                 </td>
-                                                <td className="px-4 py-3 text-xs text-right font-medium text-green-700 whitespace-nowrap">
+                                                <td className="px-4 py-3 text-xs text-right font-medium text-gray-800 whitespace-nowrap">
                                                     {totalPaid > 0 ? `₱${fmt(totalPaid)}` : <span className="text-gray-300">—</span>}
                                                 </td>
                                                 <td className="px-4 py-3 text-xs text-right font-semibold whitespace-nowrap" style={{ overflow: 'visible', position: 'relative' }}>
@@ -1197,12 +1196,12 @@ const InvoicingProfile = ({ onBack }) => {
                                                                 loadCosData(p.id);
                                                             }
                                                         }}
-                                                        className="text-blue-700 font-semibold hover:underline inline-flex items-center gap-1"
+                                                        className="text-gray-800 font-medium hover:underline inline-flex items-center gap-1"
                                                     >
                                                         {expandedRows[p.id] ? (
-                                                            <ChevronUp size={12} className="text-blue-500" />
+                                                            <ChevronUp size={12} className="text-gray-500" />
                                                         ) : (
-                                                            <ChevronDown size={12} className="text-blue-500" />
+                                                            <ChevronDown size={12} className="text-gray-500" />
                                                         )}
                                                         {cosData[p.id] === undefined ? '...' :
                                                             cosData[p.id] === null ? '...' :
@@ -1218,11 +1217,11 @@ const InvoicingProfile = ({ onBack }) => {
                                                 <td className="px-4 py-3 text-center">
                                                     <div className="flex items-center justify-center gap-1">
                                                         {isAdmin && (
-                                                            <button onClick={() => setPaymentProfile(p)} title="Record payment" className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 text-gray-600 hover:bg-gray-200 transition">
-                                                                <img src="/money.png" alt="Record payment" className="w-4 h-4" />
+                                                            <button onClick={() => setPaymentProfile(p)} title="Record payment" className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200 transition">
+                                                                <img src="/money.png" alt="Record payment" className="w-4 h-4 opacity-70" />
                                                             </button>
                                                         )}
-                                                        <button onClick={() => handleDelete(p.id)} title="Delete" className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600 transition">
+                                                        <button onClick={() => handleDelete(p.id)} title="Delete" className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200 transition">
                                                             <Trash2 size={15} />
                                                         </button>
                                                     </div>
