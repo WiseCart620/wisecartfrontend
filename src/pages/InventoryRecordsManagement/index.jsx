@@ -611,7 +611,17 @@ const InventoryRecordsManagement = () => {
           remarks: fullInventory.remarks || '',
           status: 'PENDING',
           confirmedBy: fullInventory.confirmedBy || '',
-          items: fullInventory.items.map(item => ({ productId: item.product.id, variationId: item.variationId || null, quantity: item.quantity }))
+          items: fullInventory.items.map(item => ({
+            productId: item.product.id,
+            variationId: item.variationId || null,
+            quantity: item.quantity,
+            productName: item.product?.productName || item.productDescription || '',
+            productDescription: item.productDescription || '',
+            variationDescription: item.variation || '',
+            upc: item.upc || '',
+            sku: item.sku || '',
+            productNumber: item.productNumber || '',
+          }))
         });
         setWarehouseStocks({});
         setBranchStocks({});
@@ -683,7 +693,15 @@ const InventoryRecordsManagement = () => {
         }
       }
     }
-    const newItems = [...formData.items, { productId: selectedOption.parentProductId, variationId: selectedOption.variationId, quantity: '' }];
+    const newItems = [...formData.items, {
+      productId: selectedOption.parentProductId,
+      variationId: selectedOption.variationId,
+      quantity: '',
+      productName: selectedOption.fullName,
+      sku: selectedOption.sku,
+      upc: selectedOption.upc,
+      variationDescription: selectedOption.subLabel,
+    }];
     setFormData({ ...formData, items: newItems });
     const hasLocation = formData.fromWarehouseId || formData.fromBranchId || formData.toWarehouseId || formData.toBranchId;
     if (hasLocation) {
@@ -703,7 +721,15 @@ const InventoryRecordsManagement = () => {
       if (selectedOption) {
         const isDuplicate = formData.items.some((item, idx) => idx !== index && item.productId === selectedOption.parentProductId && item.variationId === selectedOption.variationId);
         if (isDuplicate) { alert('⚠️ This product variation is already added!\n\nPlease select a different variation or update the quantity of the existing item.'); return; }
-        newItems[index] = { ...newItems[index], productId: selectedOption.parentProductId, variationId: selectedOption.variationId };
+        newItems[index] = {
+          ...newItems[index],
+          productId: selectedOption.parentProductId,
+          variationId: selectedOption.variationId,
+          productName: selectedOption.fullName,
+          sku: selectedOption.sku,
+          upc: selectedOption.upc,
+          variationDescription: selectedOption.subLabel,
+        };
         setFormData({ ...formData, items: newItems });
         const hasLocation = formData.fromWarehouseId || formData.fromBranchId || formData.toWarehouseId || formData.toBranchId;
         if (hasLocation) {

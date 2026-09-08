@@ -368,10 +368,21 @@ const InventoryForm = ({
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 bg-white">
                                     {formData.items.map((item, i) => {
-                                        const selectedOption = productOptions.find(opt =>
+                                        const liveOption = productOptions.find(opt =>
                                             opt.parentProductId === item.productId &&
                                             opt.variationId === item.variationId
                                         );
+                                        const selectedOption = liveOption || (item.productName || item.sku || item.upc
+                                            ? {
+                                                fullName: item.productName || item.productDescription || `Product #${item.productId}`,
+                                                sku: item.sku || 'N/A',
+                                                upc: item.upc || 'N/A',
+                                                subLabel: (item.variationDescription && item.variationDescription !== 'N/A')
+                                                    ? item.variationDescription
+                                                    : 'No variations',
+                                                isVariation: !!item.variationId,
+                                            }
+                                            : null);
                                         const stockInfo = getItemStockInfo(i, item.productId, item.variationId);
                                         const selectedLocation = formData.fromWarehouseId || formData.fromBranchId || formData.toWarehouseId || formData.toBranchId;
 
