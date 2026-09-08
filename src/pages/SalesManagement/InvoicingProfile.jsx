@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, X, Trash2, Eye, ChevronDown, ChevronUp, FileText } from 'lucide-react';
+import { ArrowLeft, X, Trash2, Eye, ChevronDown, ChevronUp, FileText, Pencil } from 'lucide-react';
 import '../../styles/invoice-print.css';
 import { useAuth } from '../../context/AuthContext';
 
@@ -233,7 +233,7 @@ const BalanceTooltip = ({ profile, onClick }) => {
     );
 };
 
-const PaymentEntry = ({ p, idx, onDelete, isAdmin }) => {
+const PaymentEntry = ({ p, idx, onDelete, onEdit, isAdmin }) => {
     const [isOpen, setIsOpen] = useState(false);
     const hasEwt = Number(p.ewtAmount) > 0;
     const chargesList = p.charges || [];
@@ -268,6 +268,15 @@ const PaymentEntry = ({ p, idx, onDelete, isAdmin }) => {
                     </div>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
+                    {isAdmin && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onEdit(p); }}
+                            title="Edit this payment"
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
+                        >
+                            <Pencil size={14} />
+                        </button>
+                    )}
                     {isAdmin && (
                         <button
                             onClick={(e) => { e.stopPropagation(); onDelete(p.id); }}
@@ -338,7 +347,7 @@ const PaymentEntry = ({ p, idx, onDelete, isAdmin }) => {
     );
 };
 
-const DetailModal = ({ profile, onClose, onAddPayment, onDeletePayment, isAdmin }) => {
+const DetailModal = ({ profile, onClose, onAddPayment, onEditPayment, onDeletePayment, isAdmin }) => {
     const totalPaid = (profile.payments || []).reduce((s, p) => s + Number(p.amount), 0);
     const bal = getBalance(profile);
     const isPaid = bal <= 0;
@@ -385,28 +394,30 @@ const DetailModal = ({ profile, onClose, onAddPayment, onDeletePayment, isAdmin 
                     ) : (
                         <div className="space-y-2 mb-4">
                             {profile.payments.map((p, idx) => (
-                                <PaymentEntry key={p.id} p={p} idx={idx} isAdmin={isAdmin} onDelete={(paymentId) => onDeletePayment(profile.id, paymentId)} />
+                                <PaymentEntry
+                                    key={p.id}
+                                    p={p}
+                                    idx={idx}
+                                    isAdmin={isAdmin}
+                                    onDelete={(paymentId) => onDeletePayment(profile.id, paymentId)}
+                                    onEdit={(payment) => { onClose(); onEditPayment(profile, payment); }}
+                                />
                             ))}
                         </div>
                     )}
 
-                    <div
-                        className={`rounded-xl p-4 flex justify-between items-center mb-4 ${isPaid
-                            ? 'bg-green-50 border border-green-200'
-                            : 'bg-red-50 border border-red-200'
-                            }`}
-                    >
+                    <div className="rounded-md p-4 flex justify-between items-center mb-4 bg-gray-50 border border-gray-200">
                         <div>
-                            <div className={`text-xs font-semibold uppercase tracking-wide ${isPaid ? 'text-green-700' : 'text-red-700'}`}>
+                            <div className="text-xs font-medium uppercase tracking-wide text-gray-500">
                                 Open balance
                             </div>
                             {(profile.payments || []).length > 0 && (
-                                <div className={`text-xs mt-0.5 ${isPaid ? 'text-green-600' : 'text-red-600'}`}>
+                                <div className="text-xs mt-0.5 text-gray-500">
                                     ₱{fmt(profile.totalAmountDue)} − ₱{fmt(totalPaid)} paid
                                 </div>
                             )}
                         </div>
-                        <div className={`text-xl font-bold ${isPaid ? 'text-green-700' : 'text-red-700'}`}>
+                        <div className="text-xl font-medium text-gray-800">
                             {isPaid ? '✓ Fully paid' : '₱' + fmt(bal)}
                         </div>
                     </div>
@@ -415,34 +426,38 @@ const DetailModal = ({ profile, onClose, onAddPayment, onDeletePayment, isAdmin 
                         <div className="flex justify-end">
                             <button
                                 onClick={() => { onClose(); onAddPayment(profile); }}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+                                className="flex items-center gap-2 px-4 py-2 bg-[#2CA01C] text-white rounded-md text-sm font-medium hover:bg-[#268d19] transition"
                             >
-                                <img src="/money.png" alt="" className="w-4 h-4" />
+                                <img src="/money.png" alt="" className="w-4 h-4 brightness-0 invert" />
                                 Record payment
                             </button>
                         </div>
                     )}
+
                 </div>
             </div>
         </div>
     );
 };
 
-const PaymentModal = ({ profile, onClose, onSaved }) => {
-    const [amount, setAmount] = useState('');
-    const [applyEwt, setApplyEwt] = useState(true);
-    const [ewtOverride, setEwtOverride] = useState('');
-    const [charges, setCharges] = useState([]); // [{ label, amount }]
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-    const [ref, setRef] = useState('');
+const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
+    const isEditing = !!editingPayment;
+    const [amount, setAmount] = useState(isEditing ? String(editingPayment.grossAmount ?? editingPayment.amount) : '');
+    const [applyEwt, setApplyEwt] = useState(isEditing ? Number(editingPayment.ewtAmount) > 0 : true);
+    const [ewtOverride, setEwtOverride] = useState(isEditing && Number(editingPayment.ewtAmount) > 0 ? String(editingPayment.ewtAmount) : '');
+    const [charges, setCharges] = useState(
+        isEditing && editingPayment.charges?.length
+            ? editingPayment.charges.map(c => ({ label: c.label, amount: String(c.amount) }))
+            : []
+    );
+    const [date, setDate] = useState(isEditing ? editingPayment.paymentDate : new Date().toISOString().split('T')[0]);
+    const [ref, setRef] = useState(isEditing ? (editingPayment.referenceNumber || '') : '');
     const [proofFile, setProofFile] = useState(null);
     const [saving, setSaving] = useState(false);
     const fileRef = useRef();
-
-    const totalPaid = (profile.payments || []).reduce((s, p) => s + Number(p.amount), 0);
+    const otherPayments = (profile.payments || []).filter(p => !isEditing || p.id !== editingPayment.id);
+    const totalPaid = otherPayments.reduce((s, p) => s + Number(p.amount), 0);
     const balance = Math.max(0, Number(profile.totalAmountDue) - totalPaid);
-
-    // EWT = 1% of the VAT-exclusive base of the amount typed
     const autoEwt = amount
         ? Math.round((Number(amount) / 1.12) * 0.01 * 100) / 100
         : 0;
@@ -481,6 +496,17 @@ const PaymentModal = ({ profile, onClose, onSaved }) => {
 
         setSaving(true);
         try {
+            // No dedicated "update payment" endpoint exists yet, so editing is done
+            // as delete-then-recreate against the existing add/delete endpoints.
+            if (isEditing) {
+                const delRes = await api.delete(`/invoice-profiles/${profile.id}/payments/${editingPayment.id}`);
+                if (!delRes.success) {
+                    toast.error(delRes.message || 'Failed to update payment');
+                    setSaving(false);
+                    return;
+                }
+            }
+
             const validCharges = charges.filter(c => c.label && Number(c.amount) > 0);
 
             const formData = new FormData();
@@ -492,29 +518,34 @@ const PaymentModal = ({ profile, onClose, onSaved }) => {
             }
             formData.append('paymentDate', date);
             if (ref) formData.append('referenceNumber', ref);
-            if (proofFile) formData.append('proofFile', proofFile);
+            if (proofFile) {
+                formData.append('proofFile', proofFile);
+            } else if (isEditing && editingPayment.proofFilePath) {
+                toast('Previous proof of payment was cleared. Re-upload it if needed.', { icon: '⚠️' });
+            }
 
             const res = await api.upload(`/invoice-profiles/${profile.id}/payments`, formData);
             if (res.success) {
-                toast.success('Payment recorded successfully!');
+                toast.success(isEditing ? 'Payment updated successfully!' : 'Payment recorded successfully!');
                 onSaved(res.data.data || res.data);
                 onClose();
             } else {
                 toast.error(res.error || 'Failed to save payment');
             }
         } catch (e) {
-            toast.error('Failed to save payment');
+            toast.error(isEditing ? 'Failed to update payment' : 'Failed to save payment');
         } finally {
             setSaving(false);
         }
     };
+
 
     return (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
                 <div className="p-5 border-b border-gray-100 flex justify-between items-center">
                     <div>
-                        <div className="font-semibold text-gray-900">Record payment</div>
+                        <div className="font-medium text-gray-800">{isEditing ? 'Edit payment' : 'Record payment'}</div>
                         <div className="text-xs text-gray-500 mt-0.5">{profile.soldTo}</div>
                     </div>
                     <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 rounded-lg">
@@ -672,9 +703,9 @@ const PaymentModal = ({ profile, onClose, onSaved }) => {
                     <button
                         onClick={handleSave}
                         disabled={saving || !amount || Number(amount) <= 0}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-40"
+                        className="px-4 py-2 bg-[#2CA01C] text-white rounded-md text-sm font-medium hover:bg-[#268d19] transition disabled:opacity-40"
                     >
-                        {saving ? 'Saving...' : 'Save payment'}
+                        {saving ? (isEditing ? 'Updating...' : 'Saving...') : (isEditing ? 'Update payment' : 'Save payment')}
                     </button>
                 </div>
             </div>
@@ -755,6 +786,7 @@ const InvoicingProfile = ({ onBack }) => {
     const [companyFilter, setCompanyFilter] = useState([]);
     const [detailProfile, setDetailProfile] = useState(null);
     const [paymentProfile, setPaymentProfile] = useState(null);
+    const [editingPayment, setEditingPayment] = useState(null);
     const [editingDateId, setEditingDateId] = useState(null);
     const [editingDateValue, setEditingDateValue] = useState('');
     const [receiptProfile, setReceiptProfile] = useState(null);
@@ -971,7 +1003,7 @@ const InvoicingProfile = ({ onBack }) => {
     return (
         <div className="min-h-screen bg-gray-50 p-3 lg:p-5">
             {/* Header */}
-            <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-3 pb-4 border-b border-gray-200">
                 <div>
                     <button
                         onClick={onBack}
@@ -980,26 +1012,25 @@ const InvoicingProfile = ({ onBack }) => {
                         <ArrowLeft size={15} />
                         Back to Sales
                     </button>
-                    <h1 className="text-xl font-bold text-gray-900">Sales Journal</h1>
+                    <h1 className="text-xl font-medium text-gray-800">Sales Journal</h1>
                     <p className="text-xs text-gray-500 mt-0.5">
                         Hover open balance to preview · Click to view full detail
                     </p>
                 </div>
                 <button
                     onClick={load}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-100 transition"
+                    className="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition"
                 >
                     ↻ Refresh
                 </button>
             </div>
 
-            {/* Filters */}
-            <div className="bg-white rounded-xl border border-gray-200 p-3 mb-3 flex flex-wrap gap-3 items-center">
+            <div className="bg-white rounded-md border border-gray-200 p-3 mb-3 flex flex-wrap gap-3 items-center">
                 <input
                     placeholder="Search Invoice #..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-48 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="px-3 py-2 border border-gray-300 rounded-md text-sm w-48 focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
                 />
                 <MultiSelectDropdown
                     label="Company"
@@ -1029,7 +1060,7 @@ const InvoicingProfile = ({ onBack }) => {
                 <select
                     value={sortOrder}
                     onChange={(e) => setSortOrder(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-700 focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
                 >
                     <option value="asc">Invoice # ↑ Ascending</option>
                     <option value="desc">Invoice # ↓ Descending</option>
@@ -1037,11 +1068,11 @@ const InvoicingProfile = ({ onBack }) => {
                 </select>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-md border border-gray-200 overflow-hidden">
                 <div className="overflow-auto" style={{ maxHeight: '70vh' }}>
                     <table className="w-full min-w-[1100px]" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
-                        <thead className="bg-gray-50 border-b border-gray-200">
-                            <tr className="bg-gray-100 border-b border-gray-200">
+                        <thead className="bg-gray-50 border-b-2 border-gray-200">
+                            <tr className="bg-gray-50 border-b-2 border-gray-200">
                                 <th colSpan={4} className="px-4 py-2 text-[11px] font-medium text-gray-800 uppercase tracking-wide text-left">
                                     Totals ({filtered.length} invoice{filtered.length !== 1 ? 's' : ''})
                                 </th>
@@ -1217,7 +1248,7 @@ const InvoicingProfile = ({ onBack }) => {
                                                 <td className="px-4 py-3 text-center">
                                                     <div className="flex items-center justify-center gap-1">
                                                         {isAdmin && (
-                                                            <button onClick={() => setPaymentProfile(p)} title="Record payment" className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200 transition">
+                                                            <button onClick={() => { setEditingPayment(null); setPaymentProfile(p); }} title="Record payment" className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200 transition">
                                                                 <img src="/money.png" alt="Record payment" className="w-4 h-4 opacity-70" />
                                                             </button>
                                                         )}
@@ -1481,14 +1512,27 @@ const InvoicingProfile = ({ onBack }) => {
                     profile={detailProfile}
                     isAdmin={isAdmin}
                     onClose={() => setDetailProfile(null)}
-                    onAddPayment={(p) => setPaymentProfile(p)}
+                    onAddPayment={(p) => { setEditingPayment(null); setPaymentProfile(p); }}
+                    onEditPayment={(p, payment) => { setEditingPayment(payment); setPaymentProfile(p); }}
                     onDeletePayment={async (profileId, paymentId) => {
                         const updated = await handleDeletePayment(profileId, paymentId);
                         if (updated) setDetailProfile(updated);
                     }}
                 />
             )}
-            {paymentProfile && <PaymentModal profile={paymentProfile} onClose={() => setPaymentProfile(null)} onSaved={(updated) => { setProfiles((prev) => prev.map((p) => (p.id === updated.id ? updated : p))); setPaymentProfile(null); }} />}
+            {paymentProfile && (
+                <PaymentModal
+                    profile={paymentProfile}
+                    editingPayment={editingPayment}
+                    onClose={() => { setPaymentProfile(null); setEditingPayment(null); }}
+                    onSaved={(updated) => {
+                        setProfiles((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+                        setPaymentProfile(null);
+                        setEditingPayment(null);
+                    }}
+                />
+            )}
+
         </div>
     );
 };
