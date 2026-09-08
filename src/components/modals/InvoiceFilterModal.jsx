@@ -13,6 +13,7 @@ const InvoiceFilterModal = ({
   invoiceNumber, setInvoiceNumber,
   invoiceDate, setInvoiceDate,
   taxType, setTaxType,
+  includeWithholdingTax, setIncludeWithholdingTax,
   invoiceSubmitted,
   onClose, onSubmit,
   dataLoading = false,
@@ -324,6 +325,29 @@ const InvoiceFilterModal = ({
                   <div className="text-xs mt-0.5 font-normal opacity-75">{sub}</div>
                 </button>
               ))}
+            </div>
+
+            <div className="flex items-center justify-between border border-gray-300 rounded-lg px-4 py-3 bg-gray-50">
+              <div>
+                <div className="text-sm font-medium text-gray-700">Include Withholding Tax</div>
+                <div className="text-xs text-gray-500 mt-0.5">Applies to the Sales Invoice and Sales Journal table</div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIncludeWithholdingTax(true)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition ${includeWithholdingTax ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'}`}
+                >
+                  Yes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIncludeWithholdingTax(false)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition ${!includeWithholdingTax ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'}`}
+                >
+                  No
+                </button>
+              </div>
             </div>
           </div>
 

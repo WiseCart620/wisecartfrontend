@@ -13,7 +13,6 @@ import { months, monthsFull, DEFAULT_FILTER_DATA, SALE_STATUS } from '../../cons
 import { useSalesData } from '../../hooks/useSalesData';
 import { useSalesForm } from '../../hooks/useSalesForm';
 import { useProductOptions } from '../../hooks/useProductOptions';
-import SearchableDropdown from '../../components/common/SaleSearchableDropdown';
 import InvoiceReportModal from '../../components/modals/InvoiceReportModal'
 import SalesFilters from '../../components/filters/SalesFilters';
 import SalesTable from '../../components/tables/SalesTable';
@@ -52,6 +51,7 @@ const SalesManagement = () => {
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
   const [invoiceSubmitted, setInvoiceSubmitted] = useState(false);
   const [taxType, setTaxType] = useState('VAT');
+  const [includeWithholdingTax, setIncludeWithholdingTax] = useState(true);
   const [invoiceNumberError, setInvoiceNumberError] = useState('');
   const [productsByStatus, setProductsByStatus] = useState({ pending: [], confirmed: [], invoiced: [] });
   const [productsByStatusLoading, setProductsByStatusLoading] = useState(false);
@@ -220,13 +220,13 @@ const SalesManagement = () => {
     if (taxType === 'VAT') {
       vatableSales = (invoiceReport.vatableSales || 0) + adjustmentTotal;
       vat = vatableSales * 0.12;
-      wht = vatableSales * 0.01;
+      wht = includeWithholdingTax ? vatableSales * 0.01 : 0;
       totalAmountDue = ((invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal) - wht;
     } else {
       const grossSales = (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
       vatableSales = grossSales;
       vat = grossSales * 0.03;
-      wht = (grossSales / 1.12) * 0.01;
+      wht = includeWithholdingTax ? (grossSales / 1.12) * 0.01 : 0;
       totalAmountDue = grossSales - wht;
     }
     const payload = {
@@ -428,6 +428,8 @@ const SalesManagement = () => {
             setInvoiceDate={setInvoiceDate}
             taxType={taxType}
             setTaxType={setTaxType}
+            includeWithholdingTax={includeWithholdingTax}
+            setIncludeWithholdingTax={setIncludeWithholdingTax}
             invoiceSubmitted={invoiceSubmitted}
             onClose={() => { setShowInvoiceModal(false); setInvoiceSubmitted(false); }}
             onSubmit={() => {
@@ -467,6 +469,8 @@ const SalesManagement = () => {
             invoiceDate={invoiceDate}
             setInvoiceDate={setInvoiceDate}
             taxType={taxType}
+            includeWithholdingTax={includeWithholdingTax}
+            setIncludeWithholdingTax={setIncludeWithholdingTax}
             onGenerate={handleGenerateToProfile}
             invoiceNumberError={invoiceNumberError}
           />

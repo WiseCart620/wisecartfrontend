@@ -19,7 +19,6 @@ const SaleSearchableDropdown = ({ options, value, onChange, placeholder, display
     option[displayKey]?.toLowerCase().includes(searchTerm.toLowerCase())
   );
   const selectedOption = options.find(opt => opt[valueKey] === value);
-
   return (
     <div ref={dropdownRef} className="relative">
       <button

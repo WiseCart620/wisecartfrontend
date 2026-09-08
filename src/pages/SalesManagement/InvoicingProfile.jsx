@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, CreditCard, X, Trash2, Eye, ChevronDown, ChevronUp, FileText } from 'lucide-react';
+import { ArrowLeft, X, Trash2, Eye, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import '../../styles/invoice-print.css';
+import { useAuth } from '../../context/AuthContext';
 
 const fmt = (n) =>
     Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -122,11 +123,17 @@ const ProofImage = ({ filePath, fileName }) => {
 const fmtDate = (d) =>
     d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
 
+const getBalance = (profile) => {
+    const totalPaid = (profile.payments || []).reduce((s, p) => s + Number(p.amount || 0), 0);
+    const bal = Number(profile.totalAmountDue || 0) - totalPaid;
+    return bal > 0 ? Math.round(bal * 100) / 100 : 0;
+};
+
 const BalanceTooltip = ({ profile, onClick }) => {
     const [hovered, setHovered] = useState(false);
     const [pos, setPos] = useState({ x: 0, y: 0 });
     const paid = (profile.payments || []).reduce((s, p) => s + Number(p.amount), 0);
-    const bal = Number(profile.openBalance);
+    const bal = getBalance(profile);
     const isPaid = bal <= 0;
     const payments = profile.payments || [];
 
@@ -227,7 +234,7 @@ const BalanceTooltip = ({ profile, onClick }) => {
     );
 };
 
-const PaymentEntry = ({ p, idx, onDelete }) => {
+const PaymentEntry = ({ p, idx, onDelete, isAdmin }) => {
     const [isOpen, setIsOpen] = useState(false);
     const hasEwt = Number(p.ewtAmount) > 0;
     const chargesList = p.charges || [];
@@ -262,13 +269,15 @@ const PaymentEntry = ({ p, idx, onDelete }) => {
                     </div>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onDelete(p.id); }}
-                        title="Delete this payment"
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-red-500 hover:bg-red-100 transition"
-                    >
-                        <Trash2 size={14} />
-                    </button>
+                    {isAdmin && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onDelete(p.id); }}
+                            title="Delete this payment"
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-red-600 transition"
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                    )}
                     <div className="w-7 h-7 flex items-center justify-center text-gray-400">
                         {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </div>
@@ -330,9 +339,9 @@ const PaymentEntry = ({ p, idx, onDelete }) => {
     );
 };
 
-const DetailModal = ({ profile, onClose, onAddPayment, onDeletePayment }) => {
+const DetailModal = ({ profile, onClose, onAddPayment, onDeletePayment, isAdmin }) => {
     const totalPaid = (profile.payments || []).reduce((s, p) => s + Number(p.amount), 0);
-    const bal = Number(profile.openBalance);
+    const bal = getBalance(profile);
     const isPaid = bal <= 0;
 
     return (
@@ -377,7 +386,7 @@ const DetailModal = ({ profile, onClose, onAddPayment, onDeletePayment }) => {
                     ) : (
                         <div className="space-y-2 mb-4">
                             {profile.payments.map((p, idx) => (
-                                <PaymentEntry key={p.id} p={p} idx={idx} onDelete={(paymentId) => onDeletePayment(profile.id, paymentId)} />
+                                <PaymentEntry key={p.id} p={p} idx={idx} isAdmin={isAdmin} onDelete={(paymentId) => onDeletePayment(profile.id, paymentId)} />
                             ))}
                         </div>
                     )}
@@ -403,15 +412,17 @@ const DetailModal = ({ profile, onClose, onAddPayment, onDeletePayment }) => {
                         </div>
                     </div>
 
-                    <div className="flex justify-end">
-                        <button
-                            onClick={() => { onClose(); onAddPayment(profile); }}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
-                        >
-                            <CreditCard size={15} />
-                            Record payment
-                        </button>
-                    </div>
+                    {isAdmin && (
+                        <div className="flex justify-end">
+                            <button
+                                onClick={() => { onClose(); onAddPayment(profile); }}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+                            >
+                                <img src="/money.png" alt="" className="w-4 h-4" />
+                                Record payment
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -736,6 +747,8 @@ const MultiSelectDropdown = ({ label, options, selected, onChange }) => {
 };
 
 const InvoicingProfile = ({ onBack }) => {
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'ADMIN';
     const [profiles, setProfiles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -828,7 +841,7 @@ const InvoicingProfile = ({ onBack }) => {
 
     const getStatusCode = (p) => {
         const totalPaid = (p.payments || []).reduce((s, pay) => s + Number(pay.amount), 0);
-        const bal = Number(p.openBalance);
+        const bal = getBalance(p);
         if (bal <= 0) return 'PAID';
         if (totalPaid > 0) return 'PARTIAL'; // has some payment but still owes = "Have Balance"
         return 'UNPAID';
@@ -880,7 +893,7 @@ const InvoicingProfile = ({ onBack }) => {
 
     const getStatus = (profile) => {
         const paid = (profile.payments || []).reduce((s, p) => s + Number(p.amount), 0);
-        const balance = Number(profile.openBalance);
+        const balance = getBalance(profile);
         if (balance <= 0) return { label: 'Fully Paid', cls: 'bg-green-100 text-green-800' };
         if (paid > 0) return { label: 'Partially Paid', cls: 'bg-yellow-100 text-yellow-800' };
         return { label: 'Unpaid', cls: 'bg-red-100 text-red-800' };
@@ -911,6 +924,30 @@ const InvoicingProfile = ({ onBack }) => {
         } catch {
         }
     };
+
+    const totals = React.useMemo(() => {
+        return filtered.reduce((acc, p) => {
+            const paid = (p.payments || []).reduce((s, pay) => s + Number(pay.amount), 0);
+            const bal = getBalance(p);
+            const cd = cosData[p.id];
+            const cos = cd && cd !== null
+                ? (cd.items || []).reduce((s, item) => {
+                    const qty = item.qty || item.totalQuantity || 1;
+                    const unitCost = Number(item.unitCost || 0);
+                    return s + (unitCost * qty);
+                }, 0)
+                : 0;
+            return {
+                vatableSales: acc.vatableSales + Number(p.vatableSales || 0),
+                vat: acc.vat + Number(p.vat || 0),
+                withholdingTax: acc.withholdingTax + Number(p.withholdingTax || 0),
+                totalAmountDue: acc.totalAmountDue + Number(p.totalAmountDue || 0),
+                paid: acc.paid + paid,
+                balance: acc.balance + bal,
+                cos: acc.cos + cos,
+            };
+        }, { vatableSales: 0, vat: 0, withholdingTax: 0, totalAmountDue: 0, paid: 0, balance: 0, cos: 0 });
+    }, [filtered, cosData]);
 
     const fmtPeriod = (profile) => {
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -1005,6 +1042,20 @@ const InvoicingProfile = ({ onBack }) => {
                 <div className="overflow-auto" style={{ maxHeight: '70vh' }}>
                     <table className="w-full min-w-[1100px]" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
                         <thead className="bg-gray-50 border-b border-gray-200">
+                            <tr className="bg-gray-100 border-b border-gray-200">
+                                <th colSpan={4} className="px-4 py-2 text-[11px] font-semibold text-gray-600 uppercase tracking-wide text-left">
+                                    Totals ({filtered.length} invoice{filtered.length !== 1 ? 's' : ''})
+                                </th>
+                                <th className="px-4 py-2 text-xs font-bold text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.vatableSales)}</th>
+                                <th className="px-4 py-2 text-xs font-bold text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.vat)}</th>
+                                <th className="px-4 py-2 text-xs font-bold text-gray-600 text-right whitespace-nowrap">−₱{fmt(totals.withholdingTax)}</th>
+                                <th className="px-4 py-2 text-xs font-bold text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.totalAmountDue)}</th>
+                                <th colSpan={2}></th>
+                                <th className="px-4 py-2 text-xs font-bold text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.paid)}</th>
+                                <th className="px-4 py-2 text-xs font-bold text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.balance)}</th>
+                                <th className="px-4 py-2 text-xs font-bold text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.cos)}</th>
+                                <th></th>
+                            </tr>
                             <tr>
                                 {[
                                     { label: 'Invoice #', align: 'left', sortable: true },
@@ -1059,14 +1110,10 @@ const InvoicingProfile = ({ onBack }) => {
                                     const totalPaid = (p.payments || []).reduce((s, pay) => s + Number(pay.amount), 0);
                                     const overdueDays = calcOverdueDays(p.invoiceDate || p.createdAt, p.companyTerms);
                                     const termsDays = parseTermsDays(p.companyTerms);
-                                    const isPaid = Number(p.openBalance) <= 0;
+                                    const isPaid = getBalance(p) <= 0;
                                     const hasPartialPayments = totalPaid > 0 && !isPaid;
 
-                                    const rowBg = isPaid
-                                        ? 'bg-green-50 hover:bg-green-100'
-                                        : hasPartialPayments
-                                            ? 'bg-yellow-50 hover:bg-yellow-100'
-                                            : 'bg-red-50 hover:bg-red-100';
+                                    const rowBg = 'bg-white hover:bg-gray-50';
 
                                     return (
                                         <React.Fragment key={p.id}>
@@ -1170,10 +1217,12 @@ const InvoicingProfile = ({ onBack }) => {
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
                                                     <div className="flex items-center justify-center gap-1">
-                                                        <button onClick={() => setPaymentProfile(p)} title="Record payment" className="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-50 text-amber-600 hover:bg-amber-100 transition">
-                                                            <CreditCard size={15} />
-                                                        </button>
-                                                        <button onClick={() => handleDelete(p.id)} title="Delete" className="w-8 h-8 rounded-lg flex items-center justify-center bg-red-50 text-red-600 hover:bg-red-100 transition">
+                                                        {isAdmin && (
+                                                            <button onClick={() => setPaymentProfile(p)} title="Record payment" className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 text-gray-600 hover:bg-gray-200 transition">
+                                                                <img src="/money.png" alt="Record payment" className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+                                                        <button onClick={() => handleDelete(p.id)} title="Delete" className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600 transition">
                                                             <Trash2 size={15} />
                                                         </button>
                                                     </div>
@@ -1431,6 +1480,7 @@ const InvoicingProfile = ({ onBack }) => {
             {detailProfile && (
                 <DetailModal
                     profile={detailProfile}
+                    isAdmin={isAdmin}
                     onClose={() => setDetailProfile(null)}
                     onAddPayment={(p) => setPaymentProfile(p)}
                     onDeletePayment={async (profileId, paymentId) => {

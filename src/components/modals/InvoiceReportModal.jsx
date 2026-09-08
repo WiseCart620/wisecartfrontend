@@ -10,6 +10,8 @@ const InvoiceReportModal = ({
   invoiceDate,
   setInvoiceDate,
   taxType,
+  includeWithholdingTax = true,
+  setIncludeWithholdingTax,
   onGenerate,
   invoiceNumberError,
 }) => {
@@ -72,11 +74,12 @@ const InvoiceReportModal = ({
       const vat = vatableSales * 0.12;
       const totalSales = (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
       const netOfVat = (invoiceReport.netOfVat || 0) + adjustmentTotal;
-      const withholdingTax = netOfVat * 0.01;
+      const withholdingTax = includeWithholdingTax ? netOfVat * 0.01 : 0;
       return { vatableSales, vat, totalSales, netOfVat, withholdingTax, totalAmountDue: totalSales - withholdingTax };
     } else {
       const grossSales = (invoiceReport.totalSalesVatInclusive || 0) + adjustmentTotal;
-      return { grossSales, totalAmountDue: grossSales };
+      const withholdingTax = includeWithholdingTax ? (grossSales / 1.12) * 0.01 : 0;
+      return { grossSales, withholdingTax, totalAmountDue: grossSales - withholdingTax };
     }
   };
 
@@ -99,6 +102,14 @@ const InvoiceReportModal = ({
             >
               <Plus size={18} /> Add Adjustment
             </button>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg px-3 py-2 bg-white">
+              <input
+                type="checkbox"
+                checked={includeWithholdingTax}
+                onChange={(e) => setIncludeWithholdingTax && setIncludeWithholdingTax(e.target.checked)}
+              />
+              Include Withholding Tax
+            </label>
             <button
               onClick={() => setInvoiceReport(null)}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
