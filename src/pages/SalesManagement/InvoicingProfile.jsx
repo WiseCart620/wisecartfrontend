@@ -147,8 +147,7 @@ const BalanceTooltip = ({ profile, onClick }) => {
         >
             <button
                 onClick={onClick}
-                className="text-right w-full font-medium text-sm text-gray-800 underline decoration-dashed underline-offset-2 cursor-pointer transition-colors hover:text-gray-600"
-            >
+                className="text-right w-full font-medium text-sm text-black underline decoration-dashed underline-offset-2 cursor-pointer transition-colors hover:text-gray-700"            >
                 {isPaid ? '✓ Paid' : '₱' + fmt(bal)}
             </button>
             {payments.length > 0 && (
@@ -358,7 +357,7 @@ const DetailModal = ({ profile, onClose, onAddPayment, onEditPayment, onDeletePa
                 <div className="p-5 border-b border-gray-100 flex justify-between items-start">
                     <div>
                         <div className="flex items-center gap-2">
-                            <div className="font-semibold text-gray-900">{profile.soldTo}</div>
+                            <div className="font-medium text-black">{profile.soldTo}</div>
                             {profile.invoiceNumber && (
                                 <span className="font-mono text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
                                     {profile.invoiceNumber}
@@ -417,7 +416,7 @@ const DetailModal = ({ profile, onClose, onAddPayment, onEditPayment, onDeletePa
                                 </div>
                             )}
                         </div>
-                        <div className="text-xl font-medium text-gray-800">
+                        <div className="text-xl font-medium text-black">
                             {isPaid ? '✓ Fully paid' : '₱' + fmt(bal)}
                         </div>
                     </div>
@@ -545,7 +544,7 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
             <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
                 <div className="p-5 border-b border-gray-100 flex justify-between items-center">
                     <div>
-                        <div className="font-medium text-gray-800">{isEditing ? 'Edit payment' : 'Record payment'}</div>
+                        <div className="font-medium text-black">{isEditing ? 'Edit payment' : 'Record payment'}</div>
                         <div className="text-xs text-gray-500 mt-0.5">{profile.soldTo}</div>
                     </div>
                     <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 rounded-lg">
@@ -1001,7 +1000,7 @@ const InvoicingProfile = ({ onBack }) => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-3 lg:p-5">
+        <div className="min-h-screen bg-gray-50 p-3 lg:p-5" style={{ fontFamily: "'Avenir Next', 'Avenir', 'Segoe UI', Helvetica, Arial, sans-serif" }}>
             {/* Header */}
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3 pb-4 border-b border-gray-200">
                 <div>
@@ -1012,7 +1011,7 @@ const InvoicingProfile = ({ onBack }) => {
                         <ArrowLeft size={15} />
                         Back to Sales
                     </button>
-                    <h1 className="text-xl font-medium text-gray-800">Sales Journal</h1>
+                    <h1 className="text-xl font-medium text-black">Sales Journal</h1>
                     <p className="text-xs text-gray-500 mt-0.5">
                         Hover open balance to preview · Click to view full detail
                     </p>
@@ -1073,17 +1072,17 @@ const InvoicingProfile = ({ onBack }) => {
                     <table className="w-full min-w-[1100px]" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
                         <thead className="bg-gray-50 border-b-2 border-gray-200">
                             <tr className="bg-gray-50 border-b-2 border-gray-200">
-                                <th colSpan={4} className="px-4 py-2 text-[11px] font-medium text-gray-800 uppercase tracking-wide text-left">
+                                <th colSpan={4} className="px-4 py-2 text-[11px] font-medium text-black uppercase tracking-wide text-left">
                                     Totals ({filtered.length} invoice{filtered.length !== 1 ? 's' : ''})
                                 </th>
-                                <th className="px-4 py-2 text-xs font-medium text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.vatableSales)}</th>
-                                <th className="px-4 py-2 text-xs font-medium text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.vat)}</th>
-                                <th className="px-4 py-2 text-xs font-medium text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.withholdingTax)}</th>
-                                <th className="px-4 py-2 text-xs font-medium text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.totalAmountDue)}</th>
+                                <th className="px-4 py-2 text-xs font-medium text-black text-right whitespace-nowrap">₱{fmt(totals.vatableSales)}</th>
+                                <th className="px-4 py-2 text-xs font-medium text-black text-right whitespace-nowrap">₱{fmt(totals.vat)}</th>
+                                <th className="px-4 py-2 text-xs font-medium text-black text-right whitespace-nowrap">₱{fmt(totals.withholdingTax)}</th>
+                                <th className="px-4 py-2 text-xs font-medium text-black text-right whitespace-nowrap">₱{fmt(totals.totalAmountDue)}</th>
                                 <th colSpan={2}></th>
-                                <th className="px-4 py-2 text-xs font-medium text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.paid)}</th>
-                                <th className="px-4 py-2 text-xs font-medium text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.balance)}</th>
-                                <th className="px-4 py-2 text-xs font-medium text-gray-800 text-right whitespace-nowrap">₱{fmt(totals.cos)}</th>
+                                <th className="px-4 py-2 text-xs font-medium text-black text-right whitespace-nowrap">₱{fmt(totals.paid)}</th>
+                                <th className="px-4 py-2 text-xs font-medium text-black text-right whitespace-nowrap">₱{fmt(totals.balance)}</th>
+                                <th className="px-4 py-2 text-xs font-medium text-black text-right whitespace-nowrap">₱{fmt(totals.cos)}</th>
                                 <th></th>
                             </tr>
                             <tr>
@@ -1152,7 +1151,7 @@ const InvoicingProfile = ({ onBack }) => {
                                                     {p.invoiceNumber ? (
                                                         <button
                                                             onClick={() => setReceiptProfile(p)}
-                                                            className="text-gray-800 hover:underline font-mono font-medium"
+                                                            className="text-black hover:underline font-mono font-medium"
                                                             title="View Invoice Receipt"
                                                         >
                                                             {p.invoiceNumber}
@@ -1182,7 +1181,7 @@ const InvoicingProfile = ({ onBack }) => {
                                                                 const d = p.invoiceDate || (p.createdAt ? new Date(p.createdAt).toISOString().split('T')[0] : '');
                                                                 setEditingDateValue(d);
                                                             }}
-                                                            className="text-left text-gray-800 hover:underline decoration-dashed underline-offset-2 transition"
+                                                            className="text-left text-black hover:underline decoration-dashed underline-offset-2 transition"
                                                             title="Click to edit date"
                                                         >
                                                             {fmtDate(p.invoiceDate || p.createdAt)}
@@ -1190,28 +1189,28 @@ const InvoicingProfile = ({ onBack }) => {
                                                     )}
                                                 </td>
                                                 <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">{fmtPeriod(p)}</td>
-                                                <td className="px-4 py-3 text-sm font-medium text-gray-900 max-w-[160px] truncate">
+                                                <td className="px-4 py-3 text-sm font-medium text-black max-w-[160px] truncate">
                                                     {p.soldTo}
                                                     {p.companyName && p.companyName !== p.soldTo && (
                                                         <div className="text-[10px] text-gray-400 font-normal">{p.companyName}</div>
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-3 text-xs text-right font-medium text-gray-800 whitespace-nowrap">₱{fmt(p.vatableSales)}</td>
-                                                <td className="px-4 py-3 text-xs text-right font-medium text-gray-800 whitespace-nowrap">₱{fmt(p.vat)}</td>
-                                                <td className="px-4 py-3 text-xs text-right font-medium text-gray-800 whitespace-nowrap">₱{fmt(p.withholdingTax)}</td>
-                                                <td className="px-4 py-3 text-xs text-right font-medium text-gray-800 whitespace-nowrap">₱{fmt(p.totalAmountDue)}</td>
+                                                <td className="px-4 py-3 text-xs text-right font-medium text-black whitespace-nowrap">₱{fmt(p.vatableSales)}</td>
+                                                <td className="px-4 py-3 text-xs text-right font-medium text-black whitespace-nowrap">₱{fmt(p.vat)}</td>
+                                                <td className="px-4 py-3 text-xs text-right font-medium text-black whitespace-nowrap">₱{fmt(p.withholdingTax)}</td>
+                                                <td className="px-4 py-3 text-xs text-right font-medium text-black whitespace-nowrap">₱{fmt(p.totalAmountDue)}</td>
                                                 <td className="px-4 py-3 text-center text-xs text-gray-600 whitespace-nowrap">
                                                     {termsDays !== null ? p.companyTerms : <span className="text-gray-300">—</span>}
                                                 </td>
                                                 <td className="px-4 py-3 text-center whitespace-nowrap">
                                                     {termsDays !== null ? (
                                                         overdueDays === null ? <span className="text-[10px] text-gray-300">—</span>
-                                                            : overdueDays === 0 ? <span className="text-[10px] font-medium text-gray-800">Due today</span>
-                                                                : overdueDays < 0 ? <span className="text-[10px] font-medium text-gray-800">{Math.abs(overdueDays)}d</span>
-                                                                    : <span className="text-[10px] font-medium text-gray-800">{overdueDays}d</span>
+                                                            : overdueDays === 0 ? <span className="text-[10px] font-medium text-black">Due today</span>
+                                                                : overdueDays < 0 ? <span className="text-[10px] font-medium text-black">{Math.abs(overdueDays)}d</span>
+                                                                    : <span className="text-[10px] font-medium text-black">{overdueDays}d</span>
                                                     ) : <span className="text-[10px] text-gray-300">—</span>}
                                                 </td>
-                                                <td className="px-4 py-3 text-xs text-right font-medium text-gray-800 whitespace-nowrap">
+                                                <td className="px-4 py-3 text-xs text-right font-medium text-black whitespace-nowrap">
                                                     {totalPaid > 0 ? `₱${fmt(totalPaid)}` : <span className="text-gray-300">—</span>}
                                                 </td>
                                                 <td className="px-4 py-3 text-xs text-right font-semibold whitespace-nowrap" style={{ overflow: 'visible', position: 'relative' }}>
@@ -1227,7 +1226,7 @@ const InvoicingProfile = ({ onBack }) => {
                                                                 loadCosData(p.id);
                                                             }
                                                         }}
-                                                        className="text-gray-800 font-medium hover:underline inline-flex items-center gap-1"
+                                                        className="text-black font-medium hover:underline inline-flex items-center gap-1"
                                                     >
                                                         {expandedRows[p.id] ? (
                                                             <ChevronUp size={12} className="text-gray-500" />
