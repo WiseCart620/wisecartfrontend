@@ -4,12 +4,12 @@ import {
     FileText, Loader2, CreditCard, Package, Calendar, User, Mail, ChevronDown, ChevronRight, Building2, Phone, AlertTriangle, Ship, MoreHorizontal, Banknote
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
-import { api } from '../services/api';
-import LoadingOverlay from '../components/common/LoadingOverlay';
-import { getFileUrl, getPlaceholderImage, getFileDownloadUrl } from '../utils/fileUtils';
-import { philippineBanks } from '../utils/philippineBanks';
-import ShippingModal from '../components/modals/ProcurementModals/ShippingModal';
-import OthersModal from '../components/modals/ProcurementModals/OthersModal';
+import { api } from '../../services/api';
+import LoadingOverlay from '../../components/common/LoadingOverlay';
+import { getFileUrl, getPlaceholderImage, getFileDownloadUrl } from '../../utils/fileUtils';
+import { philippineBanks } from '../../utils/philippineBanks';
+import ShippingModal from '../../components/modals/ProcurementModals/ShippingModal';
+import OthersModal from '../../components/modals/ProcurementModals/OthersModal';
 
 
 
@@ -2593,8 +2593,6 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
 const ProductDetailsModal = ({ products, onClose, po }) => {
     if (!products || products.length === 0) return null;
 
-
-
     const controlNumber = po?.controlNumber ||
         po?.quotationRequest?.controlNumber ||
         products[0]?.controlNumber ||
@@ -2611,7 +2609,7 @@ const ProductDetailsModal = ({ products, onClose, po }) => {
                 </div>
 
                 <div className="p-8 space-y-6">
-                    {/* Header with Company Info */}
+                    {/* Header with Company Info + Control # */}
                     <div className="mb-5 pb-4 flex justify-between items-start">
                         <div className="text-left leading-none space-y-0">
                             <div className="text-[34px] font-bold text-gray-900 font-serif tracking-tight">
@@ -2623,13 +2621,15 @@ const ProductDetailsModal = ({ products, onClose, po }) => {
                                 <div>VAT REG. TIN 010-751-561-00000</div>
                             </div>
                         </div>
+                        <div className="text-right">
+                            <div className="font-semibold">PO #: {controlNumber}</div>
+                        </div>
                     </div>
 
                     {/* Title */}
                     <div className="text-center mb-4">
                         <h2 className="text-2xl font-bold text-gray-900">PRODUCT DETAILS</h2>
                     </div>
-
 
                     {/* Products Table */}
                     <div>
@@ -2662,12 +2662,12 @@ const ProductDetailsModal = ({ products, onClose, po }) => {
                                                 {item.qty ? parseInt(item.qty).toLocaleString('en-US') : '-'}
                                             </td>
                                             <td className="px-4 py-3 text-sm border border-gray-300 text-right">
-                                                {item.unitPrice && parseFloat(item.unitPrice) > 0 ? `$${parseFloat(item.unitPrice).toFixed(2)}` : '-'}
+                                                {item.unitPrice && parseFloat(item.unitPrice) > 0 ? `$${parseFloat(item.unitPrice).toFixed(4)}` : '-'}
                                             </td>
                                             <td className="px-4 py-3 text-sm font-medium border border-gray-300 text-right">
                                                 {(() => {
                                                     const total = (parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0);
-                                                    return total > 0 ? `$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-';
+                                                    return total > 0 ? `$${total.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}` : '-';
                                                 })()}
                                             </td>
                                         </tr>
@@ -2683,7 +2683,7 @@ const ProductDetailsModal = ({ products, onClose, po }) => {
                                         <td className="px-4 py-3 font-bold text-sm border border-gray-300 text-right">
                                             ${products.reduce((sum, item) =>
                                                 sum + ((parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0)), 0
-                                            ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            ).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
                                         </td>
                                     </tr>
                                 </tfoot>

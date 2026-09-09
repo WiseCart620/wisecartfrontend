@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingCart } from 'lucide-react';
 import InventoryRequestManagement from './InventoryRequestManagement';
 import ProductQuotationManagement from './ProductQuotationManagement';
-import PurchaseOrderManagement from '../../pages/UploadPaymentManagement';
+import PurchaseOrderManagement from './UploadPaymentManagement';
 import ProductUnitCostingTab from './ProductUnitCostingTab';
 import LoadingOverlay from '../../components/common/LoadingOverlay';
 import ProcurementTabs from './components/ProcurementTabs';
@@ -88,7 +88,7 @@ const ProcurementManagement = () => {
 
     const loadPaymentCounts = async () => {
         try {
-            const { getPaymentCounts } = await import('../../pages/UploadPaymentManagement');
+            const { getPaymentCounts } = await import('./UploadPaymentManagement');
             const counts = await getPaymentCounts();
             setPaymentCounts(counts);
         } catch (error) {
