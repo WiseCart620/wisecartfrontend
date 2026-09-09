@@ -1942,12 +1942,12 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                                         {item.qty ? parseInt(item.qty).toLocaleString('en-US') : '-'}
                                                     </td>
                                                     <td className="px-4 py-3 text-sm border border-gray-300 text-right">
-                                                        {item.unitPrice && parseFloat(item.unitPrice) > 0 ? `$${parseFloat(item.unitPrice).toFixed(2)}` : '-'}
+                                                        {item.unitPrice && parseFloat(item.unitPrice) > 0 ? `$${parseFloat(item.unitPrice).toFixed(4)}` : '-'}
                                                     </td>
                                                     <td className="px-4 py-3 text-sm font-medium border border-gray-300 text-right">
                                                         {(() => {
                                                             const total = (parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0);
-                                                            return total > 0 ? `$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-';
+                                                            return total > 0 ? `$${total.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}` : '-';
                                                         })()}
                                                     </td>
                                                 </tr>
@@ -1963,7 +1963,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                                 <td className="px-4 py-3 font-bold text-sm border border-gray-300 text-right">
                                                     ${po.items.reduce((sum, item) =>
                                                         sum + ((parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0)), 0
-                                                    ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    ).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
                                                 </td>
                                             </tr>
                                         </tfoot>
