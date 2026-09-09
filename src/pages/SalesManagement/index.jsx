@@ -5,10 +5,8 @@ import '../../styles/sales-memo-print.css';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, FileText, Printer, X } from 'lucide-react';
 
-// Separated utilities, constants, hooks, components
-import { formatCurrency, formatDate, formatPHDateTime } from '../../utils/salesUtils';
+
 import { months, monthsFull, DEFAULT_FILTER_DATA, SALE_STATUS } from '../../constants/salesConstants';
 import { useSalesData } from '../../hooks/useSalesData';
 import { useSalesForm } from '../../hooks/useSalesForm';

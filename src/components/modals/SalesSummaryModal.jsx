@@ -29,8 +29,10 @@ const SalesSummaryModal = ({ onClose, filterData, statusFilter, searchTerm, comp
 
         if (filterData.productFilters?.length > 0) {
           filterData.productFilters.forEach(pf => {
-            if (pf.productId) params.append('productIds', pf.productId);
-            if (pf.variationId) params.append('variationIds', pf.variationId);
+            if (pf.productId) {
+              params.append('productIds', pf.productId);
+              params.append('variationIds', pf.variationId ?? 0);
+            }
           });
         }
 

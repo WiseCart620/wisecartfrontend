@@ -169,8 +169,10 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
             }
             if (activeProductFilters?.length) {
                 activeProductFilters.forEach(pf => {
-                    if (pf.productId) params.append('productIds', pf.productId);
-                    if (pf.variationId) params.append('variationIds', pf.variationId);
+                    if (pf.productId) {
+                        params.append('productIds', pf.productId);
+                        params.append('variationIds', pf.variationId ?? 0);
+                    }
                 });
             }
             if (salesReportFilter.startDate) {
