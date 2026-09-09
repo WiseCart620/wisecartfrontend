@@ -313,26 +313,6 @@ const UploadPaymentManagement = () => {
         }
     };
 
-    const handleResyncPricing = async (po) => {
-        try {
-            setLoadingMessage('Resyncing pricing from quotation...');
-            setIsLoadingOverlay(true);
-            const response = await api.post(`/purchase-orders/${po.id}/resync-pricing`);
-            if (response.success) {
-                toast.success('Pricing resynced from quotation request');
-                await loadPurchaseOrders();
-                setViewingProducts(prev => (prev && prev.id === po.id ? response.data : prev));
-            } else {
-                toast.error(response.message || 'Failed to resync pricing');
-            }
-        } catch (error) {
-            console.error('Resync pricing error:', error);
-            toast.error('Failed to resync pricing');
-        } finally {
-            setIsLoadingOverlay(false);
-        }
-    };
-
     const handleSubmitOrder = async (po) => {
         const hasAllPrices = po.items && po.items.length > 0 &&
             po.items.every(item => item.unitPrice && item.unitPrice > 0 && item.totalAmount && item.totalAmount > 0);
@@ -693,7 +673,6 @@ const UploadPaymentManagement = () => {
                         products={viewingProducts.items}
                         po={viewingProducts}
                         onClose={() => setViewingProducts(null)}
-                        onResync={() => handleResyncPricing(viewingProducts)}
                     />
                 )}
 
@@ -2611,12 +2590,16 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
 };
 
 
-const ProductDetailsModal = ({ products, onClose, po, onResync }) => {
-    if (!products || products.length === 0) return null;
+const ProductDetailsModal = ({ products, onClose, po }) => {
+    const displayProducts = (po?.quotationRequest?.items && po.quotationRequest.items.length > 0)
+        ? po.quotationRequest.items
+        : products;
+
+    if (!displayProducts || displayProducts.length === 0) return null;
 
     const controlNumber = po?.controlNumber ||
         po?.quotationRequest?.controlNumber ||
-        products[0]?.controlNumber ||
+        displayProducts[0]?.controlNumber ||
         'N/A';
 
     return (
@@ -2624,20 +2607,9 @@ const ProductDetailsModal = ({ products, onClose, po, onResync }) => {
             <div className="bg-white rounded-xl shadow-xl max-w-7xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="border-b px-6 py-4 flex items-center justify-between sticky top-0 bg-white">
                     <h2 className="text-xl font-bold text-gray-900">Product Quotation Details</h2>
-                    <div className="flex items-center gap-2">
-                        {onResync && po?.quotationRequestId && (
-                            <button
-                                onClick={onResync}
-                                className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                                title="Pull the latest unit prices from the linked quotation request"
-                            >
-                                Resync Pricing
-                            </button>
-                        )}
-                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
-                            <X size={20} />
-                        </button>
-                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+                        <X size={20} />
+                    </button>
                 </div>
 
                 <div className="p-8 space-y-6">
@@ -2681,7 +2653,7 @@ const ProductDetailsModal = ({ products, onClose, po, onResync }) => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {products.map((item, idx) => (
+                                    {displayProducts.map((item, idx) => (
                                         <tr key={idx} className="hover:bg-gray-50">
                                             <td className="px-4 py-3 border border-gray-300">
                                                 <div className="text-sm font-medium text-gray-900">{item.productName}</div>
@@ -2709,11 +2681,11 @@ const ProductDetailsModal = ({ products, onClose, po, onResync }) => {
                                     <tr>
                                         <td colSpan="5" className="px-4 py-3 text-right font-bold text-sm border border-gray-300">TOTAL QTY:</td>
                                         <td className="px-4 py-3 font-bold text-sm border border-gray-300 text-right">
-                                            {products.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0).toLocaleString('en-US')}
+                                            {displayProducts.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0).toLocaleString('en-US')}
                                         </td>
                                         <td className="px-4 py-3 text-right font-bold text-sm border border-gray-300">GRAND TOTAL:</td>
                                         <td className="px-4 py-3 font-bold text-sm border border-gray-300 text-right">
-                                            ${products.reduce((sum, item) =>
+                                            ${displayProducts.reduce((sum, item) =>
                                                 sum + ((parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0)), 0
                                             ).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
                                         </td>
