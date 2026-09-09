@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertCircle, Building2 } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { LoadingOverlay } from '../components/common/LoadingOverlay';
@@ -115,9 +115,11 @@ const LoginPage = () => {
         {/* Top bar */}
         <header className="w-full border-b border-gray-200 bg-white">
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-md bg-[#0B5FFF] flex items-center justify-center">
-              <Building2 size={18} className="text-white" />
-            </div>
+            <img
+              src="/wisecart-logo.png"
+              alt="WiseCart logo"
+              className="w-8 h-8 rounded-md object-contain"
+            />
             <span className="text-[17px] font-semibold text-gray-900 tracking-tight">
               WiseCart <span className="font-normal text-gray-500">ERP</span>
             </span>
@@ -163,7 +165,7 @@ const LoginPage = () => {
                     required
                     autoComplete="username"
                     autoFocus
-                    className="w-full h-12 px-3.5 bg-white border border-gray-300 rounded-md text-[15px] text-gray-900 placeholder-gray-400 outline-none transition-colors duration-150 focus:border-[#0B5FFF] focus:ring-2 focus:ring-[#0B5FFF]/20"
+                    className="w-full h-12 px-3.5 bg-white border border-gray-300 rounded-md text-[15px] text-gray-900 placeholder-gray-400 outline-none transition-colors duration-150 focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20"
                     placeholder="Enter your username"
                   />
                 </div>
@@ -184,7 +186,7 @@ const LoginPage = () => {
                     onChange={handleChange}
                     required
                     autoComplete="current-password"
-                    className="w-full h-12 px-3.5 bg-white border border-gray-300 rounded-md text-[15px] text-gray-900 placeholder-gray-400 outline-none transition-colors duration-150 focus:border-[#0B5FFF] focus:ring-2 focus:ring-[#0B5FFF]/20"
+                    className="w-full h-12 px-3.5 bg-white border border-gray-300 rounded-md text-[15px] text-gray-900 placeholder-gray-400 outline-none transition-colors duration-150 focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20"
                     placeholder="Enter your password"
                   />
                 </div>
@@ -193,7 +195,7 @@ const LoginPage = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-12 mt-2 bg-[#0B5FFF] text-white font-semibold text-[15px] rounded-md hover:bg-[#0A4FD6] active:bg-[#0940B3] focus:outline-none focus:ring-2 focus:ring-[#0B5FFF]/40 focus:ring-offset-1 transition-colors duration-150 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
+                  className="w-full h-12 mt-2 bg-[#F97316] text-white font-semibold text-[15px] rounded-md hover:bg-[#EA6A0C] active:bg-[#C2560A] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:ring-offset-1 transition-colors duration-150 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
                 >
                   {loading ? (
                     <>
