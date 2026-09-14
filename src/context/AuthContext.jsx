@@ -164,8 +164,8 @@ export const AdminRoute = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (!user || !['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
-    toast.error('Admin access required');
+  if (!user || user.role !== 'SUPER_ADMIN') {
+    toast.error('Super Admin access required');
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -191,10 +191,9 @@ export const SuperAdminRoute = ({ children }) => {
   return children;
 };
 
-// Granular check: can(user, 'sales', 'delete') -> true/false
 export const can = (user, feature, action = 'view') => {
   if (!user) return false;
-  if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') return true;
+  if (user.role === 'SUPER_ADMIN') return true;   // only Super Admin bypasses
   const key = `${feature}:${action}`;
   return Array.isArray(user.permissions) && user.permissions.includes(key);
 };
@@ -239,14 +238,9 @@ export const FinanceRoute = ({ children }) => {
   return children;
 };
 
-export const useCanDelete = () => {
-  const { user } = useAuth();
-  return ['ADMIN', 'ASSISTANT_ADMIN', 'FINANCE'].includes(user?.role);
-};
-
 export const useIsAdmin = () => {
   const { user } = useAuth();
-  return user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  return user?.role === 'SUPER_ADMIN';
 };
 
 export const useIsSuperAdmin = () => {

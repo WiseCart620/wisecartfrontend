@@ -26,9 +26,9 @@ import { LoadingOverlay } from '../../components/common/LoadingOverlay';
 
 const SalesManagement = () => {
   const { user } = useAuth();
-  const canCreate = user?.role === 'ENCODER' || can(user, 'sales', 'create');
-  const canEdit = user?.role === 'ENCODER' || can(user, 'sales', 'edit');
-  const canDelete = ['ADMIN', 'ASSISTANT_ADMIN', 'SUPER_ADMIN'].includes(user?.role) || can(user, 'sales', 'delete');
+  const canCreate = can(user, 'sales', 'create');
+  const canEdit = can(user, 'sales', 'edit');
+  const canDelete = can(user, 'sales', 'delete');
   const canInvoice = can(user, 'sales', 'invoice');
   const canReport = can(user, 'sales', 'report');
   const canSummary = can(user, 'sales', 'summary');

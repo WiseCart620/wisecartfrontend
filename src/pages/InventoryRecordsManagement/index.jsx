@@ -888,9 +888,8 @@ const InventoryRecordsManagement = () => {
   const handleDelete = async (id) => {
     if (!canDelete) { alert('You do not have permission to delete inventory records.'); return; }
     const inventory = inventories.find(inv => inv.id === id);
-    const userRole = localStorage.getItem('userRole') || 'USER';
     if (inventory && inventory.status === 'CONFIRMED') {
-      if (userRole !== 'ADMIN') { alert('⚠️ PERMISSION DENIED\n\nOnly administrators can delete CONFIRMED inventory records.\n\nPlease contact your system administrator if you need to delete this record.'); return; }
+      if (user?.role !== 'SUPER_ADMIN') { alert('⚠️ PERMISSION DENIED\n\nOnly a Super Admin can delete CONFIRMED inventory records.\n\nPlease contact your system administrator if you need to delete this record.'); return; }
       if (!window.confirm('⚠️ Warning: Deleting CONFIRMED Inventory\n\nThis inventory has been confirmed and stock changes have been applied.\n\nDeleting will:\n• Permanently remove this inventory record\n• Reverse all stock changes that were applied\n• Cannot be undone\n\nAre you absolutely sure you want to delete this record?')) return;
     } else {
       if (!window.confirm('Are you sure you want to delete this inventory record?')) return;

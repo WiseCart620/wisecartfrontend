@@ -40,6 +40,7 @@ const UserManagement = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
+  const PRESET_ROLES = ['ENCODER', 'ASSISTANT_ADMIN', 'ADMIN', 'FINANCE'];
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -54,6 +55,8 @@ const UserManagement = () => {
     enabled: true,
     permissions: []
   });
+
+  const [isCustomRole, setIsCustomRole] = useState(false);
 
   const togglePermission = (permKey) => {
     setFormData(prev => {
@@ -144,7 +147,7 @@ const UserManagement = () => {
         fullName: formData.fullName,
         role: formData.role,
         enabled: formData.enabled,
-        ...(isSuperAdmin ? { permissions: formData.permissions } : {})
+        permissions: formData.role === 'SUPER_ADMIN' ? [] : formData.permissions
       };
 
       if (!editingUser) {
@@ -211,15 +214,17 @@ const UserManagement = () => {
 
   const handleEdit = (user) => {
     setEditingUser(user);
+    const role = user.role || 'ENCODER';
     setFormData({
       username: user.username || '',
       email: user.email || '',
       fullName: user.fullName || '',
       password: '',
-      role: user.role || 'USER',
+      role,
       enabled: user.enabled,
       permissions: user.permissions || []
     });
+    setIsCustomRole(!PRESET_ROLES.includes(role));
     setShowModal(true);
   };
 
@@ -280,6 +285,7 @@ const UserManagement = () => {
       permissions: []
     });
     setEditingUser(null);
+    setIsCustomRole(false);
   };
 
   const resetPasswordForm = () => {
@@ -576,17 +582,42 @@ const UserManagement = () => {
                   </label>
                   <select
                     name="role"
-                    value={formData.role}
-                    onChange={handleInputChange}
+                    value={isCustomRole ? 'CUSTOM' : formData.role}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === 'CUSTOM') {
+                        setIsCustomRole(true);
+                        setFormData(prev => ({ ...prev, role: '' }));
+                      } else {
+                        setIsCustomRole(false);
+                        setFormData(prev => ({ ...prev, role: val }));
+                      }
+                    }}
                     required
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    {isSuperAdmin && <option value="SUPER_ADMIN">Super Admin</option>}
-                    <option value="ADMIN">Admin</option>
+                    <option value="" disabled>Select a role...</option>
                     <option value="ENCODER">Encoder</option>
                     <option value="ASSISTANT_ADMIN">Assistant Admin</option>
+                    <option value="ADMIN">Admin</option>
                     <option value="FINANCE">Finance</option>
+                    <option value="CUSTOM">Custom...</option>
                   </select>
+                  {isCustomRole && (
+                    <input
+                      type="text"
+                      name="role"
+                      value={formData.role}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="e.g. WAREHOUSE_STAFF, AUDITOR"
+                      autoFocus
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-2"
+                    />
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    Access is controlled entirely by the permissions below, not the role name.
+                  </p>
                 </div>
 
                 <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
@@ -604,7 +635,7 @@ const UserManagement = () => {
                   </label>
                 </div>
 
-                {isSuperAdmin && (
+                {formData.role !== 'SUPER_ADMIN' && (
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Feature Access & Permissions

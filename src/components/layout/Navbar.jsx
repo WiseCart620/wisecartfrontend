@@ -49,7 +49,7 @@ const Navbar = ({ toggleSidebar }) => {
               {/* User Avatar */}
               <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center relative">
                 <User size={18} className="text-blue-600" />
-                {(role === 'ADMIN' || role === 'SUPER_ADMIN') && (
+                {(role === 'SUPER_ADMIN') && (
                   <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
                     <Shield size={10} className="text-white" />
                   </div>
@@ -79,7 +79,7 @@ const Navbar = ({ toggleSidebar }) => {
                 {/* Role Badge */}
                 <div className="px-4 py-2">
                   <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full">
-                    {role === 'ADMIN' ? (
+                    {role === 'SUPER_ADMIN' ? (
                       <Shield size={14} className="text-blue-600" />
                     ) : (
                       <User size={14} className="text-gray-600" />

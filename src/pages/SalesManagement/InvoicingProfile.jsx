@@ -3,7 +3,8 @@ import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import { ArrowLeft, X, Trash2, Eye, ChevronDown, ChevronUp, FileText, Pencil } from 'lucide-react';
 import '../../styles/invoice-print.css';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, can } from '../../context/AuthContext';
+
 
 const fmt = (n) =>
     Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -804,7 +805,7 @@ const MultiSelectDropdown = ({ label, options, selected, onChange }) => {
 
 const InvoicingProfile = ({ onBack }) => {
     const { user } = useAuth();
-    const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+    const isAdmin = can(user, 'sales', 'invoice');
     const [profiles, setProfiles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');

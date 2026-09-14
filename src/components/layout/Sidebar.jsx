@@ -30,10 +30,7 @@ const W_EXPANDED = 240;  // px
 
 const Sidebar = ({ isOpen, toggle }) => {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
-  const isAssistantAdmin = user?.role === 'ASSISTANT_ADMIN';
-  const isFinance = user?.role === 'FINANCE';
-  const isEncoder = user?.role === 'ENCODER';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
   const featureKeyByPath = {
     '/dashboard': 'dashboard', '/sales': 'sales', '/deliveries': 'deliveries',
@@ -41,12 +38,10 @@ const Sidebar = ({ isOpen, toggle }) => {
     '/procurement': 'procurement',
   };
 
-  const mainMenuItems = (user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN')
+  const mainMenuItems = isSuperAdmin
     ? allMainMenuItems
-    : isEncoder
-      ? allMainMenuItems.filter(i => ['/sales', '/deliveries'].includes(i.to))
-      : allMainMenuItems.filter(i => hasPermission(user, featureKeyByPath[i.to]));
-  const showDataEntry = isAdmin || user?.role === 'SUPER_ADMIN' || isAssistantAdmin || isFinance ||
+    : allMainMenuItems.filter(i => hasPermission(user, featureKeyByPath[i.to]));
+  const showDataEntry = isSuperAdmin ||
     ['warehouse', 'branches', 'products', 'supplier'].some(f => hasPermission(user, f));
 
   const dataEntryFeatureByPath = {
@@ -182,10 +177,9 @@ const Sidebar = ({ isOpen, toggle }) => {
           )}
 
           {/* User Management */}
-          {isAdmin && (
+          {isSuperAdmin && (
             <div className="pt-1 border-t border-gray-800 mt-1">
-              <NavLink
-                to="/users"
+              <NavLink to="/users"
                 onClick={() => window.innerWidth < 1024 && toggle()}
                 title={sidebarCollapsed ? 'User Management' : undefined}
                 className={({ isActive }) =>

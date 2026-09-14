@@ -25,9 +25,9 @@ const SORT_OPTIONS = [
 
 const DeliveryManagement = () => {
   const { user } = useAuth();
-  const canCreate = user?.role === 'ENCODER' || can(user, 'deliveries', 'create');
+  const canCreate = can(user, 'deliveries', 'create');
   const canEdit = can(user, 'deliveries', 'edit');
-  const canDelete = ['ADMIN', 'ASSISTANT_ADMIN', 'SUPER_ADMIN'].includes(user?.role) || can(user, 'deliveries', 'delete');
+  const canDelete = can(user, 'deliveries', 'delete');
   const canCancel = can(user, 'deliveries', 'cancel');
   const canPrint = can(user, 'deliveries', 'print');
   const navigate = useNavigate();
