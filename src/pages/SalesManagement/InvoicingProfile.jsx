@@ -155,7 +155,11 @@ const BalanceTooltip = ({ profile, onClick }) => {
         >
             <button
                 onClick={onClick}
-                className="text-right w-full text-xs text-black underline decoration-dashed underline-offset-2 cursor-pointer transition-colors hover:text-gray-700"            >
+                className={`text-right w-full text-xs font-medium underline decoration-dashed underline-offset-2 cursor-pointer transition-colors ${overpaid > 0 ? 'text-orange-600 hover:text-orange-700'
+                    : isPaid ? 'text-emerald-600 hover:text-emerald-700'
+                        : 'text-red-600 hover:text-red-700'
+                    }`}
+            >
                 {overpaid > 0 ? '⚠ Overpaid' : isPaid ? '✓ Paid' : '₱' + fmt(bal)}
             </button>
             {overpaid > 0 && (
@@ -1227,21 +1231,21 @@ const InvoicingProfile = ({ onBack }) => {
                                                 </td>
                                                 <td className="px-4 py-3 text-center whitespace-nowrap">
                                                     {termsDays !== null ? (
-                                                        overdueDays === null ? <span className="text-xs text-black">—</span>
-                                                            : overdueDays === 0 ? <span className="text-xs text-black">Due today</span>
-                                                                : overdueDays < 0 ? <span className="text-xs text-black">{Math.abs(overdueDays)}d</span>
-                                                                    : <span className="text-xs text-black">{overdueDays}d</span>
-                                                    ) : <span className="text-xs text-black">—</span>}
+                                                        overdueDays === null ? <span className="text-xs text-gray-400">—</span>
+                                                            : overdueDays === 0 ? <span className="text-xs text-amber-600 font-medium">Due today</span>
+                                                                : overdueDays < 0 ? <span className="text-xs text-emerald-600">{Math.abs(overdueDays)}d left</span>
+                                                                    : <span className="text-xs text-red-600 font-medium">{overdueDays}d overdue</span>
+                                                    ) : <span className="text-xs text-gray-400">—</span>}
                                                 </td>
-                                                <td className="px-4 py-3 text-xs text-right text-black whitespace-nowrap">
+                                                <td className="px-4 py-3 text-xs text-right whitespace-nowrap">
                                                     {totalPaid > 0 ? (
                                                         <>
-                                                            ₱{fmt(totalPaid)}
+                                                            <span className="text-emerald-600 font-medium">₱{fmt(totalPaid)}</span>
                                                             {getOverpaidAmount(p) > 0 && (
                                                                 <div className="text-orange-600 font-medium">⚠ +₱{fmt(getOverpaidAmount(p))} over</div>
                                                             )}
                                                         </>
-                                                    ) : <span className="text-black">—</span>}
+                                                    ) : <span className="text-gray-400">—</span>}
                                                 </td>
                                                 <td className="px-4 py-3 text-xs text-right text-black whitespace-nowrap" style={{ overflow: 'visible', position: 'relative' }}>
                                                     <BalanceTooltip profile={p} onClick={() => setDetailProfile(p)} />
