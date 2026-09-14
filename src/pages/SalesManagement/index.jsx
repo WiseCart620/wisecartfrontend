@@ -329,6 +329,7 @@ const SalesManagement = () => {
           dataLoading={staticDataLoading}
           canCreate={canCreate}
           canFinance={canFinance}
+          canSummary={canSummary}
           isEncoder={isEncoder}
           onNewSale={() => handleOpenModal('create')}
           onOpenInvoice={() => {

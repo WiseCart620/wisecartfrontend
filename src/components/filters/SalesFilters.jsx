@@ -14,7 +14,7 @@ const SalesFilters = ({
   productsByStatus,
   allProductOptions,
   dataLoading = false,
-  canCreate, canFinance, isEncoder,
+  canCreate, canFinance, canSummary, isEncoder,
   onNewSale,
   onOpenInvoice,
   onOpenJournal,
@@ -226,7 +226,7 @@ const SalesFilters = ({
         )}
 
 
-        {!isEncoder && (
+        {canSummary && (
           <div className="pt-2 border-t border-gray-100">
             <button
               onClick={() => setShowSummary(prev => !prev)}
