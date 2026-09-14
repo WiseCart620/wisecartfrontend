@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Search, Plus, FileText, X } from 'lucide-react';
 import MultiSelectDropdown from '../../components/common/MultiSelectDropdown';
 import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
@@ -22,6 +22,8 @@ const SalesFilters = ({
   onResetFilter,
   setCurrentPage,
 }) => {
+  const [showSummary, setShowSummary] = useState(false);
+
   const companyOptions = companies.map(c => ({ id: c.id, name: c.companyName || c.name }));
   const branchOptions = branches.map(b => ({ id: b.id, name: b.branchName, code: b.branchCode }));
 
@@ -57,22 +59,22 @@ const SalesFilters = ({
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2">
             {canCreate && (
-              <button onClick={onNewSale} className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium text-sm">
+              <button onClick={onNewSale} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-none hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm font-medium text-sm">
                 <Plus size={16} /> New Sale
               </button>
             )}
             {canFinance && (
-              <button onClick={onOpenInvoice} className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md text-sm">
+              <button onClick={onOpenInvoice} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-none hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-md text-sm">
                 <FileText size={16} /> Generate Invoice / COS
               </button>
             )}
             {canFinance && (
-              <button onClick={onOpenJournal} className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md text-sm font-medium">
+              <button onClick={onOpenJournal} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-none hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-md text-sm font-medium">
                 <FileText size={16} /> Sales Journal
               </button>
             )}
             {canFinance && (
-              <button onClick={onOpenReport} className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm text-sm font-medium">
+              <button onClick={onOpenReport} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-none hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm text-sm font-medium">
                 <span className="text-sm font-bold leading-none">₱</span> Sales Report
               </button>
             )}
@@ -212,42 +214,50 @@ const SalesFilters = ({
           </div>
         )}
 
-        {/* Summary row */}
+
         {!isEncoder && (
-          <div className="flex items-center gap-3 flex-wrap pt-2 border-t border-gray-100">
-            {[
-              { status: 'PENDING', label: 'Pending', amt: pendingAmt, count: allFilteredSales.pendingCount ?? 0, qty: pendingQty, hoverClass: 'hover:bg-yellow-50' },
-              { status: 'CONFIRMED', label: 'Confirmed', amt: confirmedAmt, count: allFilteredSales.confirmedCount ?? 0, qty: confirmedQty, hoverClass: 'hover:bg-blue-50' },
-              { status: 'INVOICED', label: 'Invoiced', amt: invoicedAmt, count: allFilteredSales.invoicedCount ?? 0, qty: invoicedQty, hoverClass: 'hover:bg-green-50' },
-            ].map(({ status, label, amt, count, qty, hoverClass }) => (
-              <button
-                key={status}
-                onClick={() => onOpenStatusModal(status)}
-                className={`flex items-center gap-2 border border-blue-400 rounded-lg px-3 py-1 ${hoverClass} transition-colors cursor-pointer`}
-              >
-                <span className="text-xs text-gray-600">{label}:</span>
-                <span className="text-xs font-semibold text-gray-800">₱{fmt(amt)}</span>
-                <span className="text-xs font-bold text-gray-700">{count}</span>
-                <span className="text-xs text-gray-500 ml-1">(Qty: {qty.toLocaleString()})</span>
-              </button>
-            ))}
-
-            <div className="flex items-center gap-2 border-2 border-blue-400 rounded-lg px-3 py-1">
-              <span className="text-xs font-bold text-gray-700">Total Qty:</span>
-              <span className="text-sm font-black text-gray-800">{(pendingQty + confirmedQty + invoicedQty).toLocaleString()}</span>
-            </div>
-
-            <div className="flex items-center gap-2 border-2 border-blue-600 rounded-lg px-3 py-1">
-              <span className="text-xs font-bold text-blue-700">Grand Total:</span>
-              <span className="text-sm font-black text-blue-700">₱{fmt(grandTotal)}</span>
-            </div>
-
+          <div className="pt-2 border-t border-gray-100">
             <button
-              onClick={onOpenSummary}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-xs font-semibold transition-colors"
+              onClick={() => setShowSummary(prev => !prev)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-none bg-blue-600 text-white hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm text-xs font-semibold transition-all duration-150"
             >
-              <FileText size={13} /> View Summary
+              <FileText size={13} /> {showSummary ? 'Hide Summary' : 'View Summary'}
             </button>
+
+            <div
+              className={`grid transition-all duration-300 ease-out ${showSummary ? 'grid-rows-[1fr] opacity-100 mt-3' : 'grid-rows-[0fr] opacity-0'}`}
+            >
+              <div className="overflow-hidden">
+                <div className="flex items-center gap-3 flex-wrap">
+                  {[
+                    { status: 'PENDING', label: 'Pending', amt: pendingAmt, count: allFilteredSales.pendingCount ?? 0, qty: pendingQty, hoverClass: 'hover:bg-yellow-50' },
+                    { status: 'CONFIRMED', label: 'Confirmed', amt: confirmedAmt, count: allFilteredSales.confirmedCount ?? 0, qty: confirmedQty, hoverClass: 'hover:bg-blue-50' },
+                    { status: 'INVOICED', label: 'Invoiced', amt: invoicedAmt, count: allFilteredSales.invoicedCount ?? 0, qty: invoicedQty, hoverClass: 'hover:bg-green-50' },
+                  ].map(({ status, label, amt, count, qty, hoverClass }) => (
+                    <button
+                      key={status}
+                      onClick={() => onOpenStatusModal(status)}
+                      className={`flex items-center gap-2 border border-blue-400 rounded-lg px-3 py-1 ${hoverClass} transition-colors cursor-pointer`}
+                    >
+                      <span className="text-xs text-gray-600">{label}:</span>
+                      <span className="text-xs font-semibold text-gray-800">₱{fmt(amt)}</span>
+                      <span className="text-xs font-bold text-gray-700">{count}</span>
+                      <span className="text-xs text-gray-500 ml-1">(Qty: {qty.toLocaleString()})</span>
+                    </button>
+                  ))}
+
+                  <div className="flex items-center gap-2 border-2 border-blue-400 rounded-lg px-3 py-1">
+                    <span className="text-xs font-bold text-gray-700">Total Qty:</span>
+                    <span className="text-sm font-black text-gray-800">{(pendingQty + confirmedQty + invoicedQty).toLocaleString()}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 border-2 border-blue-600 rounded-lg px-3 py-1">
+                    <span className="text-xs font-bold text-blue-700">Grand Total:</span>
+                    <span className="text-sm font-black text-blue-700">₱{fmt(grandTotal)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
