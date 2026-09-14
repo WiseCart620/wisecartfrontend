@@ -1,6 +1,5 @@
 // src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import MaintenancePage from './pages/MaintenancePage';
 import UserManagement from './pages/UserManagement';
 import InventoryManagement from './pages/InventoryManagement';
 import WarehouseManagement from './pages/WarehouseManagement';
@@ -18,73 +17,10 @@ import ProcurementManagement from './pages/ProcurementManagement/index.jsx';
 import TransmittalManagement from './pages/TransmittalManagement';
 import { AuthProvider, AuthLoading, ProtectedRoute, AdminRoute, FinanceRoute, AdminOrUserRoute } from './context/AuthContext';
 import { ReferenceDataProvider } from './context/ReferenceDataContext';
-import { startActivityTracking, stopActivityTracking, API_BASE_URL } from './services/api';
-import { useEffect, useState, useRef } from 'react';
-
-
-const FORCE_MAINTENANCE = false;
-
-
-// Poll fast while the backend is down, so recovery is detected quickly.
-const HEALTH_CHECK_INTERVAL_DOWN = 5000;
-// Once healthy, back off to a slow heartbeat instead of hammering the server.
-const HEALTH_CHECK_INTERVAL_UP = 120000;
-
-const HEALTH_CHECK_PATH = '/health';
+import { startActivityTracking, stopActivityTracking } from './services/api';
+import { useEffect } from 'react';
 
 function App() {
-  const [backendUp, setBackendUp] = useState(!FORCE_MAINTENANCE ? null : false);
-  const backendUpRef = useRef(backendUp);
-  useEffect(() => { backendUpRef.current = backendUp; }, [backendUp]);
-
-  useEffect(() => {
-    if (FORCE_MAINTENANCE) return;
-
-    let cancelled = false;
-    let inFlight = false;
-    let timeoutId = null;
-
-    const scheduleNext = (delay) => {
-      if (cancelled) return;
-      timeoutId = setTimeout(runCheck, delay);
-    };
-
-    async function checkHealth() {
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 4000);
-
-        const response = await fetch(`${API_BASE_URL}${HEALTH_CHECK_PATH}`, {
-          method: 'GET',
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeout);
-        if (!cancelled) setBackendUp(response.ok);
-      } catch (err) {
-        if (!cancelled) setBackendUp(false);
-      }
-    }
-
-    async function runCheck() {
-      if (cancelled || inFlight) return;
-      inFlight = true;
-      try {
-        await checkHealth();
-      } finally {
-        inFlight = false;
-      }
-      scheduleNext(backendUpRef.current ? HEALTH_CHECK_INTERVAL_UP : HEALTH_CHECK_INTERVAL_DOWN);
-    }
-
-    runCheck();
-
-    return () => {
-      cancelled = true;
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, []);
-
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (token) {
@@ -92,14 +28,6 @@ function App() {
     }
     return () => stopActivityTracking();
   }, []);
-
-  if (backendUp === false) {
-    return <MaintenancePage />;
-  }
-
-  if (backendUp === null) {
-    return null;
-  }
 
   return (
     <Router>
@@ -119,7 +47,6 @@ function App() {
                 </ProtectedRoute>
               } />
 
-
               <Route path="/supplier" element={
                 <ProtectedRoute>
                   <AdminOrUserRoute>
@@ -129,7 +56,6 @@ function App() {
                   </AdminOrUserRoute>
                 </ProtectedRoute>
               } />
-
 
               <Route path="/procurement" element={
                 <ProtectedRoute>
@@ -151,9 +77,6 @@ function App() {
                 </ProtectedRoute>
               } />
 
-
-
-
               <Route path="/deliveries" element={
                 <ProtectedRoute>
                   <Layout>
@@ -171,7 +94,6 @@ function App() {
                   </AdminOrUserRoute>
                 </ProtectedRoute>
               } />
-
 
               <Route path="/users" element={
                 <ProtectedRoute>
