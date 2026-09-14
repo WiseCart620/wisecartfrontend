@@ -217,22 +217,13 @@ const SalesFilters = ({
 
         {!isEncoder && (
           <div className="pt-2 border-t border-gray-100">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowSummary(prev => !prev)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm text-xs transition-all duration-150"
-              >
-                <FileText size={13} /> View Summary
-                <ChevronDown size={14} className={`transition-transform duration-200 ${showSummary ? 'rotate-180' : ''}`} />
-              </button>
-
-              <button
-                onClick={onOpenSummary}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 hover:shadow-sm text-xs transition-all duration-150"
-              >
-                <FileText size={13} /> Open Summary
-              </button>
-            </div>
+            <button
+              onClick={() => setShowSummary(prev => !prev)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm text-xs transition-all duration-150"
+            >
+              <FileText size={13} /> View Summary
+              <ChevronDown size={14} className={`transition-transform duration-200 ${showSummary ? 'rotate-180' : ''}`} />
+            </button>
 
             <div
               className={`grid transition-all duration-300 ease-out ${showSummary ? 'grid-rows-[1fr] opacity-100 mt-3' : 'grid-rows-[0fr] opacity-0'}`}
@@ -250,20 +241,26 @@ const SalesFilters = ({
                       className={`flex items-center gap-2 border border-blue-400 rounded-lg px-3 py-1 ${hoverClass} transition-colors cursor-pointer`}
                     >
                       <span className="text-xs text-gray-600">{label}:</span>
-                      <span className="text-xs font-semibold text-gray-800">₱{fmt(amt)}</span>
-                      <span className="text-xs font-bold text-gray-700">{count}</span>
+                      <span className="text-xs text-gray-800">₱{fmt(amt)}</span>
+                      <span className="text-xs text-gray-700">{count}</span>
                       <span className="text-xs text-gray-500 ml-1">(Qty: {qty.toLocaleString()})</span>
                     </button>
                   ))}
 
                   <div className="flex items-center gap-2 border-2 border-blue-400 rounded-lg px-3 py-1">
-                    <span className="text-xs font-bold text-gray-700">Total Qty:</span>
-                    <span className="text-sm font-black text-gray-800">{(pendingQty + confirmedQty + invoicedQty).toLocaleString()}</span>
+                    <span className="text-xs text-gray-700">Total Qty:</span>
+                    <span className="text-sm text-gray-800">{(pendingQty + confirmedQty + invoicedQty).toLocaleString()}</span>
                   </div>
 
                   <div className="flex items-center gap-2 border-2 border-blue-600 rounded-lg px-3 py-1">
-                    <span className="text-xs font-bold text-blue-700">Grand Total:</span>
-                    <span className="text-sm font-black text-blue-700">₱{fmt(grandTotal)}</span>
+                    <span className="text-xs text-blue-700">Grand Total:</span>
+                    <span className="text-sm text-blue-700">₱{fmt(grandTotal)}</span>
+                    <button
+                      onClick={onOpenSummary}
+                      className="flex items-center gap-1 pl-2 ml-1 border-l border-blue-300 text-blue-700 hover:text-blue-900 text-xs transition-colors"
+                    >
+                      Open Summary <ChevronDown size={12} className="-rotate-90" />
+                    </button>
                   </div>
                 </div>
               </div>
