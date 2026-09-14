@@ -14,7 +14,7 @@ const SalesFilters = ({
   productsByStatus,
   allProductOptions,
   dataLoading = false,
-  canCreate, canFinance, canSummary, isEncoder,
+  canCreate, canInvoice, canReport, canSummary,
   onNewSale,
   onOpenInvoice,
   onOpenJournal,
@@ -65,17 +65,17 @@ const SalesFilters = ({
                 <Plus size={16} /> New Sale
               </button>
             )}
-            {canFinance && (
+            {canInvoice && (
               <button onClick={onOpenInvoice} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-md text-sm">
                 <FileText size={16} /> Generate Invoice / COS
               </button>
             )}
-            {canFinance && (
+            {canInvoice && (
               <button onClick={onOpenJournal} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-md text-sm">
                 <FileText size={16} /> Sales Journal
               </button>
             )}
-            {canFinance && (
+            {canReport && (
               <button onClick={onOpenReport} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm text-sm">
                 <span className="text-sm font-normal leading-none">₱</span> Sales Report
               </button>

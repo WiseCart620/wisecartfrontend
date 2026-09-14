@@ -32,8 +32,6 @@ const SalesManagement = () => {
   const canInvoice = can(user, 'sales', 'invoice');
   const canReport = can(user, 'sales', 'report');
   const canSummary = can(user, 'sales', 'summary');
-  const canFinance = canInvoice || canReport;
-  const isEncoder = user?.role === 'ENCODER';
 
   // UI state
   const [currentPage, setCurrentPage] = useState(1);
@@ -328,9 +326,9 @@ const SalesManagement = () => {
           allProductOptions={allProductOptions}
           dataLoading={staticDataLoading}
           canCreate={canCreate}
-          canFinance={canFinance}
+          canInvoice={canInvoice}
+          canReport={canReport}
           canSummary={canSummary}
-          isEncoder={isEncoder}
           onNewSale={() => handleOpenModal('create')}
           onOpenInvoice={() => {
             if (!canInvoice) { toast.error('You do not have permission to generate invoices'); return; }
