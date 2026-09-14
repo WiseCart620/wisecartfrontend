@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, FileText, X } from 'lucide-react';
+import { Search, Plus, FileText, X, ChevronDown } from 'lucide-react';
 import MultiSelectDropdown from '../../components/common/MultiSelectDropdown';
 import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
 
@@ -59,23 +59,23 @@ const SalesFilters = ({
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2">
             {canCreate && (
-              <button onClick={onNewSale} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-none hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm font-medium text-sm">
+              <button onClick={onNewSale} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm text-sm">
                 <Plus size={16} /> New Sale
               </button>
             )}
             {canFinance && (
-              <button onClick={onOpenInvoice} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-none hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-md text-sm">
+              <button onClick={onOpenInvoice} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-md text-sm">
                 <FileText size={16} /> Generate Invoice / COS
               </button>
             )}
             {canFinance && (
-              <button onClick={onOpenJournal} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-none hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-md text-sm font-medium">
+              <button onClick={onOpenJournal} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-md text-sm">
                 <FileText size={16} /> Sales Journal
               </button>
             )}
             {canFinance && (
-              <button onClick={onOpenReport} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-none hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm text-sm font-medium">
-                <span className="text-sm font-bold leading-none">₱</span> Sales Report
+              <button onClick={onOpenReport} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm text-sm">
+                <span className="text-sm font-normal leading-none">₱</span> Sales Report
               </button>
             )}
           </div>
@@ -219,9 +219,10 @@ const SalesFilters = ({
           <div className="pt-2 border-t border-gray-100">
             <button
               onClick={() => setShowSummary(prev => !prev)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-none bg-blue-600 text-white hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm text-xs font-semibold transition-all duration-150"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm text-xs transition-all duration-150"
             >
-              <FileText size={13} /> {showSummary ? 'Hide Summary' : 'View Summary'}
+              <FileText size={13} /> View Summary
+              <ChevronDown size={14} className={`transition-transform duration-200 ${showSummary ? 'rotate-180' : ''}`} />
             </button>
 
             <div
