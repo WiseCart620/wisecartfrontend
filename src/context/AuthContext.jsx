@@ -166,7 +166,7 @@ export const AdminRoute = ({ children }) => {
 
   if (!user || user.role !== 'SUPER_ADMIN') {
     toast.error('Super Admin access required');
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/welcome" replace />;
   }
 
   return children;
@@ -214,7 +214,7 @@ export const PermissionRoute = ({ feature, children }) => {
 
   if (!hasPermission(user, feature)) {
     toast.error('You do not have access to this page');
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/welcome" replace />;
   }
 
   return children;

@@ -1,6 +1,7 @@
 // src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import UserManagement from './pages/UserManagement';
+import Welcome from './pages/Welcome';
 import InventoryManagement from './pages/InventoryManagement';
 import WarehouseManagement from './pages/WarehouseManagement';
 import DeliveryManagement from './pages/DeliveryManagement';
@@ -15,7 +16,7 @@ import Layout from './components/layout/Layout';
 import Supplier from './pages/SupplierManagement';
 import ProcurementManagement from './pages/ProcurementManagement/index.jsx';
 import TransmittalManagement from './pages/TransmittalManagement';
-import { AuthProvider, AuthLoading, ProtectedRoute, AdminRoute, FinanceRoute, AdminOrUserRoute, SuperAdminRoute, PermissionRoute } from './context/AuthContext';
+import { AuthProvider, AuthLoading, ProtectedRoute, FinanceRoute, AdminOrUserRoute, SuperAdminRoute, PermissionRoute } from './context/AuthContext';
 import { ReferenceDataProvider } from './context/ReferenceDataContext';
 import { startActivityTracking, stopActivityTracking } from './services/api';
 import { useEffect } from 'react';
@@ -37,13 +38,21 @@ function App() {
             <Routes>
               <Route path="/login" element={<LoginPage />} />
 
+              <Route path="/welcome" element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Welcome />
+                  </Layout>
+                </ProtectedRoute>
+              } />
+
               <Route path="/dashboard" element={
                 <ProtectedRoute>
-                  <AdminOrUserRoute>
+                  <PermissionRoute feature="dashboard">
                     <Layout>
                       <Dashboard />
                     </Layout>
-                  </AdminOrUserRoute>
+                  </PermissionRoute>
                 </ProtectedRoute>
               } />
 
@@ -105,11 +114,11 @@ function App() {
 
               <Route path="/users" element={
                 <ProtectedRoute>
-                  <AdminRoute>
+                  <SuperAdminRoute>
                     <Layout>
                       <UserManagement />
                     </Layout>
-                  </AdminRoute>
+                  </SuperAdminRoute>
                 </ProtectedRoute>
               } />
 
@@ -170,7 +179,7 @@ function App() {
               } />
 
               {/* Redirect root to dashboard */}
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/" element={<Navigate to="/welcome" replace />} />
 
               {/* 404 Page */}
               <Route path="*" element={<NotFound />} />
