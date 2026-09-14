@@ -30,7 +30,7 @@ const W_EXPANDED = 240;  // px
 
 const Sidebar = ({ isOpen, toggle }) => {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'ADMIN';
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
   const isAssistantAdmin = user?.role === 'ASSISTANT_ADMIN';
   const isFinance = user?.role === 'FINANCE';
   const isEncoder = user?.role === 'ENCODER';

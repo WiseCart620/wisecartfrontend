@@ -1,6 +1,6 @@
 export const isAdmin = () => {
   const userRole = localStorage.getItem('userRole') || 'USER';
-  return userRole === 'ADMIN';
+  return userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
 };
 
 export const getCurrentUser = () => {
@@ -16,7 +16,7 @@ export const getCurrentUser = () => {
   } catch (e) {
     console.error('Error parsing user from localStorage:', e);
   }
-  
+
   return localStorage.getItem('fullName') ||
     localStorage.getItem('userName') ||
     localStorage.getItem('username') ||

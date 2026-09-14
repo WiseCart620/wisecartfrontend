@@ -804,7 +804,7 @@ const MultiSelectDropdown = ({ label, options, selected, onChange }) => {
 
 const InvoicingProfile = ({ onBack }) => {
     const { user } = useAuth();
-    const isAdmin = user?.role === 'ADMIN';
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
     const [profiles, setProfiles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');

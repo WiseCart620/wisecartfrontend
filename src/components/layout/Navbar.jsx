@@ -4,7 +4,7 @@ import { LogOut, User, Menu, ChevronDown, Shield } from 'lucide-react';
 const Navbar = ({ toggleSidebar }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  
+
   const username = user.username || 'User';
   const fullName = user.fullName || '';
   const role = user.role || 'User';
@@ -21,8 +21,8 @@ const Navbar = ({ toggleSidebar }) => {
     <nav className="bg-white shadow-sm border-b border-gray-200 px-4 py-3">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button 
-            onClick={toggleSidebar} 
+          <button
+            onClick={toggleSidebar}
             className="lg:hidden text-gray-600 hover:text-gray-900"
           >
             <Menu size={24} />
@@ -45,19 +45,19 @@ const Navbar = ({ toggleSidebar }) => {
                   {fullName ? username : role}
                 </p>
               </div>
-              
+
               {/* User Avatar */}
               <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center relative">
                 <User size={18} className="text-blue-600" />
-                {role === 'ADMIN' && (
+                {(role === 'ADMIN' || role === 'SUPER_ADMIN') && (
                   <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
                     <Shield size={10} className="text-white" />
                   </div>
                 )}
               </div>
-              
-              <ChevronDown 
-                size={16} 
+
+              <ChevronDown
+                size={16}
                 className={`text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
               />
             </button>
@@ -107,8 +107,8 @@ const Navbar = ({ toggleSidebar }) => {
       </div>
 
       {isDropdownOpen && (
-        <div 
-          className="fixed inset-0 z-40" 
+        <div
+          className="fixed inset-0 z-40"
           onClick={() => setIsDropdownOpen(false)}
         />
       )}
