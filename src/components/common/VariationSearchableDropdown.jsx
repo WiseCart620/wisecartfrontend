@@ -121,33 +121,33 @@ const VariationSearchableDropdown = ({
   };
 
   return (
-    <div ref={dropdownRef} className="relative">
+    <div ref={dropdownRef} className="relative inline-block">
       <button
         type="button"
         onClick={() => !loading && setIsOpen(!isOpen)}
         disabled={loading}
-        className={`w-full px-3 flex items-center justify-between ${fieldBase} ${loading ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+        className={`inline-flex items-center justify-between gap-2 min-w-[200px] max-w-md px-3 ${fieldBase} ${loading ? 'bg-gray-100 cursor-not-allowed' : ''}`}
       >
-        <div className="flex-1 min-w-0 overflow-hidden">
+        <div className="min-w-0">
           {loading ? (
             <span className="flex items-center gap-2 text-gray-400 text-sm whitespace-nowrap">
               <span className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
               Loading...
             </span>
           ) : selectedOption ? (
-            <div className="text-gray-900 font-medium text-sm truncate">
+            <div className="text-gray-900 font-medium text-sm whitespace-nowrap truncate">
               {selectedOption.upc || 'N/A'} - {selectedOption.fullName} - {selectedOption.sku || 'N/A'}
             </div>
           ) : (
-            <span className="text-gray-500 text-sm truncate block">{placeholder}</span>
+            <span className="text-gray-500 text-sm whitespace-nowrap">{placeholder}</span>
           )}
         </div>
-        <ChevronDown size={16} className={`text-gray-400 transition-transform ml-2 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={16} className={`text-gray-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Dropdown list */}
       {isOpen && !loading && (
-        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-hidden">
+        <div className="absolute z-50 min-w-full w-max max-w-lg mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-hidden">
           <div className="p-3 border-b border-gray-200">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
@@ -234,7 +234,7 @@ const VariationSearchableDropdown = ({
                       }`}
                   >
                     <div className="flex flex-col">
-                      <div className="font-medium">
+                      <div className="font-medium whitespace-nowrap">
                         {option.upc || 'N/A'} - {option.name} - {option.sku || 'N/A'}
                       </div>
                       {option.subLabel && option.subLabel !== 'No variations' && (

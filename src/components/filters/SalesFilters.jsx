@@ -154,7 +154,7 @@ const SalesFilters = ({
             />
           </div>
 
-          <div className="w-56 flex-shrink-0">
+          <div className="inline-block flex-shrink-0">
             <VariationSearchableDropdown
               options={allProductOptions.filter(o =>
                 !filterData.productFilters.some(pf =>

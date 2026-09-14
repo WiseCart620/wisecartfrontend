@@ -37,10 +37,10 @@ const SalesTable = ({
         <table className="w-full min-w-[680px] sales-print-table table-fixed">
           <colgroup>
             <col className="w-10" />
-            <col className="w-[19%]" />
-            <col className="w-[16%]" />
-            <col className="w-[11%]" />
-            <col className="w-[13%]" />
+            <col className="w-[18%]" />
+            <col className="w-[20%]" />
+            <col className="w-[9%]" />
+            <col className="w-[12%]" />
             <col className="w-[10%]" />
             <col className="w-[12%]" />
             <col className="w-[9%]" />
@@ -84,11 +84,11 @@ const SalesTable = ({
                   <td className="px-3 py-3 whitespace-nowrap text-center text-xs text-gray-400 font-medium">
                     {((currentPage - 1) * 10) + idx + 1}
                   </td>
-                  <td className="px-3 py-3 whitespace-nowrap">
-                    <div className="text-xs font-medium text-gray-900">{sale.branch.branchName}</div>
+                  <td className="px-3 py-3">
+                    <div className="text-xs font-medium text-gray-900 truncate" title={sale.branch.branchName}>{sale.branch.branchName}</div>
                     <div className="text-xs text-gray-500">{sale.branch.branchCode}</div>
                   </td>
-                  <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">{sale.company.companyName}</td>
+                  <td className="px-3 py-3 text-xs text-gray-900 truncate" title={sale.company.companyName}>{sale.company.companyName}</td>
                   <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">{months[sale.month - 1]} {sale.year}</td>
                   <td className="px-3 py-3 truncate text-xs text-gray-900">{sale.createdBy || sale.generatedBy || '-'}</td>
                   <td className="pl-3 pr-10 py-3 whitespace-nowrap text-xs text-gray-700 text-right">{getRowTotals(sale).qty.toLocaleString()}</td>
