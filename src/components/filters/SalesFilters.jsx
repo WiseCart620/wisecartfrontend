@@ -217,13 +217,22 @@ const SalesFilters = ({
 
         {!isEncoder && (
           <div className="pt-2 border-t border-gray-100">
-            <button
-              onClick={() => setShowSummary(prev => !prev)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm text-xs transition-all duration-150"
-            >
-              <FileText size={13} /> View Summary
-              <ChevronDown size={14} className={`transition-transform duration-200 ${showSummary ? 'rotate-180' : ''}`} />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowSummary(prev => !prev)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm text-xs transition-all duration-150"
+              >
+                <FileText size={13} /> View Summary
+                <ChevronDown size={14} className={`transition-transform duration-200 ${showSummary ? 'rotate-180' : ''}`} />
+              </button>
+
+              <button
+                onClick={onOpenSummary}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 hover:shadow-sm text-xs transition-all duration-150"
+              >
+                <FileText size={13} /> Open Summary
+              </button>
+            </div>
 
             <div
               className={`grid transition-all duration-300 ease-out ${showSummary ? 'grid-rows-[1fr] opacity-100 mt-3' : 'grid-rows-[0fr] opacity-0'}`}
