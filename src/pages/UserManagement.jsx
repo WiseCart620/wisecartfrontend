@@ -5,9 +5,31 @@ import toast, { Toaster } from 'react-hot-toast';
 import { api } from '../services/api';
 import { LoadingOverlay } from '../components/common/LoadingOverlay';
 import Pagination from '../components/common/Pagination';
+import { useIsSuperAdmin } from '../context/AuthContext';
+
+const ACTION_LABELS = {
+  view: 'View', create: 'Create', edit: 'Edit', delete: 'Delete',
+  invoice: 'Invoice', report: 'Reports', summary: 'Summary',
+  cancel: 'Cancel', print: 'Print', confirm: 'Confirm',
+};
+
+const FEATURES = [
+  { key: 'dashboard', label: 'Dashboard', actions: ['view'] },
+  { key: 'sales', label: 'Sales', actions: ['view', 'create', 'edit', 'delete', 'invoice', 'report', 'summary'] },
+  { key: 'deliveries', label: 'Deliveries', actions: ['view', 'create', 'edit', 'delete', 'cancel', 'print'] },
+  { key: 'warehouse_inventory', label: 'Warehouse Inventory', actions: ['view', 'create', 'edit', 'delete', 'confirm'] },
+  { key: 'inventory', label: 'Inventory Record', actions: ['view', 'create', 'edit', 'delete', 'confirm'] },
+  { key: 'procurement', label: 'Procurement', actions: ['view'] },
+  { key: 'warehouse', label: 'Warehouse', actions: ['view', 'create', 'edit', 'delete'] },
+  { key: 'branches', label: 'Branches & Companies', actions: ['view', 'create', 'edit', 'delete'] },
+  { key: 'products', label: 'Products', actions: ['view', 'create', 'edit', 'delete'] },
+  { key: 'supplier', label: 'Supplier', actions: ['view', 'create', 'edit', 'delete'] },
+  { key: 'users', label: 'User Management', actions: ['view', 'create', 'edit', 'delete'] },
+];
 
 
 const UserManagement = () => {
+  const isSuperAdmin = useIsSuperAdmin();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,8 +51,27 @@ const UserManagement = () => {
     fullName: '',
     password: '',
     role: 'ENCODER',
-    enabled: true
+    enabled: true,
+    permissions: []
   });
+
+  const togglePermission = (permKey) => {
+    setFormData(prev => {
+      const has = prev.permissions.includes(permKey);
+      return {
+        ...prev,
+        permissions: has ? prev.permissions.filter(p => p !== permKey) : [...prev.permissions, permKey]
+      };
+    });
+  };
+
+  const toggleAllForFeature = (feature, checked) => {
+    setFormData(prev => {
+      const keys = feature.actions.map(a => `${feature.key}:${a}`);
+      const withoutFeature = prev.permissions.filter(p => !keys.includes(p));
+      return { ...prev, permissions: checked ? [...withoutFeature, ...keys] : withoutFeature };
+    });
+  };
 
   const [passwordData, setPasswordData] = useState({
     newPassword: '',
@@ -102,7 +143,8 @@ const UserManagement = () => {
         email: formData.email,
         fullName: formData.fullName,
         role: formData.role,
-        enabled: formData.enabled
+        enabled: formData.enabled,
+        ...(isSuperAdmin ? { permissions: formData.permissions } : {})
       };
 
       if (!editingUser) {
@@ -175,7 +217,8 @@ const UserManagement = () => {
       fullName: user.fullName || '',
       password: '',
       role: user.role || 'USER',
-      enabled: user.enabled
+      enabled: user.enabled,
+      permissions: user.permissions || []
     });
     setShowModal(true);
   };
@@ -233,7 +276,8 @@ const UserManagement = () => {
       fullName: '',
       password: '',
       role: 'ENCODER',
-      enabled: true
+      enabled: true,
+      permissions: []
     });
     setEditingUser(null);
   };
@@ -262,6 +306,7 @@ const UserManagement = () => {
 
   const getRoleBadge = (role) => {
     const roleStyles = {
+      SUPER_ADMIN: 'bg-black text-white',
       ADMIN: 'bg-purple-100 text-purple-800',
       ENCODER: 'bg-blue-100 text-blue-800',
       ASSISTANT_ADMIN: 'bg-indigo-100 text-indigo-800',
@@ -269,6 +314,7 @@ const UserManagement = () => {
     };
 
     const roleLabels = {
+      SUPER_ADMIN: 'Super Admin',
       ADMIN: 'Admin',
       ENCODER: 'Encoder',
       ASSISTANT_ADMIN: 'Assistant Admin',
@@ -535,6 +581,7 @@ const UserManagement = () => {
                     required
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
+                    {isSuperAdmin && <option value="SUPER_ADMIN">Super Admin</option>}
                     <option value="ADMIN">Admin</option>
                     <option value="ENCODER">Encoder</option>
                     <option value="ASSISTANT_ADMIN">Assistant Admin</option>
@@ -556,6 +603,52 @@ const UserManagement = () => {
                     <div className="text-sm text-gray-500">User can login to the system</div>
                   </label>
                 </div>
+
+                {isSuperAdmin && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Feature Access & Permissions
+                    </label>
+                    <div className="space-y-2 p-4 bg-gray-50 rounded-lg max-h-96 overflow-y-auto">
+                      {FEATURES.map(f => {
+                        const keys = f.actions.map(a => `${f.key}:${a}`);
+                        const allChecked = keys.every(k => formData.permissions.includes(k));
+                        return (
+                          <div key={f.key} className="p-3 bg-white rounded-lg border border-gray-200">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-medium text-gray-900 text-sm">{f.label}</span>
+                              <label className="flex items-center gap-1.5 text-xs text-blue-600 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={allChecked}
+                                  onChange={(e) => toggleAllForFeature(f, e.target.checked)}
+                                  className="w-3.5 h-3.5 text-blue-600 rounded"
+                                />
+                                All
+                              </label>
+                            </div>
+                            <div className="flex flex-wrap gap-3">
+                              {f.actions.map(action => {
+                                const permKey = `${f.key}:${action}`;
+                                return (
+                                  <label key={permKey} className="flex items-center gap-1.5 text-xs text-gray-700 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={formData.permissions.includes(permKey)}
+                                      onChange={() => togglePermission(permKey)}
+                                      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                                    />
+                                    {ACTION_LABELS[action] || action}
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3 pt-4 border-t border-gray-200">

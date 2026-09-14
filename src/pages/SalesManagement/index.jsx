@@ -4,7 +4,7 @@ import '../../styles/sales-report-print.css';
 import '../../styles/sales-memo-print.css';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, can } from '../../context/AuthContext';
 
 
 import { months, monthsFull, DEFAULT_FILTER_DATA, SALE_STATUS } from '../../constants/salesConstants';
@@ -26,9 +26,13 @@ import { LoadingOverlay } from '../../components/common/LoadingOverlay';
 
 const SalesManagement = () => {
   const { user } = useAuth();
-  const canCreate = ['ADMIN', 'ENCODER', 'ASSISTANT_ADMIN'].includes(user?.role);
-  const canDelete = ['ADMIN', 'ASSISTANT_ADMIN'].includes(user?.role);
-  const canFinance = ['ADMIN', 'FINANCE', 'ASSISTANT_ADMIN'].includes(user?.role);
+  const canCreate = user?.role === 'ENCODER' || can(user, 'sales', 'create');
+  const canEdit = user?.role === 'ENCODER' || can(user, 'sales', 'edit');
+  const canDelete = ['ADMIN', 'ASSISTANT_ADMIN', 'SUPER_ADMIN'].includes(user?.role) || can(user, 'sales', 'delete');
+  const canInvoice = can(user, 'sales', 'invoice');
+  const canReport = can(user, 'sales', 'report');
+  const canSummary = can(user, 'sales', 'summary');
+  const canFinance = canInvoice || canReport;
   const isEncoder = user?.role === 'ENCODER';
 
   // UI state
@@ -327,12 +331,19 @@ const SalesManagement = () => {
           isEncoder={isEncoder}
           onNewSale={() => handleOpenModal('create')}
           onOpenInvoice={() => {
+            if (!canInvoice) { toast.error('You do not have permission to generate invoices'); return; }
             setInvoiceBranchIds(filterData.branchIds || []);
             setShowInvoiceModal(true);
           }}
           onOpenJournal={() => setShowInvoicingProfile(true)}
-          onOpenReport={() => setShowSalesReport(true)}
-          onOpenSummary={() => setShowSummaryModal(true)}
+          onOpenReport={() => {
+            if (!canReport) { toast.error('You do not have permission to view reports'); return; }
+            setShowSalesReport(true);
+          }}
+          onOpenSummary={() => {
+            if (!canSummary) { toast.error('You do not have permission to view summary'); return; }
+            setShowSummaryModal(true);
+          }}
           onOpenStatusModal={(status) => {
             setSelectedStatusForModal(status);
             setProductsByStatus(prev => ({ ...prev, [status.toLowerCase()]: [] }));
@@ -350,12 +361,19 @@ const SalesManagement = () => {
           totalPages={totalPages}
           totalElements={totalElements}
           canCreate={canCreate}
+          canEdit={canEdit}
           canDelete={canDelete}
           onView={async (sale) => { setLoadingAction({ id: sale.id, type: 'view' }); await handleOpenModal('view', sale); }}
-          onEdit={async (sale) => { setLoadingAction({ id: sale.id, type: 'edit' }); await handleOpenModal('edit', sale); }}
+          onEdit={async (sale) => {
+            if (!canEdit) { toast.error('You do not have permission to edit sales'); return; }
+            setLoadingAction({ id: sale.id, type: 'edit' }); await handleOpenModal('edit', sale);
+          }}
           loadingAction={loadingAction}
           onUpdateStatus={handleUpdateStatus}
-          onDelete={handleDelete}
+          onDelete={(saleId) => {
+            if (!canDelete) { toast.error('You do not have permission to delete sales'); return; }
+            handleDelete(saleId);
+          }}
           onPageChange={setCurrentPage}
           productFilters={filterData.productFilters}
         />

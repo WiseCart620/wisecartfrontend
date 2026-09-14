@@ -7,7 +7,7 @@ import { months } from '../../constants/salesConstants';
 const SalesTable = ({
   sales, loading,
   currentPage, totalPages, totalElements,
-  canCreate, canDelete,
+  canCreate, canEdit, canDelete,
   onView, onEdit, onUpdateStatus, onDelete,
   onPageChange,
   loadingAction,
@@ -109,9 +109,11 @@ const SalesTable = ({
 
                       {sale.status === 'PENDING' && canCreate && (
                         <>
-                          <button onClick={() => onEdit(sale)} disabled={loadingAction?.id === sale.id} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-indigo-600 hover:bg-indigo-50 transition disabled:opacity-60" title="Edit">
-                            {loadingAction?.id === sale.id && loadingAction?.type === 'edit' ? <Loader2 size={15} className="animate-spin" /> : <Edit2 size={15} />}
-                          </button>
+                          {canEdit && (
+                            <button onClick={() => onEdit(sale)} disabled={loadingAction?.id === sale.id} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-indigo-600 hover:bg-indigo-50 transition disabled:opacity-60" title="Edit">
+                              {loadingAction?.id === sale.id && loadingAction?.type === 'edit' ? <Loader2 size={15} className="animate-spin" /> : <Edit2 size={15} />}
+                            </button>
+                          )}
                           <button onClick={() => onUpdateStatus(sale.id, 'CONFIRMED')} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-green-600 hover:bg-green-50 transition" title="Confirm Sale">
                             <Check size={15} />
                           </button>

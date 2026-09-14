@@ -153,7 +153,7 @@ export const ProtectedRoute = ({ children }) => {
 };
 
 
-// ADMIN only (user management)
+// ADMIN or SUPER_ADMIN (user management)
 export const AdminRoute = ({ children }) => {
   const { user, isTokenValid, loading } = useAuth();
 
@@ -164,8 +164,57 @@ export const AdminRoute = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (!user || user.role !== 'ADMIN') {
+  if (!user || !['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
     toast.error('Admin access required');
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
+};
+
+// SUPER_ADMIN only
+export const SuperAdminRoute = ({ children }) => {
+  const { user, isTokenValid, loading } = useAuth();
+
+  if (loading) return null;
+
+  if (!isTokenValid()) {
+    toast.error('Please login to continue');
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!user || user.role !== 'SUPER_ADMIN') {
+    toast.error('Super Admin access required');
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
+};
+
+// Granular check: can(user, 'sales', 'delete') -> true/false
+export const can = (user, feature, action = 'view') => {
+  if (!user) return false;
+  if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') return true;
+  const key = `${feature}:${action}`;
+  return Array.isArray(user.permissions) && user.permissions.includes(key);
+};
+
+// Page-level check (sidebar/routes)
+export const hasPermission = (user, feature) => can(user, feature, 'view');
+
+// Route wrapper gated by a feature's view permission
+export const PermissionRoute = ({ feature, children }) => {
+  const { user, isTokenValid, loading } = useAuth();
+
+  if (loading) return null;
+
+  if (!isTokenValid()) {
+    toast.error('Please login to continue');
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!hasPermission(user, feature)) {
+    toast.error('You do not have access to this page');
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -197,5 +246,10 @@ export const useCanDelete = () => {
 
 export const useIsAdmin = () => {
   const { user } = useAuth();
-  return user?.role === 'ADMIN';
+  return user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+};
+
+export const useIsSuperAdmin = () => {
+  const { user } = useAuth();
+  return user?.role === 'SUPER_ADMIN';
 };

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Users, Edit2, Trash2, Eye } from 'lucide-react';
 import Pagination from '../common/Pagination';
 
-const CompanyTable = ({ companies, searchTerm, onView, onEdit, onDelete }) => {
+const CompanyTable = ({ companies, searchTerm, onView, onEdit, onDelete, canEdit = true, canDelete = true }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
@@ -89,20 +89,24 @@ const CompanyTable = ({ companies, searchTerm, onView, onEdit, onDelete }) => {
                       >
                         <Eye size={18} />
                       </button>
-                      <button
-                        onClick={() => onEdit(company)}
-                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
-                        title="Edit company"
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                      <button
-                        onClick={() => onDelete(company.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                        title="Delete company"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                      {canEdit && (
+                        <button
+                          onClick={() => onEdit(company)}
+                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
+                          title="Edit company"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          onClick={() => onDelete(company.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                          title="Delete company"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

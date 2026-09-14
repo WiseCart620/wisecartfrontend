@@ -10,8 +10,13 @@ import ProductRow from '../../components/tables/ProductRow';
 import ProductModal from '../../components/modals/ProductModal';
 import useProductManagement from '../../hooks/data/useProductManagement';
 import { productCategories } from '../../constants/productConstants';
+import { useAuth, can } from '../../context/AuthContext';
 
 const ProductManagement = () => {
+  const { user } = useAuth();
+  const canCreate = can(user, 'products', 'create');
+  const canEdit = can(user, 'products', 'edit');
+  const canDelete = can(user, 'products', 'delete');
   const {
     products,
     companies,
@@ -399,13 +404,15 @@ const ProductManagement = () => {
             Clear
           </button>
         )}
-        <button
-          onClick={() => { resetForm(); setShowModal(true); }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-        >
-          <Plus size={20} />
-          Add Product
-        </button>
+        {canCreate && (
+          <button
+            onClick={() => { resetForm(); setShowModal(true); }}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            <Plus size={20} />
+            Add Product
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -457,6 +464,8 @@ const ProductManagement = () => {
                     onDelete={handleDelete}
                     API_BASE_URL={API_BASE_URL}
                     unitCosts={unitCosts}
+                    canEdit={canEdit}
+                    canDelete={canDelete}
                   />
                 ))
               )}

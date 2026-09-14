@@ -10,6 +10,7 @@ import DeliveryViewModal from '../../components/modals/DeliveryViewModal';
 import DeliveryReceiptModal from '../../components/modals/DeliveryReceiptModal';
 import { useDeliveries } from '../../hooks/useDeliveries';
 import { useReferenceData } from '../../context/ReferenceDataContext';
+import { can } from '../../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -24,8 +25,11 @@ const SORT_OPTIONS = [
 
 const DeliveryManagement = () => {
   const { user } = useAuth();
-  const canCreate = ['ADMIN', 'ENCODER', 'ASSISTANT_ADMIN'].includes(user?.role);
-  const canDelete = ['ADMIN', 'ASSISTANT_ADMIN'].includes(user?.role);
+  const canCreate = user?.role === 'ENCODER' || can(user, 'deliveries', 'create');
+  const canEdit = can(user, 'deliveries', 'edit');
+  const canDelete = ['ADMIN', 'ASSISTANT_ADMIN', 'SUPER_ADMIN'].includes(user?.role) || can(user, 'deliveries', 'delete');
+  const canCancel = can(user, 'deliveries', 'cancel');
+  const canPrint = can(user, 'deliveries', 'print');
   const navigate = useNavigate();
   const location = useLocation();
   const {
@@ -96,6 +100,10 @@ const DeliveryManagement = () => {
   const totalPages = serverTotalPages || 1;
 
   const handleOpenModal = async (mode, delivery = null) => {
+    if (mode === 'edit' && !canEdit) {
+      alert('You do not have permission to edit deliveries.');
+      return;
+    }
     if (mode === 'edit' && delivery?.status === 'DELIVERED') {
       alert('Cannot edit a delivery that has already been DELIVERED.');
       return;
@@ -206,6 +214,7 @@ const DeliveryManagement = () => {
   };
 
   const handleDeleteDelivery = async (id) => {
+    if (!canDelete) { alert('You do not have permission to delete deliveries.'); return; }
     const delivery = deliveries.find(d => d.id === id);
     if (['DELIVERED', 'IN_TRANSIT', 'CANCELLED'].includes(delivery?.status)) {
       alert(`🚫 DELETION NOT ALLOWED\n\nDeliveries with status "${delivery.status}" cannot be deleted.\n\nOnly deliveries in PENDING or PREPARING status may be deleted.`);
@@ -234,6 +243,7 @@ const DeliveryManagement = () => {
   };
 
   const handleOpenCancelModal = (delivery) => {
+    if (!canCancel) { alert('You do not have permission to cancel deliveries.'); return; }
     setCancelModal({ show: true, delivery, remarks: '' });
   };
 
@@ -266,6 +276,7 @@ const DeliveryManagement = () => {
   };
 
   const handleGenerateReceipt = async (delivery) => {
+    if (!canPrint) { alert('You do not have permission to print receipts.'); return; }
     try {
       setActionLoading(true);
       setLoadingMessage('Generating receipt...');
@@ -427,6 +438,9 @@ const DeliveryManagement = () => {
           isLoading={loading}
           canDelete={canDelete}
           canCreate={canCreate}
+          canEdit={canEdit}
+          canCancel={canCancel}
+          canPrint={canPrint}
           productFilters={filterData.productFilters}
         />
 

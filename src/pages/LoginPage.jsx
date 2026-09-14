@@ -63,7 +63,8 @@ const LoginPage = () => {
 
         userData = {
           username: data.username,
-          role: decodeJWT(data.accessToken)?.role || 'USER'
+          role: decodeJWT(data.accessToken)?.role || 'USER',
+          permissions: []
         };
       }
 

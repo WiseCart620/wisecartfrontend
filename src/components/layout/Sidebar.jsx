@@ -6,42 +6,58 @@ import {
   ChevronLeft, Database, Factory, ClipboardList, Menu, X,
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, hasPermission } from '../../context/AuthContext';
 
 const allMainMenuItems = [
-  { to: '/dashboard',           label: 'Dashboard',        icon: Home,          userHidden: true  },
-  { to: '/sales',               label: 'Sales',            icon: ShoppingCart,  userHidden: false },
-  { to: '/deliveries',          label: 'Deliveries',       icon: Truck,         userHidden: false },
-  { to: '/warehouse-inventory', label: 'Warehouse Inventory', icon: PackageOpen,   userHidden: true  },
-  { to: '/inventory',           label: 'Inventory Record', icon: PackageSearch, userHidden: true  },
-  { to: '/procurement',         label: 'Procurement',      icon: ClipboardList, userHidden: true  },
+  { to: '/dashboard', label: 'Dashboard', icon: Home, userHidden: true },
+  { to: '/sales', label: 'Sales', icon: ShoppingCart, userHidden: false },
+  { to: '/deliveries', label: 'Deliveries', icon: Truck, userHidden: false },
+  { to: '/warehouse-inventory', label: 'Warehouse Inventory', icon: PackageOpen, userHidden: true },
+  { to: '/inventory', label: 'Inventory Record', icon: PackageSearch, userHidden: true },
+  { to: '/procurement', label: 'Procurement', icon: ClipboardList, userHidden: true },
 ];
 
 const dataEntryItems = [
-  { to: '/warehouse', label: 'Warehouse',           icon: Warehouse },
-  { to: '/branches',  label: 'Branches & Companies',icon: Users     },
-  { to: '/products',  label: 'Products',            icon: Package   },
-  { to: '/supplier',  label: 'Supplier',            icon: Factory   },
+  { to: '/warehouse', label: 'Warehouse', icon: Warehouse },
+  { to: '/branches', label: 'Branches & Companies', icon: Users },
+  { to: '/products', label: 'Products', icon: Package },
+  { to: '/supplier', label: 'Supplier', icon: Factory },
 ];
 
 // ── Collapsed width (icon-only) ───────────────────────────────────
 const W_COLLAPSED = 64;   // px
-const W_EXPANDED  = 240;  // px
+const W_EXPANDED = 240;  // px
 
 const Sidebar = ({ isOpen, toggle }) => {
   const { user } = useAuth();
-  const isAdmin          = user?.role === 'ADMIN';
+  const isAdmin = user?.role === 'ADMIN';
   const isAssistantAdmin = user?.role === 'ASSISTANT_ADMIN';
-  const isFinance        = user?.role === 'FINANCE';
-  const isEncoder        = user?.role === 'ENCODER';
+  const isFinance = user?.role === 'FINANCE';
+  const isEncoder = user?.role === 'ENCODER';
 
-  const mainMenuItems = isEncoder
-    ? allMainMenuItems.filter(i => ['/sales', '/deliveries'].includes(i.to))
-    : allMainMenuItems;
+  const featureKeyByPath = {
+    '/dashboard': 'dashboard', '/sales': 'sales', '/deliveries': 'deliveries',
+    '/warehouse-inventory': 'warehouse_inventory', '/inventory': 'inventory',
+    '/procurement': 'procurement',
+  };
 
-  const showDataEntry = isAdmin || isAssistantAdmin || isFinance;
+  const mainMenuItems = (user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN')
+    ? allMainMenuItems
+    : isEncoder
+      ? allMainMenuItems.filter(i => ['/sales', '/deliveries'].includes(i.to))
+      : allMainMenuItems.filter(i => hasPermission(user, featureKeyByPath[i.to]));
+  const showDataEntry = isAdmin || user?.role === 'SUPER_ADMIN' || isAssistantAdmin || isFinance ||
+    ['warehouse', 'branches', 'products', 'supplier'].some(f => hasPermission(user, f));
 
-  const [dataEntryOpen,    setDataEntryOpen]    = useState(true);
+  const dataEntryFeatureByPath = {
+    '/warehouse': 'warehouse', '/branches': 'branches', '/products': 'products', '/supplier': 'supplier',
+  };
+
+  const visibleDataEntryItems = (user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN')
+    ? dataEntryItems
+    : dataEntryItems.filter(i => hasPermission(user, dataEntryFeatureByPath[i.to]));
+
+  const [dataEntryOpen, setDataEntryOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const sidebarW = sidebarCollapsed ? W_COLLAPSED : W_EXPANDED;
@@ -121,7 +137,7 @@ const Sidebar = ({ isOpen, toggle }) => {
 
               <div className={`overflow-hidden transition-all duration-300 ${dataEntryOpen ? 'max-h-60' : 'max-h-0'}`}>
                 <div className="ml-6 mt-1 space-y-1 border-l border-gray-700 pl-2">
-                  {dataEntryItems.map((item) => {
+                  {visibleDataEntryItems.map((item) => {
                     const Icon = item.icon;
                     return (
                       <NavLink
@@ -146,7 +162,7 @@ const Sidebar = ({ isOpen, toggle }) => {
           {/* Data Entry icons-only when collapsed */}
           {showDataEntry && sidebarCollapsed && (
             <div className="pt-1 space-y-1">
-              {dataEntryItems.map((item) => {
+              {visibleDataEntryItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <NavLink
@@ -199,9 +215,9 @@ const Sidebar = ({ isOpen, toggle }) => {
             {sidebarCollapsed
               ? <ChevronRight size={18} />
               : <>
-                  <ChevronLeft size={18} />
-                  <span className="text-xs">Collapse</span>
-                </>
+                <ChevronLeft size={18} />
+                <span className="text-xs">Collapse</span>
+              </>
             }
           </button>
         </div>

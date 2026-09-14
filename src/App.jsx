@@ -15,7 +15,7 @@ import Layout from './components/layout/Layout';
 import Supplier from './pages/SupplierManagement';
 import ProcurementManagement from './pages/ProcurementManagement/index.jsx';
 import TransmittalManagement from './pages/TransmittalManagement';
-import { AuthProvider, AuthLoading, ProtectedRoute, AdminRoute, FinanceRoute, AdminOrUserRoute } from './context/AuthContext';
+import { AuthProvider, AuthLoading, ProtectedRoute, AdminRoute, FinanceRoute, AdminOrUserRoute, SuperAdminRoute, PermissionRoute } from './context/AuthContext';
 import { ReferenceDataProvider } from './context/ReferenceDataContext';
 import { startActivityTracking, stopActivityTracking } from './services/api';
 import { useEffect } from 'react';
@@ -50,9 +50,11 @@ function App() {
               <Route path="/supplier" element={
                 <ProtectedRoute>
                   <AdminOrUserRoute>
-                    <Layout>
-                      <Supplier />
-                    </Layout>
+                    <PermissionRoute feature="supplier">
+                      <Layout>
+                        <Supplier />
+                      </Layout>
+                    </PermissionRoute>
                   </AdminOrUserRoute>
                 </ProtectedRoute>
               } />
@@ -60,9 +62,11 @@ function App() {
               <Route path="/procurement" element={
                 <ProtectedRoute>
                   <AdminOrUserRoute>
-                    <Layout>
-                      <ProcurementManagement />
-                    </Layout>
+                    <PermissionRoute feature="procurement">
+                      <Layout>
+                        <ProcurementManagement />
+                      </Layout>
+                    </PermissionRoute>
                   </AdminOrUserRoute>
                 </ProtectedRoute>
               } />
@@ -70,9 +74,11 @@ function App() {
               <Route path="/transmittals" element={
                 <ProtectedRoute>
                   <AdminOrUserRoute>
-                    <Layout>
-                      <TransmittalManagement />
-                    </Layout>
+                    <PermissionRoute feature="deliveries">
+                      <Layout>
+                        <TransmittalManagement />
+                      </Layout>
+                    </PermissionRoute>
                   </AdminOrUserRoute>
                 </ProtectedRoute>
               } />
@@ -88,9 +94,11 @@ function App() {
               <Route path="/warehouse-inventory" element={
                 <ProtectedRoute>
                   <AdminOrUserRoute>
-                    <Layout>
-                      <WarehouseInventory />
-                    </Layout>
+                    <PermissionRoute feature="warehouse_inventory">
+                      <Layout>
+                        <WarehouseInventory />
+                      </Layout>
+                    </PermissionRoute>
                   </AdminOrUserRoute>
                 </ProtectedRoute>
               } />
@@ -108,9 +116,11 @@ function App() {
               <Route path="/inventory" element={
                 <ProtectedRoute>
                   <AdminOrUserRoute>
-                    <Layout>
-                      <InventoryManagement />
-                    </Layout>
+                    <PermissionRoute feature="inventory">
+                      <Layout>
+                        <InventoryManagement />
+                      </Layout>
+                    </PermissionRoute>
                   </AdminOrUserRoute>
                 </ProtectedRoute>
               } />
@@ -126,9 +136,11 @@ function App() {
               <Route path="/warehouse" element={
                 <ProtectedRoute>
                   <AdminOrUserRoute>
-                    <Layout>
-                      <WarehouseManagement />
-                    </Layout>
+                    <PermissionRoute feature="warehouse">
+                      <Layout>
+                        <WarehouseManagement />
+                      </Layout>
+                    </PermissionRoute>
                   </AdminOrUserRoute>
                 </ProtectedRoute>
               } />
@@ -136,9 +148,11 @@ function App() {
               <Route path="/products" element={
                 <ProtectedRoute>
                   <AdminOrUserRoute>
-                    <Layout>
-                      <ProductManagement />
-                    </Layout>
+                    <PermissionRoute feature="products">
+                      <Layout>
+                        <ProductManagement />
+                      </Layout>
+                    </PermissionRoute>
                   </AdminOrUserRoute>
                 </ProtectedRoute>
               } />
@@ -146,9 +160,11 @@ function App() {
               <Route path="/branches" element={
                 <ProtectedRoute>
                   <AdminOrUserRoute>
-                    <Layout>
-                      <BranchCompanyManagement />
-                    </Layout>
+                    <PermissionRoute feature="branches">
+                      <Layout>
+                        <BranchCompanyManagement />
+                      </Layout>
+                    </PermissionRoute>
                   </AdminOrUserRoute>
                 </ProtectedRoute>
               } />

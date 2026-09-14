@@ -12,6 +12,7 @@ import usePagination from '../../hooks/ui/usePagination';
 import { getCurrentUser, isAdmin } from '../../utils/authUtils';
 import { api } from '../../services/api';
 import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
+import { useAuth, can } from '../../context/AuthContext';
 
 
 // ─── Fixed Delete Error Modal with Collapsible Product Cards ─────────────────────
@@ -411,8 +412,12 @@ const Toast = ({ toasts, removeToast }) => (
 );
 
 // ─── Main Component ────────────────────────────────────────────────────────
-
 const InventoryRecordsManagement = () => {
+  const { user } = useAuth();
+  const canCreate = can(user, 'inventory', 'create');
+  const canEdit = can(user, 'inventory', 'edit');
+  const canDelete = can(user, 'inventory', 'delete');
+  const canConfirm = can(user, 'inventory', 'confirm');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [typeFilter, setTypeFilter] = useState('ALL');
@@ -587,6 +592,7 @@ const InventoryRecordsManagement = () => {
       setBranchStocks({});
       setShowModal(true);
     } else if (mode === 'edit' && inventory) {
+      if (!canEdit) { alert('You do not have permission to edit inventory records.'); return; }
       if (inventory.status === 'CONFIRMED') {
         alert('⚠️ CONFIRMED INVENTORY CANNOT BE EDITED\n\nOnce an inventory is confirmed, it cannot be edited.\n\nStock changes have been applied to the system.\n\nIf you need to make changes:\n1. Delete this record (admin only, if stock hasn\'t been used)\n2. Create a new inventory record with the correct information\n\nContact your administrator for assistance.');
         return;
@@ -847,8 +853,8 @@ const InventoryRecordsManagement = () => {
       setLoadingMessage('');
     }
   };
-
   const handleConfirmInventory = async (inventory, confirmedByUser = null) => {
+    if (!canConfirm) { alert('You do not have permission to confirm inventory records.'); return; }
     let locationInfo = '';
     if (inventory.inventoryType === 'STOCK_IN') locationInfo = `\n📦 Adding stock to: ${inventory.toWarehouse?.warehouseName || inventory.toBranch?.branchName}`;
     else if (inventory.inventoryType === 'TRANSFER') locationInfo = `\n📦 Transfer from: ${inventory.fromWarehouse?.warehouseName || inventory.fromBranch?.branchName}\n📍 Transfer to: ${inventory.toWarehouse?.warehouseName || inventory.toBranch?.branchName}`;
@@ -879,8 +885,8 @@ const InventoryRecordsManagement = () => {
       setLoadingMessage('');
     }
   };
-
   const handleDelete = async (id) => {
+    if (!canDelete) { alert('You do not have permission to delete inventory records.'); return; }
     const inventory = inventories.find(inv => inv.id === id);
     const userRole = localStorage.getItem('userRole') || 'USER';
     if (inventory && inventory.status === 'CONFIRMED') {
@@ -1003,10 +1009,12 @@ const InventoryRecordsManagement = () => {
           </div>
 
           <div className="flex justify-between items-center mb-4">
-            <button onClick={() => handleOpenModal('create')} className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium text-sm">
-              <Plus size={16} />
-              <span>New Inventory Record</span>
-            </button>
+            {canCreate && (
+              <button onClick={() => handleOpenModal('create')} className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium text-sm">
+                <Plus size={16} />
+                <span>New Inventory Record</span>
+              </button>
+            )}
           </div>
 
           <InventoryFilters
@@ -1066,6 +1074,8 @@ const InventoryRecordsManagement = () => {
             canModifyStatus={canModifyStatus}
             indexOfFirstItem={indexOfFirstItem}
             indexOfLastItem={indexOfLastItem}
+            canEdit={canEdit}
+            canDelete={canDelete}
           />
 
           {sortedInventories.length > 0 && (

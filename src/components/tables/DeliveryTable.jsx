@@ -15,7 +15,11 @@ const DeliveryTable = ({
   itemsPerPage = 10,
   totalItems = 0,
   isLoading = false,
-  productFilters = []
+  productFilters = [],
+  canEdit = true,
+  canDelete = true,
+  canCancel = true,
+  canPrint = true,
 }) => {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const indexOfFirstItem = (currentPage - 1) * itemsPerPage + 1;
@@ -177,8 +181,8 @@ const DeliveryTable = ({
                 const isCancelled = delivery.status === 'CANCELLED';
                 const isReturned = delivery.status === 'RETURNED';
 
-                const canDelete = isPending || isPreparing;
-                const canEdit = !isDelivered && !isCancelled && !isReturned;
+                const rowCanDelete = canDelete && (isPending || isPreparing);
+                const rowCanEdit = canEdit && !isDelivered && !isCancelled && !isReturned;
 
                 const rowNumber = (currentPage - 1) * itemsPerPage + index + 1;
 
@@ -277,7 +281,7 @@ const DeliveryTable = ({
                           <Eye size={15} />
                         </button>
 
-                        {canEdit && (
+                        {rowCanEdit && (
                           <button
                             onClick={() => onEdit(delivery)}
                             title="Edit delivery"
@@ -287,7 +291,7 @@ const DeliveryTable = ({
                           </button>
                         )}
 
-                        {canDelete && (
+                        {rowCanDelete && (
                           <button
                             onClick={() => onDelete(delivery.id)}
                             title="Delete delivery"
@@ -297,7 +301,7 @@ const DeliveryTable = ({
                           </button>
                         )}
 
-                        {isDelivered && (
+                        {isDelivered && canCancel && (
                           <button
                             onClick={() => onCancel(delivery)}
                             title="Cancel delivery"
@@ -307,13 +311,15 @@ const DeliveryTable = ({
                           </button>
                         )}
 
-                        <button
-                          onClick={() => onPrint(delivery)}
-                          title="Print receipt"
-                          className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-green-600 hover:bg-green-100 transition-colors"
-                        >
-                          <Printer size={15} />
-                        </button>
+                        {canPrint && (
+                          <button
+                            onClick={() => onPrint(delivery)}
+                            title="Print receipt"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-green-600 hover:bg-green-100 transition-colors"
+                          >
+                            <Printer size={15} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
