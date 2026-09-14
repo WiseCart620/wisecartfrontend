@@ -172,7 +172,6 @@ export const AdminRoute = ({ children }) => {
   return children;
 };
 
-// SUPER_ADMIN only
 export const SuperAdminRoute = ({ children }) => {
   const { user, isTokenValid, loading } = useAuth();
 
@@ -185,7 +184,7 @@ export const SuperAdminRoute = ({ children }) => {
 
   if (!user || user.role !== 'SUPER_ADMIN') {
     toast.error('Super Admin access required');
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/welcome" replace />;
   }
 
   return children;
@@ -196,6 +195,17 @@ export const can = (user, feature, action = 'view') => {
   if (user.role === 'SUPER_ADMIN') return true;   // only Super Admin bypasses
   const key = `${feature}:${action}`;
   return Array.isArray(user.permissions) && user.permissions.includes(key);
+};
+
+
+export const canSeeFilter = (user, feature, filterKey) => {
+  if (!user) return false;
+  if (user.role === 'SUPER_ADMIN') return true;
+  const perms = Array.isArray(user.permissions) ? user.permissions : [];
+  const prefix = `${feature}:filter_`;
+  const filterPerms = perms.filter(p => p.startsWith(prefix));
+  if (filterPerms.length === 0) return true;
+  return filterPerms.includes(`${prefix}${filterKey}`);
 };
 
 // Page-level check (sidebar/routes)

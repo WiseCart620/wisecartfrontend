@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Search, Plus, FileText, X, ChevronDown } from 'lucide-react';
 import MultiSelectDropdown from '../../components/common/MultiSelectDropdown';
 import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
+import { canSeeFilter } from '../../context/AuthContext';
 
 const SalesFilters = ({
+  user,
   filterData, setFilterData,
   statusFilter, setStatusFilter,
   searchTerm, setSearchTerm,
@@ -92,96 +94,105 @@ const SalesFilters = ({
           </div>
         </div>
 
-        {/* Compact filter row */}
         <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-200">
-          <div className="min-w-[140px] max-w-[260px] flex-shrink-0">
-            <MultiSelectDropdown
-              options={companyOptions}
-              selectedIds={filterData.companyIds || []}
-              onChange={(ids) => {
-                setFilterData(prev => {
-                  const update = { ...prev, companyIds: ids };
-                  if (ids.length > 0 && prev.branchIds?.length) {
-                    const validIds = branches.filter(b => ids.includes(b.company?.id)).map(b => b.id);
-                    update.branchIds = prev.branchIds.filter(id => validIds.includes(id));
-                  }
-                  return update;
-                });
-                setCurrentPage(1);
-              }}
-              placeholder="All Companies"
-              searchPlaceholder="Search companies..."
-              loading={dataLoading}
-            />
-          </div>
+          {canSeeFilter(user, 'sales', 'company') && (
+            <div className="min-w-[140px] max-w-[260px] flex-shrink-0">
+              <MultiSelectDropdown
+                options={companyOptions}
+                selectedIds={filterData.companyIds || []}
+                onChange={(ids) => {
+                  setFilterData(prev => {
+                    const update = { ...prev, companyIds: ids };
+                    if (ids.length > 0 && prev.branchIds?.length) {
+                      const validIds = branches.filter(b => ids.includes(b.company?.id)).map(b => b.id);
+                      update.branchIds = prev.branchIds.filter(id => validIds.includes(id));
+                    }
+                    return update;
+                  });
+                  setCurrentPage(1);
+                }}
+                placeholder="All Companies"
+                searchPlaceholder="Search companies..."
+                loading={dataLoading}
+              />
+            </div>
+          )}
 
-          <div className="min-w-[140px] max-w-[260px] flex-shrink-0">
-            <MultiSelectDropdown
-              options={filteredBranchOptions}
-              selectedIds={filterData.branchIds || []}
-              onChange={(ids) => { setFilterData(prev => ({ ...prev, branchIds: ids })); setCurrentPage(1); }}
-              placeholder="All Branches"
-              searchPlaceholder="Search name or code..."
-              loading={dataLoading}
-            />
-          </div>
+          {canSeeFilter(user, 'sales', 'branch') && (
+            <div className="min-w-[140px] max-w-[260px] flex-shrink-0">
+              <MultiSelectDropdown
+                options={filteredBranchOptions}
+                selectedIds={filterData.branchIds || []}
+                onChange={(ids) => { setFilterData(prev => ({ ...prev, branchIds: ids })); setCurrentPage(1); }}
+                placeholder="All Branches"
+                searchPlaceholder="Search name or code..."
+                loading={dataLoading}
+              />
+            </div>
+          )}
 
-          <select
-            value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-            className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-36 flex-shrink-0"
-          >
-            <option value="ALL">All Status</option>
-            <option value="PENDING">Pending</option>
-            <option value="CONFIRMED">Confirmed</option>
-            <option value="INVOICED">Invoiced</option>
-          </select>
+          {canSeeFilter(user, 'sales', 'status') && (
+            <select
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+              className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-36 flex-shrink-0"
+            >
+              <option value="ALL">All Status</option>
+              <option value="PENDING">Pending</option>
+              <option value="CONFIRMED">Confirmed</option>
+              <option value="INVOICED">Invoiced</option>
+            </select>
+          )}
 
-          <div className="h-9 flex items-center gap-1 border border-gray-300 rounded-lg px-2 flex-shrink-0">
-            <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
-            <input
-              type="date"
-              value={filterData.startDate}
-              onChange={(e) => { setFilterData(prev => ({ ...prev, startDate: e.target.value })); setCurrentPage(1); }}
-              className="w-32 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
-            />
-            <span className="text-gray-300">–</span>
-            <input
-              type="date"
-              value={filterData.endDate}
-              onChange={(e) => { setFilterData(prev => ({ ...prev, endDate: e.target.value })); setCurrentPage(1); }}
-              className="w-32 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
-            />
-          </div>
+          {canSeeFilter(user, 'sales', 'date') && (
+            <div className="h-9 flex items-center gap-1 border border-gray-300 rounded-lg px-2 flex-shrink-0">
+              <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
+              <input
+                type="date"
+                value={filterData.startDate}
+                onChange={(e) => { setFilterData(prev => ({ ...prev, startDate: e.target.value })); setCurrentPage(1); }}
+                className="w-32 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
+              />
+              <span className="text-gray-300">–</span>
+              <input
+                type="date"
+                value={filterData.endDate}
+                onChange={(e) => { setFilterData(prev => ({ ...prev, endDate: e.target.value })); setCurrentPage(1); }}
+                className="w-32 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
+              />
+            </div>
+          )}
 
-          <div className="inline-block flex-shrink-0">
-            <VariationSearchableDropdown
-              options={allProductOptions.filter(o =>
-                !filterData.productFilters.some(pf =>
-                  pf.productId === o.parentProductId && (pf.variationId ?? null) === (o.variationId ?? null)
-                )
-              )}
-              value=""
-              onChange={(value) => {
-                if (!value) return;
-                const option = allProductOptions.find(o => o.id === value);
-                if (!option) return;
-                const alreadyAdded = filterData.productFilters.some(pf =>
-                  pf.productId === option.parentProductId && (pf.variationId ?? '') === (option.variationId ?? '')
-                );
-                if (alreadyAdded) return;
-                const label = option.subLabel !== 'No variations' ? `${option.fullName} — ${option.subLabel}` : option.fullName;
-                setFilterData(prev => ({
-                  ...prev,
-                  productFilters: [...prev.productFilters, { productId: option.parentProductId, variationId: option.variationId ?? null, label }]
-                }));
-                setCurrentPage(1);
-              }}
-              placeholder="Product / UPC / SKU"
-              hideLocationHint={true}
-              loading={dataLoading}
-            />
-          </div>
+          {canSeeFilter(user, 'sales', 'product') && (
+            <div className="inline-block flex-shrink-0">
+              <VariationSearchableDropdown
+                options={allProductOptions.filter(o =>
+                  !filterData.productFilters.some(pf =>
+                    pf.productId === o.parentProductId && (pf.variationId ?? null) === (o.variationId ?? null)
+                  )
+                )}
+                value=""
+                onChange={(value) => {
+                  if (!value) return;
+                  const option = allProductOptions.find(o => o.id === value);
+                  if (!option) return;
+                  const alreadyAdded = filterData.productFilters.some(pf =>
+                    pf.productId === option.parentProductId && (pf.variationId ?? '') === (option.variationId ?? '')
+                  );
+                  if (alreadyAdded) return;
+                  const label = option.subLabel !== 'No variations' ? `${option.fullName} — ${option.subLabel}` : option.fullName;
+                  setFilterData(prev => ({
+                    ...prev,
+                    productFilters: [...prev.productFilters, { productId: option.parentProductId, variationId: option.variationId ?? null, label }]
+                  }));
+                  setCurrentPage(1);
+                }}
+                placeholder="Product / UPC / SKU"
+                hideLocationHint={true}
+                loading={dataLoading}
+              />
+            </div>
+          )}
 
           {hasActiveFilters && (
             <button onClick={onResetFilter} className="text-sm text-blue-600 hover:text-blue-800 font-medium ml-auto whitespace-nowrap">

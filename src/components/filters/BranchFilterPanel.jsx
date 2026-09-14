@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo } from 'react';
 import MultiSelectDropdown from '../common/MultiSelectDropdown';
 import ProductMultiSelectDropdown from '../common/ProductMultiSelectDropdown';
+import { canSeeFilter } from '../../context/AuthContext';
 
 const BranchFilterPanel = ({
+  user,
   showBranchFilter,
   branches,
   companies = [],
@@ -93,71 +95,81 @@ const BranchFilterPanel = ({
   return (
     <div className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 mb-4">
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
-        <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
-          <MultiSelectDropdown
-            options={companies.map(c => ({ id: c.id, name: c.companyName }))}
-            selectedIds={filters.companyIds || []}
-            onChange={(ids) => updateFilter('companyIds', ids)}
-            placeholder="All Companies"
-            searchPlaceholder="Search companies..."
-          />
-        </div>
+        {canSeeFilter(user, 'warehouse_inventory', 'company') && (
+          <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
+            <MultiSelectDropdown
+              options={companies.map(c => ({ id: c.id, name: c.companyName }))}
+              selectedIds={filters.companyIds || []}
+              onChange={(ids) => updateFilter('companyIds', ids)}
+              placeholder="All Companies"
+              searchPlaceholder="Search companies..."
+            />
+          </div>
+        )}
 
-        <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
-          <MultiSelectDropdown
-            options={availableBranches.map(b => ({ id: b.id, name: b.branchName, code: b.branchCode }))}
-            selectedIds={filters.branchIds || []}
-            onChange={(ids) => updateFilter('branchIds', ids)}
-            placeholder="All Branches"
-            searchPlaceholder="Search name or code..."
-          />
-        </div>
+        {canSeeFilter(user, 'warehouse_inventory', 'branch') && (
+          <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
+            <MultiSelectDropdown
+              options={availableBranches.map(b => ({ id: b.id, name: b.branchName, code: b.branchCode }))}
+              selectedIds={filters.branchIds || []}
+              onChange={(ids) => updateFilter('branchIds', ids)}
+              placeholder="All Branches"
+              searchPlaceholder="Search name or code..."
+            />
+          </div>
+        )}
 
-        <div className="w-52 flex-shrink-0">
-          <ProductMultiSelectDropdown
-            options={productOptions}
-            selectedIds={filters.productKeys || []}
-            onChange={(ids) => updateFilter('productKeys', ids)}
-            placeholder="All Products"
-            searchPlaceholder="Search by name, SKU, or UPC..."
-          />
-        </div>
+        {canSeeFilter(user, 'warehouse_inventory', 'product') && (
+          <div className="w-52 flex-shrink-0">
+            <ProductMultiSelectDropdown
+              options={productOptions}
+              selectedIds={filters.productKeys || []}
+              onChange={(ids) => updateFilter('productKeys', ids)}
+              placeholder="All Products"
+              searchPlaceholder="Search by name, SKU, or UPC..."
+            />
+          </div>
+        )}
 
-        <div className="h-9 flex items-center gap-1 border border-gray-300 rounded-lg px-2 flex-shrink-0">
-          <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Stock</span>
-          <input
-            type="number"
-            placeholder="Min"
-            value={filters.minQty}
-            onChange={(e) => updateFilter('minQty', e.target.value)}
-            className="w-16 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
-          />
-          <span className="text-gray-300">–</span>
-          <input
-            type="number"
-            placeholder="Max"
-            value={filters.maxQty}
-            onChange={(e) => updateFilter('maxQty', e.target.value)}
-            className="w-16 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
-          />
-        </div>
+        {canSeeFilter(user, 'warehouse_inventory', 'quantity') && (
+          <div className="h-9 flex items-center gap-1 border border-gray-300 rounded-lg px-2 flex-shrink-0">
+            <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Stock</span>
+            <input
+              type="number"
+              placeholder="Min"
+              value={filters.minQty}
+              onChange={(e) => updateFilter('minQty', e.target.value)}
+              className="w-16 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
+            />
+            <span className="text-gray-300">–</span>
+            <input
+              type="number"
+              placeholder="Max"
+              value={filters.maxQty}
+              onChange={(e) => updateFilter('maxQty', e.target.value)}
+              className="w-16 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
+            />
+          </div>
+        )}
 
-        <div className="h-9 flex items-center gap-1 border border-gray-300 rounded-lg px-2 flex-shrink-0">
-          <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
-          <input
-            type="date"
-            value={filters.startDate}
-            onChange={(e) => updateFilter('startDate', e.target.value)}
-            className="w-32 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
-          />
-          <span className="text-gray-300">–</span>
-          <input
-            type="date"
-            value={filters.endDate}
-            onChange={(e) => updateFilter('endDate', e.target.value)}
-            className="w-32 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
-          />
-        </div>
+        {canSeeFilter(user, 'warehouse_inventory', 'date') && (
+          <div className="h-9 flex items-center gap-1 border border-gray-300 rounded-lg px-2 flex-shrink-0">
+            <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
+            <input
+              type="date"
+              value={filters.startDate}
+              onChange={(e) => updateFilter('startDate', e.target.value)}
+              className="w-32 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
+            />
+            <span className="text-gray-300">–</span>
+            <input
+              type="date"
+              value={filters.endDate}
+              onChange={(e) => updateFilter('endDate', e.target.value)}
+              className="w-32 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
+            />
+          </div>
+        )}
         {hasActiveFilters && (
           <button
             onClick={clearFilters}

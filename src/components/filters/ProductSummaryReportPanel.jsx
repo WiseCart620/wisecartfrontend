@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react';
 import ProductMultiSelectDropdown from '../common/ProductMultiSelectDropdown';
 import MultiSelectDropdown from '../common/MultiSelectDropdown';
+import { canSeeFilter } from '../../context/AuthContext';
 
 const ProductSummaryReportPanel = ({
+    user,
     products,
     warehouses,
     companies,
@@ -50,99 +52,111 @@ const ProductSummaryReportPanel = ({
     return (
         <div className="bg-white rounded-lg border border-gray-200 px-4 py-3 mb-4">
             <div className="flex flex-wrap items-end gap-3">
-                <div className="w-full sm:w-[320px]">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Products</label>
-                    <ProductMultiSelectDropdown
-                        options={productOptions}
-                        selectedIds={filters.productKeys || []}
-                        onChange={(ids) => updateFilter('productKeys', ids)}
-                        disabled={!filters.warehouseId && !hasCompanyFilter}
-                        placeholder={
-                            !filters.warehouseId && !hasCompanyFilter
-                                ? 'Select a warehouse, company, or branch first'
-                                : 'All Products'
-                        }
-                        searchPlaceholder="Search by name, SKU, or UPC..."
-                    />
-                </div>
-
-                <div className="w-[150px]">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Date From</label>
-                    <input
-                        type="date"
-                        value={filters.dateFrom}
-                        onChange={(e) => updateFilter('dateFrom', e.target.value)}
-                        className="w-full h-9 px-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
-                </div>
-                <div className="w-[150px]">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Date To</label>
-                    <input
-                        type="date"
-                        value={filters.dateTo}
-                        onChange={(e) => updateFilter('dateTo', e.target.value)}
-                        className="w-full h-9 px-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
-                </div>
-
-                <div className="w-[180px]">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Warehouse</label>
-                    <select
-                        value={filters.warehouseId}
-                        onChange={(e) => updateFilter('warehouseId', e.target.value)}
-                        disabled={hasCompanyFilter}
-                        className={`w-full h-9 px-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ${hasCompanyFilter ? 'bg-gray-100 cursor-not-allowed text-gray-400' : 'bg-white'}`}
-                    >
-                        <option value="">All Warehouses</option>
-                        {warehouses.map(w => (
-                            <option key={w.id} value={String(w.id)}>{w.warehouseName}</option>
-                        ))}
-                    </select>
-                </div>
-
-                <div className="w-[170px]">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Company</label>
-                    <MultiSelectDropdown
-                        options={companyOptions}
-                        selectedIds={selectedCompanyIds}
-                        disabled={!!filters.warehouseId}
-                        onChange={(ids) => {
-                            updateFilter('companyIds', ids);
-                            if (ids.length > 0) updateFilter('warehouseId', '');
-                        }}
-                        placeholder={filters.warehouseId ? 'Disabled (warehouse selected)' : 'All Companies'}
-                        searchPlaceholder="Search companies..."
-                    />
-                </div>
-                <div className="w-[170px]">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Branch</label>
-                    <MultiSelectDropdown
-                        options={branchOptions}
-                        selectedIds={filters.branchIds || []}
-                        disabled={!!filters.warehouseId}
-                        onChange={(ids) => {
-                            updateFilter('branchIds', ids);
-                            if (ids.length > 0) {
-                                updateFilter('warehouseId', '');
-                                const inferredCompanyIds = [...new Set(
-                                    ids
-                                        .map(id => branches.find(b => String(b.id) === String(id)))
-                                        .filter(Boolean)
-                                        .map(b => b.companyId ?? b.company?.id)
-                                        .filter(Boolean)
-                                )];
-                                if (inferredCompanyIds.length > 0) {
-                                    updateFilter(
-                                        'companyIds',
-                                        [...new Set([...(filters.companyIds || []), ...inferredCompanyIds])]
-                                    );
-                                }
+                {canSeeFilter(user, 'warehouse_inventory', 'product') && (
+                    <div className="w-full sm:w-[320px]">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Products</label>
+                        <ProductMultiSelectDropdown
+                            options={productOptions}
+                            selectedIds={filters.productKeys || []}
+                            onChange={(ids) => updateFilter('productKeys', ids)}
+                            disabled={!filters.warehouseId && !hasCompanyFilter}
+                            placeholder={
+                                !filters.warehouseId && !hasCompanyFilter
+                                    ? 'Select a warehouse, company, or branch first'
+                                    : 'All Products'
                             }
-                        }}
-                        placeholder={filters.warehouseId ? 'Disabled (warehouse selected)' : 'All Branches'}
-                        searchPlaceholder="Search name or code..."
-                    />
-                </div>
+                            searchPlaceholder="Search by name, SKU, or UPC..."
+                        />
+                    </div>
+                )}
+
+                {canSeeFilter(user, 'warehouse_inventory', 'date') && (
+                    <>
+                        <div className="w-[150px]">
+                            <label className="block text-xs font-medium text-gray-500 mb-1">Date From</label>
+                            <input
+                                type="date"
+                                value={filters.dateFrom}
+                                onChange={(e) => updateFilter('dateFrom', e.target.value)}
+                                className="w-full h-9 px-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                        <div className="w-[150px]">
+                            <label className="block text-xs font-medium text-gray-500 mb-1">Date To</label>
+                            <input
+                                type="date"
+                                value={filters.dateTo}
+                                onChange={(e) => updateFilter('dateTo', e.target.value)}
+                                className="w-full h-9 px-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                    </>
+                )}
+
+                {canSeeFilter(user, 'warehouse_inventory', 'warehouse') && (
+                    <div className="w-[180px]">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Warehouse</label>
+                        <select
+                            value={filters.warehouseId}
+                            onChange={(e) => updateFilter('warehouseId', e.target.value)}
+                            disabled={hasCompanyFilter}
+                            className={`w-full h-9 px-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ${hasCompanyFilter ? 'bg-gray-100 cursor-not-allowed text-gray-400' : 'bg-white'}`}
+                        >
+                            <option value="">All Warehouses</option>
+                            {warehouses.map(w => (
+                                <option key={w.id} value={String(w.id)}>{w.warehouseName}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
+                {canSeeFilter(user, 'warehouse_inventory', 'company') && (
+                    <div className="w-[170px]">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Company</label>
+                        <MultiSelectDropdown
+                            options={companyOptions}
+                            selectedIds={selectedCompanyIds}
+                            disabled={!!filters.warehouseId}
+                            onChange={(ids) => {
+                                updateFilter('companyIds', ids);
+                                if (ids.length > 0) updateFilter('warehouseId', '');
+                            }}
+                            placeholder={filters.warehouseId ? 'Disabled (warehouse selected)' : 'All Companies'}
+                            searchPlaceholder="Search companies..."
+                        />
+                    </div>
+                )}
+                {canSeeFilter(user, 'warehouse_inventory', 'branch') && (
+                    <div className="w-[170px]">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Branch</label>
+                        <MultiSelectDropdown
+                            options={branchOptions}
+                            selectedIds={filters.branchIds || []}
+                            disabled={!!filters.warehouseId}
+                            onChange={(ids) => {
+                                updateFilter('branchIds', ids);
+                                if (ids.length > 0) {
+                                    updateFilter('warehouseId', '');
+                                    const inferredCompanyIds = [...new Set(
+                                        ids
+                                            .map(id => branches.find(b => String(b.id) === String(id)))
+                                            .filter(Boolean)
+                                            .map(b => b.companyId ?? b.company?.id)
+                                            .filter(Boolean)
+                                    )];
+                                    if (inferredCompanyIds.length > 0) {
+                                        updateFilter(
+                                            'companyIds',
+                                            [...new Set([...(filters.companyIds || []), ...inferredCompanyIds])]
+                                        );
+                                    }
+                                }
+                            }}
+                            placeholder={filters.warehouseId ? 'Disabled (warehouse selected)' : 'All Branches'}
+                            searchPlaceholder="Search name or code..."
+                        />
+                    </div>
+                )}
 
                 <div className="ml-auto">
                     <button

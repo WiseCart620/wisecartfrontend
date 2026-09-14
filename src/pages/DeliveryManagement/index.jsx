@@ -413,8 +413,9 @@ const DeliveryManagement = () => {
             </select>
           </div>
         </div>
-
+        
         <DeliveryFilters
+          user={user}
           filterData={filterData}
           onFilterChange={handleFilterChange}
           onReset={handleResetFilter}

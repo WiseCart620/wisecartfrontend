@@ -1017,6 +1017,7 @@ const InventoryRecordsManagement = () => {
           </div>
 
           <InventoryFilters
+            user={user}
             searchTerm={searchTerm} setSearchTerm={setSearchTerm}
             statusFilter={statusFilter} setStatusFilter={setStatusFilter}
             typeFilter={typeFilter} setTypeFilter={setTypeFilter}

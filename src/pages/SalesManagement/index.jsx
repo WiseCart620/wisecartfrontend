@@ -314,6 +314,7 @@ const SalesManagement = () => {
         </div>
 
         <SalesFilters
+          user={user}
           filterData={filterData}
           setFilterData={setFilterData}
           statusFilter={statusFilter}

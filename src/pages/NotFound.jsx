@@ -19,11 +19,11 @@ const NotFound = () => {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            to="/dashboard"
+            to="/welcome"
             className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
           >
             <Home size={20} />
-            Back to Dashboard
+            Back Home
           </Link>
 
           <button

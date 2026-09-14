@@ -13,20 +13,57 @@ const ACTION_LABELS = {
   cancel: 'Cancel', print: 'Print', confirm: 'Confirm',
 };
 
-const FEATURES = [
-  { key: 'dashboard', label: 'Dashboard', actions: ['view'] },
-  { key: 'sales', label: 'Sales', actions: ['view', 'create', 'edit', 'delete', 'invoice', 'report', 'summary'] },
-  { key: 'deliveries', label: 'Deliveries', actions: ['view', 'create', 'edit', 'delete', 'cancel', 'print'] },
-  { key: 'warehouse_inventory', label: 'Warehouse Inventory', actions: ['view', 'create', 'edit', 'delete', 'confirm'] },
-  { key: 'inventory', label: 'Inventory Record', actions: ['view', 'create', 'edit', 'delete', 'confirm'] },
-  { key: 'procurement', label: 'Procurement', actions: ['view'] },
-  { key: 'warehouse', label: 'Warehouse', actions: ['view', 'create', 'edit', 'delete'] },
-  { key: 'branches', label: 'Branches & Companies', actions: ['view', 'create', 'edit', 'delete'] },
-  { key: 'products', label: 'Products', actions: ['view', 'create', 'edit', 'delete'] },
-  { key: 'supplier', label: 'Supplier', actions: ['view', 'create', 'edit', 'delete'] },
-  { key: 'users', label: 'User Management', actions: ['view', 'create', 'edit', 'delete'] },
-];
+const FILTERS = {
+  sales: [
+    { key: 'company', label: 'Company' },
+    { key: 'branch', label: 'Branch' },
+    { key: 'status', label: 'Status' },
+    { key: 'date', label: 'Date Range' },
+    { key: 'product', label: 'Product' },
+  ],
+  deliveries: [
+    { key: 'company', label: 'Company' },
+    { key: 'branch', label: 'Branch' },
+    { key: 'warehouse', label: 'Warehouse' },
+    { key: 'status', label: 'Status' },
+    { key: 'date', label: 'Date Range' },
+    { key: 'product', label: 'Product' },
+  ],
+  inventory: [
+    { key: 'search', label: 'Search' },
+    { key: 'status', label: 'Status' },
+    { key: 'type', label: 'Type' },
+    { key: 'warehouse', label: 'Warehouse' },
+    { key: 'branch', label: 'Branch' },
+    { key: 'date', label: 'Date Range' },
+  ],
+  warehouse_inventory: [
+    { key: 'search', label: 'Search' },
+    { key: 'company', label: 'Company' },
+    { key: 'branch', label: 'Branch' },
+    { key: 'warehouse', label: 'Warehouse' },
+    { key: 'product', label: 'Product' },
+    { key: 'quantity', label: 'Stock Qty' },
+    { key: 'date', label: 'Date Range' },
+    { key: 'type', label: 'Transaction Type' },
+    { key: 'verifiedBy', label: 'Verified By' },
+    { key: 'items', label: 'Item Count' },
+  ],
+};
 
+const FEATURES = [
+  { key: 'dashboard', label: 'Dashboard', description: 'Business analytics, charts, and performance overview', actions: ['view'] },
+  { key: 'sales', label: 'Sales', description: 'Create and manage sales orders, invoices, and reports', actions: ['view', 'create', 'edit', 'delete', 'invoice', 'report', 'summary'] },
+  { key: 'deliveries', label: 'Deliveries', description: 'Track and manage delivery transactions', actions: ['view', 'create', 'edit', 'delete', 'cancel', 'print'] },
+  { key: 'warehouse_inventory', label: 'Warehouse Inventory', description: 'Warehouse stock levels and confirmations', actions: ['view', 'create', 'edit', 'delete', 'confirm'] },
+  { key: 'inventory', label: 'Inventory Record', description: 'Stock movement records across all locations', actions: ['view', 'create', 'edit', 'delete', 'confirm'] },
+  { key: 'procurement', label: 'Procurement', description: 'Purchase orders and supplier procurement', actions: ['view'] },
+  { key: 'warehouse', label: 'Warehouse', description: 'Warehouse locations and configuration', actions: ['view', 'create', 'edit', 'delete'] },
+  { key: 'branches', label: 'Branches & Companies', description: 'Company and branch records', actions: ['view', 'create', 'edit', 'delete'] },
+  { key: 'products', label: 'Products', description: 'Product catalog and variations', actions: ['view', 'create', 'edit', 'delete'] },
+  { key: 'supplier', label: 'Supplier', description: 'Supplier records and contacts', actions: ['view', 'create', 'edit', 'delete'] },
+  { key: 'users', label: 'User Management', description: 'Create and manage other user accounts — grant with caution', actions: ['view', 'create', 'edit', 'delete'] },
+];
 
 const UserManagement = () => {
   const isSuperAdmin = useIsSuperAdmin();
@@ -637,43 +674,109 @@ const UserManagement = () => {
 
                 {formData.role !== 'SUPER_ADMIN' && (
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Feature Access & Permissions
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Feature Access & Permissions
+                      </label>
+                      <span className="text-xs text-gray-500">
+                        {formData.permissions.length} permission{formData.permissions.length !== 1 ? 's' : ''} selected
+                      </span>
+                    </div>
                     <div className="space-y-2 p-4 bg-gray-50 rounded-lg max-h-96 overflow-y-auto">
                       {FEATURES.map(f => {
                         const keys = f.actions.map(a => `${f.key}:${a}`);
-                        const allChecked = keys.every(k => formData.permissions.includes(k));
+                        const checkedCount = keys.filter(k => formData.permissions.includes(k)).length;
+                        const allChecked = checkedCount === keys.length;
+                        const someChecked = checkedCount > 0 && !allChecked;
+
                         return (
-                          <div key={f.key} className="p-3 bg-white rounded-lg border border-gray-200">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="font-medium text-gray-900 text-sm">{f.label}</span>
-                              <label className="flex items-center gap-1.5 text-xs text-blue-600 cursor-pointer">
+                          <div
+                            key={f.key}
+                            className={`p-3 rounded-lg border transition-colors ${allChecked
+                              ? 'bg-blue-50 border-blue-300'
+                              : someChecked
+                                ? 'bg-white border-blue-200'
+                                : 'bg-white border-gray-200'
+                              }`}
+                          >
+                            <div className="flex items-start justify-between gap-3 mb-1">
+                              <div className="min-w-0">
+                                <span className="font-medium text-gray-900 text-sm">{f.label}</span>
+                                {f.description && (
+                                  <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">{f.description}</p>
+                                )}
+                              </div>
+                              <label className="flex items-center gap-1.5 text-xs font-medium text-blue-700 cursor-pointer flex-shrink-0 pt-0.5">
                                 <input
                                   type="checkbox"
                                   checked={allChecked}
+                                  ref={(el) => { if (el) el.indeterminate = someChecked; }}
                                   onChange={(e) => toggleAllForFeature(f, e.target.checked)}
                                   className="w-3.5 h-3.5 text-blue-600 rounded"
                                 />
-                                All
+                                {allChecked ? 'Full access' : someChecked ? `${checkedCount}/${keys.length}` : 'Select all'}
                               </label>
                             </div>
-                            <div className="flex flex-wrap gap-3">
+                            <div className="flex flex-wrap gap-2 mt-2">
                               {f.actions.map(action => {
                                 const permKey = `${f.key}:${action}`;
+                                const isChecked = formData.permissions.includes(permKey);
                                 return (
-                                  <label key={permKey} className="flex items-center gap-1.5 text-xs text-gray-700 cursor-pointer">
+                                  <label
+                                    key={permKey}
+                                    className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${isChecked
+                                      ? 'bg-blue-100 border-blue-300 text-blue-800 font-medium'
+                                      : 'bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200'
+                                      }`}
+                                  >
                                     <input
                                       type="checkbox"
-                                      checked={formData.permissions.includes(permKey)}
+                                      checked={isChecked}
                                       onChange={() => togglePermission(permKey)}
-                                      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                                      className="w-3.5 h-3.5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                                     />
                                     {ACTION_LABELS[action] || action}
                                   </label>
                                 );
                               })}
                             </div>
+
+                            {FILTERS[f.key] && (
+                              <div className="mt-2 pt-2 border-t border-gray-100">
+                                <p className="text-[10px] font-medium text-gray-400 uppercase mb-1.5">
+                                  Visible filters {(() => {
+                                    const filterKeys = FILTERS[f.key].map(fl => `${f.key}:filter_${fl.key}`);
+                                    const checkedFilters = filterKeys.filter(k => formData.permissions.includes(k)).length;
+                                    return checkedFilters === 0
+                                      ? '(all shown by default)'
+                                      : `(${checkedFilters}/${filterKeys.length} restricted)`;
+                                  })()}
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                  {FILTERS[f.key].map(fl => {
+                                    const permKey = `${f.key}:filter_${fl.key}`;
+                                    const isChecked = formData.permissions.includes(permKey);
+                                    return (
+                                      <label
+                                        key={permKey}
+                                        className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${isChecked
+                                          ? 'bg-purple-100 border-purple-300 text-purple-800 font-medium'
+                                          : 'bg-gray-100 border-gray-200 text-gray-500 hover:bg-gray-200'
+                                          }`}
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={isChecked}
+                                          onChange={() => togglePermission(permKey)}
+                                          className="w-3.5 h-3.5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+                                        />
+                                        {fl.label}
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         );
                       })}

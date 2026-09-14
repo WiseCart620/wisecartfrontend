@@ -3,8 +3,10 @@ import React from 'react';
 import { X } from 'lucide-react';
 import VariationSearchableDropdown from '../common/VariationSearchableDropdown';
 import MultiSelectDropdown from '../common/MultiSelectDropdown';
+import { canSeeFilter } from '../../context/AuthContext';
 
 const DeliveryFilters = ({
+  user,
   filterData,
   onFilterChange,
   onReset,
@@ -77,109 +79,121 @@ const DeliveryFilters = ({
   return (
     <div className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 mb-4">
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
-        <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
-          <MultiSelectDropdown
-            options={companyOptions}
-            selectedIds={filterData.companyIds || []}
-            onChange={(ids) => {
-              const currentBranchIds = filterData.branchIds || [];
-              const stillValidBranchIds = ids.length === 0
-                ? currentBranchIds
-                : currentBranchIds.filter(bId => {
-                  const b = branches.find(br => br.id === bId);
-                  return b && ids.includes(b.company?.id);
+        {canSeeFilter(user, 'deliveries', 'company') && (
+          <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
+            <MultiSelectDropdown
+              options={companyOptions}
+              selectedIds={filterData.companyIds || []}
+              onChange={(ids) => {
+                const currentBranchIds = filterData.branchIds || [];
+                const stillValidBranchIds = ids.length === 0
+                  ? currentBranchIds
+                  : currentBranchIds.filter(bId => {
+                    const b = branches.find(br => br.id === bId);
+                    return b && ids.includes(b.company?.id);
+                  });
+                onFilterChange({
+                  companyIds: ids,
+                  branchIds: stillValidBranchIds
                 });
-              onFilterChange({
-                companyIds: ids,
-                branchIds: stillValidBranchIds
-              });
-            }}
-            placeholder="All Companies"
-            searchPlaceholder="Search companies..."
-          />
-        </div>
+              }}
+              placeholder="All Companies"
+              searchPlaceholder="Search companies..."
+            />
+          </div>
+        )}
 
-        <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
-          <MultiSelectDropdown
-            options={filteredBranchOptions}
-            selectedIds={filterData.branchIds || []}
-            onChange={(ids) => onFilterChange({ branchIds: ids })}
-            placeholder="All Branches"
-            searchPlaceholder="Search branches..."
-          />
-        </div>
+        {canSeeFilter(user, 'deliveries', 'branch') && (
+          <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
+            <MultiSelectDropdown
+              options={filteredBranchOptions}
+              selectedIds={filterData.branchIds || []}
+              onChange={(ids) => onFilterChange({ branchIds: ids })}
+              placeholder="All Branches"
+              searchPlaceholder="Search branches..."
+            />
+          </div>
+        )}
 
-        <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
-          <MultiSelectDropdown
-            options={warehouseOptions}
-            selectedIds={filterData.warehouseIds || []}
-            onChange={(ids) => onFilterChange({ warehouseIds: ids })}
-            placeholder="All Warehouses"
-            searchPlaceholder="Search warehouses..."
-          />
-        </div>
+        {canSeeFilter(user, 'deliveries', 'warehouse') && (
+          <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
+            <MultiSelectDropdown
+              options={warehouseOptions}
+              selectedIds={filterData.warehouseIds || []}
+              onChange={(ids) => onFilterChange({ warehouseIds: ids })}
+              placeholder="All Warehouses"
+              searchPlaceholder="Search warehouses..."
+            />
+          </div>
+        )}
 
-        <select
-          value={filterData.status}
-          onChange={(e) => onFilterChange({ status: e.target.value })}
-          className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-36 flex-shrink-0"
-        >
-          <option value="">All Status</option>
-          {statusOptions.map(status => (
-            <option key={status} value={status}>{status}</option>
-          ))}
-        </select>
+        {canSeeFilter(user, 'deliveries', 'status') && (
+          <select
+            value={filterData.status}
+            onChange={(e) => onFilterChange({ status: e.target.value })}
+            className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-36 flex-shrink-0"
+          >
+            <option value="">All Status</option>
+            {statusOptions.map(status => (
+              <option key={status} value={status}>{status}</option>
+            ))}
+          </select>
+        )}
 
-        <div className="w-56">
-          <VariationSearchableDropdown
-            options={productOptions.filter(o =>
-              !(filterData.productFilters || []).some(pf =>
-                pf.productId === o.parentProductId &&
-                (pf.variationId ?? null) === (o.variationId ?? null)
-              )
-            )}
-            value=""
-            onChange={(value) => {
-              if (!value) return;
-              const option = productOptions.find(o => o.id === value);
-              if (!option) return;
-              const alreadyAdded = (filterData.productFilters || []).some(pf =>
-                pf.productId === option.parentProductId &&
-                (pf.variationId ?? '') === (option.variationId ?? '')
-              );
-              if (alreadyAdded) return;
-              const label = option.subLabel !== 'No variations'
-                ? `${option.fullName} — ${option.subLabel}`
-                : option.fullName;
-              onFilterChange({
-                productFilters: [...(filterData.productFilters || []), {
-                  productId: option.parentProductId,
-                  variationId: option.variationId ?? null,
-                  label
-                }]
-              });
-            }}
-            placeholder="Add product / UPC / SKU..."
-            hideLocationHint={true}
-          />
-        </div>
+        {canSeeFilter(user, 'deliveries', 'product') && (
+          <div className="w-56">
+            <VariationSearchableDropdown
+              options={productOptions.filter(o =>
+                !(filterData.productFilters || []).some(pf =>
+                  pf.productId === o.parentProductId &&
+                  (pf.variationId ?? null) === (o.variationId ?? null)
+                )
+              )}
+              value=""
+              onChange={(value) => {
+                if (!value) return;
+                const option = productOptions.find(o => o.id === value);
+                if (!option) return;
+                const alreadyAdded = (filterData.productFilters || []).some(pf =>
+                  pf.productId === option.parentProductId &&
+                  (pf.variationId ?? '') === (option.variationId ?? '')
+                );
+                if (alreadyAdded) return;
+                const label = option.subLabel !== 'No variations'
+                  ? `${option.fullName} — ${option.subLabel}`
+                  : option.fullName;
+                onFilterChange({
+                  productFilters: [...(filterData.productFilters || []), {
+                    productId: option.parentProductId,
+                    variationId: option.variationId ?? null,
+                    label
+                  }]
+                });
+              }}
+              placeholder="Add product / UPC / SKU..."
+              hideLocationHint={true}
+            />
+          </div>
+        )}
 
-        <div className="h-9 flex items-center gap-1 border border-gray-300 rounded-lg px-2">
-          <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
-          <input
-            type="date"
-            value={filterData.startDate}
-            onChange={(e) => onFilterChange({ startDate: e.target.value })}
-            className="w-32 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
-          />
-          <span className="text-gray-300">–</span>
-          <input
-            type="date"
-            value={filterData.endDate}
-            onChange={(e) => onFilterChange({ endDate: e.target.value })}
-            className="w-32 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
-          />
-        </div>
+        {canSeeFilter(user, 'deliveries', 'date') && (
+          <div className="h-9 flex items-center gap-1 border border-gray-300 rounded-lg px-2">
+            <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
+            <input
+              type="date"
+              value={filterData.startDate}
+              onChange={(e) => onFilterChange({ startDate: e.target.value })}
+              className="w-32 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
+            />
+            <span className="text-gray-300">–</span>
+            <input
+              type="date"
+              value={filterData.endDate}
+              onChange={(e) => onFilterChange({ endDate: e.target.value })}
+              className="w-32 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
+            />
+          </div>
+        )}
 
         <input
           type="text"

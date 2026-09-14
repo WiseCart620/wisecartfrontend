@@ -3,6 +3,7 @@ import { Search, BarChart3, Building, Store, RefreshCw, Lock } from 'lucide-reac
 import toast, { Toaster } from 'react-hot-toast';
 
 // Hooks
+import { useAuth, canSeeFilter } from '../../context/AuthContext';
 import useInventory from '../../hooks/data/useInventory';
 import { useTransactionHandlers } from '../../hooks/useTransactionHandlers';
 import { useFilters } from '../../hooks/ui/useFilters';
@@ -30,6 +31,7 @@ import {
   filterBranchStocks
 } from '../../utils/inventoryFilters';
 const InventoryManagement = () => {
+  const { user } = useAuth();
   const [productSearchTerm, setProductSearchTerm] = useState('');
   const [stockSearchTerm, setStockSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('products');
@@ -623,6 +625,7 @@ const InventoryManagement = () => {
         {activeTab === 'products' && (
           <div className="mb-8">
             <ProductSummaryReportPanel
+              user={user}
               products={products}
               warehouses={warehouses}
               companies={companies}
@@ -666,20 +669,23 @@ const InventoryManagement = () => {
 
         {activeTab === 'warehouse-stocks' && (
           <div className="mb-8">
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                <input
-                  type="text"
-                  placeholder="Search warehouse stocks by product name, warehouse, or SKU..."
-                  value={stockSearchTerm}
-                  onChange={(e) => setStockSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
+            {canSeeFilter(user, 'warehouse_inventory', 'search') && (
+              <div className="flex flex-col md:flex-row gap-4 mb-6">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Search warehouse stocks by product name, warehouse, or SKU..."
+                    value={stockSearchTerm}
+                    onChange={(e) => setStockSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             <WarehouseFilterPanel
+              user={user}
               showWarehouseFilter={showWarehouseFilter}
               warehouses={warehouses}
               filters={warehouseFilters.filters}
@@ -710,20 +716,22 @@ const InventoryManagement = () => {
         {activeTab === 'branch-stocks' && (
           <div className="mb-8">
             <div className="flex flex-col md:flex-row gap-3 mb-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                <input
-                  type="text"
-                  placeholder="Search branch stocks by product name, branch, or SKU..."
-                  value={stockSearchTerm}
-                  onChange={(e) => setStockSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+              {canSeeFilter(user, 'warehouse_inventory', 'search') && (
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                  <input
+                    type="text"
+                    placeholder="Search branch stocks by product name, branch, or SKU..."
+                    value={stockSearchTerm}
+                    onChange={(e) => setStockSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              )}
               <BranchStockExportButton data={filteredBranchStocks} />
             </div>
-
             <BranchFilterPanel
+              user={user}
               showBranchFilter={showBranchFilter}
               branches={branches}
               companies={companies}
