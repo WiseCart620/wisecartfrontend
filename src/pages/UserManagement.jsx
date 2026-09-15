@@ -53,6 +53,7 @@ const FILTERS = {
 
 const FEATURES = [
   { key: 'dashboard', label: 'Dashboard', description: 'Business analytics, charts, and performance overview', actions: ['view'] },
+  { key: 'alerts', label: 'Alerts', description: 'Low-stock and system alerts', actions: ['view', 'edit', 'delete'] },
   { key: 'sales', label: 'Sales', description: 'Create and manage sales orders, invoices, and reports', actions: ['view', 'create', 'edit', 'delete', 'invoice', 'report', 'summary'] },
   { key: 'deliveries', label: 'Deliveries', description: 'Track and manage delivery transactions', actions: ['view', 'create', 'edit', 'delete', 'cancel', 'print'] },
   { key: 'warehouse_inventory', label: 'Warehouse Inventory', description: 'Warehouse stock levels and confirmations', actions: ['view', 'create', 'edit', 'delete', 'confirm'] },

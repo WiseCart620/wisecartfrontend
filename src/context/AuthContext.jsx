@@ -192,7 +192,7 @@ export const SuperAdminRoute = ({ children }) => {
 
 export const can = (user, feature, action = 'view') => {
   if (!user) return false;
-  if (user.role === 'SUPER_ADMIN') return true;   // only Super Admin bypasses
+  if (user.role === 'SUPER_ADMIN') return true;
   const key = `${feature}:${action}`;
   return Array.isArray(user.permissions) && user.permissions.includes(key);
 };

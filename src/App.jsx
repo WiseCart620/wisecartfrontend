@@ -94,16 +94,18 @@ function App() {
 
               <Route path="/deliveries" element={
                 <ProtectedRoute>
-                  <Layout>
-                    <DeliveryManagement />
-                  </Layout>
+                  <PermissionRoute feature="deliveries">
+                    <Layout>
+                      <DeliveryManagement />
+                    </Layout>
+                  </PermissionRoute>
                 </ProtectedRoute>
               } />
 
               <Route path="/warehouse-inventory" element={
                 <ProtectedRoute>
                   <AdminOrUserRoute>
-                    <PermissionRoute feature="warehouse_inventory">
+                    <PermissionRoute feature="inventory">
                       <Layout>
                         <WarehouseInventory />
                       </Layout>
@@ -136,9 +138,11 @@ function App() {
 
               <Route path="/sales" element={
                 <ProtectedRoute>
-                  <Layout>
-                    <SalesManagement />
-                  </Layout>
+                  <PermissionRoute feature="sales">
+                    <Layout>
+                      <SalesManagement />
+                    </Layout>
+                  </PermissionRoute>
                 </ProtectedRoute>
               } />
 
