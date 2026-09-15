@@ -20,12 +20,19 @@ export const ReferenceDataProvider = ({ children }) => {
     try {
       setLoading(true);
       const [branchesRes, productsRes, warehousesRes, companiesRes] = await Promise.all([
-        api.get('/branches'),
+        api.get('/branches/list'),
         api.get('/products'),
         api.get('/warehouse'),
         api.get('/companies')
       ]);
-      if (branchesRes.success) setBranches(branchesRes.data || []);
+      if (branchesRes.success) {
+        const normalizedBranches = (branchesRes.data || []).map(b => ({
+          ...b,
+          branchName: b.branchName ?? b.name,
+          branchCode: b.branchCode ?? b.code,
+        }));
+        setBranches(normalizedBranches);
+      }
       if (productsRes.success) setProducts(productsRes.data || []);
       if (warehousesRes.success) setWarehouses(warehousesRes.data || []);
       if (companiesRes.success) setCompanies(companiesRes.data || []);

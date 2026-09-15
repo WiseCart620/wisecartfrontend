@@ -8,7 +8,6 @@ import InventoryFormModal from '../../components/modals/InventoryFormModal';
 import InventoryViewModal from '../../components/modals/InventoryViewModal';
 import Pagination from '../../components/common/Pagination';
 import useInventory from '../../hooks/data/useInventory';
-import usePagination from '../../hooks/ui/usePagination';
 import { getCurrentUser, isAdmin } from '../../utils/authUtils';
 import { api } from '../../services/api';
 import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
@@ -16,12 +15,12 @@ import { useAuth, can } from '../../context/AuthContext';
 import { useReferenceData } from '../../context/ReferenceDataContext';
 
 
-// ─── Fixed Delete Error Modal with Collapsible Product Cards ─────────────────────
 const DeleteErrorModal = ({ message, onClose }) => {
+  const [expandedProducts, setExpandedProducts] = useState({});
+
   if (!message) return null;
 
   const lines = message.split('\n');
-  const [expandedProducts, setExpandedProducts] = useState({});
 
   const productMap = {};
   let inDeliveries = false;
@@ -442,6 +441,13 @@ const InventoryRecordsManagement = () => {
   const [deleteErrorMessage, setDeleteErrorMessage] = useState(null);
   const [toasts, setToasts] = useState([]);
 
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   const showToast = (message, type = 'error', duration = 4500) => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
@@ -475,26 +481,51 @@ const InventoryRecordsManagement = () => {
 
   const {
     inventories, loading, canModifyStatus, warehouseStocks, branchStocks, loadingStocks,
-    loadData, loadLocationStock, checkCanModify, confirmInventory, deleteInventory,
+    totalInventories, loadData, loadLocationStock, checkCanModify, confirmInventory, deleteInventory,
     updateInventory, createInventory, setWarehouseStocks, setBranchStocks
   } = useInventory();
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const buildFilterParams = () => ({
+    inventoryType: typeFilter,
+    status: statusFilter,
+    fromWarehouseId: fromWarehouseFilter || null,
+    toWarehouseId: toWarehouseFilter || null,
+    fromBranchId: fromBranchFilter || null,
+    toBranchId: toBranchFilter || null,
+    startDate: startDateFilter || null,
+    endDate: endDateFilter || null,
+    search: debouncedSearchTerm || null,
+    productId: productFilter.productId || null,
+    variationId: productFilter.variationId || null,
+  });
+
   useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        setActionLoading(true);
-        setLoadingMessage('Loading data...');
-        await loadData(0, 1000);
-      } catch (error) {
-        console.error('Failed to load initial data', error);
-        alert('Failed to load data: ' + error.message);
-      } finally {
-        setActionLoading(false);
-        setLoadingMessage('');
-      }
-    };
-    loadInitialData();
-  }, []);
+    loadData(currentPage - 1, itemsPerPage, buildFilterParams());
+  }, [
+    currentPage,
+    debouncedSearchTerm,
+    statusFilter,
+    typeFilter,
+    fromWarehouseFilter,
+    toWarehouseFilter,
+    fromBranchFilter,
+    toBranchFilter,
+    startDateFilter,
+    endDateFilter,
+    productFilter.productId,
+    productFilter.variationId,
+  ]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    searchTerm, statusFilter, typeFilter, fromWarehouseFilter, toWarehouseFilter,
+    fromBranchFilter, toBranchFilter, startDateFilter, endDateFilter,
+    productFilter.productId, productFilter.variationId,
+  ]);
 
   const productOptions = useMemo(() => {
     return products.flatMap(p => {
@@ -532,30 +563,7 @@ const InventoryRecordsManagement = () => {
     });
   }, [products]);
 
-  const filteredInventories = (Array.isArray(inventories) ? inventories : []).filter(inventory => {
-    const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = inventory.processedBy?.toLowerCase().includes(searchLower) || inventory.remarks?.toLowerCase().includes(searchLower);
-    const matchesStatus = statusFilter === 'ALL' || inventory.status === statusFilter;
-    const matchesType = typeFilter === 'ALL' || inventory.inventoryType === typeFilter;
-    const matchesFromWarehouse = !fromWarehouseFilter || inventory.fromWarehouse?.id === parseInt(fromWarehouseFilter);
-    const matchesToWarehouse = !toWarehouseFilter || inventory.toWarehouse?.id === parseInt(toWarehouseFilter);
-    const matchesFromBranch = !fromBranchFilter || inventory.fromBranch?.id === parseInt(fromBranchFilter);
-    const matchesToBranch = !toBranchFilter || inventory.toBranch?.id === parseInt(toBranchFilter);
-    const inventoryDate = new Date(inventory.dateProcessed);
-    const matchesStartDate = !startDateFilter || inventoryDate >= new Date(startDateFilter);
-    const matchesEndDate = !endDateFilter || inventoryDate <= new Date(endDateFilter + 'T23:59:59');
-    const matchesProduct = !productFilter.productId || inventory.items?.some(item => {
-      const productMatch = item.product?.id === productFilter.productId;
-      if (!productMatch) return false;
-      if (productFilter.variationId) return item.variationId === productFilter.variationId;
-      return true;
-    });
-
-    return matchesSearch && matchesStatus && matchesType && matchesFromWarehouse && matchesToWarehouse
-      && matchesFromBranch && matchesToBranch && matchesStartDate && matchesEndDate && matchesProduct;
-  });
-
-  const sortedInventories = [...filteredInventories].sort((a, b) => {
+  const sortedInventories = [...(Array.isArray(inventories) ? inventories : [])].sort((a, b) => {
     const isAConfirmed = a.status === 'CONFIRMED' ? 1 : 0;
     const isBConfirmed = b.status === 'CONFIRMED' ? 1 : 0;
     if (isAConfirmed !== isBConfirmed) return isAConfirmed - isBConfirmed;
@@ -564,7 +572,12 @@ const InventoryRecordsManagement = () => {
     return dateB - dateA;
   });
 
-  const { currentPage, setCurrentPage, currentItems: currentInventories, totalPages, indexOfFirstItem, indexOfLastItem, nextPage, prevPage } = usePagination(sortedInventories, 10);
+  const currentInventories = sortedInventories;
+  const totalPages = Math.max(1, Math.ceil(totalInventories / itemsPerPage));
+  const indexOfFirstItem = (currentPage - 1) * itemsPerPage;
+  const indexOfLastItem = Math.min(currentPage * itemsPerPage, totalInventories);
+  const nextPage = () => setCurrentPage(p => Math.min(p + 1, totalPages));
+  const prevPage = () => setCurrentPage(p => Math.max(p - 1, 1));
 
   const handleOpenModal = async (mode, inventory = null) => {
     setModalMode(mode);
@@ -832,8 +845,8 @@ const InventoryRecordsManagement = () => {
       if (modalMode === 'create') { await createInventory(payload); alert('Inventory record created successfully as PENDING!'); }
       else { await updateInventory(selectedInventory.id, payload); alert('Inventory record updated successfully!'); }
       handleCloseModal();
-      await loadData(0, 1000, true);
       setCurrentPage(1);
+      await loadData(0, itemsPerPage, buildFilterParams(), true);
     } catch (error) {
       console.error('Failed to save inventory:', error);
       showToast(error?.response?.data?.error || error.message || 'Failed to save inventory record.', 'error');
@@ -860,7 +873,7 @@ const InventoryRecordsManagement = () => {
       setLoadingMessage('Confirming inventory...');
       await confirmInventory(inventory.id, currentUser);
       showToast('Inventory confirmed successfully! Stock levels have been updated.', 'success');
-      await loadData(0, 1000, true);
+      await loadData(currentPage - 1, itemsPerPage, buildFilterParams(), true);
     } catch (error) {
       console.error('Failed to confirm inventory:', error);
       const errorMsg = error?.response?.data?.error || error.message || 'Unknown error';
@@ -889,8 +902,13 @@ const InventoryRecordsManagement = () => {
       const result = await deleteInventory(id);
       if (result && result.success === false) { setDeleteErrorMessage(result.error || 'Failed to delete inventory'); return; }
       showToast('Inventory deleted successfully', 'success');
-      await loadData(0, 1000, true);
-      if (filteredInventories.length % 10 === 1 && currentPage > 1) setCurrentPage(currentPage - 1);
+      const newTotal = totalInventories - 1;
+      const newTotalPages = Math.max(1, Math.ceil(newTotal / itemsPerPage));
+      if (currentPage > newTotalPages) {
+        setCurrentPage(newTotalPages);
+      } else {
+        await loadData(currentPage - 1, itemsPerPage, buildFilterParams(), true);
+      }
     } catch (error) {
       console.error('❌ Delete error:', error);
       const errorMsg = error.message || 'Failed to delete inventory';
@@ -981,7 +999,7 @@ const InventoryRecordsManagement = () => {
 
   return (
     <>
-      <LoadingOverlay show={loading || actionLoading} message={loadingMessage || ''} />
+      <LoadingOverlay show={actionLoading} message={loadingMessage || ''} />
       <DeleteErrorModal message={deleteErrorMessage} onClose={() => setDeleteErrorMessage(null)} />
       <Toast toasts={toasts} removeToast={removeToast} />
 
@@ -1061,14 +1079,14 @@ const InventoryRecordsManagement = () => {
             indexOfLastItem={indexOfLastItem}
             canEdit={canEdit}
             canDelete={canDelete}
+            isLoading={loading}
           />
-
-          {sortedInventories.length > 0 && (
+          {totalInventories > 0 && (
             <Pagination
               currentPage={currentPage} totalPages={totalPages}
               onPageChange={setCurrentPage} onNextPage={nextPage} onPrevPage={prevPage}
-              showingStart={indexOfFirstItem + 1} showingEnd={Math.min(indexOfLastItem, sortedInventories.length)}
-              totalItems={sortedInventories.length}
+              showingStart={indexOfFirstItem + 1} showingEnd={indexOfLastItem}
+              totalItems={totalInventories}
             />
           )}
 

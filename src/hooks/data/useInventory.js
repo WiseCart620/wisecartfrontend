@@ -13,13 +13,20 @@ const useInventory = () => {
 
   const [stocksLoaded, setStocksLoaded] = useState(false);
 
-  const loadData = useCallback(async (page = 0, size = 50, forceStocksReload = false) => {
+  const loadData = useCallback(async (page = 0, size = 50, filters = {}, forceStocksReload = false) => {
     try {
       setLoading(true);
 
       const shouldLoadStocks = forceStocksReload || !stocksLoaded;
 
-      const requests = [api.get(`/inventories?page=${page}&size=${size}`)];
+      const params = new URLSearchParams({ page, size });
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== '' && value !== null && value !== undefined && value !== 'ALL') {
+          params.append(key, value);
+        }
+      });
+
+      const requests = [api.get(`/inventories?${params.toString()}`)];
       if (shouldLoadStocks) {
         requests.push(api.get('/stocks/warehouses'), api.get('/stocks/branches'));
       }

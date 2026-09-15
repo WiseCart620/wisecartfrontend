@@ -17,6 +17,7 @@ const InventoryTable = ({
   indexOfLastItem,
   canEdit = true,
   canDelete = true,
+  isLoading = false,
 }) => {
 
   const grandTotalItems = inventories.reduce((sum, inv) => sum + (inv.items?.length || 0), 0);
@@ -42,9 +43,38 @@ const InventoryTable = ({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {inventories.length === 0 ? (
+            {isLoading ? (
+              [...Array(8)].map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                  <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-5" /></td>
+                  <td className="px-3 py-3"><div className="h-5 bg-gray-100 rounded-full w-20" /></td>
+                  <td className="px-3 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 bg-gray-100 rounded w-24" />
+                      <div className="h-4 bg-gray-100 rounded w-3" />
+                      <div className="h-4 bg-gray-100 rounded w-24" />
+                    </div>
+                  </td>
+                  <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-20" /></td>
+                  <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-8" /></td>
+                  <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-10" /></td>
+                  <td className="px-3 py-3"><div className="h-5 bg-gray-100 rounded-full w-16" /></td>
+                  <td className="px-3 py-3">
+                    <div className="h-3 bg-gray-100 rounded w-16 mb-1" />
+                    <div className="h-3 bg-gray-100 rounded w-12" />
+                  </td>
+                  <td className="px-3 py-3">
+                    <div className="flex items-center gap-1">
+                      <div className="h-7 w-7 bg-gray-100 rounded-lg" />
+                      <div className="h-7 w-7 bg-gray-100 rounded-lg" />
+                      <div className="h-7 w-7 bg-gray-100 rounded-lg" />
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : inventories.length === 0 ? (
               <tr>
-                <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
+                <td colSpan="9" className="px-6 py-12 text-center text-gray-500">
                   {indexOfFirstItem === 0 ? 'No inventory records found' : 'No records on this page'}
                 </td>
               </tr>
@@ -214,27 +244,29 @@ const InventoryTable = ({
               })
             )}
           </tbody>
-          <tfoot>
-            <tr className="bg-gray-100 border-t-2 border-gray-300">
-              <td colSpan={4} className="px-3 py-2">
-                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">
-                  Page Totals ({inventories.length} record{inventories.length !== 1 ? 's' : ''})
-                </span>
-              </td>
-              <td className="px-3 py-2 whitespace-nowrap">
-                <div className="flex items-center gap-1">
-                  <Package size={13} className="text-gray-500" />
-                  <span className="text-xs font-bold text-gray-800">{grandTotalItems.toLocaleString('en-US')}</span>
-                </div>
-              </td>
-              <td className="px-3 py-2 whitespace-nowrap">
-                <span className="px-2 py-1 bg-blue-50 border border-blue-200 rounded-lg text-xs font-bold text-blue-700">
-                  {grandTotalQty.toLocaleString()}
-                </span>
-              </td>
-              <td colSpan={3} />
-            </tr>
-          </tfoot>
+          {!isLoading && (
+            <tfoot>
+              <tr className="bg-gray-100 border-t-2 border-gray-300">
+                <td colSpan={4} className="px-3 py-2">
+                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">
+                    Page Totals ({inventories.length} record{inventories.length !== 1 ? 's' : ''})
+                  </span>
+                </td>
+                <td className="px-3 py-2 whitespace-nowrap">
+                  <div className="flex items-center gap-1">
+                    <Package size={13} className="text-gray-500" />
+                    <span className="text-xs font-bold text-gray-800">{grandTotalItems.toLocaleString('en-US')}</span>
+                  </div>
+                </td>
+                <td className="px-3 py-2 whitespace-nowrap">
+                  <span className="px-2 py-1 bg-blue-50 border border-blue-200 rounded-lg text-xs font-bold text-blue-700">
+                    {grandTotalQty.toLocaleString()}
+                  </span>
+                </td>
+                <td colSpan={3} />
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
     </div>
