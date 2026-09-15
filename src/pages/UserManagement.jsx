@@ -522,167 +522,217 @@ const UserManagement = () => {
 
       {/* Add/Edit User Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">
-                {editingUser ? 'Edit User' : 'Add New User'}
-              </h2>
+        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[92vh] overflow-hidden flex flex-col">
+
+            {/* Sticky Header */}
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 px-8 py-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                  <User size={20} className="text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    {editingUser ? 'Edit User' : 'Add New User'}
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {editingUser ? `Editing ${editingUser.fullName}` : 'Create a new account and set their access'}
+                  </p>
+                </div>
+              </div>
               <button
-                onClick={() => {
-                  setShowModal(false);
-                  resetForm();
-                }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
+                onClick={() => { setShowModal(false); resetForm(); }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-400 hover:text-gray-600"
               >
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Username <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter username"
-                  />
-                </div>
+            {/* Scrollable Body */}
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
+              <div className="px-8 py-6 space-y-8">
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter email"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter full name"
-                  />
-                </div>
-
-                {!editingUser && (
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Password <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
+                {/* Section: Account Details */}
+                <section>
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-1 h-4 bg-blue-600 rounded-full" />
+                    <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Account Details</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-gray-50 rounded-xl p-5 border border-gray-100">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Username <span className="text-red-500">*</span>
+                      </label>
                       <input
-                        type={showPassword ? "text" : "password"}
-                        name="password"
-                        value={formData.password}
+                        type="text"
+                        name="username"
+                        value={formData.username}
                         onChange={handleInputChange}
-                        required={!editingUser}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
-                        placeholder="Enter password (min 6 characters)"
-                        minLength="6"
+                        required
+                        className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                        placeholder="e.g. jonathan.elano"
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Email <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                        placeholder="name@company.com"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Full Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="fullName"
+                        value={formData.fullName}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                        placeholder="Enter full name"
+                      />
+                    </div>
+
+                    {!editingUser && (
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Password <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showPassword ? "text" : "password"}
+                            name="password"
+                            value={formData.password}
+                            onChange={handleInputChange}
+                            required={!editingUser}
+                            className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition pr-10"
+                            placeholder="Minimum 6 characters"
+                            minLength="6"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          >
+                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                {/* Section: Role & Status */}
+                <section>
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-1 h-4 bg-blue-600 rounded-full" />
+                    <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Role & Status</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Role <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        name="role"
+                        value={isCustomRole ? 'CUSTOM' : formData.role}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === 'CUSTOM') {
+                            setIsCustomRole(true);
+                            setFormData(prev => ({ ...prev, role: '' }));
+                          } else {
+                            setIsCustomRole(false);
+                            setFormData(prev => ({ ...prev, role: val }));
+                          }
+                        }}
+                        required
+                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white"
                       >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
+                        <option value="" disabled>Select a role...</option>
+                        <option value="ENCODER">Encoder</option>
+                        <option value="ASSISTANT_ADMIN">Assistant Admin</option>
+                        <option value="ADMIN">Admin</option>
+                        <option value="FINANCE">Finance</option>
+                        <option value="CUSTOM">Custom...</option>
+                      </select>
+                      {isCustomRole && (
+                        <input
+                          type="text"
+                          name="role"
+                          value={formData.role}
+                          onChange={handleInputChange}
+                          required
+                          placeholder="e.g. WAREHOUSE_STAFF, AUDITOR"
+                          autoFocus
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition mt-2"
+                        />
+                      )}
+                      <p className="text-xs text-gray-500 mt-1.5">
+                        Access is controlled entirely by the permissions below, not the role name.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Account Status</label>
+                      <label
+                        htmlFor="enabled"
+                        className="flex items-center justify-between gap-3 px-4 py-2.5 bg-white border border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition h-[42px]"
+                      >
+                        <span className="text-sm text-gray-700">
+                          {formData.enabled ? 'Enabled — can sign in' : 'Disabled — access blocked'}
+                        </span>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={formData.enabled}
+                          onClick={() => setFormData(prev => ({ ...prev, enabled: !prev.enabled }))}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0 ${formData.enabled ? 'bg-blue-600' : 'bg-gray-300'
+                            }`}
+                        >
+                          <span
+                            className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${formData.enabled ? 'translate-x-5' : 'translate-x-1'
+                              }`}
+                          />
+                        </button>
+                        <input
+                          type="checkbox"
+                          id="enabled"
+                          name="enabled"
+                          checked={formData.enabled}
+                          onChange={handleInputChange}
+                          className="hidden"
+                        />
+                      </label>
                     </div>
                   </div>
-                )}
+                </section>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Role <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="role"
-                    value={isCustomRole ? 'CUSTOM' : formData.role}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === 'CUSTOM') {
-                        setIsCustomRole(true);
-                        setFormData(prev => ({ ...prev, role: '' }));
-                      } else {
-                        setIsCustomRole(false);
-                        setFormData(prev => ({ ...prev, role: val }));
-                      }
-                    }}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="" disabled>Select a role...</option>
-                    <option value="ENCODER">Encoder</option>
-                    <option value="ASSISTANT_ADMIN">Assistant Admin</option>
-                    <option value="ADMIN">Admin</option>
-                    <option value="FINANCE">Finance</option>
-                    <option value="CUSTOM">Custom...</option>
-                  </select>
-                  {isCustomRole && (
-                    <input
-                      type="text"
-                      name="role"
-                      value={formData.role}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="e.g. WAREHOUSE_STAFF, AUDITOR"
-                      autoFocus
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-2"
-                    />
-                  )}
-                  <p className="text-xs text-gray-500 mt-1">
-                    Access is controlled entirely by the permissions below, not the role name.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-                  <input
-                    type="checkbox"
-                    id="enabled"
-                    name="enabled"
-                    checked={formData.enabled}
-                    onChange={handleInputChange}
-                    className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  <label htmlFor="enabled" className="flex-1 cursor-pointer">
-                    <div className="font-medium text-gray-900">Account Enabled</div>
-                    <div className="text-sm text-gray-500">User can login to the system</div>
-                  </label>
-                </div>
-
+                {/* Section: Permissions */}
                 {formData.role !== 'SUPER_ADMIN' && (
-                  <div className="md:col-span-2">
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Feature Access & Permissions
-                      </label>
-                      <span className="text-xs text-gray-500">
+                  <section>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1 h-4 bg-blue-600 rounded-full" />
+                        <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Feature Access</h3>
+                      </div>
+                      <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
                         {formData.permissions.length} permission{formData.permissions.length !== 1 ? 's' : ''} selected
                       </span>
                     </div>
-                    <div className="space-y-2 p-4 bg-gray-50 rounded-lg max-h-96 overflow-y-auto">
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                       {FEATURES.map(f => {
                         const keys = f.actions.map(a => `${f.key}:${a}`);
                         const checkedCount = keys.filter(k => formData.permissions.includes(k)).length;
@@ -692,118 +742,129 @@ const UserManagement = () => {
                         return (
                           <div
                             key={f.key}
-                            className={`p-3 rounded-lg border transition-colors ${allChecked
-                              ? 'bg-blue-50 border-blue-300'
+                            className={`rounded-xl border transition-all ${allChecked
+                              ? 'bg-blue-50/60 border-blue-300'
                               : someChecked
                                 ? 'bg-white border-blue-200'
                                 : 'bg-white border-gray-200'
                               }`}
                           >
-                            <div className="flex items-start justify-between gap-3 mb-1">
-                              <div className="min-w-0">
-                                <span className="font-medium text-gray-900 text-sm">{f.label}</span>
-                                {f.description && (
-                                  <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">{f.description}</p>
-                                )}
-                              </div>
-                              <label className="flex items-center gap-1.5 text-xs font-medium text-blue-700 cursor-pointer flex-shrink-0 pt-0.5">
-                                <input
-                                  type="checkbox"
-                                  checked={allChecked}
-                                  ref={(el) => { if (el) el.indeterminate = someChecked; }}
-                                  onChange={(e) => toggleAllForFeature(f, e.target.checked)}
-                                  className="w-3.5 h-3.5 text-blue-600 rounded"
-                                />
-                                {allChecked ? 'Full access' : someChecked ? `${checkedCount}/${keys.length}` : 'Select all'}
-                              </label>
-                            </div>
-                            <div className="flex flex-wrap gap-2 mt-2">
-                              {f.actions.map(action => {
-                                const permKey = `${f.key}:${action}`;
-                                const isChecked = formData.permissions.includes(permKey);
-                                return (
-                                  <label
-                                    key={permKey}
-                                    className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${isChecked
-                                      ? 'bg-blue-100 border-blue-300 text-blue-800 font-medium'
-                                      : 'bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200'
-                                      }`}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={isChecked}
-                                      onChange={() => togglePermission(permKey)}
-                                      className="w-3.5 h-3.5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                                    />
-                                    {ACTION_LABELS[action] || action}
-                                  </label>
-                                );
-                              })}
-                            </div>
-
-                            {FILTERS[f.key] && (
-                              <div className="mt-2 pt-2 border-t border-gray-100">
-                                <p className="text-[10px] font-medium text-gray-400 uppercase mb-1.5">
-                                  Visible filters {(() => {
-                                    const filterKeys = FILTERS[f.key].map(fl => `${f.key}:filter_${fl.key}`);
-                                    const checkedFilters = filterKeys.filter(k => formData.permissions.includes(k)).length;
-                                    return checkedFilters === 0
-                                      ? '(all shown by default)'
-                                      : `(${checkedFilters}/${filterKeys.length} restricted)`;
-                                  })()}
-                                </p>
-                                <div className="flex flex-wrap gap-2">
-                                  {FILTERS[f.key].map(fl => {
-                                    const permKey = `${f.key}:filter_${fl.key}`;
-                                    const isChecked = formData.permissions.includes(permKey);
-                                    return (
-                                      <label
-                                        key={permKey}
-                                        className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${isChecked
-                                          ? 'bg-purple-100 border-purple-300 text-purple-800 font-medium'
-                                          : 'bg-gray-100 border-gray-200 text-gray-500 hover:bg-gray-200'
-                                          }`}
-                                      >
-                                        <input
-                                          type="checkbox"
-                                          checked={isChecked}
-                                          onChange={() => togglePermission(permKey)}
-                                          className="w-3.5 h-3.5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
-                                        />
-                                        {fl.label}
-                                      </label>
-                                    );
-                                  })}
+                            <div className="p-4">
+                              <div className="flex items-start justify-between gap-3 mb-3">
+                                <div className="min-w-0">
+                                  <span className="font-semibold text-gray-900 text-sm">{f.label}</span>
+                                  {f.description && (
+                                    <p className="text-xs text-gray-500 mt-0.5 leading-snug">{f.description}</p>
+                                  )}
                                 </div>
+                                <label className="flex items-center gap-1.5 text-xs font-medium text-blue-700 cursor-pointer flex-shrink-0">
+                                  <input
+                                    type="checkbox"
+                                    checked={allChecked}
+                                    ref={(el) => { if (el) el.indeterminate = someChecked; }}
+                                    onChange={(e) => toggleAllForFeature(f, e.target.checked)}
+                                    className="w-3.5 h-3.5 text-blue-600 rounded"
+                                  />
+                                  {allChecked ? 'All' : someChecked ? `${checkedCount}/${keys.length}` : 'All'}
+                                </label>
                               </div>
-                            )}
+
+                              <div className="flex flex-wrap gap-1.5">
+                                {f.actions.map(action => {
+                                  const permKey = `${f.key}:${action}`;
+                                  const isChecked = formData.permissions.includes(permKey);
+                                  return (
+                                    <label
+                                      key={permKey}
+                                      className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${isChecked
+                                        ? 'bg-blue-600 border-blue-600 text-white font-medium'
+                                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                                        }`}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={() => togglePermission(permKey)}
+                                        className="hidden"
+                                      />
+                                      {ACTION_LABELS[action] || action}
+                                    </label>
+                                  );
+                                })}
+                              </div>
+
+                              {FILTERS[f.key] && (
+                                <div className="mt-3 pt-3 border-t border-gray-100">
+                                  <p className="text-[10px] font-medium text-gray-400 uppercase mb-2 tracking-wide">
+                                    Visible filters {(() => {
+                                      const filterKeys = FILTERS[f.key].map(fl => `${f.key}:filter_${fl.key}`);
+                                      const checkedFilters = filterKeys.filter(k => formData.permissions.includes(k)).length;
+                                      return checkedFilters === 0
+                                        ? '(all shown by default)'
+                                        : `(${checkedFilters}/${filterKeys.length} restricted)`;
+                                    })()}
+                                  </p>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {FILTERS[f.key].map(fl => {
+                                      const permKey = `${f.key}:filter_${fl.key}`;
+                                      const isChecked = formData.permissions.includes(permKey);
+                                      return (
+                                        <label
+                                          key={permKey}
+                                          className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${isChecked
+                                            ? 'bg-purple-600 border-purple-600 text-white font-medium'
+                                            : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+                                            }`}
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            checked={isChecked}
+                                            onChange={() => togglePermission(permKey)}
+                                            className="hidden"
+                                          />
+                                          {fl.label}
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         );
                       })}
                     </div>
+                  </section>
+                )}
+
+                {formData.role === 'SUPER_ADMIN' && (
+                  <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <Shield size={20} className="text-amber-600 flex-shrink-0" />
+                    <p className="text-sm text-amber-800">
+                      <span className="font-semibold">Super Admin</span> automatically has full access to every feature. Individual permissions don't apply.
+                    </p>
                   </div>
                 )}
               </div>
-
-              <div className="flex gap-3 pt-4 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    resetForm();
-                  }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                >
-                  {editingUser ? 'Update User' : 'Create User'}
-                </button>
-              </div>
             </form>
+
+            {/* Sticky Footer */}
+            <div className="flex-shrink-0 bg-white border-t border-gray-200 px-8 py-4 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => { setShowModal(false); resetForm(); }}
+                className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                onClick={handleSubmit}
+                className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium shadow-sm"
+              >
+                {editingUser ? 'Save Changes' : 'Create User'}
+              </button>
+            </div>
           </div>
         </div>
       )}
