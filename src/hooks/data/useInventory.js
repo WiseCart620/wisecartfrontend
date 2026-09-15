@@ -11,15 +11,20 @@ const useInventory = () => {
   const [loadingStocks, setLoadingStocks] = useState({});
   const [totalInventories, setTotalInventories] = useState(0);
 
-  const loadData = useCallback(async (page = 0, size = 50) => {
+  const [stocksLoaded, setStocksLoaded] = useState(false);
+
+  const loadData = useCallback(async (page = 0, size = 50, forceStocksReload = false) => {
     try {
       setLoading(true);
 
-      const [inventoriesRes, warehouseStocksRes, branchStocksRes] = await Promise.all([
-        api.get(`/inventories?page=${page}&size=${size}`),
-        api.get('/stocks/warehouses?limit=200'),
-        api.get('/stocks/branches?limit=200'),
-      ]);
+      const shouldLoadStocks = forceStocksReload || !stocksLoaded;
+
+      const requests = [api.get(`/inventories?page=${page}&size=${size}`)];
+      if (shouldLoadStocks) {
+        requests.push(api.get('/stocks/warehouses'), api.get('/stocks/branches'));
+      }
+
+      const [inventoriesRes, warehouseStocksRes, branchStocksRes] = await Promise.all(requests);
 
       let inventoriesData = [];
       let totalElements = 0;
@@ -37,20 +42,24 @@ const useInventory = () => {
       setInventories(inventoriesData);
       setTotalInventories(totalElements);
 
-      if (warehouseStocksRes.success) {
-        setWarehouseStocks(warehouseStocksRes.data || []);
-      }
-      if (branchStocksRes.success) {
-        setBranchStocks(branchStocksRes.data || []);
+      if (shouldLoadStocks) {
+        if (warehouseStocksRes?.success) {
+          setWarehouseStocks(warehouseStocksRes.data || []);
+        }
+        if (branchStocksRes?.success) {
+          setBranchStocks(branchStocksRes.data || []);
+        }
+        setStocksLoaded(true);
       }
 
+      return inventoriesRes.data;
     } catch (error) {
       console.error('Failed to load inventory data', error);
       throw error;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [stocksLoaded]);
 
   const loadLocationStock = useCallback(async (productId, variationId, itemIndex, locationId, locationType) => {
     const loadingKey = `${itemIndex}_${productId}_${variationId}`;
@@ -123,8 +132,7 @@ const useInventory = () => {
 
   const deleteInventory = useCallback(async (inventoryId) => {
     try {
-      const userRole = localStorage.getItem('userRole') || 'USER';
-      return await api.delete(`/inventories/${inventoryId}?userRole=${userRole}`);
+      return await api.delete(`/inventories/${inventoryId}`);
     } catch (error) {
       console.error('Failed to delete inventory:', error);
       throw error;
@@ -133,8 +141,7 @@ const useInventory = () => {
 
   const updateInventory = useCallback(async (inventoryId, payload) => {
     try {
-      const userRole = localStorage.getItem('userRole') || 'USER';
-      return await api.put(`/inventories/${inventoryId}?userRole=${userRole}`, payload);
+      return await api.put(`/inventories/${inventoryId}`, payload);
     } catch (error) {
       console.error('Failed to update inventory:', error);
       throw error;

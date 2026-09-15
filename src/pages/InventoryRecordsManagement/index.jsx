@@ -13,6 +13,7 @@ import { getCurrentUser, isAdmin } from '../../utils/authUtils';
 import { api } from '../../services/api';
 import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
 import { useAuth, can } from '../../context/AuthContext';
+import { useReferenceData } from '../../context/ReferenceDataContext';
 
 
 // ─── Fixed Delete Error Modal with Collapsible Product Cards ─────────────────────
@@ -449,9 +450,7 @@ const InventoryRecordsManagement = () => {
 
   const removeToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
 
-  const [products, setProducts] = useState([]);
-  const [warehouses, setWarehouses] = useState([]);
-  const [branches, setBranches] = useState([]);
+  const { products, warehouses, branches } = useReferenceData();
 
   const [selectedProductForAdd, setSelectedProductForAdd] = useState('');
   const [tempQuantity, setTempQuantity] = useState(1);
@@ -485,15 +484,7 @@ const InventoryRecordsManagement = () => {
       try {
         setActionLoading(true);
         setLoadingMessage('Loading data...');
-        const [productsRes, warehousesRes, branchesRes] = await Promise.all([
-          api.get('/products'), api.get('/warehouse'), api.get('/branches')
-        ]);
-        setProducts(productsRes.success ? productsRes.data || [] : []);
-        setWarehouses(warehousesRes.success ? warehousesRes.data || [] : []);
-        setBranches(branchesRes.success ? branchesRes.data || [] : []);
-        const firstPage = await loadData(0, 1);
-        const total = firstPage?.totalElements || firstPage?.data?.totalElements || 1000;
-        await loadData(0, total);
+        await loadData(0, 1000);
       } catch (error) {
         console.error('Failed to load initial data', error);
         alert('Failed to load data: ' + error.message);
@@ -503,7 +494,7 @@ const InventoryRecordsManagement = () => {
       }
     };
     loadInitialData();
-  }, [loadData]);
+  }, []);
 
   const productOptions = useMemo(() => {
     return products.flatMap(p => {
@@ -841,9 +832,7 @@ const InventoryRecordsManagement = () => {
       if (modalMode === 'create') { await createInventory(payload); alert('Inventory record created successfully as PENDING!'); }
       else { await updateInventory(selectedInventory.id, payload); alert('Inventory record updated successfully!'); }
       handleCloseModal();
-      const firstPage = await loadData(0, 1);
-      const total = firstPage?.totalElements || firstPage?.data?.totalElements || 1000;
-      await loadData(0, total);
+      await loadData(0, 1000, true);
       setCurrentPage(1);
     } catch (error) {
       console.error('Failed to save inventory:', error);
@@ -871,9 +860,7 @@ const InventoryRecordsManagement = () => {
       setLoadingMessage('Confirming inventory...');
       await confirmInventory(inventory.id, currentUser);
       showToast('Inventory confirmed successfully! Stock levels have been updated.', 'success');
-      const firstPage = await loadData(0, 1);
-      const total = firstPage?.totalElements || firstPage?.data?.totalElements || 1000;
-      await loadData(0, total);
+      await loadData(0, 1000, true);
     } catch (error) {
       console.error('Failed to confirm inventory:', error);
       const errorMsg = error?.response?.data?.error || error.message || 'Unknown error';
@@ -902,9 +889,7 @@ const InventoryRecordsManagement = () => {
       const result = await deleteInventory(id);
       if (result && result.success === false) { setDeleteErrorMessage(result.error || 'Failed to delete inventory'); return; }
       showToast('Inventory deleted successfully', 'success');
-      const firstPage = await loadData(0, 1);
-      const total = firstPage?.totalElements || firstPage?.data?.totalElements || 1000;
-      await loadData(0, total);
+      await loadData(0, 1000, true);
       if (filteredInventories.length % 10 === 1 && currentPage > 1) setCurrentPage(currentPage - 1);
     } catch (error) {
       console.error('❌ Delete error:', error);
