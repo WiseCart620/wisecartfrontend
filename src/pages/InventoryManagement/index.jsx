@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, BarChart3, Building, Store, RefreshCw, Lock } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -59,6 +59,8 @@ const InventoryManagement = () => {
   const UNLOCK_TTL_MS = 30 * 60 * 1000;
   const [warehouseMovementMap, setWarehouseMovementMap] = useState({});
   const [warehouseMovLoading, setWarehouseMovLoading] = useState(false);
+  const warehouseMovementCache = useRef({});
+  const fetchedProductIdsByWarehouse = useRef({});
 
   const [stockToolsUnlocked, setStockToolsUnlocked] = useState(() => {
     try {
@@ -288,41 +290,79 @@ const InventoryManagement = () => {
     return map[`${wid}|${pid}|${vid}`] || null;
   };
 
-  const warehouseIdKey = [
-    ...new Set(
-      filteredWarehouseStocks
-        .map((s) => s.warehouseId)
-        .filter((id) => id != null)
-        .map(String)
-    ),
-  ].sort().join(',');
+  // Group the current page's rows by warehouse so we only ever ask the
+  // movements endpoint about products actually visible right now.
+  const productIdsByWarehouse = {};
+  filteredWarehouseStocks.forEach((s) => {
+    const wid = String(s.warehouseId ?? '');
+    const pid = String(s.productId ?? '');
+    if (!wid || !pid) return;
+    if (!productIdsByWarehouse[wid]) productIdsByWarehouse[wid] = new Set();
+    productIdsByWarehouse[wid].add(pid);
+  });
+
+  const warehouseIdKey = Object.keys(productIdsByWarehouse).sort().join(',');
+  const movementDepsKey = Object.keys(productIdsByWarehouse)
+    .sort()
+    .map((wid) => `${wid}:${[...productIdsByWarehouse[wid]].sort().join(',')}`)
+    .join('|');
 
   useEffect(() => {
     if (!warehouseIdKey) {
       setWarehouseMovementMap({});
       return;
     }
+
     const warehouseIds = warehouseIdKey.split(',');
+
+    // Only fetch (warehouse, product) combinations we haven't already cached this session.
+    const toFetch = {}; // wid -> [productIds not yet cached]
+    warehouseIds.forEach((wid) => {
+      const needed = productIdsByWarehouse[wid] || new Set();
+      const already = fetchedProductIdsByWarehouse.current[wid] || new Set();
+      const missing = [...needed].filter((pid) => !already.has(pid));
+      if (missing.length > 0) {
+        toFetch[wid] = missing;
+      }
+    });
+
+    const mergeFromCache = () => {
+      const map = {};
+      warehouseIds.forEach((wid) => {
+        Object.assign(map, warehouseMovementCache.current[wid] || {});
+      });
+      setWarehouseMovementMap(map);
+    };
+
+    if (Object.keys(toFetch).length === 0) {
+      // Everything needed on this page has already been fetched this session — no network call.
+      mergeFromCache();
+      return;
+    }
+
     let cancelled = false;
     setWarehouseMovLoading(true);
 
     const fetchAll = async () => {
       try {
         const results = await Promise.all(
-          warehouseIds.map((wid) =>
-            api
-              .get(`/inventory-reports/report/movements?warehouseId=${wid}`)
-              .then((res) => ({ wid, rows: Array.isArray(res.data) ? res.data : [] }))
-              .catch(() => ({ wid, rows: [] }))
-          )
+          Object.entries(toFetch).map(([wid, productIds]) => {
+            const params = new URLSearchParams({ warehouseId: wid });
+            productIds.forEach((pid) => params.append('productIds', pid));
+            return api
+              .get(`/inventory-reports/report/movements?${params}`)
+              .then((res) => ({ wid, productIds, rows: Array.isArray(res.data) ? res.data : [] }))
+              .catch(() => ({ wid, productIds, rows: [] }));
+          })
         );
         if (cancelled) return;
-        const map = {};
-        results.forEach(({ wid, rows }) => {
+
+        results.forEach(({ wid, productIds, rows }) => {
+          if (!warehouseMovementCache.current[wid]) warehouseMovementCache.current[wid] = {};
           rows.forEach((row) => {
             const pid = String(row.productId ?? '');
             const vid = String(row.variationId ?? '');
-            map[`${wid}|${pid}|${vid}`] = {
+            warehouseMovementCache.current[wid][`${wid}|${pid}|${vid}`] = {
               stockIn: Number(row.stockIn) || 0,
               transferIn: Number(row.transferIn) || 0,
               transferOut: Number(row.transferOut) || 0,
@@ -332,8 +372,14 @@ const InventoryManagement = () => {
               manualAdjustment: row.manualAdjustment != null ? Number(row.manualAdjustment) : 0,
             };
           });
+
+          if (!fetchedProductIdsByWarehouse.current[wid]) {
+            fetchedProductIdsByWarehouse.current[wid] = new Set();
+          }
+          productIds.forEach((pid) => fetchedProductIdsByWarehouse.current[wid].add(pid));
         });
-        setWarehouseMovementMap(map);
+
+        mergeFromCache();
       } finally {
         if (!cancelled) setWarehouseMovLoading(false);
       }
@@ -341,7 +387,7 @@ const InventoryManagement = () => {
 
     fetchAll();
     return () => { cancelled = true; };
-  }, [warehouseIdKey]);
+  }, [movementDepsKey]);
 
   const filteredWarehouseStocksActive = [...filteredWarehouseStocks].sort((a, b) => {
     const warehouseCompare = (a.warehouseName || '').localeCompare(
