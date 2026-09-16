@@ -16,7 +16,7 @@ import InventorySummaryReportModal from '../../components/modals/InventorySummar
 import ProductSummaryTable from '../../components/tables/InventoryManagement/ProductSummaryTable';
 import WarehouseStockTable from '../../components/tables/InventoryManagement/WarehouseStockTable';
 import BranchStockTable from '../../components/tables/InventoryManagement/BranchStockTable';
-import { useWarehouseStockData, useBranchStockData, fetchAllBranchStocks } from '../../components/hooks/useStockPageData';
+import { useWarehouseStockData, useBranchStockData, useProductSummaryData, fetchAllBranchStocks } from '../../components/hooks/useStockPageData';
 import StockRebuildPanel, { PasswordGate } from '../../components/tables/InventoryManagement/StockRebuildPanel';
 import TransactionCleanupPanel from '../../components/tables/InventoryManagement/TransactionCleanupPanel';
 import ProductSummaryReportPanel from '../../components/filters/ProductSummaryReportPanel';
@@ -26,7 +26,6 @@ import BranchFilterPanel from '../../components/filters/BranchFilterPanel';
 import WarehouseReportInlineTable from '../../components/tables/InventoryManagement/WarehouseReportInlineTable';
 import BranchReportInlineTable from '../../components/tables/InventoryManagement/BranchReportInlineTable';
 import BranchStockExportButton from '../../components/tables/InventoryManagement/BranchStockExportButton';
-import { filterProductSummaries } from '../../utils/inventoryFilters';
 const InventoryManagement = () => {
   const { user } = useAuth();
   const [productSearchTerm, setProductSearchTerm] = useState('');
@@ -48,7 +47,6 @@ const InventoryManagement = () => {
   const [productSummaries, setProductSummaries] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
-  const [refDataLoading, setRefDataLoading] = useState(true);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportData, setReportData] = useState([]);
   const [reportLoading, setReportLoading] = useState(false);
@@ -126,8 +124,8 @@ const InventoryManagement = () => {
         if (branchesRes.success) setBranches(branchesRes.data || []);
         if (companiesRes.success) setCompanies(companiesRes.data || []);
         await loadProductSummaries();
-      } finally {
-        setRefDataLoading(false);
+      } catch (err) {
+        console.error('Failed to load reference data', err);
       }
     };
     loadReferenceData();
@@ -135,20 +133,9 @@ const InventoryManagement = () => {
 
 
   const {
-    loading,
-    canModifyStatus,
     warehouseStocks,
     branchStocks,
-    loadingStocks,
     loadData,
-    loadLocationStock,
-    checkCanModify,
-    confirmInventory,
-    deleteInventory,
-    updateInventory,
-    createInventory,
-    setWarehouseStocks,
-    setBranchStocks
   } = useInventory();
 
 
@@ -233,12 +220,25 @@ const InventoryManagement = () => {
   const productPagination = usePaginationControl(10);
   const stockPagination = usePaginationControl(10);
 
+  const selectedProductKeys = productReportFilters.filters.productKeys || [];
+
+  const {
+    summaries: productSummaryPage,
+    loading: productSummaryPageLoading,
+    totalPages: productSummaryTotalPages,
+    totalElements: productSummaryTotalElements,
+  } = useProductSummaryData({
+    searchTerm: productSearchTerm,
+    variationFilter: showVariationFilter,
+    productKeys: selectedProductKeys,
+    currentPage: productPagination.currentPage,
+    pageSize: 10,
+  });
+
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedStockSearchTerm(stockSearchTerm), 400);
     return () => clearTimeout(timer);
   }, [stockSearchTerm]);
-
-  const selectedProductKeys = productReportFilters.filters.productKeys || [];
 
   useEffect(() => {
     productPagination.setCurrentPage(1);
@@ -259,39 +259,8 @@ const InventoryManagement = () => {
     JSON.stringify(branchFilters.filters),
   ]);
 
-  const baseFilteredSummaries = filterProductSummaries(
-    Array.isArray(productSummaries) ? productSummaries : [],
-    productSearchTerm,
-    showVariationFilter
-  );
-  const filteredProductSummariesUnsorted = selectedProductKeys.length > 0
-    ? baseFilteredSummaries.filter(p => {
-      const key = p.isVariation || p.variationId
-        ? `${p.productId}_${p.variationId}`
-        : `${p.productId}_base`;
-      return selectedProductKeys.includes(key);
-    })
-    : baseFilteredSummaries;
-
-  const filteredProductSummaries = [...filteredProductSummariesUnsorted].sort((a, b) => {
-    const nameCompare = (a.productName || '').localeCompare(b.productName || '', undefined, { sensitivity: 'base' });
-    if (nameCompare !== 0) return nameCompare;
-    const varA = a.variationName || a.combinationDisplay || '';
-    const varB = b.variationName || b.combinationDisplay || '';
-    return varA.localeCompare(varB, undefined, { sensitivity: 'base' });
-  });
-
-
   const filteredWarehouseStocks = Array.isArray(warehouseStocksPage) ? warehouseStocksPage : [];
-  const getWarehouseMovement = (stock, map) => {
-    const wid = String(stock.warehouseId ?? '');
-    const pid = String(stock.productId ?? '');
-    const vid = stock.variationId != null ? String(stock.variationId) : '';
-    return map[`${wid}|${pid}|${vid}`] || null;
-  };
 
-  // Group the current page's rows by warehouse so we only ever ask the
-  // movements endpoint about products actually visible right now.
   const productIdsByWarehouse = {};
   filteredWarehouseStocks.forEach((s) => {
     const wid = String(s.warehouseId ?? '');
@@ -404,11 +373,10 @@ const InventoryManagement = () => {
 
   const filteredBranchStocks = Array.isArray(branchStocksPage) ? branchStocksPage : [];
 
-  const currentProductSummaries = productPagination.getPageItems(filteredProductSummaries);
+  const currentProductSummaries = productSummaryPage;
   const currentWarehouseStocks = filteredWarehouseStocksActive;
   const currentBranchStocks = filteredBranchStocks;
 
-  const productTotalPages = productPagination.getTotalPages(filteredProductSummaries.length);
   const warehouseStockTotalPages = warehouseStockServerTotalPages;
   const branchStockTotalPages = branchStockServerTotalPages;
 
@@ -713,14 +681,14 @@ const InventoryManagement = () => {
               return (
                 <ProductSummaryTable
                   currentProductSummaries={currentProductSummaries}
-                  filteredProductSummaries={filteredProductSummaries}
+                  totalElements={productSummaryTotalElements}
                   productIndexOfFirstItem={productPagination.getIndexOfFirstItem()}
-                  productIndexOfLastItem={productPagination.getIndexOfLastItem(filteredProductSummaries.length)}
+                  productIndexOfLastItem={productPagination.getIndexOfFirstItem() + currentProductSummaries.length}
                   handleViewTransactions={handleViewTransactions}
                   productCurrentPage={productPagination.currentPage}
-                  productTotalPages={productTotalPages}
+                  productTotalPages={productSummaryTotalPages}
                   setProductCurrentPage={productPagination.setCurrentPage}
-                  isLoading={refDataLoading}
+                  isLoading={productSummaryPageLoading}
                 />
               );
             })()}

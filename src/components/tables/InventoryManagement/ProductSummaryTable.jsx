@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { BarChart3, CheckCircle, ShoppingCart, Truck, Clock, Eye, Loader2, Undo2 } from 'lucide-react';
 import Pagination from '../../common/Pagination';
 
+const SKELETON_ROWS = 5;
+const BADGE_COL_COUNT = 10;
+
 const ProductSummaryTable = ({
   currentProductSummaries,
-  filteredProductSummaries,
+  totalElements = 0,
   productIndexOfFirstItem,
   productIndexOfLastItem,
   handleViewTransactions,
@@ -123,18 +126,30 @@ const ProductSummaryTable = ({
           </thead>
           <tbody className="divide-y divide-gray-200">
             {isLoading ? (
-              <tr>
-                <td colSpan="13" className="px-6 py-16 text-center">
-                  <div className="flex flex-col items-center gap-3 text-gray-400">
-                    <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin" />
-                    <span className="text-sm">Loading products...</span>
-                  </div>
-                </td>
-              </tr>
+              [...Array(SKELETON_ROWS)].map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                  <td className="px-2 py-2">
+                    <div className="h-3 bg-gray-100 rounded w-28" />
+                    <div className="h-2.5 bg-gray-100 rounded w-16 mt-1" />
+                  </td>
+                  <td className="px-2 py-2">
+                    <div className="h-2.5 bg-gray-100 rounded w-20" />
+                    <div className="h-2.5 bg-gray-100 rounded w-16 mt-1" />
+                  </td>
+                  {[...Array(BADGE_COL_COUNT)].map((__, j) => (
+                    <td key={j} className="px-1 py-2 text-center">
+                      <div className="h-4 bg-gray-100 rounded-full w-8 mx-auto" />
+                    </td>
+                  ))}
+                  <td className="px-2 py-2 text-right">
+                    <div className="h-4 bg-gray-100 rounded w-10 ml-auto" />
+                  </td>
+                </tr>
+              ))
             ) : currentProductSummaries.length === 0 ? (
               <tr>
                 <td colSpan="13" className="px-6 py-8 text-center text-gray-500">
-                  {filteredProductSummaries.length === 0 ? 'No products found' : 'No products on this page'}
+                  {totalElements === 0 ? 'No products found' : 'No products on this page'}
                 </td>
               </tr>
             ) : (
@@ -234,7 +249,7 @@ const ProductSummaryTable = ({
           </tbody>
         </table>
       </div>
-      {filteredProductSummaries.length > 0 && (
+      {totalElements > 0 && (
         <Pagination
           currentPage={productCurrentPage}
           totalPages={productTotalPages}
@@ -242,8 +257,8 @@ const ProductSummaryTable = ({
           onNextPage={() => setProductCurrentPage(prev => Math.min(prev + 1, productTotalPages))}
           onPrevPage={() => setProductCurrentPage(prev => Math.max(prev - 1, 1))}
           showingStart={productIndexOfFirstItem + 1}
-          showingEnd={Math.min(productIndexOfLastItem, filteredProductSummaries.length)}
-          totalItems={filteredProductSummaries.length}
+          showingEnd={Math.min(productIndexOfLastItem, totalElements)}
+          totalItems={totalElements}
         />
       )}
     </div>

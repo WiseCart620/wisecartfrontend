@@ -82,6 +82,44 @@ export const fetchAllBranchStocks = async (filters, maxSize = 20000) => {
   return res.data?.content || [];
 };
 
+export const useProductSummaryData = ({
+  searchTerm, variationFilter, productKeys, currentPage, pageSize = 10,
+}) => {
+  const [summaries, setSummaries] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+
+  const filters = { search: searchTerm, variationFilter, productKeys };
+
+  const fetchPage = useCallback(async (page) => {
+    setLoading(true);
+    try {
+      const res = await api.get(`/inventory-reports/products/summary/paginated?${buildParams(filters, page, pageSize)}`);
+      setSummaries(res.data?.content || []);
+      setTotalPages(res.data?.totalPages || 0);
+      setTotalElements(res.data?.totalElements || 0);
+    } catch (err) {
+      console.error('Failed to load product summaries', err);
+      toast.error('Failed to load product summaries');
+    } finally {
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, variationFilter, JSON.stringify(productKeys), pageSize]);
+
+  const prevKey = useRef(null);
+  useEffect(() => {
+    const key = JSON.stringify(filters);
+    const changed = prevKey.current !== null && prevKey.current !== key;
+    prevKey.current = key;
+    fetchPage(changed ? 0 : currentPage - 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, variationFilter, JSON.stringify(productKeys), currentPage, fetchPage]);
+
+  return { summaries, loading, totalPages, totalElements, refetch: () => fetchPage(currentPage - 1) };
+};
+
 export const useBranchStockData = ({
   companyIds, branchIds, productIds, searchTerm, minQty, maxQty, startDate, endDate, currentPage, pageSize = 20,
 }) => {
