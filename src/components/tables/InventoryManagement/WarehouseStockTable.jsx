@@ -148,6 +148,8 @@ const ColumnTogglePanel = ({ visible, cols, onChange, onClose }) => {
 };
 
 // ── Main component ────────────────────────────────────────────────────────────
+const SKELETON_ROWS = 5;
+
 const WarehouseStockTable = ({
   currentWarehouseStocks,
   filteredWarehouseStocks,
@@ -163,8 +165,11 @@ const WarehouseStockTable = ({
   onStockUpdated,
   movementMap = {},
   movLoading = false,
+  grandTotals,
+  totalElements = 0,
 }) => {
   const [loadingId, setLoadingId] = useState(null);
+  const totals = grandTotals || { quantity: 0, delivered: 0, pendingDelivery: 0 };
   const [adjustmentStock, setAdjustmentStock] = useState(null);
   const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
 
@@ -249,6 +254,30 @@ const WarehouseStockTable = ({
       <div className="border-t border-gray-100 overflow-x-auto table-fit">
         <table className="w-full text-sm" style={{ fontSize: '11px', tableLayout: 'fixed' }}>
           <thead className="bg-gray-50">
+            {!isLoading && totalElements > 0 && (
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <td className="px-2 py-2 text-xs font-semibold text-gray-700" colSpan={3}>
+                  Grand Total ({totalElements.toLocaleString('en-US')} rows)
+                </td>
+                {activeCols.length > 0 && <td className="px-2 py-2" colSpan={activeCols.length}></td>}
+                <td className="px-2 py-2 text-center">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                    {totals.quantity.toLocaleString('en-US')}
+                  </span>
+                </td>
+                <td className="px-2 py-2 text-center">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
+                    {totals.delivered.toLocaleString('en-US')}
+                  </span>
+                </td>
+                <td className="px-2 py-2 text-center">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                    {totals.pendingDelivery.toLocaleString('en-US')}
+                  </span>
+                </td>
+                <td className="px-2 py-2" colSpan={2}></td>
+              </tr>
+            )}
             <tr>
               <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '100px' }}>Warehouse</th>
               <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style={{ minWidth: '130px' }}>Product</th>
@@ -284,14 +313,22 @@ const WarehouseStockTable = ({
 
           <tbody className="divide-y divide-gray-200">
             {isLoading ? (
-              <tr>
-                <td colSpan={totalColSpan} className="px-6 py-16 text-center">
-                  <div className="flex flex-col items-center gap-3 text-gray-400">
-                    <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin" />
-                    <span className="text-sm">Loading warehouse stocks…</span>
-                  </div>
-                </td>
-              </tr>
+              [...Array(SKELETON_ROWS)].map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                  <td className="px-2 py-2"><div className="h-4 bg-gray-100 rounded w-20" /><div className="h-3 bg-gray-100 rounded w-10 mt-1" /></td>
+                  <td className="px-2 py-2"><div className="h-4 bg-gray-100 rounded w-28" /></td>
+                  <td className="px-2 py-2"><div className="h-4 bg-gray-100 rounded w-20" /></td>
+                  {activeCols.map((col) => (
+                    <td key={col.key} className="px-2 py-2"><div className="h-5 bg-gray-100 rounded-full w-10 mx-auto" /></td>
+                  ))}
+                  <td className="px-2 py-2"><div className="h-5 bg-gray-100 rounded-full w-10 mx-auto" /></td>
+                  <td className="px-2 py-2"><div className="h-5 bg-gray-100 rounded-full w-10 mx-auto" /></td>
+                  <td className="px-2 py-2"><div className="h-5 bg-gray-100 rounded-full w-10 mx-auto" /></td>
+                  <td className="px-2 py-2"><div className="h-5 bg-gray-100 rounded-full w-10 mx-auto" /></td>
+                  <td className="px-2 py-2"><div className="h-4 bg-gray-100 rounded w-16" /></td>
+                  <td className="px-2 py-2"><div className="h-4 bg-gray-100 rounded w-10 mx-auto" /></td>
+                </tr>
+              ))
             ) : currentWarehouseStocks.length === 0 ? (
               <tr>
                 <td colSpan={totalColSpan} className="px-6 py-8 text-center text-gray-500">
@@ -434,7 +471,7 @@ const WarehouseStockTable = ({
         </table>
       </div>
 
-      {filteredWarehouseStocks.length > 0 && (
+      {totalElements > 0 && (
         <Pagination
           currentPage={stockCurrentPage}
           totalPages={warehouseStockTotalPages}
@@ -442,8 +479,8 @@ const WarehouseStockTable = ({
           onNextPage={() => setStockCurrentPage((prev) => Math.min(prev + 1, warehouseStockTotalPages))}
           onPrevPage={() => setStockCurrentPage((prev) => Math.max(prev - 1, 1))}
           showingStart={stockIndexOfFirstItem + 1}
-          showingEnd={Math.min(stockIndexOfLastItem, filteredWarehouseStocks.length)}
-          totalItems={filteredWarehouseStocks.length}
+          showingEnd={Math.min(stockIndexOfLastItem, totalElements)}
+          totalItems={totalElements}
         />
       )}
       <ManualAdjustmentModal

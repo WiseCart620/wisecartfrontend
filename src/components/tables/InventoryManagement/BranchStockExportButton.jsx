@@ -1,5 +1,6 @@
-import React from 'react';
-import { FileSpreadsheet, Printer } from 'lucide-react';
+import React, { useState } from 'react';
+import { FileSpreadsheet, Printer, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const fmtDate = (d) => {
   if (!d) return '';
@@ -30,44 +31,81 @@ const buildRows = (data) => data.map(s => {
 
 const sumCol = (rows, key) => rows.reduce((a, r) => a + (Number(r[key]) || 0), 0);
 
-const BranchStockExportButton = ({ data = [] }) => {
-  const rows = buildRows(data);
-  const totals = {
-    totalStock: sumCol(rows, 'totalStock'),
-    delivered: sumCol(rows, 'delivered'),
-    totalSales: sumCol(rows, 'totalSales'),
-    pendingDelivery: sumCol(rows, 'pendingDelivery'),
-    pendingSale: sumCol(rows, 'pendingSale'),
-    available: sumCol(rows, 'available'),
+const BranchStockExportButton = ({ fetchData }) => {
+  const [exportingCsv, setExportingCsv] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const loadRows = async () => {
+    if (typeof fetchData !== 'function') return [];
+    const fullData = await fetchData();
+    return buildRows(fullData || []);
   };
 
-  const handleExportCSV = () => {
-    const headers = ['Branch', 'Branch Code', 'Product', 'Variation', 'SKU', 'UPC',
-      'Total Stock', 'Delivered', 'Total Sales', 'Pending Delivery', 'Pending Sale', 'Available', 'Last Updated'];
-    const lines = rows.map(r => [
-      r.branch, r.branchCode, r.product, r.variation, r.sku, r.upc,
-      r.totalStock, r.delivered, r.totalSales, r.pendingDelivery, r.pendingSale, r.available, r.lastUpdated
-    ]);
-    lines.push(['TOTAL', '', '', '', '', '',
-      totals.totalStock, totals.delivered, totals.totalSales,
-      totals.pendingDelivery, totals.pendingSale, totals.available, '']);
+  const handleExportCSV = async () => {
+    setExportingCsv(true);
+    try {
+      const rows = await loadRows();
+      if (rows.length === 0) {
+        toast.error('No records to export');
+        return;
+      }
+      const totals = {
+        totalStock: sumCol(rows, 'totalStock'),
+        delivered: sumCol(rows, 'delivered'),
+        totalSales: sumCol(rows, 'totalSales'),
+        pendingDelivery: sumCol(rows, 'pendingDelivery'),
+        pendingSale: sumCol(rows, 'pendingSale'),
+        available: sumCol(rows, 'available'),
+      };
 
-    const csv = [headers, ...lines]
-      .map(row => row.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
-      .join('\n');
+      const headers = ['Branch', 'Branch Code', 'Product', 'Variation', 'SKU', 'UPC',
+        'Total Stock', 'Delivered', 'Total Sales', 'Pending Delivery', 'Pending Sale', 'Available', 'Last Updated'];
+      const lines = rows.map(r => [
+        r.branch, r.branchCode, r.product, r.variation, r.sku, r.upc,
+        r.totalStock, r.delivered, r.totalSales, r.pendingDelivery, r.pendingSale, r.available, r.lastUpdated
+      ]);
+      lines.push(['TOTAL', '', '', '', '', '',
+        totals.totalStock, totals.delivered, totals.totalSales,
+        totals.pendingDelivery, totals.pendingSale, totals.available, '']);
 
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Company_Stock_Levels_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+      const csv = [headers, ...lines]
+        .map(row => row.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Company_Stock_Levels_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('CSV export failed', err);
+      toast.error('Failed to export CSV');
+    } finally {
+      setExportingCsv(false);
+    }
   };
 
-  const handleExportPDF = () => {
-    const today = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
-    const tableRows = rows.map(r => `
+  const handleExportPDF = async () => {
+    setExportingPdf(true);
+    try {
+      const rows = await loadRows();
+      if (rows.length === 0) {
+        toast.error('No records to export');
+        return;
+      }
+      const totals = {
+        totalStock: sumCol(rows, 'totalStock'),
+        delivered: sumCol(rows, 'delivered'),
+        totalSales: sumCol(rows, 'totalSales'),
+        pendingDelivery: sumCol(rows, 'pendingDelivery'),
+        pendingSale: sumCol(rows, 'pendingSale'),
+        available: sumCol(rows, 'available'),
+      };
+
+      const today = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+      const tableRows = rows.map(r => `
       <tr>
         <td class="left">${r.branch}<br/><span class="sub">${r.branchCode}</span></td>
         <td class="left">${r.product}${r.variation ? `<br/><span class="sub">${r.variation}</span>` : ''}</td>
@@ -80,7 +118,7 @@ const BranchStockExportButton = ({ data = [] }) => {
         <td>${r.available.toLocaleString()}</td>
       </tr>`).join('');
 
-    const html = `
+      const html = `
       <!DOCTYPE html><html><head><title>Company Stock Levels</title>
       <style>
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -117,30 +155,36 @@ const BranchStockExportButton = ({ data = [] }) => {
         </table>
       </body></html>`;
 
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.print();
-    printWindow.close();
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.print();
+      printWindow.close();
+    } catch (err) {
+      console.error('PDF export failed', err);
+      toast.error('Failed to export PDF');
+    } finally {
+      setExportingPdf(false);
+    }
   };
 
   return (
     <div className="flex items-center gap-2">
       <button
         onClick={handleExportCSV}
-        disabled={rows.length === 0}
+        disabled={exportingCsv || exportingPdf}
         className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
       >
-        <FileSpreadsheet size={16} />
-        <span>Export CSV</span>
+        {exportingCsv ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
+        <span>{exportingCsv ? 'Preparing...' : 'Export CSV'}</span>
       </button>
       <button
         onClick={handleExportPDF}
-        disabled={rows.length === 0}
+        disabled={exportingCsv || exportingPdf}
         className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
       >
-        <Printer size={16} />
-        <span>Print / PDF</span>
+        {exportingPdf ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
+        <span>{exportingPdf ? 'Preparing...' : 'Print / PDF'}</span>
       </button>
     </div>
   );

@@ -16,6 +16,7 @@ import InventorySummaryReportModal from '../../components/modals/InventorySummar
 import ProductSummaryTable from '../../components/tables/InventoryManagement/ProductSummaryTable';
 import WarehouseStockTable from '../../components/tables/InventoryManagement/WarehouseStockTable';
 import BranchStockTable from '../../components/tables/InventoryManagement/BranchStockTable';
+import { useWarehouseStockData, useBranchStockData, fetchAllBranchStocks } from '../../hooks/useStockPageData';
 import StockRebuildPanel, { PasswordGate } from '../../components/tables/InventoryManagement/StockRebuildPanel';
 import TransactionCleanupPanel from '../../components/tables/InventoryManagement/TransactionCleanupPanel';
 import ProductSummaryReportPanel from '../../components/filters/ProductSummaryReportPanel';
@@ -25,15 +26,15 @@ import BranchFilterPanel from '../../components/filters/BranchFilterPanel';
 import WarehouseReportInlineTable from '../../components/tables/InventoryManagement/WarehouseReportInlineTable';
 import BranchReportInlineTable from '../../components/tables/InventoryManagement/BranchReportInlineTable';
 import BranchStockExportButton from '../../components/tables/InventoryManagement/BranchStockExportButton';
-import {
-  filterProductSummaries,
-  filterWarehouseStocks,
-  filterBranchStocks
-} from '../../utils/inventoryFilters';
+import { filterProductSummaries } from '../../utils/inventoryFilters';
 const InventoryManagement = () => {
   const { user } = useAuth();
   const [productSearchTerm, setProductSearchTerm] = useState('');
   const [stockSearchTerm, setStockSearchTerm] = useState('');
+  const [debouncedStockSearchTerm, setDebouncedStockSearchTerm] = useState('');
+  const [warehouseStockPage, setWarehouseStockPage] = useState(1);
+  const [branchStockPage, setBranchStockPage] = useState(1);
+  const STOCK_PAGE_SIZE = 20;
   const [activeTab, setActiveTab] = useState('products');
   const [showVariationFilter, setShowVariationFilter] = useState('ALL');
   const [showWarehouseFilter, setShowWarehouseFilter] = useState(true);
@@ -169,8 +170,71 @@ const InventoryManagement = () => {
     endDate: ''
   });
 
+  const {
+    stocks: warehouseStocksPage,
+    loading: warehouseStocksPageLoading,
+    totalPages: warehouseStockServerTotalPages,
+    totalElements: warehouseStockTotalElements,
+    grandTotals: warehouseGrandTotals,
+    refetch: refetchWarehouseStocks,
+  } = useWarehouseStockData({
+    warehouseId: warehouseFilters.filters.warehouse || undefined,
+    searchTerm: activeTab === 'warehouse-stocks' ? debouncedStockSearchTerm : '',
+    minQty: warehouseFilters.filters.minQty || undefined,
+    maxQty: warehouseFilters.filters.maxQty || undefined,
+    startDate: warehouseFilters.filters.startDate || undefined,
+    endDate: warehouseFilters.filters.endDate || undefined,
+    currentPage: warehouseStockPage,
+    pageSize: STOCK_PAGE_SIZE,
+  });
+
+  const branchStockFilterParams = {
+    companyIds: branchFilters.filters.companyIds,
+    branchIds: branchFilters.filters.branchIds,
+    productIds: (branchFilters.filters.productKeys || [])
+      .map((k) => k.split('_')[0])
+      .filter(Boolean),
+    searchTerm: debouncedStockSearchTerm,
+    minQty: branchFilters.filters.minQty || undefined,
+    maxQty: branchFilters.filters.maxQty || undefined,
+    startDate: branchFilters.filters.startDate || undefined,
+    endDate: branchFilters.filters.endDate || undefined,
+  };
+
+  const handleFetchBranchExportData = useCallback(
+    () => fetchAllBranchStocks(branchStockFilterParams),
+    [JSON.stringify(branchStockFilterParams)]
+  );
+
+  const {
+    stocks: branchStocksPage,
+    loading: branchStocksPageLoading,
+    totalPages: branchStockServerTotalPages,
+    totalElements: branchStockTotalElements,
+    grandTotals: branchGrandTotals,
+    refetch: refetchBranchStocks,
+  } = useBranchStockData({
+    companyIds: branchFilters.filters.companyIds,
+    branchIds: branchFilters.filters.branchIds,
+    productIds: (branchFilters.filters.productKeys || [])
+      .map((k) => k.split('_')[0])
+      .filter(Boolean),
+    searchTerm: activeTab === 'branch-stocks' ? debouncedStockSearchTerm : '',
+    minQty: branchFilters.filters.minQty || undefined,
+    maxQty: branchFilters.filters.maxQty || undefined,
+    startDate: branchFilters.filters.startDate || undefined,
+    endDate: branchFilters.filters.endDate || undefined,
+    currentPage: branchStockPage,
+    pageSize: STOCK_PAGE_SIZE,
+  });
+
   const productPagination = usePaginationControl(10);
   const stockPagination = usePaginationControl(10);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedStockSearchTerm(stockSearchTerm), 400);
+    return () => clearTimeout(timer);
+  }, [stockSearchTerm]);
 
   const selectedProductKeys = productReportFilters.filters.productKeys || [];
 
@@ -184,8 +248,10 @@ const InventoryManagement = () => {
 
   useEffect(() => {
     stockPagination.setCurrentPage(1);
+    setWarehouseStockPage(1);
+    setBranchStockPage(1);
   }, [
-    stockSearchTerm,
+    debouncedStockSearchTerm,
     activeTab,
     JSON.stringify(warehouseFilters.filters),
     JSON.stringify(branchFilters.filters),
@@ -213,23 +279,8 @@ const InventoryManagement = () => {
     return varA.localeCompare(varB, undefined, { sensitivity: 'base' });
   });
 
-  const stripRedundantBaseRows = (stocks) => {
-    const productIdsWithVariationRows = new Set(
-      stocks
-        .filter(s => s.variationId != null)
-        .map(s => String(s.productId))
-    );
-    return stocks.filter(s =>
-      s.variationId != null || !productIdsWithVariationRows.has(String(s.productId))
-    );
-  };
 
-  const warehouseStocksArray = stripRedundantBaseRows(Array.isArray(warehouseStocks) ? warehouseStocks : []);
-  const filteredWarehouseStocks = filterWarehouseStocks(
-    warehouseStocksArray,
-    stockSearchTerm,
-    warehouseFilters.filters
-  );
+  const filteredWarehouseStocks = Array.isArray(warehouseStocksPage) ? warehouseStocksPage : [];
   const getWarehouseMovement = (stock, map) => {
     const wid = String(stock.warehouseId ?? '');
     const pid = String(stock.productId ?? '');
@@ -292,64 +343,28 @@ const InventoryManagement = () => {
     return () => { cancelled = true; };
   }, [warehouseIdKey]);
 
-  const filteredWarehouseStocksActive = filteredWarehouseStocks
-    .filter((stock) => {
-      const mv = getWarehouseMovement(stock, warehouseMovementMap);
-      const hasStockActivity =
-        (stock.quantity || 0) > 0 ||
-        (stock.deliveredQuantity || 0) > 0 ||
-        (stock.pendingDeliveries || 0) > 0 ||
-        (stock.reservedQuantity || 0) > 0;
-      const hasMovementActivity = mv && Object.values(mv).some((v) => Number(v) !== 0);
-      return hasStockActivity || hasMovementActivity;
-    })
-    .sort((a, b) => {
-      const warehouseCompare = (a.warehouseName || '').localeCompare(
-        b.warehouseName || '',
-        undefined,
-        { sensitivity: 'base' }
-      );
-      if (warehouseCompare !== 0) return warehouseCompare;
+  const filteredWarehouseStocksActive = [...filteredWarehouseStocks].sort((a, b) => {
+    const warehouseCompare = (a.warehouseName || '').localeCompare(
+      b.warehouseName || '',
+      undefined,
+      { sensitivity: 'base' }
+    );
+    if (warehouseCompare !== 0) return warehouseCompare;
 
-      const productA = a.fullProductName || a.productName || '';
-      const productB = b.fullProductName || b.productName || '';
-      return productA.localeCompare(productB, undefined, { sensitivity: 'base' });
-    });
-
-  const branchStocksArray = stripRedundantBaseRows(Array.isArray(branchStocks) ? branchStocks : []);
-  const filteredBranchStocksAll = filterBranchStocks(
-    branchStocksArray,
-    stockSearchTerm,
-    branchFilters.filters,
-    branches,
-    products
-  );
-  const filteredBranchStocks = filteredBranchStocksAll.filter(stock => {
-    const totalStock = stock.quantity || 0;
-    const delivered = stock.deliveredQuantity || 0;
-    const totalSales = stock.totalSales || 0;
-    const pendingDelivery = stock.pendingDeliveries || 0;
-    const pendingSale = stock.pendingSales || 0;
-    const available = stock.availableQuantity != null
-      ? stock.availableQuantity
-      : Math.max(0, totalStock - (stock.reservedQuantity || 0));
-    return totalStock !== 0 || delivered !== 0 || totalSales !== 0 ||
-      pendingDelivery !== 0 || pendingSale !== 0 || available !== 0;
+    const productA = a.fullProductName || a.productName || '';
+    const productB = b.fullProductName || b.productName || '';
+    return productA.localeCompare(productB, undefined, { sensitivity: 'base' });
   });
 
+  const filteredBranchStocks = Array.isArray(branchStocksPage) ? branchStocksPage : [];
+
   const currentProductSummaries = productPagination.getPageItems(filteredProductSummaries);
-  const currentWarehouseStocks = stockPagination.getPageItems(filteredWarehouseStocksActive);
-  const currentBranchStocks = stockPagination.getPageItems(filteredBranchStocks);
+  const currentWarehouseStocks = filteredWarehouseStocksActive;
+  const currentBranchStocks = filteredBranchStocks;
 
   const productTotalPages = productPagination.getTotalPages(filteredProductSummaries.length);
-  const warehouseStockTotalPages = stockPagination.getTotalPages(filteredWarehouseStocksActive.length);
-  const branchStockTotalPages = stockPagination.getTotalPages(filteredBranchStocks.length);
-
-  useEffect(() => {
-    if (activeTab === 'warehouse-stocks' && stockPagination.currentPage > warehouseStockTotalPages) {
-      stockPagination.setCurrentPage(Math.max(1, warehouseStockTotalPages));
-    }
-  }, [warehouseStockTotalPages, activeTab]);
+  const warehouseStockTotalPages = warehouseStockServerTotalPages;
+  const branchStockTotalPages = branchStockServerTotalPages;
 
   useEffect(() => {
     loadData(inventoryPage, inventoryPageSize);
@@ -548,11 +563,10 @@ const InventoryManagement = () => {
     try {
       if (activeTab === 'products') {
         await loadProductSummaries();
-      } else if (
-        activeTab === 'warehouse-stocks' ||
-        activeTab === 'branch-stocks'
-      ) {
-        await loadData(inventoryPage, inventoryPageSize);
+      } else if (activeTab === 'warehouse-stocks') {
+        await refetchWarehouseStocks();
+      } else if (activeTab === 'branch-stocks') {
+        await refetchBranchStocks();
       }
       toast.success('Refreshed');
     } catch (err) {
@@ -696,19 +710,21 @@ const InventoryManagement = () => {
             <WarehouseStockTable
               currentWarehouseStocks={currentWarehouseStocks}
               filteredWarehouseStocks={filteredWarehouseStocksActive}
-              stockIndexOfFirstItem={stockPagination.getIndexOfFirstItem()}
-              stockIndexOfLastItem={stockPagination.getIndexOfLastItem(filteredWarehouseStocksActive.length)}
+              stockIndexOfFirstItem={(warehouseStockPage - 1) * STOCK_PAGE_SIZE}
+              stockIndexOfLastItem={(warehouseStockPage - 1) * STOCK_PAGE_SIZE + currentWarehouseStocks.length}
               handleViewStockTransactions={handleViewStockTransactions}
-              stockCurrentPage={stockPagination.currentPage}
+              stockCurrentPage={warehouseStockPage}
               warehouseStockTotalPages={warehouseStockTotalPages}
-              setStockCurrentPage={stockPagination.setCurrentPage}
-              isLoading={loading}
+              setStockCurrentPage={setWarehouseStockPage}
+              isLoading={warehouseStocksPageLoading}
               productSummaries={productSummaries}
               isAdmin={true}
               currentUser="Admin"
-              onStockUpdated={() => loadData(inventoryPage, inventoryPageSize)}
+              onStockUpdated={() => refetchWarehouseStocks()}
               movementMap={warehouseMovementMap}
               movLoading={warehouseMovLoading}
+              grandTotals={warehouseGrandTotals}
+              totalElements={warehouseStockTotalElements}
             />
           </div>
         )}
@@ -728,7 +744,7 @@ const InventoryManagement = () => {
                   />
                 </div>
               )}
-              <BranchStockExportButton data={filteredBranchStocks} />
+              <BranchStockExportButton fetchData={handleFetchBranchExportData} />
             </div>
             <BranchFilterPanel
               user={user}
@@ -745,13 +761,15 @@ const InventoryManagement = () => {
             <BranchStockTable
               currentBranchStocks={currentBranchStocks}
               filteredBranchStocks={filteredBranchStocks}
-              stockIndexOfFirstItem={stockPagination.getIndexOfFirstItem()}
-              stockIndexOfLastItem={stockPagination.getIndexOfLastItem(filteredBranchStocks.length)}
+              stockIndexOfFirstItem={(branchStockPage - 1) * STOCK_PAGE_SIZE}
+              stockIndexOfLastItem={(branchStockPage - 1) * STOCK_PAGE_SIZE + currentBranchStocks.length}
               handleViewStockTransactions={handleViewStockTransactions}
-              stockCurrentPage={stockPagination.currentPage}
+              stockCurrentPage={branchStockPage}
               branchStockTotalPages={branchStockTotalPages}
-              setStockCurrentPage={stockPagination.setCurrentPage}
-              isLoading={loading}
+              setStockCurrentPage={setBranchStockPage}
+              isLoading={branchStocksPageLoading}
+              grandTotals={branchGrandTotals}
+              totalElements={branchStockTotalElements}
             />
           </div>
         )}
