@@ -135,7 +135,7 @@ const InventoryManagement = () => {
   const {
     warehouseStocks,
     branchStocks,
-    loadData,
+    loadLocationStock,
   } = useInventory();
 
 
@@ -381,13 +381,13 @@ const InventoryManagement = () => {
   const branchStockTotalPages = branchStockServerTotalPages;
 
   useEffect(() => {
-    loadData(inventoryPage, inventoryPageSize);
-    window.loadData = () => loadData(inventoryPage, inventoryPageSize);
+    loadLocationStock();
+    window.loadData = () => loadLocationStock();
 
     return () => {
       delete window.loadData;
     };
-  }, [loadData, inventoryPage, inventoryPageSize]);
+  }, [loadLocationStock]);
 
   const handleViewTransactions = (product, showStock = false) => {
     return transactionHandlers.handleViewTransactions(
@@ -811,7 +811,7 @@ const InventoryManagement = () => {
                       warehouses={warehouses}
                       branches={branches}
                       onRebuilt={() => {
-                        loadData(inventoryPage, inventoryPageSize);
+                        loadLocationStock();
                         loadProductSummaries();
                       }}
                     />
@@ -824,7 +824,7 @@ const InventoryManagement = () => {
                     <TransactionCleanupPanel
                       bare
                       onCleaned={() => {
-                        loadData(inventoryPage, inventoryPageSize);
+                        loadLocationStock();
                         loadProductSummaries();
                       }}
                     />
