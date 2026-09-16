@@ -16,7 +16,7 @@ import InventorySummaryReportModal from '../../components/modals/InventorySummar
 import ProductSummaryTable from '../../components/tables/InventoryManagement/ProductSummaryTable';
 import WarehouseStockTable from '../../components/tables/InventoryManagement/WarehouseStockTable';
 import BranchStockTable from '../../components/tables/InventoryManagement/BranchStockTable';
-import { useWarehouseStockData, useBranchStockData, fetchAllBranchStocks } from '../../hooks/useStockPageData';
+import { useWarehouseStockData, useBranchStockData, fetchAllBranchStocks } from '../../components/hooks/useStockPageData';
 import StockRebuildPanel, { PasswordGate } from '../../components/tables/InventoryManagement/StockRebuildPanel';
 import TransactionCleanupPanel from '../../components/tables/InventoryManagement/TransactionCleanupPanel';
 import ProductSummaryReportPanel from '../../components/filters/ProductSummaryReportPanel';
