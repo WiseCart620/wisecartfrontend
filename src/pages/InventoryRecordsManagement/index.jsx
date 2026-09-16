@@ -503,7 +503,7 @@ const InventoryRecordsManagement = () => {
   });
 
   useEffect(() => {
-    loadData(currentPage - 1, itemsPerPage, buildFilterParams());
+    loadData(currentPage - 1, itemsPerPage, buildFilterParams(), false, false);
   }, [
     currentPage,
     debouncedSearchTerm,
@@ -846,7 +846,7 @@ const InventoryRecordsManagement = () => {
       else { await updateInventory(selectedInventory.id, payload); alert('Inventory record updated successfully!'); }
       handleCloseModal();
       setCurrentPage(1);
-      await loadData(0, itemsPerPage, buildFilterParams(), true);
+      await loadData(0, itemsPerPage, buildFilterParams(), true, false);
     } catch (error) {
       console.error('Failed to save inventory:', error);
       showToast(error?.response?.data?.error || error.message || 'Failed to save inventory record.', 'error');
@@ -873,7 +873,7 @@ const InventoryRecordsManagement = () => {
       setLoadingMessage('Confirming inventory...');
       await confirmInventory(inventory.id, currentUser);
       showToast('Inventory confirmed successfully! Stock levels have been updated.', 'success');
-      await loadData(currentPage - 1, itemsPerPage, buildFilterParams(), true);
+      await loadData(currentPage - 1, itemsPerPage, buildFilterParams(), true, false);
     } catch (error) {
       console.error('Failed to confirm inventory:', error);
       const errorMsg = error?.response?.data?.error || error.message || 'Unknown error';
@@ -907,7 +907,7 @@ const InventoryRecordsManagement = () => {
       if (currentPage > newTotalPages) {
         setCurrentPage(newTotalPages);
       } else {
-        await loadData(currentPage - 1, itemsPerPage, buildFilterParams(), true);
+        await loadData(currentPage - 1, itemsPerPage, buildFilterParams(), true, false);
       }
     } catch (error) {
       console.error('❌ Delete error:', error);
