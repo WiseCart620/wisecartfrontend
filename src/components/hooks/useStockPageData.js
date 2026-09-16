@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { api } from '../services/api';
+import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const buildParams = (filters, page, size) => {
