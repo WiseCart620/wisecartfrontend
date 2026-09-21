@@ -549,8 +549,11 @@ const InventoryManagement = () => {
   };
 
   useEffect(() => {
-    const { companyIds, branchIds } = productReportFilters.filters;
+    const { companyIds, branchIds, warehouseId, dateFrom, dateTo } = productReportFilters.filters;
     const hasCompanyFilter = (companyIds && companyIds.length > 0) || (branchIds && branchIds.length > 0);
+
+    // Default view doesn't show this report, so don't run it on page load.
+    if (!hasCompanyFilter && !warehouseId && !dateFrom && !dateTo) return;
 
     const timer = setTimeout(() => {
       if (hasCompanyFilter) {

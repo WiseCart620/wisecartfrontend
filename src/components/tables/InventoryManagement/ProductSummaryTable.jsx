@@ -221,7 +221,7 @@ const ProductSummaryTable = ({
                       <Badge value={product.totalPendingDelivery} className="bg-orange-100 text-orange-800" />
                     </td>
                     <td className="px-1 py-2 text-center">
-                      <Badge value={product.totalConfirmedSales} className="bg-purple-100 text-purple-800" />
+                      <Badge value={product.totalPendingSales} className="bg-purple-100 text-purple-800" />
                     </td>
                     <td className="px-2 py-2 text-right">
                       <button
