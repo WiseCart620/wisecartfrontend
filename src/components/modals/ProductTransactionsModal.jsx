@@ -313,6 +313,7 @@ const ProductTransactionsModal = ({
 
     const detailedTotals = useMemo(() => {
         let stockIn = 0;
+        let transferIn = 0;
         let transferOut = 0;
         let returns = 0;
         let damage = 0;
@@ -370,7 +371,14 @@ const ProductTransactionsModal = ({
                     if (action === 'ADD') stockIn += qty;
                     break;
                 case 'TRANSFER':
-                    if (action === 'SUBTRACT' && t.fromWarehouse) transferOut += qty;
+                    if (action === 'ADD') transferIn += qty;
+                    else if (action === 'SUBTRACT' && t.fromWarehouse) transferOut += qty;
+                    break;
+                case 'TRANSFER_IN':
+                    transferIn += qty;
+                    break;
+                case 'TRANSFER_OUT':
+                    transferOut += qty;
                     break;
                 case 'RETURN':
                     if (action === 'ADD') returns += qty;
@@ -402,7 +410,7 @@ const ProductTransactionsModal = ({
             }
         });
 
-        return { stockIn, transferOut, returns, damage, delivered, salesConfirmed, salesInvoiced, pendingSale };
+        return { stockIn, transferIn, transferOut, returns, damage, delivered, salesConfirmed, salesInvoiced, pendingSale };
     }, [filteredTransactions]);
 
     const isProductSummaryView = product?.isProductSummaryView === true;
@@ -689,6 +697,10 @@ const ProductTransactionsModal = ({
                                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
                                     <span className="text-[10px] font-medium text-green-700 uppercase tracking-wide">Stock In</span>
                                     <span className="text-sm font-bold text-green-800">+{detailedTotals.stockIn.toLocaleString()}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 border border-teal-200 rounded-lg">
+                                    <span className="text-[10px] font-medium text-teal-700 uppercase tracking-wide">Trans. In</span>
+                                    <span className="text-sm font-bold text-teal-800">+{detailedTotals.transferIn.toLocaleString()}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded-lg">
                                     <span className="text-[10px] font-medium text-orange-700 uppercase tracking-wide">Trans. Out</span>
