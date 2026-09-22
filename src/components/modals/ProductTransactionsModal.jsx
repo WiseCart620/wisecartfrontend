@@ -230,10 +230,14 @@ const ProductTransactionsModal = ({
         }
     };
 
+    const groupedTransactionsRef = useMemo(() => {
+        if (!transactions || transactions.length === 0) return {};
+        return groupTransactionsByReference(transactions);
+    }, [transactions]);
+
     const filteredTransactions = useMemo(() => {
         if (!transactions || transactions.length === 0) return [];
-        const groupedTransactions = groupTransactionsByReference(transactions);
-        const latestTransactions = Object.values(groupedTransactions).flat();
+        const latestTransactions = Object.values(groupedTransactionsRef).flat();
         return latestTransactions.filter(transaction => {
             const searchLower = searchTerm.toLowerCase();
             const type = transaction.inventoryType || transaction.transactionType;
@@ -280,7 +284,7 @@ const ProductTransactionsModal = ({
             const { userEnteredDate: dateB } = getTransactionDates(b);
             return (dateB || 0) - (dateA || 0);
         });
-    }, [transactions, searchTerm, filterType, showDeletedFilter, startDate, endDate]);
+    }, [groupedTransactionsRef, searchTerm, filterType, showDeletedFilter, startDate, endDate]);
 
 
 
@@ -434,11 +438,6 @@ const ProductTransactionsModal = ({
     };
 
     const isProductSummaryView = product?.isProductSummaryView === true;
-
-    const groupedTransactionsRef = useMemo(() => {
-        if (!transactions || transactions.length === 0) return {};
-        return groupTransactionsByReference(transactions);
-    }, [transactions]);
 
     const totalPages = Math.ceil(filteredTransactions.length / pageSize);
     const startIndex = (currentPage - 1) * pageSize;
