@@ -70,16 +70,11 @@ const ProofImage = ({ filePath, fileName }) => {
 
     if (error) return (
         <div className="mt-1">
-            <a
-                href={`${API_BASE}/api/files/serve?path=payment-proofs/${filePath.split('/').pop()}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-blue-500 hover:text-blue-700 underline flex items-center gap-1"
-            >
-                📎 View proof {fileName && `(${fileName})`}
-            </a>
+            <span className="text-xs text-gray-400 flex items-center gap-1">
+                📎 Proof unavailable {fileName && `(${fileName})`}
+            </span>
             <div className="text-[10px] text-red-400 mt-0.5">
-                Preview unavailable - click to download
+                Could not load this file. Try refreshing the page.
             </div>
         </div>
     );

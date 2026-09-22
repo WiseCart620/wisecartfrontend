@@ -173,7 +173,22 @@ export const useSalesData = ({ filterData, statusFilter, searchTerm, currentPage
     let retryTimeout;
 
     const connect = () => {
-      es = new EventSource('https://backend.wisecart.ph/api/sales/stream');
+      const token = localStorage.getItem('token')
+        || localStorage.getItem('authToken')
+        || localStorage.getItem('jwt')
+        || localStorage.getItem('accessToken')
+        || sessionStorage.getItem('token')
+        || sessionStorage.getItem('authToken');
+
+      if (!token) {
+        retryTimeout = setTimeout(() => {
+          retryDelay = Math.min(retryDelay * 2, 60000);
+          connect();
+        }, retryDelay);
+        return;
+      }
+
+      es = new EventSource(`https://backend.wisecart.ph/api/sales/stream?token=${encodeURIComponent(token)}`);
 
       es.addEventListener('connected', () => { retryDelay = 3000; });
 

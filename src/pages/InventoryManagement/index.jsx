@@ -69,10 +69,13 @@ const InventoryManagement = () => {
     }
   });
 
-  const handleUnlockStockTools = () => {
+  const [rebuildAccessPassword, setRebuildAccessPassword] = useState('');
+
+  const handleUnlockStockTools = (password) => {
     try {
       sessionStorage.setItem(REBUILD_UNLOCK_KEY, String(Date.now() + UNLOCK_TTL_MS));
     } catch { }
+    setRebuildAccessPassword(password || '');
     setStockToolsUnlocked(true);
   };
 
@@ -80,6 +83,7 @@ const InventoryManagement = () => {
     try {
       sessionStorage.removeItem(REBUILD_UNLOCK_KEY);
     } catch { }
+    setRebuildAccessPassword('');
     setStockToolsUnlocked(false);
   };
 
@@ -823,6 +827,8 @@ const InventoryManagement = () => {
                       products={products}
                       warehouses={warehouses}
                       branches={branches}
+                      accessPassword={rebuildAccessPassword}
+                      onExpiredPassword={handleRelockStockTools}
                       onRebuilt={() => {
                         loadLocationStock();
                         loadProductSummaries();

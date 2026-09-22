@@ -188,7 +188,7 @@ export const PasswordGate = ({ onUnlock, bare = false }) => {
             const res = await api.post('/admin/stock-rebuild/verify-access', { password: value });
             const data = res.data || res;
             if (data.authorized) {
-                onUnlock();
+                onUnlock(value);
             } else {
                 setError(data.error || 'Incorrect password.');
                 setShake(true);
@@ -464,7 +464,7 @@ let rowCounter = 0;
 const PRODUCT_DETAIL_ENABLED = false;
 const PRODUCT_DETAIL_ENDPOINT = (id) => `/admin/products/${id}`;
 
-const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRebuilt, bare = false }) => {
+const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRebuilt, onExpiredPassword, accessPassword = '', bare = false }) => {
     const [scope] = useState('BOTH');
     const [warehouseIds, setWarehouseIds] = useState([]);
     const [branchIds, setBranchIds] = useState([]);
@@ -788,8 +788,20 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
             locationName: op.locationName,
         }));
 
+        if (!accessPassword) {
+            toast.error('Your session lock expired — please re-enter the access password.');
+            setRunning(false);
+            setCurrentOpLabel('');
+            setResults([]);
+            if (onExpiredPassword) onExpiredPassword();
+            return;
+        }
+
         try {
-            const res = await api.post('/admin/stock-rebuild/jobs', payload);
+            const res = await api.post(
+                `/admin/stock-rebuild/jobs?accessPassword=${encodeURIComponent(accessPassword)}`,
+                payload
+            );
             const data = res.data || res;
             if (!data.jobId) {
                 toast.error('Failed to start rebuild');
@@ -800,7 +812,14 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
             setJobId(data.jobId);
             startPolling(data.jobId);
         } catch (err) {
-            toast.error('Failed to start rebuild');
+            const status = err?.response?.status;
+            if (status === 401 || status === 403) {
+                toast.error('Access password rejected — please unlock again.');
+                setResults([]);
+                if (onExpiredPassword) onExpiredPassword();
+            } else {
+                toast.error('Failed to start rebuild');
+            }
             setRunning(false);
             setCurrentOpLabel('');
         }
