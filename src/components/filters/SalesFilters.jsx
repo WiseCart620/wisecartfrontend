@@ -61,27 +61,16 @@ const SalesFilters = ({
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2">
             {canCreate && (
-              <button onClick={onNewSale} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm text-sm">
+              <button onClick={onNewSale} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm text-sm font-medium">
                 <Plus size={16} /> New Sale
               </button>
             )}
             {canInvoice && (
-              <button onClick={onOpenInvoice} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-md text-sm">
+              <button onClick={onOpenInvoice} className="flex items-center gap-2 px-4 py-2 bg-white border border-orange-300 text-orange-700 rounded-md hover:bg-orange-50 hover:shadow-sm transition-all duration-150 text-sm font-medium">
                 <FileText size={16} /> Generate Invoice / COS
               </button>
             )}
-            {canInvoice && (
-              <button onClick={onOpenJournal} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-md text-sm">
-                <FileText size={16} /> Sales Journal
-              </button>
-            )}
-            {canReport && (
-              <button onClick={onNewSale} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm text-sm">
-                <span className="text-sm font-normal leading-none">₱</span> Sales Report
-              </button>
-            )}
           </div>
-
           <div className="relative w-full sm:w-56 lg:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
             <input

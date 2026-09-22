@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import '../../styles/invoice-print.css';
 import '../../styles/sales-report-print.css';
 import '../../styles/sales-memo-print.css';
@@ -42,8 +43,10 @@ const SalesManagement = () => {
   const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [showProductsByStatusModal, setShowProductsByStatusModal] = useState(false);
   const [selectedStatusForModal, setSelectedStatusForModal] = useState(null);
-  const [showInvoicingProfile, setShowInvoicingProfile] = useState(false);
-  const [showSalesReport, setShowSalesReport] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const showInvoicingProfile = location.pathname === '/sales/journal';
+  const showSalesReport = location.pathname === '/sales/report';
   const [invoiceReport, setInvoiceReport] = useState(null);
   const [invoiceBranchIds, setInvoiceBranchIds] = useState([]);
   const [invoiceProductIds, setInvoiceProductIds] = useState([]);
@@ -280,7 +283,7 @@ const SalesManagement = () => {
         setInvoiceReport(null);
         setInvoiceBranchIds([]);
         setInvoiceProductIds([]);
-        setShowInvoicingProfile(true);
+        navigate('/sales/journal');
       } else {
         const rawMsg = res.error || res.message || 'Failed to save to Sales Journal';
         const dupMsg = extractDuplicateMessage(rawMsg);
@@ -301,9 +304,9 @@ const SalesManagement = () => {
     }
   };
 
-  if (showInvoicingProfile) return <InvoicingProfile onBack={() => setShowInvoicingProfile(false)} />;
-  if (showSalesReport) return <SalesReport onBack={() => setShowSalesReport(false)} filterData={filterData} companies={companies} branches={branches} allProductOptions={allProductOptions} />;
-
+  if (showInvoicingProfile) return <InvoicingProfile onBack={() => navigate('/sales')} />;
+  if (showSalesReport) return <SalesReport onBack={() => navigate('/sales')} filterData={filterData} companies={companies} branches={branches} allProductOptions={allProductOptions} />;
+  
   return (
     <div className="min-h-screen bg-gray-50 p-2 sm:p-3 lg:p-4">
       <LoadingOverlay show={actionLoading && !!loadingMessage} message={loadingMessage} />
@@ -337,10 +340,10 @@ const SalesManagement = () => {
             setInvoiceBranchIds(filterData.branchIds || []);
             setShowInvoiceModal(true);
           }}
-          onOpenJournal={() => setShowInvoicingProfile(true)}
+          onOpenJournal={() => navigate('/sales/journal')}
           onOpenReport={() => {
             if (!canReport) { toast.error('You do not have permission to view reports'); return; }
-            setShowSalesReport(true);
+            navigate('/sales/report');
           }}
           onOpenSummary={() => {
             if (!canSummary) { toast.error('You do not have permission to view summary'); return; }

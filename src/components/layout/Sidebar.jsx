@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import {
   Package, Truck, Warehouse, ShoppingCart, Users, Home,
   UserPlus, PackageSearch, PackageOpen, ChevronDown, ChevronRight,
-  ChevronLeft, Database, Factory, ClipboardList, X,
+  ChevronLeft, Database, Factory, ClipboardList, X, BookOpen, BarChart3,
 } from 'lucide-react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useAuth, hasPermission } from '../../context/AuthContext';
@@ -25,10 +25,8 @@ const dataEntryItems = [
 ];
 
 const salesSubItems = [
-  { to: '/sales', label: 'New Sale / All Sales', icon: ShoppingCart },
-  { to: '/sales', label: 'Generate Invoice / COS', icon: ClipboardList },
-  { to: '/sales', label: 'Sales Journal', icon: ClipboardList },
-  { to: '/sales', label: 'Sales Report', icon: ClipboardList },
+  { to: '/sales/journal', label: 'Sales Journal', icon: BookOpen },
+  { to: '/sales/report', label: 'Sales Report', icon: BarChart3 },
 ];
 
 const Sidebar = ({ isOpen, toggle }) => {
@@ -60,7 +58,7 @@ const Sidebar = ({ isOpen, toggle }) => {
   const [salesOpen, setSalesOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const location = useLocation();
-  const isSalesActive = location.pathname === '/sales';
+  const isSalesActive = location.pathname.startsWith('/sales');
 
   return (
     <>
@@ -130,34 +128,47 @@ const Sidebar = ({ isOpen, toggle }) => {
           {/* Sales section (collapsible) */}
           {showSales && !sidebarCollapsed && (
             <div>
-              <button
-                onClick={() => setSalesOpen(!salesOpen)}
-                className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg transition-colors text-sm
+              <div
+                className={`flex items-center justify-between w-full rounded-lg transition-colors text-sm
                   ${isSalesActive ? 'bg-orange-600 text-white font-[600]' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-[600] font-[480] text-gray-600'}`}
               >
-                <div className="flex items-center gap-3">
+                <NavLink
+                  to="/sales"
+                  end
+                  onClick={() => window.innerWidth < 1024 && toggle()}
+                  className="flex items-center gap-3 flex-1 px-3 py-2.5"
+                >
                   <ShoppingCart size={20} className="flex-shrink-0" />
                   <span className="font-medium">Sales</span>
-                </div>
-                {salesOpen
-                  ? <ChevronDown size={16} />
-                  : <ChevronRight size={16} />}
-              </button>
+                </NavLink>
+                <button
+                  onClick={() => setSalesOpen(!salesOpen)}
+                  className="px-3 py-2.5 flex-shrink-0"
+                  aria-label={salesOpen ? 'Collapse Sales menu' : 'Expand Sales menu'}
+                >
+                  {salesOpen
+                    ? <ChevronDown size={16} />
+                    : <ChevronRight size={16} />}
+                </button>
+              </div>
 
               <div className={`overflow-hidden transition-all duration-300 ${salesOpen ? 'max-h-60' : 'max-h-0'}`}>
                 <div className="ml-6 mt-1 space-y-1 border-l border-gray-200 pl-2">
                   {salesSubItems.map((item) => {
                     const Icon = item.icon;
                     return (
-                      <Link
-                        key={item.label}
+                      <NavLink
+                        key={item.to}
                         to={item.to}
                         onClick={() => window.innerWidth < 1024 && toggle()}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm hover:bg-orange-50 hover:text-gray-900 hover:font-[600] font-[480] text-gray-500"
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm
+                          ${isActive ? 'bg-orange-600 text-white font-[600]' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-[600] font-[480] text-gray-500'}`
+                        }
                       >
                         <Icon size={17} className="flex-shrink-0" />
                         <span className="truncate">{item.label}</span>
-                      </Link>
+                      </NavLink>
                     );
                   })}
                 </div>

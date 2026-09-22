@@ -146,6 +146,26 @@ function App() {
                 </ProtectedRoute>
               } />
 
+              <Route path="/sales/journal" element={
+                <ProtectedRoute>
+                  <PermissionRoute feature="sales">
+                    <Layout>
+                      <SalesManagement />
+                    </Layout>
+                  </PermissionRoute>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/sales/report" element={
+                <ProtectedRoute>
+                  <PermissionRoute feature="sales">
+                    <Layout>
+                      <SalesManagement />
+                    </Layout>
+                  </PermissionRoute>
+                </ProtectedRoute>
+              } />
+
               <Route path="/warehouse" element={
                 <ProtectedRoute>
                   <AdminOrUserRoute>
