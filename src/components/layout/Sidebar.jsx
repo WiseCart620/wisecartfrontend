@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import {
   Package, Truck, Warehouse, ShoppingCart, Users, Home,
   UserPlus, PackageSearch, PackageOpen, ChevronDown, ChevronRight,
-  ChevronLeft, Database, Factory, ClipboardList, Menu, X,
+  ChevronLeft, Database, Factory, ClipboardList, X,
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth, hasPermission } from '../../context/AuthContext';
@@ -104,7 +104,8 @@ const Sidebar = ({ isOpen, toggle }) => {
                 title={sidebarCollapsed ? item.label : undefined}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm
-                                     ${isActive ? 'bg-orange-600 text-white font-medium' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-medium text-gray-600'}
+                  ${isActive ? 'bg-orange-600 text-white font-[550]' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-[550] text-gray-600'}
+
                    ${sidebarCollapsed ? 'justify-center' : ''}`
                 }
               >
@@ -121,7 +122,7 @@ const Sidebar = ({ isOpen, toggle }) => {
             <div className="pt-1">
               <button
                 onClick={() => setDataEntryOpen(!dataEntryOpen)}
-                className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg hover:bg-orange-50 hover:text-gray-900 hover:font-medium text-gray-600 transition-colors text-sm"              >
+                className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg hover:bg-orange-50 hover:text-gray-900 hover:font-[550] text-gray-600 transition-colors text-sm">
                 <div className="flex items-center gap-3">
                   <Database size={20} className="flex-shrink-0" />
                   <span className="font-medium">Data Entry</span>
@@ -142,7 +143,7 @@ const Sidebar = ({ isOpen, toggle }) => {
                         onClick={() => window.innerWidth < 1024 && toggle()}
                         className={({ isActive }) =>
                           `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm
-                                                  ${isActive ? 'bg-orange-600 text-white font-medium' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-medium text-gray-500'}`
+                         ${isActive ? 'bg-orange-600 text-white font-[550]' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-[550] text-gray-500'}`
                         }
                       >
                         <Icon size={17} className="flex-shrink-0" />
@@ -167,7 +168,7 @@ const Sidebar = ({ isOpen, toggle }) => {
                     title={item.label}
                     className={({ isActive }) =>
                       `flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors
-                                              ${isActive ? 'bg-orange-600 text-white font-medium' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-medium text-gray-600'}`
+                     ${isActive ? 'bg-orange-600 text-white font-[550]' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-[550] text-gray-600'}`
                     }
                   >
                     <Icon size={20} className="flex-shrink-0" />
@@ -185,8 +186,8 @@ const Sidebar = ({ isOpen, toggle }) => {
                 title={sidebarCollapsed ? 'User Management' : undefined}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm
-                                     ${isActive ? 'bg-orange-600 text-white font-medium' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-medium text-gray-600'}
-                                                        ${sidebarCollapsed ? 'justify-center' : ''}`
+                  ${isActive ? 'bg-orange-600 text-white font-[550]' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-[550] text-gray-600'}
+                    ${sidebarCollapsed ? 'justify-center' : ''}`
                 }
               >
                 <UserPlus size={20} className="flex-shrink-0" />
