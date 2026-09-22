@@ -27,7 +27,6 @@ const Navbar = ({ toggleSidebar }) => {
           >
             <Menu size={24} />
           </button>
-          <h1 className="text-xl font-bold text-gray-800">WiseCart ERP</h1>
         </div>
 
         <div className="flex items-center gap-4">

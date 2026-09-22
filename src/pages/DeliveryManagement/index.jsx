@@ -359,7 +359,7 @@ const DeliveryManagement = () => {
             <button
               onClick={() => navigate('/deliveries')}
               className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-lg transition-all duration-200 font-medium text-sm whitespace-nowrap ${location.pathname === '/deliveries'
-                ? 'bg-blue-600 text-white shadow-md'
+                ? 'bg-orange-600 text-white shadow-md'
                 : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
@@ -369,7 +369,7 @@ const DeliveryManagement = () => {
             <button
               onClick={() => navigate('/transmittals')}
               className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-lg transition-all duration-200 font-medium text-sm whitespace-nowrap ${location.pathname === '/transmittals'
-                ? 'bg-blue-600 text-white shadow-md'
+                ? 'bg-orange-600 text-white shadow-md'
                 : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
@@ -391,7 +391,7 @@ const DeliveryManagement = () => {
             {canCreate && (
               <button
                 onClick={() => handleOpenModal('create')}
-                className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium text-sm"
+                className="flex items-center gap-2 px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm font-medium text-sm"
               >
                 <Plus size={16} />
                 <span>New Delivery</span>
@@ -413,7 +413,7 @@ const DeliveryManagement = () => {
             </select>
           </div>
         </div>
-        
+
         <DeliveryFilters
           user={user}
           filterData={filterData}

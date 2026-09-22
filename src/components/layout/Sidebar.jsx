@@ -76,7 +76,7 @@ const Sidebar = ({ isOpen, toggle }) => {
         {/* Logo row */}
         <div className="flex items-center justify-between px-4 py-5 border-b border-gray-200 flex-shrink-0">
           {!sidebarCollapsed && (
-            <span className="text-xl font-bold whitespace-nowrap text-orange-600">WiseCart</span>
+            <span className="text-xl font-bold whitespace-nowrap text-orange-600">WiseCart ERP</span>
           )}
           {sidebarCollapsed && (
             <span className="text-xl font-bold mx-auto text-orange-600">WC</span>

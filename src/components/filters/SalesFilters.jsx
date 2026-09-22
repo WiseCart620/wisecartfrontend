@@ -61,22 +61,22 @@ const SalesFilters = ({
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2">
             {canCreate && (
-              <button onClick={onNewSale} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm text-sm">
+              <button onClick={onNewSale} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm text-sm">
                 <Plus size={16} /> New Sale
               </button>
             )}
             {canInvoice && (
-              <button onClick={onOpenInvoice} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-md text-sm">
+              <button onClick={onOpenInvoice} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-md text-sm">
                 <FileText size={16} /> Generate Invoice / COS
               </button>
             )}
             {canInvoice && (
-              <button onClick={onOpenJournal} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-md text-sm">
+              <button onClick={onOpenJournal} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-md text-sm">
                 <FileText size={16} /> Sales Journal
               </button>
             )}
             {canReport && (
-              <button onClick={onOpenReport} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm text-sm">
+              <button onClick={onNewSale} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm text-sm">
                 <span className="text-sm font-normal leading-none">₱</span> Sales Report
               </button>
             )}
@@ -258,17 +258,17 @@ const SalesFilters = ({
                     </button>
                   ))}
 
-                  <div className="flex items-center gap-2 border-2 border-blue-400 rounded-lg px-3 py-1">
+                  <div className="flex items-center gap-2 border-2 border-orange-400 rounded-lg px-3 py-1">
                     <span className="text-xs text-gray-700">Total Qty:</span>
                     <span className="text-sm text-gray-800">{(pendingQty + confirmedQty + invoicedQty).toLocaleString()}</span>
                   </div>
 
-                  <div className="flex items-center gap-2 border-2 border-blue-600 rounded-lg px-3 py-1">
-                    <span className="text-xs text-blue-700">Grand Total:</span>
-                    <span className="text-sm text-blue-700">₱{fmt(grandTotal)}</span>
+                  <div className="flex items-center gap-2 border-2 border-orange-600 rounded-lg px-3 py-1">
+                    <span className="text-xs text-orange-700">Grand Total:</span>
+                    <span className="text-sm text-orange-700">₱{fmt(grandTotal)}</span>
                     <button
                       onClick={onOpenSummary}
-                      className="flex items-center gap-1 pl-2 ml-1 border-l border-blue-300 text-blue-700 hover:text-blue-900 text-xs transition-colors"
+                      className="flex items-center gap-1 pl-2 ml-1 border-l border-orange-300 text-orange-700 hover:text-orange-900 text-xs transition-colors"
                     >
                       Open Summary <ChevronDown size={12} className="-rotate-90" />
                     </button>

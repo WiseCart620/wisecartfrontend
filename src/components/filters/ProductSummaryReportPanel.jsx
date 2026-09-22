@@ -162,7 +162,7 @@ const ProductSummaryReportPanel = ({
                     <button
                         onClick={onGenerate}
                         disabled={!canGenerate || generating}
-                        className="h-9 px-4 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium whitespace-nowrap"
+                        className="h-9 px-4 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium whitespace-nowrap"
                     >
                         {generating ? 'Generating...' : 'Generate Report'}
                     </button>
