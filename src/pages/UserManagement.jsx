@@ -16,6 +16,7 @@ const ACTION_LABELS = {
 
 const FILTERS = {
   sales: [
+    { key: 'search', label: 'Search' },
     { key: 'company', label: 'Company' },
     { key: 'branch', label: 'Branch' },
     { key: 'status', label: 'Status' },
@@ -29,6 +30,8 @@ const FILTERS = {
     { key: 'status', label: 'Status' },
     { key: 'date', label: 'Date Range' },
     { key: 'product', label: 'Product' },
+    { key: 'receiptNumber', label: 'Receipt #' },
+    { key: 'poNumber', label: 'PO #' },
   ],
   inventory: [
     { key: 'search', label: 'Search' },
@@ -37,6 +40,7 @@ const FILTERS = {
     { key: 'warehouse', label: 'Warehouse' },
     { key: 'branch', label: 'Branch' },
     { key: 'date', label: 'Date Range' },
+    { key: 'product', label: 'Product/UPC/SKU' },
   ],
   warehouse_inventory: [
     { key: 'search', label: 'Search' },

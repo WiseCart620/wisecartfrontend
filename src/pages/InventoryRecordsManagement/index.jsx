@@ -11,7 +11,7 @@ import useInventory from '../../hooks/data/useInventory';
 import { getCurrentUser, isAdmin } from '../../utils/authUtils';
 import { api } from '../../services/api';
 import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
-import { useAuth, can } from '../../context/AuthContext';
+import { useAuth, can, canSeeFilter } from '../../context/AuthContext';
 import { useReferenceData } from '../../context/ReferenceDataContext';
 
 
@@ -1038,36 +1038,38 @@ const InventoryRecordsManagement = () => {
           />
 
           {/* ── Product Search Filter ── */}
-          <div className="bg-white rounded-xl shadow-sm p-3 mb-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-end">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Filter by Product / UPC / SKU
-                </label>
-                <VariationSearchableDropdown
-                  options={productOptions}
-                  value={selectedProductFilterOptionId}
-                  onChange={handleProductFilterChange}
-                  placeholder="Search by product name, UPC, or SKU..."
-                  hideLocationHint={true}
-                />
-                {productFilter.productName && (
-                  <p className="text-xs text-blue-600 mt-1">Filtering by: {productFilter.productName}</p>
+          {canSeeFilter(user, 'inventory', 'product') && (
+            <div className="bg-white rounded-xl shadow-sm p-3 mb-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-end">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Filter by Product / UPC / SKU
+                  </label>
+                  <VariationSearchableDropdown
+                    options={productOptions}
+                    value={selectedProductFilterOptionId}
+                    onChange={handleProductFilterChange}
+                    placeholder="Search by product name, UPC, or SKU..."
+                    hideLocationHint={true}
+                  />
+                  {productFilter.productName && (
+                    <p className="text-xs text-blue-600 mt-1">Filtering by: {productFilter.productName}</p>
+                  )}
+                </div>
+                {productFilter.productId && (
+                  <div>
+                    <button
+                      onClick={() => setProductFilter({ productId: '', variationId: '', productName: '' })}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
+                    >
+                      <X size={14} />
+                      Clear Product Filter
+                    </button>
+                  </div>
                 )}
               </div>
-              {productFilter.productId && (
-                <div>
-                  <button
-                    onClick={() => setProductFilter({ productId: '', variationId: '', productName: '' })}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
-                  >
-                    <X size={14} />
-                    Clear Product Filter
-                  </button>
-                </div>
-              )}
             </div>
-          </div>
+          )}
 
           <InventoryTable
             inventories={currentInventories}

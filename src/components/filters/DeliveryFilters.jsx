@@ -195,21 +195,25 @@ const DeliveryFilters = ({
           </div>
         )}
 
-        <input
-          type="text"
-          placeholder="Receipt #..."
-          value={filterData.receiptNumber || ''}
-          onChange={(e) => onFilterChange({ receiptNumber: e.target.value })}
-          className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-32"
-        />
+        {canSeeFilter(user, 'deliveries', 'receiptNumber') && (
+          <input
+            type="text"
+            placeholder="Receipt #..."
+            value={filterData.receiptNumber || ''}
+            onChange={(e) => onFilterChange({ receiptNumber: e.target.value })}
+            className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-32"
+          />
+        )}
 
-        <input
-          type="text"
-          placeholder="PO #..."
-          value={filterData.poNumber || ''}
-          onChange={(e) => onFilterChange({ poNumber: e.target.value })}
-          className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-28"
-        />
+        {canSeeFilter(user, 'deliveries', 'poNumber') && (
+          <input
+            type="text"
+            placeholder="PO #..."
+            value={filterData.poNumber || ''}
+            onChange={(e) => onFilterChange({ poNumber: e.target.value })}
+            className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-28"
+          />
+        )}
 
         {hasActiveFilters && (
           <button
