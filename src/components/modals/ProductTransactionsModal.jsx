@@ -33,6 +33,7 @@ const ProductTransactionsModal = ({
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(20); // Changed to 20
     const [expandedCategory, setExpandedCategory] = useState(null);
+    const [showTotalsSummary, setShowTotalsSummary] = useState(false);
 
     const getTransactionDates = (transaction) => {
         const userEnteredDate = transaction.transactionDate
@@ -705,91 +706,108 @@ const ProductTransactionsModal = ({
                     </div>
 
                     {/* Totals summary bar */}
-                    <div className="flex flex-wrap items-center gap-2 mb-4">
-                        {isProductSummaryView ? (
-                            <>
-                                {[
-                                    { key: 'stockIn', label: 'Stock In', sign: '+', value: detailedTotals.stockIn, bg: 'bg-green-50', border: 'border-green-200', hover: 'hover:bg-green-100', text: 'text-green-700', val: 'text-green-800', icon: 'text-green-600' },
-                                    { key: 'transferIn', label: 'Trans. In', sign: '+', value: detailedTotals.transferIn, bg: 'bg-teal-50', border: 'border-teal-200', hover: 'hover:bg-teal-100', text: 'text-teal-700', val: 'text-teal-800', icon: 'text-teal-600' },
-                                    { key: 'transferOut', label: 'Trans. Out', sign: '-', value: detailedTotals.transferOut, bg: 'bg-orange-50', border: 'border-orange-200', hover: 'hover:bg-orange-100', text: 'text-orange-700', val: 'text-orange-800', icon: 'text-orange-600' },
-                                    { key: 'returns', label: 'Return', sign: '+', value: detailedTotals.returns, bg: 'bg-yellow-50', border: 'border-yellow-200', hover: 'hover:bg-yellow-100', text: 'text-yellow-700', val: 'text-yellow-800', icon: 'text-yellow-600' },
-                                    { key: 'damage', label: 'Damage', sign: '-', value: detailedTotals.damage, bg: 'bg-red-50', border: 'border-red-200', hover: 'hover:bg-red-100', text: 'text-red-700', val: 'text-red-800', icon: 'text-red-600' },
-                                    { key: 'delivered', label: 'Delivered', sign: '-', value: detailedTotals.delivered, bg: 'bg-purple-50', border: 'border-purple-200', hover: 'hover:bg-purple-100', text: 'text-purple-700', val: 'text-purple-800', icon: 'text-purple-600' },
-                                    { key: 'salesConfirmed', label: 'Sales (Confirmed)', sign: '-', value: detailedTotals.salesConfirmed, bg: 'bg-pink-50', border: 'border-pink-200', hover: 'hover:bg-pink-100', text: 'text-pink-700', val: 'text-pink-800', icon: 'text-pink-600' },
-                                    { key: 'salesInvoiced', label: 'Sales (Invoiced)', sign: '-', value: detailedTotals.salesInvoiced, bg: 'bg-fuchsia-50', border: 'border-fuchsia-200', hover: 'hover:bg-fuchsia-100', text: 'text-fuchsia-700', val: 'text-fuchsia-800', icon: 'text-fuchsia-600' },
-                                    { key: 'pendingSale', label: 'Pend. Sale', sign: '', value: detailedTotals.pendingSale, bg: 'bg-slate-50', border: 'border-slate-200', hover: 'hover:bg-slate-100', text: 'text-slate-700', val: 'text-slate-800', icon: 'text-slate-600' },
-                                ].map(({ key, label, sign, value, bg, border, hover, text, val, icon }) => (
-                                    <button
-                                        key={key}
-                                        type="button"
-                                        onClick={() => setExpandedCategory(prev => (prev === key ? null : key))}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 ${bg} border ${border} ${hover} rounded-lg transition-colors`}
-                                    >
-                                        <span className={`text-[10px] font-medium ${text} uppercase tracking-wide`}>{label}</span>
-                                        <span className={`text-sm font-bold ${val}`}>{sign}{value.toLocaleString()}</span>
-                                        <ChevronDown
-                                            size={12}
-                                            className={`${icon} transition-transform duration-200 ${expandedCategory === key ? 'rotate-180' : ''}`}
-                                        />
-                                    </button>
-                                ))}
-                            </>
-                        ) : (
-                            <>
-                                <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
-                                    <ArrowDownCircle size={15} className="text-green-600" />
-                                    <span className="text-xs font-medium text-green-700 uppercase tracking-wide">Total In</span>
-                                    <span className="text-sm font-bold text-green-800">{totals.totalIn.toLocaleString()}</span>
-                                    {totals.totalInCancelled > 0 && (
-                                        <span className="text-[10px] text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">
-                                            ({totals.totalInRegular.toLocaleString()} regular + {totals.totalInCancelled.toLocaleString()} cancelled)
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg">
-                                    <ArrowUpCircle size={15} className="text-red-600" />
-                                    <span className="text-xs font-medium text-red-700 uppercase tracking-wide">Total Out</span>
-                                    <span className="text-sm font-bold text-red-800">{totals.totalOut.toLocaleString()}</span>
-                                </div>
-                                <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-                                    <span className="text-xs font-medium text-blue-700 uppercase tracking-wide">Net</span>
-                                    <span className={`text-sm font-bold ${totals.totalIn - totals.totalOut >= 0 ? 'text-blue-800' : 'text-red-800'}`}>
-                                        {totals.totalIn - totals.totalOut >= 0 ? '+' : ''}{(totals.totalIn - totals.totalOut).toLocaleString()}
-                                    </span>
-                                </div>
-                                {totals.totalCancelled > 0 && (
-                                    <div className="flex items-center gap-2 px-4 py-2 bg-rose-50 border border-rose-200 rounded-lg">
-                                        <span className="text-xs font-medium text-rose-700 uppercase tracking-wide">Cancelled (returned)</span>
-                                        <span className="text-sm font-bold text-rose-800">{totals.totalCancelled.toLocaleString()}</span>
-                                    </div>
+                    <div className="mb-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <button
+                                type="button"
+                                onClick={() => { setShowTotalsSummary(prev => !prev); setExpandedCategory(null); }}
+                                className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                            >
+                                <ChevronRight
+                                    size={16}
+                                    className={`transition-transform duration-200 ${showTotalsSummary ? 'rotate-90' : ''}`}
+                                />
+                                Transaction Totals
+                                <span className="text-xs text-gray-400 font-normal">
+                                    ({filteredTransactions.filter(t => !(t.isDeleted === true || t.action === 'DELETED')).length} active transactions)
+                                </span>
+                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleExportCsv}
+                                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                                >
+                                    <FileText size={14} />
+                                    CSV
+                                </button>
+                                <button
+                                    onClick={handleExportExcel}
+                                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                                >
+                                    <FileText size={14} />
+                                    Excel
+                                </button>
+                            </div>
+                        </div>
+                        <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showTotalsSummary ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
+                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                                {isProductSummaryView ? (
+                                    <>
+                                        {[
+                                            { key: 'stockIn', label: 'Stock In', sign: '+', value: detailedTotals.stockIn, bg: 'bg-green-50', border: 'border-green-200', hover: 'hover:bg-green-100', text: 'text-green-700', val: 'text-green-800', icon: 'text-green-600' },
+                                            { key: 'transferIn', label: 'Trans. In', sign: '+', value: detailedTotals.transferIn, bg: 'bg-teal-50', border: 'border-teal-200', hover: 'hover:bg-teal-100', text: 'text-teal-700', val: 'text-teal-800', icon: 'text-teal-600' },
+                                            { key: 'transferOut', label: 'Trans. Out', sign: '-', value: detailedTotals.transferOut, bg: 'bg-orange-50', border: 'border-orange-200', hover: 'hover:bg-orange-100', text: 'text-orange-700', val: 'text-orange-800', icon: 'text-orange-600' },
+                                            { key: 'returns', label: 'Return', sign: '+', value: detailedTotals.returns, bg: 'bg-yellow-50', border: 'border-yellow-200', hover: 'hover:bg-yellow-100', text: 'text-yellow-700', val: 'text-yellow-800', icon: 'text-yellow-600' },
+                                            { key: 'damage', label: 'Damage', sign: '-', value: detailedTotals.damage, bg: 'bg-red-50', border: 'border-red-200', hover: 'hover:bg-red-100', text: 'text-red-700', val: 'text-red-800', icon: 'text-red-600' },
+                                            { key: 'delivered', label: 'Delivered', sign: '-', value: detailedTotals.delivered, bg: 'bg-purple-50', border: 'border-purple-200', hover: 'hover:bg-purple-100', text: 'text-purple-700', val: 'text-purple-800', icon: 'text-purple-600' },
+                                            { key: 'salesConfirmed', label: 'Sales (Confirmed)', sign: '-', value: detailedTotals.salesConfirmed, bg: 'bg-pink-50', border: 'border-pink-200', hover: 'hover:bg-pink-100', text: 'text-pink-700', val: 'text-pink-800', icon: 'text-pink-600' },
+                                            { key: 'salesInvoiced', label: 'Sales (Invoiced)', sign: '-', value: detailedTotals.salesInvoiced, bg: 'bg-fuchsia-50', border: 'border-fuchsia-200', hover: 'hover:bg-fuchsia-100', text: 'text-fuchsia-700', val: 'text-fuchsia-800', icon: 'text-fuchsia-600' },
+                                            { key: 'pendingSale', label: 'Pend. Sale', sign: '', value: detailedTotals.pendingSale, bg: 'bg-slate-50', border: 'border-slate-200', hover: 'hover:bg-slate-100', text: 'text-slate-700', val: 'text-slate-800', icon: 'text-slate-600' },
+                                        ].map(({ key, label, sign, value, bg, border, hover, text, val, icon }) => (
+                                            <button
+                                                key={key}
+                                                type="button"
+                                                onClick={() => setExpandedCategory(prev => (prev === key ? null : key))}
+                                                className={`flex items-center gap-1.5 px-3 py-1.5 ${bg} border ${border} ${hover} rounded-lg transition-colors`}
+                                            >
+                                                <span className={`text-[10px] font-medium ${text} uppercase tracking-wide`}>{label}</span>
+                                                <span className={`text-sm font-bold ${val}`}>{sign}{value.toLocaleString()}</span>
+                                                <ChevronDown
+                                                    size={12}
+                                                    className={`${icon} transition-transform duration-200 ${expandedCategory === key ? 'rotate-180' : ''}`}
+                                                />
+                                            </button>
+                                        ))}
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
+                                            <ArrowDownCircle size={15} className="text-green-600" />
+                                            <span className="text-xs font-medium text-green-700 uppercase tracking-wide">Total In</span>
+                                            <span className="text-sm font-bold text-green-800">{totals.totalIn.toLocaleString()}</span>
+                                            {totals.totalInCancelled > 0 && (
+                                                <span className="text-[10px] text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">
+                                                    ({totals.totalInRegular.toLocaleString()} regular + {totals.totalInCancelled.toLocaleString()} cancelled)
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg">
+                                            <ArrowUpCircle size={15} className="text-red-600" />
+                                            <span className="text-xs font-medium text-red-700 uppercase tracking-wide">Total Out</span>
+                                            <span className="text-sm font-bold text-red-800">{totals.totalOut.toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                                            <span className="text-xs font-medium text-blue-700 uppercase tracking-wide">Net</span>
+                                            <span className={`text-sm font-bold ${totals.totalIn - totals.totalOut >= 0 ? 'text-blue-800' : 'text-red-800'}`}>
+                                                {totals.totalIn - totals.totalOut >= 0 ? '+' : ''}{(totals.totalIn - totals.totalOut).toLocaleString()}
+                                            </span>
+                                        </div>
+                                        {totals.totalCancelled > 0 && (
+                                            <div className="flex items-center gap-2 px-4 py-2 bg-rose-50 border border-rose-200 rounded-lg">
+                                                <span className="text-xs font-medium text-rose-700 uppercase tracking-wide">Cancelled (returned)</span>
+                                                <span className="text-sm font-bold text-rose-800">{totals.totalCancelled.toLocaleString()}</span>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
-                            </>
-                        )}
-                        <span className="text-xs text-gray-400 ml-1">
-                            ({filteredTransactions.filter(t => !(t.isDeleted === true || t.action === 'DELETED')).length} active transactions)
-                        </span>
-                        <div className="ml-auto flex items-center gap-2">
-                            <button
-                                onClick={handleExportCsv}
-                                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-                            >
-                                <FileText size={14} />
-                                CSV
-                            </button>
-                            <button
-                                onClick={handleExportExcel}
-                                className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-                            >
-                                <FileText size={14} />
-                                Excel
-                            </button>
+                            </div>
                         </div>
                     </div>
 
                     {/* Expandable detail panel for a clicked badge */}
                     {isProductSummaryView && (
                         <div
-                            className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedCategory ? 'max-h-80 opacity-100 mb-4' : 'max-h-0 opacity-0 mb-0'
+                            className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedCategory && showTotalsSummary ? 'max-h-80 opacity-100 mb-4' : 'max-h-0 opacity-0 mb-0'
                                 }`}
                         >
                             {expandedCategory && (
