@@ -282,6 +282,24 @@ const ProductTransactionsModal = ({
 
 
 
+    // ─────────────────────────────────────────────────────────────────
+    // FIX: "Total In" / delivered total must NOT re-add cancelled
+    // returns-to-warehouse back into the delivered figure.
+    //
+    // A cancelled delivery produces:
+    //   - a SUBTRACT from the branch (already counted once in totalOut)
+    //   - an ADD back to the warehouse (a *return*, not a new delivery)
+    //
+    // Previously this component computed:
+    //   totalIn = totalInRegular + totalInCancelled
+    // which double-counted the cancelled ADD as if it were a real
+    // delivery on top of the rebuilt delivery that replaced it.
+    //
+    // Correct formula (matches the manual reconciliation):
+    //   Total Delivered = Sum of all ADD entries − Cancelled returns
+    //                    = totalInRegular   (cancelled ADDs already
+    //                      excluded from totalInRegular below)
+    // ─────────────────────────────────────────────────────────────────
     const totals = useMemo(() => {
         let totalInRegular = 0;
         let totalInCancelled = 0;
@@ -295,6 +313,9 @@ const ProductTransactionsModal = ({
 
             const isCancelled = isCancellationTransaction(t);
 
+            // Cancelled returns (stock going back to the warehouse after a
+            // cancelled delivery) are not deliveries — track separately and
+            // keep them OUT of the delivered/"Total In" total entirely.
             if (isCancelled && action === 'ADD') {
                 totalInCancelled += qty;
                 return;
@@ -306,7 +327,11 @@ const ProductTransactionsModal = ({
                 totalOut += qty;
             }
         });
-        const totalIn = totalInRegular + totalInCancelled;
+
+        // totalIn now equals only genuine inbound movement — cancelled
+        // returns are reported separately (totalCancelled) and are no
+        // longer added back into the delivered total.
+        const totalIn = totalInRegular;
         return { totalIn, totalInRegular, totalInCancelled, totalOut, totalCancelled: totalInCancelled };
     }, [filteredTransactions]);
 
@@ -593,7 +618,7 @@ const ProductTransactionsModal = ({
                             <span className="text-sm font-bold text-green-800">{totals.totalIn.toLocaleString()}</span>
                             {totals.totalInCancelled > 0 && (
                                 <span className="text-[10px] text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">
-                                    ({totals.totalInRegular.toLocaleString()} regular + {totals.totalInCancelled.toLocaleString()} cancelled)
+                                    (excludes {totals.totalInCancelled.toLocaleString()} cancelled return{totals.totalInCancelled === 1 ? '' : 's'})
                                 </span>
                             )}
                         </div>

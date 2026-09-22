@@ -64,6 +64,7 @@ const FEATURES = [
   { key: 'branches', label: 'Branches & Companies', description: 'Company and branch records', actions: ['view', 'create', 'edit', 'delete'] },
   { key: 'products', label: 'Products', description: 'Product catalog and variations', actions: ['view', 'create', 'edit', 'delete'] },
   { key: 'supplier', label: 'Supplier', description: 'Supplier records and contacts', actions: ['view', 'create', 'edit', 'delete'] },
+  { key: 'employees', label: 'Employees', description: 'Manage employee records and payroll data', actions: ['view', 'create', 'edit', 'delete'] },
 ];
 
 const UserManagement = () => {
