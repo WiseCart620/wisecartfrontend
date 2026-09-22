@@ -53,7 +53,11 @@ const DeliveryManagement = () => {
     filterDeliveries
   } = useDeliveries();
 
-  const { branches, products, warehouses, companies } = useReferenceData();
+  const { branches, products, warehouses, companies, ensureReferenceData } = useReferenceData();
+
+  useEffect(() => {
+    ensureReferenceData();
+  }, [ensureReferenceData]);
 
   const [modalState, setModalState] = useState({ show: false, mode: null, delivery: null });
   const [receiptModalState, setReceiptModalState] = useState({ show: false, receiptData: null });

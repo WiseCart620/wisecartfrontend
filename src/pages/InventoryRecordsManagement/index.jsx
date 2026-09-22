@@ -456,7 +456,11 @@ const InventoryRecordsManagement = () => {
 
   const removeToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
 
-  const { products, warehouses, branches } = useReferenceData();
+  const { products, warehouses, branches, ensureReferenceData } = useReferenceData();
+
+  useEffect(() => {
+    ensureReferenceData();
+  }, [ensureReferenceData]);
 
   const [selectedProductForAdd, setSelectedProductForAdd] = useState('');
   const [tempQuantity, setTempQuantity] = useState(1);

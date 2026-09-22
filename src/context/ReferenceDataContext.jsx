@@ -1,12 +1,10 @@
-// src/context/ReferenceDataContext.jsx
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { api } from '../services/api';
-import { useAuth } from './AuthContext';
+
 
 const ReferenceDataContext = createContext(null);
 
 export const ReferenceDataProvider = ({ children }) => {
-  const { user } = useAuth();
   const [branches, setBranches] = useState([]);
   const [products, setProducts] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
@@ -34,7 +32,7 @@ export const ReferenceDataProvider = ({ children }) => {
         safeGet('/branches/list'),
         safeGet('/products'),
         safeGet('/warehouse'),
-        safeGet('/companies')
+        safeGet('/companies'),
       ]);
       if (branchesRes.success) {
         const normalizedBranches = (branchesRes.data || []).map(b => ({
@@ -52,13 +50,9 @@ export const ReferenceDataProvider = ({ children }) => {
     }
   }, []);
 
-  useEffect(() => {
-    if (user) {
-      loadReferenceData();
-    }
-  }, [user, loadReferenceData]);
 
   const refreshReferenceData = useCallback(() => loadReferenceData(true), [loadReferenceData]);
+  const ensureReferenceData = useCallback(() => loadReferenceData(false), [loadReferenceData]);
 
   return (
     <ReferenceDataContext.Provider value={{
@@ -67,7 +61,8 @@ export const ReferenceDataProvider = ({ children }) => {
       warehouses,
       companies,
       loading,
-      refreshReferenceData
+      refreshReferenceData,
+      ensureReferenceData
     }}>
       {children}
     </ReferenceDataContext.Provider>
