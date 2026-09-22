@@ -319,6 +319,49 @@ const ProductTransactionsModal = ({
         let delivered = 0;
         let sales = 0;
 
+        // A cancelled delivery's REVERSAL rows carry "CANCELLED-{deliveryId}-{originalRef}"
+        // as their reference number, but the ORIGINAL delivery-out row still just has the
+        // plain reference (e.g. "5152") — so it isn't excluded by reference prefix alone.
+        // Since a reference number can be reused by more than one physical delivery,
+        // match on reference + destination branch + quantity to find exactly which
+        // original SUBTRACT a given cancellation undoes.
+        const cancelledDeliveryIds = new Set();
+
+        const cancelReturnAdds = filteredTransactions.filter(t => {
+            const type = t.inventoryType || t.transactionType || '';
+            const isDeleted = t.isDeleted === true || t.action === 'DELETED';
+            return !isDeleted && type === 'DELIVERY' && t.action === 'ADD' &&
+                t.referenceNumber?.startsWith('CANCELLED-');
+        });
+
+        cancelReturnAdds.forEach(cancelTx => {
+            // Paired "removed from branch" row for the same cancellation tells us which
+            // branch the delivery was reversed from (= the original delivery's destination).
+            const pairedSubtract = filteredTransactions.find(t => {
+                const type = t.inventoryType || t.transactionType || '';
+                return type === 'DELIVERY' && t.action === 'SUBTRACT' &&
+                    t.referenceNumber === cancelTx.referenceNumber;
+            });
+            const cancelledBranchId = pairedSubtract?.fromBranch?.id;
+            const qty = Math.abs(cancelTx.quantity || cancelTx.quantityChanged || 0);
+
+            const m = cancelTx.referenceNumber.match(/^CANCELLED-\d+-(.+)$/);
+            const baseRef = m ? m[1] : null;
+            if (!baseRef || !cancelledBranchId) return;
+
+            const original = filteredTransactions.find(t => {
+                const type = t.inventoryType || t.transactionType || '';
+                const isDeleted = t.isDeleted === true || t.action === 'DELETED';
+                if (isDeleted) return false;
+                if (type !== 'DELIVERY' || t.action !== 'SUBTRACT') return false;
+                if (t.referenceNumber !== baseRef) return false;
+                if (t.toBranch?.id !== cancelledBranchId) return false;
+                const oQty = Math.abs(t.quantity || t.quantityChanged || 0);
+                return oQty === qty;
+            });
+            if (original) cancelledDeliveryIds.add(original.id);
+        });
+
         filteredTransactions.forEach((t) => {
             const qty = Math.abs(t.quantity || t.quantityChanged || 0);
             const action = t.action || '';
@@ -342,7 +385,7 @@ const ProductTransactionsModal = ({
                 case 'DELIVERY': {
                     const isCancelled = t.referenceNumber?.startsWith('CANCELLED-');
                     if (action === 'SUBTRACT') {
-                        if (!isCancelled) delivered += qty;
+                        if (!isCancelled && !cancelledDeliveryIds.has(t.id)) delivered += qty;
                     } else if (action === 'ADD' && isCancelled) {
                         returns += qty;
                     }
