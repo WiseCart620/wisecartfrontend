@@ -211,6 +211,25 @@ export const canSeeFilter = (user, feature, filterKey) => {
 // Page-level check (sidebar/routes)
 export const hasPermission = (user, feature) => can(user, feature, 'view');
 
+// Route wrapper gated by a specific feature:action permission (finer-grained than PermissionRoute)
+export const ActionRoute = ({ feature, action, fallback = '/welcome', children }) => {
+  const { user, isTokenValid, loading } = useAuth();
+
+  if (loading) return null;
+
+  if (!isTokenValid()) {
+    toast.error('Please login to continue');
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!can(user, feature, action)) {
+    toast.error('You do not have access to this page');
+    return <Navigate to={fallback} replace />;
+  }
+
+  return children;
+};
+
 // Route wrapper gated by a feature's view permission
 export const PermissionRoute = ({ feature, children }) => {
   const { user, isTokenValid, loading } = useAuth();

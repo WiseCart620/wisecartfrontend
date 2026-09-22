@@ -4,6 +4,7 @@ import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import MultiSelectDropdown from '../../components/common/MultiSelectDropdown';
 import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
+import { useAuth, canSeeFilter } from '../../context/AuthContext';
 
 const formatCurrency = (amount) => {
     if (amount === null || amount === undefined) return '0.00';
@@ -16,6 +17,7 @@ const formatCurrency = (amount) => {
 const monthsFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 const SalesReport = ({ onBack, filterData, companies, branches, allProductOptions = [] }) => {
+    const { user } = useAuth();
     const [salesReportFilter, setSalesReportFilter] = useState({ startDate: '', endDate: '' });
 
     // Multi-select filters — seeded from whatever was active on the main Sales screen
@@ -725,60 +727,70 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 px-4 py-4 mb-4">
                     <h2 className="text-sm font-semibold text-gray-700 mb-3">Filter Report</h2>
                     <div className="flex flex-wrap gap-4 items-end">
-                        <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Company</label>
-                            <MultiSelectDropdown
-                                options={companyOptions}
-                                selectedIds={reportCompanyIds}
-                                onChange={(ids) => {
-                                    // Drop any selected branch that no longer belongs to the selected companies
-                                    const validBranchIds = ids.length > 0
-                                        ? branches.filter(b => ids.includes(b.companyId ?? b.company?.id)).map(b => b.id)
-                                        : branches.map(b => b.id);
-                                    const newBranchIds = reportBranchIds.filter(id => validBranchIds.includes(id));
-                                    setReportCompanyIds(ids);
-                                    setReportBranchIds(newBranchIds);
-                                    generateSalesReport(ids, newBranchIds);
-                                }}
-                                placeholder="All Companies"
-                                searchPlaceholder="Search companies..."
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Branch</label>
-                            <MultiSelectDropdown
-                                options={branchOptions}
-                                selectedIds={reportBranchIds}
-                                onChange={(ids) => {
-                                    setReportBranchIds(ids);
-                                    generateSalesReport(reportCompanyIds, ids);
-                                }}
-                                placeholder="All Branches"
-                                searchPlaceholder="Search name or code..."
-                            />
-                        </div>
-                        <div className="w-64">
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Product</label>
-                            <VariationSearchableDropdown
-                                options={availableProductOptions}
-                                value={productSearchValue}
-                                onChange={addProductFilter}
-                                placeholder="Product / UPC / SKU"
-                                hideLocationHint={true}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
-                            <input type="date" value={salesReportFilter.startDate}
-                                onChange={e => setSalesReportFilter(p => ({ ...p, startDate: e.target.value }))}
-                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">End Date</label>
-                            <input type="date" value={salesReportFilter.endDate}
-                                onChange={e => setSalesReportFilter(p => ({ ...p, endDate: e.target.value }))}
-                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
-                        </div>
+                        {canSeeFilter(user, 'sales', 'company') && (
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Company</label>
+                                <MultiSelectDropdown
+                                    options={companyOptions}
+                                    selectedIds={reportCompanyIds}
+                                    onChange={(ids) => {
+                                        // Drop any selected branch that no longer belongs to the selected companies
+                                        const validBranchIds = ids.length > 0
+                                            ? branches.filter(b => ids.includes(b.companyId ?? b.company?.id)).map(b => b.id)
+                                            : branches.map(b => b.id);
+                                        const newBranchIds = reportBranchIds.filter(id => validBranchIds.includes(id));
+                                        setReportCompanyIds(ids);
+                                        setReportBranchIds(newBranchIds);
+                                        generateSalesReport(ids, newBranchIds);
+                                    }}
+                                    placeholder="All Companies"
+                                    searchPlaceholder="Search companies..."
+                                />
+                            </div>
+                        )}
+                        {canSeeFilter(user, 'sales', 'branch') && (
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Branch</label>
+                                <MultiSelectDropdown
+                                    options={branchOptions}
+                                    selectedIds={reportBranchIds}
+                                    onChange={(ids) => {
+                                        setReportBranchIds(ids);
+                                        generateSalesReport(reportCompanyIds, ids);
+                                    }}
+                                    placeholder="All Branches"
+                                    searchPlaceholder="Search name or code..."
+                                />
+                            </div>
+                        )}
+                        {canSeeFilter(user, 'sales', 'product') && (
+                            <div className="w-64">
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Product</label>
+                                <VariationSearchableDropdown
+                                    options={availableProductOptions}
+                                    value={productSearchValue}
+                                    onChange={addProductFilter}
+                                    placeholder="Product / UPC / SKU"
+                                    hideLocationHint={true}
+                                />
+                            </div>
+                        )}
+                        {canSeeFilter(user, 'sales', 'date') && (
+                            <>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
+                                    <input type="date" value={salesReportFilter.startDate}
+                                        onChange={e => setSalesReportFilter(p => ({ ...p, startDate: e.target.value }))}
+                                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">End Date</label>
+                                    <input type="date" value={salesReportFilter.endDate}
+                                        onChange={e => setSalesReportFilter(p => ({ ...p, endDate: e.target.value }))}
+                                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+                                </div>
+                            </>
+                        )}
                         <button onClick={() => generateSalesReport(reportCompanyIds, reportBranchIds, reportProductFilters)} disabled={salesReportLoading}
                             className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition">
                             {salesReportLoading ? 'Generating...' : 'Generate Report'}

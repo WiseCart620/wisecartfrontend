@@ -3,14 +3,13 @@ import React, { useState } from 'react';
 import {
   Package, Truck, Warehouse, ShoppingCart, Users, Home,
   UserPlus, PackageSearch, PackageOpen, ChevronDown, ChevronRight,
-  ChevronLeft, Database, Factory, ClipboardList, X, BookOpen, BarChart3,
+  ChevronLeft, Database, Factory, ClipboardList, X, BookOpen, BarChart3, FileText,
 } from 'lucide-react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
-import { useAuth, hasPermission } from '../../context/AuthContext';
+import { useAuth, hasPermission, can } from '../../context/AuthContext';
 
 const allMainMenuItems = [
   { to: '/dashboard', label: 'Dashboard', icon: Home, userHidden: true },
-  { to: '/deliveries', label: 'Deliveries', icon: Truck, userHidden: false },
   { to: '/warehouse-inventory', label: 'Warehouse Inventory', icon: PackageOpen, userHidden: true },
   { to: '/inventory', label: 'Inventory Record', icon: PackageSearch, userHidden: true },
   { to: '/procurement', label: 'Procurement', icon: ClipboardList, userHidden: true },
@@ -25,9 +24,14 @@ const dataEntryItems = [
 ];
 
 const salesSubItems = [
-  { to: '/sales', label: 'All Sales', icon: ShoppingCart, end: true },
-  { to: '/sales/journal', label: 'Sales Journal', icon: BookOpen },
-  { to: '/sales/report', label: 'Sales Report', icon: BarChart3 },
+  { to: '/sales', label: 'All Sales', icon: ShoppingCart, end: true, permAction: 'view' },
+  { to: '/sales/journal', label: 'Sales Journal', icon: BookOpen, permAction: 'invoice' },
+  { to: '/sales/report', label: 'Sales Report', icon: BarChart3, permAction: 'report' },
+];
+
+const deliveriesSubItems = [
+  { to: '/deliveries', label: 'Delivery Management', icon: Truck, end: true, permAction: 'view' },
+  { to: '/transmittals', label: 'Transmittal Forms', icon: FileText, permAction: 'transmittal' },
 ];
 
 const Sidebar = ({ isOpen, toggle }) => {
@@ -46,6 +50,13 @@ const Sidebar = ({ isOpen, toggle }) => {
   const showDataEntry = isSuperAdmin ||
     ['warehouse', 'branches', 'products', 'supplier'].some(f => hasPermission(user, f));
   const showSales = isSuperAdmin || hasPermission(user, 'sales');
+  const visibleSalesSubItems = isSuperAdmin
+    ? salesSubItems
+    : salesSubItems.filter(i => can(user, 'sales', i.permAction));
+  const showDeliveries = isSuperAdmin || hasPermission(user, 'deliveries');
+  const visibleDeliveriesSubItems = isSuperAdmin
+    ? deliveriesSubItems
+    : deliveriesSubItems.filter(i => can(user, 'deliveries', i.permAction));
 
   const dataEntryFeatureByPath = {
     '/warehouse': 'warehouse', '/branches': 'branches', '/products': 'products', '/supplier': 'supplier',
@@ -57,6 +68,7 @@ const Sidebar = ({ isOpen, toggle }) => {
 
   const [dataEntryOpen, setDataEntryOpen] = useState(true);
   const [salesOpen, setSalesOpen] = useState(true);
+  const [deliveriesOpen, setDeliveriesOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const location = useLocation();
 
@@ -125,6 +137,63 @@ const Sidebar = ({ isOpen, toggle }) => {
             );
           })}
 
+          {/* Deliveries section (collapsible) */}
+          {showDeliveries && !sidebarCollapsed && (
+            <div>
+              <button
+                onClick={() => setDeliveriesOpen(!deliveriesOpen)}
+                className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg hover:bg-orange-50 hover:text-gray-900 hover:font-[600] font-[480] text-gray-600 transition-colors text-sm"
+              >
+                <div className="flex items-center gap-3">
+                  <Truck size={20} className="flex-shrink-0" />
+                  <span className="font-medium">Deliveries</span>
+                </div>
+                {deliveriesOpen
+                  ? <ChevronDown size={16} />
+                  : <ChevronRight size={16} />}
+              </button>
+
+              <div className={`overflow-hidden transition-all duration-300 ${deliveriesOpen ? 'max-h-60' : 'max-h-0'}`}>
+                <div className="ml-6 mt-1 space-y-1 border-l border-gray-200 pl-2">
+                  {visibleDeliveriesSubItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <NavLink
+                        key={item.to}
+                        to={item.to}
+                        end={item.end}
+                        onClick={() => window.innerWidth < 1024 && toggle()}
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm
+                          ${isActive ? 'bg-orange-600 text-white font-[600]' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-[600] font-[480] text-gray-500'}`
+                        }
+                      >
+                        <Icon size={17} className="flex-shrink-0" />
+                        <span className="truncate">{item.label}</span>
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Deliveries icon-only when collapsed */}
+          {showDeliveries && sidebarCollapsed && (
+            <NavLink
+              to="/deliveries"
+              end
+              title="Deliveries"
+              onClick={() => window.innerWidth < 1024 && toggle()}
+              className={({ isActive }) =>
+                `flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors
+               ${isActive ? 'bg-orange-600 text-white font-[600]' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-[600] font-[480] text-gray-600'}`
+              }
+            >
+              <Truck size={20} className="flex-shrink-0" />
+            </NavLink>
+          )}
+
           {/* Sales section (collapsible) */}
           {showSales && !sidebarCollapsed && (
             <div>
@@ -143,7 +212,7 @@ const Sidebar = ({ isOpen, toggle }) => {
 
               <div className={`overflow-hidden transition-all duration-300 ${salesOpen ? 'max-h-60' : 'max-h-0'}`}>
                 <div className="ml-6 mt-1 space-y-1 border-l border-gray-200 pl-2">
-                  {salesSubItems.map((item) => {
+                  {visibleSalesSubItems.map((item) => {
                     const Icon = item.icon;
                     return (
                       <NavLink

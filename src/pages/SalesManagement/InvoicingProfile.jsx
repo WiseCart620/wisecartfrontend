@@ -3,7 +3,7 @@ import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import { ArrowLeft, X, Trash2, Eye, ChevronDown, ChevronUp, FileText, Pencil } from 'lucide-react';
 import '../../styles/invoice-print.css';
-import { useAuth, can } from '../../context/AuthContext';
+import { useAuth, can, canSeeFilter } from '../../context/AuthContext';
 
 
 const fmt = (n) =>
@@ -1053,28 +1053,34 @@ const InvoicingProfile = ({ onBack }) => {
             </div>
 
             <div className="bg-white rounded-md border border-gray-200 p-3 mb-3 flex flex-wrap gap-3 items-center">
-                <input
-                    placeholder="Search Invoice #..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md text-sm w-48 focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
-                />
-                <MultiSelectDropdown
-                    label="Company"
-                    options={companyOptions}
-                    selected={companyFilter}
-                    onChange={setCompanyFilter}
-                />
-                <MultiSelectDropdown
-                    label="Status"
-                    options={[
-                        { value: 'PAID', label: 'Paid' },
-                        { value: 'UNPAID', label: 'Unpaid' },
-                        { value: 'PARTIAL', label: 'Partial' },
-                    ]}
-                    selected={statusFilter}
-                    onChange={setStatusFilter}
-                />
+                {canSeeFilter(user, 'sales', 'search') && (
+                    <input
+                        placeholder="Search Invoice #..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-md text-sm w-48 focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                    />
+                )}
+                {canSeeFilter(user, 'sales', 'company') && (
+                    <MultiSelectDropdown
+                        label="Company"
+                        options={companyOptions}
+                        selected={companyFilter}
+                        onChange={setCompanyFilter}
+                    />
+                )}
+                {canSeeFilter(user, 'sales', 'status') && (
+                    <MultiSelectDropdown
+                        label="Status"
+                        options={[
+                            { value: 'PAID', label: 'Paid' },
+                            { value: 'UNPAID', label: 'Unpaid' },
+                            { value: 'PARTIAL', label: 'Partial' },
+                        ]}
+                        selected={statusFilter}
+                        onChange={setStatusFilter}
+                    />
+                )}
                 {(companyFilter.length > 0 || statusFilter.length > 0 || search) && (
                     <button
                         type="button"

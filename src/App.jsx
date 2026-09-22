@@ -16,7 +16,7 @@ import Layout from './components/layout/Layout';
 import Supplier from './pages/SupplierManagement';
 import ProcurementManagement from './pages/ProcurementManagement/index.jsx';
 import TransmittalManagement from './pages/TransmittalManagement';
-import { AuthProvider, AuthLoading, ProtectedRoute, FinanceRoute, AdminOrUserRoute, SuperAdminRoute, PermissionRoute } from './context/AuthContext';
+import { AuthProvider, AuthLoading, ProtectedRoute, FinanceRoute, AdminOrUserRoute, SuperAdminRoute, PermissionRoute, ActionRoute } from './context/AuthContext';
 import { ReferenceDataProvider } from './context/ReferenceDataContext';
 import { startActivityTracking, stopActivityTracking } from './services/api';
 import { useEffect } from 'react';
@@ -84,9 +84,11 @@ function App() {
                 <ProtectedRoute>
                   <AdminOrUserRoute>
                     <PermissionRoute feature="deliveries">
-                      <Layout>
-                        <TransmittalManagement />
-                      </Layout>
+                      <ActionRoute feature="deliveries" action="transmittal" fallback="/deliveries">
+                        <Layout>
+                          <TransmittalManagement />
+                        </Layout>
+                      </ActionRoute>
                     </PermissionRoute>
                   </AdminOrUserRoute>
                 </ProtectedRoute>
@@ -149,9 +151,11 @@ function App() {
               <Route path="/sales/journal" element={
                 <ProtectedRoute>
                   <PermissionRoute feature="sales">
-                    <Layout>
-                      <SalesManagement />
-                    </Layout>
+                    <ActionRoute feature="sales" action="invoice" fallback="/sales">
+                      <Layout>
+                        <SalesManagement />
+                      </Layout>
+                    </ActionRoute>
                   </PermissionRoute>
                 </ProtectedRoute>
               } />
@@ -159,9 +163,11 @@ function App() {
               <Route path="/sales/report" element={
                 <ProtectedRoute>
                   <PermissionRoute feature="sales">
-                    <Layout>
-                      <SalesManagement />
-                    </Layout>
+                    <ActionRoute feature="sales" action="report" fallback="/sales">
+                      <Layout>
+                        <SalesManagement />
+                      </Layout>
+                    </ActionRoute>
                   </PermissionRoute>
                 </ProtectedRoute>
               } />

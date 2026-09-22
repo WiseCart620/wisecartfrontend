@@ -11,7 +11,7 @@ const ACTION_LABELS = {
   view: 'View', create: 'Create', edit: 'Edit', delete: 'Delete',
   invoice: 'Invoice', report: 'Reports', summary: 'Summary',
   cancel: 'Cancel', print: 'Print', confirm: 'Confirm',
-  payment: 'Payments',
+  payment: 'Payments', transmittal: 'Transmittals',
 };
 
 const FILTERS = {
@@ -24,6 +24,7 @@ const FILTERS = {
     { key: 'product', label: 'Product' },
   ],
   deliveries: [
+    { key: 'search', label: 'Search' },
     { key: 'company', label: 'Company' },
     { key: 'branch', label: 'Branch' },
     { key: 'warehouse', label: 'Warehouse' },
@@ -60,7 +61,7 @@ const FEATURES = [
   { key: 'dashboard', label: 'Dashboard', description: 'Business analytics, charts, and performance overview', actions: ['view'] },
   { key: 'alerts', label: 'Alerts', description: 'Low-stock and system alerts', actions: ['view', 'edit', 'delete'] },
   { key: 'sales', label: 'Sales', description: 'Create and manage sales orders, invoices, and reports', actions: ['view', 'create', 'edit', 'delete', 'invoice', 'report', 'summary'] },
-  { key: 'deliveries', label: 'Deliveries', description: 'Track and manage delivery transactions', actions: ['view', 'create', 'edit', 'delete', 'cancel', 'print'] },
+  { key: 'deliveries', label: 'Deliveries', description: 'Track and manage delivery transactions', actions: ['view', 'create', 'edit', 'delete', 'cancel', 'print', 'transmittal'] },
   { key: 'warehouse_inventory', label: 'Warehouse Inventory', description: 'Warehouse stock levels and confirmations', actions: ['view', 'create', 'edit', 'delete', 'confirm'] },
   { key: 'inventory', label: 'Inventory Record', description: 'Stock movement records across all locations', actions: ['view', 'create', 'edit', 'delete', 'confirm'] },
   { key: 'procurement', label: 'Procurement', description: 'Inventory requests, RPQ, purchase orders, and payments', actions: ['view', 'create', 'edit', 'delete', 'confirm', 'payment'] },
