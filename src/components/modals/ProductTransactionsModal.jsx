@@ -32,6 +32,7 @@ const ProductTransactionsModal = ({
 
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(20); // Changed to 20
+    const [expandedCategory, setExpandedCategory] = useState(null);
 
     const getTransactionDates = (transaction) => {
         const userEnteredDate = transaction.transactionDate
@@ -322,6 +323,11 @@ const ProductTransactionsModal = ({
         let salesInvoiced = 0;
         let pendingSale = 0;
 
+        const txns = {
+            stockIn: [], transferIn: [], transferOut: [], returns: [], damage: [],
+            delivered: [], salesConfirmed: [], salesInvoiced: [], pendingSale: [],
+        };
+
         const cancelledDeliveryIds = new Set();
 
         const cancelReturnAdds = filteredTransactions.filter(t => {
@@ -332,8 +338,6 @@ const ProductTransactionsModal = ({
         });
 
         cancelReturnAdds.forEach(cancelTx => {
-            // Paired "removed from branch" row for the same cancellation tells us which
-            // branch the delivery was reversed from (= the original delivery's destination).
             const pairedSubtract = filteredTransactions.find(t => {
                 const type = t.inventoryType || t.transactionType || '';
                 return type === 'DELIVERY' && t.action === 'SUBTRACT' &&
@@ -368,50 +372,60 @@ const ProductTransactionsModal = ({
 
             switch (type) {
                 case 'STOCK_IN':
-                    if (action === 'ADD') stockIn += qty;
+                    if (action === 'ADD') { stockIn += qty; txns.stockIn.push(t); }
                     break;
                 case 'TRANSFER':
-                    if (action === 'ADD') transferIn += qty;
-                    else if (action === 'SUBTRACT' && t.fromWarehouse) transferOut += qty;
+                    if (action === 'ADD') { transferIn += qty; txns.transferIn.push(t); }
+                    else if (action === 'SUBTRACT' && t.fromWarehouse) { transferOut += qty; txns.transferOut.push(t); }
                     break;
                 case 'TRANSFER_IN':
-                    transferIn += qty;
+                    transferIn += qty; txns.transferIn.push(t);
                     break;
                 case 'TRANSFER_OUT':
-                    transferOut += qty;
+                    transferOut += qty; txns.transferOut.push(t);
                     break;
                 case 'RETURN':
-                    if (action === 'ADD') returns += qty;
+                    if (action === 'ADD') { returns += qty; txns.returns.push(t); }
                     break;
                 case 'DAMAGE':
-                    if (action === 'SUBTRACT') damage += qty;
+                    if (action === 'SUBTRACT') { damage += qty; txns.damage.push(t); }
                     break;
                 case 'DELIVERY': {
                     const isCancelled = t.referenceNumber?.startsWith('CANCELLED-');
                     if (action === 'SUBTRACT') {
-                        if (!isCancelled && !cancelledDeliveryIds.has(t.id)) delivered += qty;
+                        if (!isCancelled && !cancelledDeliveryIds.has(t.id)) { delivered += qty; txns.delivered.push(t); }
                     } else if (action === 'ADD' && isCancelled) {
-                        returns += qty;
+                        returns += qty; txns.returns.push(t);
                     }
                     break;
                 }
                 case 'SALE':
-
-                    if (action === 'SUBTRACT') {
-                        salesConfirmed += qty;
-                    } else if (action === 'INVOICED') {
-                        salesInvoiced += qty;
-                    } else if (action === 'RESERVE') {
-                        pendingSale += qty;
-                    }
+                    if (action === 'SUBTRACT') { salesConfirmed += qty; txns.salesConfirmed.push(t); }
+                    else if (action === 'INVOICED') { salesInvoiced += qty; txns.salesInvoiced.push(t); }
+                    else if (action === 'RESERVE') { pendingSale += qty; txns.pendingSale.push(t); }
                     break;
                 default:
                     break;
             }
         });
 
-        return { stockIn, transferIn, transferOut, returns, damage, delivered, salesConfirmed, salesInvoiced, pendingSale };
+        return {
+            stockIn, transferIn, transferOut, returns, damage, delivered,
+            salesConfirmed, salesInvoiced, pendingSale, txns,
+        };
     }, [filteredTransactions]);
+
+    const categoryLabels = {
+        stockIn: 'Stock In',
+        transferIn: 'Trans. In',
+        transferOut: 'Trans. Out',
+        returns: 'Return',
+        damage: 'Damage',
+        delivered: 'Delivered',
+        salesConfirmed: 'Sales (Confirmed)',
+        salesInvoiced: 'Sales (Invoiced)',
+        pendingSale: 'Pend. Sale',
+    };
 
     const isProductSummaryView = product?.isProductSummaryView === true;
 
@@ -694,42 +708,31 @@ const ProductTransactionsModal = ({
                     <div className="flex flex-wrap items-center gap-2 mb-4">
                         {isProductSummaryView ? (
                             <>
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
-                                    <span className="text-[10px] font-medium text-green-700 uppercase tracking-wide">Stock In</span>
-                                    <span className="text-sm font-bold text-green-800">+{detailedTotals.stockIn.toLocaleString()}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 border border-teal-200 rounded-lg">
-                                    <span className="text-[10px] font-medium text-teal-700 uppercase tracking-wide">Trans. In</span>
-                                    <span className="text-sm font-bold text-teal-800">+{detailedTotals.transferIn.toLocaleString()}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded-lg">
-                                    <span className="text-[10px] font-medium text-orange-700 uppercase tracking-wide">Trans. Out</span>
-                                    <span className="text-sm font-bold text-orange-800">-{detailedTotals.transferOut.toLocaleString()}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                    <span className="text-[10px] font-medium text-yellow-700 uppercase tracking-wide">Return</span>
-                                    <span className="text-sm font-bold text-yellow-800">+{detailedTotals.returns.toLocaleString()}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg">
-                                    <span className="text-[10px] font-medium text-red-700 uppercase tracking-wide">Damage</span>
-                                    <span className="text-sm font-bold text-red-800">-{detailedTotals.damage.toLocaleString()}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 border border-purple-200 rounded-lg">
-                                    <span className="text-[10px] font-medium text-purple-700 uppercase tracking-wide">Delivered</span>
-                                    <span className="text-sm font-bold text-purple-800">-{detailedTotals.delivered.toLocaleString()}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-50 border border-pink-200 rounded-lg">
-                                    <span className="text-[10px] font-medium text-pink-700 uppercase tracking-wide">Sales (Confirmed)</span>
-                                    <span className="text-sm font-bold text-pink-800">-{detailedTotals.salesConfirmed.toLocaleString()}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-fuchsia-50 border border-fuchsia-200 rounded-lg">
-                                    <span className="text-[10px] font-medium text-fuchsia-700 uppercase tracking-wide">Sales (Invoiced)</span>
-                                    <span className="text-sm font-bold text-fuchsia-800">-{detailedTotals.salesInvoiced.toLocaleString()}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">
-                                    <span className="text-[10px] font-medium text-slate-700 uppercase tracking-wide">Pend. Sale</span>
-                                    <span className="text-sm font-bold text-slate-800">{detailedTotals.pendingSale.toLocaleString()}</span>
-                                </div>
+                                {[
+                                    { key: 'stockIn', label: 'Stock In', sign: '+', value: detailedTotals.stockIn, bg: 'bg-green-50', border: 'border-green-200', hover: 'hover:bg-green-100', text: 'text-green-700', val: 'text-green-800', icon: 'text-green-600' },
+                                    { key: 'transferIn', label: 'Trans. In', sign: '+', value: detailedTotals.transferIn, bg: 'bg-teal-50', border: 'border-teal-200', hover: 'hover:bg-teal-100', text: 'text-teal-700', val: 'text-teal-800', icon: 'text-teal-600' },
+                                    { key: 'transferOut', label: 'Trans. Out', sign: '-', value: detailedTotals.transferOut, bg: 'bg-orange-50', border: 'border-orange-200', hover: 'hover:bg-orange-100', text: 'text-orange-700', val: 'text-orange-800', icon: 'text-orange-600' },
+                                    { key: 'returns', label: 'Return', sign: '+', value: detailedTotals.returns, bg: 'bg-yellow-50', border: 'border-yellow-200', hover: 'hover:bg-yellow-100', text: 'text-yellow-700', val: 'text-yellow-800', icon: 'text-yellow-600' },
+                                    { key: 'damage', label: 'Damage', sign: '-', value: detailedTotals.damage, bg: 'bg-red-50', border: 'border-red-200', hover: 'hover:bg-red-100', text: 'text-red-700', val: 'text-red-800', icon: 'text-red-600' },
+                                    { key: 'delivered', label: 'Delivered', sign: '-', value: detailedTotals.delivered, bg: 'bg-purple-50', border: 'border-purple-200', hover: 'hover:bg-purple-100', text: 'text-purple-700', val: 'text-purple-800', icon: 'text-purple-600' },
+                                    { key: 'salesConfirmed', label: 'Sales (Confirmed)', sign: '-', value: detailedTotals.salesConfirmed, bg: 'bg-pink-50', border: 'border-pink-200', hover: 'hover:bg-pink-100', text: 'text-pink-700', val: 'text-pink-800', icon: 'text-pink-600' },
+                                    { key: 'salesInvoiced', label: 'Sales (Invoiced)', sign: '-', value: detailedTotals.salesInvoiced, bg: 'bg-fuchsia-50', border: 'border-fuchsia-200', hover: 'hover:bg-fuchsia-100', text: 'text-fuchsia-700', val: 'text-fuchsia-800', icon: 'text-fuchsia-600' },
+                                    { key: 'pendingSale', label: 'Pend. Sale', sign: '', value: detailedTotals.pendingSale, bg: 'bg-slate-50', border: 'border-slate-200', hover: 'hover:bg-slate-100', text: 'text-slate-700', val: 'text-slate-800', icon: 'text-slate-600' },
+                                ].map(({ key, label, sign, value, bg, border, hover, text, val, icon }) => (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() => setExpandedCategory(prev => (prev === key ? null : key))}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 ${bg} border ${border} ${hover} rounded-lg transition-colors`}
+                                    >
+                                        <span className={`text-[10px] font-medium ${text} uppercase tracking-wide`}>{label}</span>
+                                        <span className={`text-sm font-bold ${val}`}>{sign}{value.toLocaleString()}</span>
+                                        <ChevronDown
+                                            size={12}
+                                            className={`${icon} transition-transform duration-200 ${expandedCategory === key ? 'rotate-180' : ''}`}
+                                        />
+                                    </button>
+                                ))}
                             </>
                         ) : (
                             <>
@@ -782,6 +785,67 @@ const ProductTransactionsModal = ({
                             </button>
                         </div>
                     </div>
+
+                    {/* Expandable detail panel for a clicked badge */}
+                    {isProductSummaryView && (
+                        <div
+                            className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedCategory ? 'max-h-80 opacity-100 mb-4' : 'max-h-0 opacity-0 mb-0'
+                                }`}
+                        >
+                            {expandedCategory && (
+                                <div className="bg-white border rounded-lg overflow-hidden">
+                                    <div className="px-4 py-2 bg-gray-50 border-b flex items-center justify-between">
+                                        <h4 className="text-sm font-semibold text-gray-700">
+                                            {categoryLabels[expandedCategory]}
+                                            <span className="ml-2 text-xs font-normal text-gray-400">
+                                                {(detailedTotals.txns[expandedCategory] || []).length} transaction(s)
+                                            </span>
+                                        </h4>
+                                        <button
+                                            onClick={() => setExpandedCategory(null)}
+                                            className="p-1 hover:bg-gray-200 rounded transition"
+                                        >
+                                            <X size={14} className="text-gray-500" />
+                                        </button>
+                                    </div>
+                                    <div className="max-h-64 overflow-y-auto divide-y divide-gray-100">
+                                        {(detailedTotals.txns[expandedCategory] || []).length === 0 ? (
+                                            <div className="px-4 py-6 text-center text-sm text-gray-400">
+                                                No transactions in this category
+                                            </div>
+                                        ) : (
+                                            detailedTotals.txns[expandedCategory].map((t, i) => {
+                                                const { userEnteredDate } = getTransactionDates(t);
+                                                const qty = Math.abs(t.quantity || t.quantityChanged || 0);
+                                                const fromLoc = t.fromBranch?.branchName || t.fromWarehouse?.warehouseName;
+                                                const toLoc = t.toBranch?.branchName || t.toWarehouse?.warehouseName;
+                                                return (
+                                                    <div
+                                                        key={`${expandedCategory}-${t.id}-${i}`}
+                                                        className="px-4 py-2 text-sm flex items-center justify-between gap-4 hover:bg-gray-50"
+                                                    >
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="font-medium text-gray-800 truncate">
+                                                                {t.referenceNumber || `INV-${t.referenceId || t.id}`}
+                                                            </div>
+                                                            <div className="text-xs text-gray-500 truncate">
+                                                                {userEnteredDate ? formatDate(userEnteredDate) : 'No date'}
+                                                                {fromLoc && ` • From: ${fromLoc}`}
+                                                                {toLoc && ` • To: ${toLoc}`}
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-sm font-semibold text-gray-700 whitespace-nowrap">
+                                                            {qty.toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* Page Size Selector */}
                     <div className="mb-4 flex justify-end">
