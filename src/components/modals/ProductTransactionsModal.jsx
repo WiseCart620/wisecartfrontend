@@ -310,6 +310,57 @@ const ProductTransactionsModal = ({
         return { totalIn, totalInRegular, totalInCancelled, totalOut, totalCancelled: totalInCancelled };
     }, [filteredTransactions]);
 
+
+    const detailedTotals = useMemo(() => {
+        let stockIn = 0;
+        let transferOut = 0;
+        let returns = 0;
+        let damage = 0;
+        let delivered = 0;
+        let sales = 0;
+
+        filteredTransactions.forEach((t) => {
+            const qty = Math.abs(t.quantity || t.quantityChanged || 0);
+            const action = t.action || '';
+            const type = t.inventoryType || t.transactionType || '';
+            const isDeleted = t.isDeleted === true || action === 'DELETED';
+            if (isDeleted) return;
+
+            switch (type) {
+                case 'STOCK_IN':
+                    if (action === 'ADD') stockIn += qty;
+                    break;
+                case 'TRANSFER':
+                    if (action === 'SUBTRACT' && t.fromWarehouse) transferOut += qty;
+                    break;
+                case 'RETURN':
+                    if (action === 'ADD') returns += qty;
+                    break;
+                case 'DAMAGE':
+                    if (action === 'SUBTRACT') damage += qty;
+                    break;
+                case 'DELIVERY': {
+                    const isCancelled = t.referenceNumber?.startsWith('CANCELLED-');
+                    if (action === 'SUBTRACT') {
+                        if (!isCancelled) delivered += qty;
+                    } else if (action === 'ADD' && isCancelled) {
+                        returns += qty;
+                    }
+                    break;
+                }
+                case 'SALE':
+                    if (action === 'SUBTRACT') sales += qty;
+                    break;
+                default:
+                    break;
+            }
+        });
+
+        return { stockIn, transferOut, returns, damage, delivered, sales };
+    }, [filteredTransactions]);
+
+    const isProductSummaryView = product?.isProductSummaryView === true;
+
     const groupedTransactionsRef = useMemo(() => {
         if (!transactions || transactions.length === 0) return {};
         return groupTransactionsByReference(transactions);
@@ -586,33 +637,64 @@ const ProductTransactionsModal = ({
                     </div>
 
                     {/* Totals summary bar */}
-                    <div className="flex flex-wrap items-center gap-3 mb-4">
-                        <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
-                            <ArrowDownCircle size={15} className="text-green-600" />
-                            <span className="text-xs font-medium text-green-700 uppercase tracking-wide">Total In</span>
-                            <span className="text-sm font-bold text-green-800">{totals.totalIn.toLocaleString()}</span>
-                            {totals.totalInCancelled > 0 && (
-                                <span className="text-[10px] text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">
-                                    ({totals.totalInRegular.toLocaleString()} regular + {totals.totalInCancelled.toLocaleString()} cancelled)
-                                </span>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg">
-                            <ArrowUpCircle size={15} className="text-red-600" />
-                            <span className="text-xs font-medium text-red-700 uppercase tracking-wide">Total Out</span>
-                            <span className="text-sm font-bold text-red-800">{totals.totalOut.toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-                            <span className="text-xs font-medium text-blue-700 uppercase tracking-wide">Net</span>
-                            <span className={`text-sm font-bold ${totals.totalIn - totals.totalOut >= 0 ? 'text-blue-800' : 'text-red-800'}`}>
-                                {totals.totalIn - totals.totalOut >= 0 ? '+' : ''}{(totals.totalIn - totals.totalOut).toLocaleString()}
-                            </span>
-                        </div>
-                        {totals.totalCancelled > 0 && (
-                            <div className="flex items-center gap-2 px-4 py-2 bg-rose-50 border border-rose-200 rounded-lg">
-                                <span className="text-xs font-medium text-rose-700 uppercase tracking-wide">Cancelled (returned)</span>
-                                <span className="text-sm font-bold text-rose-800">{totals.totalCancelled.toLocaleString()}</span>
-                            </div>
+                    <div className="flex flex-wrap items-center gap-2 mb-4">
+                        {isProductSummaryView ? (
+                            <>
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
+                                    <span className="text-[10px] font-medium text-green-700 uppercase tracking-wide">Stock In</span>
+                                    <span className="text-sm font-bold text-green-800">+{detailedTotals.stockIn.toLocaleString()}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded-lg">
+                                    <span className="text-[10px] font-medium text-orange-700 uppercase tracking-wide">Trans. Out</span>
+                                    <span className="text-sm font-bold text-orange-800">-{detailedTotals.transferOut.toLocaleString()}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                    <span className="text-[10px] font-medium text-yellow-700 uppercase tracking-wide">Return</span>
+                                    <span className="text-sm font-bold text-yellow-800">+{detailedTotals.returns.toLocaleString()}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg">
+                                    <span className="text-[10px] font-medium text-red-700 uppercase tracking-wide">Damage</span>
+                                    <span className="text-sm font-bold text-red-800">-{detailedTotals.damage.toLocaleString()}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 border border-purple-200 rounded-lg">
+                                    <span className="text-[10px] font-medium text-purple-700 uppercase tracking-wide">Delivered</span>
+                                    <span className="text-sm font-bold text-purple-800">-{detailedTotals.delivered.toLocaleString()}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-50 border border-pink-200 rounded-lg">
+                                    <span className="text-[10px] font-medium text-pink-700 uppercase tracking-wide">Sales</span>
+                                    <span className="text-sm font-bold text-pink-800">-{detailedTotals.sales.toLocaleString()}</span>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
+                                    <ArrowDownCircle size={15} className="text-green-600" />
+                                    <span className="text-xs font-medium text-green-700 uppercase tracking-wide">Total In</span>
+                                    <span className="text-sm font-bold text-green-800">{totals.totalIn.toLocaleString()}</span>
+                                    {totals.totalInCancelled > 0 && (
+                                        <span className="text-[10px] text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">
+                                            ({totals.totalInRegular.toLocaleString()} regular + {totals.totalInCancelled.toLocaleString()} cancelled)
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg">
+                                    <ArrowUpCircle size={15} className="text-red-600" />
+                                    <span className="text-xs font-medium text-red-700 uppercase tracking-wide">Total Out</span>
+                                    <span className="text-sm font-bold text-red-800">{totals.totalOut.toLocaleString()}</span>
+                                </div>
+                                <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <span className="text-xs font-medium text-blue-700 uppercase tracking-wide">Net</span>
+                                    <span className={`text-sm font-bold ${totals.totalIn - totals.totalOut >= 0 ? 'text-blue-800' : 'text-red-800'}`}>
+                                        {totals.totalIn - totals.totalOut >= 0 ? '+' : ''}{(totals.totalIn - totals.totalOut).toLocaleString()}
+                                    </span>
+                                </div>
+                                {totals.totalCancelled > 0 && (
+                                    <div className="flex items-center gap-2 px-4 py-2 bg-rose-50 border border-rose-200 rounded-lg">
+                                        <span className="text-xs font-medium text-rose-700 uppercase tracking-wide">Cancelled (returned)</span>
+                                        <span className="text-sm font-bold text-rose-800">{totals.totalCancelled.toLocaleString()}</span>
+                                    </div>
+                                )}
+                            </>
                         )}
                         <span className="text-xs text-gray-400 ml-1">
                             ({filteredTransactions.filter(t => !(t.isDeleted === true || t.action === 'DELETED')).length} active transactions)

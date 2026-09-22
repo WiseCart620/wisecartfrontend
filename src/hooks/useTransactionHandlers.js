@@ -86,7 +86,6 @@ export const useTransactionHandlers = () => {
             const itemTransactions = thisSaleTransactions.filter(t =>
               t.productId === item.product?.id
             );
-
             return {
               id: item.id || `${saleId}-${item.product?.id || 'unknown'}`,
               productId: item.product?.id,
@@ -317,7 +316,8 @@ export const useTransactionHandlers = () => {
         branchId: product.branchId,
         branchName: product.branchName,
         targetId: targetId,
-        targetType: targetType
+        targetType: targetType,
+        isProductSummaryView: true
       });
 
       let transactionsRes;
@@ -443,7 +443,7 @@ export const useTransactionHandlers = () => {
           }
 
           return t.fromBranch?.id === stock.branchId ||
-            t.toBranch?.id === stock.branchId; f
+            t.toBranch?.id === stock.branchId;
         });
       }
 
