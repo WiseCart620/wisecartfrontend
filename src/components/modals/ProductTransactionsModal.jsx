@@ -330,6 +330,7 @@ const ProductTransactionsModal = ({
         };
 
         const cancelledDeliveryIds = new Set();
+        const usedOriginalIds = new Set();
 
         const cancelReturnAdds = filteredTransactions.filter(t => {
             const type = t.inventoryType || t.transactionType || '';
@@ -358,10 +359,14 @@ const ProductTransactionsModal = ({
                 if (type !== 'DELIVERY' || t.action !== 'SUBTRACT') return false;
                 if (t.referenceNumber !== baseRef) return false;
                 if (t.toBranch?.id !== cancelledBranchId) return false;
+                if (usedOriginalIds.has(t.id)) return false;
                 const oQty = Math.abs(t.quantity || t.quantityChanged || 0);
                 return oQty === qty;
             });
-            if (original) cancelledDeliveryIds.add(original.id);
+            if (original) {
+                cancelledDeliveryIds.add(original.id);
+                usedOriginalIds.add(original.id);
+            }
         });
 
         filteredTransactions.forEach((t) => {
