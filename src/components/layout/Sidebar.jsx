@@ -5,7 +5,7 @@ import {
   UserPlus, PackageSearch, PackageOpen, ChevronDown, ChevronRight,
   ChevronLeft, Database, Factory, ClipboardList, X,
 } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useAuth, hasPermission } from '../../context/AuthContext';
 
 const allMainMenuItems = [
@@ -26,9 +26,9 @@ const dataEntryItems = [
 
 const salesSubItems = [
   { to: '/sales', label: 'New Sale / All Sales', icon: ShoppingCart },
-  { to: '/sales?section=invoicing', label: 'Generate Invoice / COS', icon: ClipboardList },
-  { to: '/sales?section=journal', label: 'Sales Journal', icon: ClipboardList },
-  { to: '/sales?section=report', label: 'Sales Report', icon: ClipboardList },
+  { to: '/sales', label: 'Generate Invoice / COS', icon: ClipboardList },
+  { to: '/sales', label: 'Sales Journal', icon: ClipboardList },
+  { to: '/sales', label: 'Sales Report', icon: ClipboardList },
 ];
 
 const Sidebar = ({ isOpen, toggle }) => {
@@ -59,6 +59,8 @@ const Sidebar = ({ isOpen, toggle }) => {
   const [dataEntryOpen, setDataEntryOpen] = useState(true);
   const [salesOpen, setSalesOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const location = useLocation();
+  const isSalesActive = location.pathname === '/sales';
 
   return (
     <>
@@ -101,61 +103,6 @@ const Sidebar = ({ isOpen, toggle }) => {
         {/* Nav */}
         <nav className="flex-1 p-2 space-y-1">
 
-          {/* Sales section (collapsible, first item) */}
-          {showSales && !sidebarCollapsed && (
-            <div>
-              <button
-                onClick={() => setSalesOpen(!salesOpen)}
-                className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg hover:bg-orange-50 hover:text-gray-900 hover:font-[600] font-[480] text-gray-600 transition-colors text-sm"
-              >
-                <div className="flex items-center gap-3">
-                  <ShoppingCart size={20} className="flex-shrink-0" />
-                  <span className="font-medium">Sales</span>
-                </div>
-                {salesOpen
-                  ? <ChevronDown size={16} />
-                  : <ChevronRight size={16} />}
-              </button>
-
-              <div className={`overflow-hidden transition-all duration-300 ${salesOpen ? 'max-h-60' : 'max-h-0'}`}>
-                <div className="ml-6 mt-1 space-y-1 border-l border-gray-200 pl-2">
-                  {salesSubItems.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <NavLink
-                        key={item.label}
-                        to={item.to}
-                        onClick={() => window.innerWidth < 1024 && toggle()}
-                        className={({ isActive }) =>
-                          `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm
-                          ${isActive ? 'bg-orange-600 text-white font-[600]' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-[600] font-[480] text-gray-500'}`
-                        }
-                      >
-                        <Icon size={17} className="flex-shrink-0" />
-                        <span className="truncate">{item.label}</span>
-                      </NavLink>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Sales icon-only when collapsed */}
-          {showSales && sidebarCollapsed && (
-            <NavLink
-              to="/sales"
-              title="Sales"
-              onClick={() => window.innerWidth < 1024 && toggle()}
-              className={({ isActive }) =>
-                `flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors
-               ${isActive ? 'bg-orange-600 text-white font-[600]' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-[600] font-[480] text-gray-600'}`
-              }
-            >
-              <ShoppingCart size={20} className="flex-shrink-0" />
-            </NavLink>
-          )}
-
           {/* Main items */}
           {mainMenuItems.map((item) => {
             const Icon = item.icon;
@@ -179,6 +126,59 @@ const Sidebar = ({ isOpen, toggle }) => {
               </NavLink>
             );
           })}
+
+          {/* Sales section (collapsible) */}
+          {showSales && !sidebarCollapsed && (
+            <div>
+              <button
+                onClick={() => setSalesOpen(!salesOpen)}
+                className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg transition-colors text-sm
+                  ${isSalesActive ? 'bg-orange-600 text-white font-[600]' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-[600] font-[480] text-gray-600'}`}
+              >
+                <div className="flex items-center gap-3">
+                  <ShoppingCart size={20} className="flex-shrink-0" />
+                  <span className="font-medium">Sales</span>
+                </div>
+                {salesOpen
+                  ? <ChevronDown size={16} />
+                  : <ChevronRight size={16} />}
+              </button>
+
+              <div className={`overflow-hidden transition-all duration-300 ${salesOpen ? 'max-h-60' : 'max-h-0'}`}>
+                <div className="ml-6 mt-1 space-y-1 border-l border-gray-200 pl-2">
+                  {salesSubItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.label}
+                        to={item.to}
+                        onClick={() => window.innerWidth < 1024 && toggle()}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm hover:bg-orange-50 hover:text-gray-900 hover:font-[600] font-[480] text-gray-500"
+                      >
+                        <Icon size={17} className="flex-shrink-0" />
+                        <span className="truncate">{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Sales icon-only when collapsed */}
+          {showSales && sidebarCollapsed && (
+            <NavLink
+              to="/sales"
+              title="Sales"
+              onClick={() => window.innerWidth < 1024 && toggle()}
+              className={({ isActive }) =>
+                `flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors
+               ${isActive ? 'bg-orange-600 text-white font-[600]' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-[600] font-[480] text-gray-600'}`
+              }
+            >
+              <ShoppingCart size={20} className="flex-shrink-0" />
+            </NavLink>
+          )}
 
           {/* Data Entry section */}
           {showDataEntry && !sidebarCollapsed && (

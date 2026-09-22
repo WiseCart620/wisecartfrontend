@@ -1,5 +1,4 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import '../../styles/invoice-print.css';
 import '../../styles/sales-report-print.css';
 import '../../styles/sales-memo-print.css';
@@ -45,7 +44,6 @@ const SalesManagement = () => {
   const [selectedStatusForModal, setSelectedStatusForModal] = useState(null);
   const [showInvoicingProfile, setShowInvoicingProfile] = useState(false);
   const [showSalesReport, setShowSalesReport] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
   const [invoiceReport, setInvoiceReport] = useState(null);
   const [invoiceBranchIds, setInvoiceBranchIds] = useState([]);
   const [invoiceProductIds, setInvoiceProductIds] = useState([]);
@@ -109,24 +107,7 @@ const SalesManagement = () => {
     if (showModal) setLoadingAction(null);
   }, [showModal]);
 
-  // Auto-open the right view based on ?section= from sidebar links
-  useEffect(() => {
-    const section = searchParams.get('section');
-    if (!section) return;
 
-    if (section === 'invoicing' && canInvoice) {
-      setInvoiceBranchIds(filterData.branchIds || []);
-      setShowInvoiceModal(true);
-    } else if (section === 'journal' && canInvoice) {
-      setShowInvoicingProfile(true);
-    } else if (section === 'report' && canReport) {
-      setShowSalesReport(true);
-    }
-
-    // Clear the query param so it doesn't re-trigger on every render/back-nav
-    setSearchParams({}, { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
 
   const handleResetFilter = () => {
     setFilterData(DEFAULT_FILTER_DATA);
