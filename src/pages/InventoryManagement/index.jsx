@@ -108,24 +108,34 @@ const InventoryManagement = () => {
   }, []);
 
   useEffect(() => {
-    const loadReferenceData = async () => {
+    const safeGet = async (url) => {
       try {
-        const [productsRes, warehousesRes, branchesRes, companiesRes] = await Promise.all([
-          api.get('/products?limit=100'),
-          api.get('/warehouse'),
-          api.get('/branches'),
-          api.get('/companies'),
-        ]);
-        if (productsRes.success) setProducts(productsRes.data || []);
-        if (warehousesRes.success) {
-          console.log('Warehouses loaded:', warehousesRes.data);
-          setWarehouses(warehousesRes.data || []);
+        return await api.get(url);
+      } catch (err) {
+        if (err?.response?.status === 403) {
+          // User doesn't have permission to view this reference data — skip quietly.
+          return { success: false, data: [] };
         }
-        if (branchesRes.success) setBranches(branchesRes.data || []);
-        if (companiesRes.success) setCompanies(companiesRes.data || []);
+        console.error(`Failed to load ${url}`, err);
+        return { success: false, data: [] };
+      }
+    };
+
+    const loadReferenceData = async () => {
+      const [productsRes, warehousesRes, branchesRes, companiesRes] = await Promise.all([
+        safeGet('/products?limit=100'),
+        safeGet('/warehouse'),
+        safeGet('/branches'),
+        safeGet('/companies'),
+      ]);
+      if (productsRes.success) setProducts(productsRes.data || []);
+      if (warehousesRes.success) setWarehouses(warehousesRes.data || []);
+      if (branchesRes.success) setBranches(branchesRes.data || []);
+      if (companiesRes.success) setCompanies(companiesRes.data || []);
+      try {
         await loadProductSummaries();
       } catch (err) {
-        console.error('Failed to load reference data', err);
+        console.error('Failed to load product summaries', err);
       }
     };
     loadReferenceData();

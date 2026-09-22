@@ -2,6 +2,8 @@ import React from 'react';
 import SearchableWarehouseDropdown from '../common/SearchableWarehouseDropdown';
 import { canSeeFilter } from '../../context/AuthContext';
 
+import { useEffect } from 'react';
+
 const WarehouseFilterPanel = ({
   user,
   showWarehouseFilter,
@@ -10,14 +12,33 @@ const WarehouseFilterPanel = ({
   updateFilter,
   clearFilters
 }) => {
+  const canWarehouse = canSeeFilter(user, 'warehouse_inventory', 'warehouse');
+  const canQuantity = canSeeFilter(user, 'warehouse_inventory', 'quantity');
+  const canDate = canSeeFilter(user, 'warehouse_inventory', 'date');
+
+  useEffect(() => {
+    if (!canWarehouse && filters.warehouse) updateFilter('warehouse', '');
+    if (!canQuantity && (filters.minQty || filters.maxQty)) {
+      updateFilter('minQty', '');
+      updateFilter('maxQty', '');
+    }
+    if (!canDate && (filters.startDate || filters.endDate)) {
+      updateFilter('startDate', '');
+      updateFilter('endDate', '');
+    }
+  }, [canWarehouse, canQuantity, canDate]);
+
   if (!showWarehouseFilter) return null;
 
-  const hasActiveFilters = filters.warehouse || filters.minQty || filters.maxQty || filters.startDate || filters.endDate;
+  const hasActiveFilters =
+    (canWarehouse && filters.warehouse) ||
+    (canQuantity && (filters.minQty || filters.maxQty)) ||
+    (canDate && (filters.startDate || filters.endDate));
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 mb-4">
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
-        {canSeeFilter(user, 'warehouse_inventory', 'warehouse') && (
+        {canWarehouse && (
           <div className="w-52 h-9 [&>div]:h-9 [&>button]:h-9">
             <SearchableWarehouseDropdown
               warehouses={warehouses}
@@ -28,7 +49,7 @@ const WarehouseFilterPanel = ({
           </div>
         )}
 
-        {canSeeFilter(user, 'warehouse_inventory', 'quantity') && (
+        {canQuantity && (
           <div className="flex items-center gap-1 border border-gray-300 rounded-lg px-2 py-1">
             <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Stock</span>
             <input
@@ -49,7 +70,7 @@ const WarehouseFilterPanel = ({
           </div>
         )}
 
-        {canSeeFilter(user, 'warehouse_inventory', 'date') && (
+        {canDate && (
           <div className="flex items-center gap-1 border border-gray-300 rounded-lg px-2 py-1">
             <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
             <input

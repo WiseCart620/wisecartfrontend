@@ -14,16 +14,27 @@ export const ReferenceDataProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const hasFetched = useRef(false);
 
+  const safeGet = async (url) => {
+    try {
+      return await api.get(url);
+    } catch (err) {
+      if (err?.response?.status !== 403) {
+        console.error(`Failed to load ${url}`, err);
+      }
+      return { success: false, data: [] };
+    }
+  };
+
   const loadReferenceData = useCallback(async (force = false) => {
     if (hasFetched.current && !force) return;
     hasFetched.current = true;
     try {
       setLoading(true);
       const [branchesRes, productsRes, warehousesRes, companiesRes] = await Promise.all([
-        api.get('/branches/list'),
-        api.get('/products'),
-        api.get('/warehouse'),
-        api.get('/companies')
+        safeGet('/branches/list'),
+        safeGet('/products'),
+        safeGet('/warehouse'),
+        safeGet('/companies')
       ]);
       if (branchesRes.success) {
         const normalizedBranches = (branchesRes.data || []).map(b => ({
@@ -36,9 +47,6 @@ export const ReferenceDataProvider = ({ children }) => {
       if (productsRes.success) setProducts(productsRes.data || []);
       if (warehousesRes.success) setWarehouses(warehousesRes.data || []);
       if (companiesRes.success) setCompanies(companiesRes.data || []);
-    } catch (err) {
-      console.error('Failed to load reference data', err);
-      hasFetched.current = false; // allow retry on next mount/call
     } finally {
       setLoading(false);
     }

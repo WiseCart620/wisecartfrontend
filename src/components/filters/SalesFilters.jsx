@@ -238,7 +238,7 @@ const SalesFilters = ({
                     <button
                       key={status}
                       onClick={() => onOpenStatusModal(status)}
-                      className={`flex items-center gap-2 border border-blue-400 rounded-lg px-3 py-1 ${hoverClass} transition-colors cursor-pointer`}
+                      className={`flex items-center gap-2 border border-black rounded-md px-3 py-1 ${hoverClass} transition-colors cursor-pointer`}
                     >
                       <span className="text-xs text-gray-600">{label}:</span>
                       <span className="text-xs text-gray-800">₱{fmt(amt)}</span>
@@ -247,12 +247,12 @@ const SalesFilters = ({
                     </button>
                   ))}
 
-                  <div className="flex items-center gap-2 border-2 border-orange-400 rounded-lg px-3 py-1">
+                  <div className="flex items-center gap-2 border-2 border-black rounded-md px-3 py-1">
                     <span className="text-xs text-gray-700">Total Qty:</span>
                     <span className="text-sm text-gray-800">{(pendingQty + confirmedQty + invoicedQty).toLocaleString()}</span>
                   </div>
 
-                  <div className="flex items-center gap-2 border-2 border-orange-600 rounded-lg px-3 py-1">
+                  <div className="flex items-center gap-2 border-2 border-black rounded-md px-3 py-1">
                     <span className="text-xs text-orange-700">Grand Total:</span>
                     <span className="text-sm text-orange-700">₱{fmt(grandTotal)}</span>
                     <button
