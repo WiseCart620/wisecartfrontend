@@ -317,15 +317,10 @@ const ProductTransactionsModal = ({
         let returns = 0;
         let damage = 0;
         let delivered = 0;
-        let sales = 0;
+        let salesConfirmed = 0;
+        let salesInvoiced = 0;
         let pendingSale = 0;
 
-        // A cancelled delivery's REVERSAL rows carry "CANCELLED-{deliveryId}-{originalRef}"
-        // as their reference number, but the ORIGINAL delivery-out row still just has the
-        // plain reference (e.g. "5152") — so it isn't excluded by reference prefix alone.
-        // Since a reference number can be reused by more than one physical delivery,
-        // match on reference + destination branch + quantity to find exactly which
-        // original SUBTRACT a given cancellation undoes.
         const cancelledDeliveryIds = new Set();
 
         const cancelReturnAdds = filteredTransactions.filter(t => {
@@ -393,8 +388,11 @@ const ProductTransactionsModal = ({
                     break;
                 }
                 case 'SALE':
-                    if (action === 'SUBTRACT' || action === 'INVOICED') {
-                        sales += qty;
+
+                    if (action === 'SUBTRACT') {
+                        salesConfirmed += qty;
+                    } else if (action === 'INVOICED') {
+                        salesInvoiced += qty;
                     } else if (action === 'RESERVE') {
                         pendingSale += qty;
                     }
@@ -404,7 +402,7 @@ const ProductTransactionsModal = ({
             }
         });
 
-        return { stockIn, transferOut, returns, damage, delivered, sales, pendingSale };
+        return { stockIn, transferOut, returns, damage, delivered, salesConfirmed, salesInvoiced, pendingSale };
     }, [filteredTransactions]);
 
     const isProductSummaryView = product?.isProductSummaryView === true;
@@ -709,8 +707,12 @@ const ProductTransactionsModal = ({
                                     <span className="text-sm font-bold text-purple-800">-{detailedTotals.delivered.toLocaleString()}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-50 border border-pink-200 rounded-lg">
-                                    <span className="text-[10px] font-medium text-pink-700 uppercase tracking-wide">Sales</span>
-                                    <span className="text-sm font-bold text-pink-800">-{detailedTotals.sales.toLocaleString()}</span>
+                                    <span className="text-[10px] font-medium text-pink-700 uppercase tracking-wide">Sales (Confirmed)</span>
+                                    <span className="text-sm font-bold text-pink-800">-{detailedTotals.salesConfirmed.toLocaleString()}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-fuchsia-50 border border-fuchsia-200 rounded-lg">
+                                    <span className="text-[10px] font-medium text-fuchsia-700 uppercase tracking-wide">Sales (Invoiced)</span>
+                                    <span className="text-sm font-bold text-fuchsia-800">-{detailedTotals.salesInvoiced.toLocaleString()}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">
                                     <span className="text-[10px] font-medium text-slate-700 uppercase tracking-wide">Pend. Sale</span>
