@@ -25,6 +25,7 @@ const dataEntryItems = [
 ];
 
 const salesSubItems = [
+  { to: '/sales', label: 'All Sales', icon: ShoppingCart, end: true },
   { to: '/sales/journal', label: 'Sales Journal', icon: BookOpen },
   { to: '/sales/report', label: 'Sales Report', icon: BarChart3 },
 ];
@@ -58,7 +59,6 @@ const Sidebar = ({ isOpen, toggle }) => {
   const [salesOpen, setSalesOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const location = useLocation();
-  const isSalesActive = location.pathname.startsWith('/sales');
 
   return (
     <>
@@ -128,29 +128,18 @@ const Sidebar = ({ isOpen, toggle }) => {
           {/* Sales section (collapsible) */}
           {showSales && !sidebarCollapsed && (
             <div>
-              <div
-                className={`flex items-center justify-between w-full rounded-lg transition-colors text-sm
-                  ${isSalesActive ? 'bg-orange-600 text-white font-[600]' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-[600] font-[480] text-gray-600'}`}
+              <button
+                onClick={() => setSalesOpen(!salesOpen)}
+                className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg hover:bg-orange-50 hover:text-gray-900 hover:font-[600] font-[480] text-gray-600 transition-colors text-sm"
               >
-                <NavLink
-                  to="/sales"
-                  end
-                  onClick={() => window.innerWidth < 1024 && toggle()}
-                  className="flex items-center gap-3 flex-1 px-3 py-2.5"
-                >
+                <div className="flex items-center gap-3">
                   <ShoppingCart size={20} className="flex-shrink-0" />
                   <span className="font-medium">Sales</span>
-                </NavLink>
-                <button
-                  onClick={() => setSalesOpen(!salesOpen)}
-                  className="px-3 py-2.5 flex-shrink-0"
-                  aria-label={salesOpen ? 'Collapse Sales menu' : 'Expand Sales menu'}
-                >
-                  {salesOpen
-                    ? <ChevronDown size={16} />
-                    : <ChevronRight size={16} />}
-                </button>
-              </div>
+                </div>
+                {salesOpen
+                  ? <ChevronDown size={16} />
+                  : <ChevronRight size={16} />}
+              </button>
 
               <div className={`overflow-hidden transition-all duration-300 ${salesOpen ? 'max-h-60' : 'max-h-0'}`}>
                 <div className="ml-6 mt-1 space-y-1 border-l border-gray-200 pl-2">
@@ -160,6 +149,7 @@ const Sidebar = ({ isOpen, toggle }) => {
                       <NavLink
                         key={item.to}
                         to={item.to}
+                        end={item.end}
                         onClick={() => window.innerWidth < 1024 && toggle()}
                         className={({ isActive }) =>
                           `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm
@@ -180,6 +170,7 @@ const Sidebar = ({ isOpen, toggle }) => {
           {showSales && sidebarCollapsed && (
             <NavLink
               to="/sales"
+              end
               title="Sales"
               onClick={() => window.innerWidth < 1024 && toggle()}
               className={({ isActive }) =>
