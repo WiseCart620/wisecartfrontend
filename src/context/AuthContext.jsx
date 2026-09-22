@@ -204,7 +204,7 @@ export const canSeeFilter = (user, feature, filterKey) => {
   const perms = Array.isArray(user.permissions) ? user.permissions : [];
   const prefix = `${feature}:filter_`;
   const filterPerms = perms.filter(p => p.startsWith(prefix));
-  if (filterPerms.length === 0) return true;
+  if (filterPerms.length === 0) return false;
   return filterPerms.includes(`${prefix}${filterKey}`);
 };
 

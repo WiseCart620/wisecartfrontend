@@ -797,15 +797,34 @@ const UserManagement = () => {
 
                               {FILTERS[f.key] && (
                                 <div className="mt-3 pt-3 border-t border-gray-100">
-                                  <p className="text-[10px] font-medium text-gray-400 uppercase mb-2 tracking-wide">
-                                    Visible filters {(() => {
-                                      const filterKeys = FILTERS[f.key].map(fl => `${f.key}:filter_${fl.key}`);
-                                      const checkedFilters = filterKeys.filter(k => formData.permissions.includes(k)).length;
-                                      return checkedFilters === 0
-                                        ? '(all shown by default)'
-                                        : `(${checkedFilters}/${filterKeys.length} visible — rest hidden)`;
-                                    })()}
-                                  </p>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">
+                                      Visible filters {(() => {
+                                        const filterKeys = FILTERS[f.key].map(fl => `${f.key}:filter_${fl.key}`);
+                                        const checkedFilters = filterKeys.filter(k => formData.permissions.includes(k)).length;
+                                        return checkedFilters === 0
+                                          ? '(none — all hidden)'
+                                          : `(${checkedFilters}/${filterKeys.length} visible)`;
+                                      })()}
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const filterKeys = FILTERS[f.key].map(fl => `${f.key}:filter_${fl.key}`);
+                                        const allChecked = filterKeys.every(k => formData.permissions.includes(k));
+                                        setFormData(prev => {
+                                          const withoutFilters = prev.permissions.filter(p => !filterKeys.includes(p));
+                                          return {
+                                            ...prev,
+                                            permissions: allChecked ? withoutFilters : [...withoutFilters, ...filterKeys]
+                                          };
+                                        });
+                                      }}
+                                      className="text-[10px] font-medium text-purple-600 hover:text-purple-800"
+                                    >
+                                      {FILTERS[f.key].every(fl => formData.permissions.includes(`${f.key}:filter_${fl.key}`)) ? 'Clear all' : 'Select all'}
+                                    </button>
+                                  </div>
                                   <div className="flex flex-wrap gap-1.5">
                                     {FILTERS[f.key].map(fl => {
                                       const permKey = `${f.key}:filter_${fl.key}`;
