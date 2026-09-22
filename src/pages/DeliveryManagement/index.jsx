@@ -481,7 +481,7 @@ const DeliveryManagement = () => {
           <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-2 sm:p-6">
             <div className="bg-white rounded-xl sm:rounded-2xl max-w-lg w-full shadow-2xl max-h-[95vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200 flex items-center gap-3">
-                <div className="p-2 bg-orange-100 rounded-lg"><XCircle size={22} className="text-orange-600" /></div>
+                <div className="p-2 bg-red-100 rounded-lg"><XCircle size={22} className="text-red-600" /></div>
                 <div>
                   <h2 className="text-lg font-bold text-gray-900">Cancel Delivered Delivery</h2>
                   <p className="text-sm text-gray-500 mt-0.5">DR# {cancelModal.delivery.deliveryReceiptNumber}</p>
@@ -522,7 +522,7 @@ const DeliveryManagement = () => {
                 <button
                   onClick={handleConfirmCancel}
                   disabled={!cancelModal.remarks.trim()}
-                  className="px-5 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   <XCircle size={16} />Confirm Cancellation
                 </button>
