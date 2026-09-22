@@ -803,7 +803,7 @@ const UserManagement = () => {
                                       const checkedFilters = filterKeys.filter(k => formData.permissions.includes(k)).length;
                                       return checkedFilters === 0
                                         ? '(all shown by default)'
-                                        : `(${checkedFilters}/${filterKeys.length} restricted)`;
+                                        : `(${checkedFilters}/${filterKeys.length} visible — rest hidden)`;
                                     })()}
                                   </p>
                                   <div className="flex flex-wrap gap-1.5">
