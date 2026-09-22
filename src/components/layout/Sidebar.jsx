@@ -30,8 +30,8 @@ const salesSubItems = [
 ];
 
 const deliveriesSubItems = [
-  { to: '/deliveries', label: 'Delivery Management', icon: Truck, end: true, permAction: 'view' },
-  { to: '/transmittals', label: 'Transmittal Forms', icon: FileText, permAction: 'transmittal' },
+  { to: '/deliveries', label: 'Delivery', icon: Truck, end: true, permAction: 'view' },
+  { to: '/transmittals', label: 'Transmittal', icon: FileText, permAction: 'transmittal' },
 ];
 
 const Sidebar = ({ isOpen, toggle }) => {
