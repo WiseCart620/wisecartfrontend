@@ -17,6 +17,7 @@ const allMainMenuItems = [
   { to: '/procurement', label: 'Procurement', icon: ClipboardList, userHidden: true },
 ];
 
+
 const dataEntryItems = [
   { to: '/warehouse', label: 'Warehouse', icon: Warehouse },
   { to: '/branches', label: 'Branches & Companies', icon: Users },
@@ -81,10 +82,10 @@ const Sidebar = ({ isOpen, toggle }) => {
         {/* Logo row */}
         <div className="flex items-center justify-between px-4 py-5 border-b border-gray-800 flex-shrink-0">
           {!sidebarCollapsed && (
-            <span className="text-xl font-bold whitespace-nowrap">WiseCart</span>
+            <span className="text-xl font-bold whitespace-nowrap text-orange-600">WiseCart</span>
           )}
           {sidebarCollapsed && (
-            <span className="text-xl font-bold mx-auto">WC</span>
+            <span className="text-xl font-bold mx-auto text-orange-600">WC</span>
           )}
         </div>
 
@@ -102,7 +103,7 @@ const Sidebar = ({ isOpen, toggle }) => {
                 title={sidebarCollapsed ? item.label : undefined}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm
-                   ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-800 text-gray-300'}
+                   ${isActive ? 'bg-orange-600 text-white' : 'hover:bg-orange-100 hover:text-gray-900 text-gray-300'}
                    ${sidebarCollapsed ? 'justify-center' : ''}`
                 }
               >
@@ -119,7 +120,7 @@ const Sidebar = ({ isOpen, toggle }) => {
             <div className="pt-1">
               <button
                 onClick={() => setDataEntryOpen(!dataEntryOpen)}
-                className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg hover:bg-gray-800 text-gray-300 transition-colors text-sm"
+                className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg hover:bg-orange-100 hover:text-gray-900 text-gray-300 transition-colors text-sm"
               >
                 <div className="flex items-center gap-3">
                   <Database size={20} className="flex-shrink-0" />
@@ -141,7 +142,7 @@ const Sidebar = ({ isOpen, toggle }) => {
                         onClick={() => window.innerWidth < 1024 && toggle()}
                         className={({ isActive }) =>
                           `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm
-                           ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-800 text-gray-400'}`
+                           ${isActive ? 'bg-orange-600 text-white' : 'hover:bg-orange-100 hover:text-gray-900 text-gray-400'}`
                         }
                       >
                         <Icon size={17} className="flex-shrink-0" />
@@ -166,7 +167,7 @@ const Sidebar = ({ isOpen, toggle }) => {
                     title={item.label}
                     className={({ isActive }) =>
                       `flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors
-                       ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-800 text-gray-300'}`
+                       ${isActive ? 'bg-orange-600 text-white' : 'hover:bg-orange-100 hover:text-gray-900 text-gray-300'}`
                     }
                   >
                     <Icon size={20} className="flex-shrink-0" />
@@ -184,7 +185,7 @@ const Sidebar = ({ isOpen, toggle }) => {
                 title={sidebarCollapsed ? 'User Management' : undefined}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm
-                   ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-800 text-gray-300'}
+                   ${isActive ? 'bg-orange-600 text-white' : 'hover:bg-orange-100 hover:text-gray-900 text-gray-300'}
                    ${sidebarCollapsed ? 'justify-center' : ''}`
                 }
               >
