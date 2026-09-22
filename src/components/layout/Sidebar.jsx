@@ -25,10 +25,6 @@ const dataEntryItems = [
   { to: '/supplier', label: 'Supplier', icon: Factory },
 ];
 
-// ── Collapsed width (icon-only) ───────────────────────────────────
-const W_COLLAPSED = 64;   // px
-const W_EXPANDED = 240;  // px
-
 const Sidebar = ({ isOpen, toggle }) => {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
@@ -56,8 +52,6 @@ const Sidebar = ({ isOpen, toggle }) => {
   const [dataEntryOpen, setDataEntryOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const sidebarW = sidebarCollapsed ? W_COLLAPSED : W_EXPANDED;
-
   return (
     <>
       {/* Mobile overlay */}
@@ -70,9 +64,9 @@ const Sidebar = ({ isOpen, toggle }) => {
 
       {/* ── Sidebar panel ── */}
       <aside
-        style={{ width: sidebarW }}
         className={`
-           fixed top-0 left-0 z-50 h-full
+          fixed top-0 left-0 z-50 h-full
+          w-72 sm:w-64 ${sidebarCollapsed ? 'lg:w-16' : 'lg:w-60'}
           bg-white text-gray-700 border-r border-gray-200 overflow-y-auto overflow-x-hidden
           transition-all duration-300 flex flex-col
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -87,6 +81,13 @@ const Sidebar = ({ isOpen, toggle }) => {
           {sidebarCollapsed && (
             <span className="text-xl font-bold mx-auto text-orange-600">WC</span>
           )}
+          <button
+            onClick={toggle}
+            className="lg:hidden p-2 -mr-1 rounded-lg hover:bg-orange-50 text-gray-500 flex-shrink-0"
+            aria-label="Close sidebar"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         {/* Nav */}
@@ -103,7 +104,7 @@ const Sidebar = ({ isOpen, toggle }) => {
                 title={sidebarCollapsed ? item.label : undefined}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm
-                   ${isActive ? 'bg-orange-600 text-white' : 'hover:bg-orange-50 hover:text-gray-900 text-gray-600'}
+                   ${isActive ? 'bg-orange-600 text-white font-semibold' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-semibold text-gray-600'}
                    ${sidebarCollapsed ? 'justify-center' : ''}`
                 }
               >
@@ -120,7 +121,7 @@ const Sidebar = ({ isOpen, toggle }) => {
             <div className="pt-1">
               <button
                 onClick={() => setDataEntryOpen(!dataEntryOpen)}
-                className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg hover:bg-orange-50 hover:text-gray-900 text-gray-600 transition-colors text-sm"
+                className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg hover:bg-orange-50 hover:text-gray-900 hover:font-semibold text-gray-600 transition-colors text-sm"
               >
                 <div className="flex items-center gap-3">
                   <Database size={20} className="flex-shrink-0" />
@@ -142,7 +143,7 @@ const Sidebar = ({ isOpen, toggle }) => {
                         onClick={() => window.innerWidth < 1024 && toggle()}
                         className={({ isActive }) =>
                           `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm
-                         ${isActive ? 'bg-orange-600 text-white' : 'hover:bg-orange-50 hover:text-gray-900 text-gray-500'}`
+                         ${isActive ? 'bg-orange-600 text-white font-semibold' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-semibold text-gray-500'}`
                         }
                       >
                         <Icon size={17} className="flex-shrink-0" />
@@ -167,7 +168,7 @@ const Sidebar = ({ isOpen, toggle }) => {
                     title={item.label}
                     className={({ isActive }) =>
                       `flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors
-                                              ${isActive ? 'bg-orange-600 text-white' : 'hover:bg-orange-50 hover:text-gray-900 text-gray-600'}`
+                                              ${isActive ? 'bg-orange-600 text-white font-semibold' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-semibold text-gray-600'}`
                     }
                   >
                     <Icon size={20} className="flex-shrink-0" />
@@ -185,7 +186,7 @@ const Sidebar = ({ isOpen, toggle }) => {
                 title={sidebarCollapsed ? 'User Management' : undefined}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm
-                                     ${isActive ? 'bg-orange-600 text-white' : 'hover:bg-orange-50 hover:text-gray-900 text-gray-600'}
+                                     ${isActive ? 'bg-orange-600 text-white font-semibold' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-semibold text-gray-600'}
                    ${sidebarCollapsed ? 'justify-center' : ''}`
                 }
               >
@@ -196,8 +197,8 @@ const Sidebar = ({ isOpen, toggle }) => {
           )}
         </nav>
 
-        {/* Collapse toggle — bottom of sidebar */}
-        <div className="flex-shrink-0 border-t border-gray-200 p-2">
+        {/* Collapse toggle — desktop only, bottom of sidebar */}
+        <div className="hidden lg:block flex-shrink-0 border-t border-gray-200 p-2">
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className={`
@@ -220,8 +221,7 @@ const Sidebar = ({ isOpen, toggle }) => {
 
       {/* ── Spacer that pushes page content — desktop only ── */}
       <div
-        style={{ width: sidebarW }}
-        className="hidden lg:block flex-shrink-0 transition-all duration-300"
+        className={`hidden lg:block flex-shrink-0 transition-all duration-300 ${sidebarCollapsed ? 'lg:w-16' : 'lg:w-60'}`}
       />
     </>
   );
