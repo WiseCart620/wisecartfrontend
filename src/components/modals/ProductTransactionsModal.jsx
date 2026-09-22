@@ -318,6 +318,7 @@ const ProductTransactionsModal = ({
         let damage = 0;
         let delivered = 0;
         let sales = 0;
+        let pendingSale = 0;
 
         // A cancelled delivery's REVERSAL rows carry "CANCELLED-{deliveryId}-{originalRef}"
         // as their reference number, but the ORIGINAL delivery-out row still just has the
@@ -392,14 +393,18 @@ const ProductTransactionsModal = ({
                     break;
                 }
                 case 'SALE':
-                    if (action === 'SUBTRACT') sales += qty;
+                    if (action === 'SUBTRACT' || action === 'INVOICED') {
+                        sales += qty;
+                    } else if (action === 'RESERVE') {
+                        pendingSale += qty;
+                    }
                     break;
                 default:
                     break;
             }
         });
 
-        return { stockIn, transferOut, returns, damage, delivered, sales };
+        return { stockIn, transferOut, returns, damage, delivered, sales, pendingSale };
     }, [filteredTransactions]);
 
     const isProductSummaryView = product?.isProductSummaryView === true;
@@ -706,6 +711,10 @@ const ProductTransactionsModal = ({
                                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-50 border border-pink-200 rounded-lg">
                                     <span className="text-[10px] font-medium text-pink-700 uppercase tracking-wide">Sales</span>
                                     <span className="text-sm font-bold text-pink-800">-{detailedTotals.sales.toLocaleString()}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">
+                                    <span className="text-[10px] font-medium text-slate-700 uppercase tracking-wide">Pend. Sale</span>
+                                    <span className="text-sm font-bold text-slate-800">{detailedTotals.pendingSale.toLocaleString()}</span>
                                 </div>
                             </>
                         ) : (
