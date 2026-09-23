@@ -408,6 +408,8 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
             html += `<p style="font-style:italic;color:#666;">No invoiced sales found for the selected filters.</p>`;
             return html;
         }
+        let grandVatable = 0, grandVat = 0, grandEwt = 0, grandTotal = 0, grandInvoiceCount = 0;
+
         branchGroups.forEach(bg => {
             html += `<h3 class="print-branch-title">Branch: ${bg.branch?.branchName || 'Unknown'}</h3>`;
 
@@ -416,6 +418,12 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                 const sVat = sVatable * 0.12;
                 const sEwt = sVatable * 0.01;
                 const salePeriod = sale.month && sale.year ? `${monthsFull[sale.month - 1]} ${sale.year}` : '—';
+
+                grandVatable += sVatable;
+                grandVat += sVat;
+                grandEwt += sEwt;
+                grandTotal += Number(sale.totalAmount) || 0;
+                grandInvoiceCount += 1;
 
                 html += `
                   <table class="print-summary-table">
@@ -472,6 +480,27 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                 `;
             });
         });
+
+        html += `
+          <table class="print-summary-table" style="margin-top:10pt;">
+            <thead>
+              <tr>
+                <th colspan="4" class="text-right">GRAND TOTAL (${grandInvoiceCount} invoice${grandInvoiceCount !== 1 ? 's' : ''})</th>
+                <th class="text-right">Vatable</th><th class="text-right">VAT</th>
+                <th class="text-right">EWT</th><th class="text-right">Total Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="4"></td>
+                <td class="text-right"><strong>₱${grandVatable.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong></td>
+                <td class="text-right"><strong>₱${grandVat.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong></td>
+                <td class="text-right"><strong>₱${grandEwt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong></td>
+                <td class="text-right"><strong>₱${grandTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        `;
 
         return html;
     };
