@@ -102,42 +102,6 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
         return Array.from(mergedMap.values());
     };
 
-
-    const buildJournaledPeriods = (profiles) => {
-        const set = new Set();
-        (profiles || []).forEach(p => {
-            const companyId = p.companyId;
-            const branchId = p.branchId || null;
-            const sYear = p.startYear || p.endYear;
-            const eYear = p.endYear || p.startYear;
-            const sMonth = p.startMonth || 1;
-            const eMonth = p.endMonth || 12;
-            if (!companyId || !sYear) return;
-
-            let y = sYear, m = sMonth;
-            while (y < eYear || (y === eYear && m <= eMonth)) {
-                const key = branchId ? `${companyId}_${branchId}_${y}_${m}` : `${companyId}_all_${y}_${m}`;
-                set.add(key);
-                m++;
-                if (m > 12) { m = 1; y++; }
-            }
-        });
-        return set;
-    };
-
-    const isSaleJournaled = (sale, journaledSet) => {
-        const cid = sale.company?.id;
-        const bid = sale.branch?.id;
-        const y = sale.year;
-        const m = sale.month;
-        if (!cid || !y || !m) return false;
-        if (bid && journaledSet.has(`${cid}_${bid}_${y}_${m}`)) return true;
-        if (journaledSet.has(`${cid}_all_${y}_${m}`)) return true;
-        return false;
-    };
-
-    // Narrows each sale down to only the items matching the selected product filters,
-    // and recomputes totalAmount so every downstream VAT/EWT/due calculation stays consistent.
     const applyProductFilterToSales = (salesList, productFilters) => {
         if (!productFilters || productFilters.length === 0) return salesList;
         return salesList
@@ -438,7 +402,6 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
             html += `<p style="font-style:italic;color:#666;">No invoiced sales found for the selected filters.</p>`;
             return html;
         }
-
         branchGroups.forEach(bg => {
             html += `<h3 class="print-branch-title">Branch: ${bg.branch?.branchName || 'Unknown'}</h3>`;
 
@@ -446,12 +409,13 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                 const sVatable = (Number(sale.totalAmount) || 0) / 1.12;
                 const sVat = sVatable * 0.12;
                 const sEwt = sVatable * 0.01;
+                const salePeriod = sale.month && sale.year ? `${monthsFull[sale.month - 1]} ${sale.year}` : '—';
 
                 html += `
                   <table class="print-summary-table">
                     <thead>
                       <tr>
-                        <th>Branch</th><th>Encoded By</th><th>Status</th>
+                        <th>Branch</th><th>Period</th><th>Encoded By</th><th>Status</th>
                         <th class="text-right">Vatable</th><th class="text-right">VAT</th>
                         <th class="text-right">EWT</th><th class="text-right">Total Amount</th>
                       </tr>
@@ -459,6 +423,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                     <tbody>
                       <tr>
                         <td>${sale.branch?.branchName || ''}</td>
+                        <td>${salePeriod}</td>
                         <td>${sale.createdBy || '—'}</td>
                         <td>${sale.status}</td>
                         <td class="text-right">₱${sVatable.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
