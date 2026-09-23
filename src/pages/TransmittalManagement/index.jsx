@@ -756,32 +756,6 @@ const TransmittalManagement = () => {
             <LoadingOverlay show={actionLoading} message={loadingMessage || 'Loading…'} />
 
             <div className="p-6 max-w-[1640px] mx-auto">
-                {/* Sliding Navigation Bar */}
-                <div className="mb-8">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 inline-flex">
-                        <button
-                            onClick={() => navigate('/deliveries')}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200 font-medium ${location.pathname === '/deliveries'
-                                ? 'bg-blue-600 text-white shadow-md'
-                                : 'text-gray-600 hover:bg-gray-100'
-                                }`}
-                        >
-                            <ClipboardList size={18} />
-                            <span>Delivery Management</span>
-                        </button>
-                        <button
-                            onClick={() => navigate('/transmittals')}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200 font-medium ${location.pathname === '/transmittals'
-                                ? 'bg-blue-600 text-white shadow-md'
-                                : 'text-gray-600 hover:bg-gray-100'
-                                }`}
-                        >
-                            <FileText size={18} />
-                            <span>Transmittal Forms</span>
-                        </button>
-                    </div>
-                </div>
-
                 {/* Page header */}
                 <div className="mb-6 flex items-center gap-3">
                     <button
@@ -804,7 +778,7 @@ const TransmittalManagement = () => {
                     <div className="flex items-center gap-3 flex-wrap">
                         <button
                             onClick={handleCreate}
-                            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
+                            className="flex items-center gap-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors shadow-sm font-medium"
                         >
                             <Plus size={18} />
                             <span>New Transmittal</span>
@@ -822,7 +796,7 @@ const TransmittalManagement = () => {
                                         setSearchQuery(e.target.value);
                                         setCurrentPage(1);
                                     }}
-                                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm w-80"
+                                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm w-80"
                                 />
                             </div>
                         )}
@@ -831,14 +805,14 @@ const TransmittalManagement = () => {
                         <button
                             onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${showAdvancedSearch || advancedFilters.productSearch || advancedFilters.dateFrom || advancedFilters.dateTo
-                                ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                                ? 'bg-orange-100 text-orange-700 border border-orange-300'
                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 }`}
                         >
                             <Filter size={16} />
                             <span>Advanced Search</span>
                             {(advancedFilters.productSearch || advancedFilters.dateFrom || advancedFilters.dateTo) && (
-                                <span className="ml-1 w-5 h-5 bg-blue-600 text-white rounded-full text-xs flex items-center justify-center">
+                                <span className="ml-1 w-5 h-5 bg-orange-600 text-white rounded-full text-xs flex items-center justify-center">
                                     !
                                 </span>
                             )}
@@ -881,7 +855,7 @@ const TransmittalManagement = () => {
                                     />
                                     {advancedFilters.productSearch && (
                                         <div className="mt-2 flex items-center justify-between">
-                                            <p className="text-xs text-blue-600">
+                                            <p className="text-xs text-orange-600">
                                                 Searching for: {advancedFilters.productSearch}
                                             </p>
                                             <button
@@ -908,7 +882,7 @@ const TransmittalManagement = () => {
                                                 setAdvancedFilters(prev => ({ ...prev, dateFrom: e.target.value }));
                                                 setCurrentPage(1);
                                             }}
-                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
                                         />
                                         <input
                                             type="date"
@@ -918,7 +892,7 @@ const TransmittalManagement = () => {
                                                 setAdvancedFilters(prev => ({ ...prev, dateTo: e.target.value }));
                                                 setCurrentPage(1);
                                             }}
-                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
                                         />
                                     </div>
                                 </div>
@@ -972,7 +946,7 @@ const TransmittalManagement = () => {
                                     return (
                                         <tr key={t.id} className="hover:bg-gray-50 transition">
                                             <td className="px-4 py-3">
-                                                <span className="font-mono font-semibold text-blue-700 text-sm">{t.controlNumber}</span>
+                                                <span className="font-mono font-semibold text-orange-700 text-sm">{t.controlNumber}</span>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-700">{fmtDate(t.date)}</td>
                                             <td className="px-4 py-3">
@@ -983,7 +957,7 @@ const TransmittalManagement = () => {
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-700">{t.preparedBy || '—'}</td>
                                             <td className="px-4 py-3 text-center">
-                                                <span className="inline-flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-700 rounded-full text-sm font-bold">
+                                                <span className="inline-flex items-center justify-center w-8 h-8 bg-orange-100 text-orange-700 rounded-full text-sm font-bold">
                                                     {t.itemCount ?? (t.items || []).length}
                                                 </span>
                                             </td>
@@ -994,7 +968,7 @@ const TransmittalManagement = () => {
                                                 <div className="flex items-center justify-center gap-2">
                                                     <button
                                                         onClick={() => handleEdit(t)}
-                                                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                                                        className="p-1.5 text-orange-600 hover:bg-orange-50 rounded-lg transition"
                                                         title="Edit"
                                                     >
                                                         <Eye size={16} />

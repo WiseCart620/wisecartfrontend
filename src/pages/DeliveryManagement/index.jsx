@@ -1,7 +1,6 @@
 // src/pages/DeliveryManagement/index.jsx
 import React, { useState, useEffect } from 'react';
 import { Plus, ArrowUpDown, Hash, Clock, XCircle, FileText, ClipboardList, Package } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { LoadingOverlay } from '../../components/common/LoadingOverlay';
 import DeliveryTable from '../../components/tables/DeliveryTable';
 import DeliveryFilters from '../../components/filters/DeliveryFilters';
@@ -30,8 +29,6 @@ const DeliveryManagement = () => {
   const canDelete = can(user, 'deliveries', 'delete');
   const canCancel = can(user, 'deliveries', 'cancel');
   const canPrint = can(user, 'deliveries', 'print');
-  const navigate = useNavigate();
-  const location = useLocation();
   const {
     deliveries,
     loading,
@@ -357,32 +354,6 @@ const DeliveryManagement = () => {
       />
 
       <div className="p-2 sm:p-3 lg:p-4 max-w-full mx-auto overflow-x-hidden">
-        {/* Sliding Navigation Bar */}
-        <div className="mb-4">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 inline-flex overflow-x-auto max-w-full">
-            <button
-              onClick={() => navigate('/deliveries')}
-              className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-lg transition-all duration-200 font-medium text-sm whitespace-nowrap ${location.pathname === '/deliveries'
-                ? 'bg-orange-600 text-white shadow-md'
-                : 'text-gray-600 hover:bg-gray-100'
-                }`}
-            >
-              <ClipboardList size={18} />
-              <span>Delivery Management</span>
-            </button>
-            <button
-              onClick={() => navigate('/transmittals')}
-              className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-lg transition-all duration-200 font-medium text-sm whitespace-nowrap ${location.pathname === '/transmittals'
-                ? 'bg-orange-600 text-white shadow-md'
-                : 'text-gray-600 hover:bg-gray-100'
-                }`}
-            >
-              <FileText size={18} />
-              <span>Transmittal Forms</span>
-            </button>
-          </div>
-        </div>
-
         <div className="mb-3 flex items-center justify-between">
           <div>
             <h1 className="text-lg lg:text-2xl font-bold text-gray-900">Delivery Management</h1>
