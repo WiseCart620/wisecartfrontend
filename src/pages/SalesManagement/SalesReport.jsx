@@ -395,6 +395,12 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
         });
         const branchGroups = Array.from(branchMap.values())
             .sort((a, b) => (a.branch?.branchName || '').localeCompare(b.branch?.branchName || ''));
+        branchGroups.forEach(bg => {
+            bg.sales.sort((a, b) => {
+                if (a.year !== b.year) return a.year - b.year;
+                return a.month - b.month;
+            });
+        });
 
         let html = buildPrintMetaHTML();
 
