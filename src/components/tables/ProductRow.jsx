@@ -36,7 +36,7 @@ const ProductRow = ({
             cleanPath = cleanPath.substring('uploads/'.length);
         }
 
-        return `${API_BASE_URL}/files/serve?path=${encodeURIComponent(cleanPath)}`;
+        return `${API_BASE_URL}/files/view/${cleanPath}`;
     };
 
     const getPlaceholderImage = () => {
@@ -120,7 +120,7 @@ const ProductRow = ({
                 cleanPath = cleanPath.substring('uploads/'.length);
             }
 
-            return `${API_BASE_URL}/files/serve?path=${encodeURIComponent(cleanPath)}`;
+            return `${API_BASE_URL}/files/view/${cleanPath}`;
         };
 
         if (imageUrl && !varImageError) {

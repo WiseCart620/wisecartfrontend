@@ -15,7 +15,7 @@ export const getFileUrl = (fileUrl) => {
         return getPlaceholderImage();
     }
 
-    const viewUrl = `${API_BASE_URL}/files/serve?path=${encodeURIComponent(relativePath)}`;
+    const viewUrl = `${API_BASE_URL}/files/view/${relativePath}`;
 
     return viewUrl;
 };
@@ -24,8 +24,8 @@ export const getFileUrl = (fileUrl) => {
 export const getFileDownloadUrl = (fileUrl) => {
     if (!fileUrl) return '';
 
-    if (fileUrl.includes('/files/serve')) {
-        return fileUrl.replace('/files/serve?', '/files/download?');
+    if (fileUrl.includes('/files/view/')) {
+        return fileUrl.replace('/files/view/', '/files/download?path=');
     }
 
     if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
@@ -82,8 +82,7 @@ export const getFileUrlView = (fileUrl) => {
         return `${API_BASE_URL}/files/view/${directory}/${encodeURIComponent(filename)}`;
     }
 
-    // Fallback to serve endpoint
-    return `${API_BASE_URL}/files/serve?path=${encodeURIComponent(relativePath)}`;
+    return `${API_BASE_URL}/files/view/${relativePath}`;
 };
 
 export const getPlaceholderImage = () => {
