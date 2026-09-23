@@ -187,18 +187,10 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                 params.append('endYear', d.getFullYear());
                 params.append('endMonth', d.getMonth() + 1);
             }
-            const [salesResponse, profilesResponse] = await Promise.all([
-                api.get(`/sales/all?${params}`),
-                api.get('/invoice-profiles'),
-            ]);
+            const salesResponse = await api.get(`/sales/all?${params}`);
 
             const rawSales = salesResponse.data?.content || [];
-            const profiles = profilesResponse.data?.data || profilesResponse.data || [];
-            const journaledSet = buildJournaledPeriods(profiles);
-            let allSales = rawSales.filter(sale => isSaleJournaled(sale, journaledSet));
-
-            // Narrow items down to the selected products (backend only guarantees the sale
-            // contains at least one matching item — it can still return non-matching items too).
+            let allSales = rawSales;
             allSales = applyProductFilterToSales(allSales, activeProductFilters);
 
             const grouped = {};

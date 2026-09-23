@@ -806,6 +806,8 @@ const InvoicingProfile = ({ onBack }) => {
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState([]);
     const [companyFilter, setCompanyFilter] = useState([]);
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
     const [detailProfile, setDetailProfile] = useState(null);
     const [paymentProfile, setPaymentProfile] = useState(null);
     const [editingPayment, setEditingPayment] = useState(null);
@@ -910,8 +912,22 @@ const InvoicingProfile = ({ onBack }) => {
         const matchCompany = companyFilter.length === 0 || companyFilter.includes(p.companyName);
 
         const matchStatus = statusFilter.length === 0 || statusFilter.includes(getStatusCode(p));
+        const periodStartYear = p.startYear;
+        const periodStartMonth = p.startMonth;
+        const periodEndYear = p.endYear || p.startYear;
+        const periodEndMonth = p.endMonth || p.startMonth;
 
-        return matchSearch && matchCompany && matchStatus;
+        const periodStart = periodStartYear && periodStartMonth
+            ? new Date(periodStartYear, periodStartMonth - 1, 1)
+            : null;
+        const periodEnd = periodEndYear && periodEndMonth
+            ? new Date(periodEndYear, periodEndMonth, 0, 23, 59, 59, 999)
+            : null;
+
+        const matchDateFrom = !dateFrom || (periodEnd && periodEnd >= new Date(dateFrom));
+        const matchDateTo = !dateTo || (periodStart && periodStart <= new Date(new Date(dateTo).setHours(23, 59, 59, 999)));
+
+        return matchSearch && matchCompany && matchStatus && matchDateFrom && matchDateTo;
     });
 
     if (sortOrder !== 'none') {
@@ -1076,10 +1092,26 @@ const InvoicingProfile = ({ onBack }) => {
                         onChange={setStatusFilter}
                     />
                 )}
-                {(companyFilter.length > 0 || statusFilter.length > 0 || search) && (
+                <div className="flex items-center gap-2">
+                    <label className="text-xs text-gray-500 font-medium">Date:</label>
+                    <input
+                        type="date"
+                        value={dateFrom}
+                        onChange={(e) => setDateFrom(e.target.value)}
+                        className="px-2 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                    />
+                    <span className="text-xs text-gray-400">to</span>
+                    <input
+                        type="date"
+                        value={dateTo}
+                        onChange={(e) => setDateTo(e.target.value)}
+                        className="px-2 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                    />
+                </div>
+                {(companyFilter.length > 0 || statusFilter.length > 0 || search || dateFrom || dateTo) && (
                     <button
                         type="button"
-                        onClick={() => { setCompanyFilter([]); setStatusFilter([]); setSearch(''); }}
+                        onClick={() => { setCompanyFilter([]); setStatusFilter([]); setSearch(''); setDateFrom(''); setDateTo(''); }}
                         className="text-xs text-gray-500 hover:text-red-600 underline"
                     >
                         Clear filters
