@@ -518,7 +518,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
 
         let rowNum = 1;
         let hasAnyRows = false;
-        let grandVatable = 0, grandVat = 0, grandEwt = 0, grandDue = 0, grandInvoiceCount = 0;
+        let grandVatable = 0, grandVat = 0, grandEwt = 0, grandTotal = 0, grandDue = 0, grandInvoiceCount = 0;
 
         salesReportData.forEach(yr => {
             (yr.products || []).forEach(monthRow => {
@@ -530,6 +530,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                         grandVatable += cg.vatableSales;
                         grandVat += cg.vat;
                         grandEwt += cg.lesEwt;
+                        grandTotal += cg.amount;
                         grandDue += cg.due;
                         grandInvoiceCount += cg.salesCount;
                         const products = (cg.aggregatedProducts || [])
@@ -551,7 +552,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                               <tr>
                                 <th>#</th><th>Year</th><th>Month</th><th>Company</th><th>Branch</th>
                                 <th class="text-right">Gross / Vatable</th><th class="text-right">VAT/PT</th>
-                                <th class="text-right">Less: EWT</th><th class="text-right">Due</th>
+                                <th class="text-right">Less: EWT</th><th class="text-right">Total Amount</th><th class="text-right">Due</th>
                                 <th class="text-center">Invoices</th>
                               </tr>
                             </thead>
@@ -565,6 +566,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                                 <td class="text-right">₱${cg.vatableSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
                                 <td class="text-right">₱${cg.vat.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
                                 <td class="text-right">₱${cg.lesEwt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                                <td class="text-right">₱${cg.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
                                 <td class="text-right">₱${cg.due.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
                                 <td class="text-center">${cg.salesCount}</td>
                               </tr>
@@ -614,7 +616,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                   <tr>
                     <th colspan="5" class="text-right">GRAND TOTAL (${grandInvoiceCount} invoice${grandInvoiceCount !== 1 ? 's' : ''})</th>
                     <th class="text-right">Gross / Vatable</th><th class="text-right">VAT/PT</th>
-                    <th class="text-right">Less: EWT</th><th class="text-right">Due</th>
+                    <th class="text-right">Less: EWT</th><th class="text-right">Total Amount</th><th class="text-right">Due</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -624,6 +626,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                     <td class="text-right"><strong>₱${grandVatable.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong></td>
                     <td class="text-right"><strong>₱${grandVat.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong></td>
                     <td class="text-right"><strong>₱${grandEwt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong></td>
+                    <td class="text-right"><strong>₱${grandTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong></td>
                     <td class="text-right"><strong>₱${grandDue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong></td>
                     <td></td>
                   </tr>
@@ -631,7 +634,6 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
               </table>
             `;
         }
-
         return html;
     };
 
