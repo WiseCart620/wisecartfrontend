@@ -517,6 +517,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
 
         let rowNum = 1;
         let hasAnyRows = false;
+        let grandVatable = 0, grandVat = 0, grandEwt = 0, grandDue = 0, grandInvoiceCount = 0;
 
         salesReportData.forEach(yr => {
             (yr.products || []).forEach(monthRow => {
@@ -525,6 +526,11 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                     .sort((a, b) => (a.company?.companyName || '').localeCompare(b.company?.companyName || ''))
                     .forEach(cg => {
                         hasAnyRows = true;
+                        grandVatable += cg.vatableSales;
+                        grandVat += cg.vat;
+                        grandEwt += cg.lesEwt;
+                        grandDue += cg.due;
+                        grandInvoiceCount += cg.salesCount;
                         const products = (cg.aggregatedProducts || [])
                             .slice()
                             .sort((a, b) => a.productName.localeCompare(b.productName));
@@ -592,7 +598,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                                 <td class="text-right"><strong>₱${cg.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong></td>
                               </tr>
                             </tfoot>
-                          </table>
+                              </table>
                         `;
                     });
             });
@@ -600,6 +606,29 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
 
         if (!hasAnyRows) {
             html += `<p style="font-style:italic;color:#666;">No invoiced sales found for the selected filters.</p>`;
+        } else {
+            html += `
+              <table class="print-summary-table" style="margin-top:10pt;">
+                <thead>
+                  <tr>
+                    <th colspan="5" class="text-right">GRAND TOTAL (${grandInvoiceCount} invoice${grandInvoiceCount !== 1 ? 's' : ''})</th>
+                    <th class="text-right">Gross / Vatable</th><th class="text-right">VAT/PT</th>
+                    <th class="text-right">Less: EWT</th><th class="text-right">Due</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="5"></td>
+                    <td class="text-right"><strong>₱${grandVatable.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong></td>
+                    <td class="text-right"><strong>₱${grandVat.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong></td>
+                    <td class="text-right"><strong>₱${grandEwt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong></td>
+                    <td class="text-right"><strong>₱${grandDue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+            `;
         }
 
         return html;
