@@ -11,7 +11,8 @@ const ACTION_LABELS = {
   view: 'View', create: 'Create', edit: 'Edit', delete: 'Delete',
   invoice: 'Invoice', report: 'Reports', summary: 'Summary',
   cancel: 'Cancel', print: 'Print', confirm: 'Confirm',
-  payment: 'Payments', transmittal: 'Transmittals',
+  payment: 'Payments', transmittal: 'Transmittals', manage: 'Approve Payroll',
+  submit: 'Submit', approve: 'Approve / Reject', download: 'Download Docs', pay: 'Mark Paid',
 };
 
 const FILTERS = {
@@ -69,8 +70,15 @@ const FEATURES = [
   { key: 'branches', label: 'Branches & Companies', description: 'Company and branch records', actions: ['view', 'create', 'edit', 'delete'] },
   { key: 'products', label: 'Products', description: 'Product catalog and variations', actions: ['view', 'create', 'edit', 'delete'] },
   { key: 'supplier', label: 'Supplier', description: 'Supplier records and contacts', actions: ['view', 'create', 'edit', 'delete'] },
-  { key: 'employees', label: 'Employees', description: 'Manage employee records and payroll data', actions: ['view', 'create', 'edit', 'delete'] },
+  { key: 'employees', label: 'Employees', description: 'Manage employee records and payroll data', actions: ['view', 'create', 'edit', 'delete', 'manage'] },
+  { key: 'payroll', label: 'Payroll Runs', description: 'View: see runs. Create: create runs, OT/undertime. Submit. Edit: change payslip items (GM). Approve/Reject. Download docs. Mark Paid.', actions: ['view', 'create', 'submit', 'edit', 'approve', 'download', 'pay'] },
 ];
+
+const ROLE_PRESETS = {
+  PAYROLL_INCHARGE: ['employees:view', 'payroll:view', 'payroll:create', 'payroll:submit'],
+  GENERAL_MANAGER: ['employees:view', 'payroll:view', 'payroll:edit', 'payroll:approve'],
+  FINANCE_OFFICER: ['employees:view', 'payroll:view', 'payroll:download', 'payroll:pay'],
+};
 
 const UserManagement = () => {
   const isSuperAdmin = useIsSuperAdmin();
@@ -84,7 +92,7 @@ const UserManagement = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
-  const PRESET_ROLES = ['ENCODER', 'ASSISTANT_ADMIN', 'ADMIN', 'FINANCE'];
+  const PRESET_ROLES = ['ENCODER', 'ASSISTANT_ADMIN', 'ADMIN', 'FINANCE', 'PAYROLL_INCHARGE', 'GENERAL_MANAGER', 'FINANCE_OFFICER'];
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -361,6 +369,9 @@ const UserManagement = () => {
       ENCODER: 'bg-blue-100 text-blue-800',
       ASSISTANT_ADMIN: 'bg-indigo-100 text-indigo-800',
       FINANCE: 'bg-green-100 text-green-800',
+      PAYROLL_INCHARGE: 'bg-cyan-100 text-cyan-800',
+      GENERAL_MANAGER: 'bg-amber-100 text-amber-800',
+      FINANCE_OFFICER: 'bg-emerald-100 text-emerald-800',
     };
 
     const roleLabels = {
@@ -369,6 +380,9 @@ const UserManagement = () => {
       ENCODER: 'Encoder',
       ASSISTANT_ADMIN: 'Assistant Admin',
       FINANCE: 'Finance',
+      PAYROLL_INCHARGE: 'Payroll In-charge',
+      GENERAL_MANAGER: 'General Manager',
+      FINANCE_OFFICER: 'Finance Officer',
     };
 
     return (
@@ -420,11 +434,12 @@ const UserManagement = () => {
           />
         </div>
         <button
+          disabled={!isSuperAdmin}
           onClick={() => {
             resetForm();
             setShowModal(true);
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
         >
           <Plus size={20} />
           Add User
@@ -475,8 +490,9 @@ const UserManagement = () => {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
+                          disabled={!isSuperAdmin}
                           onClick={() => handleEdit(user)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                           title="Edit User"
                         >
                           <Edit2 size={18} />
@@ -661,7 +677,11 @@ const UserManagement = () => {
                             setFormData(prev => ({ ...prev, role: '' }));
                           } else {
                             setIsCustomRole(false);
-                            setFormData(prev => ({ ...prev, role: val }));
+                            setFormData(prev => ({
+                              ...prev,
+                              role: val,
+                              permissions: ROLE_PRESETS[val] ? [...ROLE_PRESETS[val]] : prev.permissions
+                            }));
                           }
                         }}
                         required
@@ -672,6 +692,9 @@ const UserManagement = () => {
                         <option value="ASSISTANT_ADMIN">Assistant Admin</option>
                         <option value="ADMIN">Admin</option>
                         <option value="FINANCE">Finance</option>
+                        <option value="PAYROLL_INCHARGE">Payroll In-charge</option>
+                        <option value="GENERAL_MANAGER">General Manager</option>
+                        <option value="FINANCE_OFFICER">Finance Officer</option>
                         <option value="CUSTOM">Custom...</option>
                       </select>
                       {isCustomRole && (
@@ -727,7 +750,7 @@ const UserManagement = () => {
                 </section>
 
                 {/* Section: Permissions */}
-                {formData.role !== 'SUPER_ADMIN' && (
+                {isSuperAdmin && formData.role !== 'SUPER_ADMIN' && (
                   <section>
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">

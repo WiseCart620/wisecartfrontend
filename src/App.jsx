@@ -5,9 +5,16 @@ import Welcome from './pages/Welcome';
 import InventoryManagement from './pages/InventoryManagement';
 import WarehouseManagement from './pages/WarehouseManagement';
 import DeliveryManagement from './pages/DeliveryManagement';
+import PayTypeManagement from './pages/payroll/PayTypeManagement';
+import LeaveManagement from './pages/payroll/LeaveManagement';
+import TaxStatutoryManagement from './pages/payroll/TaxStatutoryManagement.jsx';
+import YearEndManagement from './pages/payroll/YearEndManagement.jsx';
+import PayrollRunManagement from './pages/payroll/PayrollRunManagement.jsx';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import SalesManagement from './pages/SalesManagement/index.jsx';
+import EmployeeManagement from './pages/payroll/EmployeeManagement.jsx';
+import LoansAndBenefits from './pages/payroll/LoansAndBenefits';
 import ProductManagement from './pages/ProductManagement';
 import BranchCompanyManagement from './pages/BranchCompanyManagement/index.jsx';
 import WarehouseInventory from './pages/InventoryRecordsManagement/index.jsx';
@@ -205,6 +212,76 @@ function App() {
                       </Layout>
                     </PermissionRoute>
                   </AdminOrUserRoute>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/employees" element={
+                <ProtectedRoute>
+                  <PermissionRoute feature="employees">
+                    <Layout>
+                      <EmployeeManagement />
+                    </Layout>
+                  </PermissionRoute>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/pay-types" element={
+                <ProtectedRoute>
+                  <PermissionRoute feature="employees">
+                    <Layout>
+                      <PayTypeManagement />
+                    </Layout>
+                  </PermissionRoute>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/loans-benefits" element={
+                <ProtectedRoute>
+                  <PermissionRoute feature="employees">
+                    <Layout>
+                      <LoansAndBenefits />
+                    </Layout>
+                  </PermissionRoute>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/leave" element={
+                <ProtectedRoute>
+                  <PermissionRoute feature="employees">
+                    <Layout>
+                      <LeaveManagement />
+                    </Layout>
+                  </PermissionRoute>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/tax-statutory" element={
+                <ProtectedRoute>
+                  <PermissionRoute feature="employees">
+                    <Layout>
+                      <TaxStatutoryManagement />
+                    </Layout>
+                  </PermissionRoute>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/payroll-runs" element={
+                <ProtectedRoute>
+                  <PermissionRoute feature="employees">
+                    <Layout>
+                      <PayrollRunManagement />
+                    </Layout>
+                  </PermissionRoute>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/year-end" element={
+                <ProtectedRoute>
+                  <PermissionRoute feature="employees">
+                    <Layout>
+                      <YearEndManagement />
+                    </Layout>
+                  </PermissionRoute>
                 </ProtectedRoute>
               } />
 

@@ -1,9 +1,10 @@
-// components/layout/Sidebar.jsx
+
 import React, { useState } from 'react';
 import {
   Package, Truck, Warehouse, ShoppingCart, Users, Home,
   UserPlus, PackageSearch, PackageOpen, ChevronDown, ChevronRight,
   ChevronLeft, Database, Factory, ClipboardList, X, BookOpen, BarChart3, FileText,
+  Briefcase, Coins, Landmark, CalendarDays, Percent, Wallet, Gift, HandCoins
 } from 'lucide-react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useAuth, hasPermission, can } from '../../context/AuthContext';
@@ -15,6 +16,15 @@ const allMainMenuItems = [
   { to: '/procurement', label: 'Procurement', icon: ClipboardList, userHidden: true },
 ];
 
+const payrollSubItems = [
+  { to: '/employees', label: 'Employees', icon: Briefcase },
+  { to: '/pay-types', label: 'Pay Types', icon: Coins },
+  { to: '/loans-benefits', label: 'Loans & Benefits', icon: Landmark },
+  { to: '/leave', label: 'Leave', icon: CalendarDays },
+  { to: '/tax-statutory', label: 'Tax & Statutory', icon: Percent },
+  { to: '/payroll-runs', label: 'Payroll Runs', icon: Wallet },
+  { to: '/year-end', label: 'Year-End & Disbursement', icon: Gift },
+];
 
 const dataEntryItems = [
   { to: '/warehouse', label: 'Warehouse', icon: Warehouse },
@@ -38,15 +48,23 @@ const Sidebar = ({ isOpen, toggle }) => {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
-  const featureKeyByPath = {
-    '/dashboard': 'dashboard', '/deliveries': 'deliveries',
-    '/warehouse-inventory': 'warehouse_inventory', '/inventory': 'inventory',
-    '/procurement': 'procurement',
-  };
-
   const mainMenuItems = isSuperAdmin
     ? allMainMenuItems
-    : allMainMenuItems.filter(i => hasPermission(user, featureKeyByPath[i.to]));
+    : allMainMenuItems.filter(i => hasPermission(user, {
+      '/dashboard': 'dashboard',
+      '/warehouse-inventory': 'warehouse_inventory',
+      '/inventory': 'inventory',
+      '/procurement': 'procurement',
+    }[i.to]));
+
+  const showPayroll = isSuperAdmin || hasPermission(user, 'employees');
+  const visiblePayrollSubItems = isSuperAdmin
+    ? payrollSubItems
+    : payrollSubItems.filter(() => hasPermission(user, 'employees'));
+  // ^ all payroll pages share the "employees" feature key today, so this is a single
+  // check rather than a per-item one — if a payroll sub-item ever gets its own
+  // feature key, filter it individually here the same way visibleSalesSubItems does.
+
   const showDataEntry = isSuperAdmin ||
     ['warehouse', 'branches', 'products', 'supplier'].some(f => hasPermission(user, f));
   const showSales = isSuperAdmin || hasPermission(user, 'sales');
@@ -66,11 +84,18 @@ const Sidebar = ({ isOpen, toggle }) => {
     ? dataEntryItems
     : dataEntryItems.filter(i => hasPermission(user, dataEntryFeatureByPath[i.to]));
 
-  const [dataEntryOpen, setDataEntryOpen] = useState(true);
-  const [salesOpen, setSalesOpen] = useState(true);
-  const [deliveriesOpen, setDeliveriesOpen] = useState(true);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const location = useLocation();
+  const isUnder = (paths) => paths.some(p => location.pathname === p || location.pathname.startsWith(p + '/'));
+
+  const [payrollOpen, setPayrollOpen] = useState(() =>
+    isUnder(['/employees', '/pay-types', '/loans-benefits', '/leave', '/tax-statutory', '/payroll-runs', '/year-end']));
+  const [deliveriesOpen, setDeliveriesOpen] = useState(() =>
+    isUnder(['/deliveries', '/transmittals']));
+  const [salesOpen, setSalesOpen] = useState(() =>
+    isUnder(['/sales']));
+  const [dataEntryOpen, setDataEntryOpen] = useState(() =>
+    isUnder(['/warehouse', '/branches', '/products', '/supplier']));
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
     <>
@@ -136,6 +161,61 @@ const Sidebar = ({ isOpen, toggle }) => {
               </NavLink>
             );
           })}
+
+          {/* Payroll section (collapsible) */}
+          {showPayroll && !sidebarCollapsed && (
+            <div>
+              <button
+                onClick={() => setPayrollOpen(!payrollOpen)}
+                className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg hover:bg-orange-50 hover:text-gray-900 hover:font-[600] font-[480] text-gray-600 transition-colors text-sm"
+              >
+                <div className="flex items-center gap-3">
+                  <HandCoins size={20} className="flex-shrink-0" />
+                  <span className="font-medium">Payroll</span>
+                </div>
+                {payrollOpen
+                  ? <ChevronDown size={16} />
+                  : <ChevronRight size={16} />}
+              </button>
+
+              <div className={`overflow-hidden transition-all duration-300 ${payrollOpen ? 'max-h-96' : 'max-h-0'}`}>
+                <div className="ml-6 mt-1 space-y-1 border-l border-gray-200 pl-2">
+                  {visiblePayrollSubItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <NavLink
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => window.innerWidth < 1024 && toggle()}
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm
+                          ${isActive ? 'bg-orange-600 text-white font-[600]' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-[600] font-[480] text-gray-500'}`
+                        }
+                      >
+                        <Icon size={17} className="flex-shrink-0" />
+                        <span className="truncate">{item.label}</span>
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Payroll icon-only when collapsed */}
+          {showPayroll && sidebarCollapsed && (
+            <NavLink
+              to="/employees"
+              title="Payroll"
+              onClick={() => window.innerWidth < 1024 && toggle()}
+              className={({ isActive }) =>
+                `flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors
+               ${isActive ? 'bg-orange-600 text-white font-[600]' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-[600] font-[480] text-gray-600'}`
+              }
+            >
+              <HandCoins size={20} className="flex-shrink-0" />
+            </NavLink>
+          )}
 
           {/* Deliveries section (collapsible) */}
           {showDeliveries && !sidebarCollapsed && (
