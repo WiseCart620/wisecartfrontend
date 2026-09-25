@@ -18,6 +18,30 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
 
   useEffect(() => { load(); }, [year]);
 
+  const currentYear = new Date().getFullYear();
+
+  const hasRows = items.length > 0;
+
+
+  const resetEnabled =
+    year >= currentYear && (!hasRows || year === currentYear + 1);
+
+  const resetLabel = (() => {
+    if (year > currentYear) return `Prepare ${year}`;
+    if (year < currentYear) return 'Closed year';
+    if (!hasRows) return `Initialize ${year}`;
+    return 'Reset year';
+  })();
+
+  const resetTooltip = (() => {
+    if (year < currentYear)
+      return `${year} is closed. Reset Year only applies to the current or next year.`;
+    if (year === currentYear && hasRows)
+      return `${year} is already in progress. Use Prepare ${currentYear + 1} to open the next year.`;
+    if (!hasRows) return `Create leave balances for ${year} with the configured opening.`;
+    return `Prepare ${year} with the configured opening for every active employee.`;
+  })();
+
   const load = async () => {
     setLoading(true);
     try {
@@ -31,10 +55,13 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
   };
 
   const resetYear = async () => {
-    if (!window.confirm(`Reset all leave balances for ${year}? Each leave type uses its configured opening (Regular / Probationary Reset values).`)) return;
+    const msg = year > currentYear
+      ? `Prepare leave balances for ${year}? Every active employee gets the configured opening for each leave type.`
+      : `Initialize leave balances for ${year}? Every active employee gets the configured opening for each leave type.`;
+    if (!window.confirm(msg)) return;
     try {
       const res = await api.post(`/leave-balances/reset?year=${year}`);
-      toast.success(res.data?.message || 'Reset done');
+      toast.success(res.data?.message || `${year} balances prepared`);
       load();
     } catch (err) {
       toast.error(err.message || 'Failed to reset');
@@ -134,9 +161,16 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
       <div className="flex justify-end gap-2 mb-3">
         {canEdit && (
           <>
-            <button onClick={resetYear}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-sm">
-              <RefreshCw size={16} /> Reset year
+            <button
+              onClick={resetYear}
+              disabled={!resetEnabled}
+              title={resetTooltip}
+              className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-sm
+                ${resetEnabled
+                  ? 'border-gray-300 hover:bg-gray-100'
+                  : 'border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50'}`}
+            >
+              <RefreshCw size={16} /> {resetLabel}
             </button>
             <button onClick={() => { setForm({ employeeId: '', leaveTypeId: '', days: '', openingBalance: '' }); setShow(true); }}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">

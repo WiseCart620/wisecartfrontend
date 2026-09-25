@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Ban } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { inputCls, Field, money, today } from './Shared';
@@ -54,8 +54,20 @@ const ReimbursementTab = ({ employees, canEdit }) => {
     }
   };
 
+  const cancelReimbursement = async (id) => {
+    if (!window.confirm('Cancel this reimbursement?')) return;
+    try {
+      await api.patch(`/payroll/reimbursements/${id}/cancel`);
+      toast.success('Cancelled');
+      load();
+    } catch (err) {
+      toast.error(err.message || 'Failed to cancel');
+    }
+  };
+
   const STATUS_STYLE = {
     PENDING: 'bg-yellow-100 text-yellow-800',
+    RESERVED: 'bg-blue-100 text-blue-800',
     APPROVED: 'bg-green-100 text-green-800',
     CANCELLED: 'bg-gray-100 text-gray-600',
   };
@@ -115,10 +127,15 @@ const ReimbursementTab = ({ employees, canEdit }) => {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  {canEdit && r.status !== 'APPROVED' && (
-                    <button onClick={() => del(r.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
-                      <Trash2 size={16} />
-                    </button>
+                  {canEdit && r.status === 'PENDING' && (
+                    <div className="flex justify-end gap-1">
+                      <button onClick={() => cancelReimbursement(r.id)} title="Cancel" className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg">
+                        <Ban size={16} />
+                      </button>
+                      <button onClick={() => del(r.id)} title="Delete" className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   )}
                 </td>
               </tr>
@@ -127,7 +144,8 @@ const ReimbursementTab = ({ employees, canEdit }) => {
         </table>
       </div>
       <p className="text-xs text-gray-500">
-        Reimbursements dated inside a payroll run's period are picked up automatically when the run is created or regenerated, then marked APPROVED.
+        Reimbursements dated inside a payroll run's period are picked up automatically when the run is created or regenerated (status: RESERVED).
+        They become APPROVED only when the payroll run is approved. If the run is rejected, they return to PENDING.
       </p>
     </div>
   );

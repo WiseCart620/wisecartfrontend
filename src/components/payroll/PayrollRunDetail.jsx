@@ -81,6 +81,7 @@ const PayrollRunDetail = ({ runId, onBack }) => {
   const [busy, setBusy] = useState(false);
   const [viewId, setViewId] = useState(null);
   const [editId, setEditId] = useState(null);
+  const [checked, setChecked] = useState(() => new Set());
 
   const perm = (a) => can(user, 'payroll', a);
 
@@ -99,9 +100,30 @@ const PayrollRunDetail = ({ runId, onBack }) => {
     catch (e) { toast.error(e.message || 'Action failed'); }
     finally { setBusy(false); }
   };
+  const regenerate = () => {
 
-  const regenerate = () => window.confirm('Regenerate all payslips? Manual edits are lost.') &&
-    act(() => api.post(`/payroll/runs/${runId}/regenerate`), 'Payslips regenerated');
+    const selectedIds = Array.from(checked);
+    const employeeIds = slips
+      .filter(s => selectedIds.includes(s.paySlipId))
+      .map(s => s.employeeId);
+
+    if (employeeIds.length === 0) {
+      if (!window.confirm('No employees selected. Regenerate ALL payslips? Manual edits will be lost.')) return;
+      return act(
+        () => api.post(`/payroll/runs/${runId}/regenerate`, {}),
+        'All payslips regenerated'
+      );
+    }
+
+    // Some selected -> regenerate only those.
+    if (!window.confirm(`Regenerate ${employeeIds.length} selected payslip(s)? Manual edits are lost.`)) return;
+    return act(
+      () => api.post(`/payroll/runs/${runId}/regenerate`, { employeeIds }),
+      employeeIds.length === slips.length
+        ? 'All payslips regenerated'
+        : `${employeeIds.length} payslip(s) regenerated`
+    );
+  };
   const submit = () => window.confirm('Submit for approval?') && act(() => api.patch(`/payroll/runs/${runId}/submit`), 'Submitted to General Manager');
   const approve = () => window.confirm('Approve this payroll run? Contributions and loan payments will be posted.') &&
     act(() => api.patch(`/payroll/runs/${runId}/approve`), 'Approved');
@@ -224,8 +246,17 @@ const PayrollRunDetail = ({ runId, onBack }) => {
           <span className="inline-block mt-2 px-2 py-1 rounded-full text-xs font-semibold bg-gray-100">{LABEL[st] || st}</span>
         </div>
         <div className="flex flex-wrap gap-2">
-          {(st === 'DRAFT' || st === 'REJECTED') && perm('create') &&
-            <button disabled={busy} onClick={regenerate} className={`${btn} border border-gray-300`}><RefreshCw size={16} /> Regenerate</button>}
+          {(st === 'DRAFT' || st === 'REJECTED') && perm('create') && (
+            <button
+              disabled={busy || checked.size === 0}
+              onClick={regenerate}
+              title={checked.size === 0 ? 'Select at least one employee below to regenerate' : `Regenerate ${checked.size} selected`}
+              className={`${btn} border border-gray-300 ${checked.size === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <RefreshCw size={16} />
+              Regenerate{checked.size > 0 ? ` (${checked.size})` : ''}
+            </button>
+          )}
           {(st === 'DRAFT' || st === 'REJECTED' || st === 'SUBMITTED') &&
             <button onClick={() => { toast.success('Saved — continue anytime'); onBack(); }} className={`${btn} border border-gray-300`}><Save size={16} /> Save for Later</button>}
           {(st === 'DRAFT' || st === 'REJECTED') && perm('submit') &&
@@ -251,8 +282,21 @@ const PayrollRunDetail = ({ runId, onBack }) => {
       <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
-            <tr>{['Employee', 'Basic', 'Other Earnings', 'Statutory', 'Tax', 'Other Ded.', 'Net Pay', ''].map(h =>
-              <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}</tr>
+            <tr>
+              <th className="px-4 py-3 w-8">
+                <input
+                  type="checkbox"
+                  checked={slips.length > 0 && checked.size === slips.length}
+                  onChange={(e) => {
+                    if (e.target.checked) setChecked(new Set(slips.map(s => s.paySlipId)));
+                    else setChecked(new Set());
+                  }}
+                  title="Select all"
+                />
+              </th>
+              {['Employee', 'Basic', 'Other Earnings', 'Statutory', 'Tax', 'Other Ded.', 'Net Pay', ''].map(h =>
+                <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}
+            </tr>
           </thead>
           <tbody className="divide-y">
             {slips.map(s => {
@@ -260,6 +304,21 @@ const PayrollRunDetail = ({ runId, onBack }) => {
               const tax = Number(s.withholdingTax || 0);
               return (
                 <tr key={s.paySlipId} className="hover:bg-gray-50">
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={checked.has(s.paySlipId)}
+                      onChange={(e) => {
+                        setChecked(prev => {
+                          const next = new Set(prev);
+                          if (e.target.checked) next.add(s.paySlipId);
+                          else next.delete(s.paySlipId);
+                          return next;
+                        });
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </td>
                   <td className="px-4 py-3 font-medium cursor-pointer" onClick={() => setViewId(s.paySlipId)}>{s.employeeName}</td>
                   <td className="px-4 py-3">{money(s.basicPay)}</td>
                   <td className="px-4 py-3">{money(Number(s.grossPay) - Number(s.basicPay))}</td>
@@ -275,15 +334,16 @@ const PayrollRunDetail = ({ runId, onBack }) => {
               );
             })}
             <tr className="bg-gray-50 font-semibold">
+              <td />
               <td className="px-4 py-3" colSpan="6">Total ({run.employeeCount})</td>
               <td className="px-4 py-3">{money(run.totalNetPay)}</td><td />
             </tr>
           </tbody>
         </table>
       </div>
-
       {viewId && <PayslipDrilldown payslipId={viewId} onClose={() => setViewId(null)} />}
       {editId && <EditModal payslipId={editId} onClose={() => setEditId(null)} onSaved={() => { setEditId(null); load(); }} />}
+
     </div>
   );
 };
