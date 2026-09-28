@@ -1,22 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { useAuth, can } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { inputCls, Field } from './Shared';
+import DeductionFormulaCard from './DeductionFormulaCard';
+import OvertimeRatesCard from './OvertimeRatesCard';
 
-// [value, label, unitMode]
-// unitMode: 'HOURS'  -> Hours or Minutes
-//           'MINUTES'-> Minutes or Hours (default Minutes)
-//           'DAYS'   -> Days only
 const TYPES = [
-    ['REGULAR_OT', 'Overtime - Regular (rate + 30%)', 'HOURS'],
-    ['REST_DAY', 'Overtime - Rest Day (130%)', 'HOURS'],
-    ['SPECIAL_HOLIDAY', 'Overtime - Special Holiday (130%)', 'HOURS'],
-    ['REGULAR_HOLIDAY', 'Regular Holiday (200% / excess 260%)', 'HOURS'],
-    ['REST_DAY_REGULAR_HOLIDAY', 'Rest Day + Regular Holiday (260% / excess 320%)', 'HOURS'],
-    ['NIGHT_DIFF', 'Night Differential (+10%)', 'HOURS'],
+    ['REGULAR_OT', 'Overtime - Regular', 'HOURS'],
+    ['REST_DAY', 'Overtime - Rest Day', 'HOURS'],
+    ['SPECIAL_HOLIDAY', 'Overtime - Special Holiday', 'HOURS'],
+    ['REGULAR_HOLIDAY', 'Regular Holiday', 'HOURS'],
+    ['REST_DAY_REGULAR_HOLIDAY', 'Rest Day + Regular Holiday', 'HOURS'],
+    ['NIGHT_DIFF', 'Night Differential', 'HOURS'],
     ['UNDERTIME_HOUR', 'Undertime - Hours', 'HOURS'],
-    ['UNDERTIME_DAY', 'Undertime - Days', 'DAYS'],
     ['LATE_HOUR', 'Lates', 'MINUTES'],
     ['ABSENCE_DAY', 'Absences', 'DAYS'],
 ];
@@ -25,17 +23,22 @@ const today = new Date().toISOString().slice(0, 10);
 const monthStart = today.slice(0, 8) + '01';
 
 const OvertimeEntries = ({ canEdit }) => {
+    const { user } = useAuth();
+    const canFormula = can(user, 'payroll', 'formula');
+    const [showRates, setShowRates] = useState(false);
     const [employees, setEmployees] = useState([]);
     const [rows, setRows] = useState([]);
     const [from, setFrom] = useState(monthStart);
     const [to, setTo] = useState(today);
+    const [filterEmployee, setFilterEmployee] = useState('');
+    const [filterType, setFilterType] = useState('');
 
     const [form, setForm] = useState({
         employeeId: '',
         workDate: today,
         entryType: 'REGULAR_OT',
-        value: '',          // the number the user typed
-        unit: 'HOURS',      // HOURS or MINUTES, or ignored for DAYS
+        value: '',
+        unit: 'HOURS',
         remarks: '',
     });
 
@@ -118,7 +121,10 @@ const OvertimeEntries = ({ canEdit }) => {
 
     const label = (t) => (TYPES.find(x => x[0] === t) || [])[1] || t;
 
-    // Format the stored hours back into a readable "0.5 h" or "1 day"
+    const filteredRows = rows.filter(r =>
+        (!filterEmployee || String(r.employeeId) === filterEmployee) &&
+        (!filterType || r.entryType === filterType)
+    );
     const formatStored = (entryType, hours) => {
         const meta = TYPES.find(t => t[0] === entryType);
         const mode = meta ? meta[2] : 'HOURS';
@@ -130,6 +136,21 @@ const OvertimeEntries = ({ canEdit }) => {
 
     return (
         <div className="space-y-6">
+            {canFormula && (
+                <div className="bg-white rounded-xl shadow-sm">
+                    <button type="button" onClick={() => setShowRates(o => !o)}
+                        className="w-full flex items-center justify-between px-5 py-3 text-sm font-semibold text-gray-900">
+                        Payroll rate settings
+                        {showRates ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                    </button>
+                    {showRates && (
+                        <div className="border-t border-gray-100">
+                            <DeductionFormulaCard />
+                            <OvertimeRatesCard />
+                        </div>
+                    )}
+                </div>
+            )}
             {canEdit && (
                 <form onSubmit={add} className="bg-white rounded-xl shadow-sm p-5 grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
                     <Field label="Employee" required>
@@ -184,13 +205,37 @@ const OvertimeEntries = ({ canEdit }) => {
                 </form>
             )}
 
-            <div className="flex gap-3 items-center text-sm">
+            <div className="flex flex-wrap gap-3 items-center text-sm">
+                <span>Employee</span>
+                <select className={inputCls + ' !w-auto'} value={filterEmployee}
+                    onChange={e => setFilterEmployee(e.target.value)}>
+                    <option value="">All employees</option>
+                    {employees.map(e => (
+                        <option key={e.employeeId} value={String(e.employeeId)}>{e.fullName}</option>
+                    ))}
+                </select>
+
+                <span>Type</span>
+                <select className={inputCls + ' !w-auto'} value={filterType}
+                    onChange={e => setFilterType(e.target.value)}>
+                    <option value="">All types</option>
+                    {TYPES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                </select>
+
                 <span>From</span>
                 <input type="date" className={inputCls + ' !w-auto'} value={from}
                     onChange={e => setFrom(e.target.value || monthStart)} />
                 <span>To</span>
                 <input type="date" className={inputCls + ' !w-auto'} value={to}
                     onChange={e => setTo(e.target.value || today)} />
+
+                {(filterEmployee || filterType) && (
+                    <button type="button"
+                        onClick={() => { setFilterEmployee(''); setFilterType(''); }}
+                        className="px-3 py-2 text-xs text-gray-600 hover:bg-gray-100 rounded-lg">
+                        Clear filters
+                    </button>
+                )}
             </div>
 
             <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
@@ -203,9 +248,9 @@ const OvertimeEntries = ({ canEdit }) => {
                         </tr>
                     </thead>
                     <tbody className="divide-y">
-                        {rows.length === 0 ? (
+                        {filteredRows.length === 0 ? (
                             <tr><td colSpan="5" className="px-4 py-8 text-center text-gray-500">No entries</td></tr>
-                        ) : rows.map(r => (
+                        ) : filteredRows.map(r => (
                             <tr key={r.id}>
                                 <td className="px-4 py-3">{r.workDate}</td>
                                 <td className="px-4 py-3">{r.employeeName}</td>

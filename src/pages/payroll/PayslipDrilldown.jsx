@@ -103,23 +103,26 @@ const PayslipDrilldown = ({ payslipId, onClose }) => {
     (slip.earnings || []).find(e => (e.payTypeName || '').toLowerCase().includes(needle));
 
   const thirteen = earningByName('13th');
-  const overtimeEarning = earningByName('overtime');
-
-  // Deductions with dedicated rows
-  const deductionByName = (needle) =>
-    (slip.deductions || []).find(d => (d.deductionType || '').toLowerCase().includes(needle));
-
-  const negateIfPositive = (d) => {
-    if (!d) return 0;
-    const v = Number(d.amount || 0);
-    return v > 0 ? -v : v;
+  const overtimeEarning = {
+    amount: (slip.earnings || [])
+      .filter(e => (e.payTypeName || '').toLowerCase().includes('overtime'))
+      .reduce((sum, e) => sum + Number(e.amount || 0), 0),
   };
 
-  const undertime = negateIfPositive(deductionByName('undertime'));
-  const lates = negateIfPositive(deductionByName('lates'));
-  const absences = negateIfPositive(deductionByName('absence'));
+  const sumNegativeByName = (needle) => {
+    const total = (slip.deductions || [])
+      .filter(d => (d.deductionType || '').toLowerCase().includes(needle))
+      .reduce((sum, d) => sum + Number(d.amount || 0), 0);
+    return total > 0 ? -total : total;
+  };
 
-  const reimbursement = earningByName('reimburse');
+  const undertime = sumNegativeByName('undertime');
+  const lates = sumNegativeByName('lates');
+  const absences = sumNegativeByName('absence');
+
+  const reimbursementTotal = (slip.earnings || [])
+    .filter(e => (e.payTypeName || '').toLowerCase().includes('reimburse'))
+    .reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
   const earnings = [
     { label: 'BASIC SALARY', amount: slip.basicPay },
@@ -128,7 +131,7 @@ const PayslipDrilldown = ({ payslipId, onClose }) => {
     { label: 'UNDERTIME', amount: undertime },
     { label: 'LATES', amount: lates },
     { label: 'ABSENCES', amount: absences },
-    { label: 'REIMBURSEMENT', amount: reimbursement ? reimbursement.amount : 0 },
+    { label: 'REIMBURSEMENT', amount: reimbursementTotal },
     ...(slip.earnings || [])
       .filter(e => {
         const t = (e.payTypeName || '').toLowerCase();
@@ -141,7 +144,6 @@ const PayslipDrilldown = ({ payslipId, onClose }) => {
   const extras = [];
   (slip.deductions || []).forEach(d => {
     const t = (d.deductionType || '').toLowerCase();
-    // skip the ones we've given dedicated rows to
     if (t.includes('undertime') || t.includes('lates') || t.includes('absence')) return;
     const k = classify(d.deductionType);
     if (k) buckets[k] = (buckets[k] || 0) + Number(d.amount || 0);
