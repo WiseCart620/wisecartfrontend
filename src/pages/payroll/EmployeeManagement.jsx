@@ -12,7 +12,7 @@ const EMPTY_FORM = {
     firstName: '', middleName: '', lastName: '', gender: '', dateOfBirth: '',
     email: '', phone: '', address: '', hireDate: '', status: 'ACTIVE',
     department: '', designation: '', employmentType: 'REGULAR', workLocation: '',
-    supervisorId: '', scheduleId: '',
+    supervisorId: '', scheduleId: '', inactiveDate: '',
     tinNumber: '', sssNumber: '', philhealthNumber: '', pagibigNumber: '', taxStatus: '',
     paymentMode: 'BANK_TRANSFER', bankName: '', accountNumber: '', accountHolderName: '', basicSalary: '',
 };
@@ -129,15 +129,14 @@ const EmployeeManagement = () => {
         setActionLoading(true);
         setLoadingMessage(editing ? 'Updating employee...' : 'Creating employee...');
         try {
-            if (editing) {
-                await api.put(`/employees/${editing.employeeId}`, buildPayload());
-                toast.success('Employee updated');
-            } else {
-                await api.post('/employees', buildPayload());
-                toast.success('Employee created');
+            const res = editing
+                ? await api.put(`/employees/${editing.employeeId}`, buildPayload())
+                : await api.post('/employees', buildPayload());
+            if (res.success) {
+                toast.success(editing ? 'Employee updated' : 'Employee created');
+                setShowModal(false);
+                await loadAll();
             }
-            setShowModal(false);
-            await loadAll();
         } catch (err) {
             toast.error(err.message || 'Failed to save employee');
         } finally {
@@ -152,9 +151,11 @@ const EmployeeManagement = () => {
         setActionLoading(true);
         setLoadingMessage('Updating status...');
         try {
-            await api.patch(`/employees/${emp.employeeId}/toggle-status`);
-            toast.success('Status updated');
-            await loadAll();
+            const res = await api.patch(`/employees/${emp.employeeId}/toggle-status`);
+            if (res.success) {
+                toast.success('Status updated');
+                await loadAll();
+            }
         } catch (err) {
             toast.error(err.message || 'Failed to update status');
         } finally {
@@ -314,6 +315,11 @@ const EmployeeManagement = () => {
                                             {emp.status === 'ACTIVE' ? <UserCheck size={12} /> : <UserX size={12} />}
                                             {emp.status === 'ACTIVE' ? 'Active' : emp.status}
                                         </span>
+                                        {emp.status !== 'ACTIVE' && emp.inactiveDate && (
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                Since {new Date(emp.inactiveDate + 'T00:00:00').toLocaleDateString()}
+                                            </div>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
@@ -399,6 +405,9 @@ const EmployeeManagement = () => {
                                             <option value="INACTIVE">Inactive</option>
                                         </select>
                                     </Field>
+                                    {form.status === 'INACTIVE' && (
+                                        <Field label="Inactive Since" required><input type="date" className={inputCls} name="inactiveDate" value={form.inactiveDate} onChange={onChange} required /></Field>
+                                    )}
                                     <Field label="Department"><input className={inputCls} name="department" value={form.department} onChange={onChange} /></Field>
                                     <Field label="Designation"><input className={inputCls} name="designation" value={form.designation} onChange={onChange} /></Field>
                                     <Field label="Employment Type">
