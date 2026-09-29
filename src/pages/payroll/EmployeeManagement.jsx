@@ -12,7 +12,7 @@ const EMPTY_FORM = {
     firstName: '', middleName: '', lastName: '', gender: '', dateOfBirth: '',
     email: '', phone: '', address: '', hireDate: '', status: 'ACTIVE',
     department: '', designation: '', employmentType: 'REGULAR', workLocation: '',
-    supervisorId: '', scheduleId: '', inactiveDate: '',
+    supervisorId: '', scheduleId: '', inactiveDate: '', includeLeaveConversion: false,
     tinNumber: '', sssNumber: '', philhealthNumber: '', pagibigNumber: '', taxStatus: '',
     paymentMode: 'BANK_TRANSFER', bankName: '', accountNumber: '', accountHolderName: '', basicSalary: '',
 };
@@ -59,6 +59,9 @@ const EmployeeManagement = () => {
     const itemsPerPage = 10;
     const [compEmployee, setCompEmployee] = useState(null);
     const [docsEmployee, setDocsEmployee] = useState(null);
+    const [deactivateEmp, setDeactivateEmp] = useState(null);
+    const [deactivateDate, setDeactivateDate] = useState('');
+    const [deactivateLeave, setDeactivateLeave] = useState(false);
 
 
     const [showModal, setShowModal] = useState(false);
@@ -145,13 +148,29 @@ const EmployeeManagement = () => {
         }
     };
 
-    const toggleStatus = async (emp) => {
-        const active = emp.status === 'ACTIVE';
-        if (!window.confirm(`${active ? 'Deactivate' : 'Activate'} ${emp.fullName}?`)) return;
+    const localToday = () =>
+        new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
+    const toggleStatus = (emp) => {
+        if (emp.status === 'ACTIVE') {
+            setDeactivateEmp(emp);
+            setDeactivateDate(localToday());
+            setDeactivateLeave(false);
+            return;
+        }
+        if (!window.confirm(`Activate ${emp.fullName}?`)) return;
+        submitStatus(emp, null);
+    };
+
+    const submitStatus = async (emp, inactiveDate, includeLeave = false) => {
         setActionLoading(true);
         setLoadingMessage('Updating status...');
         try {
-            const res = await api.patch(`/employees/${emp.employeeId}/toggle-status`);
+            const res = await api.patch(
+                `/employees/${emp.employeeId}/toggle-status`,
+                null,
+                inactiveDate ? { params: { inactiveDate, includeLeaveConversion: includeLeave } } : {}
+            );
             if (res.success) {
                 toast.success('Status updated');
                 await loadAll();
@@ -408,6 +427,15 @@ const EmployeeManagement = () => {
                                     {form.status === 'INACTIVE' && (
                                         <Field label="Inactive Since" required><input type="date" className={inputCls} name="inactiveDate" value={form.inactiveDate} onChange={onChange} required /></Field>
                                     )}
+                                    {form.status === 'INACTIVE' && (
+                                        <Field label="Final Pay">
+                                            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer py-2.5">
+                                                <input type="checkbox" checked={!!form.includeLeaveConversion}
+                                                    onChange={(e) => setForm(p => ({ ...p, includeLeaveConversion: e.target.checked }))} />
+                                                Include leave conversion
+                                            </label>
+                                        </Field>
+                                    )}
                                     <Field label="Department"><input className={inputCls} name="department" value={form.department} onChange={onChange} /></Field>
                                     <Field label="Designation"><input className={inputCls} name="designation" value={form.designation} onChange={onChange} /></Field>
                                     <Field label="Employment Type">
@@ -468,6 +496,45 @@ const EmployeeManagement = () => {
                     </div>
                 )
             }
+            {deactivateEmp && (
+                <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+                        <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                            <h2 className="text-lg font-bold text-gray-900">Deactivate Employee</h2>
+                            <button onClick={() => setDeactivateEmp(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <p className="text-sm text-gray-600">
+                                {deactivateEmp.fullName} will be removed from future payroll runs.
+                            </p>
+                            <Field label="Inactive Since" required>
+                                <input type="date" className={inputCls} value={deactivateDate}
+                                    onChange={(e) => setDeactivateDate(e.target.value)} />
+                            </Field>
+                            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                                <input type="checkbox" checked={deactivateLeave}
+                                    onChange={(e) => setDeactivateLeave(e.target.checked)} />
+                                Include leave conversion in final pay
+                            </label>
+                        </div>
+                        <div className="border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
+                            <button onClick={() => setDeactivateEmp(null)} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+                            <button
+                                disabled={!deactivateDate}
+                                onClick={() => {
+                                    const emp = deactivateEmp;
+                                    const date = deactivateDate;
+                                    setDeactivateEmp(null);
+                                    submitStatus(emp, date, deactivateLeave);
+                                }}
+                                className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 disabled:opacity-50">
+                                Deactivate
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {docsEmployee && (
                 <EmployeeDocumentsModal
                     employee={employees.find(e => e.employeeId === docsEmployee.employeeId) || docsEmployee}

@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import ProductMultiSelectDropdown from '../common/ProductMultiSelectDropdown';
 import MultiSelectDropdown from '../common/MultiSelectDropdown';
 import { canSeeFilter } from '../../context/AuthContext';
 
@@ -16,24 +15,7 @@ const ProductSummaryReportPanel = ({
     showVariationFilter,
     setShowVariationFilter
 }) => {
-    const productOptions = useMemo(() => {
-        return products.flatMap(p => {
-            if (p.variations && p.variations.length > 0) {
-                return p.variations.map(v => ({
-                    id: `${p.id}_${v.id}`,
-                    name: `${p.productName} (${v.combinationDisplay || 'Variation'})`,
-                    sku: v.sku || p.sku || 'N/A',
-                    upc: v.upc || p.upc || 'N/A',
-                }));
-            }
-            return [{
-                id: `${p.id}_base`,
-                name: p.productName,
-                sku: p.sku || 'N/A',
-                upc: p.upc || 'N/A',
-            }];
-        });
-    }, [products]);
+
 
     const companyOptions = companies.map(c => ({ id: c.id, name: c.companyName }));
 
@@ -52,23 +34,6 @@ const ProductSummaryReportPanel = ({
     return (
         <div className="bg-white rounded-lg border border-gray-200 px-4 py-3 mb-4">
             <div className="flex flex-wrap items-end gap-3">
-                {canSeeFilter(user, 'warehouse_inventory', 'product') && (
-                    <div className="w-full sm:w-[320px]">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Products</label>
-                        <ProductMultiSelectDropdown
-                            options={productOptions}
-                            selectedIds={filters.productKeys || []}
-                            onChange={(ids) => updateFilter('productKeys', ids)}
-                            disabled={!filters.warehouseId && !hasCompanyFilter}
-                            placeholder={
-                                !filters.warehouseId && !hasCompanyFilter
-                                    ? 'Select a warehouse, company, or branch first'
-                                    : 'All Products'
-                            }
-                            searchPlaceholder="Search by name, SKU, or UPC..."
-                        />
-                    </div>
-                )}
 
                 {canSeeFilter(user, 'warehouse_inventory', 'date') && (
                     <>

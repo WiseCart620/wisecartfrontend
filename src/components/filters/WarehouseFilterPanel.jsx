@@ -3,15 +3,19 @@ import SearchableWarehouseDropdown from '../common/SearchableWarehouseDropdown';
 import { canSeeFilter } from '../../context/AuthContext';
 
 import { useEffect } from 'react';
+import VariationSearchableDropdown from '../common/VariationSearchableDropdown';
 
 const WarehouseFilterPanel = ({
   user,
   showWarehouseFilter,
   warehouses,
+  productOptions = [],
   filters,
   updateFilter,
   clearFilters
 }) => {
+  const selectedKeys = filters.productKeys || [];
+  const canProduct = canSeeFilter(user, 'warehouse_inventory', 'product');
   const canWarehouse = canSeeFilter(user, 'warehouse_inventory', 'warehouse');
   const canQuantity = canSeeFilter(user, 'warehouse_inventory', 'quantity');
   const canDate = canSeeFilter(user, 'warehouse_inventory', 'date');
@@ -31,6 +35,7 @@ const WarehouseFilterPanel = ({
   if (!showWarehouseFilter) return null;
 
   const hasActiveFilters =
+    (canProduct && selectedKeys.length > 0) ||
     (canWarehouse && filters.warehouse) ||
     (canQuantity && (filters.minQty || filters.maxQty)) ||
     (canDate && (filters.startDate || filters.endDate));
@@ -98,6 +103,44 @@ const WarehouseFilterPanel = ({
           </button>
         )}
       </div>
+
+      {canProduct && (
+        <div className="mt-2">
+          <VariationSearchableDropdown
+            options={productOptions}
+            value=""
+            onChange={(id) => {
+              const opt = productOptions.find((o) => o.id === id);
+              if (opt && !selectedKeys.includes(opt.id)) {
+                updateFilter('productKeys', [...selectedKeys, opt.id]);
+              }
+            }}
+            placeholder="Filter by product / variation (name, SKU, UPC)..."
+            formData={{
+              items: selectedKeys
+                .map((k) => productOptions.find((o) => o.id === k))
+                .filter(Boolean)
+                .map((o) => ({ productId: o.parentProductId, variationId: o.variationId })),
+            }}
+            index={-1}
+            hideLocationHint
+            loading={productOptions.length === 0}
+          />
+          {selectedKeys.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {selectedKeys.map((k) => {
+                const o = productOptions.find((x) => x.id === k);
+                return (
+                  <span key={k} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                    {o ? `${o.sku || 'N/A'} - ${o.fullName}` : k}
+                    <button type="button" onClick={() => updateFilter('productKeys', selectedKeys.filter((x) => x !== k))}>×</button>
+                  </span>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

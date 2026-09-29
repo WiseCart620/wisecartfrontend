@@ -252,7 +252,7 @@ const WarehouseStockTable = ({
       </div>
 
       <div className="border-t border-gray-100 overflow-x-auto table-fit">
-        <table className="w-full text-sm" style={{ fontSize: '11px', tableLayout: 'fixed' }}>
+        <table className="w-full text-sm" style={{ fontSize: '11px', tableLayout: 'auto' }}>
           <thead className="bg-gray-50">
             {!isLoading && totalElements > 0 && (
               <tr className="bg-gray-50 border-b border-gray-200">
@@ -343,43 +343,41 @@ const WarehouseStockTable = ({
                   <tr key={stock.id} className="hover:bg-gray-50 transition-colors">
                     {/* Warehouse */}
                     <td className="px-2 py-2">
-                      <div style={{ maxWidth: '110px' }}>
-                        <div className="font-medium text-gray-900 text-xs truncate" title={stock.warehouseName}>
-                          {stock.warehouseName}
-                        </div>
-                        <div className="text-xs text-gray-400 truncate">{stock.warehouseCode}</div>
+                      <div className="font-medium text-gray-900 text-xs break-words">
+                        {stock.warehouseName}
                       </div>
+                      <div className="text-xs text-gray-400 break-words">{stock.warehouseCode}</div>
                     </td>
 
                     {/* Product */}
                     <td className="px-2 py-2">
-                      <div style={{ maxWidth: '140px' }}>
-                        <div className="font-medium text-gray-900 text-xs leading-snug line-clamp-2">
-                          {stock.fullProductName || stock.productName}
+                      <div style={{ minWidth: '160px' }}>
+                        <div className="font-medium text-gray-900 text-xs leading-snug break-words whitespace-normal">
+                          {stock.productName || stock.fullProductName}
                         </div>
-                        {stock.combinationDisplay && (
-                          <div className="text-xs text-gray-500 mt-0.5">{stock.combinationDisplay}</div>
+                        {(stock.variationName || stock.combinationDisplay) && (
+                          <div className="text-xs text-blue-600 font-medium mt-0.5 break-words whitespace-normal">
+                            {stock.variationName || stock.combinationDisplay}
+                            {stock.variationName && stock.combinationDisplay && stock.combinationDisplay !== stock.variationName
+                              ? ` (${stock.combinationDisplay})`
+                              : ''}
+                          </div>
                         )}
                       </div>
                     </td>
 
                     {/* SKU/UPC */}
                     <td className="px-2 py-2">
-                      <div className="space-y-0.5" style={{ maxWidth: '110px' }}>
-                        <div className="text-xs font-medium truncate">
+                      <div className="space-y-0.5" style={{ minWidth: '110px' }}>
+                        <div className="text-xs font-medium break-all">
                           {stock.variationSku || stock.productSku || stock.sku || 'N/A'}
                         </div>
                         {(stock.variationUpc || stock.productUpc || stock.upc) &&
                           (stock.variationUpc || stock.productUpc || stock.upc) !== 'N/A' && (
-                            <div className="text-xs text-gray-400 truncate">
+                            <div className="text-xs text-gray-400 break-all">
                               {stock.variationUpc || stock.productUpc || stock.upc}
                             </div>
                           )}
-                        {stock.variationName && (
-                          <div className="text-xs text-blue-600 font-medium truncate mt-0.5">
-                            {stock.variationName}
-                          </div>
-                        )}
                       </div>
                     </td>
 

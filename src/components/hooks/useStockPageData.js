@@ -30,7 +30,7 @@ const buildSummaryParams = (filters) => {
 };
 
 export const useWarehouseStockData = ({
-  warehouseId, searchTerm, minQty, maxQty, startDate, endDate, currentPage, pageSize = 20,
+  warehouseId, productKeys, searchTerm, minQty, maxQty, startDate, endDate, currentPage, pageSize = 20,
 }) => {
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -38,7 +38,7 @@ export const useWarehouseStockData = ({
   const [totalElements, setTotalElements] = useState(0);
   const [grandTotals, setGrandTotals] = useState({ quantity: 0, delivered: 0, pendingDelivery: 0 });
 
-  const filters = { warehouseId, searchTerm, minQty, maxQty, startDate, endDate };
+  const filters = { warehouseId, productKeys, searchTerm, minQty, maxQty, startDate, endDate };
 
   const fetchPage = useCallback(async (page) => {
     setLoading(true);
@@ -61,8 +61,7 @@ export const useWarehouseStockData = ({
     } finally {
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [warehouseId, searchTerm, minQty, maxQty, startDate, endDate, pageSize]);
+  }, [warehouseId, JSON.stringify(productKeys), searchTerm, minQty, maxQty, startDate, endDate, pageSize]);
 
   const prevKey = useRef(null);
   useEffect(() => {
@@ -70,8 +69,7 @@ export const useWarehouseStockData = ({
     const changed = prevKey.current !== null && prevKey.current !== key;
     prevKey.current = key;
     fetchPage(changed ? 0 : currentPage - 1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [warehouseId, searchTerm, minQty, maxQty, startDate, endDate, currentPage, fetchPage]);
+  }, [warehouseId, JSON.stringify(productKeys), searchTerm, minQty, maxQty, startDate, endDate, currentPage, fetchPage]);
 
   return { stocks, loading, totalPages, totalElements, grandTotals, refetch: () => fetchPage(currentPage - 1) };
 };
@@ -121,7 +119,7 @@ export const useProductSummaryData = ({
 };
 
 export const useBranchStockData = ({
-  companyIds, branchIds, productIds, searchTerm, minQty, maxQty, startDate, endDate, currentPage, pageSize = 20,
+  companyIds, branchIds, productKeys, searchTerm, minQty, maxQty, startDate, endDate, currentPage, pageSize = 20,
 }) => {
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -131,7 +129,7 @@ export const useBranchStockData = ({
     quantity: 0, delivered: 0, totalSales: 0, pendingDelivery: 0, pendingSale: 0, available: 0,
   });
 
-  const filters = { companyIds, branchIds, productIds, searchTerm, minQty, maxQty, startDate, endDate };
+  const filters = { companyIds, branchIds, productKeys, searchTerm, minQty, maxQty, startDate, endDate };
 
   const fetchPage = useCallback(async (page) => {
     setLoading(true);
@@ -157,8 +155,7 @@ export const useBranchStockData = ({
     } finally {
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(companyIds), JSON.stringify(branchIds), JSON.stringify(productIds), searchTerm, minQty, maxQty, startDate, endDate, pageSize]);
+  }, [JSON.stringify(companyIds), JSON.stringify(branchIds), JSON.stringify(productKeys), searchTerm, minQty, maxQty, startDate, endDate, pageSize]);
 
   const prevKey = useRef(null);
   useEffect(() => {
@@ -166,8 +163,7 @@ export const useBranchStockData = ({
     const changed = prevKey.current !== null && prevKey.current !== key;
     prevKey.current = key;
     fetchPage(changed ? 0 : currentPage - 1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(companyIds), JSON.stringify(branchIds), JSON.stringify(productIds), searchTerm, minQty, maxQty, startDate, endDate, currentPage, fetchPage]);
+  }, [JSON.stringify(companyIds), JSON.stringify(branchIds), JSON.stringify(productKeys), searchTerm, minQty, maxQty, startDate, endDate, currentPage, fetchPage]);
 
   return { stocks, loading, totalPages, totalElements, grandTotals, refetch: () => fetchPage(currentPage - 1) };
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
@@ -25,6 +25,7 @@ const STATUS_LABEL = { DRAFT: 'On-Going', SUBMITTED: 'On-Going (For Approval)', 
 const PayrollRunManagement = () => {
   const { user } = useAuth();
   const canCreate = can(user, 'payroll', 'create');
+  const canDeleteRun = can(user, 'payroll', 'delete');
   const canManage = can(user, 'employees', 'manage');
 
   const [runs, setRuns] = useState([]);
@@ -76,6 +77,15 @@ const PayrollRunManagement = () => {
 
   const set = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
 
+  const deleteRun = async (run) => {
+    if (!window.confirm(`Delete payroll run ${run.periodStart} – ${run.periodEnd}?\nThis removes all its payslips and cannot be undone.`)) return;
+    const res = await api.delete(`/payroll/runs/${run.payRollRunId}`);
+    if (res.success) {
+      toast.success('Payroll run deleted');
+      load();
+    }
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     if (!form.scheduleId || !form.periodStart || !form.periodEnd || !form.payDate) {
@@ -90,11 +100,13 @@ const PayrollRunManagement = () => {
         periodEnd: form.periodEnd,
         payDate: form.payDate,
       });
-      toast.success('Payroll run created');
-      setShow(false);
-      setForm(EMPTY);
-      load();
-      if (res.success) setSelectedRunId(res.data.payRollRunId);
+      if (res.success) {
+        toast.success('Payroll run created');
+        setShow(false);
+        setForm(EMPTY);
+        load();
+        setSelectedRunId(res.data.payRollRunId);
+      }
     } catch (err) {
       toast.error(err.message || 'Failed to create payroll run');
     } finally {
@@ -148,13 +160,14 @@ const PayrollRunManagement = () => {
               {['Schedule', 'Period', 'Pay Date', 'Employees', 'Net Pay', 'Status'].map(h => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
               ))}
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {loading ? (
-              <tr><td colSpan="6" className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
+              <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
             ) : runs.length === 0 ? (
-              <tr><td colSpan="6" className="px-4 py-8 text-center text-gray-500">No payroll runs yet</td></tr>
+              <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">No payroll runs yet</td></tr>
             ) : runs.map(r => (
               <tr key={r.payRollRunId} className="hover:bg-gray-50 text-sm cursor-pointer" onClick={() => setSelectedRunId(r.payRollRunId)}>
                 <td className="px-4 py-3 font-medium text-gray-900">{r.scheduleName}</td>
@@ -165,6 +178,16 @@ const PayrollRunManagement = () => {
                 <td className="px-4 py-3">
                   <span className={`px-2 py-1 rounded-full text-xs font-semibold ${STATUS_STYLE[r.status]}`}>{STATUS_LABEL[r.status] || r.status}</span>
                   <span className="ml-3 text-blue-600 text-xs underline">View</span>
+                </td>
+                <td className="px-4 py-3 text-right">
+                  {canDeleteRun && (r.status === 'DRAFT' || r.status === 'REJECTED') && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteRun(r); }}
+                      title="Delete run"
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
+                      <Trash2 size={18} />
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

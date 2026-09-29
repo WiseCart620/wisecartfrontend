@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, BarChart3, Building, Store, RefreshCw, Lock } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
+import { BarChart3, Building, Store, RefreshCw, Lock } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 // Hooks
@@ -68,6 +69,7 @@ const InventoryManagement = () => {
       return false;
     }
   });
+
 
   const [rebuildAccessPassword, setRebuildAccessPassword] = useState('');
 
@@ -155,8 +157,10 @@ const InventoryManagement = () => {
 
   const transactionHandlers = useTransactionHandlers();
 
+
   const warehouseFilters = useFilters({
     warehouse: '',
+    productKeys: [],
     minQty: '',
     maxQty: '',
     startDate: '',
@@ -182,6 +186,7 @@ const InventoryManagement = () => {
     refetch: refetchWarehouseStocks,
   } = useWarehouseStockData({
     warehouseId: warehouseFilters.filters.warehouse || undefined,
+    productKeys: warehouseFilters.filters.productKeys || [],
     searchTerm: activeTab === 'warehouse-stocks' ? debouncedStockSearchTerm : '',
     minQty: warehouseFilters.filters.minQty || undefined,
     maxQty: warehouseFilters.filters.maxQty || undefined,
@@ -194,9 +199,7 @@ const InventoryManagement = () => {
   const branchStockFilterParams = {
     companyIds: branchFilters.filters.companyIds,
     branchIds: branchFilters.filters.branchIds,
-    productIds: (branchFilters.filters.productKeys || [])
-      .map((k) => k.split('_')[0])
-      .filter(Boolean),
+    productKeys: branchFilters.filters.productKeys || [],
     searchTerm: debouncedStockSearchTerm,
     minQty: branchFilters.filters.minQty || undefined,
     maxQty: branchFilters.filters.maxQty || undefined,
@@ -219,9 +222,7 @@ const InventoryManagement = () => {
   } = useBranchStockData({
     companyIds: branchFilters.filters.companyIds,
     branchIds: branchFilters.filters.branchIds,
-    productIds: (branchFilters.filters.productKeys || [])
-      .map((k) => k.split('_')[0])
-      .filter(Boolean),
+    productKeys: branchFilters.filters.productKeys || [],
     searchTerm: activeTab === 'branch-stocks' ? debouncedStockSearchTerm : '',
     minQty: branchFilters.filters.minQty || undefined,
     maxQty: branchFilters.filters.maxQty || undefined,
@@ -235,6 +236,49 @@ const InventoryManagement = () => {
   const stockPagination = usePaginationControl(10);
 
   const selectedProductKeys = productReportFilters.filters.productKeys || [];
+  const productFilterOptions = useMemo(() => {
+    const idsWithVariations = new Set(
+      productSummaries.filter((s) => s.variationId != null).map((s) => String(s.productId))
+    );
+    return productSummaries
+      .filter((s) => s.variationId != null || !idsWithVariations.has(String(s.productId)))
+      .map((s) => {
+        const variationLabel = s.combinationDisplay || s.variationName || null;
+        return {
+          id: `${s.productId}_${s.variationId ?? 'base'}`,
+          parentProductId: s.productId,
+          variationId: s.variationId ?? null,
+          name: s.productName,
+          fullName: variationLabel ? `${s.productName} - ${variationLabel}` : s.productName,
+          subLabel: variationLabel,
+          sku: s.sku,
+          upc: s.upc,
+          isVariation: s.variationId != null,
+        };
+      });
+  }, [productSummaries]);
+
+  // Used by the dropdown to grey out items that are already in the filter list
+  const selectedFilterItems = useMemo(
+    () =>
+      selectedProductKeys
+        .map((k) => productFilterOptions.find((o) => o.id === k))
+        .filter(Boolean)
+        .map((o) => ({ productId: o.parentProductId, variationId: o.variationId })),
+    [selectedProductKeys, productFilterOptions]
+  );
+
+  const addProductFilterKey = (opt) => {
+    if (opt && !selectedProductKeys.includes(opt.id)) {
+      productReportFilters.updateFilter('productKeys', [...selectedProductKeys, opt.id]);
+    }
+  };
+
+  const removeProductFilterKey = (key) =>
+    productReportFilters.updateFilter(
+      'productKeys',
+      selectedProductKeys.filter((k) => k !== key)
+    );
 
   const {
     summaries: productSummaryPage,
@@ -683,6 +727,40 @@ const InventoryManagement = () => {
               setShowVariationFilter={setShowVariationFilter}
             />
 
+            <div className="bg-white rounded-xl shadow p-3 mb-4">
+              <div className="text-xs font-semibold text-gray-700 uppercase mb-2">Filter by Product</div>
+              <VariationSearchableDropdown
+                options={productFilterOptions}
+                value=""
+                onChange={(id) => addProductFilterKey(productFilterOptions.find((o) => o.id === id))}
+                placeholder="Search product, variation, SKU or UPC..."
+                formData={{ items: selectedFilterItems }}
+                index={-1}
+                hideLocationHint
+                loading={productSummaries.length === 0}
+              />
+              {selectedProductKeys.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {selectedProductKeys.map((k) => {
+                    const o = productFilterOptions.find((x) => x.id === k);
+                    return (
+                      <span key={k} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                        {o ? `${o.sku || 'N/A'} - ${o.fullName}` : k}
+                        <button type="button" onClick={() => removeProductFilterKey(k)} className="hover:text-red-600">×</button>
+                      </span>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={() => productReportFilters.updateFilter('productKeys', [])}
+                    className="text-xs text-gray-500 underline"
+                  >
+                    Clear all
+                  </button>
+                </div>
+              )}
+            </div>
+
             {(() => {
               const { companyIds, branchIds, warehouseId, dateFrom, dateTo } = productReportFilters.filters;
               const hasCompanyFilter = (companyIds && companyIds.length > 0) || (branchIds && branchIds.length > 0);
@@ -714,25 +792,12 @@ const InventoryManagement = () => {
 
         {activeTab === 'warehouse-stocks' && (
           <div className="mb-8">
-            {canSeeFilter(user, 'warehouse_inventory', 'search') && (
-              <div className="flex flex-col md:flex-row gap-4 mb-6">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                  <input
-                    type="text"
-                    placeholder="Search warehouse stocks by product name, warehouse, or SKU..."
-                    value={stockSearchTerm}
-                    onChange={(e) => setStockSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            )}
 
             <WarehouseFilterPanel
               user={user}
               showWarehouseFilter={showWarehouseFilter}
               warehouses={warehouses}
+              productOptions={productFilterOptions}
               filters={warehouseFilters.filters}
               updateFilter={warehouseFilters.updateFilter}
               clearFilters={warehouseFilters.clearFilters}
@@ -762,19 +827,7 @@ const InventoryManagement = () => {
 
         {activeTab === 'branch-stocks' && (
           <div className="mb-8">
-            <div className="flex flex-col md:flex-row gap-3 mb-4">
-              {canSeeFilter(user, 'warehouse_inventory', 'search') && (
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                  <input
-                    type="text"
-                    placeholder="Search branch stocks by product name, branch, or SKU..."
-                    value={stockSearchTerm}
-                    onChange={(e) => setStockSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              )}
+            <div className="flex justify-end mb-4">
               <BranchStockExportButton fetchData={handleFetchBranchExportData} />
             </div>
             <BranchFilterPanel

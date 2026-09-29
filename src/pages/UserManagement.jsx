@@ -71,7 +71,7 @@ const FEATURES = [
   { key: 'products', label: 'Products', description: 'Product catalog and variations', actions: ['view', 'create', 'edit', 'delete'] },
   { key: 'supplier', label: 'Supplier', description: 'Supplier records and contacts', actions: ['view', 'create', 'edit', 'delete'] },
   { key: 'employees', label: 'Employees', description: 'Manage employee records and payroll data', actions: ['view', 'create', 'edit', 'delete', 'manage'] },
-  { key: 'payroll', label: 'Payroll Runs', description: 'View: see runs. Create: create runs, OT/undertime. Submit. Edit: change payslip items (GM). Approve/Reject. Download docs. Mark Paid.', actions: ['view', 'create', 'submit', 'edit', 'approve', 'download', 'pay', 'formula'] },
+  { key: 'payroll', label: 'Payroll Runs', description: 'View: see runs. Create: create runs, OT/undertime. Submit. Edit: change payslip items (GM). Approve/Reject. Download docs. Mark Paid.', actions: ['view', 'create', 'submit', 'edit', 'approve', 'download', 'pay', 'formula', 'delete'] },
 ];
 
 const ROLE_PRESETS = {
