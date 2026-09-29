@@ -27,7 +27,36 @@ import { AuthProvider, AuthLoading, ProtectedRoute, FinanceRoute, AdminOrUserRou
 import { ReferenceDataProvider } from './context/ReferenceDataContext';
 import { startActivityTracking, stopActivityTracking } from './services/api';
 import { useEffect } from 'react';
+import { useAuth, hasPermission } from './context/AuthContext';
 
+// Sends the user to the first page shown in their sidebar (same order as Sidebar.jsx).
+const HomeRedirect = () => {
+  const { user } = useAuth();
+
+  if (!user) return <Navigate to="/login" replace />;
+
+  const isSuperAdmin = user.role === 'SUPER_ADMIN';
+  const allowed = (feature) => isSuperAdmin || hasPermission(user, feature);
+
+  // Same order as the sidebar, top to bottom
+  const candidates = [
+    { to: '/dashboard', ok: allowed('dashboard') },
+    { to: '/warehouse-inventory', ok: allowed('warehouse_inventory') },
+    { to: '/inventory', ok: allowed('inventory') },
+    { to: '/procurement', ok: allowed('procurement') },
+    { to: '/employees', ok: allowed('employees') },
+    { to: '/deliveries', ok: allowed('deliveries') },
+    { to: '/sales', ok: allowed('sales') },
+    { to: '/warehouse', ok: allowed('warehouse') },
+    { to: '/branches', ok: allowed('branches') },
+    { to: '/products', ok: allowed('products') },
+    { to: '/supplier', ok: allowed('supplier') },
+    { to: '/users', ok: isSuperAdmin },
+  ];
+
+  const first = candidates.find((c) => c.ok);
+  return <Navigate to={first ? first.to : '/welcome'} replace />;
+};
 function App() {
   useEffect(() => {
     const token = localStorage.getItem('authToken');
@@ -114,7 +143,7 @@ function App() {
               <Route path="/warehouse-inventory" element={
                 <ProtectedRoute>
                   <AdminOrUserRoute>
-                    <PermissionRoute feature="inventory">
+                    <PermissionRoute feature="warehouse_inventory">
                       <Layout>
                         <WarehouseInventory />
                       </Layout>
@@ -285,8 +314,8 @@ function App() {
                 </ProtectedRoute>
               } />
 
-              {/* Redirect root to dashboard */}
-              <Route path="/" element={<Navigate to="/welcome" replace />} />
+              {/* Redirect root to the first page in the user's sidebar */}
+              <Route path="/" element={<HomeRedirect />} />
 
               {/* 404 Page */}
               <Route path="*" element={<NotFound />} />

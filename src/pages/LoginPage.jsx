@@ -77,10 +77,7 @@ const LoginPage = () => {
 
       toast.success(`Welcome back, ${userData.fullName || userData.username}!`);
 
-      const permissions = Array.isArray(userData.permissions) ? userData.permissions : [];
-      const canViewDashboard = userRole === 'SUPER_ADMIN' || permissions.includes('dashboard:view');
-
-      navigate(canViewDashboard ? '/dashboard' : '/welcome', { replace: true });
+      navigate('/', { replace: true });
 
     } catch (err) {
       console.error('Login error:', err);
