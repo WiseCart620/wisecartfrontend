@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Edit2, Search, X, User, UserCheck, UserX, CalendarClock, Trash2, Wallet } from 'lucide-react';
+import { Plus, Edit2, Search, X, User, UserCheck, UserX, CalendarClock, Trash2, Wallet, FileText } from 'lucide-react';
+import EmployeeDocumentsModal, { SecureImage } from './EmployeeDocumentsModal';
 import toast, { Toaster } from 'react-hot-toast';
 import EmployeeCompensationModal from '../../components/payroll/EmployeeCompensationModal';
 import { api } from '../../services/api';
@@ -57,6 +58,7 @@ const EmployeeManagement = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const [compEmployee, setCompEmployee] = useState(null);
+    const [docsEmployee, setDocsEmployee] = useState(null);
 
 
     const [showModal, setShowModal] = useState(false);
@@ -291,7 +293,10 @@ const EmployeeManagement = () => {
                                 <tr key={emp.employeeId} className="hover:bg-gray-50">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-blue-100 rounded-lg"><User size={20} className="text-blue-600" /></div>
+                                            {emp.photoUrl
+                                                ? <SecureImage path={emp.photoUrl} className="w-10 h-10 rounded-lg object-cover"
+                                                    fallback={<div className="p-2 bg-blue-100 rounded-lg"><User size={20} className="text-blue-600" /></div>} />
+                                                : <div className="p-2 bg-blue-100 rounded-lg"><User size={20} className="text-blue-600" /></div>}
                                             <div>
                                                 <div className="font-medium text-gray-900">{emp.fullName}</div>
                                                 <div className="text-sm text-gray-500">{emp.email}</div>
@@ -312,6 +317,9 @@ const EmployeeManagement = () => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
+                                            <button onClick={() => setDocsEmployee(emp)} title="Documents" className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg">
+                                                <FileText size={18} />
+                                            </button>
                                             <button onClick={() => setCompEmployee(emp)} title="Compensation" className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg">
                                                 <Wallet size={18} />
                                             </button>
@@ -451,6 +459,18 @@ const EmployeeManagement = () => {
                     </div>
                 )
             }
+            {docsEmployee && (
+                <EmployeeDocumentsModal
+                    employee={employees.find(e => e.employeeId === docsEmployee.employeeId) || docsEmployee}
+                    canEdit={canEdit}
+                    canDelete={canDelete}
+                    onClose={() => setDocsEmployee(null)}
+                    onChanged={async () => {
+                        const r = await api.get('/employees');
+                        if (r.success) setEmployees(r.data || []);
+                    }}
+                />
+            )}
 
             {
                 compEmployee && (
