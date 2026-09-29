@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Plus, Search, Calendar
+  Plus, Calendar
 } from 'lucide-react';
+import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
 import Pagination from '../../components/common/Pagination';
 import toast, { Toaster } from 'react-hot-toast';
 import { api, API_BASE_URL } from '../../services/api';
@@ -43,7 +44,7 @@ const ProductManagement = () => {
     unitCosts
   } = useProductManagement(api);
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedProductKeys, setSelectedProductKeys] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
@@ -285,14 +286,7 @@ const ProductManagement = () => {
       if (response?.success) {
         toast.success('Product deleted successfully');
         await loadData();
-        const filtered = getSortedProducts(
-          products.filter(p =>
-            p.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.upc?.toLowerCase().includes(searchTerm.toLowerCase())
-          )
-        );
-        if (filtered.length % itemsPerPage === 1 && currentPage > 1) {
+        if (filteredProducts.length % itemsPerPage === 1 && currentPage > 1) {
           setCurrentPage(currentPage - 1);
         }
       } else {
@@ -332,12 +326,54 @@ const ProductManagement = () => {
     setSelectedSupplier(null);
   };
 
+
+
+  const productOptions = React.useMemo(() => {
+    const make = (p, v) => {
+      const variationLabel = v
+        ? (v.combinationDisplay || (() => {
+          try {
+            const attrs = v.attributesJson ? JSON.parse(v.attributesJson) : null;
+            return attrs ? Object.values(attrs).join('-') : (v.variationValue || 'Variation');
+          } catch {
+            return v.variationValue || 'Variation';
+          }
+        })())
+        : null;
+      return {
+        id: `${p.id}_${v?.id ?? 'base'}`,
+        parentProductId: p.id,
+        variationId: v?.id ?? null,
+        name: p.productName,
+        fullName: variationLabel ? `${p.productName} - ${variationLabel}` : p.productName,
+        subLabel: variationLabel,
+        sku: (v?.sku || p.sku) || 'N/A',
+        upc: (v?.upc || p.upc) || 'N/A',
+        isVariation: !!v,
+      };
+    };
+    return products.flatMap((p) =>
+      p.variations && p.variations.length > 0
+        ? p.variations.map((v) => make(p, v))
+        : [make(p, null)]
+    );
+  }, [products]);
+
+  const selectedProductIds = React.useMemo(
+    () =>
+      new Set(
+        selectedProductKeys
+          .map((k) => productOptions.find((o) => o.id === k))
+          .filter(Boolean)
+          .map((o) => String(o.parentProductId))
+      ),
+    [selectedProductKeys, productOptions]
+  );
+
   const filteredProducts = getSortedProducts(
     products.filter(product => {
       const matchesSearch =
-        product.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.upc?.toLowerCase().includes(searchTerm.toLowerCase());
+        selectedProductIds.size === 0 || selectedProductIds.has(String(product.id));
       const matchesCategory = !selectedCategory || product.category === selectedCategory;
       return matchesSearch && matchesCategory;
     })
@@ -372,14 +408,26 @@ const ProductManagement = () => {
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-          <input
-            type="text"
-            placeholder="Search by name, SKU, or UPC..."
-            value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        <div className="flex-1">
+          <VariationSearchableDropdown
+            options={productOptions}
+            value=""
+            onChange={(id) => {
+              const opt = productOptions.find((o) => o.id === id);
+              if (opt && !selectedProductKeys.includes(opt.id)) {
+                setSelectedProductKeys([...selectedProductKeys, opt.id]);
+                setCurrentPage(1);
+              }
+            }}
+            placeholder="Filter by product / variation (name, SKU, UPC)..."
+            formData={{
+              items: selectedProductKeys
+                .map((k) => productOptions.find((o) => o.id === k))
+                .filter(Boolean)
+                .map((o) => ({ productId: o.parentProductId, variationId: o.variationId })),
+            }}
+            index={-1}
+            hideLocationHint
           />
         </div>
         <div className="relative">
@@ -414,6 +462,36 @@ const ProductManagement = () => {
           </button>
         )}
       </div>
+
+      {selectedProductKeys.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {selectedProductKeys.map((k) => {
+            const o = productOptions.find((x) => x.id === k);
+            return (
+              <span key={k} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                {o ? `${o.sku || 'N/A'} - ${o.fullName}` : k}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedProductKeys(selectedProductKeys.filter((x) => x !== k));
+                    setCurrentPage(1);
+                  }}
+                  className="hover:text-red-600"
+                >
+                  ×
+                </button>
+              </span>
+            );
+          })}
+          <button
+            type="button"
+            onClick={() => { setSelectedProductKeys([]); setCurrentPage(1); }}
+            className="text-xs text-gray-500 underline"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
