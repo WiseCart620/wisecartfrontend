@@ -88,6 +88,8 @@ const EmployeeManagement = () => {
     const [deactivateReason, setDeactivateReason] = useState('');
     const [deactivateRemarks, setDeactivateRemarks] = useState('');
     const [deactivateFile, setDeactivateFile] = useState(null);
+    const [photoPreview, setPhotoPreview] = useState(null);
+    const [hoverPhoto, setHoverPhoto] = useState(null);
 
 
     const [showModal, setShowModal] = useState(false);
@@ -96,6 +98,13 @@ const EmployeeManagement = () => {
 
 
     useEffect(() => { loadAll(); }, []);
+
+    useEffect(() => {
+        if (!photoPreview) return;
+        const onKey = (e) => { if (e.key === 'Escape') setPhotoPreview(null); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [photoPreview]);
 
     const loadAll = async () => {
         setLoading(true);
@@ -362,8 +371,26 @@ const EmployeeManagement = () => {
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
                                             {emp.photoUrl
-                                                ? <SecureImage path={emp.photoUrl} className="w-10 h-10 rounded-lg object-cover"
-                                                    fallback={<div className="p-2 bg-blue-100 rounded-lg"><User size={20} className="text-blue-600" /></div>} />
+                                                ? (
+                                                    <button
+                                                        type="button"
+                                                        title="Click to view photo"
+                                                        onClick={() => { setHoverPhoto(null); setPhotoPreview(emp); }}
+                                                        onMouseEnter={(e) => {
+                                                            const r = e.currentTarget.getBoundingClientRect();
+                                                            setHoverPhoto({
+                                                                emp,
+                                                                left: Math.min(r.right + 12, window.innerWidth - 224),
+                                                                top: Math.max(8, Math.min(r.top + r.height / 2 - 130, window.innerHeight - 268)),
+                                                            });
+                                                        }}
+                                                        onMouseLeave={() => setHoverPhoto(null)}
+                                                        className="flex-shrink-0 rounded-lg cursor-zoom-in transition duration-200 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                                    >
+                                                        <SecureImage path={emp.photoUrl} className="w-10 h-10 rounded-lg object-cover"
+                                                            fallback={<div className="p-2 bg-blue-100 rounded-lg"><User size={20} className="text-blue-600" /></div>} />
+                                                    </button>
+                                                )
                                                 : <div className="p-2 bg-blue-100 rounded-lg"><User size={20} className="text-blue-600" /></div>}
                                             <div>
                                                 <div className="font-medium text-gray-900">{emp.fullName}</div>
@@ -672,6 +699,61 @@ const EmployeeManagement = () => {
                                 className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 disabled:opacity-50">
                                 Deactivate
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Hover preview card */}
+            {hoverPhoto && (
+                <div
+                    className="fixed z-[60] w-52 pointer-events-none bg-white rounded-xl shadow-2xl ring-1 ring-black/10 overflow-hidden"
+                    style={{ left: hoverPhoto.left, top: hoverPhoto.top }}
+                >
+                    <SecureImage
+                        path={hoverPhoto.emp.photoUrl}
+                        className="w-52 h-52 object-cover"
+                        fallback={<div className="w-52 h-52 flex items-center justify-center bg-gray-100"><User size={48} className="text-gray-400" /></div>}
+                    />
+                    <div className="px-3 py-2">
+                        <div className="text-sm font-semibold text-gray-900 truncate">{hoverPhoto.emp.fullName}</div>
+                        <div className="text-xs text-gray-500 truncate">
+                            {hoverPhoto.emp.designation || hoverPhoto.emp.department || 'Employee'}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Full-size photo viewer */}
+            {photoPreview && (
+                <div
+                    className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+                    onClick={() => setPhotoPreview(null)}
+                >
+                    <div
+                        className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => setPhotoPreview(null)}
+                            title="Close (Esc)"
+                            className="absolute top-3 right-3 z-10 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition"
+                        >
+                            <X size={18} />
+                        </button>
+                        <div className="bg-gray-100 flex items-center justify-center">
+                            <SecureImage
+                                path={photoPreview.photoUrl}
+                                className="w-full max-h-[70vh] object-contain"
+                                fallback={<div className="h-80 flex items-center justify-center"><User size={72} className="text-gray-400" /></div>}
+                            />
+                        </div>
+                        <div className="px-5 py-4 border-t border-gray-100">
+                            <div className="text-base font-semibold text-gray-900">{photoPreview.fullName}</div>
+                            <div className="text-sm text-gray-500">
+                                {[photoPreview.designation, photoPreview.department].filter(Boolean).join(' · ') || 'Employee'}
+                            </div>
                         </div>
                     </div>
                 </div>
