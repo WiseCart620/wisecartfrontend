@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Edit2, Search, X, User, UserCheck, UserX, FileText } from 'lucide-react';
+import { Plus, Edit2, Search, X, User, UserCheck, UserX, FileText, Eye, EyeOff } from 'lucide-react';
 import EmployeeDocumentsModal, { SecureImage } from './EmployeeDocumentsModal';
 import toast, { Toaster } from 'react-hot-toast';
 import { api } from '../../services/api';
@@ -41,6 +41,39 @@ const tenure = (hire, end) => {
     if (months < 0) months = 0;
     return `${String(Math.floor(months / 12)).padStart(2, '0')}Y/${String(months % 12).padStart(2, '0')}M`;
 };
+
+const fmtDate = (d) =>
+    d ? new Date(d + 'T00:00:00').toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) : '—';
+
+const mask = (v) => {
+    if (!v) return '—';
+    const s = String(v);
+    return s.length <= 4 ? '••••' : '•'.repeat(s.length - 4) + s.slice(-4);
+};
+
+const titleCase = (v) =>
+    v ? String(v).replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()) : '—';
+
+const Detail = ({ label, value, className = '' }) => (
+    <div className={className}>
+        <div className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">{label}</div>
+        <div className="mt-0.5 text-sm text-gray-900 break-words">
+            {value || value === 0 ? value : '—'}
+        </div>
+    </div>
+);
+
+const ViewSection = ({ title, children }) => (
+    <section>
+        <div className="flex items-center gap-2 mb-3">
+            <div className="w-1 h-4 bg-orange-500 rounded-full" />
+            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">{title}</h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 bg-gray-50 rounded-xl p-5 border border-gray-100">
+            {children}
+        </div>
+    </section>
+);
 
 const inputCls = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition';
 
@@ -90,6 +123,8 @@ const EmployeeManagement = () => {
     const [deactivateFile, setDeactivateFile] = useState(null);
     const [photoPreview, setPhotoPreview] = useState(null);
     const [hoverPhoto, setHoverPhoto] = useState(null);
+    const [viewEmp, setViewEmp] = useState(null);
+    const [showSensitive, setShowSensitive] = useState(false);
 
 
     const [showModal, setShowModal] = useState(false);
@@ -100,11 +135,15 @@ const EmployeeManagement = () => {
     useEffect(() => { loadAll(); }, []);
 
     useEffect(() => {
-        if (!photoPreview) return;
-        const onKey = (e) => { if (e.key === 'Escape') setPhotoPreview(null); };
+        if (!photoPreview && !viewEmp) return;
+        const onKey = (e) => {
+            if (e.key !== 'Escape') return;
+            if (photoPreview) setPhotoPreview(null);
+            else setViewEmp(null);
+        };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [photoPreview]);
+    }, [photoPreview, viewEmp]);
 
     const loadAll = async () => {
         setLoading(true);
@@ -425,6 +464,13 @@ const EmployeeManagement = () => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
+                                            <button
+                                                onClick={() => { setShowSensitive(false); setViewEmp(emp); }}
+                                                title="View details"
+                                                className="p-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                                            >
+                                                <Eye size={18} />
+                                            </button>
                                             <button onClick={() => setDocsEmployee(emp)} title="Documents" className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg">
                                                 <FileText size={18} />
                                             </button>
@@ -704,6 +750,177 @@ const EmployeeManagement = () => {
                 </div>
             )}
 
+            {/* Employee profile viewer */}
+            {viewEmp && (() => {
+                const v = employees.find((e) => e.employeeId === viewEmp.employeeId) || viewEmp;
+                const supervisor = employees.find((e) => e.employeeId === v.supervisorId)?.fullName;
+                const allowanceName = allowanceTypes.find((p) => String(p.payTypeId) === String(v.allowancePayTypeId))?.payTypeName;
+                const others = parseOthers(v.otherDetails);
+                const active = v.status === 'ACTIVE';
+                const sens = (val) => (showSensitive ? val || '—' : mask(val));
+
+                return (
+                    <div
+                        className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                        onClick={() => setViewEmp(null)}
+                    >
+                        <div
+                            className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[92vh] overflow-hidden flex flex-col"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Header */}
+                            <div className="flex-shrink-0 px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+                                <div className="flex items-start gap-5">
+                                    {v.photoUrl ? (
+                                        <button
+                                            type="button"
+                                            title="View photo"
+                                            onClick={() => setPhotoPreview(v)}
+                                            className="flex-shrink-0 rounded-xl cursor-zoom-in transition hover:ring-2 hover:ring-orange-400"
+                                        >
+                                            <SecureImage
+                                                path={v.photoUrl}
+                                                className="w-20 h-20 rounded-xl object-cover shadow"
+                                                fallback={<div className="w-20 h-20 rounded-xl bg-gray-100 flex items-center justify-center"><User size={36} className="text-gray-400" /></div>}
+                                            />
+                                        </button>
+                                    ) : (
+                                        <div className="w-20 h-20 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                            <User size={36} className="text-gray-400" />
+                                        </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                        <h2 className="text-xl font-bold text-gray-900 truncate">{v.fullName}</h2>
+                                        <p className="text-sm text-gray-600 mt-0.5">
+                                            {[v.designation, v.department].filter(Boolean).join(' · ') || 'No position set'}
+                                        </p>
+                                        <div className="flex flex-wrap items-center gap-2 mt-3">
+                                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full ${active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                                {active ? <UserCheck size={12} /> : <UserX size={12} />}
+                                                {active ? 'Active' : titleCase(v.status)}
+                                            </span>
+                                            <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
+                                                {titleCase(v.employmentType)}
+                                            </span>
+                                            <span className="px-2.5 py-1 text-xs font-mono rounded-full bg-gray-100 text-gray-700">
+                                                Tenure {tenure(v.hireDate, active ? null : v.inactiveDate)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => setViewEmp(null)} title="Close (Esc)" className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 flex-shrink-0">
+                                        <X size={20} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Body */}
+                            <div className="flex-1 overflow-y-auto px-8 py-6 space-y-7">
+                                <ViewSection title="Personal Information">
+                                    <Detail label="First Name" value={v.firstName} />
+                                    <Detail label="Middle Name" value={v.middleName} />
+                                    <Detail label="Last Name" value={v.lastName} />
+                                    <Detail label="Gender" value={titleCase(v.gender)} />
+                                    <Detail label="Date of Birth" value={fmtDate(v.dateOfBirth)} />
+                                    <Detail label="Email" value={v.email} />
+                                    <Detail label="Phone" value={v.phone} />
+                                    <Detail label="Address" value={v.address} className="sm:col-span-2" />
+                                </ViewSection>
+
+                                <ViewSection title="Job Details">
+                                    <Detail label="Hire Date" value={fmtDate(v.hireDate)} />
+                                    <Detail label="Tenure" value={tenure(v.hireDate, active ? null : v.inactiveDate)} />
+                                    <Detail label="Department" value={v.department} />
+                                    <Detail label="Designation" value={v.designation} />
+                                    <Detail label="Employment Type" value={titleCase(v.employmentType)} />
+                                    <Detail label="Work Location" value={v.workLocation} />
+                                    <Detail label="Supervisor" value={supervisor} />
+                                    <Detail label="Pay Schedule" value={v.scheduleName} />
+                                </ViewSection>
+
+                                {!active && (
+                                    <ViewSection title="Separation">
+                                        <Detail label="Inactive Since" value={fmtDate(v.inactiveDate)} />
+                                        <Detail label="Reason" value={v.separationReason} />
+                                        <Detail label="Remarks" value={v.separationRemarks} className="sm:col-span-2" />
+                                        <Detail label="Leave Conversion in Final Pay" value={v.includeLeaveConversion ? 'Included' : 'Not included'} />
+                                    </ViewSection>
+                                )}
+
+                                <ViewSection title="Emergency Contact">
+                                    <Detail label="Contact Name" value={v.emergencyContactName} />
+                                    <Detail label="Relationship" value={v.emergencyContactRelationship} />
+                                    <Detail label="Phone" value={v.emergencyContactPhone} />
+                                </ViewSection>
+
+                                <div className="flex items-center justify-between -mb-3">
+                                    <span className="text-xs text-gray-500">Government IDs and bank details are masked by default.</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowSensitive((s) => !s)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-orange-600 border border-orange-200 rounded-lg hover:bg-orange-50"
+                                    >
+                                        {showSensitive ? <EyeOff size={14} /> : <Eye size={14} />}
+                                        {showSensitive ? 'Hide sensitive info' : 'Show sensitive info'}
+                                    </button>
+                                </div>
+
+                                <ViewSection title="Statutory Numbers">
+                                    <Detail label="TIN" value={sens(v.tinNumber)} />
+                                    <Detail label="SSS Number" value={sens(v.sssNumber)} />
+                                    <Detail label="PhilHealth Number" value={sens(v.philhealthNumber)} />
+                                    <Detail label="Pag-IBIG Number" value={sens(v.pagibigNumber)} />
+                                    <Detail label="Tax Status" value={v.taxStatus} />
+                                </ViewSection>
+
+                                <ViewSection title="Salary & Payment">
+                                    <Detail label="Basic Salary (monthly)" value={money(v.basicSalary)} />
+                                    <Detail
+                                        label="Allowance"
+                                        value={allowanceName ? `${allowanceName} — ${money(v.allowanceAmount)}` : 'None'}
+                                    />
+                                    <Detail label="Payment Mode" value={titleCase(v.paymentMode)} />
+                                    <Detail label="Bank Name" value={v.bankName} />
+                                    <Detail label="Account Number" value={sens(v.accountNumber)} />
+                                    <Detail label="Account Holder" value={v.accountHolderName} />
+                                </ViewSection>
+
+                                {others.length > 0 && (
+                                    <ViewSection title="Others">
+                                        {others.map((o, i) => (
+                                            <Detail key={i} label={o.key || 'Detail'} value={o.value} />
+                                        ))}
+                                    </ViewSection>
+                                )}
+                            </div>
+
+                            {/* Footer */}
+                            <div className="flex-shrink-0 border-t border-gray-200 px-8 py-4 flex justify-end gap-3">
+                                <button
+                                    onClick={() => { setViewEmp(null); setDocsEmployee(v); }}
+                                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium"
+                                >
+                                    <FileText size={16} /> Documents
+                                </button>
+                                {canEdit && (
+                                    <button
+                                        onClick={() => { setViewEmp(null); openEdit(v); }}
+                                        className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium"
+                                    >
+                                        <Edit2 size={16} /> Edit
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setViewEmp(null)}
+                                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
             {/* Hover preview card */}
             {hoverPhoto && (
                 <div
@@ -758,7 +975,6 @@ const EmployeeManagement = () => {
                     </div>
                 </div>
             )}
-
             {docsEmployee && (
                 <EmployeeDocumentsModal
                     employee={employees.find(e => e.employeeId === docsEmployee.employeeId) || docsEmployee}
