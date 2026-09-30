@@ -1,7 +1,6 @@
 // src/components/filters/DeliveryFilters.jsx
 import React from 'react';
-import { X } from 'lucide-react';
-import VariationSearchableDropdown from '../common/VariationSearchableDropdown';
+import ProductMultiSelectDropdown from '../common/ProductMultiSelectDropdown';
 import MultiSelectDropdown from '../common/MultiSelectDropdown';
 import { canSeeFilter } from '../../context/AuthContext';
 
@@ -59,6 +58,27 @@ const DeliveryFilters = ({
       isVariation: false,
     }];
   });
+
+  const selectedProductOptionIds = productOptions
+    .filter(o => (filterData.productFilters || []).some(pf =>
+      pf.productId === o.parentProductId &&
+      (pf.variationId ?? null) === (o.variationId ?? null)
+    ))
+    .map(o => o.id);
+
+  const handleProductIdsChange = (ids) => {
+    const next = ids
+      .map(id => productOptions.find(o => o.id === id))
+      .filter(Boolean)
+      .map(o => ({
+        productId: o.parentProductId,
+        variationId: o.variationId ?? null,
+        label: o.subLabel && o.subLabel !== 'No variations'
+          ? `${o.fullName} — ${o.subLabel}`
+          : o.fullName,
+      }));
+    onFilterChange({ productFilters: next });
+  };
 
   const filteredBranchOptions = (filterData.companyIds && filterData.companyIds.length > 0)
     ? branches
@@ -141,37 +161,12 @@ const DeliveryFilters = ({
         )}
 
         {canSeeFilter(user, 'deliveries', 'product') && (
-          <div className="w-56">
-            <VariationSearchableDropdown
-              options={productOptions.filter(o =>
-                !(filterData.productFilters || []).some(pf =>
-                  pf.productId === o.parentProductId &&
-                  (pf.variationId ?? null) === (o.variationId ?? null)
-                )
-              )}
-              value=""
-              onChange={(value) => {
-                if (!value) return;
-                const option = productOptions.find(o => o.id === value);
-                if (!option) return;
-                const alreadyAdded = (filterData.productFilters || []).some(pf =>
-                  pf.productId === option.parentProductId &&
-                  (pf.variationId ?? '') === (option.variationId ?? '')
-                );
-                if (alreadyAdded) return;
-                const label = option.subLabel !== 'No variations'
-                  ? `${option.fullName} — ${option.subLabel}`
-                  : option.fullName;
-                onFilterChange({
-                  productFilters: [...(filterData.productFilters || []), {
-                    productId: option.parentProductId,
-                    variationId: option.variationId ?? null,
-                    label
-                  }]
-                });
-              }}
-              placeholder="Add product / UPC / SKU..."
-              hideLocationHint={true}
+          <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
+            <ProductMultiSelectDropdown
+              options={productOptions}
+              selectedIds={selectedProductOptionIds}
+              onChange={handleProductIdsChange}
+              placeholder="All Products"
             />
           </div>
         )}
@@ -225,24 +220,6 @@ const DeliveryFilters = ({
         )}
       </div>
 
-      {(filterData.productFilters || []).length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-gray-100">
-          {filterData.productFilters.map((pf, idx) => (
-            <span key={idx} className="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-              <span className="leading-none">{pf.label}</span>
-              <button
-                type="button"
-                onClick={() => onFilterChange({
-                  productFilters: filterData.productFilters.filter((_, i) => i !== idx)
-                })}
-                className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-200 hover:bg-red-200 hover:text-red-700 transition-colors flex-shrink-0"
-              >
-                <X size={9} strokeWidth={2.5} />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
 
       {(filterData.companyIds && filterData.companyIds.length > 0) && filteredBranchOptions.length === 0 && (
         <p className="text-xs text-orange-600 mt-2">No branches available for the selected company(ies)</p>

@@ -65,7 +65,7 @@ const Pagination = ({
           onChange={handleInputChange}
           onBlur={commitPage}
           onKeyDown={handleKeyDown}
-          className="w-12 text-center text-sm font-semibold border border-blue-400 rounded-md px-1 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-blue-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          className="w-12 text-center text-sm font-semibold border border-orange-400 rounded-md px-1 py-0.5 focus:outline-none focus:ring-2 focus:ring-orange-500 text-orange-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           title="Type a page number and press Enter"
         />
         {' '}to {showingEnd} of {totalItems} results
@@ -98,7 +98,7 @@ const Pagination = ({
                   onClick={() => onPageChange(number)}
                   className={`min-w-[40px] px-3 py-2 text-sm rounded-lg border ${
                     currentPage === number
-                      ? 'bg-blue-600 text-white border-blue-600'
+                      ? 'bg-orange-600 text-white border-orange-600'
                       : 'text-gray-700 hover:bg-gray-50 border-gray-300'
                   }`}
                 >

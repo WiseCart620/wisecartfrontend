@@ -25,7 +25,7 @@ const ProductDropdown = ({ options, value, onChange, placeholder }) => {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition text-left flex items-center justify-between bg-white"
+        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 transition text-left flex items-center justify-between bg-white"
       >
         <span className={selectedOption ? 'text-gray-900' : 'text-gray-500'}>
           {selectedOption ? selectedOption.label : placeholder}
@@ -43,7 +43,7 @@ const ProductDropdown = ({ options, value, onChange, placeholder }) => {
                 placeholder="Search product..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-orange-500"
                 autoFocus
               />
             </div>
@@ -58,7 +58,7 @@ const ProductDropdown = ({ options, value, onChange, placeholder }) => {
                   setIsOpen(false);
                   setSearchTerm('');
                 }}
-                className={`w-full px-4 py-2 text-left text-sm hover:bg-blue-50 ${value === opt.value ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'
+                className={`w-full px-4 py-2 text-left text-sm hover:bg-orange-50 ${value === opt.value ? 'bg-orange-50 text-orange-700 font-medium' : 'text-gray-900'
                   }`}
               >
                 {opt.label}

@@ -68,7 +68,7 @@ const MultiCompanyPriceSelector = ({
           <button
             type="button"
             onClick={handleSelectAll}
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            className="text-sm text-orange-600 hover:text-orange-700 font-medium"
           >
             {allSelected ? 'Deselect All' : 'Select All'}
           </button>
@@ -90,7 +90,7 @@ const MultiCompanyPriceSelector = ({
           return (
             <div
               key={company.id}
-              className={`p-3 border rounded-lg transition ${isSelected ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white'
+              className={`p-3 border rounded-lg transition ${isSelected ? 'border-orange-300 bg-orange-50' : 'border-gray-200 bg-white'
                 }`}
             >
               <div className="flex items-start gap-3">
@@ -98,7 +98,7 @@ const MultiCompanyPriceSelector = ({
                   type="checkbox"
                   checked={isSelected}
                   onChange={() => handleCompanySelect(company.id)}
-                  className="mt-1 h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                  className="mt-1 h-4 w-4 text-orange-600 rounded border-gray-300 focus:ring-orange-500"
                 />
                 <div className="flex-1">
                   <label
@@ -119,7 +119,7 @@ const MultiCompanyPriceSelector = ({
                           placeholder="0.00"
                           min="0.01"
                           step="0.01"
-                          className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                         />
                       </div>
                       <input
@@ -128,7 +128,7 @@ const MultiCompanyPriceSelector = ({
                         onChange={(e) => handleFieldChange(company.id, 'companySku', e.target.value)}
                         onClick={(e) => e.stopPropagation()}
                         placeholder="Company SKU"
-                        className="w-36 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-36 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                       />
                     </div>
                   )}

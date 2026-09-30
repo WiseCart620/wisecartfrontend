@@ -18,10 +18,6 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled, loa
   });
 
   const selectedOption = options.find(opt => opt.value === value);
-
-  // Only use the "UPC - name - SKU" product-style format when the option
-  // actually carries product identifiers. Plain options (companies, branches,
-  // etc.) just show their label.
   const isProductLike = (option) => option && (option.upc !== undefined || option.sku !== undefined);
 
   const getDisplayLabel = (option) => {
@@ -38,7 +34,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled, loa
         type="button"
         onClick={() => !disabled && !loading && setIsOpen(!isOpen)}
         disabled={disabled || loading}
-        className={`w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex items-center justify-between ${(disabled || loading) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-gray-400'
+        className={`w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-left focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 flex items-center justify-between ${(disabled || loading) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-gray-400'
           }`}
       >
         {loading ? (
@@ -69,7 +65,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled, loa
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder={searchPlaceholder || 'Search...'}
-                  className="w-full pl-9 pr-8 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-9 pr-8 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
                   autoFocus
                 />
                 {searchTerm && (
@@ -92,7 +88,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled, loa
                       setIsOpen(false);
                       setSearchTerm('');
                     }}
-                    className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${value === option.value ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${value === option.value ? 'bg-orange-50 text-orange-700 font-medium' : 'text-gray-700'
                       }`}
                   >
                     <div className="flex flex-col">

@@ -3,11 +3,15 @@ import { Toaster } from 'react-hot-toast';
 import { useAuth, can } from '../../context/AuthContext';
 import TaxBracketsTab from '../../components/payroll/TaxBracketsTab';
 import StatutoryContributionsTab from '../../components/payroll/StatutoryContributionsTab';
+import StatutoryBracketsTab from '../../components/payroll/StatutoryBracketsTab';
 
 const TABS = [
   { key: 'tax', label: 'Tax Brackets' },
   { key: 'statutory', label: 'Statutory Contributions' },
+  { key: 'brackets', label: 'Statutory Brackets' },
 ];
+
+
 
 const TaxStatutoryManagement = () => {
   const { user } = useAuth();
@@ -39,6 +43,7 @@ const TaxStatutoryManagement = () => {
 
       {tab === 'tax' && <TaxBracketsTab canCreate={canCreate} canEdit={canEdit} canDelete={canDelete} />}
       {tab === 'statutory' && <StatutoryContributionsTab canDelete={canDelete} />}
+      {tab === 'brackets' && <StatutoryBracketsTab canCreate={canCreate} canEdit={canEdit} canDelete={canDelete} />}
     </div>
   );
 };

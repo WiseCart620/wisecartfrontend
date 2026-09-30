@@ -43,12 +43,8 @@ const ProductSummaryTable = ({
     }
   };
 
-  // Compact badge: icon optional, tighter padding/text than the original
-  const Badge = ({ value, prefix = '', className, icon }) => (
-    <span
-      className={`inline-flex items-center justify-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold leading-none whitespace-nowrap ${className}`}
-    >
-      {icon}
+  const Badge = ({ value, prefix = '' }) => (
+    <span className="text-[13px] font-semibold text-black whitespace-nowrap">
       {prefix}
       {(value || 0).toLocaleString('en-US')}
     </span>
@@ -57,7 +53,7 @@ const ProductSummaryTable = ({
   return (
     <div className="bg-white rounded-xl shadow overflow-hidden mb-6 table-panel">
       <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-        <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+        <h2 className="text-base font-semibold text-black flex items-center gap-2">
           <BarChart3 size={18} />
           Product Inventory Summary
         </h2>
@@ -66,7 +62,7 @@ const ProductSummaryTable = ({
       {/* overflow-x-auto stays as a safety net for very narrow screens,
           but table-fixed + trimmed widths below keep it inside a laptop viewport */}
       <div className="overflow-x-auto table-fit">
-        <table className="w-full table-fixed text-[11px]">
+        <table className="w-full table-fixed text-[13px]">
           <colgroup>
             <col className="w-[15%]" />
             <col className="w-[11%]" />
@@ -84,44 +80,44 @@ const ProductSummaryTable = ({
           </colgroup>
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-2 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-tight">Product</th>
-              <th className="px-2 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-tight">SKU/UPC</th>
-              <th className="px-1 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-tight leading-tight">Stock<br />In</th>
-              <th className="px-1 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-tight leading-tight">Trans.<br />In</th>
-              <th className="px-1 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-tight leading-tight">Trans.<br />Out</th>
-              <th className="px-1 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-tight leading-tight">Return</th>
-              <th className="px-1 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-tight leading-tight">Damage</th>
-              <th className="px-1 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-tight leading-tight">
+              <th className="px-2 py-2 text-left text-[12px] font-medium text-black uppercase tracking-tight">Product</th>
+              <th className="px-2 py-2 text-left text-[12px] font-medium text-black uppercase tracking-tight">SKU/UPC</th>
+              <th className="px-1 py-2 text-center text-[12px] font-medium text-black uppercase tracking-tight leading-tight">Stock<br />In</th>
+              <th className="px-1 py-2 text-center ttext-[12px] font-medium text-black uppercase tracking-tight leading-tight">Trans.<br />In</th>
+              <th className="px-1 py-2 text-center text-[12px] font-medium text-black uppercase tracking-tight leading-tight">Trans.<br />Out</th>
+              <th className="px-1 py-2 text-center text-[12px] font-medium text-black uppercase tracking-tight leading-tight">Return</th>
+              <th className="px-1 py-2 text-center text-[12px] font-medium text-black uppercase tracking-tight leading-tight">Damage</th>
+              <th className="px-1 py-2 text-center text-[12px] font-medium text-black uppercase tracking-tight leading-tight">
                 <div className="flex flex-col items-center justify-center">
-                  <CheckCircle size={11} />
+                  <CheckCircle size={13} />
                   Delivered
                 </div>
               </th>
-              <th className="px-1 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-tight leading-tight">
+              <th className="px-1 py-2 text-center text-[12px] font-medium text-black uppercase tracking-tight leading-tight">
                 <div className="flex flex-col items-center justify-center">
-                  <Undo2 size={11} />
+                  <Undo2 size={13} />
                   Cancel. Ret.
                 </div>
               </th>
-              <th className="px-1 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-tight leading-tight">
+              <th className="px-1 py-2 text-center text-[12px] font-medium text-black uppercase tracking-tight leading-tight">
                 <div className="flex flex-col items-center justify-center">
-                  <ShoppingCart size={11} />
+                  <ShoppingCart size={13} />
                   Sales
                 </div>
               </th>
-              <th className="px-1 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-tight leading-tight">
+              <th className="px-1 py-2 text-center text-[12px] font-medium text-black uppercase tracking-tight leading-tight">
                 <div className="flex flex-col items-center justify-center">
-                  <Truck size={11} />
+                  <Truck size={13} />
                   Pend. Deliv.
                 </div>
               </th>
-              <th className="px-1 py-2 text-center text-[10px] font-medium text-gray-500 uppercase tracking-tight leading-tight">
+              <th className="px-1 py-2 text-center text-[12px] font-medium text-black uppercase tracking-tight leading-tight">
                 <div className="flex flex-col items-center justify-center">
-                  <Clock size={11} />
+                  <Clock size={13} />
                   Pend. Sale
                 </div>
               </th>
-              <th className="px-2 py-2 text-right text-[10px] font-medium text-gray-500 uppercase tracking-tight">Actions</th>
+              <th className="px-2 py-2 text-right text-[12px] font-medium text-black uppercase tracking-tight">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -148,7 +144,7 @@ const ProductSummaryTable = ({
               ))
             ) : currentProductSummaries.length === 0 ? (
               <tr>
-                <td colSpan="13" className="px-6 py-8 text-center text-gray-500">
+                <td colSpan="13" className="px-6 py-8 text-center text-black">
                   {totalElements === 0 ? 'No products found' : 'No products on this page'}
                 </td>
               </tr>
@@ -167,18 +163,18 @@ const ProductSummaryTable = ({
                   <tr key={uniqueKey} className="hover:bg-gray-50">
                     <td className="px-2 py-2 align-top">
                       <div
-                        className="font-medium text-gray-900 text-[11px] truncate leading-tight"
+                        className="font-medium text-black text-[13px] truncate leading-tight"
                         title={`${product.productName}${isVariation && product.variationName ? ` (${product.variationName})` : ''}`}
                       >
                         {product.productName}
                         {isVariation && product.variationName && (
-                          <span className="ml-1 text-blue-600 font-semibold">
+                          <span className="ml-1 text-orange-600 font-semibold">
                             ({product.variationName})
                           </span>
                         )}
                       </div>
                       {isVariation && product.combinationDisplay && (
-                        <div className="text-[10px] text-gray-500 truncate" title={product.combinationDisplay}>
+                        <div className="text-[12px] text-orange-600 truncate" title={product.combinationDisplay}>
                           {product.combinationDisplay}
                         </div>
                       )}
@@ -188,7 +184,7 @@ const ProductSummaryTable = ({
                         SKU: {displaySku || 'N/A'}
                       </div>
                       {displayUpc && displayUpc !== 'N/A' && (
-                        <div className="text-gray-500 truncate" title={`UPC: ${displayUpc}`}>
+                        <div className="text-black truncate" title={`UPC: ${displayUpc}`}>
                           UPC: {displayUpc}
                         </div>
                       )}
@@ -228,16 +224,16 @@ const ProductSummaryTable = ({
                         onClick={() => handleView(product, displaySku, displayUpc, isVariation)}
                         disabled={isThisLoading}
                         title="View History"
-                        className={`inline-flex items-center gap-1 px-1.5 py-1 text-[10px] font-medium rounded transition whitespace-nowrap
+                        className={`inline-flex items-center gap-1 px-1.5 py-1 text-[12px] font-medium rounded transition whitespace-nowrap
                           ${isThisLoading
-                            ? 'text-blue-400 cursor-wait'
-                            : 'text-blue-600 hover:bg-blue-50'
+                            ? 'text-black opacity-50 cursor-wait'
+                            : 'text-black hover:bg-gray-100'
                           }`}
                       >
                         {isThisLoading ? (
-                          <Loader2 size={12} className="animate-spin" />
+                          <Loader2 size={14} className="animate-spin" />
                         ) : (
-                          <Eye size={12} />
+                          <Eye size={14} />
                         )}
                         {isThisLoading ? '...' : 'View'}
                       </button>

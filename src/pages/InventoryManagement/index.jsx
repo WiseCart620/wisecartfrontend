@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
+import ProductMultiSelectDropdown from '../../components/common/ProductMultiSelectDropdown';
 import { BarChart3, Building, Store, RefreshCw, Lock } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -258,27 +258,6 @@ const InventoryManagement = () => {
       });
   }, [productSummaries]);
 
-  // Used by the dropdown to grey out items that are already in the filter list
-  const selectedFilterItems = useMemo(
-    () =>
-      selectedProductKeys
-        .map((k) => productFilterOptions.find((o) => o.id === k))
-        .filter(Boolean)
-        .map((o) => ({ productId: o.parentProductId, variationId: o.variationId })),
-    [selectedProductKeys, productFilterOptions]
-  );
-
-  const addProductFilterKey = (opt) => {
-    if (opt && !selectedProductKeys.includes(opt.id)) {
-      productReportFilters.updateFilter('productKeys', [...selectedProductKeys, opt.id]);
-    }
-  };
-
-  const removeProductFilterKey = (key) =>
-    productReportFilters.updateFilter(
-      'productKeys',
-      selectedProductKeys.filter((k) => k !== key)
-    );
 
   const {
     summaries: productSummaryPage,
@@ -670,7 +649,7 @@ const InventoryManagement = () => {
               <button
                 onClick={() => setActiveTab('products')}
                 className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${activeTab === 'products'
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-orange-500 text-orange-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
               >
@@ -680,7 +659,7 @@ const InventoryManagement = () => {
               <button
                 onClick={() => setActiveTab('warehouse-stocks')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'warehouse-stocks'
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-orange-500 text-orange-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
               >
@@ -690,7 +669,7 @@ const InventoryManagement = () => {
               <button
                 onClick={() => setActiveTab('branch-stocks')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'branch-stocks'
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-orange-500 text-orange-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
               >
@@ -700,7 +679,7 @@ const InventoryManagement = () => {
               <button
                 onClick={() => setActiveTab('stock-rebuild')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'stock-rebuild'
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-orange-500 text-orange-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
               >
@@ -728,37 +707,16 @@ const InventoryManagement = () => {
             />
 
             <div className="bg-white rounded-xl shadow p-3 mb-4">
-              <div className="text-xs font-semibold text-gray-700 uppercase mb-2">Filter by Product</div>
-              <VariationSearchableDropdown
-                options={productFilterOptions}
-                value=""
-                onChange={(id) => addProductFilterKey(productFilterOptions.find((o) => o.id === id))}
-                placeholder="Search product, variation, SKU or UPC..."
-                formData={{ items: selectedFilterItems }}
-                index={-1}
-                hideLocationHint
-                loading={productSummaries.length === 0}
-              />
-              {selectedProductKeys.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {selectedProductKeys.map((k) => {
-                    const o = productFilterOptions.find((x) => x.id === k);
-                    return (
-                      <span key={k} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                        {o ? `${o.sku || 'N/A'} - ${o.fullName}` : k}
-                        <button type="button" onClick={() => removeProductFilterKey(k)} className="hover:text-red-600">×</button>
-                      </span>
-                    );
-                  })}
-                  <button
-                    type="button"
-                    onClick={() => productReportFilters.updateFilter('productKeys', [])}
-                    className="text-xs text-gray-500 underline"
-                  >
-                    Clear all
-                  </button>
-                </div>
-              )}
+              <div className="text-xs font-semibold text-gray-700 mb-1">Filter by Product / UPC / SKU</div>
+              <div className="w-[380px] max-w-full">
+                <ProductMultiSelectDropdown
+                  options={productFilterOptions}
+                  selectedIds={selectedProductKeys}
+                  onChange={(ids) => productReportFilters.updateFilter('productKeys', ids)}
+                  placeholder="Search by product name, UPC, or SKU..."
+                  disabled={productSummaries.length === 0}
+                />
+              </div>
             </div>
 
             {(() => {

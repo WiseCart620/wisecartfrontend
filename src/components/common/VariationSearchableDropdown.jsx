@@ -193,7 +193,7 @@ const VariationSearchableDropdown = ({
                   setSearchTerm(e.target.value);
                   setHighlightedIndex(-1);
                 }}
-                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
                 autoFocus
               />
             </div>
@@ -227,10 +227,10 @@ const VariationSearchableDropdown = ({
                     className={`w-full px-4 py-3 text-left border-b border-gray-100 transition text-sm ${isAlreadySelected
                       ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                       : optionIndex === highlightedIndex
-                        ? 'bg-blue-100 text-blue-800 font-medium'
+                        ? 'bg-orange-100 text-orange-800 font-medium'
                         : value === option.id
-                          ? 'bg-blue-50 text-blue-700 font-medium'
-                          : 'text-gray-900 hover:bg-blue-50'
+                          ? 'bg-orange-50 text-orange-700 font-medium'
+                          : 'text-gray-900 hover:bg-orange-50'
                       }`}
                   >
                     <div className="flex flex-col">
@@ -254,7 +254,7 @@ const VariationSearchableDropdown = ({
 
       {/* Selected product info card */}
       {selectedOption && (
-        <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="mt-2 p-3 bg-orange-50 rounded-lg border border-orange-200">
           <div className="text-xs space-y-2">
 
             {/* ── Top row: product details (left) + Add to List button (right) ── */}
@@ -269,7 +269,7 @@ const VariationSearchableDropdown = ({
                 {selectedOption.subLabel && selectedOption.subLabel !== 'No variations' && (
                   <div className="flex items-center">
                     <span className="text-gray-500 w-16 flex-shrink-0">Variant:</span>
-                    <span className="font-medium text-blue-600 truncate ml-1">{selectedOption.subLabel}</span>
+                    <span className="font-medium text-orange-600 truncate ml-1">{selectedOption.subLabel}</span>
                   </div>
                 )}
 
@@ -286,7 +286,7 @@ const VariationSearchableDropdown = ({
                 {/* Product type badge sits in the grid area */}
                 <div className="col-span-2 pt-1">
                   {selectedOption.isVariation ? (
-                    <span className="inline-flex px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                    <span className="inline-flex px-2 py-1 text-xs rounded-full bg-orange-100 text-orange-800">
                       Product with Variations
                     </span>
                   ) : (
@@ -306,7 +306,7 @@ const VariationSearchableDropdown = ({
                     setSearchTerm('');
                     setHighlightedIndex(-1);
                   }}
-                  className="flex-shrink-0 self-start py-5 px-7 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition flex items-center gap-2"
+                  className="flex-shrink-0 self-start py-5 px-7 bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold rounded-lg transition flex items-center gap-2"
                 >
                   <Package size={13} />
                   Add to List
@@ -316,7 +316,7 @@ const VariationSearchableDropdown = ({
 
             {/* All Company Prices */}
             {selectedOption.allCompanyPrices && selectedOption.allCompanyPrices.length > 0 && (
-              <div className="pt-2 border-t border-blue-200">
+              <div className="pt-2 border-t border-orange-200">
                 <details className="group">
                   <summary className="flex items-center justify-between cursor-pointer list-none">
                     <div className="text-gray-700 font-medium">All Company Prices ({selectedOption.allCompanyPrices.length})</div>
@@ -340,7 +340,7 @@ const VariationSearchableDropdown = ({
 
             {/* Stock Information */}
             {(formData?.fromWarehouseId || formData?.fromBranchId || formData?.toWarehouseId || formData?.toBranchId) && (stockInfo || isLoading) && (
-              <div className="pt-2 border-t border-blue-200">
+              <div className="pt-2 border-t border-orange-200">
                 <div className="flex items-center gap-1 mb-2">
                   <Package size={12} className="text-gray-500" />
                   <span className="text-gray-700 font-medium">{getLocationName()} Stock</span>
@@ -350,8 +350,8 @@ const VariationSearchableDropdown = ({
                   <div className="flex items-center justify-between p-2 bg-white rounded border border-gray-200">
                     <span className="text-gray-600 text-xs">Available:</span>
                     {isLoading ? (
-                      <div className="flex items-center gap-1 text-blue-600 text-xs">
-                        <div className="w-2 h-2 border border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      <div className="flex items-center gap-1 text-orange-600 text-xs">
+                        <div className="w-2 h-2 border border-orange-600 border-t-transparent rounded-full animate-spin" />
                       </div>
                     ) : stockInfo ? (
                       <span className="font-semibold text-green-600">
@@ -365,8 +365,8 @@ const VariationSearchableDropdown = ({
                   <div className="flex items-center justify-between p-2 bg-white rounded border border-gray-200">
                     <span className="text-gray-600 text-xs">Total:</span>
                     {isLoading ? (
-                      <div className="flex items-center gap-1 text-blue-600 text-xs">
-                        <div className="w-2 h-2 border border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      <div className="flex items-center gap-1 text-orange-600 text-xs">
+                        <div className="w-2 h-2 border border-orange-600 border-t-transparent rounded-full animate-spin" />
                       </div>
                     ) : stockInfo ? (
                       <span className="font-semibold text-gray-700">
@@ -393,7 +393,7 @@ const VariationSearchableDropdown = ({
 
             {/* Select a location hint */}
             {!hideLocationHint && !(formData?.fromWarehouseId || formData?.fromBranchId || formData?.toWarehouseId || formData?.toBranchId) && (
-              <div className="pt-2 border-t border-blue-200">
+              <div className="pt-2 border-t border-orange-200">
                 <div className="text-xs text-yellow-600 italic">
                   Select a location to see stock information
                 </div>

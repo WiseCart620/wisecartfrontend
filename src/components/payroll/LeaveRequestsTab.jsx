@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Check, X as XIcon, Ban, Trash2, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
-import { inputCls, today, Field, Modal } from './Shared';
+import { inputCls, today, Field, Modal, MoneyInput } from './Shared';
 
 const STATUS = {
   PENDING: 'bg-yellow-100 text-yellow-800',
@@ -183,7 +183,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
             <Field label="From" required><input type="date" className={inputCls} value={form.dateFrom} onChange={set('dateFrom')} /></Field>
             <Field label="To" required><input type="date" className={inputCls} value={form.dateTo} onChange={set('dateTo')} /></Field>
             <Field label="Days (blank = weekdays)" className="col-span-2">
-              <input type="number" min="0.5" step="0.5" className={inputCls} value={form.daysUsed} onChange={set('daysUsed')} placeholder={`Auto: ${weekdays(form.dateFrom, form.dateTo)}`} />
+              <MoneyInput className={inputCls} value={form.daysUsed} onChange={set('daysUsed')} placeholder={`Auto: ${weekdays(form.dateFrom, form.dateTo)}`} />
             </Field>
             <div className="col-span-2 flex justify-end gap-2 pt-2 border-t">
               <button type="button" onClick={() => setShow(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>

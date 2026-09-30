@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Edit2, Search, X, User, UserCheck, UserX, CalendarClock, Trash2, Wallet, FileText } from 'lucide-react';
+import { Plus, Edit2, Search, X, User, UserCheck, UserX, FileText } from 'lucide-react';
 import EmployeeDocumentsModal, { SecureImage } from './EmployeeDocumentsModal';
 import toast, { Toaster } from 'react-hot-toast';
-import EmployeeCompensationModal from '../../components/payroll/EmployeeCompensationModal';
 import { api } from '../../services/api';
 import { LoadingOverlay } from '../../components/common/LoadingOverlay';
 import Pagination from '../../components/common/Pagination';
 import { useAuth, can } from '../../context/AuthContext';
+import { MoneyInput } from '../../components/payroll/Shared';
 
 const EMPTY_FORM = {
     firstName: '', middleName: '', lastName: '', gender: '', dateOfBirth: '',
@@ -15,9 +15,32 @@ const EMPTY_FORM = {
     supervisorId: '', scheduleId: '', inactiveDate: '', includeLeaveConversion: false,
     tinNumber: '', sssNumber: '', philhealthNumber: '', pagibigNumber: '', taxStatus: '',
     paymentMode: 'BANK_TRANSFER', bankName: '', accountNumber: '', accountHolderName: '', basicSalary: '',
+    allowancePayTypeId: '', allowanceAmount: '',
+    customScheduleName: '', customScheduleFrequency: '', customPeriodsPerYear: '',
+    emergencyContactName: '', emergencyContactRelationship: '', emergencyContactPhone: '', otherDetails: [],
 };
 
-const EMPTY_SCHEDULE = { scheduleName: '', payFrequency: 'SEMI_MONTHLY', firstCutoffDay: 15, secondCutoffDay: 30, payDelayDays: 0 };
+const parseOthers = (raw) => {
+    if (!raw) return [];
+    try {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) return arr.map(x => ({ key: x.key ?? '', value: x.value ?? '' }));
+    } catch { /* old plain-text value */ }
+    return [{ key: 'Notes', value: raw }];
+};
+
+const PRESET_SCHEDULES = ['15th & 30th', 'Weekly', 'Monthly'];
+const SEPARATION_REASONS = ['Termination - Lawful', 'Termination - Just', 'Termination - Authorized', 'Resignation', 'Others'];
+
+const tenure = (hire, end) => {
+    if (!hire) return '—';
+    const s = new Date(hire + 'T00:00:00');
+    const e = end ? new Date(end + 'T00:00:00') : new Date();
+    let months = (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
+    if (e.getDate() < s.getDate()) months--;
+    if (months < 0) months = 0;
+    return `${String(Math.floor(months / 12)).padStart(2, '0')}Y/${String(months % 12).padStart(2, '0')}M`;
+};
 
 const inputCls = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition';
 
@@ -57,29 +80,32 @@ const EmployeeManagement = () => {
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
-    const [compEmployee, setCompEmployee] = useState(null);
+    const [allowanceTypes, setAllowanceTypes] = useState([]);
     const [docsEmployee, setDocsEmployee] = useState(null);
     const [deactivateEmp, setDeactivateEmp] = useState(null);
     const [deactivateDate, setDeactivateDate] = useState('');
     const [deactivateLeave, setDeactivateLeave] = useState(false);
+    const [deactivateReason, setDeactivateReason] = useState('');
+    const [deactivateRemarks, setDeactivateRemarks] = useState('');
+    const [deactivateFile, setDeactivateFile] = useState(null);
 
 
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState(null);
     const [form, setForm] = useState(EMPTY_FORM);
 
-    const [showScheduleModal, setShowScheduleModal] = useState(false);
-    const [scheduleForm, setScheduleForm] = useState(EMPTY_SCHEDULE);
-    const [editingSchedule, setEditingSchedule] = useState(null);
 
     useEffect(() => { loadAll(); }, []);
 
     const loadAll = async () => {
         setLoading(true);
         try {
-            const [empRes, schRes] = await Promise.all([api.get('/employees'), api.get('/pay-schedules')]);
+            const [empRes, schRes, ptRes] = await Promise.all([
+                api.get('/employees'), api.get('/pay-schedules'), api.get('/pay-types'),
+            ]);
             setEmployees(empRes.success ? empRes.data || [] : []);
             setSchedules(schRes.success ? schRes.data || [] : []);
+            setAllowanceTypes(ptRes.success ? (ptRes.data || []).filter(p => p.category === 'ALLOWANCE') : []);
             if (!empRes.success) toast.error(empRes.error || 'Failed to load employees');
         } catch (e) {
             console.error(e);
@@ -89,16 +115,20 @@ const EmployeeManagement = () => {
         }
     };
 
-    const loadSchedules = async () => {
-        const res = await api.get('/pay-schedules');
-        if (res.success) setSchedules(res.data || []);
-    };
 
     const onChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
+    const addOther = () => setForm(p => ({ ...p, otherDetails: [...p.otherDetails, { key: '', value: '' }] }));
+    const updateOther = (i, field, val) => setForm(p => ({
+        ...p,
+        otherDetails: p.otherDetails.map((o, idx) => (idx === i ? { ...o, [field]: val } : o)),
+    }));
+    const removeOther = (i) => setForm(p => ({ ...p, otherDetails: p.otherDetails.filter((_, idx) => idx !== i) }));
+    const presetSchedules = schedules.filter(s => PRESET_SCHEDULES.includes(s.scheduleName));
+
     const openCreate = () => {
         setEditing(null);
-        setForm({ ...EMPTY_FORM, scheduleId: schedules[0]?.scheduleId ?? '' });
+        setForm({ ...EMPTY_FORM, scheduleId: presetSchedules[0]?.scheduleId ?? '' });
         setShowModal(true);
     };
 
@@ -106,6 +136,18 @@ const EmployeeManagement = () => {
         setEditing(emp);
         const next = { ...EMPTY_FORM };
         Object.keys(EMPTY_FORM).forEach(k => { next[k] = emp[k] ?? ''; });
+        next.otherDetails = parseOthers(emp.otherDetails);
+        next.customScheduleName = '';
+        next.customScheduleFrequency = '';
+        next.customPeriodsPerYear = '';
+        if (emp.scheduleId && !presetSchedules.some(s => s.scheduleId === emp.scheduleId)) {
+            const PPY = { WEEKLY: 52, SEMI_MONTHLY: 24, MONTHLY: 12 };
+            next.scheduleId = 'OTHERS';
+            next.customScheduleName = emp.scheduleName || '';
+            next.customScheduleFrequency = emp.scheduleFrequencyLabel
+                || (emp.scheduleFrequency || '').replace('_', ' ').toLowerCase();
+            next.customPeriodsPerYear = emp.schedulePeriodsPerYear ?? PPY[emp.scheduleFrequency] ?? '';
+        }
         setForm(next);
         setShowModal(true);
     };
@@ -113,9 +155,19 @@ const EmployeeManagement = () => {
     const buildPayload = () => {
         const p = {};
         Object.entries(form).forEach(([k, v]) => { p[k] = v === '' ? null : v; });
-        p.scheduleId = form.scheduleId ? Number(form.scheduleId) : null;
+        const other = form.scheduleId === 'OTHERS';
+        p.scheduleId = form.scheduleId && !other ? Number(form.scheduleId) : null;
+        p.customScheduleName = other ? form.customScheduleName.trim() : null;
+        p.customScheduleFrequency = other ? form.customScheduleFrequency.trim() : null;
+        p.customPeriodsPerYear = other ? Number(form.customPeriodsPerYear) : null;
+        const others = (form.otherDetails || [])
+            .map(o => ({ key: o.key.trim(), value: o.value.trim() }))
+            .filter(o => o.key || o.value);
+        p.otherDetails = others.length ? JSON.stringify(others) : null;
         p.supervisorId = form.supervisorId ? Number(form.supervisorId) : null;
         p.basicSalary = form.basicSalary !== '' ? Number(form.basicSalary) : null;
+        p.allowancePayTypeId = form.allowancePayTypeId ? Number(form.allowancePayTypeId) : null;
+        p.allowanceAmount = form.allowancePayTypeId && form.allowanceAmount !== '' ? Number(form.allowanceAmount) : null;
         return p;
     };
 
@@ -126,7 +178,22 @@ const EmployeeManagement = () => {
             return;
         }
         if (!form.scheduleId) {
-            toast.error('Please select a pay schedule (create one first if none exist)');
+            toast.error('Please select a pay schedule');
+            return;
+        }
+        if (form.scheduleId === 'OTHERS') {
+            const n = Number(form.customPeriodsPerYear);
+            if (!form.customScheduleFrequency.trim()) {
+                toast.error('Enter the pay frequency (e.g. Once a year)');
+                return;
+            }
+            if (!Number.isInteger(n) || n < 1 || n > 366) {
+                toast.error('Enter how many times per year employees are paid (1 to 366)');
+                return;
+            }
+        }
+        if (form.allowancePayTypeId && form.allowanceAmount === '') {
+            toast.error('Enter the allowance amount');
             return;
         }
         setActionLoading(true);
@@ -156,23 +223,44 @@ const EmployeeManagement = () => {
             setDeactivateEmp(emp);
             setDeactivateDate(localToday());
             setDeactivateLeave(false);
+            setDeactivateReason('');
+            setDeactivateRemarks('');
+            setDeactivateFile(null);
             return;
         }
         if (!window.confirm(`Activate ${emp.fullName}?`)) return;
         submitStatus(emp, null);
     };
 
-    const submitStatus = async (emp, inactiveDate, includeLeave = false) => {
+    const submitStatus = async (emp, inactiveDate, includeLeave = false, sep = {}) => {
         setActionLoading(true);
         setLoadingMessage('Updating status...');
         try {
             const res = await api.patch(
                 `/employees/${emp.employeeId}/toggle-status`,
                 null,
-                inactiveDate ? { params: { inactiveDate, includeLeaveConversion: includeLeave } } : {}
+                inactiveDate ? {
+                    params: {
+                        inactiveDate,
+                        includeLeaveConversion: includeLeave,
+                        separationReason: sep.reason,
+                        separationRemarks: sep.remarks || undefined,
+                    },
+                } : {}
             );
             if (res.success) {
                 toast.success('Status updated');
+                if (sep.file) {
+                    const fd = new FormData();
+                    fd.append('title', `Separation - ${sep.reason}`);
+                    fd.append('file', sep.file);
+                    const up = await api.upload(`/employees/${emp.employeeId}/contracts`, fd);
+                    if (up.success) {
+                        toast.success('Document uploaded');
+                    } else {
+                        toast.error('Employee deactivated, but the document failed to upload. Add it under Documents.');
+                    }
+                }
                 await loadAll();
             }
         } catch (err) {
@@ -183,40 +271,6 @@ const EmployeeManagement = () => {
         }
     };
 
-    // ---- schedules
-    const saveSchedule = async (e) => {
-        e.preventDefault();
-        if (!scheduleForm.scheduleName || !scheduleForm.payFrequency) {
-            toast.error('Name and frequency are required');
-            return;
-        }
-        const payload = { ...scheduleForm };
-        try {
-            if (editingSchedule) {
-                await api.put(`/pay-schedules/${editingSchedule.scheduleId}`, payload);
-                toast.success('Schedule updated');
-            } else {
-                await api.post('/pay-schedules', payload);
-                toast.success('Schedule created');
-            }
-            setScheduleForm(EMPTY_SCHEDULE);
-            setEditingSchedule(null);
-            loadSchedules();
-        } catch (err) {
-            toast.error(err.message || 'Failed to save schedule');
-        }
-    };
-
-    const deleteSchedule = async (s) => {
-        if (!window.confirm(`Delete schedule "${s.scheduleName}"?`)) return;
-        try {
-            await api.delete(`/pay-schedules/${s.scheduleId}`);
-            toast.success('Schedule deleted');
-            loadSchedules();
-        } catch (err) {
-            toast.error(err.message || 'Failed to delete schedule');
-        }
-    };
 
     // ---- list
     const filtered = useMemo(() => {
@@ -256,7 +310,7 @@ const EmployeeManagement = () => {
 
             <div className="mb-6">
                 <h1 className="text-3xl font-bold text-gray-900">Employees</h1>
-                <p className="text-gray-600 mt-1">Manage employee records, pay schedules, and payroll setup</p>
+                <p className="text-gray-600 mt-1">Manage employee records and payroll setup</p>
             </div>
 
             <div className="flex flex-col md:flex-row gap-3 mb-6">
@@ -279,12 +333,6 @@ const EmployeeManagement = () => {
                     <option value="ACTIVE">Active</option>
                     <option value="INACTIVE">Inactive</option>
                 </select>
-                <button
-                    onClick={() => setShowScheduleModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-                >
-                    <CalendarClock size={18} /> Pay Schedules
-                </button>
                 {canCreate && (
                     <button
                         onClick={openCreate}
@@ -300,7 +348,7 @@ const EmployeeManagement = () => {
                     <table className="w-full">
                         <thead className="bg-gray-50 border-b border-gray-200">
                             <tr>
-                                {['Employee', 'Department / Position', 'Schedule', 'Basic Salary', 'Status'].map(h => (
+                                {['Employee', 'Department / Position', 'Schedule', 'Tenure', 'Basic Salary', 'Status'].map(h => (
                                     <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
                                 ))}
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -308,7 +356,7 @@ const EmployeeManagement = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                             {pageItems.length === 0 ? (
-                                <tr><td colSpan="6" className="px-6 py-8 text-center text-gray-500">No employees found</td></tr>
+                                <tr><td colSpan="7" className="px-6 py-8 text-center text-gray-500">No employees found</td></tr>
                             ) : pageItems.map(emp => (
                                 <tr key={emp.employeeId} className="hover:bg-gray-50">
                                     <td className="px-6 py-4">
@@ -328,6 +376,9 @@ const EmployeeManagement = () => {
                                         <div className="text-gray-500">{emp.designation || ''}</div>
                                     </td>
                                     <td className="px-6 py-4 text-sm text-gray-700">{emp.scheduleName || '—'}</td>
+                                    <td className="px-6 py-4 text-sm text-gray-700 font-mono">
+                                        {tenure(emp.hireDate, emp.status === 'ACTIVE' ? null : emp.inactiveDate)}
+                                    </td>
                                     <td className="px-6 py-4 text-sm text-gray-900">{money(emp.basicSalary)}</td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${emp.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
@@ -339,14 +390,16 @@ const EmployeeManagement = () => {
                                                 Since {new Date(emp.inactiveDate + 'T00:00:00').toLocaleDateString()}
                                             </div>
                                         )}
+                                        {emp.status !== 'ACTIVE' && emp.separationReason && (
+                                            <div className="text-xs text-gray-500" title={emp.separationRemarks || ''}>
+                                                {emp.separationReason}{emp.separationRemarks ? `: ${emp.separationRemarks}` : ''}
+                                            </div>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <button onClick={() => setDocsEmployee(emp)} title="Documents" className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg">
                                                 <FileText size={18} />
-                                            </button>
-                                            <button onClick={() => setCompEmployee(emp)} title="Compensation" className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg">
-                                                <Wallet size={18} />
                                             </button>
                                             {canEdit && (
                                                 <>
@@ -418,6 +471,10 @@ const EmployeeManagement = () => {
 
                                 <Section title="Job Details">
                                     <Field label="Hire Date" required><input type="date" className={inputCls} name="hireDate" value={form.hireDate} onChange={onChange} required /></Field>
+                                    <Field label="Tenure">
+                                        <input className={`${inputCls} bg-gray-100 font-mono`} readOnly
+                                            value={tenure(form.hireDate, form.status === 'INACTIVE' ? form.inactiveDate : null)} />
+                                    </Field>
                                     <Field label="Status">
                                         <select className={inputCls} name="status" value={form.status} onChange={onChange}>
                                             <option value="ACTIVE">Active</option>
@@ -458,9 +515,35 @@ const EmployeeManagement = () => {
                                     <Field label="Pay Schedule" required>
                                         <select className={inputCls} name="scheduleId" value={form.scheduleId} onChange={onChange} required>
                                             <option value="">Select schedule...</option>
-                                            {schedules.map(s => <option key={s.scheduleId} value={s.scheduleId}>{s.scheduleName} ({s.payFrequency})</option>)}
+                                            {presetSchedules.map(s => <option key={s.scheduleId} value={s.scheduleId}>{s.scheduleName}</option>)}
+                                            <option value="OTHERS">Others (type manually)</option>
                                         </select>
                                     </Field>
+                                    {form.scheduleId === 'OTHERS' && (
+                                        <>
+                                            <Field label="Frequency" required>
+                                                <input className={inputCls} name="customScheduleFrequency"
+                                                    value={form.customScheduleFrequency} onChange={onChange}
+                                                    placeholder="e.g. Once a year, Every 10 days" />
+                                            </Field>
+                                            <Field label="Pays per year" required>
+                                                <input type="number" min="1" max="366" step="1" className={inputCls}
+                                                    name="customPeriodsPerYear" value={form.customPeriodsPerYear}
+                                                    onChange={onChange} placeholder="e.g. 1" />
+                                            </Field>
+                                            <Field label="Schedule Name (optional)" className="md:col-span-2">
+                                                <input className={inputCls} name="customScheduleName"
+                                                    value={form.customScheduleName} onChange={onChange}
+                                                    placeholder="Defaults to the frequency you typed" />
+                                            </Field>
+                                        </>
+                                    )}
+                                </Section>
+
+                                <Section title="Emergency Contact">
+                                    <Field label="Contact Name"><input className={inputCls} name="emergencyContactName" value={form.emergencyContactName} onChange={onChange} /></Field>
+                                    <Field label="Relationship"><input className={inputCls} name="emergencyContactRelationship" value={form.emergencyContactRelationship} onChange={onChange} placeholder="e.g. Spouse, Parent" /></Field>
+                                    <Field label="Phone"><input className={inputCls} name="emergencyContactPhone" value={form.emergencyContactPhone} onChange={onChange} /></Field>
                                 </Section>
 
                                 <Section title="Statutory Numbers">
@@ -472,7 +555,19 @@ const EmployeeManagement = () => {
                                 </Section>
 
                                 <Section title="Salary & Payment">
-                                    <Field label="Basic Salary (monthly)"><input type="number" min="0" step="0.01" className={inputCls} name="basicSalary" value={form.basicSalary} onChange={onChange} /></Field>
+                                    <Field label="Basic Salary (monthly)"><MoneyInput className={inputCls} name="basicSalary" value={form.basicSalary} onChange={onChange} /></Field>
+                                    <Field label="Allowance">
+                                        <div className="flex gap-2">
+                                            <select className={inputCls} name="allowancePayTypeId" value={form.allowancePayTypeId}
+                                                onChange={(e) => setForm(p => ({ ...p, allowancePayTypeId: e.target.value, allowanceAmount: e.target.value ? p.allowanceAmount : '' }))}>
+                                                <option value="">None</option>
+                                                {allowanceTypes.map(p => <option key={p.payTypeId} value={p.payTypeId}>{p.payTypeName}</option>)}
+                                            </select>
+                                            <MoneyInput placeholder="Amount" className={inputCls}
+                                                name="allowanceAmount" value={form.allowanceAmount} onChange={onChange}
+                                                disabled={!form.allowancePayTypeId} />
+                                        </div>
+                                    </Field>
                                     <Field label="Payment Mode">
                                         <select className={inputCls} name="paymentMode" value={form.paymentMode} onChange={onChange}>
                                             <option value="BANK_TRANSFER">Bank Transfer</option>
@@ -483,6 +578,33 @@ const EmployeeManagement = () => {
                                     <Field label="Bank Name"><input className={inputCls} name="bankName" value={form.bankName} onChange={onChange} /></Field>
                                     <Field label="Account Number"><input className={inputCls} name="accountNumber" value={form.accountNumber} onChange={onChange} /></Field>
                                     <Field label="Account Holder Name" className="md:col-span-2"><input className={inputCls} name="accountHolderName" value={form.accountHolderName} onChange={onChange} /></Field>
+                                </Section>
+
+                                <Section title="Others">
+                                    <div className="md:col-span-2 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-xs text-gray-500">Add any extra employee details as a label and value.</p>
+                                            <button type="button" onClick={addOther}
+                                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50">
+                                                <Plus size={14} /> Add other
+                                            </button>
+                                        </div>
+                                        {form.otherDetails.length === 0 && (
+                                            <p className="text-xs text-gray-400">Nothing added yet. Click "Add other" to add a key and value.</p>
+                                        )}
+                                        {form.otherDetails.map((o, i) => (
+                                            <div key={i} className="flex gap-2 items-center">
+                                                <input className={`${inputCls} md:w-1/3`} placeholder="Key (e.g. Blood Type)"
+                                                    value={o.key} onChange={(e) => updateOther(i, 'key', e.target.value)} />
+                                                <input className={inputCls} placeholder="Value (e.g. O+)"
+                                                    value={o.value} onChange={(e) => updateOther(i, 'value', e.target.value)} />
+                                                <button type="button" onClick={() => removeOther(i)} title="Remove"
+                                                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg flex-shrink-0">
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </Section>
                             </form>
 
@@ -516,16 +638,36 @@ const EmployeeManagement = () => {
                                     onChange={(e) => setDeactivateLeave(e.target.checked)} />
                                 Include leave conversion in final pay
                             </label>
+                            <Field label="Reason for leaving" required>
+                                <select className={inputCls} value={deactivateReason}
+                                    onChange={(e) => setDeactivateReason(e.target.value)}>
+                                    <option value="">Select reason...</option>
+                                    {SEPARATION_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+                                </select>
+                            </Field>
+                            {deactivateReason === 'Others' && (
+                                <Field label="Please specify" required>
+                                    <input className={inputCls} value={deactivateRemarks} maxLength={500}
+                                        onChange={(e) => setDeactivateRemarks(e.target.value)} />
+                                </Field>
+                            )}
+                            <Field label="Supporting document (optional)">
+                                <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" className={inputCls}
+                                    onChange={(e) => setDeactivateFile(e.target.files?.[0] || null)} />
+                                <p className="text-xs text-gray-500 mt-1">e.g. resignation letter or termination notice</p>
+                            </Field>
                         </div>
                         <div className="border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
                             <button onClick={() => setDeactivateEmp(null)} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
                             <button
-                                disabled={!deactivateDate}
+                                disabled={!deactivateDate || !deactivateReason
+                                    || (deactivateReason === 'Others' && !deactivateRemarks.trim())}
                                 onClick={() => {
                                     const emp = deactivateEmp;
                                     const date = deactivateDate;
+                                    const sep = { reason: deactivateReason, remarks: deactivateRemarks.trim(), file: deactivateFile };
                                     setDeactivateEmp(null);
-                                    submitStatus(emp, date, deactivateLeave);
+                                    submitStatus(emp, date, deactivateLeave, sep);
                                 }}
                                 className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 disabled:opacity-50">
                                 Deactivate
@@ -548,108 +690,6 @@ const EmployeeManagement = () => {
                 />
             )}
 
-            {
-                compEmployee && (
-                    <EmployeeCompensationModal
-                        employee={compEmployee}
-                        canEdit={canEdit}
-                        onClose={() => setCompEmployee(null)}
-                    />
-                )
-            }
-
-            {/* Pay schedule modal */}
-            {
-                showScheduleModal && (
-                    <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-                                <h2 className="text-xl font-bold text-gray-900">Pay Schedules</h2>
-                                <button onClick={() => { setShowScheduleModal(false); setEditingSchedule(null); setScheduleForm(EMPTY_SCHEDULE); }} className="p-2 hover:bg-gray-100 rounded-lg">
-                                    <X size={20} />
-                                </button>
-                            </div>
-                            <div className="p-6 space-y-6">
-                                <div className="border border-gray-200 rounded-lg divide-y">
-                                    {schedules.length === 0 && <p className="p-4 text-sm text-gray-500">No schedules yet. Create one below.</p>}
-                                    {schedules.map(s => (
-                                        <div key={s.scheduleId} className="p-3 flex items-center justify-between">
-                                            <div>
-                                                <div className="font-medium text-gray-900 text-sm">{s.scheduleName}</div>
-                                                <div className="text-xs text-gray-500">
-                                                    {s.payFrequency}
-                                                    {s.firstCutoffDay ? ` · Cutoff${s.secondCutoffDay ? 's' : ''}: ${s.firstCutoffDay}${s.secondCutoffDay ? ` & ${s.secondCutoffDay}` : ''}` : ''}
-                                                    {s.payDelayDays ? ` · Paid ${s.payDelayDays} day(s) later` : ' · Paid on cutoff'}
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-1">
-                                                {canEdit && (
-                                                    <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" onClick={() => {
-                                                        setEditingSchedule(s);
-                                                        setScheduleForm({
-                                                            scheduleName: s.scheduleName,
-                                                            payFrequency: s.payFrequency,
-                                                            firstCutoffDay: s.firstCutoffDay ?? 15,
-                                                            secondCutoffDay: s.secondCutoffDay ?? 30,
-                                                            payDelayDays: s.payDelayDays ?? 0,
-                                                        });
-                                                    }}><Edit2 size={16} /></button>
-                                                )}
-                                                {canDelete && (
-                                                    <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg" onClick={() => deleteSchedule(s)}><Trash2 size={16} /></button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {(canCreate || canEdit) && (
-                                    <form onSubmit={saveSchedule} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <h3 className="md:col-span-2 text-sm font-semibold text-gray-900">{editingSchedule ? 'Edit schedule' : 'New schedule'}</h3>
-                                        <Field label="Schedule Name" required>
-                                            <input className={inputCls} value={scheduleForm.scheduleName} onChange={(e) => setScheduleForm(p => ({ ...p, scheduleName: e.target.value }))} placeholder="e.g. Semi-monthly (15th/30th)" />
-                                        </Field>
-                                        <Field label="Frequency" required>
-                                            <select className={inputCls} value={scheduleForm.payFrequency} onChange={(e) => setScheduleForm(p => ({ ...p, payFrequency: e.target.value }))}>
-                                                <option value="WEEKLY">Weekly</option>
-                                                <option value="SEMI_MONTHLY">Semi-monthly</option>
-                                                <option value="MONTHLY">Monthly</option>
-                                            </select>
-                                        </Field>
-                                        {(scheduleForm.payFrequency === 'SEMI_MONTHLY' || scheduleForm.payFrequency === 'MONTHLY') && (
-                                            <Field label="First cutoff day" required>
-                                                <input type="number" min="1" max="31" className={inputCls}
-                                                    value={scheduleForm.firstCutoffDay}
-                                                    onChange={(e) => setScheduleForm(p => ({ ...p, firstCutoffDay: Number(e.target.value) }))} />
-                                            </Field>
-                                        )}
-                                        {scheduleForm.payFrequency === 'SEMI_MONTHLY' && (
-                                            <Field label="Second cutoff day" required>
-                                                <input type="number" min="1" max="31" className={inputCls}
-                                                    value={scheduleForm.secondCutoffDay}
-                                                    onChange={(e) => setScheduleForm(p => ({ ...p, secondCutoffDay: Number(e.target.value) }))} />
-                                            </Field>
-                                        )}
-                                        <Field label="Days after cutoff until payday">
-                                            <input type="number" min="0" max="30" className={inputCls}
-                                                value={scheduleForm.payDelayDays}
-                                                onChange={(e) => setScheduleForm(p => ({ ...p, payDelayDays: Number(e.target.value) }))} />
-                                        </Field>
-                                        <div className="md:col-span-2 flex justify-end gap-2">
-                                            {editingSchedule && (
-                                                <button type="button" onClick={() => { setEditingSchedule(null); setScheduleForm(EMPTY_SCHEDULE); }} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel edit</button>
-                                            )}
-                                            <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
-                                                {editingSchedule ? 'Update' : 'Add Schedule'}
-                                            </button>
-                                        </div>
-                                    </form>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                )
-            }
         </div >
     );
 };

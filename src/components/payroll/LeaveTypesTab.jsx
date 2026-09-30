@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Edit2, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
-import { inputCls } from './Shared';
+import { inputCls, MoneyInput } from './Shared';
 
 const EMPTY = {
   leaveTypeName: '',
@@ -10,6 +10,7 @@ const EMPTY = {
   regularMonthly: '1',
   annualResetProbationary: '0.5',
   annualResetRegular: '1',
+  autoGrant: false,
 };
 
 const LeaveTypesTab = ({ leaveTypes, canCreate, canEdit, canDelete, onChanged }) => {
@@ -27,6 +28,7 @@ const LeaveTypesTab = ({ leaveTypes, canCreate, canEdit, canDelete, onChanged })
       regularMonthly: Number(form.regularMonthly),
       annualResetProbationary: Number(form.annualResetProbationary),
       annualResetRegular: Number(form.annualResetRegular),
+      autoGrant: !!form.autoGrant,
     };
     try {
       if (editing) await api.put(`/leave-types/${editing.leaveTypeId}`, payload);
@@ -48,6 +50,7 @@ const LeaveTypesTab = ({ leaveTypes, canCreate, canEdit, canDelete, onChanged })
       regularMonthly: t.regularMonthly ?? '1',
       annualResetProbationary: t.annualResetProbationary ?? '0.5',
       annualResetRegular: t.annualResetRegular ?? '1',
+      autoGrant: !!t.autoGrant,
     });
   };
 
@@ -70,14 +73,14 @@ const LeaveTypesTab = ({ leaveTypes, canCreate, canEdit, canDelete, onChanged })
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
-              {['Leave Type', 'Probi Monthly', 'Regular Monthly', 'Probi Reset', 'Regular Reset', ''].map(h => (
+              {['Leave Type', 'Probi Monthly', 'Regular Monthly', 'Probi Reset', 'Regular Reset', 'Auto-grant', ''].map(h => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y">
             {leaveTypes.length === 0 ? (
-              <tr><td colSpan="6" className="px-4 py-8 text-center text-gray-500">No leave types yet</td></tr>
+              <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">No leave types yet</td></tr>
             ) : leaveTypes.map(t => (
               <tr key={t.leaveTypeId} className="hover:bg-gray-50">
                 <td className="px-4 py-3 font-medium text-gray-900">{t.leaveTypeName}</td>
@@ -85,6 +88,7 @@ const LeaveTypesTab = ({ leaveTypes, canCreate, canEdit, canDelete, onChanged })
                 <td className="px-4 py-3">{fmt(t.regularMonthly, '1')}</td>
                 <td className="px-4 py-3">{fmt(t.annualResetProbationary, '0.5')}</td>
                 <td className="px-4 py-3">{fmt(t.annualResetRegular, '1')}</td>
+                <td className="px-4 py-3">{t.autoGrant ? 'Yes' : 'No'}</td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex justify-end gap-1">
                     {canEdit && <button onClick={() => startEdit(t)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 size={16} /></button>}
@@ -108,20 +112,25 @@ const LeaveTypesTab = ({ leaveTypes, canCreate, canEdit, canDelete, onChanged })
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Probi Monthly</label>
-            <input type="number" min="0" step="0.25" className={inputCls} value={form.probationaryMonthly} onChange={set('probationaryMonthly')} />
+            <MoneyInput className={inputCls} value={form.probationaryMonthly} onChange={set('probationaryMonthly')} />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Regular Monthly</label>
-            <input type="number" min="0" step="0.25" className={inputCls} value={form.regularMonthly} onChange={set('regularMonthly')} />
+            <MoneyInput className={inputCls} value={form.regularMonthly} onChange={set('regularMonthly')} />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Probi Reset</label>
-            <input type="number" min="0" step="0.25" className={inputCls} value={form.annualResetProbationary} onChange={set('annualResetProbationary')} />
+            <MoneyInput className={inputCls} value={form.annualResetProbationary} onChange={set('annualResetProbationary')} />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Regular Reset</label>
-            <input type="number" min="0" step="0.25" className={inputCls} value={form.annualResetRegular} onChange={set('annualResetRegular')} />
+            <MoneyInput className={inputCls} value={form.annualResetRegular} onChange={set('annualResetRegular')} />
           </div>
+          <label className="md:col-span-5 flex items-center gap-2 text-sm text-gray-700">
+            <input type="checkbox" checked={!!form.autoGrant}
+              onChange={(e) => setForm(p => ({ ...p, autoGrant: e.target.checked }))} />
+            Give this leave to every employee automatically (leave off to grant it manually)
+          </label>
           <div className="md:col-span-5 flex justify-end gap-2">
             {editing && (
               <button type="button" onClick={() => { setEditing(null); setForm(EMPTY); }} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">

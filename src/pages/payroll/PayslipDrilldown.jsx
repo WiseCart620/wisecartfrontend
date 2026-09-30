@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { X, Printer } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Printer, PenLine, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
+import { useAuth, can } from '../../context/AuthContext';
 import '../../styles/payslip-print.css';
 
 // ---------- company config ----------
@@ -67,8 +68,56 @@ const DEDUCTION_LINES = [
 const MIN_ROWS = 8;
 
 const PayslipDrilldown = ({ payslipId, onClose }) => {
+  const { user } = useAuth();
+  const canEditSignature = can(user, 'payroll', 'edit');
   const [slip, setSlip] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [signature, setSignature] = useState(null);
+  const [sigBusy, setSigBusy] = useState(false);
+  const sigInput = useRef(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await api.get('/payroll/settings/payslip-signature');
+        if (r.success) setSignature(r.data?.signature || null);
+      } catch { /* payslip still works without a signature */ }
+    })();
+  }, []);
+
+  const uploadSignature = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!['image/png', 'image/jpeg'].includes(file.type)) { toast.error('Use a PNG or JPG image'); return; }
+    if (file.size > 1024 * 1024) { toast.error('Image must be 1 MB or smaller'); return; }
+    setSigBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const r = await api.upload('/payroll/settings/payslip-signature', fd);
+      if (r.success) { setSignature(r.data?.signature || null); toast.success('Signature saved'); }
+      else toast.error(r.error || 'Failed to upload signature');
+    } catch (err) {
+      toast.error(err.message || 'Failed to upload signature');
+    } finally {
+      setSigBusy(false);
+    }
+  };
+
+  const removeSignature = async () => {
+    if (!window.confirm('Remove the signature from all payslips?')) return;
+    setSigBusy(true);
+    try {
+      await api.delete('/payroll/settings/payslip-signature');
+      setSignature(null);
+      toast.success('Signature removed');
+    } catch (err) {
+      toast.error(err.message || 'Failed to remove signature');
+    } finally {
+      setSigBusy(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -173,6 +222,28 @@ const PayslipDrilldown = ({ payslipId, onClose }) => {
         <div className="no-print sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
           <h2 className="text-base font-semibold text-gray-900">Payslip &middot; {slip.employeeName}</h2>
           <div className="flex gap-2">
+            {canEditSignature && (
+              <>
+                <input ref={sigInput} type="file" accept="image/png,image/jpeg" className="hidden" onChange={uploadSignature} />
+                <button
+                  onClick={() => sigInput.current?.click()}
+                  disabled={sigBusy}
+                  className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-100 disabled:opacity-50"
+                >
+                  <PenLine size={16} /> {signature ? 'Change Signature' : 'Upload Signature'}
+                </button>
+                {signature && (
+                  <button
+                    onClick={removeSignature}
+                    disabled={sigBusy}
+                    title="Remove signature"
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </>
+            )}
             <button
               onClick={() => window.print()}
               className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-100"
@@ -273,6 +344,9 @@ const PayslipDrilldown = ({ payslipId, onClose }) => {
                 </div>
                 <div className="ps-certify">
                   <div className="ps-certify-label">Certified Correct:</div>
+                  {signature && (
+                    <img src={signature} alt="Signature" className="ps-sign-img" />
+                  )}
                   <div className="ps-sign-line">{FINANCE_OFFICER}</div>
                 </div>
               </div>

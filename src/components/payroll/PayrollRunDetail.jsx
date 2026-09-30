@@ -3,7 +3,7 @@ import { ArrowLeft, Send, CheckCircle, XCircle, Download, Wallet, RefreshCw, Sav
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { useAuth, can } from '../../context/AuthContext';
-import { money } from './Shared';
+import { money, MoneyInput } from './Shared';
 import PayslipDrilldown from '../../pages/payroll/PayslipDrilldown';
 
 const LABEL = { DRAFT: 'On-Going', SUBMITTED: 'On-Going (For Approval)', APPROVED: 'Approved', REJECTED: 'Rejected', PAID: 'Paid' };
@@ -44,7 +44,7 @@ const EditModal = ({ payslipId, onClose, onSaved }) => {
   const row = (key, label, val, on) => (
     <div key={key} className="flex items-center justify-between gap-3 py-1">
       <span className="text-sm">{label}</span>
-      <input type="number" min="0" step="0.01" value={val} onChange={on}
+      <MoneyInput value={val} onChange={on}
         className="w-36 px-2 py-1 border border-gray-300 rounded text-right text-sm" />
     </div>
   );

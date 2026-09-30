@@ -10,7 +10,7 @@ import Pagination from '../../components/common/Pagination';
 import useInventory from '../../hooks/data/useInventory';
 import { getCurrentUser, isAdmin } from '../../utils/authUtils';
 import { api } from '../../services/api';
-import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
+import ProductMultiSelectDropdown from '../../components/common/ProductMultiSelectDropdown';
 import { useAuth, can, canSeeFilter } from '../../context/AuthContext';
 import { useReferenceData } from '../../context/ReferenceDataContext';
 
@@ -427,9 +427,9 @@ const InventoryRecordsManagement = () => {
   const [toBranchFilter, setToBranchFilter] = useState('');
   const [startDateFilter, setStartDateFilter] = useState('');
   const [endDateFilter, setEndDateFilter] = useState('');
-
-  // ── Product filter state — must be declared before filteredInventories ──
-  const [productFilter, setProductFilter] = useState({ productId: '', variationId: '', productName: '' });
+  const [productFilters, setProductFilters] = useState([]);
+  const hasProductFilter = productFilters.length > 0;
+  const FILTERED_FETCH_SIZE = 5000;
 
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('create');
@@ -502,14 +502,18 @@ const InventoryRecordsManagement = () => {
     startDate: startDateFilter || null,
     endDate: endDateFilter || null,
     search: debouncedSearchTerm || null,
-    productId: productFilter.productId || null,
-    variationId: productFilter.variationId || null,
+    productId: productFilters.length === 1 ? productFilters[0].productId : null,
+    variationId: productFilters.length === 1 ? (productFilters[0].variationId ?? null) : null,
+    productFilters: productFilters.map(({ productId, variationId }) => ({ productId, variationId: variationId ?? null })),
   });
-
   useEffect(() => {
-    loadData(currentPage - 1, itemsPerPage, buildFilterParams(), false, false);
+    loadData(
+      hasProductFilter ? 0 : currentPage - 1,
+      hasProductFilter ? FILTERED_FETCH_SIZE : itemsPerPage,
+      buildFilterParams(), false, false
+    );
   }, [
-    currentPage,
+    hasProductFilter ? 0 : currentPage,
     debouncedSearchTerm,
     statusFilter,
     typeFilter,
@@ -519,8 +523,7 @@ const InventoryRecordsManagement = () => {
     toBranchFilter,
     startDateFilter,
     endDateFilter,
-    productFilter.productId,
-    productFilter.variationId,
+    JSON.stringify(productFilters),
   ]);
 
   useEffect(() => {
@@ -528,7 +531,7 @@ const InventoryRecordsManagement = () => {
   }, [
     searchTerm, statusFilter, typeFilter, fromWarehouseFilter, toWarehouseFilter,
     fromBranchFilter, toBranchFilter, startDateFilter, endDateFilter,
-    productFilter.productId, productFilter.variationId,
+    JSON.stringify(productFilters),
   ]);
 
   const productOptions = useMemo(() => {
@@ -576,10 +579,32 @@ const InventoryRecordsManagement = () => {
     return dateB - dateA;
   });
 
-  const currentInventories = sortedInventories;
-  const totalPages = Math.max(1, Math.ceil(totalInventories / itemsPerPage));
+  // A record must contain ALL selected products
+  const recordHasAllFilteredProducts = (inv) =>
+    productFilters.every(pf =>
+      (inv.items || []).some(item => {
+        const itemProductId = item.product?.id ?? item.productId;
+        const itemVariationId = item.variationId ?? item.variation?.id ?? null;
+        return (
+          Number(pf.productId) === Number(itemProductId) &&
+          (pf.variationId == null ? null : Number(pf.variationId)) ===
+          (itemVariationId == null ? null : Number(itemVariationId))
+        );
+      })
+    );
+
+  const matchedInventories = hasProductFilter
+    ? sortedInventories.filter(recordHasAllFilteredProducts)
+    : sortedInventories;
+
+  // With a product filter: paginate locally. Without: use the server's pagination.
+  const totalCount = hasProductFilter ? matchedInventories.length : totalInventories;
+  const currentInventories = hasProductFilter
+    ? matchedInventories.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+    : matchedInventories;
+  const totalPages = Math.max(1, Math.ceil(totalCount / itemsPerPage));
   const indexOfFirstItem = (currentPage - 1) * itemsPerPage;
-  const indexOfLastItem = Math.min(currentPage * itemsPerPage, totalInventories);
+  const indexOfLastItem = Math.min(currentPage * itemsPerPage, totalCount);
   const nextPage = () => setCurrentPage(p => Math.min(p + 1, totalPages));
   const prevPage = () => setCurrentPage(p => Math.max(p - 1, 1));
 
@@ -850,7 +875,7 @@ const InventoryRecordsManagement = () => {
       else { await updateInventory(selectedInventory.id, payload); alert('Inventory record updated successfully!'); }
       handleCloseModal();
       setCurrentPage(1);
-      await loadData(0, itemsPerPage, buildFilterParams(), true, false);
+      await loadData(0, hasProductFilter ? FILTERED_FETCH_SIZE : itemsPerPage, buildFilterParams(), true, false);
     } catch (error) {
       console.error('Failed to save inventory:', error);
       showToast(error?.response?.data?.error || error.message || 'Failed to save inventory record.', 'error');
@@ -877,7 +902,11 @@ const InventoryRecordsManagement = () => {
       setLoadingMessage('Confirming inventory...');
       await confirmInventory(inventory.id, currentUser);
       showToast('Inventory confirmed successfully! Stock levels have been updated.', 'success');
-      await loadData(currentPage - 1, itemsPerPage, buildFilterParams(), true, false);
+      await loadData(
+        hasProductFilter ? 0 : currentPage - 1,
+        hasProductFilter ? FILTERED_FETCH_SIZE : itemsPerPage,
+        buildFilterParams(), true, false
+      );
     } catch (error) {
       console.error('Failed to confirm inventory:', error);
       const errorMsg = error?.response?.data?.error || error.message || 'Unknown error';
@@ -906,12 +935,16 @@ const InventoryRecordsManagement = () => {
       const result = await deleteInventory(id);
       if (result && result.success === false) { setDeleteErrorMessage(result.error || 'Failed to delete inventory'); return; }
       showToast('Inventory deleted successfully', 'success');
-      const newTotal = totalInventories - 1;
+      const newTotal = totalCount - 1;
       const newTotalPages = Math.max(1, Math.ceil(newTotal / itemsPerPage));
       if (currentPage > newTotalPages) {
         setCurrentPage(newTotalPages);
       } else {
-        await loadData(currentPage - 1, itemsPerPage, buildFilterParams(), true, false);
+        await loadData(
+          hasProductFilter ? 0 : currentPage - 1,
+          hasProductFilter ? FILTERED_FETCH_SIZE : itemsPerPage,
+          buildFilterParams(), true, false
+        );
       }
     } catch (error) {
       console.error('❌ Delete error:', error);
@@ -973,32 +1006,29 @@ const InventoryRecordsManagement = () => {
     setTypeFilter('ALL'); setFromWarehouseFilter(''); setToWarehouseFilter('');
     setFromBranchFilter(''); setToBranchFilter(''); setStartDateFilter('');
     setEndDateFilter(''); setSearchTerm(''); setStatusFilter('ALL');
-    setProductFilter({ productId: '', variationId: '', productName: '' });
+    setProductFilters([]);
   };
 
-  // Derive the selected option ID for the dropdown from productFilter state
-  const selectedProductFilterOptionId = productFilter.variationId
-    ? productOptions.find(o => o.variationId === productFilter.variationId)?.id ?? ''
-    : productFilter.productId
-      ? productOptions.find(o => !o.variationId && o.parentProductId === productFilter.productId)?.id ?? ''
-      : '';
+  const selectedProductOptionIds = productOptions
+    .filter(o => productFilters.some(pf =>
+      pf.productId === o.parentProductId &&
+      (pf.variationId ?? null) === (o.variationId ?? null)
+    ))
+    .map(o => o.id);
 
-  const handleProductFilterChange = (value) => {
-    if (!value) {
-      setProductFilter({ productId: '', variationId: '', productName: '' });
-      return;
-    }
-    const option = productOptions.find(o => o.id === value);
-    if (option) {
-      setProductFilter({
-        productId: option.parentProductId,
-        variationId: option.variationId ?? '',
-        productName: option.subLabel !== 'No variations'
-          ? `${option.fullName} — ${option.subLabel}`
-          : option.fullName,
-      });
-      setCurrentPage(1);
-    }
+  const handleProductIdsChange = (ids) => {
+    const next = ids
+      .map(id => productOptions.find(o => o.id === id))
+      .filter(Boolean)
+      .map(o => ({
+        productId: o.parentProductId,
+        variationId: o.variationId ?? null,
+        label: o.subLabel && o.subLabel !== 'No variations'
+          ? `${o.fullName} — ${o.subLabel}`
+          : o.fullName,
+      }));
+    setProductFilters(next);
+    setCurrentPage(1);
   };
 
   return (
@@ -1037,36 +1067,18 @@ const InventoryRecordsManagement = () => {
             warehouses={warehouses} branches={branches} onClearFilters={clearAllFilters}
           />
 
-          {/* ── Product Search Filter ── */}
           {canSeeFilter(user, 'inventory', 'product') && (
             <div className="bg-white rounded-xl shadow-sm p-3 mb-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-end">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Filter by Product / UPC / SKU
-                  </label>
-                  <VariationSearchableDropdown
-                    options={productOptions}
-                    value={selectedProductFilterOptionId}
-                    onChange={handleProductFilterChange}
-                    placeholder="Search by product name, UPC, or SKU..."
-                    hideLocationHint={true}
-                  />
-                  {productFilter.productName && (
-                    <p className="text-xs text-blue-600 mt-1">Filtering by: {productFilter.productName}</p>
-                  )}
-                </div>
-                {productFilter.productId && (
-                  <div>
-                    <button
-                      onClick={() => setProductFilter({ productId: '', variationId: '', productName: '' })}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
-                    >
-                      <X size={14} />
-                      Clear Product Filter
-                    </button>
-                  </div>
-                )}
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Filter by Product / UPC / SKU
+              </label>
+              <div className="w-[380px] max-w-full">
+                <ProductMultiSelectDropdown
+                  options={productOptions}
+                  selectedIds={selectedProductOptionIds}
+                  onChange={handleProductIdsChange}
+                  placeholder="Search by product name, UPC, or SKU..."
+                />
               </div>
             </div>
           )}
@@ -1086,13 +1098,14 @@ const InventoryRecordsManagement = () => {
             canEdit={canEdit}
             canDelete={canDelete}
             isLoading={loading}
+            productFilters={productFilters}
           />
-          {totalInventories > 0 && (
+          {totalCount > 0 && (
             <Pagination
               currentPage={currentPage} totalPages={totalPages}
               onPageChange={setCurrentPage} onNextPage={nextPage} onPrevPage={prevPage}
               showingStart={indexOfFirstItem + 1} showingEnd={indexOfLastItem}
-              totalItems={totalInventories}
+              totalItems={totalCount}
             />
           )}
 

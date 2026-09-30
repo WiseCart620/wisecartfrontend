@@ -27,7 +27,7 @@ const SearchableWarehouseDropdown = ({ warehouses, value, onChange, placeholder,
         type="button"
         onClick={() => !loading && setIsOpen(!isOpen)}
         disabled={loading}
-        className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition text-left flex items-center justify-between ${loading ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+        className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 transition text-left flex items-center justify-between ${loading ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
       >
         {loading ? (
           <span className="flex items-center gap-2 text-gray-400">
@@ -52,7 +52,7 @@ const SearchableWarehouseDropdown = ({ warehouses, value, onChange, placeholder,
                 placeholder="Search warehouses..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 border rounded text-sm focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-8 pr-3 py-1.5 border rounded text-sm focus:ring-2 focus:ring-orange-500"
                 autoFocus
               />
             </div>
@@ -65,7 +65,7 @@ const SearchableWarehouseDropdown = ({ warehouses, value, onChange, placeholder,
                 setIsOpen(false);
                 setSearchTerm('');
               }}
-              className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${!value ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'
+              className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${!value ? 'bg-orange-50 text-orange-700 font-medium' : 'text-gray-900'
                 }`}
             >
               All Warehouses
@@ -82,7 +82,7 @@ const SearchableWarehouseDropdown = ({ warehouses, value, onChange, placeholder,
                     setIsOpen(false);
                     setSearchTerm('');
                   }}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-blue-50 ${String(value) === String(warehouse.id) ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'}`}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-orange-50 ${String(value) === String(warehouse.id) ? 'bg-orange-50 text-orange-700 font-medium' : 'text-gray-900'}`}
                 >
                   <div className="font-medium">{warehouse.warehouseName}</div>
                   <div className="text-xs text-gray-500">{warehouse.warehouseCode}</div>

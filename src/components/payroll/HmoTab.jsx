@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
-import { inputCls, money, today, Field, Modal } from './Shared';
+import { inputCls, money, today, Field, Modal, MoneyInput } from './Shared';
 
 const EMPTY = { employeeId: '', hmoProvider: '', planType: '', employeeShare: '', employerShare: '', effectiveDate: today(), endDate: '' };
 
@@ -134,8 +134,8 @@ const HmoTab = ({ employees, canCreate, canEdit, canDelete }) => {
             </Field>
             <Field label="Provider" required><input className={inputCls} value={form.hmoProvider} onChange={set('hmoProvider')} /></Field>
             <Field label="Plan Type"><input className={inputCls} value={form.planType} onChange={set('planType')} /></Field>
-            <Field label="Employee Share"><input type="number" min="0" step="0.01" className={inputCls} value={form.employeeShare} onChange={set('employeeShare')} /></Field>
-            <Field label="Employer Share"><input type="number" min="0" step="0.01" className={inputCls} value={form.employerShare} onChange={set('employerShare')} /></Field>
+            <Field label="Employee Share"><MoneyInput className={inputCls} value={form.employeeShare} onChange={set('employeeShare')} /></Field>
+            <Field label="Employer Share"><MoneyInput className={inputCls} value={form.employerShare} onChange={set('employerShare')} /></Field>
             <div className="md:col-span-2 text-sm text-gray-600">Monthly premium: <span className="font-semibold">{money(premium)}</span></div>
             <Field label="Effective Date"><input type="date" className={inputCls} value={form.effectiveDate} onChange={set('effectiveDate')} /></Field>
             <Field label="End Date"><input type="date" className={inputCls} value={form.endDate} onChange={set('endDate')} /></Field>

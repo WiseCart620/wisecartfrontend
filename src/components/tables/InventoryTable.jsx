@@ -18,11 +18,46 @@ const InventoryTable = ({
   canEdit = true,
   canDelete = true,
   isLoading = false,
+  productFilters = [],
 }) => {
 
-  const grandTotalItems = inventories.reduce((sum, inv) => sum + (inv.items?.length || 0), 0);
-  const grandTotalQty = inventories.reduce((sum, inv) =>
-    sum + (inv.items?.reduce((s, item) => s + (item.quantity || 0), 0) || 0), 0);
+  // Only count the items that match the product filter (all items when no filter is set)
+  const getRowItems = (inventory) => {
+    const items = inventory.items || [];
+    if (!productFilters || productFilters.length === 0) return items;
+    return items.filter(item => {
+      const itemProductId = item.product?.id ?? item.productId;
+      const itemVariationId = item.variationId ?? item.variation?.id ?? null;
+      return productFilters.some(pf =>
+        Number(pf.productId) === Number(itemProductId) &&
+        (pf.variationId == null ? null : Number(pf.variationId)) ===
+        (itemVariationId == null ? null : Number(itemVariationId))
+      );
+    });
+  };
+
+  const hasProductFilter = productFilters && productFilters.length > 0;
+  const itemMatchesFilter = (item, pf) => {
+    const itemProductId = item.product?.id ?? item.productId;
+    const itemVariationId = item.variationId ?? item.variation?.id ?? null;
+    return (
+      Number(pf.productId) === Number(itemProductId) &&
+      (pf.variationId == null ? null : Number(pf.variationId)) ===
+      (itemVariationId == null ? null : Number(itemVariationId))
+    );
+  };
+
+  // Keep a record only if it contains ALL of the filtered products
+  const recordHasAllFilteredProducts = (inv) =>
+    productFilters.every(pf => (inv.items || []).some(item => itemMatchesFilter(item, pf)));
+
+  const visibleInventories = hasProductFilter
+    ? inventories.filter(recordHasAllFilteredProducts)
+    : inventories;
+
+  const grandTotalItems = visibleInventories.reduce((sum, inv) => sum + getRowItems(inv).length, 0);
+  const grandTotalQty = visibleInventories.reduce((sum, inv) =>
+    sum + getRowItems(inv).reduce((s, item) => s + (item.quantity || 0), 0), 0);
 
 
   return (
@@ -72,14 +107,18 @@ const InventoryTable = ({
                   </td>
                 </tr>
               ))
-            ) : inventories.length === 0 ? (
+            ) : visibleInventories.length === 0 ? (
               <tr>
                 <td colSpan="9" className="px-6 py-12 text-center text-gray-500">
-                  {indexOfFirstItem === 0 ? 'No inventory records found' : 'No records on this page'}
+                  {hasProductFilter
+                    ? 'No records contain the selected product(s)'
+                    : indexOfFirstItem === 0
+                      ? 'No inventory records found'
+                      : 'No records on this page'}
                 </td>
               </tr>
             ) : (
-              inventories.map((inventory) => {
+              visibleInventories.map((inventory) => {
                 const toManilaDate = (dateString) => {
                   if (!dateString) return null;
                   const normalized = dateString.includes('+') || dateString.endsWith('Z')
@@ -94,7 +133,7 @@ const InventoryTable = ({
                 return (
                   <tr key={inventory.id} className="hover:bg-gray-50 transition">
                     <td className="px-3 py-2.5 whitespace-nowrap text-xs text-gray-500 font-medium">
-                      {indexOfFirstItem + inventories.indexOf(inventory) + 1}
+                      {indexOfFirstItem + visibleInventories.indexOf(inventory) + 1}
                     </td>
                     <td className="px-3 py-2.5 whitespace-nowrap">
                       <span className={`px-2 py-1 inline-flex text-[11px] leading-5 font-semibold rounded-full ${getTypeColor(inventory.inventoryType)}`}>
@@ -144,12 +183,12 @@ const InventoryTable = ({
                     <td className="px-3 py-2.5 whitespace-nowrap">
                       <div className="flex items-center gap-1">
                         <Package size={13} className="text-gray-400" />
-                        <span className="text-xs font-semibold text-gray-900">{(inventory.items?.length || 0).toLocaleString('en-US')}</span>
+                        <span className="text-xs font-semibold text-gray-900">{getRowItems(inventory).length.toLocaleString('en-US')}</span>
                       </div>
                     </td>
                     <td className="px-3 py-2.5 whitespace-nowrap">
                       <span className="text-xs font-bold text-blue-700">
-                        {(inventory.items?.reduce((s, item) => s + (item.quantity || 0), 0) || 0).toLocaleString()}
+                        {getRowItems(inventory).reduce((s, item) => s + (item.quantity || 0), 0).toLocaleString()}
                       </span>
                     </td>
                     <td className="px-3 py-2.5 whitespace-nowrap">
@@ -249,7 +288,7 @@ const InventoryTable = ({
               <tr className="bg-gray-100 border-t-2 border-gray-300">
                 <td colSpan={4} className="px-3 py-2">
                   <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">
-                    Page Totals ({inventories.length} record{inventories.length !== 1 ? 's' : ''})
+                    Page Totals ({visibleInventories.length} record{visibleInventories.length !== 1 ? 's' : ''})
                   </span>
                 </td>
                 <td className="px-3 py-2 whitespace-nowrap">

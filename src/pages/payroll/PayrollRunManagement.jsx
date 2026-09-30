@@ -4,11 +4,12 @@ import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { useAuth, can } from '../../context/AuthContext';
-import { inputCls, money, Field, Modal } from '../../components/payroll/Shared';
+import { inputCls, money, Field, Modal, MoneyInput } from '../../components/payroll/Shared';
 import PayrollRunDetail from '../../components/payroll/PayrollRunDetail';
 import OvertimeEntries from '../../components/payroll/OvertimeEntries';
 import ReimbursementTab from '../../components/payroll/ReimbursementTab';
 import DisbursementTab from '../../components/payroll/DisbursementTab';
+import { runOptionsFor, computePeriod } from '../../utils/payrollPeriods';
 
 
 const STATUS_STYLE = {
@@ -19,7 +20,7 @@ const STATUS_STYLE = {
   PAID: 'bg-purple-100 text-purple-700',
 };
 
-const EMPTY = { scheduleId: '', periodStart: '', periodEnd: '', payDate: '' };
+const EMPTY = { option: '', periodStart: '', periodEnd: '', payDate: '', daysOfWork: '' };
 const STATUS_LABEL = { DRAFT: 'On-Going', SUBMITTED: 'On-Going (For Approval)', APPROVED: 'Approved', REJECTED: 'Rejected', PAID: 'Paid' };
 
 const PayrollRunManagement = () => {
@@ -77,6 +78,12 @@ const PayrollRunManagement = () => {
 
   const set = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
 
+  const runOptions = runOptionsFor(employees);
+  const onOptionChange = (value) => {
+    const opt = runOptions.find(o => o.value === value);
+    setForm(p => opt ? { ...p, option: value, ...computePeriod(opt.key) } : { ...p, option: '' });
+  };
+
   const deleteRun = async (run) => {
     if (!window.confirm(`Delete payroll run ${run.periodStart} – ${run.periodEnd}?\nThis removes all its payslips and cannot be undone.`)) return;
     const res = await api.delete(`/payroll/runs/${run.payRollRunId}`);
@@ -88,17 +95,23 @@ const PayrollRunManagement = () => {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!form.scheduleId || !form.periodStart || !form.periodEnd || !form.payDate) {
+    const opt = runOptions.find(o => o.value === form.option);
+    if (!opt || !form.periodStart || !form.periodEnd || !form.payDate) {
       toast.error('All fields are required');
+      return;
+    }
+    if (!form.daysOfWork || Number(form.daysOfWork) <= 0) {
+      toast.error('Enter the days of work');
       return;
     }
     setCreating(true);
     try {
       const res = await api.post('/payroll/runs', {
-        scheduleId: Number(form.scheduleId),
+        scheduleId: opt.scheduleId,
         periodStart: form.periodStart,
         periodEnd: form.periodEnd,
         payDate: form.payDate,
+        daysOfWork: Number(form.daysOfWork),
       });
       if (res.success) {
         toast.success('Payroll run created');
@@ -199,9 +212,9 @@ const PayrollRunManagement = () => {
         <Modal title="New Payroll Run" onClose={() => setShow(false)}>
           <form onSubmit={submit} className="grid grid-cols-1 gap-4">
             <Field label="Pay Schedule" required>
-              <select className={inputCls} value={form.scheduleId} onChange={set('scheduleId')}>
+              <select className={inputCls} value={form.option} onChange={(e) => onOptionChange(e.target.value)}>
                 <option value="">Select schedule...</option>
-                {schedules.map(s => <option key={s.scheduleId} value={s.scheduleId}>{s.scheduleName} ({s.payFrequency})</option>)}
+                {runOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </Field>
             <div className="grid grid-cols-2 gap-4">
@@ -209,6 +222,10 @@ const PayrollRunManagement = () => {
               <Field label="Period End" required><input type="date" className={inputCls} value={form.periodEnd} onChange={set('periodEnd')} /></Field>
             </div>
             <Field label="Pay Date" required><input type="date" className={inputCls} value={form.payDate} onChange={set('payDate')} /></Field>
+            <Field label="Days of Work" required>
+              <MoneyInput className={inputCls} value={form.daysOfWork}
+                onChange={set('daysOfWork')} placeholder="e.g. 26" />
+            </Field>
             <div className="flex justify-end gap-2 pt-2 border-t">
               <button type="button" onClick={() => setShow(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
               <button type="submit" disabled={creating} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">

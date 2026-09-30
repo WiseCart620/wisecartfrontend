@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Trash2, RefreshCw, ChevronDown, ChevronRight, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
-import { inputCls, money, today, Field } from './Shared';
+import { inputCls, money, today, Field, MoneyInput } from './Shared';
 
 const StatutoryContributionsTab = ({ canDelete }) => {
   const [payPeriod, setPayPeriod] = useState(today());
@@ -254,12 +254,12 @@ const StatutoryContributionsTab = ({ canDelete }) => {
               </select>
             </Field>
             <Field label="Employee Share" required>
-              <input type="number" min="0" step="0.01" className={inputCls}
+              <MoneyInput className={inputCls}
                 value={addForm.employeeShare}
                 onChange={(e) => setAddForm(p => ({ ...p, employeeShare: e.target.value }))} />
             </Field>
             <Field label="Employer Share" required>
-              <input type="number" min="0" step="0.01" className={inputCls}
+              <MoneyInput className={inputCls}
                 value={addForm.employerShare}
                 onChange={(e) => setAddForm(p => ({ ...p, employerShare: e.target.value }))} />
             </Field>

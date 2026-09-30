@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Plus, Calendar
 } from 'lucide-react';
-import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
+import ProductMultiSelectDropdown from '../../components/common/ProductMultiSelectDropdown';
 import Pagination from '../../components/common/Pagination';
 import toast, { Toaster } from 'react-hot-toast';
 import { api, API_BASE_URL } from '../../services/api';
@@ -408,26 +408,12 @@ const ProductManagement = () => {
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="flex-1">
-          <VariationSearchableDropdown
+        <div className="w-full md:w-[380px] flex-shrink-0">
+          <ProductMultiSelectDropdown
             options={productOptions}
-            value=""
-            onChange={(id) => {
-              const opt = productOptions.find((o) => o.id === id);
-              if (opt && !selectedProductKeys.includes(opt.id)) {
-                setSelectedProductKeys([...selectedProductKeys, opt.id]);
-                setCurrentPage(1);
-              }
-            }}
-            placeholder="Filter by product / variation (name, SKU, UPC)..."
-            formData={{
-              items: selectedProductKeys
-                .map((k) => productOptions.find((o) => o.id === k))
-                .filter(Boolean)
-                .map((o) => ({ productId: o.parentProductId, variationId: o.variationId })),
-            }}
-            index={-1}
-            hideLocationHint
+            selectedIds={selectedProductKeys}
+            onChange={(ids) => { setSelectedProductKeys(ids); setCurrentPage(1); }}
+            placeholder="All Products"
           />
         </div>
         <div className="relative">
@@ -455,43 +441,13 @@ const ProductManagement = () => {
         {canCreate && (
           <button
             onClick={() => { resetForm(); setShowModal(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition md:ml-auto"
           >
             <Plus size={20} />
             Add Product
           </button>
         )}
       </div>
-
-      {selectedProductKeys.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          {selectedProductKeys.map((k) => {
-            const o = productOptions.find((x) => x.id === k);
-            return (
-              <span key={k} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                {o ? `${o.sku || 'N/A'} - ${o.fullName}` : k}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedProductKeys(selectedProductKeys.filter((x) => x !== k));
-                    setCurrentPage(1);
-                  }}
-                  className="hover:text-red-600"
-                >
-                  ×
-                </button>
-              </span>
-            );
-          })}
-          <button
-            type="button"
-            onClick={() => { setSelectedProductKeys([]); setCurrentPage(1); }}
-            className="text-xs text-gray-500 underline"
-          >
-            Clear all
-          </button>
-        </div>
-      )}
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">

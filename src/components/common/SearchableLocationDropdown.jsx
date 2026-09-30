@@ -62,7 +62,7 @@ const SearchableLocationDropdown = ({
                 placeholder={`Search ${label.toLowerCase()}...`}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 border rounded text-sm focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-8 pr-3 py-1.5 border rounded text-sm focus:ring-2 focus:ring-orange-500"
                 autoFocus
               />
             </div>
@@ -75,7 +75,7 @@ const SearchableLocationDropdown = ({
                 setIsOpen(false);
                 setSearchTerm('');
               }}
-              className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 transition ${!value ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-500 italic'}`}
+              className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 transition ${!value ? 'bg-orange-50 text-orange-700 font-medium' : 'text-gray-500 italic'}`}
             >
               {placeholder}
             </button>
@@ -91,7 +91,7 @@ const SearchableLocationDropdown = ({
                     setIsOpen(false);
                     setSearchTerm('');
                   }}
-                  className={`w-full px-3 py-2 text-left hover:bg-blue-50 transition ${value === loc.id.toString() ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'
+                  className={`w-full px-3 py-2 text-left hover:bg-orange-50 transition ${value === loc.id.toString() ? 'bg-orange-50 text-orange-700 font-medium' : 'text-gray-900'
                     }`}
                 >
                   <div className="text-sm font-medium">{loc.name}</div>

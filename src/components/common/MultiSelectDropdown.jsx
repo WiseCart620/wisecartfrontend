@@ -93,7 +93,7 @@ const MultiSelectDropdown = ({
                 placeholder={searchPlaceholder}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-7 pr-2 py-1.5 border border-gray-300 rounded-md text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-7 pr-2 py-1.5 border border-gray-300 rounded-md text-xs focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               />
             </div>
           )}
@@ -102,7 +102,7 @@ const MultiSelectDropdown = ({
             <button
               type="button"
               onClick={toggleAll}
-              className="text-xs text-blue-600 hover:text-blue-800 font-medium mb-1 px-1"
+              className="text-xs text-orange-600 hover:text-orange-800 font-medium mb-1 px-1"
             >
               {allSelected ? 'Clear all' : 'Select all'}
             </button>
@@ -118,7 +118,7 @@ const MultiSelectDropdown = ({
                     type="checkbox"
                     checked={selectedIds.includes(o.id)}
                     onChange={() => toggle(o.id)}
-                    className="w-4 h-4"
+                    className="w-4 h-4 accent-orange-600"
                   />
                   <span className="text-gray-700 truncate">
                     {o.name}

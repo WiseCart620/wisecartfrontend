@@ -29,6 +29,7 @@ const ProductMultiSelectDropdown = ({
     const filtered = options.filter(o =>
         !search ||
         o.name?.toLowerCase().includes(searchLower) ||
+        o.fullName?.toLowerCase().includes(searchLower) ||
         o.sku?.toLowerCase().includes(searchLower) ||
         o.upc?.toLowerCase().includes(searchLower) ||
         o.subLabel?.toLowerCase().includes(searchLower)
@@ -54,10 +55,16 @@ const ProductMultiSelectDropdown = ({
         else onChange([...new Set([...selectedIds, ...ids])]);
     };
 
+    const hasVariation = (o) => o?.subLabel && o.subLabel !== 'No variations';
+
     const label = selectedIds.length === 0
         ? placeholder
         : selectedIds.length === 1
-            ? options.find(o => o.id === selectedIds[0])?.name || '1 selected'
+            ? (() => {
+                const o = options.find(x => x.id === selectedIds[0]);
+                if (!o) return '1 selected';
+                return hasVariation(o) ? `${o.name} — ${o.subLabel}` : o.name;
+            })()
             : `${selectedIds.length} selected`;
 
     return (
@@ -66,9 +73,11 @@ const ProductMultiSelectDropdown = ({
                 type="button"
                 disabled={disabled}
                 onClick={() => !disabled && setOpen(o => !o)}
-                className={`w-full h-9 flex items-center justify-between px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${disabled ? 'bg-gray-100 cursor-not-allowed text-gray-400' : 'bg-white'}`}
+                className={`w-full min-h-[36px] flex items-center justify-between gap-2 px-3 py-1.5 text-sm text-left border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${disabled ? 'bg-gray-100 cursor-not-allowed text-gray-400' : 'bg-white'}`}
             >
-                <span className={`truncate ${disabled ? 'text-gray-400' : selectedIds.length ? 'text-gray-900' : 'text-gray-400'}`}>{label}</span>
+                <span className={`flex-1 min-w-0 whitespace-normal break-words ${disabled ? 'text-gray-400' : selectedIds.length ? 'text-gray-900' : 'text-gray-400'}`}>
+                    {label}
+                </span>
                 <div className="flex items-center gap-1 flex-shrink-0">
                     {!disabled && selectedIds.length > 0 && (
                         <X
@@ -82,7 +91,7 @@ const ProductMultiSelectDropdown = ({
             </button>
 
             {open && !disabled && (
-                <div className="absolute z-50 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-xl p-2">
+                <div className="absolute z-50 mt-1 min-w-full w-max max-w-[90vw] sm:max-w-[600px] bg-white border border-gray-200 rounded-lg shadow-xl p-2">
                     <div className="relative mb-2">
                         <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
@@ -91,7 +100,7 @@ const ProductMultiSelectDropdown = ({
                             placeholder={searchPlaceholder}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pl-7 pr-2 py-1.5 border border-gray-300 rounded-md text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full pl-7 pr-2 py-1.5 border border-gray-300 rounded-md text-xs focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                         />
                     </div>
 
@@ -99,7 +108,7 @@ const ProductMultiSelectDropdown = ({
                         <button
                             type="button"
                             onClick={toggleAll}
-                            className="text-xs text-blue-600 hover:text-blue-800 font-medium mb-1 px-1"
+                            className="text-xs text-orange-600 hover:text-orange-800 font-medium mb-1 px-1"
                         >
                             {allSelected ? 'Clear all' : 'Select all'}
                         </button>
@@ -115,11 +124,16 @@ const ProductMultiSelectDropdown = ({
                                         type="checkbox"
                                         checked={selectedIds.includes(o.id)}
                                         onChange={() => toggle(o.id)}
-                                        className="w-4 h-4 mt-0.5"
+                                        className="w-4 h-4 mt-0.5 flex-shrink-0 accent-orange-600"
                                     />
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-gray-800 truncate">{o.name}</div>
-                                        <div className="text-[10px] text-gray-400 truncate">
+                                        <div className="text-gray-800 whitespace-normal break-words">
+                                            {o.name}
+                                            {hasVariation(o) && (
+                                                <span className="text-orange-600"> ({o.subLabel})</span>
+                                            )}
+                                        </div>
+                                        <div className="text-[10px] text-gray-400 whitespace-normal break-all">
                                             SKU: {o.sku || 'N/A'} · UPC: {o.upc || 'N/A'}
                                         </div>
                                     </div>

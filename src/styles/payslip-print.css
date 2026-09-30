@@ -187,8 +187,20 @@
 }
 
 .ps-certify {
+    position: relative;
     width: 200px;
     text-align: center;
+}
+
+.ps-sign-img {
+    position: absolute;
+    left: 50%;
+    bottom: 13px;
+    transform: translateX(-50%);
+    max-height: 28px;
+    max-width: 120px;
+    object-fit: contain;
+    pointer-events: none;
 }
 
 .ps-certify-label {
@@ -363,6 +375,12 @@
 
     .ps-table td.long-label {
         font-size: 7.5px;
+    }
+
+    .ps-sign-img {
+        max-height: 26px;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
     .ps-employee,

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Trash2, ChevronDown, ChevronRight, Search, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
-import { inputCls, Field, Modal } from './Shared';
+import { inputCls, Field, Modal, MoneyInput } from './Shared';
 
 const thisYear = new Date().getFullYear();
 
@@ -272,11 +272,11 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
               </select>
             </Field>
             <Field label="Days granted (0 = do not change accrual)" required>
-              <input type="number" min="0" step="0.5" className={inputCls}
+              <MoneyInput className={inputCls}
                 value={form.days} onChange={(e) => setForm(p => ({ ...p, days: e.target.value }))} />
             </Field>
             <Field label="Opening balance (blank = keep current)">
-              <input type="number" min="0" step="0.5" className={inputCls}
+              <MoneyInput className={inputCls}
                 value={form.openingBalance}
                 onChange={(e) => setForm(p => ({ ...p, openingBalance: e.target.value }))}
                 placeholder="e.g. 1 for regular, 0.5 for probi" />

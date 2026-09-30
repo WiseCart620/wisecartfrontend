@@ -8,7 +8,6 @@ import AgenciesTab from '../../components/payroll/AgenciesTab';
 
 const TABS = [
   { key: 'loans', label: 'Loans' },
-  { key: 'cash', label: 'Cash Advances' },
   { key: 'hmo', label: 'HMO' },
   { key: 'agencies', label: 'Agencies' },
 ];
@@ -45,7 +44,7 @@ const LoansAndBenefits = () => {
       <Toaster position="top-right" />
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Loans & Benefits</h1>
-        <p className="text-gray-600 mt-1">Employee loans, cash advances, HMO and government agencies</p>
+        <p className="text-gray-600 mt-1">Employee loans (including cash advances), HMO and government agencies</p>
       </div>
 
       <div className="flex gap-1 border-b border-gray-200 mb-6">
@@ -60,8 +59,7 @@ const LoansAndBenefits = () => {
         ))}
       </div>
 
-      {tab === 'loans' && <LoanAccountsTab kind="loans" employees={employees} agencies={agencies} canCreate={canCreate} canEdit={canEdit} />}
-      {tab === 'cash' && <LoanAccountsTab kind="cash" employees={employees} agencies={agencies} canCreate={canCreate} canEdit={canEdit} />}
+      {tab === 'loans' && <LoanAccountsTab employees={employees} agencies={agencies} canCreate={canCreate} canEdit={canEdit} />}
       {tab === 'hmo' && <HmoTab employees={employees} canCreate={canCreate} canEdit={canEdit} canDelete={canDelete} />}
       {tab === 'agencies' && <AgenciesTab agencies={agencies} canCreate={canCreate} canEdit={canEdit} canDelete={canDelete} onChanged={loadAgencies} />}
     </div>

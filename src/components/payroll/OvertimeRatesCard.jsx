@@ -1,48 +1,63 @@
 import React, { useState, useEffect } from 'react';
-import { X, Pencil } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { useAuth, can } from '../../context/AuthContext';
-import { inputCls, Field } from './Shared';
+import { inputCls, Field, MoneyInput } from './Shared';
 
-const FIELDS = [
-    ['regularOt', 'Regular overtime'],
-    ['restDay', 'Rest day overtime'],
-    ['specialHoliday', 'Special holiday'],
-    ['regularHolidayFirst', 'Regular holiday (first hours)'],
-    ['regularHolidayExcess', 'Regular holiday (excess)'],
-    ['restDayHolidayFirst', 'Rest day + regular holiday (first hours)'],
-    ['restDayHolidayExcess', 'Rest day + regular holiday (excess)'],
-    ['nightDiff', 'Night differential (extra)'],
+const OT_FIELDS = [
+    ['regularOt', 'Overtime - Regular'],
+    ['restDay', 'Overtime - Rest Day'],
+    ['specialHoliday', 'Overtime - Special Holiday'],
+    ['regularHolidayFirst', 'Regular Holiday (first hours)'],
+    ['regularHolidayExcess', 'Regular Holiday (excess hours)'],
+    ['restDayHolidayFirst', 'Rest Day + Regular Holiday (first hours)'],
+    ['restDayHolidayExcess', 'Rest Day + Regular Holiday (excess hours)'],
+    ['nightDiff', 'Night Differential (extra per hour)'],
 ];
-
-const FALLBACK = {
-    regularOt: 1.3, restDay: 1.3, specialHoliday: 1.3,
-    regularHolidayFirst: 2, regularHolidayExcess: 2.6,
-    restDayHolidayFirst: 2.6, restDayHolidayExcess: 3.2,
-    nightDiff: 0.1, holidayThresholdHours: 8,
-};
+const DED_FIELDS = [
+    ['lateMultiplier', 'Late (× hourly rate)'],
+    ['undertimeMultiplier', 'Undertime (× hourly rate)'],
+    ['absenceMultiplier', 'Absence (× daily rate)'],
+];
 
 const toForm = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, String(v)]));
 const pct = (v) => `${Math.round(Number(v) * 10000) / 100}%`;
 
+// finds { current, defaults } wherever it sits in the response
+const dig = (o, depth = 0) => {
+    if (!o || typeof o !== 'object' || depth > 4) return null;
+    if (o.current && o.current.regularOt !== undefined) return o;
+    if (o.regularOt !== undefined) return { current: o };
+    for (const v of Object.values(o)) {
+        const f = dig(v, depth + 1);
+        if (f) return f;
+    }
+    return null;
+};
+
 const OvertimeRatesCard = () => {
     const { user } = useAuth();
     const canFormula = can(user, 'payroll', 'formula');
-    const [current, setCurrent] = useState(FALLBACK);
-    const [defaults, setDefaults] = useState(FALLBACK);
-    const [show, setShow] = useState(false);
-    const [form, setForm] = useState(toForm(FALLBACK));
+    const [open, setOpen] = useState(false);
+    const [form, setForm] = useState(null);
+    const [defaults, setDefaults] = useState(null);
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
 
     const load = async () => {
         try {
             const r = await api.get('/payroll/settings/overtime-rates');
-            if (r.success && r.data && r.data.current && r.data.defaults) {
-                setCurrent(r.data.current);
-                setDefaults(r.data.defaults);
+            console.log('OvertimeRatesCard v3 response:', r);
+            const found = dig(typeof r === 'string' ? JSON.parse(r) : r);
+            if (found) {
+                setForm(toForm(found.current));
+                setDefaults(found.defaults || null);
+                setError('');
+            } else {
+                setError('v3: unexpected response shape, see console');
             }
-        } catch { /* ignore */ }
+        } catch (e) { setError(e.message || 'Could not load rates'); }
     };
     useEffect(() => { load(); }, []);
 
@@ -51,80 +66,87 @@ const OvertimeRatesCard = () => {
     const save = async () => {
         setSaving(true);
         try {
-            const payload = Object.fromEntries(Object.entries(form).map(([k, v]) => [k, Number(v)]));
-            await api.put('/payroll/settings/overtime-rates', payload);
-            toast.success('Overtime rates updated. Regenerate draft runs to apply them.');
-            setShow(false);
+            await api.put('/payroll/settings/overtime-rates',
+                Object.fromEntries(Object.entries(form).map(([k, v]) => [k, Number(v)])));
+            toast.success('Rates saved. Regenerate draft runs to apply them.');
             load();
-        } catch (err) {
-            toast.error(err.message || 'Failed to save rates');
-        } finally {
-            setSaving(false);
-        }
+        } catch (err) { toast.error(err.message || 'Failed to save rates'); }
+        finally { setSaving(false); }
     };
 
+    const numField = ([k, l]) => (
+        <Field key={k} label={l}>
+            <MoneyInput className={inputCls}
+                value={form[k] ?? ''} onChange={set(k)} disabled={!canFormula} />
+            {form[k] !== '' && <span className="text-xs text-gray-500">{pct(form[k])}</span>}
+        </Field>
+    );
+
     return (
-        <>
-            <div className="flex items-center justify-between gap-4 px-5 py-3 border-t border-gray-100">
-                <span className="text-sm text-gray-800">Overtime &amp; holiday rates</span>
-                {canFormula && (
-                    <button onClick={() => { setForm(toForm(current)); setShow(true); }}
-                        className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
-                        <Pencil size={16} /> Edit Rates
-                    </button>
-                )}
-            </div>
+        <div className="bg-white rounded-xl shadow-sm mb-6">
+            <button type="button" onClick={() => setOpen(o => !o)}
+                className="w-full flex items-center justify-between px-5 py-3 text-sm font-semibold text-gray-900">
+                <span>
+                    Payroll Rates
+                    <span className="ml-2 text-xs font-normal text-gray-500">Overtime, holiday, late, undertime, absence</span>
+                </span>
+                {open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            </button>
 
-            {show && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
-                        <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
-                            <h2 className="font-bold text-gray-900">Edit Overtime &amp; Holiday Rates</h2>
-                            <button onClick={() => setShow(false)}><X size={20} /></button>
-                        </div>
-                        <div className="p-6 space-y-5">
-                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="font-semibold text-gray-900">Default rates</span>
-                                    <button type="button" onClick={() => setForm(toForm(defaults))}
-                                        className="text-xs font-medium text-blue-600 hover:text-blue-800">Reset to default</button>
-                                </div>
-                                {FIELDS.map(([k, l]) => (
-                                    <div key={k}>{l} = <span className="font-mono">{defaults[k]}</span> ({pct(defaults[k])})</div>
-                                ))}
-                                <div>Holiday threshold = <span className="font-mono">{defaults.holidayThresholdHours}</span> hours</div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                {FIELDS.map(([k, l]) => (
-                                    <Field key={k} label={l} required>
-                                        <input type="number" min="0" max="10" step="0.01" className={inputCls}
-                                            value={form[k]} onChange={set(k)} />
+            {open && (
+                <div className="border-t border-gray-100 p-5 space-y-6">
+                    {error && <div className="text-sm text-red-600">{error}</div>}
+                    {!form ? (!error && <div className="text-sm text-gray-500">Loading...</div>) : (
+                        <>
+                            <div>
+                                <div className="text-sm font-semibold text-gray-900 mb-3">Overtime &amp; holiday</div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {OT_FIELDS.map(numField)}
+                                    <Field label="Holiday threshold (hours)">
+                                        <MoneyInput className={inputCls}
+                                            value={form.holidayThresholdHours ?? ''} onChange={set('holidayThresholdHours')}
+                                            disabled={!canFormula} />
                                     </Field>
-                                ))}
-                                <Field label="Holiday threshold (hours)" required>
-                                    <input type="number" min="1" max="24" step="0.25" className={inputCls}
-                                        value={form.holidayThresholdHours} onChange={set('holidayThresholdHours')} />
-                                </Field>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2">
+                                    1.30 = 130%, 2.00 = 200%. Night differential is the extra amount per night hour (0.10 = +10%).
+                                </p>
                             </div>
 
-                            <div className="text-xs text-gray-500">
-                                Enter multipliers as decimals: 1.30 = 130%, 2.00 = 200%. Night differential is the
-                                extra amount per night hour (0.10 = +10%).
+                            <div>
+                                <div className="text-sm font-semibold text-gray-900 mb-1">Late, Undertime &amp; Absence</div>
+                                <p className="text-xs text-gray-600 mb-3">
+                                    Daily rate = monthly salary ÷ days of work (entered on each payroll run).
+                                    Hourly rate = daily rate ÷ hours per day. Keep the multiplier at 1.00 to deduct exactly the rate.
+                                </p>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {DED_FIELDS.map(numField)}
+                                    <Field label="Hours per day">
+                                        <MoneyInput className={inputCls}
+                                            value={form.hoursPerDay ?? ''} onChange={set('hoursPerDay')} disabled={!canFormula} />
+                                    </Field>
+                                </div>
                             </div>
 
-                            <div className="flex justify-end gap-2 pt-4 border-t">
-                                <button onClick={() => setShow(false)} className="px-4 py-2 border rounded-lg text-sm">Cancel</button>
-                                <button onClick={save} disabled={saving}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
-                                    {saving ? 'Saving...' : 'Save Rates'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                            {canFormula ? (
+                                <div className="flex justify-end gap-2 pt-3 border-t">
+                                    {defaults && (
+                                        <button type="button" onClick={() => setForm(toForm(defaults))}
+                                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Reset to default</button>
+                                    )}
+                                    <button onClick={save} disabled={saving}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
+                                        {saving ? 'Saving...' : 'Save Rates'}
+                                    </button>
+                                </div>
+                            ) : (
+                                <p className="text-xs text-gray-500 pt-3 border-t">You have view-only access to payroll rates.</p>
+                            )}
+                        </>
+                    )}
                 </div>
             )}
-        </>
+        </div>
     );
 };
 

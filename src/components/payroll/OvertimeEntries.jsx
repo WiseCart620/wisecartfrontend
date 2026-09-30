@@ -1,31 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, ChevronDown, ChevronUp } from 'lucide-react';
-import { useAuth, can } from '../../context/AuthContext';
+import { Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
-import { inputCls, Field } from './Shared';
-import DeductionFormulaCard from './DeductionFormulaCard';
-import OvertimeRatesCard from './OvertimeRatesCard';
+import { inputCls, Field, MoneyInput } from './Shared';
 
-const TYPES = [
-    ['REGULAR_OT', 'Overtime - Regular', 'HOURS'],
-    ['REST_DAY', 'Overtime - Rest Day', 'HOURS'],
-    ['SPECIAL_HOLIDAY', 'Overtime - Special Holiday', 'HOURS'],
-    ['REGULAR_HOLIDAY', 'Regular Holiday', 'HOURS'],
-    ['REST_DAY_REGULAR_HOLIDAY', 'Rest Day + Regular Holiday', 'HOURS'],
-    ['NIGHT_DIFF', 'Night Differential', 'HOURS'],
-    ['UNDERTIME_HOUR', 'Undertime - Hours', 'HOURS'],
-    ['LATE_HOUR', 'Lates', 'MINUTES'],
-    ['ABSENCE_DAY', 'Absences', 'DAYS'],
-];
 
 const today = new Date().toISOString().slice(0, 10);
 const monthStart = today.slice(0, 8) + '01';
 
 const OvertimeEntries = ({ canEdit }) => {
-    const { user } = useAuth();
-    const canFormula = can(user, 'payroll', 'formula');
-    const [showRates, setShowRates] = useState(false);
+    const ENTRY_CODES = new Set(['REGULAR_OT', 'REST_DAY', 'SPECIAL_HOLIDAY', 'REGULAR_HOLIDAY',
+        'REST_DAY_REGULAR_HOLIDAY', 'NIGHT_DIFF', 'UNDERTIME_HOUR', 'LATE_HOUR', 'ABSENCE_DAY']);
+    const [types, setTypes] = useState([]);
+    const TYPES = types;
     const [employees, setEmployees] = useState([]);
     const [rows, setRows] = useState([]);
     const [from, setFrom] = useState(monthStart);
@@ -41,6 +28,19 @@ const OvertimeEntries = ({ canEdit }) => {
         unit: 'HOURS',
         remarks: '',
     });
+
+    useEffect(() => {
+        api.get('/pay-types').then(r => {
+            if (r.success) {
+                setTypes((r.data || [])
+                    .filter(p => p.category !== 'ALLOWANCE'
+                        && (p.code
+                            ? ENTRY_CODES.has(p.code) && p.includeInEntries !== false
+                            : !!p.includeInEntries))
+                    .map(p => [p.code || String(p.payTypeId), p.payTypeName, p.unit || 'HOURS']));
+            }
+        }).catch(() => { });
+    }, []);
 
     useEffect(() => {
         api.get('/employees')
@@ -136,21 +136,6 @@ const OvertimeEntries = ({ canEdit }) => {
 
     return (
         <div className="space-y-6">
-            {canFormula && (
-                <div className="bg-white rounded-xl shadow-sm">
-                    <button type="button" onClick={() => setShowRates(o => !o)}
-                        className="w-full flex items-center justify-between px-5 py-3 text-sm font-semibold text-gray-900">
-                        Payroll rate settings
-                        {showRates ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                    </button>
-                    {showRates && (
-                        <div className="border-t border-gray-100">
-                            <DeductionFormulaCard />
-                            <OvertimeRatesCard />
-                        </div>
-                    )}
-                </div>
-            )}
             {canEdit && (
                 <form onSubmit={add} className="bg-white rounded-xl shadow-sm p-5 grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
                     <Field label="Employee" required>
@@ -194,7 +179,7 @@ const OvertimeEntries = ({ canEdit }) => {
                     )}
 
                     <Field label={unitMode === 'DAYS' ? 'Days' : (form.unit === 'MINUTES' ? 'Minutes' : 'Hours')} required>
-                        <input type="number" min="0" step={unitMode === 'DAYS' || form.unit === 'HOURS' ? '0.25' : '1'}
+                        <MoneyInput decimals={unitMode === 'DAYS' || form.unit === 'HOURS' ? 2 : 0}
                             className={inputCls} value={form.value}
                             onChange={(e) => setForm(p => ({ ...p, value: e.target.value }))} />
                     </Field>
@@ -270,6 +255,7 @@ const OvertimeEntries = ({ canEdit }) => {
             </div>
             <p className="text-xs text-gray-500">
                 Entries dated inside a payroll run's period are picked up automatically when the run is created or regenerated.
+                Overtime and holiday rates are edited under Pay Types.
             </p>
         </div>
     );

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import MultiSelectDropdown from '../common/MultiSelectDropdown';
-import VariationSearchableDropdown from '../common/VariationSearchableDropdown';
+import ProductMultiSelectDropdown from '../common/ProductMultiSelectDropdown';
 import { canSeeFilter } from '../../context/AuthContext';
 
 const BranchFilterPanel = ({
@@ -151,53 +151,27 @@ const BranchFilterPanel = ({
             />
           </div>
         )}
+        {canSeeFilter(user, 'warehouse_inventory', 'product') && (
+          <div className="w-[300px] max-w-full flex-shrink-0">
+            <ProductMultiSelectDropdown
+              options={productOptions}
+              selectedIds={selectedKeys}
+              onChange={(ids) => updateFilter('productKeys', ids)}
+              placeholder="Product / UPC / SKU"
+              disabled={productOptions.length === 0}
+            />
+          </div>
+        )}
+
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
-            className="col-span-2 sm:col-span-1 text-sm text-blue-600 hover:text-blue-800 font-medium sm:ml-auto whitespace-nowrap text-right sm:text-left"
+            className="col-span-2 sm:col-span-1 text-sm text-orange-600 hover:text-orange-800 font-medium sm:ml-auto whitespace-nowrap text-right sm:text-left"
           >
             Clear filters
           </button>
         )}
       </div>
-
-      {canSeeFilter(user, 'warehouse_inventory', 'product') && (
-        <div className="mt-2">
-          <VariationSearchableDropdown
-            options={productOptions}
-            value=""
-            onChange={(id) => {
-              const opt = productOptions.find((o) => o.id === id);
-              if (opt && !selectedKeys.includes(opt.id)) {
-                updateFilter('productKeys', [...selectedKeys, opt.id]);
-              }
-            }}
-            placeholder="Filter by product / variation (name, SKU, UPC)..."
-            formData={{
-              items: selectedKeys
-                .map((k) => productOptions.find((o) => o.id === k))
-                .filter(Boolean)
-                .map((o) => ({ productId: o.parentProductId, variationId: o.variationId })),
-            }}
-            index={-1}
-            hideLocationHint
-            loading={productOptions.length === 0}
-          />
-          {selectedKeys.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {selectedKeys.map((k) => {
-                const o = productOptions.find((x) => x.id === k);
-                return (
-                  <span key={k} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                    {o ? `${o.sku || 'N/A'} - ${o.fullName}` : k}
-                    <button type="button" onClick={() => updateFilter('productKeys', selectedKeys.filter((x) => x !== k))}>×</button>
-                  </span>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 };

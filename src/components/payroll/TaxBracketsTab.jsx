@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Calculator } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
-import { inputCls, money, Field, Modal } from './Shared';
+import { inputCls, money, Field, Modal, MoneyInput } from './Shared';
 
 const thisYear = new Date().getFullYear();
 const EMPTY = { effectiveYear: thisYear, minAnnualIncome: '', maxAnnualIncome: '', baseTax: '', ratePercent: '' };
@@ -154,7 +154,7 @@ const TaxBracketsTab = ({ canCreate, canEdit, canDelete }) => {
         <form onSubmit={runCalc} className="flex gap-2 items-end">
           <div className="flex-1">
             <label className="block text-xs font-medium text-gray-700 mb-1">Annual taxable income</label>
-            <input type="number" min="0" step="0.01" className={inputCls} value={calcIncome} onChange={(e) => setCalcIncome(e.target.value)} />
+            <MoneyInput className={inputCls} value={calcIncome} onChange={(e) => setCalcIncome(e.target.value)} />
           </div>
           <button type="submit" disabled={calcLoading} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
             {calcLoading ? '...' : 'Compute'}
@@ -170,10 +170,10 @@ const TaxBracketsTab = ({ canCreate, canEdit, canDelete }) => {
           <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label="Effective Year" required><input type="number" className={inputCls} value={form.effectiveYear} onChange={set('effectiveYear')} /></Field>
             <div />
-            <Field label="Minimum Annual Income" required><input type="number" min="0" step="0.01" className={inputCls} value={form.minAnnualIncome} onChange={set('minAnnualIncome')} /></Field>
-            <Field label="Maximum Annual Income"><input type="number" min="0" step="0.01" className={inputCls} value={form.maxAnnualIncome} onChange={set('maxAnnualIncome')} placeholder="blank = no ceiling" /></Field>
-            <Field label="Base Tax" required><input type="number" min="0" step="0.01" className={inputCls} value={form.baseTax} onChange={set('baseTax')} /></Field>
-            <Field label="Rate %" required><input type="number" min="0" step="0.01" className={inputCls} value={form.ratePercent} onChange={set('ratePercent')} /></Field>
+            <Field label="Minimum Annual Income" required><MoneyInput className={inputCls} value={form.minAnnualIncome} onChange={set('minAnnualIncome')} /></Field>
+            <Field label="Maximum Annual Income"><MoneyInput className={inputCls} value={form.maxAnnualIncome} onChange={set('maxAnnualIncome')} placeholder="blank = no ceiling" /></Field>
+            <Field label="Base Tax" required><MoneyInput className={inputCls} value={form.baseTax} onChange={set('baseTax')} /></Field>
+            <Field label="Rate %" required><MoneyInput className={inputCls} value={form.ratePercent} onChange={set('ratePercent')} /></Field>
             <div className="md:col-span-2 flex justify-end gap-2 pt-2 border-t">
               <button type="button" onClick={() => setShow(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
               <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">{editing ? 'Save' : 'Create'}</button>

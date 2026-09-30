@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Search, Plus, FileText, X, ChevronDown } from 'lucide-react';
+import { Search, Plus, FileText, ChevronDown } from 'lucide-react';
 import MultiSelectDropdown from '../../components/common/MultiSelectDropdown';
-import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
+import ProductMultiSelectDropdown from '../../components/common/ProductMultiSelectDropdown';
 import { canSeeFilter } from '../../context/AuthContext';
 
 const SalesFilters = ({
@@ -32,6 +32,28 @@ const SalesFilters = ({
   const filteredBranchOptions = (filterData.companyIds && filterData.companyIds.length > 0)
     ? branches.filter(b => filterData.companyIds.includes(b.company?.id)).map(b => ({ id: b.id, name: b.branchName, code: b.branchCode }))
     : branchOptions;
+
+  const selectedProductOptionIds = allProductOptions
+    .filter(o => filterData.productFilters.some(pf =>
+      pf.productId === o.parentProductId &&
+      (pf.variationId ?? null) === (o.variationId ?? null)
+    ))
+    .map(o => o.id);
+
+  const handleProductIdsChange = (ids) => {
+    const next = ids
+      .map(id => allProductOptions.find(o => o.id === id))
+      .filter(Boolean)
+      .map(o => ({
+        productId: o.parentProductId,
+        variationId: o.variationId ?? null,
+        label: o.subLabel && o.subLabel !== 'No variations'
+          ? `${o.fullName} — ${o.subLabel}`
+          : o.fullName,
+      }));
+    setFilterData(prev => ({ ...prev, productFilters: next }));
+    setCurrentPage(1);
+  };
 
   const hasActiveFilters = (filterData.companyIds?.length > 0) || (filterData.branchIds?.length > 0) || filterData.startDate ||
     filterData.endDate || filterData.productFilters.length > 0 || searchTerm || statusFilter !== 'ALL';
@@ -155,32 +177,13 @@ const SalesFilters = ({
           )}
 
           {canSeeFilter(user, 'sales', 'product') && (
-            <div className="inline-block flex-shrink-0">
-              <VariationSearchableDropdown
-                options={allProductOptions.filter(o =>
-                  !filterData.productFilters.some(pf =>
-                    pf.productId === o.parentProductId && (pf.variationId ?? null) === (o.variationId ?? null)
-                  )
-                )}
-                value=""
-                onChange={(value) => {
-                  if (!value) return;
-                  const option = allProductOptions.find(o => o.id === value);
-                  if (!option) return;
-                  const alreadyAdded = filterData.productFilters.some(pf =>
-                    pf.productId === option.parentProductId && (pf.variationId ?? '') === (option.variationId ?? '')
-                  );
-                  if (alreadyAdded) return;
-                  const label = option.subLabel !== 'No variations' ? `${option.fullName} — ${option.subLabel}` : option.fullName;
-                  setFilterData(prev => ({
-                    ...prev,
-                    productFilters: [...prev.productFilters, { productId: option.parentProductId, variationId: option.variationId ?? null, label }]
-                  }));
-                  setCurrentPage(1);
-                }}
-                placeholder="Product / UPC / SKU"
-                hideLocationHint={true}
-                loading={dataLoading}
+            <div className="min-w-[140px] max-w-[260px] flex-shrink-0">
+              <ProductMultiSelectDropdown
+                options={allProductOptions}
+                selectedIds={selectedProductOptionIds}
+                onChange={handleProductIdsChange}
+                placeholder="All Products"
+                disabled={dataLoading}
               />
             </div>
           )}
@@ -194,26 +197,6 @@ const SalesFilters = ({
 
         {(filterData.companyIds?.length > 0) && filteredBranchOptions.length === 0 && (
           <p className="text-xs text-orange-600">No branches for selected company(ies)</p>
-        )}
-
-        {filterData.productFilters.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 -mt-1">
-            {filterData.productFilters.map((pf, idx) => (
-              <span key={idx} className="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                {pf.label}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFilterData(prev => ({ ...prev, productFilters: prev.productFilters.filter((_, i) => i !== idx) }));
-                    setCurrentPage(1);
-                  }}
-                  className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-200 hover:bg-red-200 hover:text-red-700 transition-colors"
-                >
-                  <X size={9} strokeWidth={2.5} />
-                </button>
-              </span>
-            ))}
-          </div>
         )}
 
 

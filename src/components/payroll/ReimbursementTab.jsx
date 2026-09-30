@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Trash2, Ban, ChevronRight, ChevronDown, Search, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
-import { inputCls, Field, money, today } from './Shared';
+import { inputCls, Field, money, today, MoneyInput } from './Shared';
 
 const STATUS_STYLE = {
   PENDING: 'bg-yellow-100 text-yellow-800',
@@ -137,7 +137,7 @@ const ReimbursementTab = ({ employees, canEdit }) => {
               onChange={(e) => setForm(p => ({ ...p, reimbursementDate: e.target.value }))} />
           </Field>
           <Field label="Amount" required>
-            <input type="number" min="0" step="0.01" className={inputCls} value={form.amount}
+            <MoneyInput className={inputCls} value={form.amount}
               onChange={(e) => setForm(p => ({ ...p, amount: e.target.value }))} />
           </Field>
           <Field label="Reason">

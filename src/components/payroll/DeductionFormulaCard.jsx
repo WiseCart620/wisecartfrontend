@@ -3,7 +3,7 @@ import { X, Pencil } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { useAuth, can } from '../../context/AuthContext';
-import { inputCls, Field } from './Shared';
+import { inputCls, Field, MoneyInput } from './Shared';
 
 const FALLBACK = {
     workDays: 21.75,
@@ -98,11 +98,11 @@ const DeductionFormulaCard = () => {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <Field label="Work days per month" required>
-                                    <input type="number" min="1" max="31" step="0.01" className={inputCls}
+                                    <MoneyInput className={inputCls}
                                         value={form.workDays} onChange={set('workDays')} />
                                 </Field>
                                 <Field label="Hours per day" required>
-                                    <input type="number" min="1" max="24" step="0.25" className={inputCls}
+                                    <MoneyInput className={inputCls}
                                         value={form.hoursPerDay} onChange={set('hoursPerDay')} />
                                 </Field>
                             </div>
