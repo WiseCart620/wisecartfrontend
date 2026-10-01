@@ -629,7 +629,7 @@ const EmployeeManagement = () => {
 
                                 <Section title="Salary & Payment">
                                     <Field label="Basic Salary (monthly)"><MoneyInput className={inputCls} name="basicSalary" value={form.basicSalary} onChange={onChange} /></Field>
-                                    <Field label="Allowance">
+                                    <Field label="Allowance (monthly)">
                                         <div className="flex gap-2">
                                             <select className={inputCls} name="allowancePayTypeId" value={form.allowancePayTypeId}
                                                 onChange={(e) => setForm(p => ({ ...p, allowancePayTypeId: e.target.value, allowanceAmount: e.target.value ? p.allowanceAmount : '' }))}>
@@ -875,7 +875,7 @@ const EmployeeManagement = () => {
                                 <ViewSection title="Salary & Payment">
                                     <Detail label="Basic Salary (monthly)" value={money(v.basicSalary)} />
                                     <Detail
-                                        label="Allowance"
+                                        label="Allowance (monthly)"
                                         value={allowanceName ? `${allowanceName} — ${money(v.allowanceAmount)}` : 'None'}
                                     />
                                     <Detail label="Payment Mode" value={titleCase(v.paymentMode)} />

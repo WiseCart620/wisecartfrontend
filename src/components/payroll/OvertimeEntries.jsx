@@ -69,26 +69,24 @@ const OvertimeEntries = ({ canEdit }) => {
             ...p,
             entryType: newType,
             value: '',
-            unit: mode === 'MINUTES' ? 'MINUTES' : mode === 'DAYS' ? 'DAYS' : 'HOURS',
+            unit: mode === 'MINUTES' ? 'MINUTES' : mode === 'DAYS' ? 'DAYS' : mode === 'AMOUNT' ? 'AMOUNT' : 'HOURS',
         }));
     };
 
     const currentType = TYPES.find(t => t[0] === form.entryType);
     const unitMode = currentType ? currentType[2] : 'HOURS';
 
-    // What to send to the backend — always in the backend's native unit
     const computeBackendValue = () => {
         const n = Number(form.value);
         if (!Number.isFinite(n) || n <= 0) return null;
 
-        if (unitMode === 'DAYS') {
-            // Days pass through as-is (backend multiplies by 8h internally)
+        if (unitMode === 'DAYS' || unitMode === 'AMOUNT') {
             return n;
         }
         if (form.unit === 'MINUTES') {
-            return n / 60; // convert minutes -> hours
+            return n / 60;
         }
-        return n; // already hours
+        return n;
     };
 
     const add = async (e) => {
@@ -128,6 +126,9 @@ const OvertimeEntries = ({ canEdit }) => {
     const formatStored = (entryType, hours) => {
         const meta = TYPES.find(t => t[0] === entryType);
         const mode = meta ? meta[2] : 'HOURS';
+        if (mode === 'AMOUNT') {
+            return Number(hours).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
+        }
         if (mode === 'DAYS') {
             return `${hours} day${Number(hours) === 1 ? '' : 's'}`;
         }
@@ -158,8 +159,7 @@ const OvertimeEntries = ({ canEdit }) => {
                         </select>
                     </Field>
 
-                    {/* Unit dropdown — hidden when Days */}
-                    {unitMode !== 'DAYS' && (
+                    {unitMode !== 'DAYS' && unitMode !== 'AMOUNT' && (
                         <Field label="Unit" required>
                             <select className={inputCls} value={form.unit}
                                 onChange={(e) => setForm(p => ({ ...p, unit: e.target.value }))}>
@@ -178,8 +178,8 @@ const OvertimeEntries = ({ canEdit }) => {
                         </Field>
                     )}
 
-                    <Field label={unitMode === 'DAYS' ? 'Days' : (form.unit === 'MINUTES' ? 'Minutes' : 'Hours')} required>
-                        <MoneyInput decimals={unitMode === 'DAYS' || form.unit === 'HOURS' ? 2 : 0}
+                    <Field label={unitMode === 'AMOUNT' ? 'Amount (₱)' : unitMode === 'DAYS' ? 'Days' : (form.unit === 'MINUTES' ? 'Minutes' : 'Hours')} required>
+                        <MoneyInput decimals={unitMode === 'AMOUNT' || unitMode === 'DAYS' || form.unit === 'HOURS' ? 2 : 0}
                             className={inputCls} value={form.value}
                             onChange={(e) => setForm(p => ({ ...p, value: e.target.value }))} />
                     </Field>

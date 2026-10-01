@@ -13,6 +13,7 @@ const ACTION_LABELS = {
   cancel: 'Cancel', print: 'Print', confirm: 'Confirm',
   payment: 'Payments', transmittal: 'Transmittals', manage: 'Approve Payroll',
   submit: 'Submit', approve: 'Approve / Reject', download: 'Download Docs', pay: 'Mark Paid', formula: 'Edit Deduction Formula',
+  statutory: 'Edit Statutory Shares',
 };
 
 const FILTERS = {
@@ -71,7 +72,7 @@ const FEATURES = [
   { key: 'products', label: 'Products', description: 'Product catalog and variations', actions: ['view', 'create', 'edit', 'delete'] },
   { key: 'supplier', label: 'Supplier', description: 'Supplier records and contacts', actions: ['view', 'create', 'edit', 'delete'] },
   { key: 'employees', label: 'Employees', description: 'Manage employee records and payroll data', actions: ['view', 'create', 'edit', 'delete', 'manage'] },
-  { key: 'payroll', label: 'Payroll Runs', description: 'View: see runs. Create: create runs, OT/undertime. Submit. Edit: change payslip items (GM). Approve/Reject. Download docs. Mark Paid.', actions: ['view', 'create', 'submit', 'edit', 'approve', 'download', 'pay', 'formula', 'delete'] },
+  { key: 'payroll', label: 'Payroll Runs', description: 'View: see runs. Create: create runs, OT/undertime. Submit. Edit: change payslip items (GM). Approve/Reject. Download docs. Mark Paid. Statutory: edit SSS/PHIC/HDMF employee and employer shares.', actions: ['view', 'create', 'submit', 'edit', 'approve', 'download', 'pay', 'formula', 'statutory', 'delete'] },
 ];
 
 const ROLE_PRESETS = {

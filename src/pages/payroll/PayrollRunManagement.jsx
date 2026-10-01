@@ -9,7 +9,9 @@ import PayrollRunDetail from '../../components/payroll/PayrollRunDetail';
 import OvertimeEntries from '../../components/payroll/OvertimeEntries';
 import ReimbursementTab from '../../components/payroll/ReimbursementTab';
 import DisbursementTab from '../../components/payroll/DisbursementTab';
+import AnnualMonitoringTab from '../../components/payroll/AnnualMonitoringTab';
 import { runOptionsFor, computePeriod } from '../../utils/payrollPeriods';
+
 
 
 const STATUS_STYLE = {
@@ -41,7 +43,7 @@ const PayrollRunManagement = () => {
   const approvedRuns = runs.filter(r => r.status === 'APPROVED' || r.status === 'PAID');
   const tabBar = (
     <div className="flex gap-1 border-b border-gray-200 mt-4">
-      {[['runs', 'Payroll Runs'], ['ot', 'Overtime & Undertime'], ['rb', 'Reimbursements'], ['db', 'Disbursement']].map(([k, l]) => (
+      {[['runs', 'Payroll Runs'], ['ot', 'Overtime & Undertime'], ['rb', 'Reimbursements'], ['db', 'Disbursement'], ['an', 'Annual Monitoring']].map(([k, l]) => (
         <button key={k} onClick={() => setTab(k)}
           className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${tab === k ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500'}`}>{l}</button>
       ))}
@@ -126,7 +128,7 @@ const PayrollRunManagement = () => {
       setCreating(false);
     }
   };
-  if ((tab === 'ot' || tab === 'rb' || tab === 'db') && !selectedRunId) {
+  if ((tab === 'ot' || tab === 'rb' || tab === 'db' || tab === 'an') && !selectedRunId) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
         <Toaster position="top-right" />
@@ -136,6 +138,7 @@ const PayrollRunManagement = () => {
           {tab === 'ot' && <OvertimeEntries canEdit={canCreate} />}
           {tab === 'rb' && <ReimbursementTab employees={employees} canEdit={canCreate} />}
           {tab === 'db' && <DisbursementTab approvedRuns={approvedRuns} canManage={canManage} />}
+          {tab === 'an' && <AnnualMonitoringTab />}
         </div>
       </div>
     );

@@ -204,7 +204,7 @@ const PayTypeManagement = () => {
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              {['Name', 'Category', 'Taxable', 'Unit', 'Rate'].map(h => (
+              {['Name', 'Category', 'Taxable', 'Entered As', 'Rate'].map(h => (
                 <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
               ))}
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -225,7 +225,9 @@ const PayTypeManagement = () => {
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${CATEGORY_STYLE[p.category] || 'bg-gray-100 text-gray-800'}`}>{p.category}</span>
                 </td>
                 <td className="px-6 py-4 text-sm">{p.category === 'DEDUCTION' ? '—' : p.isTaxable ? 'Yes' : 'No'}</td>
-                <td className="px-6 py-4 text-sm">{p.unit || '—'}</td>
+                <td className="px-6 py-4 text-sm">
+                  {p.unit === 'AMOUNT' ? 'Amount (₱)' : p.unit ? p.unit.charAt(0) + p.unit.slice(1).toLowerCase() : '—'}
+                </td>
                 <td className="px-6 py-4 text-sm text-gray-700" title="First hours / excess hours where applicable">{rateLabel(p)}</td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex justify-end gap-2">
@@ -262,12 +264,13 @@ const PayTypeManagement = () => {
               </div>
               {form.category !== 'ALLOWANCE' && (editing?.systemDefined || form.includeInEntries) && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Unit (for entries)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Entry value</label>
                   <select className={inputCls} value={form.unit} disabled={editing?.systemDefined}
                     onChange={(e) => setForm(p => ({ ...p, unit: e.target.value }))}>
                     <option value="HOURS">Hours</option>
                     <option value="MINUTES">Minutes</option>
                     <option value="DAYS">Days</option>
+                    <option value="AMOUNT">Fixed amount (₱)</option>
                   </select>
                 </div>
               )}
@@ -305,7 +308,7 @@ const PayTypeManagement = () => {
                 <label className="flex items-center gap-2 text-sm text-gray-700">
                   <input type="checkbox" checked={form.includeInEntries}
                     onChange={(e) => setForm(p => ({ ...p, includeInEntries: e.target.checked }))} />
-                  Enter as hours/days in Overtime &amp; Undertime
+                  Show in Overtime &amp; Undertime entries
                 </label>
               )}
 

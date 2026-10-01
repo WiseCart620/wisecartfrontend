@@ -5,6 +5,7 @@ import { api } from '../../services/api';
 import { useAuth, can } from '../../context/AuthContext';
 import { money, MoneyInput } from './Shared';
 import PayslipDrilldown from '../../pages/payroll/PayslipDrilldown';
+import EmployeeAvatar from './EmployeeAvatar';
 
 const LABEL = { DRAFT: 'On-Going', SUBMITTED: 'On-Going (For Approval)', APPROVED: 'Approved', REJECTED: 'Rejected', PAID: 'Paid' };
 const STATUTORY = ['SSS', 'PhilHealth', 'Pag-IBIG'];
@@ -82,6 +83,12 @@ const PayrollRunDetail = ({ runId, onBack }) => {
   const [viewId, setViewId] = useState(null);
   const [editId, setEditId] = useState(null);
   const [checked, setChecked] = useState(() => new Set());
+  const [photos, setPhotos] = useState({});
+  useEffect(() => {
+    api.get('/employees').then(r => {
+      if (r.success) setPhotos(Object.fromEntries((r.data || []).map(e => [e.employeeId, e.photoUrl])));
+    }).catch(() => { });
+  }, []);
 
   const perm = (a) => can(user, 'payroll', a);
 
@@ -319,7 +326,12 @@ const PayrollRunDetail = ({ runId, onBack }) => {
                       onClick={(e) => e.stopPropagation()}
                     />
                   </td>
-                  <td className="px-4 py-3 font-medium cursor-pointer" onClick={() => setViewId(s.paySlipId)}>{s.employeeName}</td>
+                  <td className="px-4 py-3 font-medium cursor-pointer" onClick={() => setViewId(s.paySlipId)}>
+                    <div className="flex items-center gap-2">
+                      <EmployeeAvatar name={s.employeeName} photoUrl={photos[s.employeeId]} />
+                      {s.employeeName}
+                    </div>
+                  </td>
                   <td className="px-4 py-3">{money(s.basicPay)}</td>
                   <td className="px-4 py-3">{money(Number(s.grossPay) - Number(s.basicPay))}</td>
                   <td className="px-4 py-3">{money(stat)}</td>

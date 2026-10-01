@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, Search, UserCheck, UserX, Info } from 'lucid
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { money } from './Shared';
+import EmployeeAvatar from './EmployeeAvatar';
 
 const thisYear = new Date().getFullYear();
 
@@ -21,6 +22,12 @@ const ThirteenthMonthTab = ({ canManage }) => {
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [expanded, setExpanded] = useState(() => new Set());
+  const [photos, setPhotos] = useState({});
+  useEffect(() => {
+    api.get('/employees').then(r => {
+      if (r.success) setPhotos(Object.fromEntries((r.data || []).map(e => [e.employeeId, e.photoUrl])));
+    }).catch(() => { });
+  }, []);
 
   useEffect(() => {
     if (year < 2000 || year > 2100) return;
@@ -136,17 +143,18 @@ const ThirteenthMonthTab = ({ canManage }) => {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
+        <div className="px-4 py-3 border-b border-gray-200">
+          <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+            <input type="checkbox" checked={allIncluded}
+              disabled={!canManage || busy || eligibleItems.length === 0}
+              onChange={(e) => setAll(e.target.checked)} />
+            Include in payroll
+          </label>
+        </div>
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-4 py-3 w-40 text-left text-xs font-medium text-gray-500 uppercase">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={allIncluded}
-                    disabled={!canManage || busy || eligibleItems.length === 0}
-                    onChange={(e) => setAll(e.target.checked)} />
-                  Include in payroll
-                </label>
-              </th>
+              <th className="px-4 py-3 w-10"></th>
               {['Employee', 'Status', 'Months', 'Computed', 'Paid', 'Remaining'].map(h => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
               ))}
@@ -172,6 +180,7 @@ const ThirteenthMonthTab = ({ canManage }) => {
                     <td className="px-4 py-3 font-medium">
                       <button onClick={() => toggleExpand(k)} className="flex items-center gap-2 hover:text-blue-600">
                         {expanded.has(k) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                        <EmployeeAvatar name={i.employeeName} photoUrl={photos[i.employeeId]} />
                         {i.employeeName}
                       </button>
                       {!i.eligible && <div className="text-xs text-gray-400 ml-6">{i.ineligibleReason}</div>}

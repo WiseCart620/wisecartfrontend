@@ -37,31 +37,30 @@ const amt = (n) => {
 const peso = (n) =>
   Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-// Map a raw deduction type onto a fixed slip line
 const classify = (type = '') => {
   const t = type.toLowerCase();
+  if (t.includes('cash advance')) return 'cashAdvance';
+  if (t.includes('hmo')) return 'hmo';
+  if (t.includes(' - ')) {
+    const hdmf = t.includes('hdmf') || t.includes('pag-ibig') || t.includes('pagibig');
+    if (t.includes('sss')) return 'sssLoan';
+    if (hdmf && t.includes('mp2')) return 'mp2';
+    if (hdmf) return 'pagibigLoan';
+    return null; // other agencies get their own line
+  }
   const isHdmf = t.includes('hdmf') || t.includes('pag-ibig') || t.includes('pagibig');
-  if (t.includes('sss') && t.includes('loan')) return 'sssLoan';
-  if (isHdmf && t.includes('mp2')) return 'mp2';
-  if (isHdmf && t.includes('loan')) return 'pagibigLoan';
   if (isHdmf) return 'pagibig';
   if (t.includes('sss')) return 'sss';
   if (t.includes('philhealth') || t.includes('phic')) return 'phic';
-  if (t.includes('hmo')) return 'hmo';
   if (t.includes('withholding')) return 'tax';
-  if (t.includes('cash advance')) return 'cashAdvance';
   return null;
 };
 
 const DEDUCTION_LINES = [
-  { key: 'sss', label: 'SSS Payable' },
-  { key: 'phic', label: 'PHIC Payable' },
-  { key: 'pagibig', label: 'Pag-ibig Payable' },
-  { key: 'hmo', label: 'HMO Payable' },
-  { key: 'tax', label: 'Withholding Tax' },
-  { key: 'sssLoan', label: 'SSS Loan' },
-  { key: 'pagibigLoan', label: 'Pag-ibig Loan' },
-  { key: 'mp2', label: 'HDMF MP2' },
+  { key: 'sss', label: 'SSS Premium' },
+  { key: 'phic', label: 'PHIC Premium' },
+  { key: 'pagibig', label: 'HDMF Premium' },
+  { key: 'hmo', label: 'HMO Premium' },
   { key: 'cashAdvance', label: 'Cash Advance' },
 ];
 
@@ -190,17 +189,30 @@ const PayslipDrilldown = ({ payslipId, onClose }) => {
   ];
 
   const buckets = {};
+  const loanLines = { sssLoan: [], pagibigLoan: [], mp2: [] };
   const extras = [];
   (slip.deductions || []).forEach(d => {
     const t = (d.deductionType || '').toLowerCase();
     if (t.includes('undertime') || t.includes('lates') || t.includes('absence')) return;
     const k = classify(d.deductionType);
-    if (k) buckets[k] = (buckets[k] || 0) + Number(d.amount || 0);
-    else extras.push({ label: d.deductionType, amount: Number(d.amount || 0) });
+    if (k && loanLines[k]) loanLines[k].push({ label: d.deductionType, amount: Number(d.amount || 0) });
+    else if (k) buckets[k] = (buckets[k] || 0) + Number(d.amount || 0);
+    else extras.push({
+      label: (d.deductionType || '').replace(/^Loan - /i, ''),
+      amount: Number(d.amount || 0),
+    });
   });
+  const slot = (key, fallback) =>
+    loanLines[key].length ? loanLines[key] : [{ label: fallback, amount: 0 }];
   const deductions = [
-    ...DEDUCTION_LINES.map(l => ({ label: l.label, amount: buckets[l.key] || 0 })),
-    ...extras,
+    ...DEDUCTION_LINES.filter(l => l.key !== 'cashAdvance')
+      .map(l => ({ label: l.label, amount: buckets[l.key] || 0 })),
+    ...slot('sssLoan', 'SSS Loan'),
+    ...slot('pagibigLoan', 'HDMF Loan'),
+    ...slot('mp2', 'HDMF MP2'),
+    { label: 'Cash Advance', amount: buckets.cashAdvance || 0 },
+    ...(extras.length ? extras : [{ label: 'Other Deductions', amount: 0 }]),
+    { label: 'Withholding Tax', amount: buckets.tax || 0 },
   ];
 
   const advances = [
@@ -282,7 +294,7 @@ const PayslipDrilldown = ({ payslipId, onClose }) => {
                   <tr>
                     <th colSpan={2}>EARNINGS</th>
                     <th colSpan={2}>DEDUCTION</th>
-                    <th colSpan={2}>ADVANCES</th>
+                    <th colSpan={2}>OUTSTANDING ADVANCES</th>
                   </tr>
                   <tr className="ps-sub">
                     <th>Description</th><th>Amount</th>

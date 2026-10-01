@@ -1,11 +1,23 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Trash2, RefreshCw, ChevronDown, ChevronRight, Search } from 'lucide-react';
+import { Trash2, RefreshCw, ChevronDown, ChevronRight, Search, Edit2, Check, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { inputCls, money, today, Field, MoneyInput } from './Shared';
+import SearchableSelect from './SearchableSelect';
+import EmployeeAvatar from './EmployeeAvatar';
+import { useAuth, can } from '../../context/AuthContext';
+
+const agencyLabel = (n) => {
+  const k = (n || '').toLowerCase();
+  if (k === 'philhealth') return 'PHIC';
+  if (k === 'pag-ibig' || k === 'pagibig') return 'HDMF';
+  return n;
+};
 
 const StatutoryContributionsTab = ({ canDelete }) => {
-  const [payPeriod, setPayPeriod] = useState(today());
+  const { user } = useAuth();
+  const canEdit = can(user, 'payroll', 'statutory');
+  const payPeriod = today();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(() => new Set());
@@ -13,8 +25,36 @@ const StatutoryContributionsTab = ({ canDelete }) => {
   const [addForm, setAddForm] = useState({ employeeId: '', agencyName: '', employeeShare: '', employerShare: '' });
   const [saving, setSaving] = useState(false);
   const [agencies, setAgencies] = useState([]);
-
-  // filters
+  const [photos, setPhotos] = useState({});
+  useEffect(() => {
+    api.get('/employees').then(r => {
+      if (r.success) setPhotos(Object.fromEntries((r.data || []).map(e => [e.employeeId, e.photoUrl])));
+    }).catch(() => { });
+  }, []);
+  const [editKey, setEditKey] = useState(null);
+  const [editVals, setEditVals] = useState({ ee: '', er: '' });
+  const [runs, setRuns] = useState([]);
+  const startEdit = (c, key) => {
+    setEditKey(key);
+    setEditVals({ ee: String(c.employeeShare ?? ''), er: String(c.employerShare ?? '') });
+  };
+  const saveEdit = async (c) => {
+    const ee = Number(editVals.ee), er = Number(editVals.er);
+    if (!Number.isFinite(ee) || !Number.isFinite(er) || ee < 0 || er < 0) {
+      toast.error('Shares must be non-negative numbers'); return;
+    }
+    try {
+      await api.put('/payroll/statutory-contributions/override', {
+        employeeId: c.employeeId, agencyName: c.agencyName, payPeriod,
+        employeeShare: ee, employerShare: er,
+      });
+      toast.success('Saved. This now applies to every payroll run. Regenerate a draft run to update its payslip.');
+      setEditKey(null);
+      load();
+    } catch (err) {
+      toast.error(err.message || 'Failed to save');
+    }
+  };
   const [employeeFilter, setEmployeeFilter] = useState('ALL');
   const [agencyFilter, setAgencyFilter] = useState('ALL');
   const [search, setSearch] = useState('');
@@ -30,6 +70,7 @@ const StatutoryContributionsTab = ({ canDelete }) => {
       setLoading(false);
     }
   };
+
 
   useEffect(() => { load(); }, [payPeriod]);
 
@@ -155,10 +196,11 @@ const StatutoryContributionsTab = ({ canDelete }) => {
     }
   };
 
+
   return (
     <div>
       {/* Filters */}
-      <div className="bg-gray-50 border border-gray-100 rounded-xl p-5 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+      <div className="bg-gray-50 border border-gray-100 rounded-xl p-5 mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
         <Field label="Search employee">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
@@ -173,26 +215,26 @@ const StatutoryContributionsTab = ({ canDelete }) => {
         </Field>
 
         <Field label="Employee">
-          <select className={inputCls} value={employeeFilter} onChange={(e) => setEmployeeFilter(e.target.value)}>
-            <option value="ALL">All employees</option>
-            {employeeOptions.map(e => (
-              <option key={e.id} value={e.id}>{e.name}</option>
-            ))}
-          </select>
+          <SearchableSelect
+            allLabel="All employees"
+            searchPlaceholder="Search employee..."
+            value={employeeFilter === 'ALL' ? '' : String(employeeFilter)}
+            options={employeeOptions.map(e => ({ value: String(e.id), label: e.name }))}
+            onChange={(v) => setEmployeeFilter(v || 'ALL')}
+          />
         </Field>
 
         <Field label="Agency">
-          <select className={inputCls} value={agencyFilter} onChange={(e) => setAgencyFilter(e.target.value)}>
-            <option value="ALL">All agencies</option>
-            {agencyOptions.map(a => <option key={a} value={a}>{a}</option>)}
-          </select>
+          <SearchableSelect
+            allLabel="All agencies"
+            searchPlaceholder="Search agency..."
+            value={agencyFilter === 'ALL' ? '' : agencyFilter}
+            options={agencyOptions.map(a => ({ value: a, label: a }))}
+            onChange={(v) => setAgencyFilter(v || 'ALL')}
+          />
         </Field>
 
-        <Field label="Pay Period" required>
-          <input type="date" className={inputCls} value={payPeriod} onChange={(e) => setPayPeriod(e.target.value)} />
-        </Field>
-
-        <div className="md:col-span-4 flex flex-wrap gap-2 items-center">
+        <div className="md:col-span-5 flex flex-wrap gap-2 items-center">
           <button
             onClick={load}
             disabled={loading}
@@ -230,28 +272,27 @@ const StatutoryContributionsTab = ({ canDelete }) => {
         {showAdd && (
           <form onSubmit={addCustom} className="bg-blue-50 border border-blue-100 rounded-xl p-5 mb-6 grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             <Field label="Employee" required>
-              <select className={inputCls} value={addForm.employeeId}
-                onChange={(e) => setAddForm(p => ({ ...p, employeeId: e.target.value, agencyName: '' }))}>
-                <option value="">Select...</option>
-                {employeeOptions.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-              </select>
+              <SearchableSelect
+                placeholder="Select employee..."
+                searchPlaceholder="Search employee..."
+                value={addForm.employeeId}
+                options={employeeOptions.map(e => ({ value: String(e.id), label: e.name }))}
+                onChange={(v) => setAddForm(p => ({ ...p, employeeId: v, agencyName: '' }))}
+              />
             </Field>
             <Field label="Agency / Contribution Name" required>
-              <select className={inputCls}
-                value={addForm.agencyName}
+              <SearchableSelect
                 disabled={!addForm.employeeId}
-                onChange={(e) => setAddForm(p => ({ ...p, agencyName: e.target.value }))}>
-                <option value="">
-                  {!addForm.employeeId
-                    ? 'Select an employee first'
-                    : availableAgencies.length === 0
-                      ? 'All agencies already added'
-                      : 'Select agency...'}
-                </option>
-                {availableAgencies.map(a => (
-                  <option key={a.agencyId} value={a.name}>{a.name}</option>
-                ))}
-              </select>
+                placeholder={!addForm.employeeId
+                  ? 'Select an employee first'
+                  : availableAgencies.length === 0
+                    ? 'All agencies already added'
+                    : 'Select agency...'}
+                searchPlaceholder="Search agency..."
+                value={addForm.agencyName}
+                options={availableAgencies.map(a => ({ value: a.name, label: a.name }))}
+                onChange={(v) => setAddForm(p => ({ ...p, agencyName: v }))}
+              />
             </Field>
             <Field label="Employee Share" required>
               <MoneyInput className={inputCls}
@@ -307,6 +348,7 @@ const StatutoryContributionsTab = ({ canDelete }) => {
                     <td className="px-4 py-3 font-semibold text-gray-900">
                       <div className="flex items-center gap-2">
                         {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        <EmployeeAvatar name={g.employeeName} photoUrl={photos[g.employeeId]} />
                         {g.employeeName}
                       </div>
                     </td>
@@ -321,26 +363,56 @@ const StatutoryContributionsTab = ({ canDelete }) => {
                   </tr>
 
                   {/* Detail rows */}
-                  {isOpen && g.rows.map((c, idx) => (
-                    <tr key={`${g.employeeId}-${c.agencyName}-${idx}`} className="text-sm hover:bg-gray-50">
-                      <td className="px-4 py-3 text-gray-400 pl-12">—</td>
-                      <td className="px-4 py-3">{c.agencyName}</td>
-                      <td className="px-4 py-3">{c.payPeriod}</td>
-                      <td className="px-4 py-3">{money(c.employeeShare)}</td>
-                      <td className="px-4 py-3">{money(c.employerShare)}</td>
-                      <td className="px-4 py-3">{money(c.totalContribution)}</td>
-                      <td className="px-4 py-3 text-right">
-                        {canDelete && c.id && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); remove(c); }}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                          >
-                            <Trash2 size={17} />
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {isOpen && g.rows.map((c, idx) => {
+                    const key = `${g.employeeId}-${c.agencyName}-${idx}`;
+                    const editingRow = editKey === key;
+                    const liveTotal = Number(editVals.ee || 0) + Number(editVals.er || 0);
+                    return (
+                      <tr key={key} className="text-sm hover:bg-gray-50">
+                        <td className="px-4 py-3 text-gray-400 pl-12">—</td>
+                        <td className="px-4 py-3">
+                          {agencyLabel(c.agencyName)}
+                          {c.id && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">Saved</span>}
+                        </td>
+                        <td className="px-4 py-3">{c.payPeriod}</td>
+                        <td className="px-4 py-3">
+                          {editingRow
+                            ? <MoneyInput className={inputCls} value={editVals.ee}
+                              onChange={(e) => setEditVals(p => ({ ...p, ee: e.target.value }))} />
+                            : money(c.employeeShare)}
+                        </td>
+                        <td className="px-4 py-3">
+                          {editingRow
+                            ? <MoneyInput className={inputCls} value={editVals.er}
+                              onChange={(e) => setEditVals(p => ({ ...p, er: e.target.value }))} />
+                            : money(c.employerShare)}
+                        </td>
+                        <td className="px-4 py-3">{editingRow ? money(liveTotal) : money(c.totalContribution)}</td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-1">
+                            {editingRow ? (
+                              <>
+                                <button onClick={() => saveEdit(c)} title="Save" className="p-2 text-green-600 hover:bg-green-50 rounded-lg"><Check size={17} /></button>
+                                <button onClick={() => setEditKey(null)} title="Cancel" className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg"><X size={17} /></button>
+                              </>
+                            ) : (
+                              <>
+                                {canEdit && (
+                                  <button onClick={(e) => { e.stopPropagation(); startEdit(c, key); }}
+                                    title="Edit shares" className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 size={17} /></button>
+                                )}
+                                {canDelete && c.id && (
+                                  <button onClick={(e) => { e.stopPropagation(); remove(c); }}
+                                    title="Delete (standard agencies go back to the bracket amount)"
+                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={17} /></button>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </React.Fragment>
               );
             })}
