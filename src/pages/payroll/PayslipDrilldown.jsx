@@ -171,12 +171,19 @@ const PayslipDrilldown = ({ payslipId, onClose }) => {
   const lates = sumNegativeByName('lates');
   const absences = sumNegativeByName('absence');
 
+  const isAllowance = (e) =>
+    e.category === 'ALLOWANCE' || (e.payTypeName || '').toLowerCase().includes('allowance');
+  const allowanceTotal = (slip.earnings || [])
+    .filter(isAllowance)
+    .reduce((sum, e) => sum + Number(e.amount || 0), 0);
+
   const reimbursementTotal = (slip.earnings || [])
     .filter(e => (e.payTypeName || '').toLowerCase().includes('reimburse'))
     .reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
   const earnings = [
     { label: 'BASIC SALARY', amount: slip.basicPay },
+    { label: 'ALLOWANCE', amount: allowanceTotal },
     { label: '13TH MONTH PAY', amount: thirteen ? thirteen.amount : 0 },
     { label: 'OVERTIME', amount: overtimeEarning ? overtimeEarning.amount : 0 },
     { label: 'UNDERTIME', amount: undertime },
@@ -186,7 +193,7 @@ const PayslipDrilldown = ({ payslipId, onClose }) => {
     ...(slip.earnings || [])
       .filter(e => {
         const t = (e.payTypeName || '').toLowerCase();
-        return !(t.includes('13th') || t.includes('overtime') || t.includes('reimburse'));
+        return !(t.includes('13th') || t.includes('overtime') || t.includes('reimburse') || isAllowance(e)); F
       })
       .map(e => ({ label: (e.payTypeName || '').toUpperCase(), amount: e.amount })),
   ];
