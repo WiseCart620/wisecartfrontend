@@ -3,6 +3,8 @@ import { Plus, Trash2, ChevronDown, ChevronRight, Search, RefreshCw } from 'luci
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { inputCls, Field, Modal, MoneyInput } from './Shared';
+import SearchableSelect from './SearchableSelect';
+import EmployeeAvatar from './EmployeeAvatar';
 
 const thisYear = new Date().getFullYear();
 
@@ -19,6 +21,7 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
   useEffect(() => { load(); }, [year]);
 
   const currentYear = new Date().getFullYear();
+  const photoOf = Object.fromEntries((employees || []).map(e => [e.employeeId, e.photoUrl]));
 
   const hasRows = items.length > 0;
 
@@ -144,10 +147,14 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
           </div>
         </Field>
         <Field label="Leave Type">
-          <select className={inputCls} value={leaveTypeFilter} onChange={(e) => setLeaveTypeFilter(e.target.value)}>
-            <option value="ALL">All leave types</option>
-            {leaveTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
+          <SearchableSelect
+            allLabel="All leave types"
+            placeholder="All leave types"
+            searchPlaceholder="Search leave type..."
+            value={leaveTypeFilter === 'ALL' ? '' : leaveTypeFilter}
+            options={leaveTypeOptions.map(t => ({ value: t, label: t }))}
+            onChange={(v) => setLeaveTypeFilter(v || 'ALL')}
+          />
         </Field>
         <Field label="Year">
           <input type="number" className={inputCls} value={year} onChange={(e) => setYear(Number(e.target.value))} />
@@ -212,6 +219,7 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
                     <td className="px-4 py-3 font-semibold text-gray-900">
                       <div className="flex items-center gap-2">
                         {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        <EmployeeAvatar name={g.employeeName} photoUrl={photoOf[g.employeeId]} />
                         {g.employeeName}
                       </div>
                     </td>
@@ -256,20 +264,26 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
         <Modal title={`Grant Leave (${year})`} onClose={() => setShow(false)} maxW="max-w-lg">
           <form onSubmit={submit} className="grid grid-cols-2 gap-4">
             <Field label="Employee" className="col-span-2">
-              <select className={inputCls} value={form.employeeId} onChange={(e) => setForm(p => ({ ...p, employeeId: e.target.value }))}>
-                <option value="">All active employees</option>
-                {employees.map(e => <option key={e.employeeId} value={e.employeeId}>{e.fullName}</option>)}
-              </select>
+              <SearchableSelect
+                allLabel="All active employees"
+                placeholder="All active employees"
+                searchPlaceholder="Search employee..."
+                value={form.employeeId}
+                options={employees.map(e => ({ value: String(e.employeeId), label: e.fullName }))}
+                onChange={(v) => setForm(p => ({ ...p, employeeId: v }))}
+              />
             </Field>
             <Field label="Leave Type" required className="col-span-2">
-              <select className={inputCls} value={form.leaveTypeId} onChange={(e) => setForm(p => ({ ...p, leaveTypeId: e.target.value }))}>
-                <option value="">Select...</option>
-                {leaveTypes.map(t => (
-                  <option key={t.leaveTypeId} value={t.leaveTypeId}>
-                    {t.leaveTypeName} (probi {t.probationaryMonthly ?? 0.5}/mo, regular {t.regularMonthly ?? 1}/mo)
-                  </option>
-                ))}
-              </select>
+              <SearchableSelect
+                placeholder="Select leave type..."
+                searchPlaceholder="Search leave type..."
+                value={form.leaveTypeId}
+                options={leaveTypes.map(t => ({
+                  value: String(t.leaveTypeId),
+                  label: `${t.leaveTypeName} (probi ${t.probationaryMonthly ?? 0.5}/mo, regular ${t.regularMonthly ?? 1}/mo)`,
+                }))}
+                onChange={(v) => setForm(p => ({ ...p, leaveTypeId: v }))}
+              />
             </Field>
             <Field label="Days granted (0 = do not change accrual)" required>
               <MoneyInput className={inputCls}

@@ -3,6 +3,8 @@ import { Plus, Check, X as XIcon, Ban, Trash2, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { inputCls, today, Field, Modal, MoneyInput } from './Shared';
+import SearchableSelect from './SearchableSelect';
+import EmployeeAvatar from './EmployeeAvatar';
 
 const STATUS = {
   PENDING: 'bg-yellow-100 text-yellow-800',
@@ -51,6 +53,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
   }, [items, search]);
 
   const set = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
+  const photoOf = Object.fromEntries((employees || []).map(e => [e.employeeId, e.photoUrl]));
 
   const submit = async (e) => {
     e.preventDefault();
@@ -107,10 +110,13 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
           </div>
         </Field>
         <Field label="Status">
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={inputCls}>
-            <option value="">All statuses</option>
-            {Object.keys(STATUS).map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <SearchableSelect
+            allLabel="All statuses"
+            typeable={false}
+            value={statusFilter}
+            options={Object.keys(STATUS).map(s => ({ value: s, label: s }))}
+            onChange={(v) => setStatusFilter(v)}
+          />
         </Field>
         {canCreate && (
           <button onClick={() => { setForm(EMPTY); setShow(true); }}
@@ -137,7 +143,12 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
               <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">No leave requests</td></tr>
             ) : filtered.map(t => (
               <tr key={t.id} className="text-sm hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-gray-900">{t.employeeName}</td>
+                <td className="px-4 py-3 font-medium text-gray-900">
+                  <div className="flex items-center gap-2">
+                    <EmployeeAvatar name={t.employeeName} photoUrl={photoOf[t.employeeId]} />
+                    {t.employeeName}
+                  </div>
+                </td>
                 <td className="px-4 py-3">{t.leaveTypeName}</td>
                 <td className="px-4 py-3">{t.dateFrom}</td>
                 <td className="px-4 py-3">{t.dateTo}</td>
@@ -169,16 +180,22 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
         <Modal title="File Leave" onClose={() => setShow(false)} maxW="max-w-lg">
           <form onSubmit={submit} className="grid grid-cols-2 gap-4">
             <Field label="Employee" required className="col-span-2">
-              <select className={inputCls} value={form.employeeId} onChange={set('employeeId')}>
-                <option value="">Select...</option>
-                {employees.map(e => <option key={e.employeeId} value={e.employeeId}>{e.fullName}</option>)}
-              </select>
+              <SearchableSelect
+                placeholder="Select employee..."
+                searchPlaceholder="Search employee..."
+                value={form.employeeId}
+                options={employees.map(e => ({ value: String(e.employeeId), label: e.fullName }))}
+                onChange={(v) => setForm(p => ({ ...p, employeeId: v }))}
+              />
             </Field>
             <Field label="Leave Type" required className="col-span-2">
-              <select className={inputCls} value={form.leaveTypeId} onChange={set('leaveTypeId')}>
-                <option value="">Select...</option>
-                {leaveTypes.map(t => <option key={t.leaveTypeId} value={t.leaveTypeId}>{t.leaveTypeName}</option>)}
-              </select>
+              <SearchableSelect
+                placeholder="Select leave type..."
+                searchPlaceholder="Search leave type..."
+                value={form.leaveTypeId}
+                options={leaveTypes.map(t => ({ value: String(t.leaveTypeId), label: t.leaveTypeName }))}
+                onChange={(v) => setForm(p => ({ ...p, leaveTypeId: v }))}
+              />
             </Field>
             <Field label="From" required><input type="date" className={inputCls} value={form.dateFrom} onChange={set('dateFrom')} /></Field>
             <Field label="To" required><input type="date" className={inputCls} value={form.dateTo} onChange={set('dateTo')} /></Field>

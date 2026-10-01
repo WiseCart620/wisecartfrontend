@@ -23,7 +23,7 @@ const payrollSubItems = [
   { to: '/leave', label: 'Leave', icon: CalendarDays },
   { to: '/tax-statutory', label: 'Tax & Statutory', icon: Percent },
   { to: '/payroll-runs', label: 'Payroll Runs', icon: Wallet },
-  { to: '/year-end', label: 'Year-End & Disbursement', icon: Gift },
+  { to: '/year-end', label: 'Year-End', icon: Gift },
 ];
 
 const dataEntryItems = [
