@@ -46,7 +46,7 @@ const LoansAndBenefits = () => {
       <Toaster position="top-right" />
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Loans & Benefits</h1>
-        <p className="text-gray-600 mt-1">Employee loans, cash advances, HMO and government agencies</p>
+        <p className="text-gray-600 mt-1">Employee loans, cash advances, HMO and government agencies.</p>
       </div>
 
       <div className="flex gap-1 border-b border-gray-200 mb-6">
