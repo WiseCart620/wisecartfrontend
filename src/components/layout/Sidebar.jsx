@@ -19,7 +19,7 @@ const allMainMenuItems = [
 const payrollSubItems = [
   { to: '/employees', label: 'Employees', icon: Briefcase },
   { to: '/pay-types', label: 'Pay Types', icon: Coins },
-  { to: '/loans-benefits', label: 'Loans & Benefits', icon: Landmark },
+  { to: '/loans-benefits', label: 'Loans & Other Deductions', icon: Landmark },
   { to: '/leave', label: 'Leave', icon: CalendarDays },
   { to: '/tax-statutory', label: 'Tax & Statutory', icon: Percent },
   { to: '/payroll-runs', label: 'Payroll Runs', icon: Wallet },

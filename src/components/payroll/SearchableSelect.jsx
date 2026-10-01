@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
 import { inputCls } from './Shared';
 
@@ -9,6 +10,7 @@ const SearchableSelect = ({
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState(null); // null = not typing, show the selected label
   const [hi, setHi] = useState(0);
+  const [rect, setRect] = useState(null);
   const ref = useRef(null);
   const inputRef = useRef(null);
   const listRef = useRef(null);
@@ -31,6 +33,33 @@ const SearchableSelect = ({
     const el = listRef.current.children[hi];
     if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
   }, [hi, open]);
+
+  // keep the floating panel anchored to the field
+  useEffect(() => {
+    if (!open) return;
+    const update = () => { if (ref.current) setRect(ref.current.getBoundingClientRect()); };
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
+  }, [open]);
+
+  const panelStyle = (() => {
+    if (!rect) return { display: 'none' };
+    const below = window.innerHeight - rect.bottom;
+    const flip = below < 250 && rect.top > below; // open upward when there's no room below
+    return {
+      position: 'fixed',
+      left: rect.left,
+      width: rect.width,
+      minWidth: 200,
+      ...(flip ? { bottom: window.innerHeight - rect.top + 4 } : { top: rect.bottom + 4 }),
+    };
+  })();
+  const panelCls = 'z-[100] max-h-60 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-xl py-1';
 
   const close = (commit) => {
     if (commit && allowCustom && q !== null && q.trim() && q.trim() !== display) {
@@ -85,8 +114,8 @@ const SearchableSelect = ({
           </span>
           <ChevronDown size={16} className={`flex-shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
-        {open && !disabled && (
-          <ul className="absolute z-50 mt-1 w-full min-w-[200px] max-h-60 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-xl py-1">
+        {open && !disabled && createPortal(
+          <ul style={panelStyle} className={panelCls}>
             {all.map(o => {
               const active = String(o.value) === String(value);
               return (
@@ -104,7 +133,8 @@ const SearchableSelect = ({
               );
             })}
             {!all.length && <li className="px-3 py-4 text-sm text-center text-gray-500">No results</li>}
-          </ul>
+          </ul>,
+          document.body
         )}
       </div>
     );
@@ -143,11 +173,8 @@ const SearchableSelect = ({
         <ChevronDown size={16} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
-      {open && !disabled && (
-        <ul
-          ref={listRef}
-          className="absolute z-50 mt-1 w-full min-w-[200px] max-h-60 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-xl py-1"
-        >
+      {open && !disabled && createPortal(
+        <ul ref={listRef} style={panelStyle} className={panelCls}>
           {shown.map((o, idx) => {
             const active = String(o.value) === String(value);
             return (
@@ -182,7 +209,8 @@ const SearchableSelect = ({
           {!shown.length && !canUseCustom && (
             <li className="px-3 py-4 text-sm text-center text-gray-500">No results</li>
           )}
-        </ul>
+        </ul>,
+        document.body
       )}
     </div>
   );

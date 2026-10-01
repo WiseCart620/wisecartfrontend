@@ -10,16 +10,14 @@
 .ps-sheet {
     --ps-border: #111;
     --ps-red: #c00000;
-    --ps-band: #e9edf2;
-    --ps-highlight: #dbe8f7;
 
     display: grid;
-    grid-template-columns: 1fr 250px;
+    grid-template-columns: 1fr;
     min-width: 860px;
     border: 1.5px solid var(--ps-border);
     background: #fff;
     color: #111;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: Calibri, 'Segoe UI', Arial, Helvetica, sans-serif;
     font-size: 11px;
     line-height: 1.25;
 }
@@ -28,68 +26,85 @@
     color: var(--ps-red);
 }
 
-/* ---------- headers ---------- */
-.ps-head {
-    text-align: center;
-    padding: 8px 8px 6px;
-}
-
-.ps-company {
-    font-weight: 700;
-    font-size: 11px;
-    letter-spacing: 0.02em;
-}
-
-.ps-period {
-    font-weight: 700;
-    font-size: 10.5px;
-    margin-top: 1px;
-}
-
-.ps-title {
-    font-weight: 700;
-    font-size: 10.5px;
-    letter-spacing: 0.15em;
-    margin-top: 1px;
-}
-
-/* ---------- main (left) ---------- */
 .ps-main {
-    border-right: 1.5px solid var(--ps-border);
     display: flex;
     flex-direction: column;
 }
 
-.ps-employee {
+.ps-head-main {
     display: flex;
-    align-items: center;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 14px 14px 10px;
+}
+
+.ps-brand {
+    display: flex;
+    align-items: flex-start;
     gap: 8px;
-    padding: 6px 8px;
-    background: var(--ps-highlight);
-    border-top: 1px solid var(--ps-border);
-    font-weight: 700;
-    font-size: 10.5px;
-}
-
-.ps-emp-name {
-    flex: 0 1 260px;
     min-width: 0;
-    padding: 0 6px 1px;
-    border-bottom: 1px solid var(--ps-border);
-    text-align: center;
 }
 
+.ps-logo-img {
+    flex: 0 0 auto;
+    height: 66px;
+    width: auto;
+    object-fit: contain;
+}
+
+.ps-company {
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.ps-address {
+    margin-top: 2px;
+    max-width: 240px;
+    font-size: 8.5px;
+    line-height: 1.3;
+}
+
+.ps-head-right {
+    flex: 0 0 auto;
+    text-align: left;
+}
+
+.ps-title {
+    font-weight: 800;
+    font-size: 26px;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    margin: 0 0 4px;
+}
+
+.ps-period,
+.ps-meta {
+    font-size: 10px;
+    font-weight: 400;
+    margin-top: 1px;
+}
+
+.ps-employee {
+    padding: 4px 12px 8px;
+    font-size: 11px;
+}
+
+.ps-employee>div {
+    margin-top: 2px;
+}
+
+.ps-emp-label,
+.ps-emp-name,
 .ps-emp-role {
-    margin-left: auto;
-    padding-right: 4px;
+    font-weight: 400;
 }
 
-/* ---------- table ---------- */
 .ps-table {
     width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
-    border-top: 1.5px solid var(--ps-border);
+    border-top: 1px solid var(--ps-border);
 }
 
 .ps-c-desc {
@@ -102,9 +117,8 @@
 
 .ps-table th,
 .ps-table td {
-    border: 1px solid var(--ps-border);
-    padding: 3px 6px;
-    min-height: 20px;
+    border: 0;
+    padding: 2px 6px;
     vertical-align: middle;
     overflow: visible;
     white-space: normal;
@@ -113,7 +127,10 @@
     line-height: 1.15;
 }
 
-/* Long labels shrink to fit instead of truncating */
+.ps-table tbody td {
+    height: 22px;
+}
+
 .ps-table td.long-label,
 .ps-table th.long-label {
     font-size: 8.5px;
@@ -123,186 +140,142 @@
 .ps-table thead th {
     text-align: center;
     font-weight: 700;
-    font-size: 10.5px;
-    letter-spacing: 0.06em;
-    background: var(--ps-band);
+    font-size: 11px;
+    background: #fff;
+    border-bottom: 1px solid var(--ps-border);
 }
 
 .ps-table thead .ps-sub th {
-    font-weight: 600;
+    font-weight: 400;
     font-size: 10px;
-    letter-spacing: 0;
-    background: #fff;
 }
 
-.ps-table th:first-child,
-.ps-table td:first-child {
-    border-left: 0;
-}
-
-.ps-table th:last-child,
-.ps-table td:last-child {
-    border-right: 0;
+.ps-table thead tr:first-child th+th,
+.ps-table thead .ps-sub th:nth-child(3),
+.ps-table thead .ps-sub th:nth-child(5),
+.ps-table tbody td:nth-child(3),
+.ps-table tbody td:nth-child(5),
+.ps-table tfoot td:nth-child(3),
+.ps-table tfoot td:nth-child(5) {
+    border-left: 1px solid var(--ps-border);
 }
 
 .ps-num {
     text-align: right;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
 }
 
 .ps-band {
     text-align: center;
     font-weight: 700;
-    font-size: 10px;
-    letter-spacing: 0.06em;
-    background: var(--ps-band);
+    font-size: 10.5px;
+    background: #fff;
 }
 
 .ps-total td {
     font-weight: 700;
-    border-top: 1.5px solid var(--ps-border);
-    background: #f6f7f9;
+    font-size: 11px;
+    padding: 8px 6px;
+    background: #fff;
+    border-top: 1px solid var(--ps-border);
 }
 
-/* ---------- footer of left column ---------- */
 .ps-foot {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    gap: 16px;
-    padding: 8px 10px 10px;
-    border-top: 1px solid var(--ps-border);
+    padding: 8px 10px 4px;
     margin-top: auto;
 }
 
 .ps-disclaimer {
-    flex: 1;
-    font-size: 8px;
-    line-height: 1.3;
-    color: #333;
-}
-
-.ps-disclaimer p {
-    margin: 0 0 2px;
-}
-
-.ps-certify {
-    position: relative;
-    width: 200px;
-    text-align: center;
-}
-
-.ps-sign-img {
-    position: absolute;
-    left: 50%;
-    bottom: 13px;
-    transform: translateX(-50%);
-    max-height: 28px;
-    max-width: 120px;
-    object-fit: contain;
-    pointer-events: none;
-}
-
-.ps-certify-label {
-    text-align: left;
-    font-size: 10px;
-    margin-bottom: 22px;
-}
-
-.ps-sign-line {
-    border-top: 1px solid var(--ps-border);
-    padding-top: 2px;
-    font-weight: 700;
-    font-size: 10px;
-}
-
-/* ---------- side (right) ---------- */
-.ps-side {
-    display: flex;
-    flex-direction: column;
-}
-
-.ps-side-head {
-    border-bottom: 1.5px solid var(--ps-border);
-    padding-bottom: 8px;
-}
-
-.ps-ack-title {
-    text-align: center;
-    font-weight: 700;
-    font-size: 10.5px;
-    letter-spacing: 0.04em;
-    padding: 5px 4px;
-    background: var(--ps-band);
-    border-bottom: 1px solid var(--ps-border);
-}
-
-.ps-ack-body {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 10px 12px 8px;
-}
-
-.ps-ack-name {
-    text-align: center;
-    font-weight: 700;
-    font-size: 10.5px;
-}
-
-.ps-ack-role {
-    text-align: center;
-    font-size: 9.5px;
-    color: #444;
-    margin-top: 1px;
-}
-
-.ps-ack-net {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 26px;
-    font-weight: 700;
-    font-size: 10.5px;
-}
-
-.ps-ack-received {
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    margin-top: auto;
-    padding-top: 24px;
-}
-
-.ps-ack-received-label {
-    font-weight: 700;
-    font-size: 10px;
-    white-space: nowrap;
-}
-
-.ps-ack-received-name {
-    flex: 1;
-    text-align: center;
-    min-width: 0;
-}
-
-.ps-ack-line {
-    border-bottom: 1px solid var(--ps-border);
-    font-weight: 700;
-    font-size: 9.5px;
-    padding-bottom: 2px;
-    white-space: normal;
-    word-break: break-word;
-}
-
-.ps-ack-caption {
     font-size: 8.5px;
-    color: #333;
-    margin-top: 2px;
+    line-height: 1.3;
+    color: #111;
+    text-align: center;
+    border: 1px solid var(--ps-border);
+    padding: 6px 8px;
 }
 
 .ps-ack-date {
-    margin-top: 10px;
+    padding: 2px 12px 10px;
     font-size: 10px;
+}
+
+/* ---------- uniform sizes: body one size, header bigger ---------- */
+.ps-address,
+.ps-period,
+.ps-meta,
+.ps-employee,
+.ps-table th,
+.ps-table td,
+.ps-table thead th,
+.ps-table thead .ps-sub th,
+.ps-table td.long-label,
+.ps-table th.long-label,
+.ps-total td,
+.ps-band,
+.ps-disclaimer,
+.ps-ack-date {
+    font-size: 13px;
+    letter-spacing: normal;
+}
+
+.ps-company {
+    font-size: 24px;
+}
+
+.ps-title {
+    font-size: 40px;
+}
+
+.ps-address {
+    max-width: 380px;
+}
+
+/* header layout: left block and right block bottom-aligned */
+.ps-head-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 16px;
+}
+
+.ps-left {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 16px;
+    min-width: 0;
+}
+
+.ps-right {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: 0 0 auto;
+}
+
+.ps-right-meta {
+    margin-top: auto;
+}
+
+.ps-employee,
+.ps-right-meta {
+    padding: 0;
+}
+
+.ps-employee>div,
+.ps-right-meta>div {
+    margin-top: 0;
+    line-height: 1.6;
+}
+
+/* "nothing follows" marker */
+.ps-table td.ps-nothing {
+    text-align: center;
+    white-space: nowrap;
+    font-style: italic;
+    color: #444;
+    letter-spacing: 0.02em;
 }
 
 /* =====================================================
@@ -318,7 +291,6 @@
         background: #fff !important;
     }
 
-    /* hide everything except the payslip */
     body * {
         visibility: hidden !important;
     }
@@ -369,26 +341,34 @@
     .ps-table th,
     .ps-table td {
         padding: 2px 5px;
-        min-height: 16px;
         height: auto;
     }
 
-    .ps-table td.long-label {
-        font-size: 7.5px;
+    .ps-table tbody td {
+        height: 16px;
     }
 
-    .ps-sign-img {
-        max-height: 26px;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
+    .ps-sheet .ps-address,
+    .ps-sheet .ps-period,
+    .ps-sheet .ps-meta,
+    .ps-sheet .ps-employee,
+    .ps-sheet .ps-table th,
+    .ps-sheet .ps-table td,
+    .ps-sheet .ps-table td.long-label,
+    .ps-sheet .ps-disclaimer,
+    .ps-sheet .ps-ack-date {
+        font-size: 10.5px;
     }
 
-    .ps-employee,
-    .ps-band,
-    .ps-ack-title,
-    .ps-table thead th,
-    .ps-total td {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
+    .ps-sheet .ps-company {
+        font-size: 19px;
+    }
+
+    .ps-sheet .ps-title {
+        font-size: 32px;
+    }
+
+    .ps-sheet .ps-logo-img {
+        height: 56px;
     }
 }

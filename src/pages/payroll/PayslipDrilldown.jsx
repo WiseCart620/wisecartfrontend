@@ -8,6 +8,8 @@ import '../../styles/payslip-print.css';
 // ---------- company config ----------
 const COMPANY_NAME = 'WISECART MERCHANTS CORP.';
 const FINANCE_OFFICER = 'PEARL HANNA SALAN';
+const COMPANY_ADDRESS = 'Unit D, 8/F, Tower One Plaza Magellan, The Mactan Newtown, Mactan, Lapu-Lapu City, Cebu, Philippines';
+const LOGO_URL = '/WISECART%20Logo%20(2).png';
 
 // ---------- helpers ----------
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
@@ -39,7 +41,7 @@ const peso = (n) =>
 
 const classify = (type = '') => {
   const t = type.toLowerCase();
-  if (t.includes('cash advance')) return 'cashAdvance';
+  if (t === 'cash advance' || t === 'loan - cash advance') return 'cashAdvance';
   if (t.includes('hmo')) return 'hmo';
   if (t.includes(' - ')) {
     const hdmf = t.includes('hdmf') || t.includes('pag-ibig') || t.includes('pagibig');
@@ -140,11 +142,12 @@ const PayslipDrilldown = ({ payslipId, onClose }) => {
   );
   if (!slip) return null;
 
-  // ---------- build rows ----------
-  const name = (slip.employeeName || '').toUpperCase();
+  const name = slip.employeeName || '';
   const designation = (slip.designation || slip.department || '').toUpperCase();
   const period = fmtRange(slip.periodStart || slip.payPeriod, slip.periodEnd || slip.payPeriod);
   const today = new Date().toLocaleDateString('en-US');
+  const idNo = slip.employeeNumber || '';
+  const dept = (slip.department || '').toUpperCase();
 
   // Pull out the earnings that have dedicated rows so they don't duplicate below
   const earningByName = (needle) =>
@@ -272,16 +275,28 @@ const PayslipDrilldown = ({ payslipId, onClose }) => {
           <div className="ps-sheet">
             {/* ================= LEFT: PAYSLIP ================= */}
             <div className="ps-main">
-              <div className="ps-head">
-                <div className="ps-company">{COMPANY_NAME}</div>
-                <div className="ps-period">CUT-OFF PERIOD {period}</div>
-                <div className="ps-title">P A Y S L I P</div>
-              </div>
-
-              <div className="ps-employee">
-                <span className="ps-emp-label">NAME OF EMPLOYEE:</span>
-                <span className="ps-emp-name">{name}</span>
-                <span className="ps-emp-role">{designation}</span>
+              <div className="ps-head-main">
+                <div className="ps-left">
+                  <div className="ps-brand">
+                    <img src={LOGO_URL} alt="WiseCart" className="ps-logo-img" />
+                    <div>
+                      <div className="ps-company">{COMPANY_NAME}</div>
+                      <div className="ps-address">{COMPANY_ADDRESS}</div>
+                    </div>
+                  </div>
+                  <div className="ps-employee">
+                    <div><span className="ps-emp-label">NAME OF EMPLOYEE:</span> <span className="ps-emp-name">{name}</span></div>
+                    <div><span className="ps-emp-label">POSITION:</span> <span className="ps-emp-role">{designation}</span></div>
+                  </div>
+                </div>
+                <div className="ps-right">
+                  <div className="ps-title">PAYSLIP</div>
+                  <div className="ps-right-meta">
+                    <div className="ps-period">CUT-OFF PERIOD {period}</div>
+                    {idNo !== '' && <div className="ps-meta">ID NO.: {idNo}</div>}
+                    {dept && <div className="ps-meta">DEPARTMENT: {dept}</div>}
+                  </div>
+                </div>
               </div>
 
               <table className="ps-table">
@@ -307,25 +322,26 @@ const PayslipDrilldown = ({ payslipId, onClose }) => {
                     const e = earnings[i];
                     const d = deductions[i];
                     const a = advances[i];
+                    const NOTHING = '*** NOTHING FOLLOWS ***';
+                    const cls = (item, list) =>
+                      item
+                        ? ((item.label || '').length > 18 ? 'long-label' : '')
+                        : (i === list.length ? 'ps-nothing' : '');
+                    const txt = (item, list) =>
+                      item ? item.label : (i === list.length ? NOTHING : '');
                     return (
                       <tr key={i}>
-                        <td className={e && (e.label || '').length > 18 ? 'long-label' : ''}>
-                          {e ? e.label : ''}
-                        </td>
+                        <td className={cls(e, earnings)}>{txt(e, earnings)}</td>
                         <td className="ps-num">{e ? amt(e.amount) : ''}</td>
 
-                        <td className={d && (d.label || '').length > 18 ? 'long-label' : ''}>
-                          {d ? d.label : ''}
-                        </td>
+                        <td className={cls(d, deductions)}>{txt(d, deductions)}</td>
                         <td className="ps-num">{d ? amt(d.amount) : ''}</td>
 
                         {a && a.header ? (
                           <td colSpan={2} className="ps-band">{a.header}</td>
                         ) : (
                           <>
-                            <td className={a && (a.label || '').length > 18 ? 'long-label' : ''}>
-                              {a ? a.label : ''}
-                            </td>
+                            <td className={cls(a, advances)}>{txt(a, advances)}</td>
                             <td className="ps-num">{a ? a.amount : ''}</td>
                           </>
                         )}
@@ -347,52 +363,11 @@ const PayslipDrilldown = ({ payslipId, onClose }) => {
 
               <div className="ps-foot">
                 <div className="ps-disclaimer">
-                  <p>
-                    This statement constitutes a record of your earnings and deductions. Please report any
-                    discrepancies. Actual pay out of salaries is still based on the schedule of release and
-                    does not coincide with the issuance of this pay slip.
-                  </p>
-                  <p>For any further question ask accounting department.</p>
-                </div>
-                <div className="ps-certify">
-                  <div className="ps-certify-label">Certified Correct:</div>
-                  {signature && (
-                    <img src={signature} alt="Signature" className="ps-sign-img" />
-                  )}
-                  <div className="ps-sign-line">{FINANCE_OFFICER}</div>
+                  This payslip is generated for payroll record purposes. Please review the details above and report any discrepancy to the Finance Officer.
                 </div>
               </div>
-            </div>
 
-            {/* ================= RIGHT: ACKNOWLEDGEMENT ================= */}
-            <div className="ps-side">
-              <div className="ps-head ps-side-head">
-                <div className="ps-company">{COMPANY_NAME}</div>
-                <div className="ps-period ps-red">CUT-OFF PERIOD</div>
-                <div className="ps-title">P A Y S L I P</div>
-              </div>
-
-              <div className="ps-ack-title">ACKNOWLEDGEMENT<br />RECEIPT</div>
-
-              <div className="ps-ack-body">
-                <div className="ps-ack-name">{name}</div>
-                <div className="ps-ack-role">{designation}</div>
-
-                <div className="ps-ack-net">
-                  <span>Net Amount:</span>
-                  <span className="ps-red">&#8369; {peso(slip.netPay)}</span>
-                </div>
-
-                <div className="ps-ack-received">
-                  <span className="ps-ack-received-label">Received By:</span>
-                  <div className="ps-ack-received-name">
-                    <div className="ps-ack-line">{name}</div>
-                    <div className="ps-ack-caption">Signature over Printed Name</div>
-                  </div>
-                </div>
-
-                <div className="ps-ack-date">Date: {today}</div>
-              </div>
+              <div className="ps-ack-date">Date: {today}</div>
             </div>
           </div>
         </div>

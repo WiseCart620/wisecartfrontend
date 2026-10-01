@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Wallet, Ban, Paperclip, Eye, Edit2 } from 'lucide-react';
+import { Plus, Wallet, Ban, Paperclip, Eye, Edit2, CheckCircle, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
+import { useAuth, can } from '../../context/AuthContext';
 import { inputCls, money, today, Field, Modal, STATUS_STYLE, MoneyInput } from './Shared';
 import SearchableSelect from './SearchableSelect';
 import EmployeeAvatar from './EmployeeAvatar';
@@ -10,13 +11,25 @@ const TYPE_LABEL = { ONE_TIME: 'One-time', RECURRING: 'Recurring' };
 const SCHEDULE_LABEL = { SPLIT: 'Split (15th & 30th)', FIRST_CUTOFF: '15th only', SECOND_CUTOFF: '30th only' };
 const EMPTY = {
   employeeId: '', amount: '', purpose: '', advanceType: 'ONE_TIME',
-  dateReleased: today(), startTerm: today(), endTerm: '', monthlyDeduction: '',
-  deductionSchedule: 'SPLIT', approvedBy: '',
+  dateReleased: today(), endTerm: '',
 };
+const OPEN_END = '2099-12-31';
+const OPEN_START = '2000-01-01';
+const isOpenStart = (d) => !d || d <= '2000-01-01';
+const isOpen = (d) => !d || d >= '2099-01-01';
 
 const serveUrl = (path) => `/files/serve?path=${encodeURIComponent(path)}`;
 const fmtDate = (d) =>
   d ? new Date(d + 'T00:00:00').toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) : '—';
+const fmtShort = (d) =>
+  d ? new Date(d + 'T00:00:00').toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+const STATUS_BADGE = {
+  PENDING: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+  ACTIVE: 'bg-green-50 text-green-700 ring-1 ring-green-200',
+  PAID: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200',
+  CANCELLED: 'bg-gray-100 text-gray-600 ring-1 ring-gray-200',
+};
+const STATUS_LABEL = { PENDING: 'Pending', ACTIVE: 'Active', PAID: 'Paid', CANCELLED: 'Cancelled' };
 const monthDiff = (a, b) => {
   const x = new Date(a + 'T00:00:00');
   const y = new Date(b + 'T00:00:00');
@@ -42,6 +55,8 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
   const [editing, setEditing] = useState(null);
   const [viewFor, setViewFor] = useState(null);
   const [payments, setPayments] = useState([]);
+  const { user } = useAuth();
+  const canApprove = can(user, 'employees', 'ca_approve');
   const [filters, setFilters] = useState({ search: '', status: '', type: '' });
 
   useEffect(() => { load(); }, []);
@@ -73,19 +88,9 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
     await loadPayments(item.id);
   };
 
-  // recurring with an end date: monthly deduction = amount / months (auto)
-  const update = (patch) => setForm(p => {
-    const n = { ...p, ...patch };
-    if (n.advanceType === 'RECURRING' && n.endTerm) {
-      const months = monthsBetween(n.startTerm, n.endTerm);
-      const amt = Number(n.amount);
-      if (months > 0 && amt > 0) n.monthlyDeduction = (amt / months).toFixed(2);
-    }
-    return n;
-  });
+  const update = (patch) => setForm(p => ({ ...p, ...patch }));
   const set = (k) => (e) => update({ [k]: e.target.value });
   const recurring = form.advanceType === 'RECURRING';
-  const autoMonthly = recurring && !!form.endTerm;
 
   const openAdd = () => { setEditing(null); setForm(EMPTY); setFile(null); setShowForm(true); };
 
@@ -98,11 +103,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
       purpose: i.purpose || '',
       advanceType: i.advanceType || 'ONE_TIME',
       dateReleased: i.dateReleased || today(),
-      startTerm: i.startTerm || today(),
-      endTerm: i.advanceType === 'RECURRING' ? (i.endTerm || '') : '',
-      monthlyDeduction: i.amortization != null ? Number(i.amortization).toFixed(2) : '',
-      deductionSchedule: i.deductionSchedule || 'SPLIT',
-      approvedBy: i.approvedBy || '',
+      endTerm: i.advanceType === 'RECURRING' && !isOpen(i.endTerm) ? i.endTerm : '',
     });
     setShowForm(true);
   };
@@ -114,10 +115,9 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
       return;
     }
     if (!recurring && !form.dateReleased) { toast.error('Date released is required'); return; }
-    if (recurring) {
-      if (!form.startTerm) { toast.error('Start date is required'); return; }
-      if (form.endTerm && form.endTerm < form.startTerm) { toast.error('End date cannot be before the start date'); return; }
-      if (!(Number(form.monthlyDeduction) > 0)) { toast.error('Monthly deduction is required'); return; }
+    if (recurring && form.endTerm && form.endTerm < today()) {
+      toast.error('End date cannot be in the past');
+      return;
     }
     setSaving(true);
     try {
@@ -131,20 +131,19 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
         docPath = up.data?.fileUrl || null;
       }
       const amount = Number(form.amount);
-      const months = recurring && form.endTerm ? monthsBetween(form.startTerm, form.endTerm) : null;
+      const start = recurring ? OPEN_START : form.dateReleased;
+      const months = 1;
       const body = {
         employeeId: Number(form.employeeId),
         advanceType: form.advanceType,
         purpose: form.purpose.trim(),
         advanceAmount: amount,
-        // one-time: the whole amount is deducted in one go, starting from the release date
-        amortization: recurring ? Number(form.monthlyDeduction) : amount,
-        durationMonths: recurring ? months : 1,
+        amortization: amount,
+        durationMonths: months,
         dateReleased: recurring ? null : form.dateReleased,
-        startTerm: recurring ? form.startTerm : form.dateReleased,
-        endTerm: recurring ? (form.endTerm || null) : form.dateReleased,
-        deductionSchedule: form.deductionSchedule || 'SPLIT',
-        approvedBy: form.approvedBy.trim() || null,
+        startTerm: start,
+        endTerm: recurring ? (form.endTerm || OPEN_END) : form.dateReleased,
+        deductionSchedule: 'SPLIT',
         docReferrence: docPath ?? (editing ? editing.docReference || null : null),
       };
       const res = editing
@@ -164,6 +163,17 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
     }
   };
 
+  const approve = async (item) => {
+    if (!window.confirm(`Approve this cash advance for ${item.employeeName}? It will be deducted in payroll runs.`)) return;
+    try {
+      await api.patch(`/cash-advances/${item.id}/approve`);
+      toast.success('Cash advance approved');
+      load();
+    } catch (err) {
+      toast.error(err.message || 'Failed to approve');
+    }
+  };
+
   const cancel = async (item) => {
     if (!window.confirm(`Cancel this cash advance for ${item.employeeName}?`)) return;
     try {
@@ -172,6 +182,17 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
       load();
     } catch (err) {
       toast.error(err.message || 'Failed to cancel');
+    }
+  };
+
+  const remove = async (item) => {
+    if (!window.confirm(`Permanently delete this cancelled cash advance for ${item.employeeName}? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/cash-advances/${item.id}`);
+      toast.success('Cash advance deleted');
+      load();
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete');
     }
   };
 
@@ -202,7 +223,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
     ['Outstanding balance', money(sum('remainingBalance'))],
   ];
   const periodOf = (i) => i.advanceType === 'RECURRING'
-    ? `${i.startTerm} → ${i.endTerm || 'Open'}`
+    ? `${i.startTerm} → ${isOpen(i.endTerm) ? 'Open' : i.endTerm}`
     : `Released ${i.dateReleased || i.startTerm || '—'}`;
 
   return (
@@ -231,7 +252,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
           <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
           <SearchableSelect
             allLabel="All statuses" typeable={false} value={filters.status}
-            options={[{ value: 'ACTIVE', label: 'Active' }, { value: 'PAID', label: 'Paid' }, { value: 'CANCELLED', label: 'Cancelled' }]}
+            options={[{ value: 'PENDING', label: 'Pending approval' }, { value: 'ACTIVE', label: 'Active' }, { value: 'PAID', label: 'Paid' }, { value: 'CANCELLED', label: 'Cancelled' }]}
             onChange={(v) => setFilters(p => ({ ...p, status: v }))}
           />
         </div>
@@ -262,52 +283,81 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              {['Employee', 'Type', 'Purpose', 'Amount', 'Deduction', 'Schedule', 'Period', 'Paid', 'Balance', 'Status', 'Approved By', 'Document'].map(h => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
+              {['Employee', 'Type', 'Purpose', 'Amount', 'Period', 'Paid', 'Balance', 'Status'].map(h => (
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
               ))}
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {loading ? (
-              <tr><td colSpan="13" className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
+              <tr><td colSpan="9" className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan="13" className="px-4 py-8 text-center text-gray-500">
+              <tr><td colSpan="9" className="px-4 py-8 text-center text-gray-500">
                 {hasFilters ? 'No cash advances match the filters' : 'No records'}
               </td></tr>
             ) : filtered.map(i => (
               <tr key={i.id} className="hover:bg-gray-50 text-sm">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2 font-medium text-gray-900">
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <div className="flex items-center gap-3 font-medium text-gray-900">
                     <EmployeeAvatar name={i.employeeName} photoUrl={photoOf[i.employeeId]} />
                     {i.employeeName}
                   </div>
                 </td>
-                <td className="px-4 py-3">{TYPE_LABEL[i.advanceType] || '—'}</td>
-                <td className="px-4 py-3 text-gray-700 max-w-[200px] truncate" title={i.purpose}>{i.purpose || '—'}</td>
-                <td className="px-4 py-3">{money(i.amount)}</td>
-                <td className="px-4 py-3">{money(i.amortization)}</td>
-                <td className="px-4 py-3 text-xs text-gray-600">{SCHEDULE_LABEL[i.deductionSchedule] || i.deductionSchedule || '—'}</td>
-                <td className="px-4 py-3 text-xs text-gray-600">{periodOf(i)}</td>
-                <td className="px-4 py-3">{money(i.totalPaid)}</td>
-                <td className="px-4 py-3 font-medium">{money(i.remainingBalance)}</td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${STATUS_STYLE[i.status] || ''}`}>{i.status}</span>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${i.advanceType === 'RECURRING' ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200' : 'bg-gray-100 text-gray-700 ring-1 ring-gray-200'}`}>
+                    {TYPE_LABEL[i.advanceType] || '—'}
+                  </span>
                 </td>
-                <td className="px-4 py-3 text-gray-700">{i.approvedBy || '—'}</td>
-                <td className="px-4 py-3">
-                  {i.docReference && i.docReference.startsWith('contracts/')
-                    ? <button onClick={() => viewDoc(i.docReference)} className="inline-flex items-center gap-1 text-blue-600 hover:underline text-xs"><Paperclip size={14} /> View</button>
-                    : <span className="text-xs text-gray-500">{i.docReference || '—'}</span>}
+                <td className="px-4 py-3 text-gray-700 max-w-[180px] truncate" title={i.purpose}>{i.purpose || '—'}</td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <div className="font-medium text-gray-900">{money(i.amount)}</div>
+                  <div className="text-xs text-gray-500">
+                    {i.advanceType === 'RECURRING' ? 'per month' : 'within 1 month'} · {money(Number(i.amount || 0) / 2)} per cutoff
+                  </div>
                 </td>
-                <td className="px-4 py-3 text-right">
+                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">
+                  {i.advanceType === 'RECURRING' ? (
+                    <>
+                      <div>{isOpenStart(i.startTerm) ? 'Every payroll run' : fmtShort(i.startTerm)}</div>
+                      <div className="text-gray-400">to {isOpen(i.endTerm) ? 'Open' : fmtShort(i.endTerm)}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div>Released</div>
+                      <div className="text-gray-400">{fmtShort(i.dateReleased || i.startTerm)}</div>
+                    </>
+                  )}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap">{money(i.totalPaid)}</td>
+                <td className="px-4 py-3 whitespace-nowrap font-medium">
+                  {i.advanceType === 'RECURRING' ? <span className="text-gray-400">—</span> : money(i.remainingBalance)}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${STATUS_BADGE[i.status] || 'bg-gray-100 text-gray-700'}`}>
+                    {STATUS_LABEL[i.status] || i.status}
+                  </span>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {i.approvedBy ? `Approved by ${i.approvedBy}` : i.status === 'PENDING' ? 'Awaiting approval' : ''}
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-right whitespace-nowrap">
                   <div className="flex justify-end gap-1">
+                    {i.docReference && i.docReference.startsWith('contracts/') && (
+                      <button onClick={() => viewDoc(i.docReference)} title="View document" className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"><Paperclip size={17} /></button>
+                    )}
                     <button onClick={() => openView(i)} title="View details & payments" className="p-2 text-gray-700 hover:bg-gray-100 rounded-lg"><Eye size={17} /></button>
-                    {canEdit && i.status === 'ACTIVE' && Number(i.totalPaid || 0) === 0 && (
+                    {canApprove && i.status === 'PENDING' && (
+                      <button onClick={() => approve(i)} title="Approve" className="p-2 text-green-600 hover:bg-green-50 rounded-lg"><CheckCircle size={17} /></button>
+                    )}
+                    {canEdit && i.status === 'PENDING' && (
                       <button onClick={() => openEdit(i)} title="Edit" className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 size={17} /></button>
                     )}
-                    {canEdit && i.status === 'ACTIVE' && (
+                    {canEdit && (i.status === 'ACTIVE' || i.status === 'PENDING') && (
                       <button onClick={() => cancel(i)} title="Cancel" className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Ban size={17} /></button>
+                    )}
+                    {canEdit && i.status === 'CANCELLED' && (
+                      <button onClick={() => remove(i)} title="Delete" className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={17} /></button>
                     )}
                   </div>
                 </td>
@@ -320,7 +370,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
       {showForm && (
         <Modal title={editing ? 'Edit Cash Advance' : 'Add Cash Advance'} onClose={() => setShowForm(false)}>
           <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="Employee" required className="md:col-span-2">
+            <Field label="Employee" required>
               <SearchableSelect
                 disabled={!!editing}
                 placeholder="Select employee..."
@@ -330,9 +380,6 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                 onChange={(v) => update({ employeeId: v })}
               />
             </Field>
-            <Field label="Amount" required>
-              <MoneyInput className={inputCls} value={form.amount} onChange={set('amount')} />
-            </Field>
             <Field label="Type" required>
               <SearchableSelect
                 typeable={false}
@@ -340,6 +387,9 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                 options={Object.entries(TYPE_LABEL).map(([value, label]) => ({ value, label }))}
                 onChange={(v) => update({ advanceType: v || 'ONE_TIME' })}
               />
+            </Field>
+            <Field label={recurring ? 'Monthly Deduction Amount' : 'Amount'} required>
+              <MoneyInput className={inputCls} value={form.amount} onChange={set('amount')} />
             </Field>
             <Field label="Purpose" required className="md:col-span-2">
               <input className={inputCls} value={form.purpose} onChange={set('purpose')}
@@ -351,38 +401,11 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                 <input type="date" className={inputCls} value={form.dateReleased} onChange={set('dateReleased')} />
               </Field>
             ) : (
-              <>
-                <Field label="Start Date" required>
-                  <input type="date" className={inputCls} value={form.startTerm} onChange={set('startTerm')} />
-                </Field>
-                <Field label="End Date (optional)">
-                  <input type="date" className={inputCls} value={form.endTerm} onChange={set('endTerm')} />
-                </Field>
-                <Field label={autoMonthly ? 'Monthly Deduction (auto)' : 'Monthly Deduction'} required>
-                  <MoneyInput className={`${inputCls} ${autoMonthly ? 'bg-gray-100' : ''}`}
-                    readOnly={autoMonthly} value={form.monthlyDeduction} onChange={set('monthlyDeduction')} />
-                  <p className="text-xs text-gray-500 mt-1">
-                    {autoMonthly ? 'Amount ÷ number of months.' : 'With no end date, it runs until the amount is fully paid.'}
-                  </p>
-                </Field>
-              </>
+              <Field label="End Date (optional)">
+                <input type="date" className={inputCls} value={form.endTerm} onChange={set('endTerm')} />
+                <p className="text-xs text-gray-500 mt-1">Deducted every payroll run until this date. Leave blank to keep deducting.</p>
+              </Field>
             )}
-
-            <Field label="Deduction Schedule">
-              <SearchableSelect
-                typeable={false}
-                value={form.deductionSchedule}
-                options={[
-                  { value: 'SPLIT', label: 'Split across cutoffs (15th and 30th)' },
-                  { value: 'FIRST_CUTOFF', label: '15th cutoff only' },
-                  { value: 'SECOND_CUTOFF', label: '30th cutoff only' },
-                ]}
-                onChange={(v) => update({ deductionSchedule: v })}
-              />
-            </Field>
-            <Field label="Approved By">
-              <input className={inputCls} value={form.approvedBy} onChange={set('approvedBy')} />
-            </Field>
             <Field label="Document (optional)" className="md:col-span-2">
               <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" className={inputCls}
                 onChange={(e) => setFile(e.target.files?.[0] || null)} />
@@ -406,21 +429,19 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
               <div className="grid grid-cols-1 sm:grid-cols-3 sm:divide-x divide-gray-200 border-y border-gray-200 py-4">
                 <div className="sm:pr-6"><div className="text-sm text-gray-500">Amount</div><div className="text-2xl font-semibold mt-1">{money(v.amount)}</div></div>
                 <div className="sm:px-6"><div className="text-sm text-gray-500">Total Paid</div><div className="text-2xl font-semibold mt-1">{money(v.totalPaid)}</div></div>
-                <div className="sm:pl-6"><div className="text-sm text-gray-500">Balance</div><div className="text-2xl font-semibold mt-1">{money(v.remainingBalance)}</div></div>
-              </div>
+                <div className="sm:pl-6"><div className="text-sm text-gray-500">Balance</div><div className="text-2xl font-semibold mt-1">{v.advanceType === 'RECURRING' ? '—' : money(v.remainingBalance)}</div></div>              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 bg-gray-50 rounded-xl p-5 border border-gray-100">
                 <Detail label="Purpose">{v.purpose}</Detail>
                 <Detail label="Status">{v.status}</Detail>
                 {v.advanceType === 'RECURRING' ? (
                   <>
-                    <Detail label="Start Date">{fmtDate(v.startTerm)}</Detail>
-                    <Detail label="End Date">{v.endTerm ? fmtDate(v.endTerm) : 'Open'}</Detail>
+                    <Detail label="Start Date">{isOpenStart(v.startTerm) ? 'None (every payroll run)' : fmtDate(v.startTerm)}</Detail>
+                    <Detail label="End Date">{isOpen(v.endTerm) ? 'Open' : fmtDate(v.endTerm)}</Detail>
                   </>
                 ) : (
                   <Detail label="Date Released">{fmtDate(v.dateReleased || v.startTerm)}</Detail>
                 )}
                 <Detail label="Deduction">{money(v.amortization)}</Detail>
-                <Detail label="Deduction Schedule">{SCHEDULE_LABEL[v.deductionSchedule] || v.deductionSchedule}</Detail>
                 <Detail label="Approved By">{v.approvedBy}</Detail>
                 <Detail label="Document">
                   {v.docReference && v.docReference.startsWith('contracts/')
@@ -446,7 +467,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                         <tr key={p.id}>
                           <td className="px-4 py-2">{fmtDate(p.payPeriod)}</td>
                           <td className="px-4 py-2 text-right">{money(p.amountPaid)}</td>
-                          <td className="px-4 py-2 text-right text-gray-600">{money(p.remainingBalance)}</td>
+                          <td className="px-4 py-2 text-right text-gray-600">{v.advanceType === 'RECURRING' ? '—' : money(p.remainingBalance)}</td>
                         </tr>
                       ))}
                     </tbody>

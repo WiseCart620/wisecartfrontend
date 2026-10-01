@@ -39,6 +39,16 @@ const loanName = (i) => (i.agencyName ? `${i.agencyName} - ${i.loanType || 'Loan
 const fmtDate = (d) =>
   d ? new Date(d + 'T00:00:00').toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) : '—';
 
+const fmtShort = (d) =>
+  d ? new Date(d + 'T00:00:00').toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+const SCHEDULE_SHORT = { SPLIT: 'both cutoffs', FIRST_CUTOFF: '15th only', SECOND_CUTOFF: '30th only' };
+const STATUS_BADGE = {
+  ACTIVE: 'bg-green-50 text-green-700 ring-1 ring-green-200',
+  PAID: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200',
+  CANCELLED: 'bg-gray-100 text-gray-600 ring-1 ring-gray-200',
+};
+const STATUS_LABEL = { ACTIVE: 'Active', PAID: 'Paid', CANCELLED: 'Cancelled' };
+
 const Detail = ({ label, children }) => (
   <div>
     <div className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">{label}</div>
@@ -79,7 +89,6 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
   // any change recomputes amortization (amount / duration) and end date (start + duration)
   const update = (patch) => setForm(p => {
     const n = { ...p, ...patch };
-    if (isCashAdvance(n.loanType)) n.agencyId = '';
     const amt = Number(n.amount);
     const dur = Number(n.durationMonths);
     n.amortization = amt > 0 && dur > 0 ? (amt / dur).toFixed(2) : '';
@@ -340,10 +349,10 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              {[groupBy === 'agency' ? 'Agency' : 'Employee', 'Agency / Type', 'Amount', 'Monthly Amort.', 'Schedule', 'Term', 'Paid', 'Balance', 'Status', 'Document'].map(h => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
+              {[groupBy === 'agency' ? 'Agency' : 'Employee', 'Loan', 'Amount', 'Term', 'Paid', 'Balance', 'Status'].map(h => (
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
               ))}
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -390,17 +399,19 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
                       <div className="text-sm text-gray-800">{activeRows.length} active loan{activeRows.length === 1 ? '' : 's'}</div>
                       {cancelledN > 0 && <div className="text-xs text-gray-400">{cancelledN} cancelled</div>}
                     </td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{money(tot.amount)}</td>
-                    <td className="px-4 py-3 text-gray-700">{monthly > 0 ? money(monthly) : '—'}</td>
-                    <td colSpan="2" />
-                    <td className="px-4 py-3 text-gray-700">{money(tot.paid)}</td>
-                    <td className="px-4 py-3 font-bold text-gray-900">{money(tot.bal)}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${activeRows.length ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="font-medium text-gray-900">{money(tot.amount)}</div>
+                      {monthly > 0 && <div className="text-xs text-gray-500">{money(monthly)} per month</div>}
+                    </td>
+                    <td />
+                    <td className="px-4 py-3 whitespace-nowrap text-gray-700">{money(tot.paid)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap font-bold text-gray-900">{money(tot.bal)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${activeRows.length ? STATUS_BADGE.ACTIVE : STATUS_BADGE.CANCELLED}`}>
                         {activeRows.length ? 'Active' : 'No active loans'}
                       </span>
                     </td>
-                    <td colSpan="2" />
+                    <td />
                   </tr>
                   {isOpen && subGroups(g.rows).map(sg => (
                     <React.Fragment key={sg.name}>
@@ -413,30 +424,33 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
                       )}
                       {sg.rows.map(i => (
                         <tr key={i.id} className="hover:bg-gray-50 text-sm">
-                          <td className="px-4 py-3 text-gray-700 pl-12">{groupBy === 'agency' ? i.employeeName : '—'}</td>
-                          <td className="px-4 py-3 text-gray-700">
-                            <div>{i.agencyName || 'Company loan'}</div>
-                            <div className="text-xs text-gray-500">{i.loanType || ''}</div>
-                            {i.applicationNo && <div className="text-xs text-gray-500">Ref: {i.applicationNo}</div>}
-                          </td>
-                          <td className="px-4 py-3">{money(i.amount)}</td>
-                          <td className="px-4 py-3">{money(i.amortization)}</td>
-                          <td className="px-4 py-3 text-xs text-gray-600">
-                            {SCHEDULE_LABEL[i.deductionSchedule] || i.deductionSchedule || '—'}
-                          </td>
-                          <td className="px-4 py-3 text-xs text-gray-600">{i.startTerm} → {i.endTerm}</td>
-                          <td className="px-4 py-3">{money(i.totalPaid)}</td>
-                          <td className="px-4 py-3 font-medium">{money(i.remainingBalance)}</td>
+                          <td className="px-4 py-3 pl-12 text-gray-700 whitespace-nowrap">{groupBy === 'agency' ? i.employeeName : ''}</td>
                           <td className="px-4 py-3">
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${STATUS_STYLE[i.status] || ''}`}>{i.status}</span>
+                            <div className="font-medium text-gray-900 whitespace-nowrap">{i.loanType || 'Loan'}</div>
+                            <div className="text-xs text-gray-500">{i.agencyName || 'Company loan'}{i.applicationNo ? ` · Ref ${i.applicationNo}` : ''}</div>
                           </td>
-                          <td className="px-4 py-3">
-                            {i.docReference && i.docReference.startsWith('contracts/')
-                              ? <button onClick={() => viewDoc(i.docReference)} className="inline-flex items-center gap-1 text-blue-600 hover:underline text-xs"><Paperclip size={14} /> View</button>
-                              : <span className="text-xs text-gray-500">{i.docReference || '—'}</span>}
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="font-medium text-gray-900">{money(i.amount)}</div>
+                            <div className="text-xs text-gray-500">
+                              {money(i.amortization)} per month · {SCHEDULE_SHORT[i.deductionSchedule] || i.deductionSchedule || '—'}
+                            </div>
                           </td>
-                          <td className="px-4 py-3 text-right">
+                          <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">
+                            <div>{fmtShort(i.startTerm)}</div>
+                            <div className="text-gray-400">to {fmtShort(i.endTerm)}</div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">{money(i.totalPaid)}</td>
+                          <td className="px-4 py-3 whitespace-nowrap font-medium">{money(i.remainingBalance)}</td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${STATUS_BADGE[i.status] || 'bg-gray-100 text-gray-700'}`}>
+                              {STATUS_LABEL[i.status] || i.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right whitespace-nowrap">
                             <div className="flex justify-end gap-1">
+                              {i.docReference && i.docReference.startsWith('contracts/') && (
+                                <button onClick={() => viewDoc(i.docReference)} title="View document" className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"><Paperclip size={17} /></button>
+                              )}
                               <button onClick={() => openView(i)} title="View details" className="p-2 text-gray-700 hover:bg-gray-100 rounded-lg"><Eye size={17} /></button>
                               {canEdit && i.status === 'ACTIVE' && Number(i.totalPaid || 0) === 0 && (
                                 <button onClick={() => openEdit(i)} title="Edit loan" className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 size={17} /></button>
@@ -475,7 +489,6 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
               <SearchableSelect
                 allLabel="None (company loan)"
                 searchPlaceholder="Search agency..."
-                disabled={isCashAdvance(form.loanType)}
                 value={form.agencyId}
                 options={agencies.map(a => ({ value: String(a.agencyId), label: a.name }))}
                 onChange={(v) => update({ agencyId: v })}

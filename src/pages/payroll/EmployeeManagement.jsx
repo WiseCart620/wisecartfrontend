@@ -9,7 +9,7 @@ import { useAuth, can } from '../../context/AuthContext';
 import { MoneyInput } from '../../components/payroll/Shared';
 
 const EMPTY_FORM = {
-    firstName: '', middleName: '', lastName: '', gender: '', dateOfBirth: '',
+    employeeNumber: '', firstName: '', middleName: '', lastName: '', gender: '', dateOfBirth: '',
     email: '', phone: '', address: '', hireDate: '', status: 'ACTIVE',
     department: '', designation: '', employmentType: 'REGULAR', workLocation: '',
     supervisorId: '', scheduleId: '', inactiveDate: '', includeLeaveConversion: false,
@@ -525,6 +525,7 @@ const EmployeeManagement = () => {
 
                             <form id="employee-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-8 py-6 space-y-8">
                                 <Section title="Personal Information">
+                                    <Field label="ID Number"><input className={inputCls} name="employeeNumber" value={form.employeeNumber} onChange={onChange} placeholder="e.g. 2025-08-0023" /></Field>
                                     <Field label="First Name" required><input className={inputCls} name="firstName" value={form.firstName} onChange={onChange} required /></Field>
                                     <Field label="Middle Name"><input className={inputCls} name="middleName" value={form.middleName} onChange={onChange} /></Field>
                                     <Field label="Last Name" required><input className={inputCls} name="lastName" value={form.lastName} onChange={onChange} required /></Field>
@@ -816,6 +817,7 @@ const EmployeeManagement = () => {
                             {/* Body */}
                             <div className="flex-1 overflow-y-auto px-8 py-6 space-y-7">
                                 <ViewSection title="Personal Information">
+                                    <Detail label="ID Number" value={v.employeeNumber} />
                                     <Detail label="First Name" value={v.firstName} />
                                     <Detail label="Middle Name" value={v.middleName} />
                                     <Detail label="Last Name" value={v.lastName} />

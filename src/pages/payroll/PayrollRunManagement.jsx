@@ -10,7 +10,20 @@ import OvertimeEntries from '../../components/payroll/OvertimeEntries';
 import ReimbursementTab from '../../components/payroll/ReimbursementTab';
 import DisbursementTab from '../../components/payroll/DisbursementTab';
 import AnnualMonitoringTab from '../../components/payroll/AnnualMonitoringTab';
-import { runOptionsFor, computePeriod } from '../../utils/payrollPeriods';
+import { runOptionsFor, computePeriod, computePeriodFor } from '../../utils/payrollPeriods';
+import SearchableSelect from '../../components/payroll/SearchableSelect';
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
+  'September', 'October', 'November', 'December'].map((m, i) => ({ value: String(i + 1), label: m }));
+const YEARS = (() => {
+  const y = new Date().getFullYear();
+  return Array.from({ length: 10 }, (_, i) => y - 2 + i).map(v => ({ value: String(v), label: String(v) }));
+})();
+
+
+const cutoffOf = (opt) => opt?.key === 'SEMI_15' ? 'first' : opt?.key === 'SEMI_30' ? 'second' : null;
+const periodFor = (opt, month, year) =>
+  cutoffOf(opt) && month && /^\d{4}$/.test(String(year)) ? computePeriodFor(opt.key, Number(month), Number(year)) : null;
 
 
 
@@ -22,7 +35,7 @@ const STATUS_STYLE = {
   PAID: 'bg-purple-100 text-purple-700',
 };
 
-const EMPTY = { option: '', periodStart: '', periodEnd: '', payDate: '', daysOfWork: '' };
+const EMPTY = { option: '', month: '', year: '', periodStart: '', periodEnd: '', payDate: '', daysOfWork: '' };
 const STATUS_LABEL = { DRAFT: 'On-Going', SUBMITTED: 'On-Going (For Approval)', APPROVED: 'Approved', REJECTED: 'Rejected', PAID: 'Paid' };
 
 const PayrollRunManagement = () => {
@@ -81,10 +94,28 @@ const PayrollRunManagement = () => {
   const set = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
 
   const runOptions = runOptionsFor(employees);
+  const selectedOpt = runOptions.find(o => o.value === form.option);
+  const auto = !!cutoffOf(selectedOpt);
   const onOptionChange = (value) => {
     const opt = runOptions.find(o => o.value === value);
-    setForm(p => opt ? { ...p, option: value, ...computePeriod(opt.key) } : { ...p, option: '' });
+    setForm(p => {
+      if (!opt) return { ...p, option: '' };
+      if (cutoffOf(opt)) {
+        const next = {
+          ...p, option: value,
+          month: p.month || String(new Date().getMonth() + 1),
+          year: p.year || String(new Date().getFullYear()),
+        };
+        return { ...next, ...periodFor(opt, next.month, next.year) };
+      }
+      return { ...p, option: value, ...computePeriod(opt.key) };
+    });
   };
+  const onMonthYear = (patch) => setForm(p => {
+    const next = { ...p, ...patch };
+    const per = periodFor(selectedOpt, next.month, next.year);
+    return per ? { ...next, ...per } : next;
+  });
 
   const deleteRun = async (run) => {
     if (!window.confirm(`Delete payroll run ${run.periodStart} – ${run.periodEnd}?\nThis removes all its payslips and cannot be undone.`)) return;
@@ -215,16 +246,48 @@ const PayrollRunManagement = () => {
         <Modal title="New Payroll Run" onClose={() => setShow(false)}>
           <form onSubmit={submit} className="grid grid-cols-1 gap-4">
             <Field label="Pay Schedule" required>
-              <select className={inputCls} value={form.option} onChange={(e) => onOptionChange(e.target.value)}>
-                <option value="">Select schedule...</option>
-                {runOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
+              <SearchableSelect
+                typeable={false}
+                placeholder="Select schedule..."
+                searchPlaceholder="Search schedule..."
+                value={form.option}
+                options={runOptions.map(o => ({ value: o.value, label: o.label }))}
+                onChange={onOptionChange}
+              />
             </Field>
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Period Start" required><input type="date" className={inputCls} value={form.periodStart} onChange={set('periodStart')} /></Field>
-              <Field label="Period End" required><input type="date" className={inputCls} value={form.periodEnd} onChange={set('periodEnd')} /></Field>
-            </div>
-            <Field label="Pay Date" required><input type="date" className={inputCls} value={form.payDate} onChange={set('payDate')} /></Field>
+            {auto ? (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Month" required>
+                    <SearchableSelect placeholder="Select month..." searchPlaceholder="Search month..."
+                      value={form.month} options={MONTHS} onChange={(v) => onMonthYear({ month: v })} />
+                  </Field>
+                  <Field label="Year" required>
+                    <SearchableSelect allowCustom placeholder="Select or type year..." searchPlaceholder="Search or type a year..."
+                      value={form.year} options={YEARS} onChange={(v) => onMonthYear({ year: v })} />
+                  </Field>
+                </div>
+                {form.periodStart && form.periodEnd && (
+                  <div className="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                    Period: <b>{form.periodStart}</b> to <b>{form.periodEnd}</b> · Pay date: <b>{form.payDate || '—'}</b>
+                  </div>
+                )}
+              </>
+            ) : form.option ? (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Period Start" required>
+                    <input type="date" className={inputCls} value={form.periodStart} onChange={set('periodStart')} />
+                  </Field>
+                  <Field label="Period End" required>
+                    <input type="date" className={inputCls} value={form.periodEnd} onChange={set('periodEnd')} />
+                  </Field>
+                </div>
+                <Field label="Pay Date" required>
+                  <input type="date" className={inputCls} value={form.payDate} onChange={set('payDate')} />
+                </Field>
+              </>
+            ) : null}
             <Field label="Days of Work" required>
               <MoneyInput className={inputCls} value={form.daysOfWork}
                 onChange={set('daysOfWork')} placeholder="e.g. 26" />

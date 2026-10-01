@@ -9,8 +9,6 @@ const nextWeekday = (end) => {
     return d;
 };
 
-// Dropdown choices for the run page, one group per schedule the employees actually have.
-// 15th & 30th (SEMI_MONTHLY) is split into two choices.
 export const runOptionsFor = (employees) => {
     const bySchedule = new Map();
     employees.forEach(e => {
@@ -28,14 +26,18 @@ export const runOptionsFor = (employees) => {
         } else {
             out.push({ value: `${id}|${e.scheduleFrequency}`, scheduleId: id, key: e.scheduleFrequency, label: `${e.scheduleName} (${n})` });
         }
+        if (e.scheduleFrequency !== 'CUSTOM') {
+            out.push({
+                value: `${id}|CUSTOM_RANGE`, scheduleId: id, key: 'CUSTOM_RANGE',
+                label: `Custom dates · ${e.scheduleName} (${n})`,
+            });
+        }
     });
     return out;
 };
 
-// -> { periodStart, periodEnd, payDate } as yyyy-MM-dd for the current month/year.
-// CUSTOM schedules have no automatic period, so the user types the dates.
 export const computePeriod = (key, now = new Date()) => {
-    if (key === 'CUSTOM') return { periodStart: '', periodEnd: '', payDate: '' };
+    if (key === 'CUSTOM' || key === 'CUSTOM_RANGE') return { periodStart: '', periodEnd: '', payDate: '' };
 
     const y = now.getFullYear();
     const m = now.getMonth();
@@ -51,3 +53,8 @@ export const computePeriod = (key, now = new Date()) => {
     }
     return { periodStart: fmtDate(start), periodEnd: fmtDate(end), payDate: fmtDate(nextWeekday(end)) };
 };
+
+
+// same as computePeriod, but for a chosen month (1-12) and year
+export const computePeriodFor = (key, month, year) =>
+    computePeriod(key, new Date(year, month - 1, 1));
