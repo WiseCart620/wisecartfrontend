@@ -13,7 +13,7 @@
 
     display: grid;
     grid-template-columns: 1fr;
-    min-width: 860px;
+    min-width: 960px;
     border: 1.5px solid var(--ps-border);
     background: #fff;
     color: #111;
@@ -54,7 +54,7 @@
 }
 
 .ps-company {
-    font-weight: 700;
+    font-weight: 550;
     font-size: 13px;
 }
 
@@ -179,10 +179,11 @@
     padding: 8px 6px;
     background: #fff;
     border-top: 1px solid var(--ps-border);
+    border-bottom: 1px solid var(--ps-border);
 }
 
 .ps-foot {
-    padding: 8px 10px 4px;
+    padding: 8px 10px 10px;
     margin-top: auto;
 }
 
@@ -215,20 +216,52 @@
 .ps-band,
 .ps-disclaimer,
 .ps-ack-date {
-    font-size: 13px;
+    font-size: 17px;
     letter-spacing: normal;
 }
 
+/* column titles (EARNINGS / DEDUCTION / OUTSTANDING ADVANCES) */
+.ps-table thead th {
+    font-size: 20px;
+}
+
+/* Description / Amount sub-headers */
+.ps-table thead .ps-sub th {
+    font-size: 17px;
+}
+
+.ps-band,
+.ps-total td {
+    font-size: 19px;
+}
+
+.ps-table tbody td {
+    height: 30px;
+}
+
 .ps-company {
-    font-size: 24px;
+    font-size: 34px;
 }
 
 .ps-title {
-    font-size: 40px;
+    font-size: 58px;
 }
 
 .ps-address {
-    max-width: 380px;
+    max-width: 460px;
+    font-size: 16px;
+}
+
+.ps-logo-img {
+    height: 90px;
+}
+
+/* disclaimer: always a single line */
+.ps-disclaimer {
+    white-space: nowrap;
+    font-size: 13px;
+    padding: 6px 4px;
+    overflow: hidden;
 }
 
 /* header layout: left block and right block bottom-aligned */
@@ -345,7 +378,7 @@
     }
 
     .ps-table tbody td {
-        height: 16px;
+        height: 20px;
     }
 
     .ps-sheet .ps-address,
@@ -357,18 +390,38 @@
     .ps-sheet .ps-table td.long-label,
     .ps-sheet .ps-disclaimer,
     .ps-sheet .ps-ack-date {
+        font-size: 13.5px;
+    }
+
+    .ps-sheet .ps-table thead th {
+        font-size: 15.5px;
+    }
+
+    .ps-sheet .ps-disclaimer {
+        white-space: nowrap;
         font-size: 10.5px;
+        padding: 6px 4px;
     }
 
     .ps-sheet .ps-company {
-        font-size: 19px;
+        font-size: 26px;
     }
 
     .ps-sheet .ps-title {
-        font-size: 32px;
+        font-size: 44px;
     }
 
     .ps-sheet .ps-logo-img {
-        height: 56px;
+        height: 72px;
     }
+}
+
+.ps-foot {
+    padding: 0;
+}
+
+.ps-disclaimer {
+    border: 0;
+    border-bottom: 1px solid var(--ps-border);
+    padding: 8px 4px;
 }

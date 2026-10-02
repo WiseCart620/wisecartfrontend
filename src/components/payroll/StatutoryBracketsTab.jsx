@@ -3,6 +3,8 @@ import { Edit2, Trash2, Copy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { inputCls, money, Field, MoneyInput } from './Shared';
+import Pagination from '../common/Pagination';
+import usePagination from './usePagination';
 
 const AGENCIES = [
     { code: 'SSS', label: 'SSS' },
@@ -91,60 +93,67 @@ const StatutoryBracketsTab = ({ canCreate, canEdit, canDelete }) => {
 
     const share = (fixed, r) => (fixed != null ? money(fixed) : r != null ? `${pct(r)}%` : '—');
 
+    const { pageItems, paginationProps, totalItems } = usePagination(rows, `${agency}|${year}`);
+
     return (
         <div>
-            <div className="bg-gray-50 border border-gray-100 rounded-xl p-5 mb-6 flex flex-wrap gap-4 items-end">
-                <Field label="Agency">
-                    <select className={inputCls} value={agency} onChange={(e) => setAgency(e.target.value)}>
-                        {AGENCIES.map(a => <option key={a.code} value={a.code}>{a.label}</option>)}
-                    </select>
-                </Field>
-                <Field label="Effective year">
-                    <input type="number" className={inputCls} value={year} onChange={(e) => setYear(Number(e.target.value))} list="bracket-years" />
-                    <datalist id="bracket-years">{years.map(y => <option key={y} value={y} />)}</datalist>
-                </Field>
-                {canCreate && (
-                    <div className="flex items-end gap-2 ml-auto">
-                        <Field label="Copy this year to">
-                            <input type="number" className={inputCls} placeholder="e.g. 2027" value={copyTo} onChange={(e) => setCopyTo(e.target.value)} />
-                        </Field>
-                        <button onClick={copyYear} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-100">
-                            <Copy size={15} /> Copy
-                        </button>
-                    </div>
-                )}
+            <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-gray-50 pb-4">
+                <div className="bg-white border border-gray-200 shadow-sm rounded-xl p-4 flex flex-wrap gap-4 items-end">
+                    <Field label="Agency">
+                        <select className={inputCls} value={agency} onChange={(e) => setAgency(e.target.value)}>
+                            {AGENCIES.map(a => <option key={a.code} value={a.code}>{a.label}</option>)}
+                        </select>
+                    </Field>
+                    <Field label="Effective year">
+                        <input type="number" className={inputCls} value={year} onChange={(e) => setYear(Number(e.target.value))} list="bracket-years" />
+                        <datalist id="bracket-years">{years.map(y => <option key={y} value={y} />)}</datalist>
+                    </Field>
+                    {canCreate && (
+                        <div className="flex items-end gap-2 ml-auto">
+                            <Field label="Copy this year to">
+                                <input type="number" className={inputCls} placeholder="e.g. 2027" value={copyTo} onChange={(e) => setCopyTo(e.target.value)} />
+                            </Field>
+                            <button onClick={copyYear} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-100">
+                                <Copy size={15} /> Copy
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm overflow-x-auto mb-4">
-                <table className="w-full text-sm">
-                    <thead className="bg-gray-50 border-b">
-                        <tr>
-                            {['Salary From', 'Salary To', 'Employee', 'Employer', 'Base Min', 'Base Max', ''].map(h => (
-                                <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                        {rows.length === 0 ? (
-                            <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">No brackets for {year}. The latest earlier year is used until you add some.</td></tr>
-                        ) : rows.map(b => (
-                            <tr key={b.statutoryBracketId} className="hover:bg-gray-50">
-                                <td className="px-4 py-3">{money(b.salaryFrom)}</td>
-                                <td className="px-4 py-3">{b.salaryTo != null ? money(b.salaryTo) : 'and over'}</td>
-                                <td className="px-4 py-3">{share(b.employeeFixed, b.employeeRate)}</td>
-                                <td className="px-4 py-3">{share(b.employerFixed, b.employerRate)}</td>
-                                <td className="px-4 py-3">{b.baseMin != null ? money(b.baseMin) : '—'}</td>
-                                <td className="px-4 py-3">{b.baseMax != null ? money(b.baseMax) : '—'}</td>
-                                <td className="px-4 py-3 text-right">
-                                    <div className="flex justify-end gap-1">
-                                        {canEdit && <button onClick={() => startEdit(b)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 size={16} /></button>}
-                                        {canDelete && <button onClick={() => remove(b)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={16} /></button>}
-                                    </div>
-                                </td>
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full tbl-card mb-4">
+                <div className="overflow-auto w-full tbl-scroll">
+                    <table className="w-full min-w-[800px] text-sm">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                {['Salary From', 'Salary To', 'Employee', 'Employer', 'Base Min', 'Base Max', ''].map(h => (
+                                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
+                                ))}
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-200">
+                            {rows.length === 0 ? (
+                                <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">No brackets for {year}. The latest earlier year is used until you add some.</td></tr>
+                            ) : pageItems.map(b => (
+                                <tr key={b.statutoryBracketId} className="hover:bg-gray-50">
+                                    <td className="px-4 py-3">{money(b.salaryFrom)}</td>
+                                    <td className="px-4 py-3">{b.salaryTo != null ? money(b.salaryTo) : 'and over'}</td>
+                                    <td className="px-4 py-3">{share(b.employeeFixed, b.employeeRate)}</td>
+                                    <td className="px-4 py-3">{share(b.employerFixed, b.employerRate)}</td>
+                                    <td className="px-4 py-3">{b.baseMin != null ? money(b.baseMin) : '—'}</td>
+                                    <td className="px-4 py-3">{b.baseMax != null ? money(b.baseMax) : '—'}</td>
+                                    <td className="px-4 py-3 text-right">
+                                        <div className="flex justify-end gap-1">
+                                            {canEdit && <button onClick={() => startEdit(b)} className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"><Edit2 size={16} /></button>}
+                                            {canDelete && <button onClick={() => remove(b)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={16} /></button>}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                {totalItems > 0 && <Pagination {...paginationProps} />}
             </div>
 
             {(canCreate || canEdit) && (
@@ -162,7 +171,7 @@ const StatutoryBracketsTab = ({ canCreate, canEdit, canDelete }) => {
                     <Field label="Base Max (ceiling)"><MoneyInput className={inputCls} value={form.baseMax} onChange={set('baseMax')} /></Field>
                     <div className="col-span-full flex justify-end gap-2">
                         {editing && <button type="button" onClick={() => { setEditing(null); setForm(EMPTY); }} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel edit</button>}
-                        <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">{editing ? 'Update' : 'Add'}</button>
+                        <button type="submit" className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">{editing ? 'Update' : 'Add'}</button>
                     </div>
                 </form>
             )}

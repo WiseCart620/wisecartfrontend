@@ -9,6 +9,17 @@ import EmployeeAvatar from './EmployeeAvatar';
 
 const LABEL = { DRAFT: 'On-Going', SUBMITTED: 'On-Going (For Approval)', APPROVED: 'Approved', REJECTED: 'Rejected', PAID: 'Paid' };
 const STATUTORY = ['SSS', 'PhilHealth', 'Pag-IBIG'];
+const BADGE = {
+  DRAFT: 'bg-gray-50 text-gray-700 ring-1 ring-gray-200',
+  SUBMITTED: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+  APPROVED: 'bg-green-50 text-green-700 ring-1 ring-green-200',
+  REJECTED: 'bg-red-50 text-red-700 ring-1 ring-red-200',
+  PAID: 'bg-purple-50 text-purple-700 ring-1 ring-purple-200',
+};
+const DOT = { DRAFT: 'bg-gray-400', SUBMITTED: 'bg-amber-500', APPROVED: 'bg-green-500', REJECTED: 'bg-red-500', PAID: 'bg-purple-500' };
+const fmtD = (d) => d
+  ? new Date(d + 'T00:00:00').toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })
+  : '—';
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const csv = (rows) => rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
 const saveFile = (name, text, type = 'text/csv') => {
@@ -66,7 +77,7 @@ const EditModal = ({ payslipId, onClose, onSaved }) => {
             {slip.deductions.map(d => row('d' + d.id, d.deductionType, ded[d.id] ?? '', ev => setDed(p => ({ ...p, [d.id]: ev.target.value }))))}
             <div className="flex justify-end gap-2 pt-4 border-t">
               <button onClick={onClose} className="px-4 py-2 border rounded-lg text-sm">Cancel</button>
-              <button onClick={save} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Save Changes</button>
+              <button onClick={save} className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm">Save Changes</button>
             </div>
           </div>
         )}
@@ -181,6 +192,45 @@ const PayrollRunDetail = ({ runId, onBack }) => {
     logDoc('PAYSLIP_SUMMARY');
   };
 
+  // One PDF per employee, zipped. File name: "<Employee Name>_<periodStart>_to_<periodEnd>.pdf"
+  const dlAllPdf = async () => {
+    if (slips.length === 0) return;
+    setBusy(true);
+    const tid = toast.loading('Preparing payslips...');
+    try {
+      const { buildPayslipPdf, loadLogo } = await import('../../utils/payslipPdf');
+      const JSZip = (await import('jszip')).default;
+      const zip = new JSZip();
+      const used = new Map();
+      const safe = (v) => String(v || 'Employee').replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, ' ').trim();
+      const logo = await loadLogo();
+
+      for (let i = 0; i < slips.length; i++) {
+        const s = slips[i];
+        toast.loading(`Generating ${i + 1} of ${slips.length}...`, { id: tid });
+        const pdf = buildPayslipPdf(s, logo);
+
+        let base = `${safe(s.employeeName)}_${run.periodStart}_to_${run.periodEnd}`;
+        const n = (used.get(base) || 0) + 1;
+        used.set(base, n);
+        if (n > 1) base += `_${n}`;
+        zip.file(`${base}.pdf`, pdf.output('blob'));
+      }
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `Payslips_${period}.zip`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast.success(`${slips.length} payslip PDF(s) downloaded`, { id: tid });
+    } catch (e) {
+      toast.error(e.message || 'Failed to generate PDFs', { id: tid });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const dlUbp = async () => {
     try {
       const XLSX = await import('xlsx');
@@ -241,16 +291,30 @@ const PayrollRunDetail = ({ runId, onBack }) => {
   if (!run) return <div className="p-8 text-gray-500">Loading...</div>;
   const st = run.status;
   const canDownload = perm('download') && (st === 'APPROVED' || st === 'PAID');
-  const btn = 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm disabled:opacity-50';
+  const btn = 'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+  const outline = `${btn} bg-white border border-gray-300 text-gray-700 hover:bg-gray-50`;
+  const totalGross = Number(run.totalGrossPay || 0);
+  const totalNet = Number(run.totalNetPay || 0);
 
   return (
     <div>
-      <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-600 mb-4"><ArrowLeft size={16} /> Back</button>
+      <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors">
+        <ArrowLeft size={16} /> Back to payroll runs
+      </button>
+
+      {/* header */}
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{run.scheduleName}</h1>
-          <p className="text-gray-600">{run.periodStart} – {run.periodEnd} · Pay date {run.payDate}</p>
-          <span className="inline-block mt-2 px-2 py-1 rounded-full text-xs font-semibold bg-gray-100">{LABEL[st] || st}</span>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{run.scheduleName}</h1>
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${BADGE[st] || BADGE.DRAFT}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${DOT[st] || 'bg-gray-400'}`} />
+              {LABEL[st] || st}
+            </span>
+          </div>
+          <p className="text-sm text-gray-500 mt-1">
+            {fmtD(run.periodStart)} – {fmtD(run.periodEnd)} <span className="mx-1.5 text-gray-300">|</span> Pay date {fmtD(run.payDate)}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           {(st === 'DRAFT' || st === 'REJECTED') && perm('create') && (
@@ -258,41 +322,59 @@ const PayrollRunDetail = ({ runId, onBack }) => {
               disabled={busy || checked.size === 0}
               onClick={regenerate}
               title={checked.size === 0 ? 'Select at least one employee below to regenerate' : `Regenerate ${checked.size} selected`}
-              className={`${btn} border border-gray-300 ${checked.size === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={outline}
             >
               <RefreshCw size={16} />
               Regenerate{checked.size > 0 ? ` (${checked.size})` : ''}
             </button>
           )}
           {(st === 'DRAFT' || st === 'REJECTED' || st === 'SUBMITTED') &&
-            <button onClick={() => { toast.success('Saved — continue anytime'); onBack(); }} className={`${btn} border border-gray-300`}><Save size={16} /> Save for Later</button>}
+            <button onClick={() => { toast.success('Saved — continue anytime'); onBack(); }} className={outline}><Save size={16} /> Save for Later</button>}
           {(st === 'DRAFT' || st === 'REJECTED') && perm('submit') &&
-            <button disabled={busy} onClick={submit} className={`${btn} bg-blue-600 text-white`}><Send size={16} /> Submit</button>}
+            <button disabled={busy} onClick={submit} className={`${btn} bg-orange-600 text-white shadow-sm hover:bg-orange-700`}><Send size={16} /> Submit</button>}
           {st === 'SUBMITTED' && perm('approve') && <>
-            <button disabled={busy} onClick={reject} className={`${btn} border border-red-300 text-red-600`}><XCircle size={16} /> Reject</button>
-            <button disabled={busy} onClick={approve} className={`${btn} bg-green-600 text-white`}><CheckCircle size={16} /> Approve</button>
+            <button disabled={busy} onClick={reject} className={`${btn} bg-white border border-red-300 text-red-600 hover:bg-red-50`}><XCircle size={16} /> Reject</button>
+            <button disabled={busy} onClick={approve} className={`${btn} bg-green-600 text-white shadow-sm hover:bg-green-700`}><CheckCircle size={16} /> Approve</button>
           </>}
           {st === 'APPROVED' && perm('pay') &&
-            <button disabled={busy} onClick={pay} className={`${btn} bg-purple-600 text-white`}><Wallet size={16} /> Pay</button>}
+            <button disabled={busy} onClick={pay} className={`${btn} bg-purple-600 text-white shadow-sm hover:bg-purple-700`}><Wallet size={16} /> Mark as Paid</button>}
         </div>
       </div>
 
+      {/* summary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        {[
+          ['Employees', run.employeeCount, 'text-gray-900'],
+          ['Gross pay', money(totalGross), 'text-gray-900'],
+          ['Total deductions', money(totalGross - totalNet), 'text-red-600'],
+          ['Net pay', money(totalNet), 'text-green-700'],
+        ].map(([label, val, color]) => (
+          <div key={label} className="bg-white rounded-xl border border-gray-200 px-5 py-4 shadow-sm">
+            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</div>
+            <div className={`text-2xl font-semibold mt-1 ${color}`}>{val}</div>
+          </div>
+        ))}
+      </div>
+
       {canDownload && (
-        <div className="flex flex-wrap items-center gap-2 mb-6 p-4 bg-white rounded-xl shadow-sm">
-          <span className="text-sm font-medium mr-2">Downloads:</span>
-          <button onClick={dlDetailed} className={`${btn} border border-gray-300`}><Download size={16} /> Payslip Detailed</button>
-          <button onClick={dlSummary} className={`${btn} border border-gray-300`}><Download size={16} /> Payslip Summary</button>
-          <button onClick={dlUbp} className={`${btn} border border-gray-300`}><Download size={16} /> UBP Template</button>
+        <div className="flex flex-wrap items-center gap-2 mb-6 px-5 py-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide mr-2">Downloads</span>
+          <button onClick={dlDetailed} className={outline}><Download size={16} /> Payslip Detailed</button>
+          <button onClick={dlSummary} className={outline}><Download size={16} /> Payslip Summary</button>
+          <button onClick={dlUbp} className={outline}><Download size={16} /> UBP Template</button>
+          <button disabled={busy} onClick={dlAllPdf} className={outline}><Download size={16} /> All Payslips (PDF)</button>
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
+      {/* payslips table */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-auto max-h-[calc(100vh-14rem)] tbl-scroll">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
+          <thead className="sticky top-0 z-10 bg-gray-50 shadow-[0_1px_0_0_#e5e7eb]">
             <tr>
-              <th className="px-4 py-3 w-8">
+              <th className="px-5 py-3 w-10">
                 <input
                   type="checkbox"
+                  className="rounded border-gray-300"
                   checked={slips.length > 0 && checked.size === slips.length}
                   onChange={(e) => {
                     if (e.target.checked) setChecked(new Set(slips.map(s => s.paySlipId)));
@@ -301,19 +383,22 @@ const PayrollRunDetail = ({ runId, onBack }) => {
                   title="Select all"
                 />
               </th>
-              {['Employee', 'Basic', 'Other Earnings', 'Statutory', 'Tax', 'Other Ded.', 'Net Pay', ''].map(h =>
-                <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}
+              {[['Employee', 'text-left'], ['Basic', 'text-right'], ['Other Earnings', 'text-right'], ['Statutory', 'text-right'],
+              ['Tax', 'text-right'], ['Other Ded.', 'text-right'], ['Net Pay', 'text-right'], ['', 'text-right']].map(([h, al], i) =>
+                <th key={i} className={`px-5 py-3 ${al} text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap`}>{h}</th>)}
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-200">
             {slips.map(s => {
               const stat = s.deductions.filter(d => STATUTORY.includes(d.deductionType)).reduce((a, d) => a + Number(d.amount), 0);
               const tax = Number(s.withholdingTax || 0);
+              const net = Number(s.netPay || 0);
               return (
-                <tr key={s.paySlipId} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
+                <tr key={s.paySlipId} className={`transition-colors hover:bg-gray-50 ${checked.has(s.paySlipId) ? 'bg-orange-50/40' : ''}`}>
+                  <td className="px-5 py-3.5">
                     <input
                       type="checkbox"
+                      className="rounded border-gray-300"
                       checked={checked.has(s.paySlipId)}
                       onChange={(e) => {
                         setChecked(prev => {
@@ -326,38 +411,42 @@ const PayrollRunDetail = ({ runId, onBack }) => {
                       onClick={(e) => e.stopPropagation()}
                     />
                   </td>
-                  <td className="px-4 py-3 font-medium cursor-pointer" onClick={() => setViewId(s.paySlipId)}>
-                    <div className="flex items-center gap-2">
+                  <td className="px-5 py-3.5 cursor-pointer" onClick={() => setViewId(s.paySlipId)} title="View payslip">
+                    <div className="flex items-center gap-3 font-medium text-gray-900 hover:text-orange-700">
                       <EmployeeAvatar name={s.employeeName} photoUrl={photos[s.employeeId]} />
                       {s.employeeName}
                     </div>
                   </td>
-                  <td className="px-4 py-3">{money(s.basicPay)}</td>
-                  <td className="px-4 py-3">{money(Number(s.grossPay) - Number(s.basicPay))}</td>
-                  <td className="px-4 py-3">{money(stat)}</td>
-                  <td className="px-4 py-3">{money(tax)}</td>
-                  <td className="px-4 py-3">{money(Number(s.totalDeductions) - stat - tax)}</td>
-                  <td className="px-4 py-3 font-semibold">{money(s.netPay)}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-5 py-3.5 text-right text-gray-700 tabular-nums">{money(s.basicPay)}</td>
+                  <td className="px-5 py-3.5 text-right text-gray-700 tabular-nums">{money(Number(s.grossPay) - Number(s.basicPay))}</td>
+                  <td className="px-5 py-3.5 text-right text-gray-700 tabular-nums">{money(stat)}</td>
+                  <td className="px-5 py-3.5 text-right text-gray-700 tabular-nums">{money(tax)}</td>
+                  <td className="px-5 py-3.5 text-right text-gray-700 tabular-nums">{money(Number(s.totalDeductions) - stat - tax)}</td>
+                  <td className={`px-5 py-3.5 text-right font-semibold tabular-nums ${net < 0 ? 'text-red-600' : 'text-gray-900'}`}>{money(s.netPay)}</td>
+                  <td className="px-5 py-3.5 text-right">
                     {st === 'SUBMITTED' && perm('edit') &&
-                      <button onClick={() => setEditId(s.paySlipId)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="Edit payslip"><Edit2 size={16} /></button>}
+                      <button onClick={() => setEditId(s.paySlipId)} className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors" title="Edit payslip"><Edit2 size={16} /></button>}
                   </td>
                 </tr>
               );
             })}
-            <tr className="bg-gray-50 font-semibold">
-              <td />
-              <td className="px-4 py-3" colSpan="6">Total ({run.employeeCount})</td>
-              <td className="px-4 py-3">{money(run.totalNetPay)}</td><td />
-            </tr>
           </tbody>
+          <tfoot>
+            <tr className="bg-gray-50 border-t border-gray-200 font-semibold text-gray-900">
+              <td />
+              <td className="px-5 py-3.5" colSpan="6">Total ({run.employeeCount} employees)</td>
+              <td className="px-5 py-3.5 text-right tabular-nums">{money(run.totalNetPay)}</td>
+              <td />
+            </tr>
+          </tfoot>
         </table>
       </div>
+
       {viewId && <PayslipDrilldown payslipId={viewId} onClose={() => setViewId(null)} />}
       {editId && <EditModal payslipId={editId} onClose={() => setEditId(null)} onSaved={() => { setEditId(null); load(); }} />}
-
     </div>
   );
 };
+
 
 export default PayrollRunDetail;

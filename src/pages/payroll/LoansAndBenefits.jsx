@@ -6,6 +6,7 @@ import LoanAccountsTab from '../../components/payroll/LoanAccountsTab';
 import HmoTab from '../../components/payroll/HmoTab';
 import AgenciesTab from '../../components/payroll/AgenciesTab';
 import CashAdvanceTab from '../../components/payroll/CashAdvanceTab';
+import PageShell from '../../components/payroll/PageShell';
 
 const TABS = [
   { key: 'loans', label: 'Loans' },
@@ -42,30 +43,15 @@ const LoansAndBenefits = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <PageShell title="Loans & Other Deductions"
+      subtitle="Employee loans, cash advances, HMO and government agencies"
+      tabs={TABS} tab={tab} onTab={setTab}>
       <Toaster position="top-right" />
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Loans & Other Deductions</h1>
-        <p className="text-gray-600 mt-1">Employee loans, cash advances, HMO and government agencies</p>
-      </div>
-
-      <div className="flex gap-1 border-b border-gray-200 mb-6">
-        {TABS.map(t => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${tab === t.key ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
       {tab === 'loans' && <LoanAccountsTab employees={employees} agencies={agencies} canCreate={canCreate} canEdit={canEdit} />}
       {tab === 'cashAdvance' && <CashAdvanceTab employees={employees} canCreate={canCreate} canEdit={canEdit} />}
       {tab === 'hmo' && <HmoTab employees={employees} canCreate={canCreate} canEdit={canEdit} canDelete={canDelete} />}
       {tab === 'agencies' && <AgenciesTab agencies={agencies} canCreate={canCreate} canEdit={canEdit} canDelete={canDelete} onChanged={loadAgencies} />}
-    </div>
+    </PageShell>
   );
 };
 

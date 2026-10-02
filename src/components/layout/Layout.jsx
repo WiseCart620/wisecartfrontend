@@ -8,11 +8,11 @@ const Layout = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-      
+
       <div className="flex">
         <Sidebar isOpen={sidebarOpen} toggle={() => setSidebarOpen(!sidebarOpen)} />
-        
-        <main className="flex-1 min-h-screen">
+
+        <main className="flex-1 min-h-[calc(100vh-81px)] min-w-0">
           {children}
         </main>
       </div>

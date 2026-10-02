@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { X } from 'lucide-react';
 
-export const inputCls = 'w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none';
+export const inputCls = 'w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none';
 
 export const MoneyInput = ({
   value, onChange, name, className = inputCls, decimals = 2,
@@ -126,6 +126,6 @@ export const Modal = ({ title, subtitle, onClose, children, maxW = 'max-w-2xl' }
 
 export const STATUS_STYLE = {
   ACTIVE: 'bg-green-100 text-green-800',
-  PAID: 'bg-blue-100 text-blue-800',
+  PAID: 'bg-orange-100 text-orange-800',
   CANCELLED: 'bg-gray-100 text-gray-600',
 };

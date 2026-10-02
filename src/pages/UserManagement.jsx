@@ -15,6 +15,7 @@ const ACTION_LABELS = {
   submit: 'Submit', approve: 'Approve / Reject', download: 'Download Docs', pay: 'Mark Paid', formula: 'Edit Deduction Formula',
   statutory: 'Edit Statutory Shares',
   ca_approve: 'Approve Cash Advances',
+  recalc: 'Recalculate Leave',
 };
 
 const FILTERS = {
@@ -72,13 +73,13 @@ const FEATURES = [
   { key: 'branches', label: 'Branches & Companies', description: 'Company and branch records', actions: ['view', 'create', 'edit', 'delete'] },
   { key: 'products', label: 'Products', description: 'Product catalog and variations', actions: ['view', 'create', 'edit', 'delete'] },
   { key: 'supplier', label: 'Supplier', description: 'Supplier records and contacts', actions: ['view', 'create', 'edit', 'delete'] },
-  { key: 'employees', label: 'Employees', description: 'Manage employee records and payroll data. Approve Cash Advances: only these users can approve new cash advances.', actions: ['view', 'create', 'edit', 'delete', 'manage', 'ca_approve'] },
+  { key: 'employees', label: 'Employees', description: 'Manage employee records and payroll data. Approve Cash Advances: only these users can approve new cash advances. Recalculate Leave: only these users can recalculate leave balances.', actions: ['view', 'create', 'edit', 'delete', 'manage', 'ca_approve', 'recalc'] },
   { key: 'payroll', label: 'Payroll Runs', description: 'View: see runs. Create: create runs, OT/undertime. Submit. Edit: change payslip items (GM). Approve/Reject. Download docs. Mark Paid. Statutory: edit SSS/PHIC/HDMF employee and employer shares.', actions: ['view', 'create', 'submit', 'edit', 'approve', 'download', 'pay', 'formula', 'statutory', 'delete'] },
 ];
 
 const ROLE_PRESETS = {
   PAYROLL_INCHARGE: ['employees:view', 'payroll:view', 'payroll:create', 'payroll:submit'],
-  GENERAL_MANAGER: ['employees:view', 'payroll:view', 'payroll:edit', 'payroll:approve', 'employees:ca_approve'],
+  GENERAL_MANAGER: ['employees:view', 'payroll:view', 'payroll:edit', 'payroll:approve', 'employees:ca_approve', 'employees:recalc'],
   FINANCE_OFFICER: ['employees:view', 'payroll:view', 'payroll:download', 'payroll:pay'],
 };
 

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
 import { inputCls } from './Shared';
 
+
 const SearchableSelect = ({
   options = [], value = '', onChange, placeholder = 'Select...',
   allLabel, disabled = false, allowCustom = false, searchPlaceholder, typeable = true,
@@ -124,7 +125,7 @@ const SearchableSelect = ({
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => pick(o.value)}
-                    className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm text-left hover:bg-blue-50 ${active ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-800'}`}
+                    className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm text-left hover:bg-orange-50 ${active ? 'bg-orange-50 text-orange-700 font-medium' : 'text-gray-800'}`}
                   >
                     <span className="truncate">{o.label}</span>
                     {active && <Check size={15} className="flex-shrink-0" />}
@@ -185,8 +186,8 @@ const SearchableSelect = ({
                   onClick={() => pick(o.value)}
                   onMouseEnter={() => setHi(idx)}
                   className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm text-left
-                    ${idx === hi ? 'bg-blue-50' : ''}
-                    ${active ? 'text-blue-700 font-medium' : 'text-gray-800'}`}
+                    ${idx === hi ? 'bg-orange-50' : ''}
+                    ${active ? 'text-orange-700 font-medium' : 'text-gray-800'}`}
                 >
                   <span className="truncate">{o.label}</span>
                   {active && <Check size={15} className="flex-shrink-0" />}
@@ -200,7 +201,7 @@ const SearchableSelect = ({
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => pick(q.trim())}
-                className="w-full px-3 py-2 text-sm text-left text-blue-700 hover:bg-blue-50"
+                className="w-full px-3 py-2 text-sm text-left text-orange-700 hover:bg-orange-50"
               >
                 Use "{q.trim()}"
               </button>

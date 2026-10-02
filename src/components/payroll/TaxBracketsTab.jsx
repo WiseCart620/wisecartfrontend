@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Calculator } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
-import { inputCls, money, Field, Modal, MoneyInput } from './Shared';
+import { inputCls, money, Field, Modal, MoneyInput } from './Shared'; 
+import Pagination from '../common/Pagination';
+import usePagination from './usePagination';
+
 
 const thisYear = new Date().getFullYear();
 const EMPTY = { effectiveYear: thisYear, minAnnualIncome: '', maxAnnualIncome: '', baseTax: '', ratePercent: '' };
@@ -83,6 +86,8 @@ const TaxBracketsTab = ({ canCreate, canEdit, canDelete }) => {
     }
   };
 
+  const { pageItems, paginationProps, totalItems } = usePagination(items, year);
+
   const runCalc = async (e) => {
     e.preventDefault();
     if (calcIncome === '') { toast.error('Enter an annual income'); return; }
@@ -107,48 +112,51 @@ const TaxBracketsTab = ({ canCreate, canEdit, canDelete }) => {
           <input type="number" className="w-24 px-3 py-2 border border-gray-300 rounded-lg" value={year} onChange={(e) => setYear(Number(e.target.value))} />
         </div>
         {canCreate && (
-          <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
             <Plus size={18} /> Add Bracket
           </button>
         )}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm overflow-x-auto mb-6">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              {['Min Annual Income', 'Max Annual Income', 'Base Tax', 'Rate %'].map(h => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
-              ))}
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {loading ? (
-              <tr><td colSpan="5" className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
-            ) : items.length === 0 ? (
-              <tr><td colSpan="5" className="px-4 py-8 text-center text-gray-500">No brackets for {year}</td></tr>
-            ) : items.map(b => (
-              <tr key={b.taxBrancketId} className="hover:bg-gray-50 text-sm">
-                <td className="px-4 py-3">{money(b.minAnnualIncome)}</td>
-                <td className="px-4 py-3">{b.maxAnnualIncome != null ? money(b.maxAnnualIncome) : 'and above'}</td>
-                <td className="px-4 py-3">{money(b.baseTax)}</td>
-                <td className="px-4 py-3">{b.ratePercent}%</td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex justify-end gap-1">
-                    {canEdit && <button onClick={() => openEdit(b)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 size={17} /></button>}
-                    {canDelete && <button onClick={() => remove(b)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={17} /></button>}
-                  </div>
-                </td>
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full tbl-card mb-6">
+        <div className="overflow-auto w-full tbl-scroll">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                {['Min Annual Income', 'Max Annual Income', 'Base Tax', 'Rate %'].map(h => (
+                  <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
+                ))}
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-200">
+              {loading ? (
+                <tr><td colSpan="5" className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
+              ) : items.length === 0 ? (
+                <tr><td colSpan="5" className="px-4 py-8 text-center text-gray-500">No brackets for {year}</td></tr>
+              ) : pageItems.map(b => (
+                <tr key={b.taxBrancketId} className="hover:bg-gray-50 text-sm">
+                  <td className="px-4 py-3">{money(b.minAnnualIncome)}</td>
+                  <td className="px-4 py-3">{b.maxAnnualIncome != null ? money(b.maxAnnualIncome) : 'and above'}</td>
+                  <td className="px-4 py-3">{money(b.baseTax)}</td>
+                  <td className="px-4 py-3">{b.ratePercent}%</td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex justify-end gap-1">
+                      {canEdit && <button onClick={() => openEdit(b)} className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"><Edit2 size={17} /></button>}
+                      {canDelete && <button onClick={() => remove(b)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={17} /></button>}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!loading && totalItems > 0 && <Pagination {...paginationProps} />}
       </div>
 
       <div className="bg-gray-50 border border-gray-100 rounded-xl p-5 max-w-md">
         <div className="flex items-center gap-2 mb-3">
-          <Calculator size={16} className="text-blue-600" />
+          <Calculator size={16} className="text-orange-600" />
           <h3 className="text-sm font-semibold text-gray-900">Quick Tax Calculator</h3>
         </div>
         <form onSubmit={runCalc} className="flex gap-2 items-end">
@@ -156,7 +164,7 @@ const TaxBracketsTab = ({ canCreate, canEdit, canDelete }) => {
             <label className="block text-xs font-medium text-gray-700 mb-1">Annual taxable income</label>
             <MoneyInput className={inputCls} value={calcIncome} onChange={(e) => setCalcIncome(e.target.value)} />
           </div>
-          <button type="submit" disabled={calcLoading} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
+          <button type="submit" disabled={calcLoading} className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 disabled:opacity-50">
             {calcLoading ? '...' : 'Compute'}
           </button>
         </form>
@@ -176,7 +184,7 @@ const TaxBracketsTab = ({ canCreate, canEdit, canDelete }) => {
             <Field label="Rate %" required><MoneyInput className={inputCls} value={form.ratePercent} onChange={set('ratePercent')} /></Field>
             <div className="md:col-span-2 flex justify-end gap-2 pt-2 border-t">
               <button type="button" onClick={() => setShow(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
-              <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">{editing ? 'Save' : 'Create'}</button>
+              <button type="submit" className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">{editing ? 'Save' : 'Create'}</button>
             </div>
           </form>
         </Modal>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
@@ -12,6 +12,8 @@ import DisbursementTab from '../../components/payroll/DisbursementTab';
 import AnnualMonitoringTab from '../../components/payroll/AnnualMonitoringTab';
 import { runOptionsFor, computePeriod, computePeriodFor } from '../../utils/payrollPeriods';
 import SearchableSelect from '../../components/payroll/SearchableSelect';
+import Pagination from '../../components/common/Pagination';
+import usePagination from '../../components/payroll/usePagination';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
   'September', 'October', 'November', 'December'].map((m, i) => ({ value: String(i + 1), label: m }));
@@ -28,12 +30,19 @@ const periodFor = (opt, month, year) =>
 
 
 const STATUS_STYLE = {
-  DRAFT: 'bg-gray-100 text-gray-700',
-  SUBMITTED: 'bg-blue-100 text-blue-700',
-  APPROVED: 'bg-green-100 text-green-700',
-  REJECTED: 'bg-red-100 text-red-700',
-  PAID: 'bg-purple-100 text-purple-700',
+  DRAFT: 'bg-gray-50 text-gray-700 ring-1 ring-gray-200',
+  SUBMITTED: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+  APPROVED: 'bg-green-50 text-green-700 ring-1 ring-green-200',
+  REJECTED: 'bg-red-50 text-red-700 ring-1 ring-red-200',
+  PAID: 'bg-purple-50 text-purple-700 ring-1 ring-purple-200',
 };
+const STATUS_DOT = {
+  DRAFT: 'bg-gray-400', SUBMITTED: 'bg-amber-500', APPROVED: 'bg-green-500',
+  REJECTED: 'bg-red-500', PAID: 'bg-purple-500',
+};
+const fmtD = (d) => d
+  ? new Date(d + 'T00:00:00').toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+  : '—';
 
 const EMPTY = { option: '', month: '', year: '', periodStart: '', periodEnd: '', payDate: '', daysOfWork: '' };
 const STATUS_LABEL = { DRAFT: 'On-Going', SUBMITTED: 'On-Going (For Approval)', APPROVED: 'Approved', REJECTED: 'Rejected', PAID: 'Paid' };
@@ -53,13 +62,57 @@ const PayrollRunManagement = () => {
   const [creating, setCreating] = useState(false);
   const [selectedRunId, setSelectedRunId] = useState(null);
   const [tab, setTab] = useState('runs');
+  const [filters, setFilters] = useState({ status: '', month: '', year: '' });
+  const headRef = useRef(null);
+
+  const [headH, setHeadH] = useState(120);
+  useLayoutEffect(() => {
+    if (headRef.current && headRef.current.offsetHeight !== headH) setHeadH(headRef.current.offsetHeight);
+  });
+
+  const pageStyle = { '--nav-h': '81px', '--head-h': `${headH}px` };
+
   const approvedRuns = runs.filter(r => r.status === 'APPROVED' || r.status === 'PAID');
+
+  const yearOptions = [...new Set(runs.map(r => (r.periodStart || '').slice(0, 4)).filter(Boolean))]
+    .sort().reverse().map(y => ({ value: y, label: y }));
+
+  const filteredRuns = runs.filter(r => {
+    const [y, m] = (r.periodStart || '').split('-');
+    if (filters.status && r.status !== filters.status) return false;
+    if (filters.year && y !== filters.year) return false;
+    if (filters.month && Number(m) !== Number(filters.month)) return false;
+    return true;
+  });
+
+  const hasFilters = Object.values(filters).some(Boolean);
+  const { pageItems, paginationProps, totalItems } =
+    usePagination(filteredRuns, `${filters.status}|${filters.month}|${filters.year}`);
+
   const tabBar = (
-    <div className="flex gap-1 border-b border-gray-200 mt-4">
+    <div className="flex gap-6 border-b border-gray-200 mt-3 overflow-x-auto overflow-y-hidden">
       {[['runs', 'Payroll Runs'], ['ot', 'Overtime & Undertime'], ['rb', 'Reimbursements'], ['db', 'Disbursement'], ['an', 'Annual Monitoring']].map(([k, l]) => (
         <button key={k} onClick={() => setTab(k)}
-          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${tab === k ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500'}`}>{l}</button>
+          className={`pb-3 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${tab === k ? 'border-orange-600 text-orange-700' : 'border-transparent text-gray-500 hover:text-gray-800'}`}>{l}</button>
       ))}
+    </div>
+  );
+
+  const stickyHead = (
+    <div ref={headRef} className="sticky top-[var(--nav-h)] z-20 bg-gray-50 pt-6 pb-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{tab === 'runs' ? 'Payroll Runs' : 'Payroll'}</h1>
+          {tab === 'runs' && <p className="text-gray-500 mt-1 text-sm">Generate payslips and walk them through submit, approve and pay.</p>}
+        </div>
+        {tab === 'runs' && canCreate && (
+          <button onClick={() => setShow(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-orange-600 text-white rounded-lg text-sm font-medium shadow-sm hover:bg-orange-700 transition-colors">
+            <Plus size={18} /> New Run
+          </button>
+        )}
+      </div>
+      {tabBar}
     </div>
   );
 
@@ -161,11 +214,10 @@ const PayrollRunManagement = () => {
   };
   if ((tab === 'ot' || tab === 'rb' || tab === 'db' || tab === 'an') && !selectedRunId) {
     return (
-      <div className="p-6 max-w-7xl mx-auto">
+      <div className="p-6 pt-0 max-w-7xl mx-auto" style={pageStyle}>
         <Toaster position="top-right" />
-        <h1 className="text-3xl font-bold text-gray-900">Payroll</h1>
-        {tabBar}
-        <div className="mt-6">
+        {stickyHead}
+        <div>
           {tab === 'ot' && <OvertimeEntries canEdit={canCreate} />}
           {tab === 'rb' && <ReimbursementTab employees={employees} canEdit={canCreate} />}
           {tab === 'db' && <DisbursementTab approvedRuns={approvedRuns} canManage={canManage} />}
@@ -185,61 +237,107 @@ const PayrollRunManagement = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 pt-0 max-w-7xl mx-auto" style={pageStyle}>
       <Toaster position="top-right" />
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Payroll Runs</h1>
-          <p className="text-gray-600 mt-1">Generate payslips and walk them through submit, approve and pay</p>
-          {tabBar}
-        </div>
-        {canCreate && (
-          <button onClick={() => setShow(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            <Plus size={18} /> New Run
-          </button>
-        )}
+      {stickyHead}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        {[
+          ['Total runs', runs.length, 'text-gray-900'],
+          ['On-going', runs.filter(r => r.status === 'DRAFT' || r.status === 'SUBMITTED').length, 'text-amber-600'],
+          ['Approved / Paid', approvedRuns.length, 'text-green-600'],
+          ['Net pay released', money(approvedRuns.reduce((s, r) => s + Number(r.totalNetPay || 0), 0)), 'text-gray-900'],
+        ].map(([label, val, color]) => (
+          <div key={label} className="bg-white rounded-xl border border-gray-200 px-5 py-4 shadow-sm">
+            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</div>
+            <div className={`text-2xl font-semibold mt-1 ${color}`}>{val}</div>
+          </div>
+        ))}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              {['Schedule', 'Period', 'Pay Date', 'Employees', 'Net Pay', 'Status'].map(h => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
-              ))}
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {loading ? (
-              <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
-            ) : runs.length === 0 ? (
-              <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">No payroll runs yet</td></tr>
-            ) : runs.map(r => (
-              <tr key={r.payRollRunId} className="hover:bg-gray-50 text-sm cursor-pointer" onClick={() => setSelectedRunId(r.payRollRunId)}>
-                <td className="px-4 py-3 font-medium text-gray-900">{r.scheduleName}</td>
-                <td className="px-4 py-3">{r.periodStart} – {r.periodEnd}</td>
-                <td className="px-4 py-3">{r.payDate}</td>
-                <td className="px-4 py-3">{r.employeeCount}</td>
-                <td className="px-4 py-3">{money(r.totalNetPay)}</td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${STATUS_STYLE[r.status]}`}>{STATUS_LABEL[r.status] || r.status}</span>
-                  <span className="ml-3 text-blue-600 text-xs underline">View</span>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  {canDeleteRun && (r.status === 'DRAFT' || r.status === 'REJECTED') && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); deleteRun(r); }}
-                      title="Delete run"
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
-                      <Trash2 size={18} />
-                    </button>
-                  )}
-                </td>
+      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-10 bg-gray-50 pb-4">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-wrap items-end gap-3">
+          <div className="min-w-[200px]">
+            <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+            <SearchableSelect
+              allLabel="All statuses" typeable={false} value={filters.status}
+              options={Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label }))}
+              onChange={(v) => setFilters(p => ({ ...p, status: v }))}
+            />
+          </div>
+          <div className="min-w-[160px]">
+            <label className="block text-xs font-medium text-gray-700 mb-1">Month</label>
+            <SearchableSelect
+              allLabel="All months" typeable={false} searchPlaceholder="Search month..."
+              value={filters.month} options={MONTHS}
+              onChange={(v) => setFilters(p => ({ ...p, month: v }))}
+            />
+          </div>
+          <div className="min-w-[120px]">
+            <label className="block text-xs font-medium text-gray-700 mb-1">Year</label>
+            <SearchableSelect
+              allLabel="All years" typeable={false}
+              value={filters.year} options={yearOptions}
+              onChange={(v) => setFilters(p => ({ ...p, year: v }))}
+            />
+          </div>
+          {hasFilters && (
+            <button type="button" onClick={() => setFilters({ status: '', month: '', year: '' })}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Clear</button>
+          )}
+          <div className="ml-auto text-xs text-gray-500 pb-2">
+            Showing {filteredRuns.length} of {runs.length} run{runs.length === 1 ? '' : 's'}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden w-full tbl-card">
+        <div className="overflow-auto w-full tbl-scroll">
+          <table className="w-full min-w-[860px]">
+            <thead className="bg-gray-50">
+              <tr>
+                {['Schedule', 'Period', 'Pay Date', 'Employees', 'Net Pay', 'Status'].map(h => (
+                  <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                ))}
+                <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-200">
+              {loading ? (
+                <tr><td colSpan="7" className="px-5 py-12 text-center text-gray-500">Loading...</td></tr>
+              ) : filteredRuns.length === 0 ? (
+                <tr><td colSpan="7" className="px-5 py-12 text-center text-gray-500">
+                  {hasFilters ? 'No payroll runs match the filters' : 'No payroll runs yet'}
+                </td></tr>
+              ) : pageItems.map(r => (
+                <tr key={r.payRollRunId} className="hover:bg-gray-50 text-sm cursor-pointer transition-colors" onClick={() => setSelectedRunId(r.payRollRunId)}>
+                  <td className="px-5 py-4 font-medium text-gray-900 whitespace-nowrap">{r.scheduleName}</td>
+                  <td className="px-5 py-4 text-gray-700 whitespace-nowrap">{fmtD(r.periodStart)} – {fmtD(r.periodEnd)}</td>
+                  <td className="px-5 py-4 text-gray-700 whitespace-nowrap">{fmtD(r.payDate)}</td>
+                  <td className="px-5 py-4 text-gray-700">{r.employeeCount}</td>
+                  <td className="px-5 py-4 font-semibold text-gray-900 whitespace-nowrap">{money(r.totalNetPay)}</td>
+                  <td className="px-5 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_STYLE[r.status] || STATUS_STYLE.DRAFT}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[r.status] || 'bg-gray-400'}`} />
+                      {STATUS_LABEL[r.status] || r.status}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4 text-right whitespace-nowrap">
+                    <span className="text-orange-600 text-xs font-medium mr-2">View</span>
+                    {canDeleteRun && (r.status === 'DRAFT' || r.status === 'REJECTED') && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteRun(r); }}
+                        title="Delete run"
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                        <Trash2 size={17} />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!loading && totalItems > 0 && <Pagination {...paginationProps} />}
       </div>
 
       {show && (
@@ -294,7 +392,7 @@ const PayrollRunManagement = () => {
             </Field>
             <div className="flex justify-end gap-2 pt-2 border-t">
               <button type="button" onClick={() => setShow(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
-              <button type="submit" disabled={creating} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
+              <button type="submit" disabled={creating} className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 disabled:opacity-50">
                 {creating ? 'Creating...' : 'Create & Generate'}
               </button>
             </div>

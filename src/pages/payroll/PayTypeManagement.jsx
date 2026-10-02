@@ -6,12 +6,16 @@ import { LoadingOverlay } from '../../components/common/LoadingOverlay';
 import { useAuth, can } from '../../context/AuthContext';
 import OvertimeRatesCard from '../../components/payroll/OvertimeRatesCard';
 import { MoneyInput } from '../../components/payroll/Shared';
+import Pagination from '../../components/common/Pagination';
+import usePagination from '../../components/payroll/usePagination';
+import PageShell from '../../components/payroll/PageShell';
+import SearchableSelect from '../../components/payroll/SearchableSelect';
 
 const EMPTY = { payTypeName: '', category: 'EARNING', isTaxable: true, unit: 'HOURS', includeInEntries: false };
-const inputCls = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition';
+const inputCls = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition';
 const CATEGORY_STYLE = {
   EARNING: 'bg-green-100 text-green-800',
-  ALLOWANCE: 'bg-blue-100 text-blue-800',
+  ALLOWANCE: 'bg-orange-100 text-orange-800',
   DEDUCTION: 'bg-red-100 text-red-800',
 };
 
@@ -150,6 +154,8 @@ const PayTypeManagement = () => {
     .sort((a, b) => (a.category || '').localeCompare(b.category || '')
       || (a.payTypeName || '').localeCompare(b.payTypeName || ''));
 
+  const { pageItems, paginationProps, totalItems } = usePagination(visibleItems, `${query}|${catFilter}`);
+
   const rateLabel = (p) => {
     if (p.code === 'ABSENCE_DAY') return ratesCurrent ? `${pct(ratesCurrent.absenceMultiplier)} of daily rate` : 'Daily rate';
     if (p.code === 'LATE_HOUR') return ratesCurrent ? `${pct(ratesCurrent.lateMultiplier)} of hourly rate` : 'Hourly rate';
@@ -167,78 +173,79 @@ const PayTypeManagement = () => {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <PageShell maxW="max-w-5xl" title="Pay Types"
+      subtitle="Earnings, allowances, and deductions used in payroll"
+      action={canCreate && (
+        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+          <Plus size={20} /> Add Pay Type
+        </button>
+      )}>
       <LoadingOverlay show={saving} message="Saving..." />
       <Toaster position="top-right" />
 
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Pay Types</h1>
-          <p className="text-gray-600 mt-1">Earnings, allowances, and deductions used in payroll</p>
-        </div>
-        {canCreate && (
-          <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            <Plus size={20} /> Add Pay Type
-          </button>
-        )}
-      </div>
+      <div className="mb-6"><OvertimeRatesCard /></div>
 
-      <OvertimeRatesCard />
-
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input className={inputCls + ' !w-64 !pl-9'} placeholder="Search pay types..."
-            value={query} onChange={(e) => setQuery(e.target.value)} />
+      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-gray-50 pb-4 flex flex-wrap items-center gap-3">
+        <div className="w-72">
+          <SearchableSelect
+            allLabel="All pay types" allowCustom placeholder="All pay types"
+            searchPlaceholder="Search pay type..."
+            value={query}
+            options={[...new Set(items.map(p => p.payTypeName).filter(Boolean))].sort().map(n => ({ value: n, label: n }))}
+            onChange={(v) => setQuery(v || '')}
+          />
         </div>
         <div className="flex gap-1">
           {[['ALL', 'All'], ['EARNING', 'Earnings'], ['ALLOWANCE', 'Allowances'], ['DEDUCTION', 'Deductions']].map(([k, l]) => (
             <button key={k} type="button" onClick={() => setCatFilter(k)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium border ${catFilter === k
-                ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}>{l}</button>
+                ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}>{l}</button>
           ))}
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              {['Name', 'Category', 'Taxable', 'Entered As', 'Rate'].map(h => (
-                <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
-              ))}
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {visibleItems.length === 0 ? (
-              <tr><td colSpan="6" className="px-6 py-8 text-center text-gray-500">No pay types yet</td></tr>
-            ) : visibleItems.map(p => (
-              <tr key={p.payTypeId} className="hover:bg-gray-50">
-                <td className="px-6 py-4 font-medium text-gray-900">
-                  <span className="inline-flex items-center gap-2">
-                    {p.payTypeName}
-                    {p.systemDefined && <Lock size={13} className="text-gray-400" title="System pay type: cannot be deleted" />}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${CATEGORY_STYLE[p.category] || 'bg-gray-100 text-gray-800'}`}>{p.category}</span>
-                </td>
-                <td className="px-6 py-4 text-sm">{p.category === 'DEDUCTION' ? '—' : p.isTaxable ? 'Yes' : 'No'}</td>
-                <td className="px-6 py-4 text-sm">
-                  {p.unit === 'AMOUNT' ? 'Amount (₱)' : p.unit ? p.unit.charAt(0) + p.unit.slice(1).toLowerCase() : '—'}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-700" title="First hours / excess hours where applicable">{rateLabel(p)}</td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex justify-end gap-2">
-                    {canEdit && <button onClick={() => openEdit(p)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 size={18} /></button>}
-                    {canDelete && !p.systemDefined && <button onClick={() => remove(p)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={18} /></button>}
-                  </div>
-                </td>
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full tbl-card">
+        <div className="overflow-auto w-full tbl-scroll">
+          <table className="w-full min-w-[800px]">
+            <thead className="bg-gray-50">
+              <tr>
+                {['Name', 'Category', 'Taxable', 'Entered As', 'Rate'].map(h => (
+                  <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
+                ))}
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-200">
+              {visibleItems.length === 0 ? (
+                <tr><td colSpan="6" className="px-6 py-8 text-center text-gray-500">No pay types yet</td></tr>
+              ) : pageItems.map(p => (
+                <tr key={p.payTypeId} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 font-medium text-gray-900">
+                    <span className="inline-flex items-center gap-2">
+                      {p.payTypeName}
+                      {p.systemDefined && <Lock size={13} className="text-gray-400" title="System pay type: cannot be deleted" />}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${CATEGORY_STYLE[p.category] || 'bg-gray-100 text-gray-800'}`}>{p.category}</span>
+                  </td>
+                  <td className="px-6 py-4 text-sm">{p.category === 'DEDUCTION' ? '—' : p.isTaxable ? 'Yes' : 'No'}</td>
+                  <td className="px-6 py-4 text-sm">
+                    {p.unit === 'AMOUNT' ? 'Amount (₱)' : p.unit ? p.unit.charAt(0) + p.unit.slice(1).toLowerCase() : '—'}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-700" title="First hours / excess hours where applicable">{rateLabel(p)}</td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex justify-end gap-2">
+                      {canEdit && <button onClick={() => openEdit(p)} className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"><Edit2 size={18} /></button>}
+                      {canDelete && !p.systemDefined && <button onClick={() => remove(p)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={18} /></button>}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {totalItems > 0 && <Pagination {...paginationProps} />}
       </div>
 
       {showModal && (
@@ -289,7 +296,7 @@ const PayTypeManagement = () => {
                       <button type="button"
                         onClick={() => setRateForm(Object.fromEntries(
                           RATE_FIELDS[editing.code].map(([k]) => [k, String(ratesDefaults[k])])))}
-                        className="text-xs font-medium text-blue-600 hover:text-blue-800">
+                        className="text-xs font-medium text-orange-600 hover:text-orange-800">
                         Reset to default
                       </button>
                     )}
@@ -314,13 +321,13 @@ const PayTypeManagement = () => {
 
               <div className="flex gap-3 pt-4 border-t border-gray-200">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-                <button type="submit" className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{editing ? 'Save' : 'Create'}</button>
+                <button type="submit" className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">{editing ? 'Save' : 'Create'}</button>
               </div>
             </form>
           </div>
         </div>
       )}
-    </div>
+    </PageShell>
   );
 };
 

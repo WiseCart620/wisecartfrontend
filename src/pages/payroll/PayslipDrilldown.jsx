@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Printer, PenLine, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Printer } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
-import { useAuth, can } from '../../context/AuthContext';
 import '../../styles/payslip-print.css';
 
 // ---------- company config ----------
@@ -43,6 +42,7 @@ const classify = (type = '') => {
   const t = type.toLowerCase();
   if (t === 'cash advance' || t === 'loan - cash advance') return 'cashAdvance';
   if (t.includes('hmo')) return 'hmo';
+  if (t.includes('mp2')) return 'mp2';
   if (t.includes(' - ')) {
     const hdmf = t.includes('hdmf') || t.includes('pag-ibig') || t.includes('pagibig');
     if (t.includes('sss')) return 'sssLoan';
@@ -69,56 +69,8 @@ const DEDUCTION_LINES = [
 const MIN_ROWS = 8;
 
 const PayslipDrilldown = ({ payslipId, onClose }) => {
-  const { user } = useAuth();
-  const canEditSignature = can(user, 'payroll', 'edit');
   const [slip, setSlip] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [signature, setSignature] = useState(null);
-  const [sigBusy, setSigBusy] = useState(false);
-  const sigInput = useRef(null);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await api.get('/payroll/settings/payslip-signature');
-        if (r.success) setSignature(r.data?.signature || null);
-      } catch { /* payslip still works without a signature */ }
-    })();
-  }, []);
-
-  const uploadSignature = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    if (!['image/png', 'image/jpeg'].includes(file.type)) { toast.error('Use a PNG or JPG image'); return; }
-    if (file.size > 1024 * 1024) { toast.error('Image must be 1 MB or smaller'); return; }
-    setSigBusy(true);
-    try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const r = await api.upload('/payroll/settings/payslip-signature', fd);
-      if (r.success) { setSignature(r.data?.signature || null); toast.success('Signature saved'); }
-      else toast.error(r.error || 'Failed to upload signature');
-    } catch (err) {
-      toast.error(err.message || 'Failed to upload signature');
-    } finally {
-      setSigBusy(false);
-    }
-  };
-
-  const removeSignature = async () => {
-    if (!window.confirm('Remove the signature from all payslips?')) return;
-    setSigBusy(true);
-    try {
-      await api.delete('/payroll/settings/payslip-signature');
-      setSignature(null);
-      toast.success('Signature removed');
-    } catch (err) {
-      toast.error(err.message || 'Failed to remove signature');
-    } finally {
-      setSigBusy(false);
-    }
-  };
 
   useEffect(() => {
     (async () => {
@@ -145,7 +97,6 @@ const PayslipDrilldown = ({ payslipId, onClose }) => {
   const name = slip.employeeName || '';
   const designation = (slip.designation || slip.department || '').toUpperCase();
   const period = fmtRange(slip.periodStart || slip.payPeriod, slip.periodEnd || slip.payPeriod);
-  const today = new Date().toLocaleDateString('en-US');
   const idNo = slip.employeeNumber || '';
   const dept = (slip.department || '').toUpperCase();
 
@@ -193,7 +144,7 @@ const PayslipDrilldown = ({ payslipId, onClose }) => {
     ...(slip.earnings || [])
       .filter(e => {
         const t = (e.payTypeName || '').toLowerCase();
-        return !(t.includes('13th') || t.includes('overtime') || t.includes('reimburse') || isAllowance(e)); F
+        return !(t.includes('13th') || t.includes('overtime') || t.includes('reimburse') || isAllowance(e));
       })
       .map(e => ({ label: (e.payTypeName || '').toUpperCase(), amount: e.amount })),
   ];
@@ -231,7 +182,7 @@ const PayslipDrilldown = ({ payslipId, onClose }) => {
     { label: 'Balance', amount: amt(slip.cashAdvanceBalance) },
     { header: 'LEAVE BALANCE' },
     { label: 'Vacation Leave', amount: slip.vacationLeaveBalance != null ? slip.vacationLeaveBalance : '0' },
-    { label: 'Sick Leave', amount: slip.sickLeaveBalance != null ? slip.sickLeaveBalance : '0' },
+    { label: 'Service Incentive Leave', amount: slip.sickLeaveBalance != null ? slip.sickLeaveBalance : '0' },
   ];
 
   const rowCount = Math.max(earnings.length, deductions.length, advances.length, MIN_ROWS);
@@ -239,33 +190,11 @@ const PayslipDrilldown = ({ payslipId, onClose }) => {
 
   return (
     <div className="payslip-overlay fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="payslip-print-area bg-white rounded-xl shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+      <div className="payslip-print-area bg-white rounded-xl shadow-xl w-f-full max-w-5xl max-h-[90vh] overflow-y-auto">
         {/* toolbar (screen only) */}
         <div className="no-print sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
           <h2 className="text-base font-semibold text-gray-900">Payslip &middot; {slip.employeeName}</h2>
           <div className="flex gap-2">
-            {canEditSignature && (
-              <>
-                <input ref={sigInput} type="file" accept="image/png,image/jpeg" className="hidden" onChange={uploadSignature} />
-                <button
-                  onClick={() => sigInput.current?.click()}
-                  disabled={sigBusy}
-                  className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-100 disabled:opacity-50"
-                >
-                  <PenLine size={16} /> {signature ? 'Change Signature' : 'Upload Signature'}
-                </button>
-                {signature && (
-                  <button
-                    onClick={removeSignature}
-                    disabled={sigBusy}
-                    title="Remove signature"
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
-              </>
-            )}
             <button
               onClick={() => window.print()}
               className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-100"
@@ -373,8 +302,6 @@ const PayslipDrilldown = ({ payslipId, onClose }) => {
                   This payslip is generated for payroll record purposes. Please review the details above and report any discrepancy to the Finance Officer.
                 </div>
               </div>
-
-              <div className="ps-ack-date">Date: {today}</div>
             </div>
           </div>
         </div>

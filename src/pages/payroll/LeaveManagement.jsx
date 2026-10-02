@@ -5,6 +5,7 @@ import { useAuth, can } from '../../context/AuthContext';
 import LeaveRequestsTab from '../../components/payroll/LeaveRequestsTab';
 import LeaveBalancesTab from '../../components/payroll/LeaveBalancesTab';
 import LeaveTypesTab from '../../components/payroll/LeaveTypesTab';
+import PageShell from '../../components/payroll/PageShell';
 
 const TABS = [
   { key: 'requests', label: 'Requests' },
@@ -40,29 +41,14 @@ const LeaveManagement = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <PageShell title="Leave Management"
+      subtitle="Leave requests, yearly balances and leave types"
+      tabs={TABS} tab={tab} onTab={setTab}>
       <Toaster position="top-right" />
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Leave Management</h1>
-        <p className="text-gray-600 mt-1">Leave requests, yearly balances and leave types</p>
-      </div>
-
-      <div className="flex gap-1 border-b border-gray-200 mb-6">
-        {TABS.map(t => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${tab === t.key ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
       {tab === 'requests' && <LeaveRequestsTab employees={employees} leaveTypes={leaveTypes} canCreate={canCreate} canEdit={canEdit} canDelete={canDelete} />}
       {tab === 'balances' && <LeaveBalancesTab employees={employees} leaveTypes={leaveTypes} canEdit={canEdit} canDelete={canDelete} />}
       {tab === 'types' && <LeaveTypesTab leaveTypes={leaveTypes} canCreate={canCreate} canEdit={canEdit} canDelete={canDelete} onChanged={loadTypes} />}
-    </div>
+    </PageShell>
   );
 };
 

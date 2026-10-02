@@ -88,9 +88,9 @@ const FormulaGroup = ({ group, formulas, setFormulas, disabled, hoursPerDay }) =
             <div className="p-4 space-y-4">
                 {field(group.dailyKey, d, 'Daily rate')}
                 {field(group.hourlyKey, h, 'Hourly rate')}
-                <div className="flex items-center justify-between rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-xs">
-                    <span className="text-blue-800 font-medium">Example result</span>
-                    <span className="text-blue-900">
+                <div className="flex items-center justify-between rounded-lg bg-orange-50 border border-orange-100 px-3 py-2 text-xs">
+                    <span className="text-orange-800 font-medium">Example result</span>
+                    <span className="text-orange-900">
                         {d.error || h.error ? '—' : `${peso(d.value)} per day · ${peso(h.value)} per hour`}
                     </span>
                 </div>
@@ -250,7 +250,7 @@ const OvertimeRatesCard = () => {
                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
                                             {VARIABLES.map(([name, desc]) => (
                                                 <div key={name} className="flex items-start gap-2">
-                                                    <code className="px-1.5 py-0.5 rounded bg-white border border-gray-200 text-xs font-mono text-blue-700">{name}</code>
+                                                    <code className="px-1.5 py-0.5 rounded bg-white border border-gray-200 text-xs font-mono text-orange-700">{name}</code>
                                                     <span className="text-xs text-gray-600">{desc}</span>
                                                 </div>
                                             ))}
@@ -279,7 +279,7 @@ const OvertimeRatesCard = () => {
                                     )}
                                     <button onClick={saveAll} disabled={saving || savingF || formulaInvalid}
                                         title={formulaInvalid ? 'Fix the formula errors first' : ''}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
+                                        className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 disabled:opacity-50">
                                         {saving || savingF ? 'Saving...' : 'Save Changes'}
                                     </button>
                                 </div>

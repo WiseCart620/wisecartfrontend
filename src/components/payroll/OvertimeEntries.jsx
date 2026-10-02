@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Trash2, Edit2, CheckCircle, ChevronDown, ChevronRight } from 'lucide-react';
+import { Trash2, Edit2, CheckCircle, ChevronRight, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { useAuth, can } from '../../context/AuthContext';
-import { inputCls, Field, MoneyInput } from './Shared';
+import { inputCls, Field, MoneyInput, Modal } from './Shared';
 import SearchableSelect from './SearchableSelect';
+import EmployeeAvatar from './EmployeeAvatar';
+import { useEmployeeDirectory, fullNameOf } from './EmployeeCell';
+import Pagination from '../common/Pagination';
+import usePagination from './usePagination';
+import EmployeeSearchBox from './EmployeeSearchBox';
 
 const ENTRY_CODES = new Set(['REGULAR_OT', 'REST_DAY', 'SPECIAL_HOLIDAY', 'REGULAR_HOLIDAY',
     'REST_DAY_REGULAR_HOLIDAY', 'NIGHT_DIFF', 'UNDERTIME_HOUR', 'LATE_HOUR', 'ABSENCE_DAY']);
@@ -52,10 +57,13 @@ const OvertimeEntries = ({ canEdit }) => {
     const [month, setMonth] = useState(String(now.getMonth() + 1));
     const [year, setYear] = useState(String(now.getFullYear()));
     const [cutoff, setCutoff] = useState('ALL');
-    const [filterEmployee, setFilterEmployee] = useState('');
+    const [empSearch, setEmpSearch] = useState('');
+    const [empSelected, setEmpSelected] = useState('');
     const [filterType, setFilterType] = useState('');
     const [editing, setEditing] = useState(null);
-    const [collapsed, setCollapsed] = useState(() => new Set());
+    const [showForm, setShowForm] = useState(false);
+    const [expanded, setExpanded] = useState(() => new Set());
+    const dir = useEmployeeDirectory();
     const { from, to } = rangeFor(month, year, cutoff);
     const [form, setForm] = useState(EMPTY_FORM(now.toISOString().slice(0, 10)));
 
@@ -112,7 +120,8 @@ const OvertimeEntries = ({ canEdit }) => {
         return form.unit === 'MINUTES' ? n / 60 : n;
     };
 
-    const reset = () => { setEditing(null); setForm({ ...EMPTY_FORM(from) }); };
+    const reset = () => { setEditing(null); setForm({ ...EMPTY_FORM(from) }); setShowForm(false); };
+    const openAdd = () => { setEditing(null); setForm({ ...EMPTY_FORM(from) }); setShowForm(true); };
 
     const save = async (e) => {
         e.preventDefault();
@@ -147,7 +156,7 @@ const OvertimeEntries = ({ canEdit }) => {
             unit: mode === 'DAYS' ? 'DAYS' : mode === 'AMOUNT' ? 'AMOUNT' : 'HOURS',
             remarks: r.remarks || '',
         });
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setShowForm(true);
     };
 
     const del = async (r) => {
@@ -175,8 +184,17 @@ const OvertimeEntries = ({ canEdit }) => {
         return `${hours} hr${Number(hours) === 1 ? '' : 's'}`;
     };
 
+    const empNames = useMemo(
+        () => employees.map(e => fullNameOf(e)).sort((a, b) => a.localeCompare(b)),
+        [employees]);
+    const selectedId = empSelected
+        ? String(employees.find(e => fullNameOf(e) === empSelected)?.employeeId ?? '')
+        : '';
+    const q = empSearch.trim().toLowerCase();
+    const rowName = (r) => (dir[r.employeeId]?.name || r.employeeName || '').toLowerCase();
+
     const filteredRows = rows.filter(r =>
-        (!filterEmployee || String(r.employeeId) === filterEmployee) &&
+        (empSelected ? String(r.employeeId) === selectedId : (!q || rowName(r).includes(q))) &&
         (!filterType || r.entryType === filterType));
 
     const groups = useMemo(() => {
@@ -185,10 +203,16 @@ const OvertimeEntries = ({ canEdit }) => {
             if (!map.has(r.employeeId)) map.set(r.employeeId, { id: r.employeeId, name: r.employeeName, rows: [] });
             map.get(r.employeeId).rows.push(r);
         });
-        return Array.from(map.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        const list = Array.from(map.values());
+        list.forEach(g => g.rows.sort((a, b) =>
+            String(a.workDate).localeCompare(String(b.workDate)) || (a.id - b.id)));
+        return list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }, [filteredRows]);
 
-    const toggle = (id) => setCollapsed(prev => {
+    const { pageItems, paginationProps } =
+        usePagination(groups, `${month}|${year}|${cutoff}|${empSearch}|${empSelected}|${filterType}`);
+
+    const toggle = (id) => setExpanded(prev => {
         const next = new Set(prev);
         next.has(id) ? next.delete(id) : next.add(id);
         return next;
@@ -197,48 +221,52 @@ const OvertimeEntries = ({ canEdit }) => {
 
     return (
         <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-sm p-4 flex flex-wrap items-end gap-3">
-                <div className="min-w-[150px]">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Month</label>
-                    <SearchableSelect typeable={false} searchPlaceholder="Search month..."
-                        value={month} options={MONTHS} onChange={(v) => setMonth(v || month)} />
+            <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-gray-50 pb-4">
+                <div className="bg-white rounded-xl shadow-sm p-4 flex flex-wrap items-end gap-3">
+                    <div className="min-w-[150px]">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Month</label>
+                        <SearchableSelect typeable={false} searchPlaceholder="Search month..."
+                            value={month} options={MONTHS} onChange={(v) => setMonth(v || month)} />
+                    </div>
+                    <div className="min-w-[110px]">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Year</label>
+                        <SearchableSelect typeable={false} searchPlaceholder="Search year..."
+                            value={year} options={YEARS} onChange={(v) => setYear(v || year)} />
+                    </div>
+                    <div className="min-w-[170px]">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Cutoff</label>
+                        <SearchableSelect typeable={false} value={cutoff} options={CUTOFFS}
+                            onChange={(v) => setCutoff(v || 'ALL')} />
+                    </div>
+                    <div className="flex-1 min-w-[200px]">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Employee</label>
+                        <EmployeeSearchBox className="w-full" names={empNames}
+                            search={empSearch} selected={empSelected}
+                            onSearch={setEmpSearch} onSelect={setEmpSelected} />
+                    </div>
+                    <div className="min-w-[180px]">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
+                        <SearchableSelect allLabel="All types" typeable={false} value={filterType}
+                            options={TYPES.map(([k, l]) => ({ value: k, label: l }))} onChange={setFilterType} />
+                    </div>
+                    <div className="text-xs text-gray-500 pb-2">{fmtShort(from)} to {fmtShort(to)}</div>
+                    {canEdit && (
+                        <button type="button" onClick={openAdd}
+                            className="ml-auto flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700">
+                            <Plus size={16} /> Add Entry
+                        </button>
+                    )}
                 </div>
-                <div className="min-w-[110px]">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Year</label>
-                    <SearchableSelect typeable={false} searchPlaceholder="Search year..."
-                        value={year} options={YEARS} onChange={(v) => setYear(v || year)} />
-                </div>
-                <div className="min-w-[170px]">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Cutoff</label>
-                    <SearchableSelect typeable={false} value={cutoff} options={CUTOFFS}
-                        onChange={(v) => setCutoff(v || 'ALL')} />
-                </div>
-                <div className="flex-1 min-w-[200px]">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Employee</label>
-                    <SearchableSelect allLabel="All employees" typeable={false} searchPlaceholder="Search employee..."
-                        value={filterEmployee}
-                        options={employees.map(e => ({ value: String(e.employeeId), label: e.fullName }))}
-                        onChange={setFilterEmployee} />
-                </div>
-                <div className="min-w-[180px]">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
-                    <SearchableSelect allLabel="All types" typeable={false} value={filterType}
-                        options={TYPES.map(([k, l]) => ({ value: k, label: l }))} onChange={setFilterType} />
-                </div>
-                <div className="text-xs text-gray-500 pb-2">{fmtShort(from)} to {fmtShort(to)}</div>
             </div>
 
-            {canEdit && (
-                <form onSubmit={save} className="bg-white rounded-xl shadow-sm p-5">
-                    <div className="text-sm font-semibold text-gray-900 mb-4">
-                        {editing ? `Edit entry for ${editing.employeeName}` : 'Add Entry'}
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+            {showForm && (
+                <Modal title={editing ? `Edit entry for ${editing.employeeName}` : 'Add Entry'} onClose={reset}>
+                    <form onSubmit={save} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Field label="Employee" required className="md:col-span-2">
                             <SearchableSelect typeable={false} disabled={!!editing}
                                 placeholder="Select employee..." searchPlaceholder="Search employee..."
                                 value={form.employeeId}
-                                options={employees.map(e => ({ value: String(e.employeeId), label: e.fullName }))}
+                                options={employees.map(e => ({ value: String(e.employeeId), label: fullNameOf(e) }))}
                                 onChange={(v) => setForm(p => ({ ...p, employeeId: v }))} />
                         </Field>
                         <Field label="Date" required>
@@ -265,17 +293,15 @@ const OvertimeEntries = ({ canEdit }) => {
                                 className={inputCls} value={form.value}
                                 onChange={(e) => setForm(p => ({ ...p, value: e.target.value }))} />
                         </Field>
-                    </div>
-                    <div className="flex justify-end gap-2 mt-4">
-                        {editing && (
+                        <div className="md:col-span-2 flex justify-end gap-2 pt-3 border-t border-gray-200">
                             <button type="button" onClick={reset}
                                 className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
-                        )}
-                        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
-                            {editing ? 'Update Entry' : 'Add Entry'}
-                        </button>
-                    </div>
-                </form>
+                            <button className="px-5 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700">
+                                {editing ? 'Update Entry' : 'Add Entry'}
+                            </button>
+                        </div>
+                    </form>
+                </Modal>
             )}
 
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -290,92 +316,124 @@ const OvertimeEntries = ({ canEdit }) => {
                             Approve all pending
                         </button>
                     )}
-                    <button onClick={() => setCollapsed(new Set())}
+                    <button onClick={() => setExpanded(new Set(pageItems.map(g => g.id)))}
                         className="px-3 py-2 text-xs border border-gray-300 rounded-lg hover:bg-gray-100">Expand all</button>
-                    <button onClick={() => setCollapsed(new Set(groups.map(g => g.id)))}
+                    <button onClick={() => setExpanded(new Set())}
                         className="px-3 py-2 text-xs border border-gray-300 rounded-lg hover:bg-gray-100">Collapse all</button>
                 </div>
             </div>
 
-            {groups.length === 0 ? (
-                <div className="bg-white rounded-xl shadow-sm px-4 py-10 text-center text-gray-500 text-sm">
-                    No entries for this period
-                </div>
-            ) : groups.map(g => {
-                const isOpen = !collapsed.has(g.id);
-                const pending = g.rows.filter(r => r.status === 'PENDING');
-                const initials = (g.name || '?').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
-                return (
-                    <div key={g.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
-                        <div onClick={() => toggle(g.id)}
-                            className={`flex items-center justify-between gap-3 px-4 py-3 cursor-pointer border-l-4 ${isOpen ? 'bg-blue-50/60 border-blue-600' : 'hover:bg-gray-50 border-transparent'}`}>
-                            <div className="flex items-center gap-3">
-                                {isOpen ? <ChevronDown size={16} className="text-gray-500" /> : <ChevronRight size={16} className="text-gray-500" />}
-                                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold flex items-center justify-center">{initials}</div>
-                                <div>
-                                    <div className="font-semibold text-gray-900 text-sm">{g.name}</div>
-                                    <div className="text-xs text-gray-500">
-                                        {g.rows.length} entr{g.rows.length === 1 ? 'y' : 'ies'}
-                                        {pending.length > 0 && ` · ${pending.length} pending`}
-                                    </div>
-                                </div>
-                            </div>
-                            {canApprove && pending.length > 0 && (
-                                <button onClick={(e) => { e.stopPropagation(); approveMany(pending); }}
-                                    className="px-3 py-1.5 text-xs border border-green-300 text-green-700 rounded-lg hover:bg-green-50">
-                                    Approve {pending.length} pending
-                                </button>
-                            )}
-                        </div>
-                        {isOpen && (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead className="bg-gray-50 border-y border-gray-200">
-                                        <tr>
-                                            {['Date', 'Type', 'Value', 'Remarks', 'Status'].map(h => (
-                                                <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
-                                            ))}
-                                            <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full tbl-card">
+                <div className="overflow-auto w-full tbl-scroll">
+                    <table className="w-full min-w-[800px] text-sm">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="w-10 px-3" />
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Employee</th>
+                                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Entries</th>
+                                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Pending</th>
+                                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Approved</th>
+                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-200">
+                            {groups.length === 0 ? (
+                                <tr><td colSpan="6" className="px-4 py-12 text-center text-gray-500">No entries for this period</td></tr>
+                            ) : pageItems.map(g => {
+                                const isOpen = expanded.has(g.id);
+                                const pending = g.rows.filter(r => r.status === 'PENDING');
+                                const approvedCount = g.rows.length - pending.length;
+                                return (
+                                    <React.Fragment key={g.id}>
+                                        <tr onClick={() => toggle(g.id)}
+                                            className={`cursor-pointer [&>td]:sticky [&>td]:top-[39px] [&>td]:z-[5] ${isOpen ? '[&>td]:bg-orange-50' : '[&>td]:bg-white hover:[&>td]:bg-gray-50'}`}>
+                                            <td className="px-3 py-3.5 text-center">
+                                                <ChevronRight size={16} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+                                            </td>
+                                            <td className="px-4 py-3.5 font-medium text-gray-900">
+                                                <div className="flex items-center gap-3">
+                                                    <EmployeeAvatar name={dir[g.id]?.name || g.name} photoUrl={dir[g.id]?.photoUrl} size={36} />
+                                                    {dir[g.id]?.name || g.name}
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3.5 text-center">{g.rows.length}</td>
+                                            <td className="px-4 py-3.5 text-center">
+                                                {pending.length > 0
+                                                    ? <span className="px-2 py-1 text-xs font-medium rounded-full bg-amber-50 text-amber-700 ring-1 ring-amber-200">{pending.length}</span>
+                                                    : 0}
+                                            </td>
+                                            <td className="px-4 py-3.5 text-center">
+                                                <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-50 text-green-700 ring-1 ring-green-200">{approvedCount}</span>
+                                            </td>
+                                            <td className="px-4 py-3.5 text-right">
+                                                {canApprove && pending.length > 0 && (
+                                                    <button onClick={(e) => { e.stopPropagation(); approveMany(pending); }}
+                                                        className="px-3 py-1.5 text-xs border border-green-300 text-green-700 rounded-lg hover:bg-green-50 whitespace-nowrap">
+                                                        Approve {pending.length} pending
+                                                    </button>
+                                                )}
+                                            </td>
                                         </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100">
-                                        {g.rows.map(r => (
-                                            <tr key={r.id} className="hover:bg-gray-50">
-                                                <td className="px-4 py-2.5 whitespace-nowrap">{fmtShort(r.workDate)}</td>
-                                                <td className="px-4 py-2.5 whitespace-nowrap">{label(r.entryType)}</td>
-                                                <td className="px-4 py-2.5 whitespace-nowrap font-medium">{formatStored(r.entryType, r.hours)}</td>
-                                                <td className="px-4 py-2.5 text-gray-600 max-w-[220px] truncate" title={r.remarks}>{r.remarks || '—'}</td>
-                                                <td className="px-4 py-2.5 whitespace-nowrap">
-                                                    <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${STATUS_BADGE[r.status] || STATUS_BADGE.APPROVED}`}>
-                                                        {r.status === 'PENDING' ? 'Pending' : 'Approved'}
-                                                    </span>
-                                                    {r.approvedBy && <div className="text-xs text-gray-500 mt-1">by {r.approvedBy}</div>}
-                                                </td>
-                                                <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                                                    <div className="flex justify-end gap-1">
-                                                        {canApprove && r.status === 'PENDING' && (
-                                                            <button onClick={() => approveMany([r])} title="Approve"
-                                                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg"><CheckCircle size={16} /></button>
-                                                        )}
-                                                        {canEdit && r.status === 'PENDING' && (
-                                                            <button onClick={() => startEdit(r)} title="Edit"
-                                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 size={16} /></button>
-                                                        )}
-                                                        {canEdit && (
-                                                            <button onClick={() => del(r)} title="Delete"
-                                                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={16} /></button>
-                                                        )}
+                                        {isOpen && (
+                                            <tr className="bg-gray-50/70">
+                                                <td />
+                                                <td colSpan="5" className="px-4 py-3">
+                                                    <div className="overflow-x-auto">
+                                                        <table className="w-full min-w-[640px] text-sm bg-white rounded-lg overflow-hidden">
+                                                            <thead className="border-b">
+                                                                <tr>
+                                                                    {['Date', 'Type', 'Value', 'Remarks', 'Status'].map(h => (
+                                                                        <th key={h} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">{h}</th>
+                                                                    ))}
+                                                                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-200">
+                                                                {g.rows.map(r => (
+                                                                    <tr key={r.id}>
+                                                                        <td className="px-4 py-2 whitespace-nowrap">{fmtShort(r.workDate)}</td>
+                                                                        <td className="px-4 py-2 whitespace-nowrap">{label(r.entryType)}</td>
+                                                                        <td className="px-4 py-2 whitespace-nowrap font-medium">{formatStored(r.entryType, r.hours)}</td>
+                                                                        <td className="px-4 py-2 text-gray-600 max-w-[220px] truncate" title={r.remarks}>{r.remarks || '—'}</td>
+                                                                        <td className="px-4 py-2 whitespace-nowrap">
+                                                                            <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${STATUS_BADGE[r.status] || STATUS_BADGE.APPROVED}`}>
+                                                                                {r.status === 'PENDING' ? 'Pending' : 'Approved'}
+                                                                            </span>
+                                                                            {r.approvedBy && <div className="text-xs text-gray-500 mt-1">by {r.approvedBy}</div>}
+                                                                        </td>
+                                                                        <td className="px-4 py-2 text-right whitespace-nowrap">
+                                                                            <div className="flex justify-end gap-1">
+                                                                                {canApprove && r.status === 'PENDING' && (
+                                                                                    <button onClick={() => approveMany([r])} title="Approve"
+                                                                                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg"><CheckCircle size={16} /></button>
+                                                                                )}
+                                                                                {canEdit && r.status === 'PENDING' && (
+                                                                                    <button onClick={() => startEdit(r)} title="Edit"
+                                                                                        className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"><Edit2 size={16} /></button>
+                                                                                )}
+                                                                                {canEdit && (
+                                                                                    <button onClick={() => del(r)} title="Delete"
+                                                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={16} /></button>
+                                                                                )}
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
                                                     </div>
                                                 </td>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </div>
-                );
-            })}
+                                        )}
+                                    </React.Fragment>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+                {groups.length > 0 && <Pagination {...paginationProps} />}
+            </div>
+
 
             <p className="text-xs text-gray-500">
                 Only approved entries dated inside a payroll run's period are included when the run is created or regenerated.

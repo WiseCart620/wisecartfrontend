@@ -5,6 +5,8 @@ import { api } from '../../services/api';
 import { inputCls, today, Field, Modal, MoneyInput } from './Shared';
 import SearchableSelect from './SearchableSelect';
 import EmployeeAvatar from './EmployeeAvatar';
+import Pagination from '../common/Pagination';
+import usePagination from './usePagination';
 
 const STATUS = {
   PENDING: 'bg-yellow-100 text-yellow-800',
@@ -51,6 +53,8 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
     const q = search.trim().toLowerCase();
     return items.filter(t => !q || (t.employeeName || '').toLowerCase().includes(q));
   }, [items, search]);
+
+  const { pageItems, paginationProps, totalItems } = usePagination(filtered, `${search}|${statusFilter}`);
 
   const set = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
   const photoOf = Object.fromEntries((employees || []).map(e => [e.employeeId, e.photoUrl]));
@@ -101,79 +105,86 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
 
   return (
     <div>
-      <div className="bg-gray-50 border border-gray-100 rounded-xl p-5 mb-6 flex flex-col md:flex-row gap-4 md:items-end">
-        <Field label="Search employee" className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-            <input type="text" placeholder="Type a name..." className={`${inputCls} pl-9`}
-              value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
-        </Field>
-        <Field label="Status">
-          <SearchableSelect
-            allLabel="All statuses"
-            typeable={false}
-            value={statusFilter}
-            options={Object.keys(STATUS).map(s => ({ value: s, label: s }))}
-            onChange={(v) => setStatusFilter(v)}
-          />
-        </Field>
-        {canCreate && (
-          <button onClick={() => { setForm(EMPTY); setShow(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm whitespace-nowrap">
-            <Plus size={18} /> File Leave
-          </button>
-        )}
+      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-gray-50 pb-4">
+        <div className="bg-white border border-gray-200 shadow-sm rounded-xl p-4 flex flex-col md:flex-row gap-4 md:items-end">
+          <Field label="Employee" className="flex-1">
+            <SearchableSelect
+              allLabel="All employees" allowCustom placeholder="All employees"
+              searchPlaceholder="Search employee..."
+              value={search}
+              options={[...new Set(items.map(t => t.employeeName).filter(Boolean))].sort().map(n => ({ value: n, label: n }))}
+              onChange={(v) => setSearch(v || '')}
+            />
+          </Field>
+          <Field label="Status">
+            <SearchableSelect
+              allLabel="All statuses"
+              typeable={false}
+              value={statusFilter}
+              options={Object.keys(STATUS).map(s => ({ value: s, label: s }))}
+              onChange={(v) => setStatusFilter(v)}
+            />
+          </Field>
+          {canCreate && (
+            <button onClick={() => { setForm(EMPTY); setShow(true); }}
+              className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm whitespace-nowrap">
+              <Plus size={18} /> File Leave
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              {['Employee', 'Leave Type', 'From', 'To', 'Days', 'Status'].map(h => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
-              ))}
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {loading ? (
-              <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
-            ) : filtered.length === 0 ? (
-              <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">No leave requests</td></tr>
-            ) : filtered.map(t => (
-              <tr key={t.id} className="text-sm hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-gray-900">
-                  <div className="flex items-center gap-2">
-                    <EmployeeAvatar name={t.employeeName} photoUrl={photoOf[t.employeeId]} />
-                    {t.employeeName}
-                  </div>
-                </td>
-                <td className="px-4 py-3">{t.leaveTypeName}</td>
-                <td className="px-4 py-3">{t.dateFrom}</td>
-                <td className="px-4 py-3">{t.dateTo}</td>
-                <td className="px-4 py-3">{t.daysUsed}</td>
-                <td className="px-4 py-3"><span className={`px-2 py-1 text-xs font-medium rounded-full ${STATUS[t.status] || ''}`}>{t.status}</span></td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex justify-end gap-1">
-                    {canEdit && t.status === 'PENDING' && (
-                      <>
-                        <button onClick={() => act(t.id, 'approve')} title="Approve" className="p-2 text-green-600 hover:bg-green-50 rounded-lg"><Check size={17} /></button>
-                        <button onClick={() => act(t.id, 'reject', 'Reject this request?')} title="Reject" className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"><XIcon size={17} /></button>
-                      </>
-                    )}
-                    {canEdit && (t.status === 'PENDING' || t.status === 'APPROVED') && (
-                      <button onClick={() => act(t.id, 'cancel', 'Cancel this request?')} title="Cancel" className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"><Ban size={17} /></button>
-                    )}
-                    {canDelete && t.status !== 'APPROVED' && (
-                      <button onClick={() => remove(t)} title="Delete" className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={17} /></button>
-                    )}
-                  </div>
-                </td>
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full tbl-card">
+        <div className="overflow-auto w-full tbl-scroll">
+          <table className="w-full min-w-[860px]">
+            <thead className="bg-gray-50">
+              <tr>
+                {['Employee', 'Leave Type', 'From', 'To', 'Days', 'Status'].map(h => (
+                  <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
+                ))}
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-200">
+              {loading ? (
+                <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">No leave requests</td></tr>
+              ) : pageItems.map(t => (
+                <tr key={t.id} className="text-sm hover:bg-gray-50">
+                  <td className="px-4 py-3 font-medium text-gray-900">
+                    <div className="flex items-center gap-2">
+                      <EmployeeAvatar name={t.employeeName} photoUrl={photoOf[t.employeeId]} />
+                      {t.employeeName}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">{t.leaveTypeName}</td>
+                  <td className="px-4 py-3">{t.dateFrom}</td>
+                  <td className="px-4 py-3">{t.dateTo}</td>
+                  <td className="px-4 py-3">{t.daysUsed}</td>
+                  <td className="px-4 py-3"><span className={`px-2 py-1 text-xs font-medium rounded-full ${STATUS[t.status] || ''}`}>{t.status}</span></td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex justify-end gap-1">
+                      {canEdit && t.status === 'PENDING' && (
+                        <>
+                          <button onClick={() => act(t.id, 'approve')} title="Approve" className="p-2 text-green-600 hover:bg-green-50 rounded-lg"><Check size={17} /></button>
+                          <button onClick={() => act(t.id, 'reject', 'Reject this request?')} title="Reject" className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"><XIcon size={17} /></button>
+                        </>
+                      )}
+                      {canEdit && (t.status === 'PENDING' || t.status === 'APPROVED') && (
+                        <button onClick={() => act(t.id, 'cancel', 'Cancel this request?')} title="Cancel" className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"><Ban size={17} /></button>
+                      )}
+                      {canDelete && t.status !== 'APPROVED' && (
+                        <button onClick={() => remove(t)} title="Delete" className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={17} /></button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!loading && totalItems > 0 && <Pagination {...paginationProps} />}
       </div>
 
       {show && (
@@ -204,7 +215,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
             </Field>
             <div className="col-span-2 flex justify-end gap-2 pt-2 border-t">
               <button type="button" onClick={() => setShow(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
-              <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">File</button>
+              <button type="submit" className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">File</button>
             </div>
           </form>
         </Modal>

@@ -85,7 +85,7 @@ const DeductionFormulaCard = () => {
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="font-semibold text-gray-900">Default formula</span>
                                     <button type="button" onClick={resetToDefault}
-                                        className="text-xs font-medium text-blue-600 hover:text-blue-800">
+                                        className="text-xs font-medium text-orange-600 hover:text-orange-800">
                                         Reset to default
                                     </button>
                                 </div>
@@ -130,7 +130,7 @@ const DeductionFormulaCard = () => {
                             <div className="flex justify-end gap-2 pt-4 border-t">
                                 <button onClick={() => setShow(false)} className="px-4 py-2 border rounded-lg text-sm">Cancel</button>
                                 <button onClick={save} disabled={saving}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
+                                    className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 disabled:opacity-50">
                                     {saving ? 'Saving...' : 'Save Formula'}
                                 </button>
                             </div>

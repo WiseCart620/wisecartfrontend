@@ -7,6 +7,8 @@ import { LoadingOverlay } from '../../components/common/LoadingOverlay';
 import Pagination from '../../components/common/Pagination';
 import { useAuth, can } from '../../context/AuthContext';
 import { MoneyInput } from '../../components/payroll/Shared';
+import PageShell from '../../components/payroll/PageShell';
+import SearchableSelect from '../../components/payroll/SearchableSelect';
 
 const EMPTY_FORM = {
     employeeNumber: '', firstName: '', middleName: '', lastName: '', gender: '', dateOfBirth: '',
@@ -45,6 +47,30 @@ const tenure = (hire, end) => {
 const fmtDate = (d) =>
     d ? new Date(d + 'T00:00:00').toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) : '—';
 
+const tenureMonths = (hire, end) => {
+    if (!hire) return null;
+    const s = new Date(hire + 'T00:00:00');
+    const e = end ? new Date(end + 'T00:00:00') : new Date();
+    let m = (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
+    if (e.getDate() < s.getDate()) m--;
+    return Math.max(m, 0);
+};
+
+const TENURE_OPTIONS = [
+    { value: 'LT1', label: 'Less than 1 year' },
+    { value: '1-3', label: '1 to 3 years' },
+    { value: '3-5', label: '3 to 5 years' },
+    { value: '5+', label: '5 years or more' },
+];
+
+const inTenure = (m, k) => {
+    if (m == null) return false;
+    if (k === 'LT1') return m < 12;
+    if (k === '1-3') return m >= 12 && m < 36;
+    if (k === '3-5') return m >= 36 && m < 60;
+    return m >= 60;
+};
+
 const mask = (v) => {
     if (!v) return '—';
     const s = String(v);
@@ -75,7 +101,7 @@ const ViewSection = ({ title, children }) => (
     </section>
 );
 
-const inputCls = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition';
+const inputCls = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition';
 
 const Field = ({ label, required, children, className = '' }) => (
     <div className={className}>
@@ -89,7 +115,7 @@ const Field = ({ label, required, children, className = '' }) => (
 const Section = ({ title, children }) => (
     <section>
         <div className="flex items-center gap-2 mb-4">
-            <div className="w-1 h-4 bg-blue-600 rounded-full" />
+            <div className="w-1 h-4 bg-orange-600 rounded-full" />
             <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">{title}</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-gray-50 rounded-xl p-5 border border-gray-100">
@@ -111,6 +137,9 @@ const EmployeeManagement = () => {
     const [loadingMessage, setLoadingMessage] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
+    const [scheduleFilter, setScheduleFilter] = useState('');
+    const [tenureFilter, setTenureFilter] = useState('');
+    const [idFilter, setIdFilter] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const [allowanceTypes, setAllowanceTypes] = useState([]);
@@ -325,15 +354,18 @@ const EmployeeManagement = () => {
         const q = searchTerm.toLowerCase();
         return employees.filter(e =>
             (statusFilter === 'ALL' || e.status === statusFilter) &&
+            (!scheduleFilter || e.scheduleName === scheduleFilter) &&
+            (!idFilter || String(e.employeeNumber || '').toLowerCase().includes(idFilter.trim().toLowerCase())) &&
+            (!tenureFilter || inTenure(tenureMonths(e.hireDate, e.status === 'ACTIVE' ? null : e.inactiveDate), tenureFilter)) &&
             (!q ||
                 e.fullName?.toLowerCase().includes(q) ||
                 e.email?.toLowerCase().includes(q) ||
                 e.department?.toLowerCase().includes(q) ||
                 e.designation?.toLowerCase().includes(q))
         );
-    }, [employees, searchTerm, statusFilter]);
+    }, [employees, searchTerm, statusFilter, scheduleFilter, tenureFilter, idFilter]);
 
-    useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter]);
+    useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter, scheduleFilter, tenureFilter, idFilter]);
 
     const last = currentPage * itemsPerPage;
     const first = last - itemsPerPage;
@@ -352,49 +384,76 @@ const EmployeeManagement = () => {
     }
 
     return (
-        <div className="p-6 max-w-7xl mx-auto">
+        <PageShell title="Employees" subtitle="Manage employee records and payroll setup"
+            action={canCreate && (
+                <button onClick={openCreate}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-orange-600 text-white rounded-lg text-sm font-medium shadow-sm hover:bg-orange-700 transition-colors">
+                    <Plus size={18} /> Add Employee
+                </button>
+            )}>
             <LoadingOverlay show={actionLoading} message={loadingMessage} />
             <Toaster position="top-right" />
 
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold text-gray-900">Employees</h1>
-                <p className="text-gray-600 mt-1">Manage employee records and payroll setup</p>
-            </div>
-
-            <div className="flex flex-col md:flex-row gap-3 mb-6">
-                <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                    <input
-                        type="text"
-                        placeholder="Search by name, email, department, or designation..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+            <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-gray-50 pb-4">
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-wrap items-end gap-3">
+                    <div className="flex-1 min-w-[220px]">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Employee</label>
+                        <SearchableSelect
+                            allLabel="All employees" allowCustom placeholder="All employees"
+                            searchPlaceholder="Search employee..."
+                            value={searchTerm}
+                            options={[...new Set(employees.map(e => e.fullName).filter(Boolean))].sort().map(n => ({ value: n, label: n }))}
+                            onChange={(v) => setSearchTerm(v || '')}
+                        />
+                    </div>
+                    <div className="min-w-[170px]">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+                        <SearchableSelect
+                            allLabel="All statuses" typeable={false}
+                            value={statusFilter === 'ALL' ? '' : statusFilter}
+                            options={[{ value: 'ACTIVE', label: 'Active' }, { value: 'INACTIVE', label: 'Inactive' }]}
+                            onChange={(v) => setStatusFilter(v || 'ALL')}
+                        />
+                    </div>
+                    <div className="min-w-[180px]">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Employee ID</label>
+                        <SearchableSelect
+                            allLabel="All IDs" allowCustom placeholder="All IDs"
+                            searchPlaceholder="Search ID..."
+                            value={idFilter}
+                            options={[...new Set(employees.map(e => e.employeeNumber).filter(Boolean))].sort().map(n => ({ value: String(n), label: String(n) }))}
+                            onChange={(v) => setIdFilter(v || '')}
+                        />
+                    </div>
+                    <div className="min-w-[180px]">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Schedule</label>
+                        <SearchableSelect
+                            allLabel="All schedules" typeable={false}
+                            value={scheduleFilter}
+                            options={[...new Set(employees.map(e => e.scheduleName).filter(Boolean))].sort().map(n => ({ value: n, label: n }))}
+                            onChange={(v) => setScheduleFilter(v || '')}
+                        />
+                    </div>
+                    <div className="min-w-[180px]">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Tenure</label>
+                        <SearchableSelect
+                            allLabel="All tenures" typeable={false}
+                            value={tenureFilter}
+                            options={TENURE_OPTIONS}
+                            onChange={(v) => setTenureFilter(v || '')}
+                        />
+                    </div>
+                    {(searchTerm || statusFilter !== 'ALL' || scheduleFilter || tenureFilter || idFilter) && (
+                        <button type="button" onClick={() => { setSearchTerm(''); setStatusFilter('ALL'); setScheduleFilter(''); setTenureFilter(''); setIdFilter(''); }}
+                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Clear</button>
+                    )}
                 </div>
-                <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm"
-                >
-                    <option value="ALL">All statuses</option>
-                    <option value="ACTIVE">Active</option>
-                    <option value="INACTIVE">Inactive</option>
-                </select>
-                {canCreate && (
-                    <button
-                        onClick={openCreate}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                    >
-                        <Plus size={20} /> Add Employee
-                    </button>
-                )}
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead className="bg-gray-50 border-b border-gray-200">
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden tbl-card">
+                <div className="overflow-auto tbl-scroll">
+                    <table className="w-full min-w-[1000px]">
+                        <thead className="bg-gray-50">
                             <tr>
                                 {['Employee', 'Department / Position', 'Schedule', 'Tenure', 'Basic Salary', 'Status'].map(h => (
                                     <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
@@ -402,7 +461,7 @@ const EmployeeManagement = () => {
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200">
+                        <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-200">
                             {pageItems.length === 0 ? (
                                 <tr><td colSpan="7" className="px-6 py-8 text-center text-gray-500">No employees found</td></tr>
                             ) : pageItems.map(emp => (
@@ -427,10 +486,10 @@ const EmployeeManagement = () => {
                                                         className="flex-shrink-0 rounded-lg cursor-zoom-in transition duration-200 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
                                                     >
                                                         <SecureImage path={emp.photoUrl} className="w-10 h-10 rounded-lg object-cover"
-                                                            fallback={<div className="p-2 bg-blue-100 rounded-lg"><User size={20} className="text-blue-600" /></div>} />
+                                                            fallback={<div className="p-2 bg-orange-100 rounded-lg"><User size={20} className="text-orange-600" /></div>} />
                                                     </button>
                                                 )
-                                                : <div className="p-2 bg-blue-100 rounded-lg"><User size={20} className="text-blue-600" /></div>}
+                                                : <div className="p-2 bg-orange-100 rounded-lg"><User size={20} className="text-orange-600" /></div>}
                                             <div>
                                                 <div className="font-medium text-gray-900">{emp.fullName}</div>
                                                 <div className="text-sm text-gray-500">{emp.email}</div>
@@ -476,7 +535,7 @@ const EmployeeManagement = () => {
                                             </button>
                                             {canEdit && (
                                                 <>
-                                                    <button onClick={() => openEdit(emp)} title="Edit" className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
+                                                    <button onClick={() => openEdit(emp)} title="Edit" className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg">
                                                         <Edit2 size={18} />
                                                     </button>
                                                     <button
@@ -659,7 +718,7 @@ const EmployeeManagement = () => {
                                         <div className="flex items-center justify-between">
                                             <p className="text-xs text-gray-500">Add any extra employee details as a label and value.</p>
                                             <button type="button" onClick={addOther}
-                                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50">
+                                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-orange-600 border border-orange-200 rounded-lg hover:bg-orange-50">
                                                 <Plus size={14} /> Add other
                                             </button>
                                         </div>
@@ -684,7 +743,7 @@ const EmployeeManagement = () => {
 
                             <div className="flex-shrink-0 border-t border-gray-200 px-8 py-4 flex justify-end gap-3">
                                 <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">Cancel</button>
-                                <button type="submit" form="employee-form" className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
+                                <button type="submit" form="employee-form" className="px-5 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
                                     {editing ? 'Save Changes' : 'Create Employee'}
                                 </button>
                             </div>
@@ -989,8 +1048,7 @@ const EmployeeManagement = () => {
                     }}
                 />
             )}
-
-        </div >
+        </PageShell>
     );
 };
 

@@ -5,6 +5,8 @@ import { api } from '../../services/api';
 import { inputCls, money, today, Field, Modal, STATUS_STYLE, MoneyInput } from './Shared';
 import SearchableSelect from './SearchableSelect';
 import { SecureImage } from '../../pages/payroll/EmployeeDocumentsModal';
+import Pagination from '../common/Pagination';
+import usePagination from './usePagination';
 
 const LOAN_TYPES = ['Salary Loan', 'Housing Loan', 'Emergency Loan'];
 const EMPTY = {
@@ -44,7 +46,7 @@ const fmtShort = (d) =>
 const SCHEDULE_SHORT = { SPLIT: 'both cutoffs', FIRST_CUTOFF: '15th only', SECOND_CUTOFF: '30th only' };
 const STATUS_BADGE = {
   ACTIVE: 'bg-green-50 text-green-700 ring-1 ring-green-200',
-  PAID: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200',
+  PAID: 'bg-orange-50 text-orange-700 ring-1 ring-orange-200',
   CANCELLED: 'bg-gray-100 text-gray-600 ring-1 ring-gray-200',
 };
 const STATUS_LABEL = { ACTIVE: 'Active', PAID: 'Paid', CANCELLED: 'Cancelled' };
@@ -247,74 +249,75 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
     return next;
   });
 
+  const { pageItems, paginationProps, totalItems } =
+    usePagination(grouped, `${JSON.stringify(filters)}|${groupBy}`);
+
   return (
     <div>
-      {canCreate && (
-        <div className="flex justify-end mb-4">
-          <button onClick={() => { setEditing(null); setForm(EMPTY); setFile(null); setShowForm(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            <Plus size={18} /> Add Loan
-          </button>
+      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-gray-50 pb-4">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-wrap items-end gap-3">
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-xs font-medium text-gray-700 mb-1">Employee</label>
+            <SearchableSelect
+              allLabel="All employees"
+              allowCustom
+              placeholder="All employees"
+              searchPlaceholder="Search employee..."
+              value={filters.search}
+              options={[...new Set(items.map(i => i.employeeName).filter(Boolean))].sort().map(n => ({ value: n, label: n }))}
+              onChange={(v) => setFilters(p => ({ ...p, search: v }))}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+            <SearchableSelect
+              allLabel="All statuses"
+              typeable={false}
+              value={filters.status}
+              options={[{ value: 'ACTIVE', label: 'Active' }, { value: 'PAID', label: 'Paid' }, { value: 'CANCELLED', label: 'Cancelled' }]}
+              onChange={(v) => setFilters(p => ({ ...p, status: v }))}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Loan</label>
+            <SearchableSelect
+              allLabel="All loans"
+              searchPlaceholder="Search loan..."
+              value={filters.loanType}
+              options={loanTypeOptions.map(t => ({ value: t, label: t }))}
+              onChange={(v) => setFilters(p => ({ ...p, loanType: v }))}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Schedule</label>
+            <SearchableSelect
+              allLabel="All schedules"
+              typeable={false}
+              value={filters.schedule}
+              options={Object.entries(SCHEDULE_LABEL).map(([value, label]) => ({ value, label }))}
+              onChange={(v) => setFilters(p => ({ ...p, schedule: v }))}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Group by</label>
+            <SearchableSelect
+              typeable={false}
+              value={groupBy}
+              options={[{ value: 'employee', label: 'Employee' }, { value: 'agency', label: 'Agency' }]}
+              onChange={(v) => { setGroupBy(v || 'employee'); setExpanded(new Set()); }}
+            />
+          </div>
+          {hasFilters && (
+            <button type="button" onClick={() => setFilters({ search: '', status: '', loanType: '', schedule: '' })}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Clear</button>
+          )}
+          {canCreate && (
+            <button onClick={() => { setEditing(null); setForm(EMPTY); setFile(null); setShowForm(true); }}
+              className="ml-auto flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700">
+              <Plus size={16} /> Add Loan
+            </button>
+          )}
         </div>
-      )}
-
-      <div className="bg-white rounded-xl shadow-sm p-4 mb-4 flex flex-wrap items-end gap-3">
-        <div className="flex-1 min-w-[200px]">
-          <label className="block text-xs font-medium text-gray-700 mb-1">Employee</label>
-          <SearchableSelect
-            allLabel="All employees"
-            allowCustom
-            placeholder="All employees"
-            searchPlaceholder="Search employee..."
-            value={filters.search}
-            options={[...new Set(items.map(i => i.employeeName).filter(Boolean))].sort().map(n => ({ value: n, label: n }))}
-            onChange={(v) => setFilters(p => ({ ...p, search: v }))}
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
-          <SearchableSelect
-            allLabel="All statuses"
-            typeable={false}
-            value={filters.status}
-            options={[{ value: 'ACTIVE', label: 'Active' }, { value: 'PAID', label: 'Paid' }, { value: 'CANCELLED', label: 'Cancelled' }]}
-            onChange={(v) => setFilters(p => ({ ...p, status: v }))}
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Loan</label>
-          <SearchableSelect
-            allLabel="All loans"
-            typeable={false}
-            searchPlaceholder="Search loan..."
-            value={filters.loanType}
-            options={loanTypeOptions.map(t => ({ value: t, label: t }))}
-            onChange={(v) => setFilters(p => ({ ...p, loanType: v }))}
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Schedule</label>
-          <SearchableSelect
-            allLabel="All schedules"
-            typeable={false}
-            value={filters.schedule}
-            options={Object.entries(SCHEDULE_LABEL).map(([value, label]) => ({ value, label }))}
-            onChange={(v) => setFilters(p => ({ ...p, schedule: v }))}
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Group by</label>
-          <SearchableSelect
-            typeable={false}
-            value={groupBy}
-            options={[{ value: 'employee', label: 'Employee' }, { value: 'agency', label: 'Agency' }]}
-            onChange={(v) => { setGroupBy(v || 'employee'); setExpanded(new Set()); }}
-          />
-        </div>
-        {hasFilters && (
-          <button type="button" onClick={() => setFilters({ search: '', status: '', loanType: '', schedule: '' })}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Clear</button>
-        )}
       </div>
 
       {(() => {
@@ -345,131 +348,134 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
           className="px-3 py-2 text-xs border border-gray-300 rounded-lg hover:bg-gray-100">Collapse all</button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              {[groupBy === 'agency' ? 'Agency' : 'Employee', 'Loan', 'Amount', 'Term', 'Paid', 'Balance', 'Status'].map(h => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
-              ))}
-              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {loading ? (
-              <tr><td colSpan="11" className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
-            ) : filtered.length === 0 ? (
-              <tr><td colSpan="11" className="px-4 py-8 text-center text-gray-500">
-                {hasFilters ? 'No loans match the filters' : 'No records'}
-              </td></tr>
-            ) : grouped.map(g => {
-              const isOpen = expanded.has(g.employeeId);
-              const activeRows = g.rows.filter(r => r.status === 'ACTIVE');
-              const cancelledN = g.rows.filter(r => r.status === 'CANCELLED').length;
-              const monthly = activeRows.reduce((s, r) => s + Number(r.amortization || 0), 0);
-              const initials = (g.employeeName || '?').split(' ').filter(Boolean).slice(0, 2)
-                .map(w => w[0]).join('').toUpperCase();
-              const tot = g.rows.filter(r => r.status !== 'CANCELLED').reduce((a, r) => ({
-                amount: a.amount + Number(r.amount || 0),
-                paid: a.paid + Number(r.totalPaid || 0),
-                bal: a.bal + Number(r.remainingBalance || 0),
-              }), { amount: 0, paid: 0, bal: 0 });
-              return (
-                <React.Fragment key={g.employeeId}>
-                  <tr
-                    className={`cursor-pointer text-sm transition-colors border-l-4 ${isOpen ? 'bg-blue-50/60 border-blue-600' : 'bg-white hover:bg-gray-50 border-transparent'}`}
-                    onClick={() => toggle(g.employeeId)}>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        {isOpen ? <ChevronDown size={16} className="text-gray-500" /> : <ChevronRight size={16} className="text-gray-500" />}
-                        {groupBy === 'employee' && photoOf[g.employeeId] ? (
-                          <SecureImage
-                            path={photoOf[g.employeeId]}
-                            alt={g.employeeName}
-                            className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                            fallback={<div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold flex items-center justify-center flex-shrink-0">{initials}</div>}
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold flex items-center justify-center flex-shrink-0">{initials}</div>
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full tbl-card">
+        <div className="overflow-auto w-full tbl-scroll">
+          <table className="w-full min-w-[1000px]">
+            <thead className="bg-gray-50">
+              <tr>
+                {[groupBy === 'agency' ? 'Agency' : 'Employee', 'Loan', 'Amount', 'Term', 'Paid', 'Balance', 'Status'].map(h => (
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                ))}
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-200">
+              {loading ? (
+                <tr><td colSpan="11" className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan="11" className="px-4 py-8 text-center text-gray-500">
+                  {hasFilters ? 'No loans match the filters' : 'No records'}
+                </td></tr>
+              ) : pageItems.map(g => {
+                const isOpen = expanded.has(g.employeeId);
+                const activeRows = g.rows.filter(r => r.status === 'ACTIVE');
+                const cancelledN = g.rows.filter(r => r.status === 'CANCELLED').length;
+                const monthly = activeRows.reduce((s, r) => s + Number(r.amortization || 0), 0);
+                const initials = (g.employeeName || '?').split(' ').filter(Boolean).slice(0, 2)
+                  .map(w => w[0]).join('').toUpperCase();
+                const tot = g.rows.filter(r => r.status !== 'CANCELLED').reduce((a, r) => ({
+                  amount: a.amount + Number(r.amount || 0),
+                  paid: a.paid + Number(r.totalPaid || 0),
+                  bal: a.bal + Number(r.remainingBalance || 0),
+                }), { amount: 0, paid: 0, bal: 0 });
+                return (
+                  <React.Fragment key={g.employeeId}>
+                    <tr
+                      className={`cursor-pointer text-sm transition-colors border-l-4 [&>td]:sticky [&>td]:top-[39px] [&>td]:z-[5] ${isOpen ? '[&>td]:bg-orange-50 border-orange-600' : '[&>td]:bg-white hover:[&>td]:bg-gray-50 border-transparent'}`}
+                      onClick={() => toggle(g.employeeId)}>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          {isOpen ? <ChevronDown size={16} className="text-gray-500" /> : <ChevronRight size={16} className="text-gray-500" />}
+                          {groupBy === 'employee' && photoOf[g.employeeId] ? (
+                            <SecureImage
+                              path={photoOf[g.employeeId]}
+                              alt={g.employeeName}
+                              className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                              fallback={<div className="w-8 h-8 rounded-full bg-orange-100 text-orange-700 text-xs font-semibold flex items-center justify-center flex-shrink-0">{initials}</div>}
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-700 text-xs font-semibold flex items-center justify-center flex-shrink-0">{initials}</div>
+                          )}
+                          <span className="font-semibold text-gray-900">{g.employeeName}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="text-sm text-gray-800">{activeRows.length} active loan{activeRows.length === 1 ? '' : 's'}</div>
+                        {cancelledN > 0 && <div className="text-xs text-gray-400">{cancelledN} cancelled</div>}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="font-medium text-gray-900">{money(tot.amount)}</div>
+                        {monthly > 0 && <div className="text-xs text-gray-500">{money(monthly)} per month</div>}
+                      </td>
+                      <td />
+                      <td className="px-4 py-3 whitespace-nowrap text-gray-700">{money(tot.paid)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap font-bold text-gray-900">{money(tot.bal)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${activeRows.length ? STATUS_BADGE.ACTIVE : STATUS_BADGE.CANCELLED}`}>
+                          {activeRows.length ? 'Active' : 'No active loans'}
+                        </span>
+                      </td>
+                      <td />
+                    </tr>
+                    {isOpen && subGroups(g.rows).map(sg => (
+                      <React.Fragment key={sg.name}>
+                        {groupBy === 'employee' && (
+                          <tr className="bg-orange-50 text-xs font-semibold text-gray-700">
+                            <td colSpan="11" className="px-4 py-2 pl-10">
+                              {sg.name} · {sg.rows.length} loan{sg.rows.length === 1 ? '' : 's'} · Balance {money(sg.rows.filter(r => r.status !== 'CANCELLED').reduce((s, r) => s + Number(r.remainingBalance || 0), 0))}
+                            </td>
+                          </tr>
                         )}
-                        <span className="font-semibold text-gray-900">{g.employeeName}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="text-sm text-gray-800">{activeRows.length} active loan{activeRows.length === 1 ? '' : 's'}</div>
-                      {cancelledN > 0 && <div className="text-xs text-gray-400">{cancelledN} cancelled</div>}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{money(tot.amount)}</div>
-                      {monthly > 0 && <div className="text-xs text-gray-500">{money(monthly)} per month</div>}
-                    </td>
-                    <td />
-                    <td className="px-4 py-3 whitespace-nowrap text-gray-700">{money(tot.paid)}</td>
-                    <td className="px-4 py-3 whitespace-nowrap font-bold text-gray-900">{money(tot.bal)}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${activeRows.length ? STATUS_BADGE.ACTIVE : STATUS_BADGE.CANCELLED}`}>
-                        {activeRows.length ? 'Active' : 'No active loans'}
-                      </span>
-                    </td>
-                    <td />
-                  </tr>
-                  {isOpen && subGroups(g.rows).map(sg => (
-                    <React.Fragment key={sg.name}>
-                      {groupBy === 'employee' && (
-                        <tr className="bg-blue-50 text-xs font-semibold text-gray-700">
-                          <td colSpan="11" className="px-4 py-2 pl-10">
-                            {sg.name} · {sg.rows.length} loan{sg.rows.length === 1 ? '' : 's'} · Balance {money(sg.rows.filter(r => r.status !== 'CANCELLED').reduce((s, r) => s + Number(r.remainingBalance || 0), 0))}
-                          </td>
-                        </tr>
-                      )}
-                      {sg.rows.map(i => (
-                        <tr key={i.id} className="hover:bg-gray-50 text-sm">
-                          <td className="px-4 py-3 pl-12 text-gray-700 whitespace-nowrap">{groupBy === 'agency' ? i.employeeName : ''}</td>
-                          <td className="px-4 py-3">
-                            <div className="font-medium text-gray-900 whitespace-nowrap">{i.loanType || 'Loan'}</div>
-                            <div className="text-xs text-gray-500">{i.agencyName || 'Company loan'}{i.applicationNo ? ` · Ref ${i.applicationNo}` : ''}</div>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <div className="font-medium text-gray-900">{money(i.amount)}</div>
-                            <div className="text-xs text-gray-500">
-                              {money(i.amortization)} per month · {SCHEDULE_SHORT[i.deductionSchedule] || i.deductionSchedule || '—'}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">
-                            <div>{fmtShort(i.startTerm)}</div>
-                            <div className="text-gray-400">to {fmtShort(i.endTerm)}</div>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">{money(i.totalPaid)}</td>
-                          <td className="px-4 py-3 whitespace-nowrap font-medium">{money(i.remainingBalance)}</td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${STATUS_BADGE[i.status] || 'bg-gray-100 text-gray-700'}`}>
-                              {STATUS_LABEL[i.status] || i.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-right whitespace-nowrap">
-                            <div className="flex justify-end gap-1">
-                              {i.docReference && i.docReference.startsWith('contracts/') && (
-                                <button onClick={() => viewDoc(i.docReference)} title="View document" className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"><Paperclip size={17} /></button>
-                              )}
-                              <button onClick={() => openView(i)} title="View details" className="p-2 text-gray-700 hover:bg-gray-100 rounded-lg"><Eye size={17} /></button>
-                              {canEdit && i.status === 'ACTIVE' && Number(i.totalPaid || 0) === 0 && (
-                                <button onClick={() => openEdit(i)} title="Edit loan" className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 size={17} /></button>
-                              )}
-                              <button onClick={() => openPayments(i)} title="Payment history" className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg"><Wallet size={17} /></button>
-                              {canEdit && i.status === 'ACTIVE' && (
-                                <button onClick={() => cancel(i)} title="Cancel" className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Ban size={17} /></button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </React.Fragment>
-                  ))}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
+                        {sg.rows.map(i => (
+                          <tr key={i.id} className="hover:bg-gray-50 text-sm">
+                            <td className="px-4 py-3 pl-12 text-gray-700 whitespace-nowrap">{groupBy === 'agency' ? i.employeeName : ''}</td>
+                            <td className="px-4 py-3">
+                              <div className="font-medium text-gray-900 whitespace-nowrap">{i.loanType || 'Loan'}</div>
+                              <div className="text-xs text-gray-500">{i.agencyName || 'Company loan'}{i.applicationNo ? ` · Ref ${i.applicationNo}` : ''}</div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="font-medium text-gray-900">{money(i.amount)}</div>
+                              <div className="text-xs text-gray-500">
+                                {money(i.amortization)} per month · {SCHEDULE_SHORT[i.deductionSchedule] || i.deductionSchedule || '—'}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">
+                              <div>{fmtShort(i.startTerm)}</div>
+                              <div className="text-gray-400">to {fmtShort(i.endTerm)}</div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">{money(i.totalPaid)}</td>
+                            <td className="px-4 py-3 whitespace-nowrap font-medium">{money(i.remainingBalance)}</td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${STATUS_BADGE[i.status] || 'bg-gray-100 text-gray-700'}`}>
+                                {STATUS_LABEL[i.status] || i.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap">
+                              <div className="flex justify-end gap-1">
+                                {i.docReference && i.docReference.startsWith('contracts/') && (
+                                  <button onClick={() => viewDoc(i.docReference)} title="View document" className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"><Paperclip size={17} /></button>
+                                )}
+                                <button onClick={() => openView(i)} title="View details" className="p-2 text-gray-700 hover:bg-gray-100 rounded-lg"><Eye size={17} /></button>
+                                {canEdit && i.status === 'ACTIVE' && Number(i.totalPaid || 0) === 0 && (
+                                  <button onClick={() => openEdit(i)} title="Edit loan" className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"><Edit2 size={17} /></button>
+                                )}
+                                <button onClick={() => openPayments(i)} title="Payment history" className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg"><Wallet size={17} /></button>
+                                {canEdit && i.status === 'ACTIVE' && (
+                                  <button onClick={() => cancel(i)} title="Cancel" className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Ban size={17} /></button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </React.Fragment>
+                    ))}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {!loading && totalItems > 0 && <Pagination {...paginationProps} />}
       </div>
 
       {showForm && (
@@ -547,7 +553,7 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
             </Field>
             <div className="md:col-span-2 flex justify-end gap-2 pt-2 border-t">
               <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
-              <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
+              <button type="submit" disabled={saving} className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 disabled:opacity-50">
                 {saving ? 'Saving...' : editing ? 'Update' : 'Create'}
               </button>
             </div>
@@ -593,7 +599,7 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
 
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="w-1 h-4 bg-blue-600 rounded-full" />
+                  <div className="w-1 h-4 bg-orange-600 rounded-full" />
                   <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Loan Information</h3>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 bg-gray-50 rounded-xl p-5 border border-gray-100">
@@ -609,7 +615,7 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
                   <Detail label="End Date">{fmtDate(v.endTerm)}</Detail>
                   <Detail label="Document">
                     {v.docReference && v.docReference.startsWith('contracts/')
-                      ? <button onClick={() => viewDoc(v.docReference)} className="inline-flex items-center gap-1 text-blue-600 hover:underline"><Paperclip size={14} /> View document</button>
+                      ? <button onClick={() => viewDoc(v.docReference)} className="inline-flex items-center gap-1 text-orange-600 hover:underline"><Paperclip size={14} /> View document</button>
                       : v.docReference}
                   </Detail>
                 </div>
@@ -617,7 +623,7 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
 
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="w-1 h-4 bg-blue-600 rounded-full" />
+                  <div className="w-1 h-4 bg-orange-600 rounded-full" />
                   <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Payment History</h3>
                 </div>
                 <div className="border border-gray-200 rounded-xl overflow-hidden">
@@ -629,7 +635,7 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
                         <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Balance After</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-200">
                       {payments.length === 0 ? (
                         <tr><td colSpan="3" className="px-4 py-6 text-center text-gray-500">No payments yet.</td></tr>
                       ) : payments.map(p => (
@@ -646,7 +652,7 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
 
               <div className="flex justify-end pt-2 border-t">
                 {canEdit && v.status === 'ACTIVE' && Number(v.totalPaid || 0) === 0 && (
-                  <button onClick={() => { setViewFor(null); openEdit(v); }} className="mr-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Edit</button>
+                  <button onClick={() => { setViewFor(null); openEdit(v); }} className="mr-2 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">Edit</button>
                 )}
                 <button onClick={() => setViewFor(null)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Close</button>
               </div>

@@ -11,6 +11,7 @@ html,
 body,
 #root {
   height: 100%;
+  background-color: #f9fafb
 }
 
 body {
@@ -42,3 +43,67 @@ code {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+.tbl-max,
+.tbl-card {
+  max-height: calc(100vh - var(--nav-h, 81px) - var(--head-h, 120px) - 130px);
+}
+
+.tbl-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.tbl-card>.tbl-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* sticky header */
+.tbl-scroll>table>thead>tr>th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f9fafb;
+  box-shadow: inset 0 -2px 0 #e5e7eb;
+}
+
+/* sticky totals row */
+.tbl-scroll>table>tfoot>tr>td {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background: #f9fafb;
+  box-shadow: inset 0 2px 0 #e5e7eb;
+}
+
+/* tall tables (no forced min-height, so no empty white space) */
+.tbl-card {
+  max-height: calc(100vh - var(--nav-h, 81px) - var(--head-h, 120px) - 40px) !important;
+  min-height: 0 !important;
+}
+.tbl-card > .tbl-scroll { flex: 1 1 auto; min-height: 0; }
+
+/* filter bars scroll away instead of staying pinned */
+[class*="top-[calc(var(--nav-h)+var(--head-h))]"] { position: static !important; }
+
+/* medium page title + tabs */
+[class*="top-[var(--nav-h)]"] { padding-top: 1rem !important; padding-bottom: 0.5rem !important; }
+[class*="top-[var(--nav-h)]"] h1 { font-size: 1.625rem !important; line-height: 2rem !important; }
+[class*="top-[var(--nav-h)]"] p { margin-top: 0.125rem !important; font-size: 0.8rem !important; }
+
+/* medium filter bars */
+[class*="--head-h"] { padding-bottom: 0.75rem !important; }
+[class*="--head-h"] > .bg-white { padding: 0.75rem 1rem !important; gap: 0.75rem !important; }
+[class*="--head-h"] label { font-size: 0.75rem !important; margin-bottom: 4px !important; }
+[class*="--head-h"] input,
+[class*="--head-h"] select,
+[class*="--head-h"] button { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; font-size: 0.875rem !important; }
+
+/* room for the focus ring on the search boxes (HMO, Reimbursements) */
+[class*="--head-h"] { padding-top: 6px !important; }
+[class*="--head-h"] input:focus { position: relative; z-index: 1; }
+
+
+/* Annual Monitoring: leave room for the summary cards above the table */
+.tbl-card { max-height: calc(100vh - var(--nav-h, 81px) - var(--head-h, 120px) - 170px) !important; }

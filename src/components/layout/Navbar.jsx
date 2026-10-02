@@ -18,7 +18,7 @@ const Navbar = ({ toggleSidebar }) => {
   };
 
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200 px-4 py-3">
+    <nav className="sticky top-0 z-30 bg-white shadow-sm border-b border-gray-200 px-4 py-3">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button

@@ -6,6 +6,8 @@ import { inputCls, money, today, Field, MoneyInput } from './Shared';
 import SearchableSelect from './SearchableSelect';
 import EmployeeAvatar from './EmployeeAvatar';
 import { useAuth, can } from '../../context/AuthContext';
+import Pagination from '../common/Pagination';
+import usePagination from './usePagination';
 
 const agencyLabel = (n) => {
   const k = (n || '').toLowerCase();
@@ -102,6 +104,10 @@ const StatutoryContributionsTab = ({ canDelete }) => {
     });
     return Array.from(map.values()).sort((a, b) => a.employeeName.localeCompare(b.employeeName));
   }, [filtered]);
+
+
+  const { pageItems, paginationProps, totalItems } =
+    usePagination(grouped, `${employeeFilter}|${agencyFilter}|${search}`);
 
   // Dropdown options — derived from the full (unfiltered) list
   const employeeOptions = useMemo(() => {
@@ -200,77 +206,67 @@ const StatutoryContributionsTab = ({ canDelete }) => {
   return (
     <div>
       {/* Filters */}
-      <div className="bg-gray-50 border border-gray-100 rounded-xl p-5 mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-        <Field label="Search employee">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-            <input
-              type="text"
-              placeholder="Type a name..."
-              className={`${inputCls} pl-9`}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-gray-50 pb-4">
+        <div className="bg-white border border-gray-200 shadow-sm rounded-xl p-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+
+          <Field label="Employee">
+            <SearchableSelect
+              allLabel="All employees"
+              searchPlaceholder="Search employee..."
+              value={employeeFilter === 'ALL' ? '' : String(employeeFilter)}
+              options={employeeOptions.map(e => ({ value: String(e.id), label: e.name }))}
+              onChange={(v) => setEmployeeFilter(v || 'ALL')}
             />
-          </div>
-        </Field>
+          </Field>
 
-        <Field label="Employee">
-          <SearchableSelect
-            allLabel="All employees"
-            searchPlaceholder="Search employee..."
-            value={employeeFilter === 'ALL' ? '' : String(employeeFilter)}
-            options={employeeOptions.map(e => ({ value: String(e.id), label: e.name }))}
-            onChange={(v) => setEmployeeFilter(v || 'ALL')}
-          />
-        </Field>
+          <Field label="Agency">
+            <SearchableSelect
+              allLabel="All agencies"
+              searchPlaceholder="Search agency..."
+              value={agencyFilter === 'ALL' ? '' : agencyFilter}
+              options={agencyOptions.map(a => ({ value: a, label: a }))}
+              onChange={(v) => setAgencyFilter(v || 'ALL')}
+            />
+          </Field>
 
-        <Field label="Agency">
-          <SearchableSelect
-            allLabel="All agencies"
-            searchPlaceholder="Search agency..."
-            value={agencyFilter === 'ALL' ? '' : agencyFilter}
-            options={agencyOptions.map(a => ({ value: a, label: a }))}
-            onChange={(v) => setAgencyFilter(v || 'ALL')}
-          />
-        </Field>
-
-        <div className="md:col-span-5 flex flex-wrap gap-2 items-center">
-          <button
-            onClick={load}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-sm disabled:opacity-50"
-          >
-            <RefreshCw size={16} /> {loading ? 'Loading...' : 'Refresh'}
-          </button>
-
-          {activeFilterCount > 0 && (
+          <div className="md:col-span-5 flex flex-wrap gap-2 items-center">
             <button
-              onClick={clearFilters}
-              className="px-3 py-2 text-xs border border-gray-300 rounded-lg hover:bg-gray-100"
+              onClick={load}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-sm disabled:opacity-50"
             >
-              Clear filters ({activeFilterCount})
+              <RefreshCw size={16} /> {loading ? 'Loading...' : 'Refresh'}
             </button>
-          )}
 
-          <div className="ml-auto flex gap-2">
-            <button onClick={expandAll} className="px-3 py-2 text-xs border border-gray-300 rounded-lg hover:bg-gray-100">Expand all</button>
-            <button onClick={collapseAll} className="px-3 py-2 text-xs border border-gray-300 rounded-lg hover:bg-gray-100">Collapse all</button>
+            {activeFilterCount > 0 && (
+              <button
+                onClick={clearFilters}
+                className="px-3 py-2 text-xs border border-gray-300 rounded-lg hover:bg-gray-100"
+              >
+                Clear filters ({activeFilterCount})
+              </button>
+            )}
+
+            <div className="ml-auto flex gap-2">
+              <button onClick={expandAll} className="px-3 py-2 text-xs border border-gray-300 rounded-lg hover:bg-gray-100">Expand all</button>
+              <button onClick={collapseAll} className="px-3 py-2 text-xs border border-gray-300 rounded-lg hover:bg-gray-100">Collapse all</button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
-        <div className="flex justify-end mb-3">
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full tbl-card">
+        <div className="flex justify-end p-3">
           <button
             onClick={() => setShowAdd(s => !s)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm"
           >
             {showAdd ? 'Close' : '+ Add custom contribution'}
           </button>
         </div>
 
         {showAdd && (
-          <form onSubmit={addCustom} className="bg-blue-50 border border-blue-100 rounded-xl p-5 mb-6 grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+          <form onSubmit={addCustom} className="bg-orange-50 border border-orange-100 rounded-xl p-5 m-3 grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             <Field label="Employee" required>
               <SearchableSelect
                 placeholder="Select employee..."
@@ -305,119 +301,122 @@ const StatutoryContributionsTab = ({ canDelete }) => {
                 onChange={(e) => setAddForm(p => ({ ...p, employerShare: e.target.value }))} />
             </Field>
             <button type="submit" disabled={saving}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
+              className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 disabled:opacity-50">
               {saving ? 'Saving...' : 'Add'}
             </button>
           </form>
         )}
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              {['Employee', 'Agency', 'Pay Period', 'Employee Share', 'Employer Share', 'Total'].map(h => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
-              ))}
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {loading ? (
-              <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
-            ) : grouped.length === 0 ? (
-              <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">
-                {activeFilterCount > 0
-                  ? 'No contributions match your filters'
-                  : 'No employees with salary configured for this period'}
-              </td></tr>
-            ) : grouped.map(g => {
-              const isOpen = expanded.has(g.employeeId);
-              const totals = g.rows.reduce(
-                (acc, r) => ({
-                  ee: acc.ee + Number(r.employeeShare || 0),
-                  er: acc.er + Number(r.employerShare || 0),
-                  total: acc.total + Number(r.totalContribution || 0),
-                }),
-                { ee: 0, er: 0, total: 0 }
-              );
-              return (
-                <React.Fragment key={g.employeeId}>
-                  {/* Group header row */}
-                  <tr
-                    className="bg-gray-50 hover:bg-gray-100 cursor-pointer text-sm"
-                    onClick={() => toggle(g.employeeId)}
-                  >
-                    <td className="px-4 py-3 font-semibold text-gray-900">
-                      <div className="flex items-center gap-2">
-                        {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                        <EmployeeAvatar name={g.employeeName} photoUrl={photos[g.employeeId]} />
-                        {g.employeeName}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-500 italic">
-                      {g.rows.length} contribution{g.rows.length === 1 ? '' : 's'}
-                    </td>
-                    <td className="px-4 py-3">{g.rows[0]?.payPeriod}</td>
-                    <td className="px-4 py-3 font-medium">{money(totals.ee)}</td>
-                    <td className="px-4 py-3 font-medium">{money(totals.er)}</td>
-                    <td className="px-4 py-3 font-bold">{money(totals.total)}</td>
-                    <td />
-                  </tr>
+        <div className="overflow-auto w-full tbl-scroll">
+          <table className="w-full min-w-[900px]">
+            <thead className="bg-gray-50">
+              <tr>
+                {['Employee', 'Agency', 'Pay Period', 'Employee Share', 'Employer Share', 'Total'].map(h => (
+                  <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
+                ))}
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-200">
+              {loading ? (
+                <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
+              ) : grouped.length === 0 ? (
+                <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">
+                  {activeFilterCount > 0
+                    ? 'No contributions match your filters'
+                    : 'No employees with salary configured for this period'}
+                </td></tr>
+              ) : pageItems.map(g => {
+                const isOpen = expanded.has(g.employeeId);
+                const totals = g.rows.reduce(
+                  (acc, r) => ({
+                    ee: acc.ee + Number(r.employeeShare || 0),
+                    er: acc.er + Number(r.employerShare || 0),
+                    total: acc.total + Number(r.totalContribution || 0),
+                  }),
+                  { ee: 0, er: 0, total: 0 }
+                );
+                return (
+                  <React.Fragment key={g.employeeId}>
+                    {/* Group header row */}
+                    <tr
+                      className="cursor-pointer text-sm [&>td]:sticky [&>td]:top-[39px] [&>td]:z-[5] [&>td]:bg-gray-50 hover:[&>td]:bg-gray-100"
+                      onClick={() => toggle(g.employeeId)}
+                    >
+                      <td className="px-4 py-3 font-semibold text-gray-900">
+                        <div className="flex items-center gap-2">
+                          {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                          <EmployeeAvatar name={g.employeeName} photoUrl={photos[g.employeeId]} />
+                          {g.employeeName}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-500 italic">
+                        {g.rows.length} contribution{g.rows.length === 1 ? '' : 's'}
+                      </td>
+                      <td className="px-4 py-3">{g.rows[0]?.payPeriod}</td>
+                      <td className="px-4 py-3 font-medium">{money(totals.ee)}</td>
+                      <td className="px-4 py-3 font-medium">{money(totals.er)}</td>
+                      <td className="px-4 py-3 font-bold">{money(totals.total)}</td>
+                      <td />
+                    </tr>
 
-                  {/* Detail rows */}
-                  {isOpen && g.rows.map((c, idx) => {
-                    const key = `${g.employeeId}-${c.agencyName}-${idx}`;
-                    const editingRow = editKey === key;
-                    const liveTotal = Number(editVals.ee || 0) + Number(editVals.er || 0);
-                    return (
-                      <tr key={key} className="text-sm hover:bg-gray-50">
-                        <td className="px-4 py-3 text-gray-400 pl-12">—</td>
-                        <td className="px-4 py-3">
-                          {agencyLabel(c.agencyName)}
-                          {c.id && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">Saved</span>}
-                        </td>
-                        <td className="px-4 py-3">{c.payPeriod}</td>
-                        <td className="px-4 py-3">
-                          {editingRow
-                            ? <MoneyInput className={inputCls} value={editVals.ee}
-                              onChange={(e) => setEditVals(p => ({ ...p, ee: e.target.value }))} />
-                            : money(c.employeeShare)}
-                        </td>
-                        <td className="px-4 py-3">
-                          {editingRow
-                            ? <MoneyInput className={inputCls} value={editVals.er}
-                              onChange={(e) => setEditVals(p => ({ ...p, er: e.target.value }))} />
-                            : money(c.employerShare)}
-                        </td>
-                        <td className="px-4 py-3">{editingRow ? money(liveTotal) : money(c.totalContribution)}</td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex justify-end gap-1">
-                            {editingRow ? (
-                              <>
-                                <button onClick={() => saveEdit(c)} title="Save" className="p-2 text-green-600 hover:bg-green-50 rounded-lg"><Check size={17} /></button>
-                                <button onClick={() => setEditKey(null)} title="Cancel" className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg"><X size={17} /></button>
-                              </>
-                            ) : (
-                              <>
-                                {canEdit && (
-                                  <button onClick={(e) => { e.stopPropagation(); startEdit(c, key); }}
-                                    title="Edit shares" className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 size={17} /></button>
-                                )}
-                                {canDelete && c.id && (
-                                  <button onClick={(e) => { e.stopPropagation(); remove(c); }}
-                                    title="Delete (standard agencies go back to the bracket amount)"
-                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={17} /></button>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
+                    {/* Detail rows */}
+                    {isOpen && g.rows.map((c, idx) => {
+                      const key = `${g.employeeId}-${c.agencyName}-${idx}`;
+                      const editingRow = editKey === key;
+                      const liveTotal = Number(editVals.ee || 0) + Number(editVals.er || 0);
+                      return (
+                        <tr key={key} className="text-sm hover:bg-gray-50">
+                          <td className="px-4 py-3 text-gray-400 pl-12">—</td>
+                          <td className="px-4 py-3">
+                            {agencyLabel(c.agencyName)}
+                            {c.id && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">Saved</span>}
+                          </td>
+                          <td className="px-4 py-3">{c.payPeriod}</td>
+                          <td className="px-4 py-3">
+                            {editingRow
+                              ? <MoneyInput className={inputCls} value={editVals.ee}
+                                onChange={(e) => setEditVals(p => ({ ...p, ee: e.target.value }))} />
+                              : money(c.employeeShare)}
+                          </td>
+                          <td className="px-4 py-3">
+                            {editingRow
+                              ? <MoneyInput className={inputCls} value={editVals.er}
+                                onChange={(e) => setEditVals(p => ({ ...p, er: e.target.value }))} />
+                              : money(c.employerShare)}
+                          </td>
+                          <td className="px-4 py-3">{editingRow ? money(liveTotal) : money(c.totalContribution)}</td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex justify-end gap-1">
+                              {editingRow ? (
+                                <>
+                                  <button onClick={() => saveEdit(c)} title="Save" className="p-2 text-green-600 hover:bg-green-50 rounded-lg"><Check size={17} /></button>
+                                  <button onClick={() => setEditKey(null)} title="Cancel" className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg"><X size={17} /></button>
+                                </>
+                              ) : (
+                                <>
+                                  {canEdit && (
+                                    <button onClick={(e) => { e.stopPropagation(); startEdit(c, key); }}
+                                      title="Edit shares" className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"><Edit2 size={17} /></button>
+                                  )}
+                                  {canDelete && c.id && (
+                                    <button onClick={(e) => { e.stopPropagation(); remove(c); }}
+                                      title="Delete (standard agencies go back to the bracket amount)"
+                                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={17} /></button>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {!loading && totalItems > 0 && <Pagination {...paginationProps} />}
       </div>
       <p className="text-xs text-gray-500 mt-3">
         Click a row to expand or collapse. Preview figures computed from each employee's monthly basic salary and pay schedule — nothing is saved until a payroll run is approved.
