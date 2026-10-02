@@ -233,9 +233,6 @@ const PayrollRunDetail = ({ runId, onBack }) => {
 
   const dlUbp = async () => {
     try {
-      const XLSX = await import('xlsx');
-
-      // Build lines straight from the loaded payslips (no external endpoint needed).
       const lines = slips.map(s => ({
         name: s.employeeName,
         account: s.bankAccountNumber || '',
@@ -248,39 +245,19 @@ const PayrollRunDetail = ({ runId, onBack }) => {
         return;
       }
 
-      const remarks = `Cut Off Date ${new Date(run.periodEnd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
-      const sourceAccount = '003040002919'; // ← your UnionBank source account
+      const remarks = `Cut Off Date ${new Date(run.periodEnd + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+      const sourceAccount = '003040002919'; // your UnionBank source account
 
-      // Exact layout of the UBP "Standard Upload File" template
-      const aoa = [
-        ['Remarks*', remarks, '', '', '', '', '', '', ''],
-        ['Channel*', 'UnionBank', '', '', '', '', '', '', ''],
-        ['Source Account', sourceAccount, '', '', '', '', '', '', ''],
-        ['', '', '', '', '', '', '', '', ''],
-        ['Beneficiary Code', 'Beneficiary Name', 'Beneficiary Account Number', 'Beneficiary Address',
-          'Beneficiary Bank Code', 'Amount', 'OUR/SHA', 'Purpose', 'Other Remarks'],
-        ...lines.map(l => [
-          '',                          // Beneficiary Code (blank)
-          l.name,                      // Beneficiary Name
-          l.account,                   // Beneficiary Account Number
-          '',                          // Beneficiary Address
-          '',                          // Beneficiary Bank Code
-          Number(l.amount).toFixed(2), // Amount
-          '',                          // OUR/SHA
-          '2',                         // Purpose: 2 = Salary
-          'Salary for Period',         // Other Remarks
-        ]),
-      ];
+      const res = await fetch('/ubp-template.xlsx');
+      if (!res.ok) throw new Error('ubp-template.xlsx not found in the public folder');
+      const { buildUbpXlsx } = await import('../../utils/ubpExport');
+      const blob = await buildUbpXlsx(await res.arrayBuffer(), { remarks, sourceAccount, lines });
 
-      const ws = XLSX.utils.aoa_to_sheet(aoa);
-      ws['!cols'] = [
-        { wch: 18 }, { wch: 30 }, { wch: 28 }, { wch: 24 },
-        { wch: 20 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 24 },
-      ];
-
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Standard Upload File');
-      XLSX.writeFile(wb, `UBP_${period}.xlsx`);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `UBP_${period}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(a.href);
 
       logDoc('UBP_TEMPLATE');
     } catch (e) {
