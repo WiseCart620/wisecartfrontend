@@ -17,9 +17,8 @@ export const formatCurrencyTruncated = (amount) => {
 
 export const formatPHDateTime = (dateString) => {
   if (!dateString) return '';
-  const normalized = dateString.includes('+') || dateString.endsWith('Z')
-    ? dateString
-    : dateString + '+00:00';
+  const hasOffset = /([zZ]|[+-]\d{2}:?\d{2})$/.test(dateString);
+  const normalized = hasOffset ? dateString : dateString + '+08:00';
   return new Date(normalized).toLocaleString('en-PH', {
     timeZone: 'Asia/Manila',
     year: 'numeric',

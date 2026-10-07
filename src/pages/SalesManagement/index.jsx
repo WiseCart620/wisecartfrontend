@@ -14,7 +14,7 @@ import { useSalesForm } from '../../hooks/useSalesForm';
 import { useProductOptions } from '../../hooks/useProductOptions';
 import InvoiceReportModal from '../../components/modals/InvoiceReportModal'
 import SalesFilters from '../../components/filters/SalesFilters';
-import SalesTable from '../../components/tables/SalesTable';
+import SalesTable from '../../components/tables/SalesTable';  
 import SaleFormModal from '../../components/forms/SaleFormModal';
 import SaleViewModal from '../../components/modals/SaleViewModal';
 import InvoiceFilterModal from '../../components/modals/InvoiceFilterModal';
