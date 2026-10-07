@@ -123,7 +123,7 @@ const InventoryTable = ({
                   if (!dateString) return null;
                   const normalized = dateString.includes('+') || dateString.endsWith('Z')
                     ? dateString
-                    : dateString + '+00:00'; // createdAt/updatedAt are server UTC — treat as UTC
+                    : dateString + '+08:00';
                   const d = new Date(normalized);
                   return isNaN(d.getTime()) ? null : d;
                 };
