@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { BarChart3, CheckCircle, ShoppingCart, Truck, Clock, Eye, Loader2, Undo2 } from 'lucide-react';
+import { BarChart3, CheckCircle, ShoppingCart, Truck, Clock, Eye, Loader2, Undo2, ArrowDownCircle, ArrowDownToLine, ArrowUpFromLine, RotateCcw, AlertTriangle, Package, Barcode, MousePointerClick } from 'lucide-react';
+import HeaderIcon from '../../common/HeaderIcon';
 import Pagination from '../../common/Pagination';
 
 const SKELETON_ROWS = 5;
@@ -51,7 +52,7 @@ const ProductSummaryTable = ({
   );
 
   return (
-    <div className="bg-white rounded-xl shadow overflow-hidden mb-6 table-panel">
+    <div className="bg-white rounded-xl shadow overflow-hidden mb-6 inv-table-panel">
       <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
         <h2 className="text-base font-semibold text-black flex items-center gap-2">
           <BarChart3 size={18} />
@@ -64,60 +65,39 @@ const ProductSummaryTable = ({
       <div className="overflow-x-auto table-fit">
         <table className="w-full table-fixed text-[13px]">
           <colgroup>
-            <col className="w-[15%]" />
-            <col className="w-[11%]" />
-            <col className="w-[7%]" />
-            <col className="w-[7%]" />
-            <col className="w-[7%]" />
-            <col className="w-[7%]" />
-            <col className="w-[7%]" />
-            <col className="w-[8%]" />
-            <col className="w-[9%]" />
-            <col className="w-[7%]" />
-            <col className="w-[8%]" />
-            <col className="w-[7%]" />
-            <col className="w-[7%]" />
+            <col className="w-[18%]" />
+            <col className="w-[13%]" />
+            <col className="w-[6.4%]" />
+            <col className="w-[6.4%]" />
+            <col className="w-[6.4%]" />
+            <col className="w-[6.4%]" />
+            <col className="w-[6.4%]" />
+            <col className="w-[6.4%]" />
+            <col className="w-[6.4%]" />
+            <col className="w-[6.4%]" />
+            <col className="w-[6.4%]" />
+            <col className="w-[6.4%]" />
+            <col className="w-[5%]" />
           </colgroup>
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-2 py-2 text-left text-[12px] font-medium text-black uppercase tracking-tight">Product</th>
-              <th className="px-2 py-2 text-left text-[12px] font-medium text-black uppercase tracking-tight">SKU/UPC</th>
-              <th className="px-1 py-2 text-center text-[12px] font-medium text-black uppercase tracking-tight leading-tight">Stock<br />In</th>
-              <th className="px-1 py-2 text-center ttext-[12px] font-medium text-black uppercase tracking-tight leading-tight">Trans.<br />In</th>
-              <th className="px-1 py-2 text-center text-[12px] font-medium text-black uppercase tracking-tight leading-tight">Trans.<br />Out</th>
-              <th className="px-1 py-2 text-center text-[12px] font-medium text-black uppercase tracking-tight leading-tight">Return</th>
-              <th className="px-1 py-2 text-center text-[12px] font-medium text-black uppercase tracking-tight leading-tight">Damage</th>
-              <th className="px-1 py-2 text-center text-[12px] font-medium text-black uppercase tracking-tight leading-tight">
-                <div className="flex flex-col items-center justify-center">
-                  <CheckCircle size={13} />
-                  Delivered
-                </div>
-              </th>
-              <th className="px-1 py-2 text-center text-[12px] font-medium text-black uppercase tracking-tight leading-tight">
-                <div className="flex flex-col items-center justify-center">
-                  <Undo2 size={13} />
-                  Cancel. Ret.
-                </div>
-              </th>
-              <th className="px-1 py-2 text-center text-[12px] font-medium text-black uppercase tracking-tight leading-tight">
-                <div className="flex flex-col items-center justify-center">
-                  <ShoppingCart size={13} />
-                  Sales
-                </div>
-              </th>
-              <th className="px-1 py-2 text-center text-[12px] font-medium text-black uppercase tracking-tight leading-tight">
-                <div className="flex flex-col items-center justify-center">
-                  <Truck size={13} />
-                  Pend. Deliv.
-                </div>
-              </th>
-              <th className="px-1 py-2 text-center text-[12px] font-medium text-black uppercase tracking-tight leading-tight">
-                <div className="flex flex-col items-center justify-center">
-                  <Clock size={13} />
-                  Pend. Sale
-                </div>
-              </th>
-              <th className="px-2 py-2 text-right text-[12px] font-medium text-black uppercase tracking-tight">Actions</th>
+              <th className="px-2 py-2 th-left"><HeaderIcon Icon={Package} label="Product" align="left" /></th>
+              <th className="px-2 py-2 th-left"><HeaderIcon Icon={Barcode} label="SKU/UPC" align="left" /></th>
+              {[
+                [ArrowDownCircle, 'Stock In'],
+                [ArrowDownToLine, 'Transfer In'],
+                [ArrowUpFromLine, 'Transfer Out'],
+                [RotateCcw, 'Return'],
+                [AlertTriangle, 'Damage'],
+                [CheckCircle, 'Delivered'],
+                [Undo2, 'Cancelled Returns'],
+                [ShoppingCart, 'Sales'],
+                [Truck, 'Pending Delivery'],
+                [Clock, 'Pending Sale'],
+              ].map(([Icon, label]) => (
+                <th key={label} className="px-1 py-2 text-center"><HeaderIcon Icon={Icon} label={label} /></th>
+              ))}
+              <th className="px-2 py-2 text-center"><HeaderIcon Icon={MousePointerClick} label="Actions" /></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -168,24 +148,24 @@ const ProductSummaryTable = ({
                       >
                         {product.productName}
                         {isVariation && product.variationName && (
-                          <span className="ml-1 text-orange-600 font-semibold">
+                          <span className="table-sub ml-1 text-orange-600">
                             ({product.variationName})
                           </span>
                         )}
                       </div>
                       {isVariation && product.combinationDisplay && (
-                        <div className="text-[12px] text-orange-600 truncate" title={product.combinationDisplay}>
+                        <div className="table-sub text-orange-600 truncate" title={product.combinationDisplay}>
                           {product.combinationDisplay}
                         </div>
                       )}
                     </td>
                     <td className="px-2 py-2 align-top text-[10px]">
                       <div className="truncate" title={`SKU: ${displaySku || 'N/A'}`}>
-                        SKU: {displaySku || 'N/A'}
+                        {displaySku || 'N/A'}
                       </div>
                       {displayUpc && displayUpc !== 'N/A' && (
                         <div className="text-black truncate" title={`UPC: ${displayUpc}`}>
-                          UPC: {displayUpc}
+                          {displayUpc}
                         </div>
                       )}
                     </td>
@@ -219,7 +199,7 @@ const ProductSummaryTable = ({
                     <td className="px-1 py-2 text-center">
                       <Badge value={product.totalPendingSales} className="bg-purple-100 text-purple-800" />
                     </td>
-                    <td className="px-2 py-2 text-right">
+                    <td className="px-2 py-2 text-center">
                       <button
                         onClick={() => handleView(product, displaySku, displayUpc, isVariation)}
                         disabled={isThisLoading}
@@ -235,7 +215,6 @@ const ProductSummaryTable = ({
                         ) : (
                           <Eye size={14} />
                         )}
-                        {isThisLoading ? '...' : 'View'}
                       </button>
                     </td>
                   </tr>

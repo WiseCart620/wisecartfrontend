@@ -1,4 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
 @import "tailwindcss";
+
 
 /* Your custom resets & fonts */
 *,
@@ -82,28 +84,147 @@ code {
   max-height: calc(100vh - var(--nav-h, 81px) - var(--head-h, 120px) - 40px) !important;
   min-height: 0 !important;
 }
-.tbl-card > .tbl-scroll { flex: 1 1 auto; min-height: 0; }
+
+.tbl-card>.tbl-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+}
 
 /* filter bars scroll away instead of staying pinned */
-[class*="top-[calc(var(--nav-h)+var(--head-h))]"] { position: static !important; }
+[class*="top-[calc(var(--nav-h)+var(--head-h))]"] {
+  position: static !important;
+}
 
 /* medium page title + tabs */
-[class*="top-[var(--nav-h)]"] { padding-top: 1rem !important; padding-bottom: 0.5rem !important; }
-[class*="top-[var(--nav-h)]"] h1 { font-size: 1.625rem !important; line-height: 2rem !important; }
-[class*="top-[var(--nav-h)]"] p { margin-top: 0.125rem !important; font-size: 0.8rem !important; }
+[class*="top-[var(--nav-h)]"] {
+  padding-top: 1rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+[class*="top-[var(--nav-h)]"] h1 {
+  font-size: 1.625rem !important;
+  line-height: 2rem !important;
+}
+
+[class*="top-[var(--nav-h)]"] p {
+  margin-top: 0.125rem !important;
+  font-size: 0.8rem !important;
+}
 
 /* medium filter bars */
-[class*="--head-h"] { padding-bottom: 0.75rem !important; }
-[class*="--head-h"] > .bg-white { padding: 0.75rem 1rem !important; gap: 0.75rem !important; }
-[class*="--head-h"] label { font-size: 0.75rem !important; margin-bottom: 4px !important; }
+[class*="--head-h"] {
+  padding-bottom: 0.75rem !important;
+}
+
+[class*="--head-h"]>.bg-white {
+  padding: 0.75rem 1rem !important;
+  gap: 0.75rem !important;
+}
+
+[class*="--head-h"] label {
+  font-size: 0.75rem !important;
+  margin-bottom: 4px !important;
+}
+
 [class*="--head-h"] input,
 [class*="--head-h"] select,
-[class*="--head-h"] button { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; font-size: 0.875rem !important; }
+[class*="--head-h"] button {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+  font-size: 0.875rem !important;
+}
 
 /* room for the focus ring on the search boxes (HMO, Reimbursements) */
-[class*="--head-h"] { padding-top: 6px !important; }
-[class*="--head-h"] input:focus { position: relative; z-index: 1; }
+[class*="--head-h"] {
+  padding-top: 6px !important;
+}
+
+[class*="--head-h"] input:focus {
+  position: relative;
+  z-index: 1;
+}
 
 
 /* Annual Monitoring: leave room for the summary cards above the table */
-.tbl-card { max-height: calc(100vh - var(--nav-h, 81px) - var(--head-h, 120px) - 170px) !important; }
+.tbl-card {
+  max-height: calc(100vh - var(--nav-h, 81px) - var(--head-h, 120px) - 170px) !important;
+}
+
+
+/* ===== Inventory tables: uniform sans-serif, orange hover ===== */
+.inv-table-panel table,
+.inv-table-panel table td,
+.inv-table-panel table td * {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif !important;
+  font-size: 13px !important;
+  line-height: 1.35;
+}
+
+.inv-table-panel table th,
+.inv-table-panel table th * {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif !important;
+  font-size: 12px !important;
+}
+
+/* variation / sub-entry: same font and size, thinner weight */
+.inv-table-panel table .table-sub {
+  font-weight: 300 !important;
+}
+
+/* row hover: whole row, including colored columns, turns light orange */
+.inv-table-panel tbody tr:hover,
+.inv-table-panel tbody tr:hover>td {
+  background-color: #fff7ed !important;
+}
+
+/* header icons centered; text cells left-aligned (number cells keep their own text-center) */
+.inv-table-panel thead th {
+  text-align: center !important;
+}
+
+.inv-table-panel thead th>span {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* text cells: plain left-aligned, no centering block */
+.inv-table-panel .txt-block {
+  width: auto;
+  text-align: left;
+}
+
+.inv-table-panel thead th.th-num,
+.inv-table-panel tbody td.td-num {
+  width: 90px;
+  min-width: 90px;
+}
+
+/* ===== inv polish: shared column system for inventory tables ===== */
+.inv-table-panel thead th {
+  height: 44px;
+  vertical-align: middle;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.inv-table-panel tbody td {
+  vertical-align: middle;
+}
+
+.inv-table-panel tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.inv-table-panel tbody td.td-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.inv-table-panel th.col-name { width: 220px; min-width: 220px; }
+.inv-table-panel th.col-prod { width: 260px; min-width: 260px; }
+.inv-table-panel th.col-sku  { width: 200px; min-width: 200px; }
+.inv-table-panel th.col-date { width: 130px; min-width: 130px; }
+.inv-table-panel th.col-act  { width: 110px; min-width: 110px; }
+
+/* text-column header icons sit at the left, over the start of the text */
+.inv-table-panel thead th.th-left {
+  text-align: left !important;
+}

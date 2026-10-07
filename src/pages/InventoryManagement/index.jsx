@@ -27,6 +27,19 @@ import BranchFilterPanel from '../../components/filters/BranchFilterPanel';
 import WarehouseReportInlineTable from '../../components/tables/InventoryManagement/WarehouseReportInlineTable';
 import BranchReportInlineTable from '../../components/tables/InventoryManagement/BranchReportInlineTable';
 import BranchStockExportButton from '../../components/tables/InventoryManagement/BranchStockExportButton';
+
+
+
+
+const TABS = [
+  { key: 'products', label: 'Product Summary', Icon: BarChart3 },
+  { key: 'warehouse-stocks', label: 'Warehouse Stocks', Icon: Building },
+  { key: 'branch-stocks', label: 'Consigned Stocks', Icon: Store },
+  { key: 'stock-rebuild', label: 'Stock Rebuild', Icon: RefreshCw },
+];
+
+
+
 const InventoryManagement = () => {
   const { user } = useAuth();
   const [productSearchTerm, setProductSearchTerm] = useState('');
@@ -645,47 +658,31 @@ const InventoryManagement = () => {
         {/* Navigation Tabs */}
         <div className="mb-4">
           <div className="border-b border-gray-200 overflow-x-auto">
-            <nav className="-mb-px flex space-x-4 min-w-max">
-              <button
-                onClick={() => setActiveTab('products')}
-                className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${activeTab === 'products'
-                  ? 'border-orange-500 text-orange-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-              >
-                <BarChart3 className="inline w-4 h-4 mr-2" />
-                Product Summary
-              </button>
-              <button
-                onClick={() => setActiveTab('warehouse-stocks')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'warehouse-stocks'
-                  ? 'border-orange-500 text-orange-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-              >
-                <Building className="inline w-4 h-4 mr-2" />
-                Warehouse Stocks
-              </button>
-              <button
-                onClick={() => setActiveTab('branch-stocks')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'branch-stocks'
-                  ? 'border-orange-500 text-orange-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-              >
-                <Store className="inline w-4 h-4 mr-2" />
-                Company Stocks
-              </button>
-              <button
-                onClick={() => setActiveTab('stock-rebuild')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'stock-rebuild'
-                  ? 'border-orange-500 text-orange-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-              >
-                <RefreshCw className="inline w-4 h-4 mr-2" />
-                Stock Rebuild
-              </button>
+            <nav className="-mb-px flex space-x-2 min-w-max">
+              {TABS.map(({ key, label, Icon }) => {
+                const active = activeTab === key;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setActiveTab(key)}
+                    aria-label={label}
+                    className={`group flex items-center py-2 px-3 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${active
+                        ? 'border-orange-500 text-orange-600'
+                        : 'border-transparent text-gray-500 hover:text-orange-600 hover:border-orange-400 hover:bg-orange-50'
+                      }`}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span
+                      className={`overflow-hidden transition-all duration-300 ease-in-out ${active
+                          ? 'max-w-[160px] ml-2 opacity-100'
+                          : 'max-w-0 ml-0 opacity-0 group-hover:max-w-[160px] group-hover:ml-2 group-hover:opacity-100'
+                        }`}
+                    >
+                      {label}
+                    </span>
+                  </button>
+                );
+              })}
             </nav>
           </div>
         </div>

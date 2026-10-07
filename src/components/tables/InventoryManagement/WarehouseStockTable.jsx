@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Building, CheckCircle, Truck, Eye,
+  Building, CheckCircle, Truck, Eye, Package, Barcode, Boxes, PackageCheck, CalendarClock, MousePointerClick,
   ArrowDownCircle, ArrowUpCircle, ArrowLeftRight,
   AlertTriangle, RotateCcw, SlidersHorizontal, X, Loader2, XCircle,
 } from 'lucide-react';
 import Pagination from '../../common/Pagination';
+import HeaderIcon from '../../common/HeaderIcon';
 import { parseDate } from '../../../utils/dateUtils';
 import ManualAdjustmentModal from '../../modals/ManualAdjustmentModal';
 
@@ -170,7 +171,7 @@ const WarehouseStockTable = ({
     7 + activeCols.length + (visibleCols.sku ? 1 : 0) + (visibleCols.lastUpdated ? 1 : 0);
 
   return (
-    <div className="bg-white rounded-xl shadow overflow-hidden table-panel">
+    <div className="bg-white rounded-xl shadow overflow-hidden inv-table-panel">
       {/* Header */}
       <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -212,41 +213,25 @@ const WarehouseStockTable = ({
       </div>
 
       <div className="border-t border-gray-100 overflow-auto max-h-[65vh] table-fit">
-        <table className="w-full text-sm text-black" style={{ fontSize: '11px', tableLayout: 'auto' }}>
+        <table className="w-full text-sm text-black" style={{ fontSize: '11px', tableLayout: 'fixed' }}>
           <thead className="bg-gray-50 sticky top-0 z-10">
             <tr>
-              <th className="px-2 py-2 text-left text-xs font-medium text-black uppercase whitespace-nowrap" style={{ minWidth: '100px' }}>Warehouse</th>
-              <th className="px-2 py-2 text-left text-xs font-medium text-black uppercase whitespace-nowrap" style={{ minWidth: '130px' }}>Product</th>
+              <th className="px-2 py-2 th-left col-name"><HeaderIcon Icon={Building} label="Warehouse" align="left" /></th>
+              <th className="px-2 py-2 th-left col-prod"><HeaderIcon Icon={Package} label="Product" align="left" /></th>
               {visibleCols.sku && (
-                <th className="px-2 py-2 text-left text-xs font-medium text-black uppercase whitespace-nowrap" style={{ minWidth: '100px' }}>SKU/UPC</th>
+                <th className="px-2 py-2 th-left col-sku"><HeaderIcon Icon={Barcode} label="SKU/UPC" align="left" /></th>
               )}
               {activeCols.map((col) => (
-                <th
-                  key={col.key}
-                  className="px-2 py-2 text-center text-xs font-medium text-black uppercase whitespace-nowrap"
-                  style={{ minWidth: '75px' }}
-                >
-                  <div className="flex items-center justify-center gap-1">
-                    {col.icon} {col.label}
-                  </div>
-                </th>
+                <th key={col.key} className="px-2 py-2 text-center th-num"><HeaderIcon icon={col.icon} label={col.label} /></th>
               ))}
-              <th className="px-2 py-2 text-center text-xs font-medium text-black uppercase whitespace-nowrap" style={{ minWidth: '65px' }}>Stock</th>
-              <th className="px-2 py-2 text-center text-xs font-medium text-black uppercase whitespace-nowrap" style={{ minWidth: '65px' }}>
-                <div className="flex items-center justify-center gap-1">
-                  <CheckCircle size={13} /> Delivered
-                </div>
-              </th>
-              <th className="px-2 py-2 text-center text-xs font-medium text-black uppercase whitespace-nowrap" style={{ minWidth: '65px' }}>
-                <div className="flex items-center justify-center gap-1">
-                  <Truck size={13} /> Pending
-                </div>
-              </th>
-              <th className="px-2 py-2 text-center text-xs font-medium text-black uppercase whitespace-nowrap" style={{ minWidth: '65px' }}>Available</th>
+              <th className="px-2 py-2 text-center th-num"><HeaderIcon Icon={Boxes} label="Stock" /></th>
+              <th className="px-2 py-2 text-center th-num"><HeaderIcon Icon={CheckCircle} label="Delivered" /></th>
+              <th className="px-2 py-2 text-center th-num"><HeaderIcon Icon={Truck} label="Pending Delivery" /></th>
+              <th className="px-2 py-2 text-center th-num"><HeaderIcon Icon={PackageCheck} label="Available" /></th>
               {visibleCols.lastUpdated && (
-                <th className="px-2 py-2 text-left text-xs font-medium text-black uppercase whitespace-nowrap" style={{ minWidth: '80px' }}>Last Updated</th>
+                <th className="px-2 py-2 th-left col-date"><HeaderIcon Icon={CalendarClock} label="Last Updated" align="left" /></th>
               )}
-              <th className="px-2 py-2 text-center text-xs font-medium text-black uppercase whitespace-nowrap" style={{ minWidth: isAdmin ? '110px' : '60px' }}>Actions</th>
+              <th className="px-2 py-2 text-center col-act"><HeaderIcon Icon={MousePointerClick} label="Actions" /></th>
             </tr>
           </thead>
 
@@ -286,20 +271,22 @@ const WarehouseStockTable = ({
                   <tr key={stock.id} className="hover:bg-gray-50 transition-colors text-black">
                     {/* Warehouse */}
                     <td className="px-2 py-2">
-                      <div className="font-medium text-black text-xs break-words">
-                        {stock.warehouseName}
+                      <div className="txt-block">
+                        <div className="font-medium text-black text-xs break-words">
+                          {stock.warehouseName}
+                        </div>
+                        <div className="text-xs text-black break-words">{stock.warehouseCode}</div>
                       </div>
-                      <div className="text-xs text-black break-words">{stock.warehouseCode}</div>
                     </td>
 
                     {/* Product */}
                     <td className="px-2 py-2">
-                      <div style={{ minWidth: '160px' }}>
+                      <div className="txt-block">
                         <div className="font-medium text-black text-xs leading-snug break-words whitespace-normal">
                           {stock.productName || stock.fullProductName}
                         </div>
                         {(stock.variationName || stock.combinationDisplay) && (
-                          <div className="text-xs text-orange-600 mt-0.5 break-words whitespace-normal">
+                          <div className="table-sub text-orange-600 mt-0.5 break-words whitespace-normal">
                             {stock.variationName || stock.combinationDisplay}
                             {stock.variationName && stock.combinationDisplay && stock.combinationDisplay !== stock.variationName
                               ? ` (${stock.combinationDisplay})`
@@ -312,7 +299,7 @@ const WarehouseStockTable = ({
                     {/* SKU/UPC (optional) */}
                     {visibleCols.sku && (
                       <td className="px-2 py-2">
-                        <div className="space-y-0.5" style={{ minWidth: '110px' }}>
+                        <div className="space-y-0.5 txt-block">
                           <div className="text-xs font-medium break-all text-black">
                             {stock.variationSku || stock.productSku || stock.sku || 'N/A'}
                           </div>
@@ -328,7 +315,7 @@ const WarehouseStockTable = ({
 
                     {/* Movement columns (optional) */}
                     {activeCols.map((col) => (
-                      <td key={col.key} className="px-3 py-3 text-center">
+                      <td key={col.key} className="px-2 py-2 text-center td-num">
                         {movLoading ? (
                           <span className="inline-flex items-center justify-center w-6 h-5">
                             <span className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin" />
@@ -344,22 +331,22 @@ const WarehouseStockTable = ({
                     ))}
 
                     {/* Stock */}
-                    <td className="px-2 py-2 text-center text-sm font-semibold text-black">
+                    <td className="px-2 py-2 text-center text-sm font-semibold text-black td-num">
                       {(stock.quantity || 0).toLocaleString()}
                     </td>
 
                     {/* Delivered */}
-                    <td className="px-2 py-2 text-center text-sm text-black">
+                    <td className="px-2 py-2 text-center text-sm text-black td-num">
                       {(stock.deliveredQuantity || 0).toLocaleString()}
                     </td>
 
                     {/* Pending */}
-                    <td className="px-2 py-2 text-center text-sm text-black">
+                    <td className="px-2 py-2 text-center text-sm text-black td-num">
                       {(stock.pendingDeliveries || 0).toLocaleString()}
                     </td>
 
                     {/* Available */}
-                    <td className="px-2 py-2 text-center text-sm text-black">
+                    <td className="px-2 py-2 text-center text-sm text-black td-num">
                       {Math.max(0, (stock.quantity || 0) - (stock.reservedQuantity || 0)).toLocaleString()}
                     </td>
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Store, CheckCircle, ShoppingCart, Truck, Clock, Eye, Loader2 } from 'lucide-react';
+import { Store, CheckCircle, ShoppingCart, Truck, Clock, Eye, Loader2, Package, Barcode, Boxes, PackageCheck, CalendarClock, MousePointerClick } from 'lucide-react';
 import Pagination from '../../common/Pagination';
+import HeaderIcon from '../../common/HeaderIcon';
 import { parseDate } from '../../../utils/dateUtils';
 
 const SKELETON_ROWS = 5;
@@ -34,11 +35,11 @@ const BranchStockTable = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow overflow-hidden table-panel">
+    <div className="bg-white rounded-xl shadow overflow-hidden inv-table-panel">
       <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-black flex items-center gap-2">
           <Store size={20} />
-          Company Stock Levels
+          Consigned Stock Levels
         </h2>
         {!isLoading && totalElements > 0 && (
           <span className="text-xs text-black">
@@ -48,40 +49,20 @@ const BranchStockTable = ({
       </div>
 
       <div className="overflow-auto max-h-[65vh] table-fit">
-        <table className="w-full">
+        <table className="w-full" style={{ tableLayout: 'fixed' }}>
           <thead className="bg-gray-50 sticky top-0 z-10">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-black uppercase">Branch</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-black uppercase">Product</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-black uppercase">SKU/UPC</th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-black uppercase">Total Stock</th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-black uppercase">
-                <div className="flex items-center justify-center gap-1">
-                  <CheckCircle size={14} />
-                  Delivered
-                </div>
-              </th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-black uppercase">
-                <div className="flex items-center justify-center gap-1">
-                  <ShoppingCart size={14} />
-                  Total Sales
-                </div>
-              </th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-black uppercase">
-                <div className="flex items-center justify-center gap-1">
-                  <Truck size={14} />
-                  Pending Delivery
-                </div>
-              </th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-black uppercase">
-                <div className="flex items-center justify-center gap-1">
-                  <Clock size={14} />
-                  Pending Sale
-                </div>
-              </th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-black uppercase">Available</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-black uppercase">Last Updated</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-black uppercase">Actions</th>
+              <th className="px-4 py-3 th-left col-name"><HeaderIcon Icon={Store} label="Branch" align="left" /></th>
+              <th className="px-4 py-3 th-left col-prod"><HeaderIcon Icon={Package} label="Product" align="left" /></th>
+              <th className="px-4 py-3 th-left col-sku"><HeaderIcon Icon={Barcode} label="SKU/UPC" align="left" /></th>
+              <th className="px-3 py-3 text-center th-num"><HeaderIcon Icon={Boxes} label="Total Stock" /></th>
+              <th className="px-3 py-3 text-center th-num"><HeaderIcon Icon={CheckCircle} label="Delivered" /></th>
+              <th className="px-3 py-3 text-center th-num"><HeaderIcon Icon={ShoppingCart} label="Total Sales" /></th>
+              <th className="px-3 py-3 text-center th-num"><HeaderIcon Icon={Truck} label="Pending Delivery" /></th>
+              <th className="px-3 py-3 text-center th-num"><HeaderIcon Icon={Clock} label="Pending Sale" /></th>
+              <th className="px-3 py-3 text-center th-num"><HeaderIcon Icon={PackageCheck} label="Available" /></th>
+              <th className="px-4 py-3 th-left col-date"><HeaderIcon Icon={CalendarClock} label="Last Updated" align="left" /></th>
+              <th className="px-4 py-3 text-center col-act"><HeaderIcon Icon={MousePointerClick} label="Actions" /></th>
             </tr>
           </thead>
 
@@ -114,7 +95,7 @@ const BranchStockTable = ({
                 return (
                   <tr key={stock.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
-                      <div className="max-w-[180px]">
+                      <div className="txt-block">
                         <div className="font-medium text-black text-sm" title={stock.branchName}>
                           {stock.branchName}
                         </div>
@@ -124,52 +105,50 @@ const BranchStockTable = ({
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="max-w-[200px]">
+                      <div className="txt-block">
                         <div className="font-medium text-black text-sm">
                           {stock.fullProductName || stock.productName}
                         </div>
                         {stock.combinationDisplay && (
-                          <div className="text-xs text-orange-600 mt-0.5">
+                          <div className="table-sub text-orange-600 mt-0.5">
                             {stock.combinationDisplay}
                           </div>
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-xs">
-                      <div className="space-y-1">
+                      <div className="space-y-1 txt-block">
                         <div className="font-medium">
-                          SKU: {stock.variationSku || stock.productSku || stock.sku || 'N/A'}
+                          {stock.variationSku || stock.productSku || stock.sku || 'N/A'}
                         </div>
                         {(stock.variationUpc || stock.productUpc || stock.upc) && (stock.variationUpc || stock.productUpc || stock.upc) !== 'N/A' && (
                           <div className="text-black">
-                            UPC: {stock.variationUpc || stock.productUpc || stock.upc}
+                            {stock.variationUpc || stock.productUpc || stock.upc}
                           </div>
                         )}
                         {stock.variationName && (
-                          <div className="text-xs text-orange-600 font-medium mt-1">
-                            Variation: {stock.variationName}
-                            {stock.variationSku && ` (SKU: ${stock.variationSku})`}
-                            {stock.variationUpc && stock.variationUpc !== 'N/A' && ` (UPC: ${stock.variationUpc})`}
+                          <div className="table-sub text-orange-600 mt-1">
+                            {stock.variationName}
                           </div>
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-3 text-center text-sm font-semibold text-black">
+                    <td className="px-3 py-3 text-center text-sm font-semibold text-black td-num">
                       {(stock.quantity || 0).toLocaleString('en-US')}
                     </td>
-                    <td className="px-3 py-3 text-center text-sm text-black">
+                    <td className="px-3 py-3 text-center text-sm text-black td-num">
                       {(stock.deliveredQuantity || 0).toLocaleString('en-US')}
                     </td>
-                    <td className="px-3 py-3 text-center text-sm text-black">
+                    <td className="px-3 py-3 text-center text-sm text-black td-num">
                       {(stock.totalSales || 0).toLocaleString('en-US')}
                     </td>
-                    <td className="px-3 py-3 text-center text-sm text-black">
+                    <td className="px-3 py-3 text-center text-sm text-black td-num">
                       {(stock.pendingDeliveries || 0).toLocaleString('en-US')}
                     </td>
-                    <td className="px-3 py-3 text-center text-sm text-black">
+                    <td className="px-3 py-3 text-center text-sm text-black td-num">
                       {(stock.pendingSales || 0).toLocaleString('en-US')}
                     </td>
-                    <td className="px-3 py-3 text-center text-sm text-black">
+                    <td className="px-3 py-3 text-center text-sm text-black td-num">
                       {(stock.availableQuantity != null ? stock.availableQuantity : Math.max(0, (stock.quantity || 0) - (stock.reservedQuantity || 0))).toLocaleString('en-US')}
                     </td>
                     <td className="px-4 py-3 text-xs text-black">
@@ -188,6 +167,7 @@ const BranchStockTable = ({
                       <button
                         onClick={() => handleView(stock)}
                         disabled={isThisLoading}
+                        title="View Transactions"
                         className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition
                           ${isThisLoading
                             ? 'text-black opacity-50 cursor-wait'
@@ -199,7 +179,6 @@ const BranchStockTable = ({
                         ) : (
                           <Eye size={14} />
                         )}
-                        {isThisLoading ? 'Loading...' : 'View'}
                       </button>
                     </td>
                   </tr>

@@ -119,7 +119,7 @@ const BranchStockExportButton = ({ fetchData }) => {
       </tr>`).join('');
 
       const html = `
-      <!DOCTYPE html><html><head><title>Company Stock Levels</title>
+      <!DOCTYPE html><html><head><title>Consigned Stock Levels</title>
       <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family: Arial, Helvetica, sans-serif; padding:15px; font-size:9pt; }
@@ -134,7 +134,7 @@ const BranchStockExportButton = ({ fetchData }) => {
         @media print { @page { size: landscape; margin:10mm; } }
       </style></head>
       <body>
-        <h1>Company Stock Levels</h1>
+        <h1>Consigned Stock Levels</h1>
         <div class="meta">Generated: ${today} &middot; ${rows.length} record(s)</div>
         <table>
           <thead><tr>

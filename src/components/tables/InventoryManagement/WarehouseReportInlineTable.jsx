@@ -17,7 +17,7 @@ const WarehouseReportInlineTable = ({ rows = [], loading }) => {
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow overflow-hidden mb-6 table-panel">
+    <div className="bg-white rounded-xl shadow overflow-hidden mb-6 inv-table-panel">
       <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
         <h2 className="text-lg font-semibold text-gray-900">Warehouse Product Summary</h2>
       </div>
@@ -47,11 +47,11 @@ const WarehouseReportInlineTable = ({ rows = [], loading }) => {
                 <tr key={row.key} className="hover:bg-gray-50">
                   <td className="px-3 py-3">
                     <div className="font-medium text-gray-900 text-sm">{row.productName}</div>
-                    {row.variationName && <div className="text-xs text-blue-600">{row.variationName}</div>}
+                    {row.variationName && <div className="table-sub text-blue-600">{row.variationName}</div>}
                   </td>
                   <td className="px-3 py-3 text-xs">
-                    <div>SKU: {row.sku}</div>
-                    {row.upc !== 'N/A' && <div className="text-gray-500">UPC: {row.upc}</div>}
+                    <div>{row.sku}</div>
+                    {row.upc !== 'N/A' && <div className="text-gray-500">{row.upc}</div>}
                   </td>
                   {cols.map(([label, key, colorClass]) => (
                     <td key={key} className={`px-2 py-3 text-center text-sm ${colorClass || ''}`}>{(row[key] || 0).toLocaleString()}</td>
