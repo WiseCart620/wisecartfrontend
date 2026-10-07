@@ -96,39 +96,40 @@ const BranchStockTable = ({
                   <tr key={stock.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <div className="txt-block">
-                        <div className="font-medium text-black text-sm" title={stock.branchName}>
+                        <div className="font-normal text-black truncate" title={stock.branchName}>
                           {stock.branchName}
                         </div>
-                        <div className="text-xs text-black">
+                        <div className="font-normal text-black truncate">
                           {stock.branchCode}
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <div className="txt-block">
-                        <div className="font-medium text-black text-sm">
+                        <div
+                          className="font-normal text-black truncate"
+                          title={stock.fullProductName || stock.productName}
+                        >
                           {stock.fullProductName || stock.productName}
                         </div>
-                        {stock.combinationDisplay && (
-                          <div className="table-sub text-orange-600 mt-0.5">
-                            {stock.combinationDisplay}
+                        {(stock.combinationDisplay || stock.variationName) && (
+                          <div
+                            className="table-sub text-gray-500 truncate"
+                            title={stock.combinationDisplay || stock.variationName}
+                          >
+                            {stock.combinationDisplay || stock.variationName}
                           </div>
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-xs">
-                      <div className="space-y-1 txt-block">
-                        <div className="font-medium">
+                      <div className="txt-block">
+                        <div className="font-normal text-black truncate">
                           {stock.variationSku || stock.productSku || stock.sku || 'N/A'}
                         </div>
                         {(stock.variationUpc || stock.productUpc || stock.upc) && (stock.variationUpc || stock.productUpc || stock.upc) !== 'N/A' && (
-                          <div className="text-black">
+                          <div className="font-normal text-black truncate">
                             {stock.variationUpc || stock.productUpc || stock.upc}
-                          </div>
-                        )}
-                        {stock.variationName && (
-                          <div className="table-sub text-orange-600 mt-1">
-                            {stock.variationName}
                           </div>
                         )}
                       </div>

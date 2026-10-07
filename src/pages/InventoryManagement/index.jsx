@@ -207,6 +207,7 @@ const InventoryManagement = () => {
     endDate: warehouseFilters.filters.endDate || undefined,
     currentPage: warehouseStockPage,
     pageSize: STOCK_PAGE_SIZE,
+    enabled: activeTab === 'warehouse-stocks',
   });
 
   const branchStockFilterParams = {
@@ -243,6 +244,7 @@ const InventoryManagement = () => {
     endDate: branchFilters.filters.endDate || undefined,
     currentPage: branchStockPage,
     pageSize: STOCK_PAGE_SIZE,
+    enabled: activeTab === 'branch-stocks',
   });
 
   const productPagination = usePaginationControl(10);
@@ -667,15 +669,15 @@ const InventoryManagement = () => {
                     onClick={() => setActiveTab(key)}
                     aria-label={label}
                     className={`group flex items-center py-2 px-3 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${active
-                        ? 'border-orange-500 text-orange-600'
-                        : 'border-transparent text-gray-500 hover:text-orange-600 hover:border-orange-400 hover:bg-orange-50'
+                      ? 'border-orange-500 text-orange-600'
+                      : 'border-transparent text-gray-500 hover:text-orange-600 hover:border-orange-400 hover:bg-orange-50'
                       }`}
                   >
                     <Icon className="w-4 h-4 shrink-0" />
                     <span
                       className={`overflow-hidden transition-all duration-300 ease-in-out ${active
-                          ? 'max-w-[160px] ml-2 opacity-100'
-                          : 'max-w-0 ml-0 opacity-0 group-hover:max-w-[160px] group-hover:ml-2 group-hover:opacity-100'
+                        ? 'max-w-[160px] ml-2 opacity-100'
+                        : 'max-w-0 ml-0 opacity-0 group-hover:max-w-[160px] group-hover:ml-2 group-hover:opacity-100'
                         }`}
                     >
                       {label}

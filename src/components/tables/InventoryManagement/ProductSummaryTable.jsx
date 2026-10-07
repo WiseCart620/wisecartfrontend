@@ -143,18 +143,18 @@ const ProductSummaryTable = ({
                   <tr key={uniqueKey} className="hover:bg-gray-50">
                     <td className="px-2 py-2 align-top">
                       <div
-                        className="font-medium text-black text-[13px] truncate leading-tight"
+                        className="font-normal text-black text-[13px] truncate leading-tight"
                         title={`${product.productName}${isVariation && product.variationName ? ` (${product.variationName})` : ''}`}
                       >
                         {product.productName}
                         {isVariation && product.variationName && (
-                          <span className="table-sub ml-1 text-orange-600">
+                          <span className="table-sub ml-1 text-gray-500">
                             ({product.variationName})
                           </span>
                         )}
                       </div>
                       {isVariation && product.combinationDisplay && (
-                        <div className="table-sub text-orange-600 truncate" title={product.combinationDisplay}>
+                        <div className="table-sub text-gray-500 truncate" title={product.combinationDisplay}>
                           {product.combinationDisplay}
                         </div>
                       )}

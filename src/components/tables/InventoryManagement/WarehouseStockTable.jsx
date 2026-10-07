@@ -272,25 +272,22 @@ const WarehouseStockTable = ({
                     {/* Warehouse */}
                     <td className="px-2 py-2">
                       <div className="txt-block">
-                        <div className="font-medium text-black text-xs break-words">
+                        <div className="font-normal text-black truncate" title={stock.warehouseName}>
                           {stock.warehouseName}
                         </div>
-                        <div className="text-xs text-black break-words">{stock.warehouseCode}</div>
+                        <div className="font-normal text-black truncate">{stock.warehouseCode}</div>
                       </div>
                     </td>
 
                     {/* Product */}
                     <td className="px-2 py-2">
                       <div className="txt-block">
-                        <div className="font-medium text-black text-xs leading-snug break-words whitespace-normal">
+                        <div className="font-normal text-black truncate" title={stock.productName || stock.fullProductName}>
                           {stock.productName || stock.fullProductName}
                         </div>
                         {(stock.variationName || stock.combinationDisplay) && (
-                          <div className="table-sub text-orange-600 mt-0.5 break-words whitespace-normal">
-                            {stock.variationName || stock.combinationDisplay}
-                            {stock.variationName && stock.combinationDisplay && stock.combinationDisplay !== stock.variationName
-                              ? ` (${stock.combinationDisplay})`
-                              : ''}
+                          <div className="table-sub text-gray-500 truncate" title={stock.combinationDisplay || stock.variationName}>
+                            {stock.combinationDisplay || stock.variationName}
                           </div>
                         )}
                       </div>
@@ -299,13 +296,13 @@ const WarehouseStockTable = ({
                     {/* SKU/UPC (optional) */}
                     {visibleCols.sku && (
                       <td className="px-2 py-2">
-                        <div className="space-y-0.5 txt-block">
-                          <div className="text-xs font-medium break-all text-black">
+                        <div className="txt-block">
+                          <div className="font-normal text-black truncate">
                             {stock.variationSku || stock.productSku || stock.sku || 'N/A'}
                           </div>
                           {(stock.variationUpc || stock.productUpc || stock.upc) &&
                             (stock.variationUpc || stock.productUpc || stock.upc) !== 'N/A' && (
-                              <div className="text-xs text-black break-all">
+                              <div className="font-normal text-black truncate">
                                 {stock.variationUpc || stock.productUpc || stock.upc}
                               </div>
                             )}
