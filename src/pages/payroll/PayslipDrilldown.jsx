@@ -190,7 +190,7 @@ const PayslipDrilldown = ({ payslipId, onClose }) => {
 
   return (
     <div className="payslip-overlay fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="payslip-print-area bg-white rounded-xl shadow-xl w-f-full max-w-5xl max-h-[90vh] overflow-y-auto">
+      <div className="payslip-print-area bg-white rounded-xl shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
         {/* toolbar (screen only) */}
         <div className="no-print sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
           <h2 className="text-base font-semibold text-gray-900">Payslip &middot; {slip.employeeName}</h2>
