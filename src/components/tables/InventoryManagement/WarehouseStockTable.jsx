@@ -173,8 +173,8 @@ const WarehouseStockTable = ({
   return (
     <div className="bg-white rounded-xl shadow overflow-hidden inv-table-panel">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+      <div className="px-4 py-2 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+        <h2 className="text-base text-gray-900 flex items-center gap-2">
           <Building size={20} />
           Warehouse Stock Levels
           {movLoading && (

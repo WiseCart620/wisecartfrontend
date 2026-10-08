@@ -53,7 +53,7 @@ const ProductSummaryTable = ({
 
   return (
     <div className="bg-white rounded-xl shadow overflow-hidden mb-6 inv-table-panel">
-      <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+      <div className="px-4 py-2 border-b border-gray-200 bg-gray-50">
         <h2 className="text-base font-semibold text-black flex items-center gap-2">
           <BarChart3 size={18} />
           Product Inventory Summary

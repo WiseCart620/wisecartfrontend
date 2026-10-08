@@ -41,10 +41,10 @@ const WarehouseFilterPanel = ({
     (canDate && (filters.startDate || filters.endDate));
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 mb-4">
-      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+    <div className="bg-white rounded-lg border border-gray-200 px-3 py-1.5 mb-2">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5">
         {canWarehouse && (
-          <div className="w-52 h-9 [&>div]:h-9 [&>button]:h-9">
+          <div className="w-52 h-8">
             <SearchableWarehouseDropdown
               warehouses={warehouses}
               value={filters.warehouse}
@@ -55,14 +55,14 @@ const WarehouseFilterPanel = ({
         )}
 
         {canQuantity && (
-          <div className="flex items-center gap-1 border border-gray-300 rounded-lg px-2 py-1">
+          <div className="h-8 flex items-center gap-1 border border-gray-300 rounded-lg px-2">
             <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Stock</span>
             <input
               type="number"
               placeholder="Min"
               value={filters.minQty}
               onChange={(e) => updateFilter('minQty', e.target.value)}
-              className="w-16 px-1.5 py-1 text-sm border-0 focus:outline-none focus:ring-0"
+              className="w-16 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
             />
             <span className="text-gray-300">–</span>
             <input
@@ -70,26 +70,26 @@ const WarehouseFilterPanel = ({
               placeholder="Max"
               value={filters.maxQty}
               onChange={(e) => updateFilter('maxQty', e.target.value)}
-              className="w-16 px-1.5 py-1 text-sm border-0 focus:outline-none focus:ring-0"
+              className="w-16 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
             />
           </div>
         )}
 
         {canDate && (
-          <div className="flex items-center gap-1 border border-gray-300 rounded-lg px-2 py-1">
+          <div className="h-8 flex items-center gap-1 border border-gray-300 rounded-lg px-2">
             <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
             <input
               type="date"
               value={filters.startDate}
               onChange={(e) => updateFilter('startDate', e.target.value)}
-              className="w-32 px-1.5 py-1 text-sm border-0 focus:outline-none focus:ring-0"
+              className="w-32 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
             />
             <span className="text-gray-300">–</span>
             <input
               type="date"
               value={filters.endDate}
               onChange={(e) => updateFilter('endDate', e.target.value)}
-              className="w-32 px-1.5 py-1 text-sm border-0 focus:outline-none focus:ring-0"
+              className="w-32 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
             />
           </div>
         )}

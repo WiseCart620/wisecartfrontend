@@ -27,7 +27,7 @@ const SearchableWarehouseDropdown = ({ warehouses, value, onChange, placeholder,
         type="button"
         onClick={() => !loading && setIsOpen(!isOpen)}
         disabled={loading}
-        className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 transition text-left flex items-center justify-between ${loading ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+        className={`w-full h-8 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 transition text-left flex items-center justify-between ${loading ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
       >
         {loading ? (
           <span className="flex items-center gap-2 text-gray-400">
@@ -35,11 +35,11 @@ const SearchableWarehouseDropdown = ({ warehouses, value, onChange, placeholder,
             Loading...
           </span>
         ) : (
-          <span className={selectedWarehouse ? 'text-gray-900' : 'text-gray-500'}>
+          <span className={`truncate ${selectedWarehouse ? 'text-gray-900' : 'text-gray-500'}`}>
             {selectedWarehouse ? selectedWarehouse.warehouseName : placeholder}
           </span>
         )}
-        <ChevronDown size={16} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={16} className={`flex-shrink-0 ml-1 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && !loading && (
@@ -65,7 +65,7 @@ const SearchableWarehouseDropdown = ({ warehouses, value, onChange, placeholder,
                 setIsOpen(false);
                 setSearchTerm('');
               }}
-              className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${!value ? 'bg-orange-50 text-orange-700 font-medium' : 'text-gray-900'
+              className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${!value ? 'bg-orange-50 text-orange-700' : 'text-gray-900'
                 }`}
             >
               All Warehouses
@@ -84,7 +84,7 @@ const SearchableWarehouseDropdown = ({ warehouses, value, onChange, placeholder,
                   }}
                   className={`w-full px-3 py-2 text-left text-sm hover:bg-orange-50 ${String(value) === String(warehouse.id) ? 'bg-orange-50 text-orange-700 font-medium' : 'text-gray-900'}`}
                 >
-                  <div className="font-medium">{warehouse.warehouseName}</div>
+                  <div>{warehouse.warehouseName}</div>
                   <div className="text-xs text-gray-500">{warehouse.warehouseCode}</div>
                 </button>
               ))

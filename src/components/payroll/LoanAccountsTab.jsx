@@ -282,6 +282,7 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
             <label className="block text-xs font-medium text-gray-700 mb-1">Loan</label>
             <SearchableSelect
               allLabel="All loans"
+              placeholder="All loans"
               searchPlaceholder="Search loan..."
               value={filters.loanType}
               options={loanTypeOptions.map(t => ({ value: t, label: t }))}

@@ -12,7 +12,8 @@ const BranchFilterPanel = ({
   products = [],
   filters,
   updateFilter,
-  clearFilters
+  clearFilters,
+  actions
 }) => {
   const selectedCompanyIds = filters.companyIds || [];
   const selectedKeys = filters.productKeys || [];
@@ -84,10 +85,10 @@ const BranchFilterPanel = ({
     (filters.productKeys?.length > 0) || filters.minQty || filters.maxQty || filters.startDate || filters.endDate;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 mb-4">
-      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+    <div className="bg-white rounded-lg border border-gray-200 px-3 py-1.5 mb-2">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5">
         {canSeeFilter(user, 'warehouse_inventory', 'company') && (
-          <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
+          <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0 [&>div>button]:!h-8 [&>div>button]:!py-0 [&>div>button]:!text-sm">
             <MultiSelectDropdown
               options={companies.map(c => ({ id: c.id, name: c.companyName }))}
               selectedIds={filters.companyIds || []}
@@ -99,7 +100,7 @@ const BranchFilterPanel = ({
         )}
 
         {canSeeFilter(user, 'warehouse_inventory', 'branch') && (
-          <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
+          <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0 [&>div>button]:!h-8 [&>div>button]:!py-0 [&>div>button]:!text-sm">
             <MultiSelectDropdown
               options={availableBranches.map(b => ({ id: b.id, name: b.branchName, code: b.branchCode }))}
               selectedIds={filters.branchIds || []}
@@ -113,7 +114,7 @@ const BranchFilterPanel = ({
 
 
         {canSeeFilter(user, 'warehouse_inventory', 'quantity') && (
-          <div className="h-9 flex items-center gap-1 border border-gray-300 rounded-lg px-2 flex-shrink-0">
+          <div className="h-8 flex items-center gap-1 border border-gray-300 rounded-lg px-2 flex-shrink-0">
             <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Stock</span>
             <input
               type="number"
@@ -134,7 +135,7 @@ const BranchFilterPanel = ({
         )}
 
         {canSeeFilter(user, 'warehouse_inventory', 'date') && (
-          <div className="h-9 flex items-center gap-1 border border-gray-300 rounded-lg px-2 flex-shrink-0">
+          <div className="h-8 flex items-center gap-1 border border-gray-300 rounded-lg px-2 flex-shrink-0">
             <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
             <input
               type="date"
@@ -152,7 +153,7 @@ const BranchFilterPanel = ({
           </div>
         )}
         {canSeeFilter(user, 'warehouse_inventory', 'product') && (
-          <div className="w-[300px] max-w-full flex-shrink-0">
+          <div className="w-[300px] max-w-full flex-shrink-0 [&>div>button]:!h-8 [&>div>button]:!py-0 [&>div>button]:!text-sm">
             <ProductMultiSelectDropdown
               options={productOptions}
               selectedIds={selectedKeys}
@@ -166,10 +167,16 @@ const BranchFilterPanel = ({
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
-            className="col-span-2 sm:col-span-1 text-sm text-orange-600 hover:text-orange-800 font-medium sm:ml-auto whitespace-nowrap text-right sm:text-left"
+            className="col-span-2 sm:col-span-1 text-sm text-orange-600 hover:text-orange-800 whitespace-nowrap text-right sm:text-left"
           >
             Clear filters
           </button>
+        )}
+
+        {actions && (
+          <div className="col-span-2 sm:col-span-1 sm:ml-auto flex-shrink-0">
+            {actions}
+          </div>
         )}
       </div>
     </div>

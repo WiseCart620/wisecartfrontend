@@ -95,10 +95,11 @@ code {
   position: static !important;
 }
 
-/* medium page title + tabs */
+/* medium page title + tabs (scrolls away with the page) */
 [class*="top-[var(--nav-h)]"] {
-  padding-top: 1rem !important;
-  padding-bottom: 0.5rem !important;
+  position: static !important;
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.25rem !important;
 }
 
 [class*="top-[var(--nav-h)]"] h1 {
@@ -117,20 +118,22 @@ code {
 }
 
 [class*="--head-h"]>.bg-white {
-  padding: 0.75rem 1rem !important;
-  gap: 0.75rem !important;
+  padding: 0.5rem 0.75rem !important;
+  gap: 0.5rem !important;
 }
 
 [class*="--head-h"] label {
-  font-size: 0.75rem !important;
-  margin-bottom: 4px !important;
+  font-size: 0.7rem !important;
+  margin-bottom: 2px !important;
+  line-height: 1.1 !important;
 }
 
 [class*="--head-h"] input,
 [class*="--head-h"] select,
 [class*="--head-h"] button {
-  padding-top: 0.5rem !important;
-  padding-bottom: 0.5rem !important;
+  height: 2rem !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
   font-size: 0.875rem !important;
 }
 
@@ -211,9 +214,10 @@ code {
   min-width: 90px;
 }
 
-/* ===== inv polish: shared column system for inventory tables ===== */
 .inv-table-panel thead th {
-  height: 44px;
+  height: 34px;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
   vertical-align: middle;
   border-bottom: 1px solid #e5e7eb;
 }

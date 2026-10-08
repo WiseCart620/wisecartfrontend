@@ -32,27 +32,26 @@ const ProductSummaryReportPanel = ({
     const canGenerate = filters.warehouseId || hasCompanyFilter;
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 px-4 py-3 mb-4">
-            <div className="flex flex-wrap items-end gap-3">
-
+        <div className="bg-white rounded-lg border border-gray-200 px-3 py-2 mb-2">
+            <div className="flex flex-wrap items-end gap-2">
                 {canSeeFilter(user, 'warehouse_inventory', 'date') && (
                     <>
                         <div className="w-[150px]">
-                            <label className="block text-xs font-medium text-gray-500 mb-1">Date From</label>
+                            <label className="block text-xs text-gray-500 mb-0.5">Date From</label>
                             <input
                                 type="date"
                                 value={filters.dateFrom}
                                 onChange={(e) => updateFilter('dateFrom', e.target.value)}
-                                className="w-full h-9 px-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                className="w-full h-8 px-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                             />
                         </div>
                         <div className="w-[150px]">
-                            <label className="block text-xs font-medium text-gray-500 mb-1">Date To</label>
+                            <label className="block text-xs text-gray-500 mb-0.5">Date To</label>
                             <input
                                 type="date"
                                 value={filters.dateTo}
                                 onChange={(e) => updateFilter('dateTo', e.target.value)}
-                                className="w-full h-9 px-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                className="w-full h-8 px-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                             />
                         </div>
                     </>
@@ -60,12 +59,12 @@ const ProductSummaryReportPanel = ({
 
                 {canSeeFilter(user, 'warehouse_inventory', 'warehouse') && (
                     <div className="w-[180px]">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Warehouse</label>
+                        <label className="block text-xs text-gray-500 mb-0.5">Warehouse</label>
                         <select
                             value={filters.warehouseId}
                             onChange={(e) => updateFilter('warehouseId', e.target.value)}
                             disabled={hasCompanyFilter}
-                            className={`w-full h-9 px-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ${hasCompanyFilter ? 'bg-gray-100 cursor-not-allowed text-gray-400' : 'bg-white'}`}
+                            className={`w-full h-8 px-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 ${hasCompanyFilter ? 'bg-gray-100 cursor-not-allowed text-gray-400' : 'bg-white'}`}
                         >
                             <option value="">All Warehouses</option>
                             {warehouses.map(w => (
@@ -77,7 +76,7 @@ const ProductSummaryReportPanel = ({
 
                 {canSeeFilter(user, 'warehouse_inventory', 'company') && (
                     <div className="w-[170px]">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Company</label>
+                        <label className="block text-xs text-gray-500 mb-0.5">Company</label>
                         <MultiSelectDropdown
                             options={companyOptions}
                             selectedIds={selectedCompanyIds}
@@ -93,7 +92,7 @@ const ProductSummaryReportPanel = ({
                 )}
                 {canSeeFilter(user, 'warehouse_inventory', 'branch') && (
                     <div className="w-[170px]">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Branch</label>
+                        <label className="block text-xs text-gray-500 mb-0.5">Branch</label>
                         <MultiSelectDropdown
                             options={branchOptions}
                             selectedIds={filters.branchIds || []}
@@ -127,14 +126,14 @@ const ProductSummaryReportPanel = ({
                     <button
                         onClick={onGenerate}
                         disabled={!canGenerate || generating}
-                        className="h-9 px-4 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium whitespace-nowrap"
+                        className="h-8 px-4 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                     >
                         {generating ? 'Generating...' : 'Generate Report'}
                     </button>
                 </div>
             </div>
             {hasCompanyFilter && (
-                <p className="text-[11px] text-orange-500 mt-1.5">Warehouse filter disabled — a company/branch is selected.</p>
+                <p className="text-[11px] text-orange-500 mt-1">Warehouse filter disabled — a company/branch is selected.</p>
             )}
         </div>
     );

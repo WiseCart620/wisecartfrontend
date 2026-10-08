@@ -652,15 +652,13 @@ const InventoryManagement = () => {
       <div className="p-2 sm:p-3 lg:p-4 max-w-full mx-auto">
         <Toaster position="top-right" />
 
-        <div className="mb-4">
-          <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Inventory Management</h1>
-          <p className="text-sm text-gray-600">Track stock movements across warehouses and branches</p>
-        </div>
-
-        {/* Navigation Tabs */}
-        <div className="mb-4">
-          <div className="border-b border-gray-200 overflow-x-auto">
-            <nav className="-mb-px flex space-x-2 min-w-max">
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-x-6 border-b border-gray-200">
+          <div className="pb-2">
+            <h1 className="text-lg font-bold text-gray-900 leading-tight">Inventory Management</h1>
+            <p className="text-xs text-gray-600">Track stock movements across warehouses and branches</p>
+          </div>
+          <div>
+            <nav className="-mb-px flex space-x-2">
               {TABS.map(({ key, label, Icon }) => {
                 const active = activeTab === key;
                 return (
@@ -784,9 +782,6 @@ const InventoryManagement = () => {
 
         {activeTab === 'branch-stocks' && (
           <div className="mb-8">
-            <div className="flex justify-end mb-4">
-              <BranchStockExportButton fetchData={handleFetchBranchExportData} />
-            </div>
             <BranchFilterPanel
               user={user}
               showBranchFilter={showBranchFilter}
@@ -797,6 +792,7 @@ const InventoryManagement = () => {
               filters={branchFilters.filters}
               updateFilter={branchFilters.updateFilter}
               clearFilters={branchFilters.clearFilters}
+              actions={<BranchStockExportButton fetchData={handleFetchBranchExportData} />}
             />
 
             <BranchStockTable

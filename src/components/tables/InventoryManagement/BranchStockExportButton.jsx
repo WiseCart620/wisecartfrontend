@@ -169,21 +169,21 @@ const BranchStockExportButton = ({ fetchData }) => {
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       <button
         onClick={handleExportCSV}
         disabled={exportingCsv || exportingPdf}
-        className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+        className="flex items-center gap-1.5 h-8 px-3 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm whitespace-nowrap"
       >
-        {exportingCsv ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
+        {exportingCsv ? <Loader2 size={14}className="animate-spin" /> : <FileSpreadsheet size={14} />}
         <span>{exportingCsv ? 'Preparing...' : 'Export CSV'}</span>
       </button>
       <button
         onClick={handleExportPDF}
         disabled={exportingCsv || exportingPdf}
-        className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+        className="flex items-center gap-1.5 h-8 px-3 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm whitespace-nowrap"
       >
-        {exportingPdf ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
+        {exportingPdf ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}
         <span>{exportingPdf ? 'Preparing...' : 'Print / PDF'}</span>
       </button>
     </div>

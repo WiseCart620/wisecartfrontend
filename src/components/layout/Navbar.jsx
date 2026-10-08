@@ -18,7 +18,7 @@ const Navbar = ({ toggleSidebar }) => {
   };
 
   return (
-    <nav className="sticky top-0 z-30 bg-white shadow-sm border-b border-gray-200 px-4 py-3">
+    <nav className="sticky top-0 z-30 bg-white border-b border-gray-200 px-4 py-1.5">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
@@ -34,22 +34,22 @@ const Navbar = ({ toggleSidebar }) => {
           <div className="relative">
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-3 hover:bg-gray-50 rounded-lg p-2 transition-colors"
+              className="flex items-center gap-2 hover:bg-gray-50 rounded-lg px-2 py-0.5 transition-colors"
             >
               <div className="text-right">
-                <p className="text-sm font-semibold text-gray-900">
+                <p className="text-sm leading-tight text-gray-900">
                   {fullName || username}
                 </p>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs leading-tight text-gray-600">
                   {fullName ? username : role}
                 </p>
               </div>
 
               {/* User Avatar */}
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center relative">
-                <User size={18} className="text-blue-600" />
+              <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center relative">
+                <User size={16} className="text-orange-600" />
                 {(role === 'SUPER_ADMIN') && (
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center">
                     <Shield size={10} className="text-white" />
                   </div>
                 )}
@@ -79,7 +79,7 @@ const Navbar = ({ toggleSidebar }) => {
                 <div className="px-4 py-2">
                   <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full">
                     {role === 'SUPER_ADMIN' ? (
-                      <Shield size={14} className="text-blue-600" />
+                      <Shield size={14} className="text-orange-600" />
                     ) : (
                       <User size={14} className="text-gray-600" />
                     )}

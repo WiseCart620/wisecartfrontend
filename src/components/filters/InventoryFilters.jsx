@@ -33,17 +33,17 @@ const InventoryFilters = ({
     fromBranchFilter || toBranchFilter || startDateFilter || endDateFilter;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 mb-4">
-      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+    <div className="bg-white rounded-lg border border-gray-200 px-3 py-1.5 mb-2">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5">
         {canSeeFilter(user, 'inventory', 'search') && (
-          <div className="relative w-56 h-9">
+          <div className="relative w-56 h-8">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
             <input
               type="text"
               placeholder="Search inventory..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 pr-3 h-9 text-sm border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
+              className="pl-8 pr-3 h-8 text-sm border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-orange-500"
             />
           </div>
         )}
@@ -52,7 +52,7 @@ const InventoryFilters = ({
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-36"
+            className="h-8 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 w-36"
           >
             <option value="ALL">All Status</option>
             <option value="PENDING">Pending</option>
@@ -64,7 +64,7 @@ const InventoryFilters = ({
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-36"
+            className="h-8 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 w-36"
           >
             <option value="ALL">All Types</option>
             <option value="STOCK_IN">Stock In</option>
@@ -123,7 +123,7 @@ const InventoryFilters = ({
         )}
 
         {canSeeFilter(user, 'inventory', 'date') && (
-          <div className="h-9 flex items-center gap-1 border border-gray-300 rounded-lg px-2">
+          <div className="h-8 flex items-center gap-1 border border-gray-300 rounded-lg px-2">
             <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
             <input
               type="date"
@@ -144,7 +144,7 @@ const InventoryFilters = ({
         {hasActiveFilters && (
           <button
             onClick={onClearFilters}
-            className="col-span-2 sm:col-span-1 text-sm text-blue-600 hover:text-blue-800 font-medium sm:ml-auto whitespace-nowrap text-right sm:text-left"
+            className="col-span-2 sm:col-span-1 text-sm text-orange-600 hover:text-orange-800 sm:ml-auto whitespace-nowrap text-right sm:text-left"
           >
             Clear filters
           </button>
