@@ -97,10 +97,10 @@ const DeliveryTable = ({
           </colgroup>
 
           {/* ── HEAD ── */}
-          <thead className="bg-gray-50 border-b-2 border-gray-200">
+          <thead className="bg-white border-b-2 border-gray-200">
             <tr>
-              <th className="px-2 py-2.5 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-20 border-r border-gray-200">No.</th>
-              <th className="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider sticky left-[50px] bg-gray-50 z-20 border-r border-gray-200">DR #</th>
+              <th className="px-2 py-2.5 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wider sticky left-0 bg-white z-20 border-r border-gray-200">No.</th>
+              <th className="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider sticky left-[50px] bg-white z-20 border-r border-gray-200">DR #</th>
               <th className="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">Warehouse</th>
               <th className="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">Branch</th>
               <th className="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">Prepared</th>
@@ -158,9 +158,9 @@ const DeliveryTable = ({
                   {/* Actions */}
                   <td className="px-2 py-3">
                     <div className="flex items-center gap-1">
-                      <div className="h-7 w-7 bg-gray-100 rounded-lg" />
-                      <div className="h-7 w-7 bg-gray-100 rounded-lg" />
-                      <div className="h-7 w-7 bg-gray-100 rounded-lg" />
+                      <div className="h-7 w-7 bg-gray-100 rounded" />
+                      <div className="h-7 w-7 bg-gray-100 rounded" />
+                      <div className="h-7 w-7 bg-gray-100 rounded" />
                     </div>
                   </td>
                 </tr>
@@ -187,7 +187,7 @@ const DeliveryTable = ({
                 const rowNumber = (currentPage - 1) * itemsPerPage + index + 1;
 
                 return (
-                  <tr key={delivery.id} className="hover:bg-blue-50/30 transition-colors">
+                  <tr key={delivery.id} className="hover:bg-orange-50/30 transition-colors">
                     <td className="px-2 py-2.5 text-center sticky left-0 bg-white z-10 border-r border-gray-200">
                       <span className="text-xs font-medium text-gray-500">{rowNumber}</span>
                     </td>
@@ -201,7 +201,7 @@ const DeliveryTable = ({
                         <div className="space-y-0.5">
                           {delivery.warehouses.slice(0, 1).map((wh, idx) => (
                             <div key={idx} className="flex items-center gap-1 truncate">
-                              <Package size={12} className="text-blue-400 flex-shrink-0" />
+                              <Package size={12} className="text-orange-400 flex-shrink-0" />
                               <span className="text-xs font-medium text-gray-800 truncate">{wh.warehouseName}</span>
                             </div>
                           ))}
@@ -255,7 +255,7 @@ const DeliveryTable = ({
                     {/* Qty */}
                     <td className="px-2 py-2.5 text-right">
                       {rowTotals.qty > 0 ? (
-                        <span className="text-sm font-bold text-blue-700">
+                        <span className="text-sm font-bold text-orange-700">
                           {rowTotals.qty.toLocaleString('en-US')}
                         </span>
                       ) : (
@@ -276,7 +276,7 @@ const DeliveryTable = ({
                         <button
                           onClick={() => onView(delivery)}
                           title="View details"
-                          className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded text-orange-600 hover:bg-orange-100 transition-colors"
                         >
                           <Eye size={15} />
                         </button>
@@ -285,7 +285,7 @@ const DeliveryTable = ({
                           <button
                             onClick={() => onEdit(delivery)}
                             title="Edit delivery"
-                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-indigo-600 hover:bg-indigo-100 transition-colors"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded text-orange-600 hover:bg-orange-100 transition-colors"
                           >
                             <Edit2 size={15} />
                           </button>
@@ -295,7 +295,7 @@ const DeliveryTable = ({
                           <button
                             onClick={() => onDelete(delivery.id)}
                             title="Delete delivery"
-                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 hover:bg-red-100 transition-colors"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded text-red-600 hover:bg-red-100 transition-colors"
                           >
                             <Trash2 size={15} />
                           </button>
@@ -305,7 +305,7 @@ const DeliveryTable = ({
                           <button
                             onClick={() => onCancel(delivery)}
                             title="Cancel delivery"
-                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-orange-600 hover:bg-orange-100 transition-colors"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded text-orange-600 hover:bg-orange-100 transition-colors"
                           >
                             <XCircle size={15} />
                           </button>
@@ -315,7 +315,7 @@ const DeliveryTable = ({
                           <button
                             onClick={() => onPrint(delivery)}
                             title="Print receipt"
-                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-green-600 hover:bg-green-100 transition-colors"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded text-green-600 hover:bg-green-100 transition-colors"
                           >
                             <Printer size={15} />
                           </button>
@@ -342,7 +342,7 @@ const DeliveryTable = ({
                   <span className="text-sm font-bold text-gray-800">{grandTotalSKU.toLocaleString('en-US')}</span>
                 </td>
                 <td className="px-2 py-2 text-right">
-                  <span className="text-sm font-bold text-blue-800">{grandTotalPrepared.toLocaleString('en-US')}</span>
+                  <span className="text-sm font-bold text-orange-800">{grandTotalPrepared.toLocaleString('en-US')}</span>
                 </td>
                 <td colSpan={2} />
               </tr>

@@ -17,7 +17,7 @@ const DashboardHeader = ({
       <div className="flex flex-wrap items-center gap-4">
         <button
           onClick={() => setShowInsights(!showInsights)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded hover:bg-gray-800 transition-colors"
         >
           <Info size={18} />
           Business Insights
@@ -30,7 +30,7 @@ const DashboardHeader = ({
         <button
           onClick={() => loadStats()}
           disabled={isLoading}
-          className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-60"
+          className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded hover:bg-white transition-colors disabled:opacity-60"
         >
           <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
           {isLoading ? 'Refreshing...' : 'Refresh Data'}
@@ -38,7 +38,7 @@ const DashboardHeader = ({
 
         <button
           onClick={() => setShowNotifications(!showNotifications)}
-          className="relative flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          className="relative flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded hover:bg-white transition-colors"
         >
           <Bell size={18} className="text-gray-600" />
           <span className="text-sm text-gray-700 font-medium">Alerts</span>

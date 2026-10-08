@@ -118,7 +118,7 @@ const LoginPage = () => {
             <img
               src="/wisecart-logo.png"
               alt="WiseCart logo"
-              className="w-8 h-8 rounded-md object-contain"
+              className="w-8 h-8 rounded object-contain"
             />
             <span className="text-[17px] font-semibold text-gray-900 tracking-tight">
               WiseCart <span className="font-normal text-gray-500">ERP</span>
@@ -129,7 +129,7 @@ const LoginPage = () => {
         {/* Main */}
         <div className="flex-1 flex items-center justify-center px-4 py-12">
           <div className="w-full max-w-[440px]">
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm px-8 py-10 sm:px-10">
+            <div className="bg-white rounded border border-gray-200 shadow-sm px-8 py-10 sm:px-10">
               <h1 className="text-[26px] leading-tight font-semibold text-gray-900 mb-1">
                 Sign in
               </h1>
@@ -140,7 +140,7 @@ const LoginPage = () => {
               {error && (
                 <div
                   role="alert"
-                  className="mb-6 px-4 py-3 bg-red-50 border border-red-200 rounded-md flex items-start gap-2.5 text-red-800"
+                  className="mb-6 px-4 py-3 bg-red-50 border border-red-200 rounded flex items-start gap-2.5 text-red-800"
                 >
                   <AlertCircle size={18} className="shrink-0 mt-0.5" />
                   <span className="text-sm">{error}</span>
@@ -165,7 +165,7 @@ const LoginPage = () => {
                     required
                     autoComplete="username"
                     autoFocus
-                    className="w-full h-12 px-3.5 bg-white border border-gray-300 rounded-md text-[15px] text-gray-900 placeholder-gray-400 outline-none transition-colors duration-150 focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20"
+                    className="w-full h-12 px-3.5 bg-white border border-gray-300 rounded text-[15px] text-gray-900 placeholder-gray-400 outline-none transition-colors duration-150 focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20"
                     placeholder="Enter your username"
                   />
                 </div>
@@ -186,7 +186,7 @@ const LoginPage = () => {
                     onChange={handleChange}
                     required
                     autoComplete="current-password"
-                    className="w-full h-12 px-3.5 bg-white border border-gray-300 rounded-md text-[15px] text-gray-900 placeholder-gray-400 outline-none transition-colors duration-150 focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20"
+                    className="w-full h-12 px-3.5 bg-white border border-gray-300 rounded text-[15px] text-gray-900 placeholder-gray-400 outline-none transition-colors duration-150 focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20"
                     placeholder="Enter your password"
                   />
                 </div>
@@ -195,7 +195,7 @@ const LoginPage = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-12 mt-2 bg-[#F97316] text-white font-semibold text-[15px] rounded-md hover:bg-[#EA6A0C] active:bg-[#C2560A] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:ring-offset-1 transition-colors duration-150 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
+                  className="w-full h-12 mt-2 bg-[#F97316] text-white font-semibold text-[15px] rounded hover:bg-[#EA6A0C] active:bg-[#C2560A] focus:outline-none focus:ring-2 focus:ring-[#F97316]/40 focus:ring-offset-1 transition-colors duration-150 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
                 >
                   {loading ? (
                     <>

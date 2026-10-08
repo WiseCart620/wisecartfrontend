@@ -248,15 +248,15 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
             <div className="bg-white rounded-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden shadow-2xl flex flex-col">
                 <div className="px-5 sm:px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-white">
                     <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                            <UploadCloud size={18} className="text-blue-600" />
+                        <div className="w-9 h-9 rounded bg-orange-50 flex items-center justify-center flex-shrink-0">
+                            <UploadCloud size={18} className="text-orange-600" />
                         </div>
                         <div>
                             <h2 className="text-lg font-bold text-gray-900">Mass Upload Sale Items</h2>
                             <p className="text-xs text-gray-500 mt-0.5">Paste a consignment sales report to auto-fill branch, products, and quantities.</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition">
+                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition">
                         <X size={20} />
                     </button>
                 </div>
@@ -286,11 +286,11 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                                 onChange={(e) => setRawText(e.target.value)}
                                 rows={12}
                                 placeholder={`Site Name: 2277 ABACUS - Taft\nVendor Name: 60002182 WISECART MERCHANTS CORP.\nSALES ARTICLE GTIN ARTICLE DESCRIPTION QTY UNIT COST AMOUNT\n200000294801 S200000294801 JOURNAL NB A5 80S BLACK LEATHER 17 139.29 2,367.97`}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full px-4 py-3 border border-gray-300 rounded font-mono text-xs focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                             />
                         </div>
                         <div className="flex items-center gap-3">
-                            <label className="flex items-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-lg cursor-pointer text-sm text-gray-600 hover:bg-gray-50 transition">
+                            <label className="flex items-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded cursor-pointer text-sm text-gray-600 hover:bg-white transition">
                                 <Upload size={16} />
                                 Upload .txt
                                 <input type="file" accept=".txt" className="hidden" onChange={(e) => handleFileText(e.target.files[0])} />
@@ -299,7 +299,7 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                                 type="button"
                                 onClick={handleParse}
                                 disabled={!rawText.trim()}
-                                className="ml-auto px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="ml-auto px-6 py-2.5 bg-orange-600 text-white rounded hover:bg-orange-700 transition font-medium disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 Parse & Preview
                             </button>
@@ -311,14 +311,14 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                     <div className="p-8 text-center text-gray-500">
                         <FileWarning size={32} className="mx-auto mb-2 text-gray-300" />
                         <p>No sale items could be parsed from this text.</p>
-                        <button type="button" onClick={() => setReports(null)} className="mt-3 text-sm text-blue-600 hover:underline">← Back to paste</button>
+                        <button type="button" onClick={() => setReports(null)} className="mt-3 text-sm text-orange-600 hover:underline">← Back to paste</button>
                     </div>
                 )}
 
                 {reports && reports.length > 0 && (
                     <div className="flex-1 min-h-0 flex flex-col sm:flex-row overflow-hidden">
                         {/* Left: branch list */}
-                        <div className="sm:w-72 border-b sm:border-b-0 sm:border-r border-gray-200 flex flex-col bg-gray-50 min-h-0">
+                        <div className="sm:w-72 border-b sm:border-b-0 sm:border-r border-gray-200 flex flex-col bg-white min-h-0">
                             <div className="p-3 border-b border-gray-200 bg-white">
                                 <div className="relative">
                                     <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -326,7 +326,7 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                                         value={search}
                                         onChange={(e) => setSearch(e.target.value)}
                                         placeholder="Search branches..."
-                                        className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                                     />
                                 </div>
                                 <p className="text-xs text-gray-500 mt-2">{reports.length} branch{reports.length === 1 ? '' : 'es'} detected</p>
@@ -358,7 +358,7 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                                             key={idx}
                                             type="button"
                                             onClick={() => setActiveIndex(idx)}
-                                            className={`w-full text-left px-3 py-2.5 border-b border-gray-100 transition ${isActive ? 'bg-blue-50 border-l-4 border-l-blue-600' : 'hover:bg-white border-l-4 border-l-transparent'
+                                            className={`w-full text-left px-3 py-2.5 border-b border-gray-100 transition ${isActive ? 'bg-orange-50 border-l-4 border-l-orange-600' : 'hover:bg-white border-l-4 border-l-transparent'
                                                 }`}
                                         >
                                             <div className="flex items-center gap-1.5">
@@ -389,7 +389,7 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                                     type="button"
                                     onClick={handleBulkCreate}
                                     disabled={bulkRunning}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition font-medium text-sm disabled:opacity-50"
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded hover:bg-gray-800 transition font-medium text-sm disabled:opacity-50"
                                 >
                                     <Layers size={15} />
                                     {bulkRunning ? `Creating ${bulkProgress.done}/${bulkProgress.total}...` : `Create Sales for All (${reports.length})`}
@@ -401,7 +401,7 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                         {/* Right: active report detail */}
                         <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-5">
                             {bulkSummary && (
-                                <div className="p-4 rounded-lg border border-gray-200 bg-gray-50 space-y-2">
+                                <div className="p-4 rounded border border-gray-200 bg-white space-y-2">
                                     <div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
                                         <Layers size={16} /> Bulk upload result
                                     </div>
@@ -426,7 +426,7 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                                         Branch {active.siteName && <span className="text-xs text-gray-400 font-normal">(detected: "{active.siteName}")</span>}
                                     </label>
                                     {companyFilterId ? (
-                                        <p className="text-xs text-blue-600 mb-1.5">
+                                        <p className="text-xs text-orange-600 mb-1.5">
                                             Filtering by company: <strong>{companyOptions.find(c => String(c.id) === String(companyFilterId))?.name || 'Unknown'}</strong> — showing only its {branchOptions.length} branch{branchOptions.length === 1 ? '' : 'es'}.
                                         </p>
                                     ) : (
@@ -455,7 +455,7 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                                         type="number" min={1} max={12}
                                         value={active.month}
                                         onChange={(e) => updateActiveReport({ month: parseInt(e.target.value) || 1 })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded"
                                     />
                                 </div>
                                 <div>
@@ -466,7 +466,7 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                                         type="number"
                                         value={active.year}
                                         onChange={(e) => updateActiveReport({ year: parseInt(e.target.value) || new Date().getFullYear() })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded"
                                     />
                                 </div>
                             </div>
@@ -477,15 +477,15 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                                     <span className="flex items-center gap-1 text-red-600 font-medium"><AlertTriangle size={16} /> {unmatchedCount} not found</span>
                                 )}
                                 {!activeComplete && (
-                                    <span className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1">
+                                    <span className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2.5 py-1">
                                         All items must match a product before this branch can be uploaded.
                                     </span>
                                 )}
                             </div>
 
-                            <div className="overflow-x-auto rounded-lg border border-gray-200">
+                            <div className="overflow-x-auto rounded border border-gray-200">
                                 <table className="w-full text-sm">
-                                    <thead className="bg-gray-50 border-b border-gray-200">
+                                    <thead className="bg-white border-b border-gray-200">
                                         <tr>
                                             <th className="px-3 py-2 w-8"></th>
                                             {['Article', 'GTIN', 'Description', 'Matched Product', 'Qty', 'Unit Cost'].map(h => (
@@ -514,7 +514,7 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                                             </tr>
                                         ))}
                                     </tbody>
-                                    <tfoot className="bg-gray-50 border-t border-gray-200">
+                                    <tfoot className="bg-white border-t border-gray-200">
                                         <tr>
                                             <td colSpan={5} className="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Grand Total</td>
                                             <td className="px-3 py-2 text-sm font-bold text-gray-900">{activeQty.toLocaleString('en-US')}</td>
@@ -531,13 +531,13 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                                     ← Re-paste data
                                 </button>
                                 <div className="flex gap-3">
-                                    <button type="button" onClick={onClose} className="px-5 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm">Cancel</button>
+                                    <button type="button" onClick={onClose} className="px-5 py-2.5 border border-gray-300 rounded hover:bg-white font-medium text-sm">Cancel</button>
                                     <button
                                         type="button"
                                         onClick={handleConfirmSingle}
                                         disabled={!activeComplete}
                                         title={!activeComplete ? 'All items must be matched before this sale can be created' : undefined}
-                                        className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                                        className="px-5 py-2.5 bg-orange-600 text-white rounded hover:bg-orange-700 font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed"
                                     >
                                         Add {matchedCount} Item{matchedCount === 1 ? '' : 's'} to This Sale
                                     </button>

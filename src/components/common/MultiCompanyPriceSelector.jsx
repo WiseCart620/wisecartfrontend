@@ -90,7 +90,7 @@ const MultiCompanyPriceSelector = ({
           return (
             <div
               key={company.id}
-              className={`p-3 border rounded-lg transition ${isSelected ? 'border-orange-300 bg-orange-50' : 'border-gray-200 bg-white'
+              className={`p-3 border rounded transition ${isSelected ? 'border-orange-300 bg-orange-50' : 'border-gray-200 bg-white'
                 }`}
             >
               <div className="flex items-start gap-3">
@@ -141,7 +141,7 @@ const MultiCompanyPriceSelector = ({
 
       {/* Assign to Remaining Companies */}
       {unassignedCount > 0 && (
-        <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded">
           <div className="flex items-start gap-3">
             <input
               type="checkbox"
@@ -182,7 +182,7 @@ const MultiCompanyPriceSelector = ({
 
       {/* Summary */}
       {(selectedCount > 0 || (assignToRemaining && remainingPrice)) && (
-        <div className="p-3 bg-gray-50 rounded-lg">
+        <div className="p-3 bg-white rounded">
           <div className="text-xs text-gray-600 space-y-1">
             {selectedCount > 0 && (
               <div>✓ {selectedCount} company{selectedCount > 1 ? 's' : ''} with specific prices</div>

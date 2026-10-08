@@ -26,7 +26,7 @@ const DeliveryViewModal = ({
       <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-6">
         <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
           <div className="p-8 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
             <p className="mt-2 text-gray-500">Loading delivery details...</p>
           </div>
         </div>
@@ -56,13 +56,35 @@ const DeliveryViewModal = ({
       <div className="bg-white rounded-xl sm:rounded-2xl max-w-5xl w-full max-h-[98vh] sm:max-h-[95vh] overflow-y-auto shadow-2xl">
         <div className="p-4 sm:p-8 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-xl sm:rounded-t-2xl z-10">
           <h2 className="text-lg sm:text-2xl font-bold text-gray-900">Delivery Details</h2>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
-            disabled={isLoading}
-          >
-            <X size={24} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onPrint(delivery)}
+              title="Print Receipt"
+              aria-label="Print Receipt"
+              className="p-2 bg-transparent border border-orange-500 text-orange-600 hover:bg-orange-50 rounded transition"
+            >
+              <Printer size={16} />
+            </button>
+            {!isDelivered && (
+              <button
+                onClick={() => onEdit(delivery)}
+                title="Edit Delivery"
+                aria-label="Edit Delivery"
+                className="p-2 bg-transparent border border-orange-500 text-orange-600 hover:bg-orange-50 rounded transition"
+              >
+                <Edit2 size={16} />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              title="Close"
+              aria-label="Close"
+              disabled={isLoading}
+              className="p-2 bg-transparent border border-gray-300 text-gray-600 hover:bg-gray-100 rounded transition"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
         <div className="p-4 sm:p-8">
@@ -111,22 +133,22 @@ const DeliveryViewModal = ({
             )}
 
             {/* Branch and Company Info */}
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="p-4 bg-orange-50 rounded border border-orange-200">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-blue-700 mb-1">Delivered To (Branch)</label>
-                  <p className="text-base font-semibold text-blue-900">{delivery.branch?.branchName}</p>
-                  <p className="text-sm text-blue-700">Code: {delivery.branch?.branchCode || 'N/A'}</p>
+                  <label className="block text-sm font-medium text-orange-700 mb-1">Delivered To (Branch)</label>
+                  <p className="text-base font-semibold text-orange-900">{delivery.branch?.branchName}</p>
+                  <p className="text-sm text-orange-700">Code: {delivery.branch?.branchCode || 'N/A'}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-blue-700 mb-1">Company</label>
-                  <p className="text-base font-semibold text-blue-900">{delivery.company?.companyName}</p>
-                  <p className="text-sm text-blue-700">TIN: {delivery.company?.tin || 'N/A'}</p>
+                  <label className="block text-sm font-medium text-orange-700 mb-1">Company</label>
+                  <p className="text-base font-semibold text-orange-900">{delivery.company?.companyName}</p>
+                  <p className="text-sm text-orange-700">TIN: {delivery.company?.tin || 'N/A'}</p>
                 </div>
               </div>
               <div className="mt-3">
-                <label className="block text-sm font-medium text-blue-700 mb-1">Delivery Address</label>
-                <p className="text-sm text-blue-800">
+                <label className="block text-sm font-medium text-orange-700 mb-1">Delivery Address</label>
+                <p className="text-sm text-orange-800">
                   {delivery.branch?.address
                     ? `${delivery.branch.address}, ${delivery.branch.city || ''}, ${delivery.branch.province || ''}`.trim()
                     : 'No address specified'}
@@ -134,14 +156,14 @@ const DeliveryViewModal = ({
               </div>
               {delivery.branch?.contactNumber && (
                 <div className="mt-2">
-                  <label className="block text-sm font-medium text-blue-700 mb-1">Contact Number</label>
-                  <p className="text-sm text-blue-800">{delivery.branch.contactNumber}</p>
+                  <label className="block text-sm font-medium text-orange-700 mb-1">Contact Number</label>
+                  <p className="text-sm text-orange-800">{delivery.branch.contactNumber}</p>
                 </div>
               )}
             </div>
 
             {/* Delivery Info */}
-            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+            <div className="p-4 bg-green-50 rounded border border-green-200">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-green-700 mb-1">Delivery Prepared By</label>
@@ -187,7 +209,7 @@ const DeliveryViewModal = ({
                   <div className="flex items-center gap-3 text-sm">
                     <div className="flex items-center gap-1">
                       <span className="text-gray-500">Prepared:</span>
-                      <span className="font-bold text-blue-700">{totalPrepared.toLocaleString('en-US')} pcs</span>
+                      <span className="font-bold text-orange-700">{totalPrepared.toLocaleString('en-US')} pcs</span>
                     </div>
                     {isDelivered && (
                       <>
@@ -213,9 +235,9 @@ const DeliveryViewModal = ({
                 )}
               </div>
 
-              <div className="border border-gray-200 rounded-lg overflow-x-auto">
+              <div className="max-h-[420px] border border-gray-200 rounded overflow-auto">
                 <table className="w-full min-w-[600px]">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-white sticky top-0 z-10 shadow-[inset_0_-1px_0_#e5e7eb]">
                     <tr>
                       <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-10">Number</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
@@ -230,20 +252,17 @@ const DeliveryViewModal = ({
                   <tbody className="bg-white divide-y divide-gray-200">
                     {displayItems.length > 0 ? (
                       displayItems.map((item, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
+                        <tr key={index} className="hover:bg-white">
                           <td className="px-4 py-3 text-center text-sm text-gray-400 font-medium">{index + 1}</td>
                           <td className="px-4 py-3 text-sm font-medium text-gray-900">
                             {item.product?.productName || 'Unknown Product'}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-600">
-                            <div className="space-y-1">
-                              <div className="text-xs"><span className="font-medium">SKU:</span> {item.product?.sku || 'N/A'}</div>
-                              <div className="text-xs"><span className="font-medium">UPC:</span> {item.product?.upc || 'N/A'}</div>
-                            </div>
+                            <div className="text-xs whitespace-nowrap">{item.product?.sku || 'N/A'} / {item.product?.upc || 'N/A'}</div>
                           </td>
                           <td className="px-4 py-3 text-sm">
                             <div className="flex items-center gap-2">
-                              <Package size={14} className="text-blue-500 flex-shrink-0" />
+                              <Package size={14} className="text-orange-500 flex-shrink-0" />
                               <div>
                                 <div className="font-semibold text-gray-900">{item.warehouse?.warehouseName || 'N/A'}</div>
                                 {item.warehouse?.warehouseCode && (
@@ -252,7 +271,7 @@ const DeliveryViewModal = ({
                               </div>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-sm text-right font-semibold text-blue-700">
+                          <td className="px-4 py-3 text-sm text-right font-semibold text-orange-700">
                             {item.preparedQty != null ? item.preparedQty.toLocaleString('en-US') : '—'}
                           </td>
                           <td className="px-4 py-3 text-sm text-right font-semibold text-green-700">
@@ -272,8 +291,8 @@ const DeliveryViewModal = ({
 
                   {/* ── Totals footer ─────────────────────────────────────── */}
                   {displayItems.length > 0 && (
-                    <tfoot>
-                      <tr className="bg-gray-50 border-t-2 border-gray-300">
+                    <tfoot className="sticky bottom-0 z-10 bg-white">
+                      <tr className="bg-white border-t-2 border-gray-300">
                         <td colSpan={4} className="px-4 py-3 text-right">
                           <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
                             Total ({displayItems.length} item{displayItems.length !== 1 ? 's' : ''})
@@ -282,8 +301,8 @@ const DeliveryViewModal = ({
                         {/* Prepared total */}
                         <td className="px-4 py-3 text-right whitespace-nowrap">
                           <div className="inline-flex items-center justify-end gap-1">
-                            <span className="text-sm font-bold text-blue-800">{totalPrepared.toLocaleString('en-US')}</span>
-                            <span className="text-xs text-blue-500">pcs</span>
+                            <span className="text-sm font-bold text-orange-800">{totalPrepared.toLocaleString('en-US')}</span>
+                            <span className="text-xs text-orange-500">pcs</span>
                           </div>
                         </td>
                         {/* Delivered total */}
@@ -325,7 +344,7 @@ const DeliveryViewModal = ({
 
             {/* Delivery Completion Info */}
             {isDelivered && (
-              <div className="p-4 bg-green-50 rounded-lg border border-green-200 mt-6">
+              <div className="p-4 bg-green-50 rounded border border-green-200 mt-6">
                 <div className="flex items-center gap-2 mb-2">
                   <Check className="text-green-600" size={20} />
                   <h3 className="text-sm font-medium text-green-800">Delivery Completed</h3>
@@ -335,32 +354,6 @@ const DeliveryViewModal = ({
                 </p>
               </div>
             )}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="mt-6 sm:mt-8 flex flex-wrap justify-end gap-2 sm:gap-4 pt-4 sm:pt-6 border-t border-gray-200">
-            <button
-              onClick={() => onPrint(delivery)}
-              className="flex items-center gap-3 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium shadow-md"
-            >
-              <Printer size={20} />
-              <span>Print Receipt</span>
-            </button>
-            {!isDelivered && (
-              <button
-                onClick={() => onEdit(delivery)}
-                className="flex items-center gap-3 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md"
-              >
-                <Edit2 size={20} />
-                <span>Edit Delivery</span>
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
-            >
-              Close
-            </button>
           </div>
         </div>
       </div>

@@ -53,7 +53,7 @@ const SearchableLocationDropdown = ({
       </button>
 
       {isOpen && !disabled && !loading && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-hidden">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-64 overflow-hidden">
           <div className="p-2 border-b border-gray-200 sticky top-0 bg-white">
             <div className="relative">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
@@ -75,7 +75,7 @@ const SearchableLocationDropdown = ({
                 setIsOpen(false);
                 setSearchTerm('');
               }}
-              className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 transition ${!value ? 'bg-orange-50 text-orange-700 font-medium' : 'text-gray-500 italic'}`}
+              className={`w-full px-3 py-2 text-left text-sm hover:bg-white transition ${!value ? 'bg-orange-50 text-orange-700 font-medium' : 'text-gray-500 italic'}`}
             >
               {placeholder}
             </button>

@@ -105,7 +105,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
 
   return (
     <div>
-      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-gray-50 pb-4">
+      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-white pb-4">
         <div className="bg-white border border-gray-200 shadow-sm rounded-xl p-4 flex flex-col md:flex-row gap-4 md:items-end">
           <Field label="Employee" className="flex-1">
             <SearchableSelect
@@ -127,7 +127,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
           </Field>
           {canCreate && (
             <button onClick={() => { setForm(EMPTY); setShow(true); }}
-              className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm whitespace-nowrap">
+              className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm whitespace-nowrap">
               <Plus size={18} /> File Leave
             </button>
           )}
@@ -137,7 +137,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
       <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full tbl-card">
         <div className="overflow-auto w-full tbl-scroll">
           <table className="w-full min-w-[860px]">
-            <thead className="bg-gray-50">
+            <thead className="bg-white">
               <tr>
                 {['Employee', 'Leave Type', 'From', 'To', 'Days', 'Status'].map(h => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
@@ -151,7 +151,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
               ) : filtered.length === 0 ? (
                 <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">No leave requests</td></tr>
               ) : pageItems.map(t => (
-                <tr key={t.id} className="text-sm hover:bg-gray-50">
+                <tr key={t.id} className="text-sm hover:bg-white">
                   <td className="px-4 py-3 font-medium text-gray-900">
                     <div className="flex items-center gap-2">
                       <EmployeeAvatar name={t.employeeName} photoUrl={photoOf[t.employeeId]} />
@@ -167,15 +167,15 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
                     <div className="flex justify-end gap-1">
                       {canEdit && t.status === 'PENDING' && (
                         <>
-                          <button onClick={() => act(t.id, 'approve')} title="Approve" className="p-2 text-green-600 hover:bg-green-50 rounded-lg"><Check size={17} /></button>
-                          <button onClick={() => act(t.id, 'reject', 'Reject this request?')} title="Reject" className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"><XIcon size={17} /></button>
+                          <button onClick={() => act(t.id, 'approve')} title="Approve" className="p-2 text-green-600 hover:bg-green-50 rounded"><Check size={17} /></button>
+                          <button onClick={() => act(t.id, 'reject', 'Reject this request?')} title="Reject" className="p-2 text-orange-600 hover:bg-orange-50 rounded"><XIcon size={17} /></button>
                         </>
                       )}
                       {canEdit && (t.status === 'PENDING' || t.status === 'APPROVED') && (
-                        <button onClick={() => act(t.id, 'cancel', 'Cancel this request?')} title="Cancel" className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"><Ban size={17} /></button>
+                        <button onClick={() => act(t.id, 'cancel', 'Cancel this request?')} title="Cancel" className="p-2 text-gray-600 hover:bg-gray-100 rounded"><Ban size={17} /></button>
                       )}
                       {canDelete && t.status !== 'APPROVED' && (
-                        <button onClick={() => remove(t)} title="Delete" className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={17} /></button>
+                        <button onClick={() => remove(t)} title="Delete" className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={17} /></button>
                       )}
                     </div>
                   </td>
@@ -214,8 +214,8 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
               <MoneyInput className={inputCls} value={form.daysUsed} onChange={set('daysUsed')} placeholder={`Auto: ${weekdays(form.dateFrom, form.dateTo)}`} />
             </Field>
             <div className="col-span-2 flex justify-end gap-2 pt-2 border-t">
-              <button type="button" onClick={() => setShow(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
-              <button type="submit" className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">File</button>
+              <button type="button" onClick={() => setShow(false)} className="px-4 py-2 border border-gray-300 rounded text-sm">Cancel</button>
+              <button type="submit" className="px-4 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700">File</button>
             </div>
           </form>
         </Modal>

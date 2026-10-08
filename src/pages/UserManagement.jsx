@@ -369,8 +369,8 @@ const UserManagement = () => {
     const roleStyles = {
       SUPER_ADMIN: 'bg-black text-white',
       ADMIN: 'bg-purple-100 text-purple-800',
-      ENCODER: 'bg-blue-100 text-blue-800',
-      ASSISTANT_ADMIN: 'bg-indigo-100 text-indigo-800',
+      ENCODER: 'bg-orange-100 text-orange-800',
+      ASSISTANT_ADMIN: 'bg-orange-100 text-orange-800',
       FINANCE: 'bg-green-100 text-green-800',
       PAYROLL_INCHARGE: 'bg-cyan-100 text-cyan-800',
       GENERAL_MANAGER: 'bg-amber-100 text-amber-800',
@@ -433,7 +433,7 @@ const UserManagement = () => {
             placeholder="Search by username, email, or name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
           />
         </div>
         <button
@@ -442,7 +442,7 @@ const UserManagement = () => {
             resetForm();
             setShowModal(true);
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+          className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-orange-600"
         >
           <Plus size={20} />
           Add User
@@ -453,7 +453,7 @@ const UserManagement = () => {
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-white border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
@@ -471,11 +471,11 @@ const UserManagement = () => {
                 </tr>
               ) : (
                 currentUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
+                  <tr key={user.id} className="hover:bg-white">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                          <User size={20} className="text-blue-600" />
+                        <div className="p-2 bg-orange-100 rounded">
+                          <User size={20} className="text-orange-600" />
                         </div>
                         <div>
                           <div className="font-medium text-gray-900">{user.fullName}</div>
@@ -495,21 +495,21 @@ const UserManagement = () => {
                         <button
                           disabled={!isSuperAdmin}
                           onClick={() => handleEdit(user)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                          className="p-2 text-orange-600 hover:bg-orange-50 rounded transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                           title="Edit User"
                         >
                           <Edit2 size={18} />
                         </button>
                         <button
                           onClick={() => handleResetPasswordClick(user)}
-                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
+                          className="p-2 text-green-600 hover:bg-green-50 rounded transition"
                           title="Reset Password"
                         >
                           <Shield size={18} />
                         </button>
                         <button
                           onClick={() => handleToggleStatus(user)}
-                          className={`p-2 rounded-lg transition ${user.enabled
+                          className={`p-2 rounded transition ${user.enabled
                             ? 'text-orange-600 hover:bg-orange-50'
                             : 'text-green-600 hover:bg-green-50'
                             }`}
@@ -519,7 +519,7 @@ const UserManagement = () => {
                         </button>
                         <button
                           onClick={() => handleDelete(user)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                          className="p-2 text-red-600 hover:bg-red-50 rounded transition"
                           title="Delete User"
                         >
                           <Trash2 size={18} />
@@ -554,8 +554,8 @@ const UserManagement = () => {
             {/* Sticky Header */}
             <div className="flex-shrink-0 bg-white border-b border-gray-200 px-8 py-5 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                  <User size={20} className="text-blue-600" />
+                <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
+                  <User size={20} className="text-orange-600" />
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">
@@ -568,7 +568,7 @@ const UserManagement = () => {
               </div>
               <button
                 onClick={() => { setShowModal(false); resetForm(); }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-400 hover:text-gray-600"
+                className="p-2 hover:bg-gray-100 rounded transition text-gray-400 hover:text-gray-600"
               >
                 <X size={20} />
               </button>
@@ -581,10 +581,10 @@ const UserManagement = () => {
                 {/* Section: Account Details */}
                 <section>
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="w-1 h-4 bg-blue-600 rounded-full" />
+                    <div className="w-1 h-4 bg-orange-600 rounded-full" />
                     <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Account Details</h3>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-gray-50 rounded-xl p-5 border border-gray-100">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-white rounded-xl p-5 border border-gray-100">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">
                         Username <span className="text-red-500">*</span>
@@ -595,7 +595,7 @@ const UserManagement = () => {
                         value={formData.username}
                         onChange={handleInputChange}
                         required
-                        className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                        className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
                         placeholder="e.g. jonathan.elano"
                       />
                     </div>
@@ -610,7 +610,7 @@ const UserManagement = () => {
                         value={formData.email}
                         onChange={handleInputChange}
                         required
-                        className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                        className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
                         placeholder="name@company.com"
                       />
                     </div>
@@ -625,7 +625,7 @@ const UserManagement = () => {
                         value={formData.fullName}
                         onChange={handleInputChange}
                         required
-                        className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                        className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
                         placeholder="Enter full name"
                       />
                     </div>
@@ -642,7 +642,7 @@ const UserManagement = () => {
                             value={formData.password}
                             onChange={handleInputChange}
                             required={!editingUser}
-                            className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition pr-10"
+                            className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition pr-10"
                             placeholder="Minimum 6 characters"
                             minLength="6"
                           />
@@ -662,7 +662,7 @@ const UserManagement = () => {
                 {/* Section: Role & Status */}
                 <section>
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="w-1 h-4 bg-blue-600 rounded-full" />
+                    <div className="w-1 h-4 bg-orange-600 rounded-full" />
                     <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Role & Status</h3>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -688,7 +688,7 @@ const UserManagement = () => {
                           }
                         }}
                         required
-                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white"
+                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition bg-white"
                       >
                         <option value="" disabled>Select a role...</option>
                         <option value="ENCODER">Encoder</option>
@@ -709,7 +709,7 @@ const UserManagement = () => {
                           required
                           placeholder="e.g. WAREHOUSE_STAFF, AUDITOR"
                           autoFocus
-                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition mt-2"
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition mt-2"
                         />
                       )}
                       <p className="text-xs text-gray-500 mt-1.5">
@@ -721,7 +721,7 @@ const UserManagement = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">Account Status</label>
                       <label
                         htmlFor="enabled"
-                        className="flex items-center justify-between gap-3 px-4 py-2.5 bg-white border border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition h-[42px]"
+                        className="flex items-center justify-between gap-3 px-4 py-2.5 bg-white border border-gray-300 rounded cursor-pointer hover:border-gray-400 transition h-[42px]"
                       >
                         <span className="text-sm text-gray-700">
                           {formData.enabled ? 'Enabled — can sign in' : 'Disabled — access blocked'}
@@ -731,7 +731,7 @@ const UserManagement = () => {
                           role="switch"
                           aria-checked={formData.enabled}
                           onClick={() => setFormData(prev => ({ ...prev, enabled: !prev.enabled }))}
-                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0 ${formData.enabled ? 'bg-blue-600' : 'bg-gray-300'
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0 ${formData.enabled ? 'bg-orange-600' : 'bg-gray-300'
                             }`}
                         >
                           <span
@@ -757,7 +757,7 @@ const UserManagement = () => {
                   <section>
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
-                        <div className="w-1 h-4 bg-blue-600 rounded-full" />
+                        <div className="w-1 h-4 bg-orange-600 rounded-full" />
                         <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Feature Access</h3>
                       </div>
                       <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
@@ -776,9 +776,9 @@ const UserManagement = () => {
                           <div
                             key={f.key}
                             className={`rounded-xl border transition-all ${allChecked
-                              ? 'bg-blue-50/60 border-blue-300'
+                              ? 'bg-orange-50/60 border-orange-300'
                               : someChecked
-                                ? 'bg-white border-blue-200'
+                                ? 'bg-white border-orange-200'
                                 : 'bg-white border-gray-200'
                               }`}
                           >
@@ -790,13 +790,13 @@ const UserManagement = () => {
                                     <p className="text-xs text-gray-500 mt-0.5 leading-snug">{f.description}</p>
                                   )}
                                 </div>
-                                <label className="flex items-center gap-1.5 text-xs font-medium text-blue-700 cursor-pointer flex-shrink-0">
+                                <label className="flex items-center gap-1.5 text-xs font-medium text-orange-700 cursor-pointer flex-shrink-0">
                                   <input
                                     type="checkbox"
                                     checked={allChecked}
                                     ref={(el) => { if (el) el.indeterminate = someChecked; }}
                                     onChange={(e) => toggleAllForFeature(f, e.target.checked)}
-                                    className="w-3.5 h-3.5 text-blue-600 rounded"
+                                    className="w-3.5 h-3.5 text-orange-600 rounded"
                                   />
                                   {allChecked ? 'All' : someChecked ? `${checkedCount}/${keys.length}` : 'All'}
                                 </label>
@@ -810,8 +810,8 @@ const UserManagement = () => {
                                     <label
                                       key={permKey}
                                       className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${isChecked
-                                        ? 'bg-blue-600 border-blue-600 text-white font-medium'
-                                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                                        ? 'bg-orange-600 border-orange-600 text-white font-medium'
+                                        : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-100'
                                         }`}
                                     >
                                       <input
@@ -865,7 +865,7 @@ const UserManagement = () => {
                                           key={permKey}
                                           className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${isChecked
                                             ? 'bg-purple-600 border-purple-600 text-white font-medium'
-                                            : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+                                            : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-100'
                                             }`}
                                         >
                                           <input
@@ -905,14 +905,14 @@ const UserManagement = () => {
               <button
                 type="button"
                 onClick={() => { setShowModal(false); resetForm(); }}
-                className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-medium"
+                className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded hover:bg-white transition text-sm font-medium"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 onClick={handleSubmit}
-                className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium shadow-sm"
+                className="px-5 py-2.5 bg-orange-600 text-white rounded hover:bg-orange-700 transition text-sm font-medium shadow-sm"
               >
                 {editingUser ? 'Save Changes' : 'Create User'}
               </button>
@@ -934,7 +934,7 @@ const UserManagement = () => {
                   setShowPasswordModal(false);
                   resetPasswordForm();
                 }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
+                className="p-2 hover:bg-gray-100 rounded transition"
               >
                 <X size={20} />
               </button>
@@ -956,7 +956,7 @@ const UserManagement = () => {
                     value={passwordData.newPassword}
                     onChange={handlePasswordChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent pr-10"
                     placeholder="Enter new password"
                     minLength="6"
                   />
@@ -980,7 +980,7 @@ const UserManagement = () => {
                   value={passwordData.confirmPassword}
                   onChange={handlePasswordChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   placeholder="Confirm new password"
                   minLength="6"
                 />
@@ -993,13 +993,13 @@ const UserManagement = () => {
                     setShowPasswordModal(false);
                     resetPasswordForm();
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-white transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  className="flex-1 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition"
                 >
                   Reset Password
                 </button>

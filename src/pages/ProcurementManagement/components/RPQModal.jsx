@@ -313,12 +313,12 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
                                 printWindow.print();
                                 printWindow.close();
                             }}
-                            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2"
+                            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center gap-2"
                         >
                             <Download size={18} />
                             Download PDF
                         </button>
-                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded">
                             <X size={20} />
                         </button>
                     </div>
@@ -355,7 +355,7 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
                         </div>
 
                         {/* Supplier Details */}
-                        <div className="mb-4 p-3 border border-gray-300 rounded-lg section">
+                        <div className="mb-4 p-3 border border-gray-300 rounded section">
                             <h3 className="font-bold text-gray-900 mb-2 section-title">Supplier Details</h3>
                             <div className="grid grid-cols-2 gap-3 text-sm grid-2">
                                 <div className="info-row"><span className="font-semibold label">Supplier Name: </span><span>{rpqFormData.supplierName}</span></div>
@@ -460,7 +460,7 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
                                                         </span>
                                                     </td>
                                                     <td className="px-3 py-2 border border-gray-300">
-                                                        <div className="px-2 py-1 bg-gray-50 text-xs font-medium text-gray-900 no-print text-right">
+                                                        <div className="px-2 py-1 bg-white text-xs font-medium text-gray-900 no-print text-right">
                                                             {(() => {
                                                                 const total = (parseFloat(item.unitPrice) || 0) * (parseInt(item.qty) || 0);
                                                                 return total > 0 ? `$${formatNumberWithCommas(total.toFixed(2))}` : '';
@@ -476,7 +476,7 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
                                                 </tr>
                                             ))}
                                         </tbody>
-                                        <tfoot className="bg-gray-50">
+                                        <tfoot className="bg-white">
                                             <tr>
                                                 <td colSpan="4" className="px-3 py-2 text-right font-bold text-sm border border-gray-300">TOTAL QTY:</td>
                                                 <td className="px-3 py-2 font-bold text-sm border border-gray-300 text-right">
@@ -495,7 +495,7 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
                             </div>
                         )}
 
-                        <div className="mb-4 p-3 border border-gray-300 rounded-lg section">
+                        <div className="mb-4 p-3 border border-gray-300 rounded section">
                             <h3 className="font-bold text-gray-900 mb-2 section-title">Payment Arrangement</h3>
                             <div className="space-y-3">
                                 <div className="flex items-center gap-2 mt-2">
@@ -593,7 +593,7 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
                         </div>
 
                         {/* Payment Method */}
-                        <div className="mb-4 p-3 border border-gray-300 rounded-lg section">
+                        <div className="mb-4 p-3 border border-gray-300 rounded section">
                             <h3 className="font-bold text-gray-900 mb-2 section-title">Payment Method</h3>
                             <div className="grid grid-cols-2 gap-3 text-sm grid-2">
                                 <div className="info-row">
@@ -632,7 +632,7 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
                         </div>
 
                         {/* Production Details */}
-                        <div className="mb-4 p-3 border border-gray-300 rounded-lg section">
+                        <div className="mb-4 p-3 border border-gray-300 rounded section">
                             <h3 className="font-bold text-gray-900 mb-2 section-title">Production Details</h3>
                             <div className="space-y-3">
                                 <div className="flex items-center gap-3">
@@ -680,7 +680,7 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
                     </div>
 
                     {/* Document Uploads Section */}
-                    <div className="mb-4 p-3 border border-gray-300 rounded-lg section no-print">
+                    <div className="mb-4 p-3 border border-gray-300 rounded section no-print">
                         <h3 className="font-bold text-gray-900 mb-2 section-title flex items-center gap-2">
                             <Upload size={18} />
                             Required Documents
@@ -701,10 +701,10 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
                                                     if (file) handleDocumentUpload(file, docType);
                                                 }}
                                                 disabled={uploadingFiles[docType]}
-                                                className="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+                                                className="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 disabled:opacity-50"
                                             />
                                             {uploadingFiles[docType] && (
-                                                <span className="ml-2 text-xs text-blue-600">
+                                                <span className="ml-2 text-xs text-orange-600">
                                                     <Loader2 size={14} className="inline animate-spin mr-1" />
                                                     Uploading...
                                                 </span>
@@ -718,7 +718,7 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
                                                 href={getFileUrl(uploadedFiles[docType].url)}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                                className="p-1 text-orange-600 hover:bg-orange-100 rounded"
                                                 title="View"
                                             >
                                                 <Eye size={16} />
@@ -751,14 +751,14 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
                             type="button"
                             onClick={onClose}
                             disabled={submitting}
-                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-white disabled:opacity-50"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 disabled:opacity-50"
+                            className="flex-1 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                             {submitting ? (
                                 <>

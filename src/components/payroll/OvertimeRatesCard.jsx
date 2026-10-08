@@ -82,13 +82,13 @@ const FormulaGroup = ({ group, formulas, setFormulas, disabled, hoursPerDay }) =
     );
     return (
         <div className="border border-gray-200 rounded-xl overflow-hidden">
-            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 text-sm font-semibold text-gray-900">
+            <div className="px-4 py-3 bg-white border-b border-gray-200 text-sm font-semibold text-gray-900">
                 {group.title}
             </div>
             <div className="p-4 space-y-4">
                 {field(group.dailyKey, d, 'Daily rate')}
                 {field(group.hourlyKey, h, 'Hourly rate')}
-                <div className="flex items-center justify-between rounded-lg bg-orange-50 border border-orange-100 px-3 py-2 text-xs">
+                <div className="flex items-center justify-between rounded bg-orange-50 border border-orange-100 px-3 py-2 text-xs">
                     <span className="text-orange-800 font-medium">Example result</span>
                     <span className="text-orange-900">
                         {d.error || h.error ? '—' : `${peso(d.value)} per day · ${peso(h.value)} per hour`}
@@ -243,7 +243,7 @@ const OvertimeRatesCard = () => {
                                         </p>
                                     </div>
 
-                                    <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 mb-4">
+                                    <div className="rounded-xl bg-white border border-gray-200 p-4 mb-4">
                                         <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                             Available variables
                                         </div>
@@ -275,11 +275,11 @@ const OvertimeRatesCard = () => {
                                     {defaults && (
                                         <button type="button"
                                             onClick={() => { setForm(toForm(defaults)); if (formulaDefaults) setFormulas({ ...formulaDefaults }); }}
-                                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Reset to default</button>
+                                            className="px-4 py-2 border border-gray-300 rounded text-sm">Reset to default</button>
                                     )}
                                     <button onClick={saveAll} disabled={saving || savingF || formulaInvalid}
                                         title={formulaInvalid ? 'Fix the formula errors first' : ''}
-                                        className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 disabled:opacity-50">
+                                        className="px-4 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 disabled:opacity-50">
                                         {saving || savingF ? 'Saving...' : 'Save Changes'}
                                     </button>
                                 </div>

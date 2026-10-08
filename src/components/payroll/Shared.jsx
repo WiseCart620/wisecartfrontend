@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { X } from 'lucide-react';
 
-export const inputCls = 'w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none';
+export const inputCls = 'w-full px-3 py-2 bg-white border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 outline-none';
 
 export const MoneyInput = ({
   value, onChange, name, className = inputCls, decimals = 2,
@@ -117,7 +117,7 @@ export const Modal = ({ title, subtitle, onClose, children, maxW = 'max-w-2xl' }
           <h2 className="text-xl font-bold text-gray-900">{title}</h2>
           {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
         </div>
-        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
+        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded"><X size={20} /></button>
       </div>
       <div className="p-6">{children}</div>
     </div>

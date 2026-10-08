@@ -89,7 +89,7 @@ const ProofImage = ({ filePath, fileName }) => {
                 href={blobUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 underline mt-1"
+                className="flex items-center gap-1 text-xs text-orange-600 hover:text-orange-800 underline mt-1"
             >
                 📄 {fileName || 'View PDF'}
             </a>
@@ -101,7 +101,7 @@ const ProofImage = ({ filePath, fileName }) => {
             <img
                 src={blobUrl}
                 alt={fileName || 'Proof of payment'}
-                className="rounded-lg border border-gray-200 max-h-32 max-w-full object-contain cursor-pointer hover:opacity-90 transition"
+                className="rounded border border-gray-200 max-h-32 max-w-full object-contain cursor-pointer hover:opacity-90 transition"
                 onClick={() => window.open(blobUrl, '_blank')}
                 onError={() => {
                     console.error('Image failed to load');
@@ -201,9 +201,9 @@ const BalanceTooltip = ({ profile, onClick }) => {
                     ) : (
                         <div className="divide-y divide-gray-50 max-h-44 overflow-y-auto">
                             {payments.map((p, idx) => (
-                                <div key={p.id} className="px-4 py-2.5 flex items-center justify-between gap-3 hover:bg-gray-50 transition-colors">
+                                <div key={p.id} className="px-4 py-2.5 flex items-center justify-between gap-3 hover:bg-white transition-colors">
                                     <div className="flex items-center gap-2.5 min-w-0">
-                                        <div className="w-5 h-5 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                                        <div className="w-5 h-5 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center text-[10px] font-bold flex-shrink-0">
                                             {idx + 1}
                                         </div>
                                         <div className="min-w-0">
@@ -222,7 +222,7 @@ const BalanceTooltip = ({ profile, onClick }) => {
                     )}
 
                     {payments.length > 0 && (
-                        <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 space-y-1.5">
+                        <div className="px-4 py-3 bg-white border-t border-gray-100 space-y-1.5">
                             <div className="flex items-center justify-between">
                                 <span className="text-[11px] text-gray-500">Total paid</span>
                                 <span className="text-xs font-semibold text-emerald-600 tabular-nums">₱{fmt(paid)}</span>
@@ -255,11 +255,11 @@ const PaymentEntry = ({ p, idx, onDelete, onEdit, isAdmin }) => {
     return (
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
             <div
-                className="flex items-start justify-between p-3 cursor-pointer hover:bg-gray-50 transition"
+                className="flex items-start justify-between p-3 cursor-pointer hover:bg-white transition"
                 onClick={() => setIsOpen(!isOpen)}
             >
                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className="w-7 h-7 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                    <div className="w-7 h-7 rounded-full bg-orange-50 text-orange-700 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
                         {idx + 1}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -284,7 +284,7 @@ const PaymentEntry = ({ p, idx, onDelete, onEdit, isAdmin }) => {
                         <button
                             onClick={(e) => { e.stopPropagation(); onEdit(p); }}
                             title="Edit this payment"
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-black transition"
+                            className="w-7 h-7 rounded flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-black transition"
                         >
                             <Pencil size={14} />
                         </button>
@@ -293,7 +293,7 @@ const PaymentEntry = ({ p, idx, onDelete, onEdit, isAdmin }) => {
                         <button
                             onClick={(e) => { e.stopPropagation(); onDelete(p.id); }}
                             title="Delete this payment"
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-black hover:bg-gray-100 hover:text-red-600 transition"
+                            className="w-7 h-7 rounded flex items-center justify-center text-black hover:bg-gray-100 hover:text-red-600 transition"
                         >
                             <Trash2 size={14} />
                         </button>
@@ -305,7 +305,7 @@ const PaymentEntry = ({ p, idx, onDelete, onEdit, isAdmin }) => {
             </div>
 
             {isOpen && (
-                <div className="border-t border-gray-100 bg-gray-50/60">
+                <div className="border-t border-gray-100 bg-white/60">
                     {/* Itemized breakdown */}
                     <div className="px-4 py-3">
                         <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">
@@ -373,7 +373,7 @@ const DetailModal = ({ profile, onClose, onAddPayment, onEditPayment, onDeletePa
                         <div className="flex items-center gap-2">
                             <div className="font-medium text-black">{profile.soldTo}</div>
                             {profile.invoiceNumber && (
-                                <span className="font-mono text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                                <span className="font-mono text-[11px] font-semibold text-orange-700 bg-orange-50 px-2 py-0.5 rounded">
                                     {profile.invoiceNumber}
                                 </span>
                             )}
@@ -382,13 +382,13 @@ const DetailModal = ({ profile, onClose, onAddPayment, onEditPayment, onDeletePa
                             Invoice dated {fmtDate(profile.invoiceDate || profile.createdAt)}
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-1 text-gray-600 hover:text-black rounded-lg">
+                    <button onClick={onClose} className="p-1 text-gray-600 hover:text-black rounded">
                         <X size={18} />
                     </button>
                 </div>
 
                 <div className="p-5">
-                    <div className="bg-gray-50 rounded-xl p-4 mb-4 flex justify-between items-center">
+                    <div className="bg-white rounded-xl p-4 mb-4 flex justify-between items-center">
                         <span className="text-sm text-gray-500">Amount due</span>
                         <span className="text-lg font-bold text-gray-900">₱{fmt(profile.totalAmountDue)}</span>
                     </div>
@@ -419,7 +419,7 @@ const DetailModal = ({ profile, onClose, onAddPayment, onEditPayment, onDeletePa
                         </div>
                     )}
 
-                    <div className={`rounded-md p-4 flex justify-between items-center mb-4 border ${overpaid > 0 ? 'bg-orange-50 border-orange-200' : 'bg-gray-50 border-gray-200'}`}>
+                    <div className={`rounded p-4 flex justify-between items-center mb-4 border ${overpaid > 0 ? 'bg-orange-50 border-orange-200' : 'bg-white border-gray-200'}`}>
                         <div>
                             <div className="text-xs font-medium uppercase tracking-wide text-gray-500">
                                 {overpaid > 0 ? 'Overpaid' : 'Open balance'}
@@ -439,7 +439,7 @@ const DetailModal = ({ profile, onClose, onAddPayment, onEditPayment, onDeletePa
                         <div className="flex justify-end">
                             <button
                                 onClick={() => { onClose(); onAddPayment(profile); }}
-                                className="flex items-center gap-2 px-4 py-2 bg-[#2CA01C] text-white rounded-md text-sm font-medium hover:bg-[#268d19] transition"
+                                className="flex items-center gap-2 px-4 py-2 bg-[#2CA01C] text-white rounded text-sm font-medium hover:bg-[#268d19] transition"
                             >
                                 <img src="/money.png" alt="" className="w-4 h-4 brightness-0 invert" />
                                 Record payment
@@ -563,7 +563,7 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
                         <div className="font-medium text-black">{isEditing ? 'Edit payment' : 'Record payment'}</div>
                         <div className="text-xs text-gray-500 mt-0.5">{profile.soldTo}</div>
                     </div>
-                    <button onClick={onClose} className="p-1 text-gray-600 hover:text-black rounded-lg">
+                    <button onClick={onClose} className="p-1 text-gray-600 hover:text-black rounded">
                         <X size={18} />
                     </button>
                 </div>
@@ -577,7 +577,7 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
                                 ? ['Overpaid by', '₱' + fmt(Math.abs(rawBalance)), 'text-orange-600']
                                 : ['Balance', '₱' + fmt(balance), balance > 0 ? 'text-red-600' : 'text-green-600'],
                         ].map(([l, v, cls]) => (
-                            <div key={l} className="bg-gray-50 rounded-xl p-3">
+                            <div key={l} className="bg-white rounded-xl p-3">
                                 <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">{l}</div>
                                 <div className={`text-sm font-bold ${cls}`}>{v}</div>
                             </div>
@@ -592,7 +592,7 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
                                 placeholder="0.00"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                             />
                             <div className="flex items-center justify-between mt-2">
                                 <label className="flex items-center gap-1.5 text-xs text-gray-500">
@@ -601,7 +601,7 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
                                 </label>
                             </div>
                             {applyEwt && Number(amount) > 0 && (
-                                <div className="mt-2 bg-gray-50 rounded-lg p-2.5 space-y-1">
+                                <div className="mt-2 bg-white rounded p-2.5 space-y-1">
                                     <div className="flex items-center justify-between text-xs">
                                         <span className="text-gray-500">Less: EWT</span>
                                         <input
@@ -620,7 +620,7 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
                                     <button
                                         type="button"
                                         onClick={addCharge}
-                                        className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                                        className="text-xs text-orange-600 hover:text-orange-800 font-medium"
                                     >
                                         + Add charge
                                     </button>
@@ -636,14 +636,14 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
                                                 placeholder="Less: Delivery charge"
                                                 value={c.label}
                                                 onChange={(e) => updateCharge(idx, 'label', e.target.value)}
-                                                className="flex-1 px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                                className="flex-1 px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
                                             />
                                             <input
                                                 type="number"
                                                 placeholder="0.00"
                                                 value={c.amount}
                                                 onChange={(e) => updateCharge(idx, 'amount', e.target.value)}
-                                                className="w-24 px-2 py-1.5 border border-gray-200 rounded text-xs text-right focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                                className="w-24 px-2 py-1.5 border border-gray-200 rounded text-xs text-right focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
                                             />
                                             <button
                                                 type="button"
@@ -658,13 +658,13 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
                             </div>
 
                             {(applyEwt || charges.length > 0) && Number(amount) > 0 && (
-                                <div className="mt-2 bg-blue-50 rounded-lg p-2.5 flex items-center justify-between text-xs font-semibold">
+                                <div className="mt-2 bg-orange-50 rounded p-2.5 flex items-center justify-between text-xs font-semibold">
                                     <span className="text-gray-600">Net amount recorded</span>
-                                    <span className="text-blue-700">₱{fmt(netAmount)}</span>
+                                    <span className="text-orange-700">₱{fmt(netAmount)}</span>
                                 </div>
                             )}
                             {willOverpay && (
-                                <div className="mt-2 bg-orange-50 border border-orange-200 rounded-lg p-2.5 text-xs text-orange-700 font-medium flex items-center gap-1.5">
+                                <div className="mt-2 bg-orange-50 border border-orange-200 rounded p-2.5 text-xs text-orange-700 font-medium flex items-center gap-1.5">
                                     ⚠ This exceeds the open balance by ₱{fmt(overpayAmount)}. It will be recorded as an overpayment.
                                 </div>
                             )}
@@ -676,7 +676,7 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
                                     type="date"
                                     value={date}
                                     onChange={(e) => setDate(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                                 />
                             </div>
                             <div>
@@ -686,7 +686,7 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
                                     value={ref}
                                     onChange={(e) => setRef(e.target.value)}
                                     placeholder="CHK-00123"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                                 />
                             </div>
                         </div>
@@ -696,7 +696,7 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
                                 <button
                                     type="button"
                                     onClick={() => fileRef.current?.click()}
-                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition"
+                                    className="px-3 py-2 border border-gray-300 rounded text-sm hover:bg-white transition"
                                 >
                                     📎 Upload
                                 </button>
@@ -718,14 +718,14 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
                 <div className="p-5 border-t border-gray-100 flex justify-end gap-2">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition"
+                        className="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-white transition"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSave}
                         disabled={saving || !amount || Number(amount) <= 0}
-                        className="px-4 py-2 bg-[#2CA01C] text-white rounded-md text-sm font-medium hover:bg-[#268d19] transition disabled:opacity-40"
+                        className="px-4 py-2 bg-[#2CA01C] text-white rounded text-sm font-medium hover:bg-[#268d19] transition disabled:opacity-40"
                     >
                         {saving ? (isEditing ? 'Updating...' : 'Saving...') : (isEditing ? 'Update payment' : 'Save payment')}
                     </button>
@@ -756,7 +756,7 @@ const MultiSelectDropdown = ({ label, options, selected, onChange }) => {
             <button
                 type="button"
                 onClick={() => setOpen((o) => !o)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50 transition flex items-center gap-2 min-w-[220px] justify-between"
+                className="px-3 py-2 border border-gray-300 rounded text-sm bg-white hover:bg-white transition flex items-center gap-2 min-w-[220px] justify-between"
             >
                 <span className="truncate text-gray-700">
                     {selected.length === 0 ? label : `${label} (${selected.length})`}
@@ -765,12 +765,12 @@ const MultiSelectDropdown = ({ label, options, selected, onChange }) => {
             </button>
 
             {open && (
-                <div className="absolute z-20 mt-1 w-72 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                <div className="absolute z-20 mt-1 w-72 bg-white border border-gray-200 rounded shadow-lg max-h-64 overflow-y-auto">
                     {selected.length > 0 && (
                         <button
                             type="button"
                             onClick={() => onChange([])}
-                            className="w-full text-left px-3 py-2 text-xs text-blue-600 hover:bg-blue-50 border-b border-gray-100"
+                            className="w-full text-left px-3 py-2 text-xs text-orange-600 hover:bg-orange-50 border-b border-gray-100"
                         >
                             Clear all
                         </button>
@@ -781,7 +781,7 @@ const MultiSelectDropdown = ({ label, options, selected, onChange }) => {
                         options.map((opt) => (
                             <label
                                 key={opt.value}
-                                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+                                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-white cursor-pointer"
                             >
                                 <input
                                     type="checkbox"
@@ -1039,7 +1039,7 @@ const InvoicingProfile = ({ onBack }) => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-3 lg:p-5" style={{ fontFamily: "'Avenir Next', 'Avenir', 'Segoe UI', Helvetica, Arial, sans-serif" }}>
+        <div className="min-h-screen bg-white p-3 lg:p-5" style={{ fontFamily: "'Avenir Next', 'Avenir', 'Segoe UI', Helvetica, Arial, sans-serif" }}>
             {/* Header */}
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3 pb-4 border-b border-gray-200">
                 <div>
@@ -1057,19 +1057,19 @@ const InvoicingProfile = ({ onBack }) => {
                 </div>
                 <button
                     onClick={load}
-                    className="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition"
+                    className="px-3 py-2 border border-gray-300 rounded text-sm text-gray-700 hover:bg-white transition"
                 >
                     ↻ Refresh
                 </button>
             </div>
 
-            <div className="bg-white rounded-md border border-gray-200 p-3 mb-3 flex flex-wrap gap-3 items-center">
+            <div className="bg-white rounded border border-gray-200 p-3 mb-3 flex flex-wrap gap-3 items-center">
                 {canSeeFilter(user, 'sales', 'search') && (
                     <input
                         placeholder="Search Invoice #..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded-md text-sm w-48 focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                        className="px-3 py-2 border border-gray-300 rounded text-sm w-48 focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
                     />
                 )}
                 {canSeeFilter(user, 'sales', 'company') && (
@@ -1098,14 +1098,14 @@ const InvoicingProfile = ({ onBack }) => {
                         type="date"
                         value={dateFrom}
                         onChange={(e) => setDateFrom(e.target.value)}
-                        className="px-2 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                        className="px-2 py-2 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
                     />
                     <span className="text-xs text-gray-400">to</span>
                     <input
                         type="date"
                         value={dateTo}
                         onChange={(e) => setDateTo(e.target.value)}
-                        className="px-2 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                        className="px-2 py-2 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
                     />
                 </div>
                 {(companyFilter.length > 0 || statusFilter.length > 0 || search || dateFrom || dateTo) && (
@@ -1120,7 +1120,7 @@ const InvoicingProfile = ({ onBack }) => {
                 <select
                     value={sortOrder}
                     onChange={(e) => setSortOrder(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-700 focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                    className="px-3 py-2 border border-gray-300 rounded text-sm text-gray-700 focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
                 >
                     <option value="asc">Invoice # ↑ Ascending</option>
                     <option value="desc">Invoice # ↓ Descending</option>
@@ -1128,11 +1128,11 @@ const InvoicingProfile = ({ onBack }) => {
                 </select>
             </div>
 
-            <div className="bg-white rounded-md border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded border border-gray-200 overflow-hidden">
                 <div className="overflow-auto" style={{ maxHeight: '70vh' }}>
                     <table className="w-full min-w-[1100px]" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
-                        <thead className="bg-gray-50 border-b-2 border-gray-200">
-                            <tr className="bg-gray-50 border-b-2 border-gray-200">
+                        <thead className="bg-white border-b-2 border-gray-200">
+                            <tr className="bg-white border-b-2 border-gray-200">
                                 <th colSpan={4} className="px-4 py-2 text-[11px] font-medium text-black uppercase tracking-wide text-left">
                                     Totals ({filtered.length} invoice{filtered.length !== 1 ? 's' : ''})
                                 </th>
@@ -1166,7 +1166,7 @@ const InvoicingProfile = ({ onBack }) => {
                                     <th
                                         key={label}
                                         onClick={label === 'Invoice #' ? () => setSortOrder(prev => prev === 'asc' ? 'desc' : prev === 'desc' ? 'none' : 'asc') : undefined}
-                                        className={`sticky top-0 z-10 bg-gray-50 px-4 py-3 text-[11px] font-medium text-gray-500 uppercase tracking-wide text-${align} ${label === 'Invoice #' ? 'cursor-pointer select-none hover:text-gray-700' : ''}`}
+                                        className={`sticky top-0 z-10 bg-white px-4 py-3 text-[11px] font-medium text-gray-500 uppercase tracking-wide text-${align} ${label === 'Invoice #' ? 'cursor-pointer select-none hover:text-gray-700' : ''}`}
                                     >
                                         {label === 'vatableSalesHeader' ? (
                                             <span className="flex flex-col items-end leading-tight">
@@ -1203,7 +1203,7 @@ const InvoicingProfile = ({ onBack }) => {
                                     const isPaid = getBalance(p) <= 0;
                                     const hasPartialPayments = totalPaid > 0 && !isPaid;
 
-                                    const rowBg = 'bg-white hover:bg-gray-50';
+                                    const rowBg = 'bg-white hover:bg-white';
 
                                     return (
                                         <React.Fragment key={p.id}>
@@ -1233,7 +1233,7 @@ const InvoicingProfile = ({ onBack }) => {
                                                                 if (e.key === 'Enter') saveDate(p.id);
                                                                 if (e.key === 'Escape') { setEditingDateId(null); setEditingDateValue(''); }
                                                             }}
-                                                            className="border border-blue-400 rounded px-1 py-0.5 text-xs text-black focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                            className="border border-orange-400 rounded px-1 py-0.5 text-xs text-black focus:outline-none focus:ring-1 focus:ring-orange-500"
                                                         />
                                                     ) : (
                                                         <button
@@ -1315,11 +1315,11 @@ const InvoicingProfile = ({ onBack }) => {
                                                 <td className="px-4 py-3 text-center">
                                                     <div className="flex items-center justify-center gap-1">
                                                         {isAdmin && (
-                                                            <button onClick={() => { setEditingPayment(null); setPaymentProfile(p); }} title="Record payment" className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200 transition">
+                                                            <button onClick={() => { setEditingPayment(null); setPaymentProfile(p); }} title="Record payment" className="w-8 h-8 rounded flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200 transition">
                                                                 <img src="/money.png" alt="Record payment" className="w-4 h-4" style={{ filter: 'grayscale(1) brightness(0)' }} />
                                                             </button>
                                                         )}
-                                                        <button onClick={() => handleDelete(p.id)} title="Delete" className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 text-black hover:bg-gray-200 hover:text-red-600 transition">
+                                                        <button onClick={() => handleDelete(p.id)} title="Delete" className="w-8 h-8 rounded flex items-center justify-center bg-gray-100 text-black hover:bg-gray-200 hover:text-red-600 transition">
                                                             <Trash2 size={15} />
                                                         </button>
                                                     </div>
@@ -1352,24 +1352,24 @@ const InvoicingProfile = ({ onBack }) => {
                                                 const grandTotal = itemsWithBreakdown.reduce((s, i) => s + i.itemTotal, 0);
 
                                                 return (
-                                                    <tr key={`cos-${p.id}`} className="bg-blue-50">
+                                                    <tr key={`cos-${p.id}`} className="bg-orange-50">
                                                         <td colSpan={14} className="px-6 py-4">
-                                                            <div className="text-xs font-semibold text-blue-700 mb-2 uppercase tracking-wide">Cost of Sales Breakdown</div>
+                                                            <div className="text-xs font-semibold text-orange-700 mb-2 uppercase tracking-wide">Cost of Sales Breakdown</div>
                                                             <table className="w-full text-xs mb-2">
                                                                 <thead>
-                                                                    <tr className="text-gray-500 border-b border-blue-200">
+                                                                    <tr className="text-gray-500 border-b border-orange-200">
                                                                         <th className="text-left pb-1">SKU</th>
                                                                         <th className="text-left pb-1">UPC</th>
                                                                         <th className="text-left pb-1">Description</th>
                                                                         <th className="text-left pb-1">Description</th>
                                                                         <th className="text-right pb-1">Qty</th>
                                                                         <th className="text-right pb-1">Unit Cost</th>
-                                                                        <th className="text-right pb-1 text-blue-700 font-bold">Total Cost</th>
+                                                                        <th className="text-right pb-1 text-orange-700 font-bold">Total Cost</th>
                                                                     </tr>
                                                                 </thead>
-                                                                <tbody className="divide-y divide-blue-100">
+                                                                <tbody className="divide-y divide-orange-100">
                                                                     {itemsWithBreakdown.map((item, i) => (
-                                                                        <tr key={i} className="hover:bg-blue-100 transition">
+                                                                        <tr key={i} className="hover:bg-orange-100 transition">
                                                                             <td className="py-1.5 text-gray-500 font-mono text-[10px]">{item.sku || '—'}</td>
                                                                             <td className="py-1.5 text-gray-500 font-mono text-[10px]">{item.sku || '—'}</td>
                                                                             <td className="py-1.5 text-gray-500 font-mono text-[10px]">{item.upc || '—'}</td>
@@ -1379,31 +1379,31 @@ const InvoicingProfile = ({ onBack }) => {
                                                                                     <span className="text-xs text-gray-500 ml-1">({item.variationDisplay})</span>
                                                                                 )}
                                                                                 {item.variationDisplay === 'Adjustment' && (
-                                                                                    <span className="ml-2 text-xs text-blue-600 italic">(Adjustment)</span>
+                                                                                    <span className="ml-2 text-xs text-orange-600 italic">(Adjustment)</span>
                                                                                 )}
                                                                             </td>
                                                                             <td className="py-1.5 text-right text-gray-700 font-medium">{Number(item.qty).toLocaleString()}</td>
                                                                             <td className="py-1.5 text-right text-gray-600">
                                                                                 ₱{fmt(item.unitCost || 0)}
                                                                             </td>
-                                                                            <td className="py-1.5 text-right font-bold text-blue-800 relative group">
+                                                                            <td className="py-1.5 text-right font-bold text-orange-800 relative group">
                                                                                 <span className="cursor-default underline decoration-dashed underline-offset-2">₱{fmt(item.itemTotal)}</span>
-                                                                                <div className="absolute right-0 bottom-full mb-1 z-50 hidden group-hover:block w-56 bg-white border border-gray-200 rounded-lg shadow-xl p-3 text-xs">
+                                                                                <div className="absolute right-0 bottom-full mb-1 z-50 hidden group-hover:block w-56 bg-white border border-gray-200 rounded shadow-xl p-3 text-xs">
                                                                                     <div className="flex justify-between mb-1 text-gray-600"><span>Unit Cost</span><span className="font-medium text-gray-800">₱{fmt(item.unitCost)}</span></div>
                                                                                     <div className="flex justify-between mb-2 text-gray-600"><span>Quantity</span><span className="font-medium text-gray-800">×{Number(item.qty).toLocaleString()}</span></div>
-                                                                                    <div className="flex justify-between border-t border-gray-100 pt-2 font-bold text-blue-800"><span>Total</span><span>₱{fmt(item.itemTotal)}</span></div>
+                                                                                    <div className="flex justify-between border-t border-gray-100 pt-2 font-bold text-orange-800"><span>Total</span><span>₱{fmt(item.itemTotal)}</span></div>
                                                                                 </div>
                                                                             </td>
                                                                         </tr>
                                                                     ))}
                                                                 </tbody>
                                                                 <tfoot>
-                                                                    <tr className="border-t-2 border-blue-300 bg-blue-100">
-                                                                        <td colSpan={5} className="py-2 text-xs font-semibold text-blue-700 uppercase tracking-wide">Totals</td>
-                                                                        <td className="py-2 text-right text-sm font-bold text-blue-900 relative group">
+                                                                    <tr className="border-t-2 border-orange-300 bg-orange-100">
+                                                                        <td colSpan={5} className="py-2 text-xs font-semibold text-orange-700 uppercase tracking-wide">Totals</td>
+                                                                        <td className="py-2 text-right text-sm font-bold text-orange-900 relative group">
                                                                             <span className="cursor-default underline decoration-dashed underline-offset-2">₱{fmt(grandTotal)}</span>
-                                                                            <div className="absolute right-0 bottom-full mb-1 z-50 hidden group-hover:block w-56 bg-white border border-gray-200 rounded-lg shadow-xl p-3 text-xs">
-                                                                                <div className="flex justify-between border-t border-gray-100 pt-2 font-bold text-blue-800"><span>Grand Total (Unit Cost × Qty)</span><span>₱{fmt(grandTotal)}</span></div>
+                                                                            <div className="absolute right-0 bottom-full mb-1 z-50 hidden group-hover:block w-56 bg-white border border-gray-200 rounded shadow-xl p-3 text-xs">
+                                                                                <div className="flex justify-between border-t border-gray-100 pt-2 font-bold text-orange-800"><span>Grand Total (Unit Cost × Qty)</span><span>₱{fmt(grandTotal)}</span></div>
                                                                             </div>
                                                                         </td>
                                                                     </tr>
@@ -1429,8 +1429,8 @@ const InvoicingProfile = ({ onBack }) => {
                         <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl z-10 print:hidden">
                             <h2 className="text-xl font-bold text-gray-900">Invoice Report</h2>
                             <div className="flex gap-3">
-                                <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">🖨️ Print</button>
-                                <button onClick={() => setReceiptProfile(null)} className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-lg transition"><X size={24} /></button>
+                                <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition text-sm font-medium">🖨️ Print</button>
+                                <button onClick={() => setReceiptProfile(null)} className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded transition"><X size={24} /></button>
                             </div>
                         </div>
                         <div className="p-8 text-sm text-black" id="invoice-report">

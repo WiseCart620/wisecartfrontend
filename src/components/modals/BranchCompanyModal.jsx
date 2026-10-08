@@ -306,7 +306,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition"
+            className="p-2 hover:bg-gray-100 rounded transition"
           >
             <X size={20} />
           </button>
@@ -331,7 +331,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
                     value={formData.branchCode}
                     onChange={handleInputChange}
                     required={companyMode !== 'edit-company-only'}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     placeholder="Enter branch code"
                   />
                 </div>
@@ -346,7 +346,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
                     value={formData.branchName}
                     onChange={handleInputChange}
                     required={companyMode !== 'edit-company-only'}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent uppercase"
                     placeholder="ENTER BRANCH NAME"
                   />
                   <p className="text-xs text-gray-500 mt-1">Branch name will be auto-capitalized</p>
@@ -362,7 +362,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
                     value={formData.branchAddress}
                     onChange={handleInputChange}
                     required={companyMode !== 'edit-company-only'}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     placeholder="Enter street address"
                   />
                 </div>
@@ -377,7 +377,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
                     value={formData.branchCity}
                     onChange={handleInputChange}
                     required={companyMode !== 'edit-company-only'}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     placeholder="Enter city"
                   />
                 </div>
@@ -392,7 +392,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
                     value={formData.branchProvince}
                     onChange={handleInputChange}
                     required={companyMode !== 'edit-company-only'}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     placeholder="Enter province"
                   />
                 </div>
@@ -407,7 +407,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
                     value={formData.area}
                     onChange={handleInputChange}
                     required={companyMode !== 'edit-company-only'}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     placeholder="Enter area"
                   />
                 </div>
@@ -422,7 +422,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
                     onChange={handleInputChange}
                     required={companyMode !== 'edit-company-only'}
                     maxLength={17}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     placeholder="000-000-000-00000"
                   />
                   <p className="text-xs text-gray-500 mt-1">Format: 000-000-000-00000</p>
@@ -437,7 +437,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
               <Users size={20} />
               Company Information
               {companyMode === 'view' && (
-                <span className="text-sm font-normal text-blue-600">(Read-Only)</span>
+                <span className="text-sm font-normal text-orange-600">(Read-Only)</span>
               )}
             </h3>
 
@@ -451,7 +451,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
                     value="new"
                     checked={companyMode === 'new'}
                     onChange={() => handleCompanyModeChange('new')}
-                    className="w-4 h-4 text-blue-600"
+                    className="w-4 h-4 text-orange-600"
                   />
                   <span className="text-sm font-medium text-gray-700">Create New Company</span>
                 </label>
@@ -462,7 +462,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
                     value="existing"
                     checked={companyMode === 'existing'}
                     onChange={() => handleCompanyModeChange('existing')}
-                    className="w-4 h-4 text-blue-600"
+                    className="w-4 h-4 text-orange-600"
                   />
                   <span className="text-sm font-medium text-gray-700">Use Existing Company</span>
                 </label>
@@ -478,7 +478,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
                     name="editCompanyMode"
                     checked={companyMode === 'view'}
                     onChange={() => handleCompanyModeChange('view')}
-                    className="w-4 h-4 text-blue-600"
+                    className="w-4 h-4 text-orange-600"
                   />
                   <span className="text-sm font-medium text-gray-700">Keep Current Company</span>
                 </label>
@@ -488,7 +488,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
                     name="editCompanyMode"
                     checked={companyMode === 'transfer'}
                     onChange={() => handleCompanyModeChange('transfer')}
-                    className="w-4 h-4 text-blue-600"
+                    className="w-4 h-4 text-orange-600"
                   />
                   <span className="text-sm font-medium text-gray-700">Transfer to Different Company</span>
                 </label>
@@ -512,8 +512,8 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
             )}
 
             {companyMode === 'view' && editingData && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
+              <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded">
+                <p className="text-sm text-orange-800">
                   ℹ️ Editing branch only. Company information is displayed below (read-only).
                   To edit company details, go to the Companies tab.
                 </p>
@@ -521,7 +521,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
             )}
 
             {companyMode === 'edit-company-only' && editingData && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded">
                 <p className="text-sm text-green-800">
                   ✏️ You are editing company <strong>{editingData.company?.companyName}</strong>.
                   Only company information can be updated.
@@ -563,7 +563,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
                       onChange={handleInputChange}
                       required={companyMode !== 'view'}
                       disabled={companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId)}
-                      className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                      className={`w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent ${companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId) ? 'bg-gray-100 cursor-not-allowed' : ''
                         }`}
                       placeholder="Enter company name"
                     />
@@ -580,7 +580,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
                       onChange={handleInputChange}
                       disabled={companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId)}
                       maxLength={17}
-                      className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                      className={`w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent ${companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId) ? 'bg-gray-100 cursor-not-allowed' : ''
                         }`}
                       placeholder="000-000-000-00000"
                     />
@@ -598,7 +598,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
                       onChange={handleInputChange}
                       required={companyMode !== 'view'}
                       disabled={companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId)}
-                      className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                      className={`w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent ${companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId) ? 'bg-gray-100 cursor-not-allowed' : ''
                         }`}
                       placeholder="Enter company address"
                     />
@@ -615,7 +615,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
                       onChange={handleInputChange}
                       required={companyMode !== 'view'}
                       disabled={companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId)}
-                      className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                      className={`w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent ${companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId) ? 'bg-gray-100 cursor-not-allowed' : ''
                         }`}
                       placeholder="Enter city"
                     />
@@ -632,7 +632,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
                       onChange={handleInputChange}
                       required={companyMode !== 'view'}
                       disabled={companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId)}
-                      className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                      className={`w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent ${companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId) ? 'bg-gray-100 cursor-not-allowed' : ''
                         }`}
                       placeholder="Enter province"
                     />
@@ -648,7 +648,7 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
                       value={formData.companyTerms}
                       onChange={handleInputChange}
                       disabled={companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId)}
-                      className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                      className={`w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent ${companyMode === 'view' || (companyMode === 'existing' && formData.existingCompanyId) ? 'bg-gray-100 cursor-not-allowed' : ''
                         }`}
                       placeholder="e.g. NET 30, COD"
                     />
@@ -662,14 +662,14 @@ const BranchCompanyModal = ({ onClose, onSave, companies, branches, editingData 
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-white transition"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Saving...' : companyMode === 'edit-company-only'
                 ? 'Update Company'

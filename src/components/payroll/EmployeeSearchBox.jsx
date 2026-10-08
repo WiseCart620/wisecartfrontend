@@ -28,9 +28,9 @@ const EmployeeSearchBox = ({ names, search, selected, onSearch, onSelect, classN
         </button>
       )}
       {open && (
-        <ul className="absolute z-20 mt-1 w-full max-h-60 overflow-auto bg-white border border-gray-200 rounded-lg shadow-lg text-sm">
+        <ul className="absolute z-20 mt-1 w-full max-h-60 overflow-auto bg-white border border-gray-200 rounded shadow-lg text-sm">
           <li onMouseDown={(e) => { e.preventDefault(); clear(); setOpen(false); }}
-            className="px-3 py-2 cursor-pointer hover:bg-gray-50 text-gray-500">
+            className="px-3 py-2 cursor-pointer hover:bg-white text-gray-500">
             All employees
           </li>
           {options.length === 0 ? (

@@ -366,7 +366,7 @@ const DeliveryManagement = () => {
             {canCreate && (
               <button
                 onClick={() => handleOpenModal('create')}
-                className="flex items-center gap-2 px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm font-medium text-sm"
+                className="flex items-center gap-2 px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm font-medium text-sm"
               >
                 <Plus size={16} />
                 <span>New Delivery</span>
@@ -374,7 +374,7 @@ const DeliveryManagement = () => {
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2 py-1.5 shadow-sm">
+          <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded px-2 py-1.5 shadow-sm">
             <ArrowUpDown size={14} className="text-gray-500 flex-shrink-0" />
             <span className="text-xs text-gray-500 font-medium whitespace-nowrap hidden sm:inline">Sort by:</span>
             <select
@@ -456,14 +456,14 @@ const DeliveryManagement = () => {
           <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-2 sm:p-6">
             <div className="bg-white rounded-xl sm:rounded-2xl max-w-lg w-full shadow-2xl max-h-[95vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200 flex items-center gap-3">
-                <div className="p-2 bg-red-100 rounded-lg"><XCircle size={22} className="text-red-600" /></div>
+                <div className="p-2 bg-red-100 rounded"><XCircle size={22} className="text-red-600" /></div>
                 <div>
                   <h2 className="text-lg font-bold text-gray-900">Cancel Delivered Delivery</h2>
                   <p className="text-sm text-gray-500 mt-0.5">DR# {cancelModal.delivery.deliveryReceiptNumber}</p>
                 </div>
               </div>
               <div className="p-6 space-y-4">
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800">
                   <p className="font-semibold mb-1">⚠️ What this action does:</p>
                   <ul className="list-disc list-inside space-y-1">
                     <li>Marks the delivery as <strong>CANCELLED</strong></li>
@@ -482,7 +482,7 @@ const DeliveryManagement = () => {
                     onChange={(e) => setCancelModal(prev => ({ ...prev, remarks: e.target.value }))}
                     placeholder="Enter the reason why this delivered delivery is being cancelled..."
                     rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm resize-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm resize-none"
                     autoFocus
                   />
                 </div>
@@ -490,14 +490,14 @@ const DeliveryManagement = () => {
               <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
                 <button
                   onClick={() => setCancelModal({ show: false, delivery: null, remarks: '' })}
-                  className="px-5 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+                  className="px-5 py-2.5 border border-gray-300 rounded hover:bg-white transition font-medium text-sm"
                 >
                   Keep Delivery
                 </button>
                 <button
                   onClick={handleConfirmCancel}
                   disabled={!cancelModal.remarks.trim()}
-                  className="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-5 py-2.5 bg-red-600 text-white rounded hover:bg-red-700 transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   <XCircle size={16} />Confirm Cancellation
                 </button>

@@ -16,7 +16,7 @@ const HeaderIcon = ({ Icon, icon, label, align = 'center' }) => {
       {iconEl}
       <span
         className={`pointer-events-none absolute ${POS[align] || POS.center} z-50 flex items-center gap-1.5
-                   max-w-0 overflow-hidden whitespace-nowrap rounded-md border border-orange-200 bg-orange-50 px-0 py-1
+                   max-w-0 overflow-hidden whitespace-nowrap rounded border border-orange-200 bg-orange-50 px-0 py-1
                    text-xs font-medium normal-case text-orange-600 opacity-0 shadow
                    transition-all duration-300 ease-in-out
                    group-hover/hdr:max-w-[200px] group-hover/hdr:px-2 group-hover/hdr:opacity-100`}

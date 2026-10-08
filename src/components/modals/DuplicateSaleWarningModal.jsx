@@ -5,7 +5,7 @@ const fmt = (n) => Number(n || 0).toLocaleString('en-PH', { minimumFractionDigit
 
 const statusBadge = (status) => {
   if (status === 'INVOICED') return 'bg-green-100 text-green-700';
-  if (status === 'CONFIRMED') return 'bg-blue-100 text-blue-700';
+  if (status === 'CONFIRMED') return 'bg-orange-100 text-orange-700';
   return 'bg-yellow-100 text-yellow-700';
 };
 
@@ -27,7 +27,7 @@ const DuplicateSaleWarningModal = ({ matches, onCancel, onSubmitAnyway }) => {
 
         <div className="px-5 py-4 max-h-56 overflow-y-auto space-y-2">
           {matches.map((m) => (
-            <div key={m.saleId} className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5">
+            <div key={m.saleId} className="flex items-center justify-between bg-white border border-gray-200 rounded px-3 py-2.5">
               <div>
                 <div className="text-sm font-medium text-gray-800">SALE-{m.saleId}</div>
                 <div className="text-xs text-gray-500 mt-0.5">
@@ -44,16 +44,16 @@ const DuplicateSaleWarningModal = ({ matches, onCancel, onSubmitAnyway }) => {
           ))}
         </div>
 
-        <div className="px-5 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-2">
+        <div className="px-5 py-4 bg-white border-t border-gray-100 flex justify-end gap-2">
           <button
             onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-white transition"
+            className="px-4 py-2 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-white transition"
           >
             Cancel
           </button>
           <button
             onClick={onSubmitAnyway}
-            className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition shadow-sm"
+            className="px-4 py-2 bg-amber-600 text-white rounded text-sm font-medium hover:bg-amber-700 transition shadow-sm"
           >
             Submit anyway
           </button>

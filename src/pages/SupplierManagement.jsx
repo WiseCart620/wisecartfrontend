@@ -233,7 +233,7 @@ const SupplierManagement = () => {
                         placeholder="Search by name, contact person, or products/services..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
                     />
                 </div>
                 <button
@@ -242,7 +242,7 @@ const SupplierManagement = () => {
                         setShowModal(true);
                     }}
                     disabled={actionLoading}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <Plus size={20} />
                     Add Supplier
@@ -253,7 +253,7 @@ const SupplierManagement = () => {
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full">
-                        <thead className="bg-gray-50 border-b">
+                        <thead className="bg-white border-b">
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
@@ -275,11 +275,11 @@ const SupplierManagement = () => {
                                 </tr>
                             ) : (
                                 currentSuppliers.map((supplier) => (
-                                    <tr key={supplier.id} className="hover:bg-gray-50">
+                                    <tr key={supplier.id} className="hover:bg-white">
                                         <td className="px-6 py-4 font-medium text-gray-900">{supplier.name}</td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${supplier.type === 'MANUFACTURER'
-                                                ? 'bg-blue-100 text-blue-800'
+                                                ? 'bg-gray-100 text-gray-700'
                                                 : 'bg-purple-100 text-purple-800'
                                                 }`}>
                                                 {supplier.type}
@@ -302,14 +302,14 @@ const SupplierManagement = () => {
                                                 <button
                                                     onClick={() => handleEdit(supplier)}
                                                     disabled={actionLoading}
-                                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="p-2 text-orange-600 hover:bg-orange-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
                                                     <Edit2 size={18} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(supplier.id)}
                                                     disabled={actionLoading}
-                                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
                                                     <Trash2 size={18} />
                                                 </button>
@@ -347,7 +347,7 @@ const SupplierManagement = () => {
                             <button
                                 onClick={() => { setShowModal(false); resetForm(); }}
                                 disabled={actionLoading}
-                                className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="p-2 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <X size={20} />
                             </button>
@@ -371,7 +371,7 @@ const SupplierManagement = () => {
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                             required
                                             disabled={actionLoading}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                         />
                                     </div>
 
@@ -382,7 +382,7 @@ const SupplierManagement = () => {
                                             value={formData.tin}
                                             onChange={(e) => setFormData({ ...formData, tin: e.target.value })}
                                             disabled={actionLoading}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                         />
                                     </div>
 
@@ -395,7 +395,7 @@ const SupplierManagement = () => {
                                             onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                                             required
                                             disabled={actionLoading}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                         >
                                             <option value="MANUFACTURER">Manufacturer</option>
                                             <option value="FORWARDER">Forwarder</option>
@@ -414,7 +414,7 @@ const SupplierManagement = () => {
                                             onChange={(e) => setFormData({ ...formData, productServices: e.target.value })}
                                             disabled={actionLoading}
                                             rows="3"
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                             placeholder="Describe the products or services this supplier provides..."
                                         />
                                     </div>
@@ -435,7 +435,7 @@ const SupplierManagement = () => {
                                             value={formData.address}
                                             onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                                             disabled={actionLoading}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                         />
                                     </div>
 
@@ -446,7 +446,7 @@ const SupplierManagement = () => {
                                             value={formData.city}
                                             onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                                             disabled={actionLoading}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                         />
                                     </div>
 
@@ -457,7 +457,7 @@ const SupplierManagement = () => {
                                             value={formData.province}
                                             onChange={(e) => setFormData({ ...formData, province: e.target.value })}
                                             disabled={actionLoading}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                         />
                                     </div>
 
@@ -468,7 +468,7 @@ const SupplierManagement = () => {
                                             value={formData.country}
                                             onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                                             disabled={actionLoading}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                         />
                                     </div>
 
@@ -479,7 +479,7 @@ const SupplierManagement = () => {
                                             value={formData.postalCode}
                                             onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
                                             disabled={actionLoading}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                         />
                                     </div>
                                 </div>
@@ -501,7 +501,7 @@ const SupplierManagement = () => {
                                             value={formData.contactPerson}
                                             onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
                                             disabled={actionLoading}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                             placeholder="Enter contact person name"
                                         />
                                     </div>
@@ -515,7 +515,7 @@ const SupplierManagement = () => {
                                             value={formData.contactNo}
                                             onChange={(e) => setFormData({ ...formData, contactNo: e.target.value })}
                                             disabled={actionLoading}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                             placeholder="Enter contact number"
                                         />
                                     </div>
@@ -529,7 +529,7 @@ const SupplierManagement = () => {
                                             value={formData.email}
                                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                             disabled={actionLoading}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                             placeholder="Enter email address"
                                         />
                                     </div>
@@ -543,7 +543,7 @@ const SupplierManagement = () => {
                                             value={formData.website}
                                             onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                                             disabled={actionLoading}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                             placeholder="Enter website URL"
                                         />
                                     </div>
@@ -557,7 +557,7 @@ const SupplierManagement = () => {
                                             value={formData.wechat}
                                             onChange={(e) => setFormData({ ...formData, wechat: e.target.value })}
                                             disabled={actionLoading}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                             placeholder="Enter WeChat ID"
                                         />
                                     </div>
@@ -571,7 +571,7 @@ const SupplierManagement = () => {
                                             value={formData.whatsapp}
                                             onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
                                             disabled={actionLoading}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                             placeholder="Enter WhatsApp number"
                                         />
                                     </div>
@@ -585,7 +585,7 @@ const SupplierManagement = () => {
                                             value={formData.others}
                                             onChange={(e) => setFormData({ ...formData, others: e.target.value })}
                                             disabled={actionLoading}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                             placeholder="Other contact details"
                                         />
                                     </div>
@@ -607,7 +607,7 @@ const SupplierManagement = () => {
                                         onChange={(e) => setFormData({ ...formData, modeOfPayment: e.target.value })}
                                         required
                                         disabled={actionLoading}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                     >
                                         <option value="">Select payment method</option>
                                         <option value="TELEGRAPHIC_TRANSFER">Telegraphic Transfer (T/T)</option>
@@ -620,7 +620,7 @@ const SupplierManagement = () => {
 
                                 {/* Telegraphic Transfer */}
                                 {formData.modeOfPayment === 'TELEGRAPHIC_TRANSFER' && (
-                                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                    <div className="p-4 bg-gray-50 rounded border border-gray-200">
                                         <h4 className="font-medium text-gray-900 mb-3">Telegraphic Transfer Details</h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
@@ -630,7 +630,7 @@ const SupplierManagement = () => {
                                                     value={formData.bankName}
                                                     onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
                                                     disabled={actionLoading}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                                 />
                                             </div>
 
@@ -641,7 +641,7 @@ const SupplierManagement = () => {
                                                     value={formData.bankCountry}
                                                     onChange={(e) => setFormData({ ...formData, bankCountry: e.target.value })}
                                                     disabled={actionLoading}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                                 />
                                             </div>
 
@@ -652,7 +652,7 @@ const SupplierManagement = () => {
                                                     value={formData.bankAddress}
                                                     onChange={(e) => setFormData({ ...formData, bankAddress: e.target.value })}
                                                     disabled={actionLoading}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                                 />
                                             </div>
 
@@ -663,7 +663,7 @@ const SupplierManagement = () => {
                                                     value={formData.accountNumber}
                                                     onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
                                                     disabled={actionLoading}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                                 />
                                             </div>
 
@@ -674,7 +674,7 @@ const SupplierManagement = () => {
                                                     value={formData.swiftCode}
                                                     onChange={(e) => setFormData({ ...formData, swiftCode: e.target.value })}
                                                     disabled={actionLoading}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                                 />
                                             </div>
 
@@ -685,7 +685,7 @@ const SupplierManagement = () => {
                                                     value={formData.beneficiaryName}
                                                     onChange={(e) => setFormData({ ...formData, beneficiaryName: e.target.value })}
                                                     disabled={actionLoading}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                                 />
                                             </div>
 
@@ -696,7 +696,7 @@ const SupplierManagement = () => {
                                                     value={formData.beneficiaryAddress}
                                                     onChange={(e) => setFormData({ ...formData, beneficiaryAddress: e.target.value })}
                                                     disabled={actionLoading}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                                 />
                                             </div>
                                         </div>
@@ -705,7 +705,7 @@ const SupplierManagement = () => {
 
                                 {/* Alipay */}
                                 {formData.modeOfPayment === 'ALIPAY' && (
-                                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                    <div className="p-4 bg-orange-50 rounded border border-orange-200">
                                         <h4 className="font-medium text-gray-900 mb-3">Alipay Details</h4>
                                         <div className="space-y-4">
                                             <div>
@@ -718,7 +718,7 @@ const SupplierManagement = () => {
                                                     onChange={(e) => setFormData({ ...formData, alipayAccount: e.target.value })}
                                                     required={formData.modeOfPayment === 'ALIPAY'}
                                                     disabled={actionLoading}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                                     placeholder="Enter Alipay account (email or phone)"
                                                 />
                                             </div>
@@ -729,7 +729,7 @@ const SupplierManagement = () => {
                                                     onChange={(e) => setFormData({ ...formData, otherPaymentDetails: e.target.value })}
                                                     rows="2"
                                                     disabled={actionLoading}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                                     placeholder="Enter any additional details..."
                                                 />
                                             </div>
@@ -739,7 +739,7 @@ const SupplierManagement = () => {
 
                                 {/* PayPal */}
                                 {formData.modeOfPayment === 'PAYPAL' && (
-                                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                    <div className="p-4 bg-orange-50 rounded border border-orange-200">
                                         <h4 className="font-medium text-gray-900 mb-3">PayPal Details</h4>
                                         <div className="space-y-4">
                                             <div>
@@ -752,7 +752,7 @@ const SupplierManagement = () => {
                                                     onChange={(e) => setFormData({ ...formData, paypalAccount: e.target.value })}
                                                     required={formData.modeOfPayment === 'PAYPAL'}
                                                     disabled={actionLoading}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                                     placeholder="Enter PayPal email address"
                                                 />
                                             </div>
@@ -763,7 +763,7 @@ const SupplierManagement = () => {
                                                     onChange={(e) => setFormData({ ...formData, otherPaymentDetails: e.target.value })}
                                                     rows="2"
                                                     disabled={actionLoading}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                                     placeholder="Enter any additional details..."
                                                 />
                                             </div>
@@ -773,7 +773,7 @@ const SupplierManagement = () => {
 
                                 {/* Weixin/WeChat Pay */}
                                 {formData.modeOfPayment === 'WEIXIN' && (
-                                    <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                                    <div className="p-4 bg-green-50 rounded border border-green-200">
                                         <h4 className="font-medium text-gray-900 mb-3">Weixin/WeChat Pay Details</h4>
                                         <div className="space-y-4">
                                             <div>
@@ -786,7 +786,7 @@ const SupplierManagement = () => {
                                                     onChange={(e) => setFormData({ ...formData, weixinAccount: e.target.value })}
                                                     required={formData.modeOfPayment === 'WEIXIN'}
                                                     disabled={actionLoading}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                                     placeholder="Enter WeChat ID or phone number"
                                                 />
                                             </div>
@@ -797,7 +797,7 @@ const SupplierManagement = () => {
                                                     onChange={(e) => setFormData({ ...formData, otherPaymentDetails: e.target.value })}
                                                     rows="2"
                                                     disabled={actionLoading}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                                     placeholder="Enter any additional details..."
                                                 />
                                             </div>
@@ -807,14 +807,14 @@ const SupplierManagement = () => {
 
                                 {/* Other Payment Method */}
                                 {formData.modeOfPayment === 'OTHER' && (
-                                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                    <div className="p-4 bg-white rounded border border-gray-200">
                                         <h4 className="font-medium text-gray-900 mb-3">Other Payment Details</h4>
                                         <textarea
                                             value={formData.otherPaymentDetails}
                                             onChange={(e) => setFormData({ ...formData, otherPaymentDetails: e.target.value })}
                                             rows="4"
                                             disabled={actionLoading}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                                             placeholder="Enter payment details..."
                                         />
                                     </div>
@@ -827,14 +827,14 @@ const SupplierManagement = () => {
                                     type="button"
                                     onClick={() => { setShowModal(false); resetForm(); }}
                                     disabled={actionLoading}
-                                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={actionLoading}
-                                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex-1 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {editingSupplier ? 'Update Supplier' : 'Create Supplier'}
                                 </button>

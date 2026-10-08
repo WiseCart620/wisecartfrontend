@@ -58,21 +58,21 @@ const DeliveryReceiptModal = ({
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50"
             >
               <Check size={18} />
               Save Details
             </button>
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition"
             >
               <Printer size={18} />
               Print Receipt
             </button>
             <button
               onClick={onClose}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition"
             >
               <X size={24} />
             </button>
@@ -104,7 +104,7 @@ const DeliveryReceiptModal = ({
                     type="text"
                     value={receipt.deliveryReceiptNumberDisplay || receipt.deliveryReceiptNumber || ''}
                     onChange={(e) => setReceipt(prev => ({ ...prev, deliveryReceiptNumberDisplay: e.target.value }))}
-                    className="w-full bg-transparent border-none focus:outline-none focus:border-blue-500 text-lg text-center"
+                    className="w-full bg-transparent border-none focus:outline-none focus:border-orange-500 text-lg text-center"
                     placeholder=""
                   />
                 </div>
@@ -158,7 +158,7 @@ const DeliveryReceiptModal = ({
                     value={receipt.businessStyle || receipt.companyName || ''}
                     onChange={(e) => setReceipt(prev => ({ ...prev, businessStyle: e.target.value }))}
                     rows={1}
-                    className="text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-blue-500 bg-transparent break-words resize-none overflow-hidden"
+                    className="text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-orange-500 bg-transparent break-words resize-none overflow-hidden"
                     style={{ minHeight: '1.5rem' }}
                     onInput={(e) => {
                       e.target.style.height = 'auto';
@@ -182,7 +182,7 @@ const DeliveryReceiptModal = ({
                     type="text"
                     value={receipt.termsOfPayment || ''}
                     onChange={(e) => setReceipt(prev => ({ ...prev, termsOfPayment: e.target.value }))}
-                    className="text-black-900 w-full border-b border-gray-300 text-sm px-1 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
+                    className="text-black-900 w-full border-b border-gray-300 text-sm px-1 focus:outline-none focus:border-orange-500 bg-transparent print:hidden"
                   />
                   <div className="hidden print:block text-black-900 text-sm px-1 border-b border-gray-900 min-h-[1.5rem]">
                     {receipt.termsOfPayment || '\u00A0'}
@@ -198,7 +198,7 @@ const DeliveryReceiptModal = ({
                     type="text"
                     value={receipt.purchaseOrderNumber || ''}
                     onChange={(e) => setReceipt(prev => ({ ...prev, purchaseOrderNumber: e.target.value }))}
-                    className="text-black-900 w-full border-b border-gray-300 text-sm px-1 focus:outline-none focus:border-blue-500 bg-transparent print:hidden"
+                    className="text-black-900 w-full border-b border-gray-300 text-sm px-1 focus:outline-none focus:border-orange-500 bg-transparent print:hidden"
                   />
                   <div
                     className="hidden print:block text-black-900 text-sm px-1 min-h-[1.5rem]"
@@ -283,7 +283,7 @@ const DeliveryReceiptModal = ({
                               return { ...prev, items: newItems };
                             });
                           }}
-                          className="w-full bg-transparent border-b border-black-300 text-[12px] px-0 py-0.5 focus:outline-none focus:border-blue-500 print:hidden"
+                          className="w-full bg-transparent border-b border-black-300 text-[12px] px-0 py-0.5 focus:outline-none focus:border-orange-500 print:hidden"
                         />
                         <span className="hidden print:inline">{item.extra || ''}</span>
                       </td>
@@ -330,7 +330,7 @@ const DeliveryReceiptModal = ({
                       type="text"
                       value={receipt.preparedBy || ''}
                       onChange={(e) => setReceipt(prev => ({ ...prev, preparedBy: e.target.value }))}
-                      className="prepared-by-input-el text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-blue-500 bg-transparent"
+                      className="prepared-by-input-el text-black-900 text-sm w-full border-b border-gray-300 px-2 focus:outline-none focus:border-orange-500 bg-transparent"
                     />
                     <div
                       ref={preparedByDivRef}
@@ -385,14 +385,14 @@ const DeliveryReceiptModal = ({
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center gap-3 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium shadow-md disabled:opacity-50"
+            className="flex items-center gap-3 px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700 transition font-medium shadow-md disabled:opacity-50"
           >
             <Check size={20} />
             <span>Save Changes</span>
           </button>
           <button
             onClick={onClose}
-            className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+            className="px-6 py-3 border border-gray-300 rounded hover:bg-white transition font-medium"
           >
             Close
           </button>

@@ -146,17 +146,17 @@ const SalesSummaryModal = ({ onClose, filterData, statusFilter, searchTerm, comp
           <div className="flex gap-2">
             <button
               onClick={handleExcel}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition"
             >
               <FileText size={14} /> Excel
             </button>
             <button
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 transition"
             >
               <Printer size={14} /> Print
             </button>
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100">
+            <button onClick={onClose} className="p-1.5 rounded hover:bg-gray-100">
               <X size={16} />
             </button>
           </div>

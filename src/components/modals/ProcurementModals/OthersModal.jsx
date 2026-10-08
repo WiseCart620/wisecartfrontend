@@ -128,12 +128,12 @@ const OthersModal = ({ purchaseOrder, onClose, onSuccess }) => {
             <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
                     <h2 className="text-lg font-bold text-gray-900">Other Charges — {purchaseOrder?.controlNumber}</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded"><X size={20} /></button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     {items.map((item, idx) => (
-                        <div key={item._key} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                        <div key={item._key} className="border border-gray-200 rounded p-4 space-y-3">
                             <div className="flex items-center justify-between">
                                 <span className="text-sm font-semibold text-gray-600">#{idx + 1}</span>
                                 <button type="button" onClick={() => removeItem(item._key)} className="p-1 text-red-500 hover:bg-red-50 rounded">
@@ -147,7 +147,7 @@ const OthersModal = ({ purchaseOrder, onClose, onSuccess }) => {
                                     <select
                                         value={item.particulars}
                                         onChange={e => updateItem(item._key, 'particulars', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500"
                                         required
                                     >
                                         <option value="">Select...</option>
@@ -162,7 +162,7 @@ const OthersModal = ({ purchaseOrder, onClose, onSuccess }) => {
                                         type="number"
                                         value={item.cost}
                                         onChange={e => updateItem(item._key, 'cost', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500"
                                         placeholder="0.00"
                                         min="0"
                                         step="0.01"
@@ -177,7 +177,7 @@ const OthersModal = ({ purchaseOrder, onClose, onSuccess }) => {
                                     type="date"
                                     value={item.date || ''}
                                     onChange={e => updateItem(item._key, 'date', e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500"
                                 />
                             </div>
 
@@ -188,7 +188,7 @@ const OthersModal = ({ purchaseOrder, onClose, onSuccess }) => {
                                         type="text"
                                         value={item.customLabel}
                                         onChange={e => updateItem(item._key, 'customLabel', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
                                         placeholder="Describe this charge..."
                                         required
                                     />
@@ -210,17 +210,17 @@ const OthersModal = ({ purchaseOrder, onClose, onSuccess }) => {
                                                     accept="image/*,.pdf,.doc,.docx"
                                                     onChange={e => { if (e.target.files[0]) handleFileUpload(item._key, dk, e.target.files[0]); }}
                                                     disabled={uploadingFiles[`${item._key}_${dk}`]}
-                                                    className="text-xs text-gray-600 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-blue-50 file:text-blue-700"
+                                                    className="text-xs text-gray-600 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-orange-50 file:text-orange-700"
                                                 />
                                                 {uploadingFiles[`${item._key}_${dk}`] && (
-                                                    <span className="text-xs text-blue-600"><Loader2 size={10} className="inline animate-spin" /> Uploading...</span>
+                                                    <span className="text-xs text-orange-600"><Loader2 size={10} className="inline animate-spin" /> Uploading...</span>
                                                 )}
                                             </div>
                                         ) : (
                                             <div className="flex items-center gap-1 bg-green-50 px-2 py-1 rounded border border-green-200">
                                                 <FileText size={12} className="text-green-600" />
                                                 <span className="text-xs text-gray-700 flex-1 truncate">{label}</span>
-                                                <a href={getFileUrl(item[field])} target="_blank" rel="noopener noreferrer" className="p-0.5 text-blue-600 hover:bg-blue-100 rounded"><Eye size={12} /></a>
+                                                <a href={getFileUrl(item[field])} target="_blank" rel="noopener noreferrer" className="p-0.5 text-orange-600 hover:bg-orange-100 rounded"><Eye size={12} /></a>
                                                 <a href={getFileDownloadUrl(item[field])} download className="p-0.5 text-green-600 hover:bg-green-100 rounded"><Download size={12} /></a>
                                                 <button type="button" onClick={() => updateItem(item._key, field, null)} className="p-0.5 text-red-600 hover:bg-red-100 rounded"><X size={12} /></button>
                                             </div>
@@ -234,13 +234,13 @@ const OthersModal = ({ purchaseOrder, onClose, onSuccess }) => {
                     <button
                         type="button"
                         onClick={addItem}
-                        className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 flex items-center justify-center gap-2"
+                        className="w-full py-2 border-2 border-dashed border-gray-300 rounded text-sm text-gray-500 hover:border-orange-400 hover:text-orange-600 flex items-center justify-center gap-2"
                     >
                         <Plus size={16} /> Add Charge
                     </button>
 
                     {/* Total */}
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                    <div className="flex items-center justify-between p-3 bg-white rounded border">
                         <span className="text-sm font-semibold text-gray-700">Total Other Charges</span>
                         <span className="text-lg font-bold text-gray-900">
                             ₱{total.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
@@ -248,8 +248,8 @@ const OthersModal = ({ purchaseOrder, onClose, onSuccess }) => {
                     </div>
 
                     <div className="flex gap-3 pt-2 border-t">
-                        <button type="button" onClick={onClose} disabled={submitting} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50">Cancel</button>
-                        <button type="submit" disabled={submitting} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 disabled:opacity-50">
+                        <button type="button" onClick={onClose} disabled={submitting} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-white disabled:opacity-50">Cancel</button>
+                        <button type="submit" disabled={submitting} className="flex-1 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 flex items-center justify-center gap-2 disabled:opacity-50">
                             {submitting ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : 'Save Charges'}
                         </button>
                     </div>

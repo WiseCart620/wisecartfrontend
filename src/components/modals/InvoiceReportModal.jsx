@@ -98,11 +98,11 @@ const InvoiceReportModal = ({
                 const newAdjustments = [...(invoiceReport.adjustments || []), { description: '', quantity: 1, unitCost: 0, amount: 0 }];
                 setInvoiceReport({ ...invoiceReport, adjustments: newAdjustments });
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition"
             >
               <Plus size={18} /> Add Adjustment
             </button>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg px-3 py-2 bg-white">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 border border-gray-300 rounded px-3 py-2 bg-white">
               <input
                 type="checkbox"
                 checked={includeWithholdingTax}
@@ -112,7 +112,7 @@ const InvoiceReportModal = ({
             </label>
             <button
               onClick={() => setInvoiceReport(null)}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition"
             >
               <X size={24} />
             </button>
@@ -242,7 +242,7 @@ const InvoiceReportModal = ({
                           setInvoiceReport({ ...invoiceReport, adjustments: newAdj });
                         }}
                         placeholder="Adjustment description..."
-                        className="w-full text-sm border-0 focus:ring-1 focus:ring-blue-500 rounded px-2 py-1"
+                        className="w-full text-sm border-0 focus:ring-1 focus:ring-orange-500 rounded px-2 py-1"
                       />
                     </td>
                     <td className="py-1 px-2">
@@ -255,7 +255,7 @@ const InvoiceReportModal = ({
                           newAdj[i].amount = newAdj[i].quantity * newAdj[i].unitCost;
                           setInvoiceReport({ ...invoiceReport, adjustments: newAdj });
                         }}
-                        className="w-full text-sm text-right border-0 focus:ring-1 focus:ring-blue-500 rounded px-2 py-1"
+                        className="w-full text-sm text-right border-0 focus:ring-1 focus:ring-orange-500 rounded px-2 py-1"
                       />
                     </td>
                     <td className="py-1 px-2">
@@ -268,7 +268,7 @@ const InvoiceReportModal = ({
                           newAdj[i].amount = newAdj[i].quantity * newAdj[i].unitCost;
                           setInvoiceReport({ ...invoiceReport, adjustments: newAdj });
                         }}
-                        className="w-full text-sm text-right border-0 focus:ring-1 focus:ring-blue-500 rounded px-2 py-1"
+                        className="w-full text-sm text-right border-0 focus:ring-1 focus:ring-orange-500 rounded px-2 py-1"
                       />
                     </td>
                     <td className="py-2 px-4 text-right">
@@ -436,21 +436,21 @@ const InvoiceReportModal = ({
               onGenerate();
             }}
             disabled={!!invoiceNumberError}
-            className={`flex items-center gap-2 px-5 py-3 rounded-lg transition font-medium shadow-md ${!invoiceNumber.trim() || invoiceNumberError ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'
+            className={`flex items-center gap-2 px-5 py-3 rounded transition font-medium shadow-md ${!invoiceNumber.trim() || invoiceNumberError ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'
               }`}
           >
             Generate
           </button>
           <button
             onClick={handlePrint}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg transition font-medium shadow-md ${!invoiceNumber.trim() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'
+            className={`flex items-center gap-2 px-6 py-3 rounded transition font-medium shadow-md ${!invoiceNumber.trim() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-orange-600 text-white hover:bg-orange-700'
               }`}
           >
             <Printer size={20} /> Print Report
           </button>
           <button
             onClick={() => setInvoiceReport(null)}
-            className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+            className="px-6 py-3 border border-gray-300 rounded hover:bg-white transition font-medium"
           >
             Close
           </button>

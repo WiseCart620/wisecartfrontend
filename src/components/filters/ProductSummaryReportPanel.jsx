@@ -32,7 +32,7 @@ const ProductSummaryReportPanel = ({
     const canGenerate = filters.warehouseId || hasCompanyFilter;
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 px-3 py-2 mb-2">
+        <div className="py-2 mb-2">
             <div className="flex flex-wrap items-end gap-2">
                 {canSeeFilter(user, 'warehouse_inventory', 'date') && (
                     <>
@@ -42,7 +42,7 @@ const ProductSummaryReportPanel = ({
                                 type="date"
                                 value={filters.dateFrom}
                                 onChange={(e) => updateFilter('dateFrom', e.target.value)}
-                                className="w-full h-8 px-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                                className="w-full h-8 px-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
                             />
                         </div>
                         <div className="w-[150px]">
@@ -51,7 +51,7 @@ const ProductSummaryReportPanel = ({
                                 type="date"
                                 value={filters.dateTo}
                                 onChange={(e) => updateFilter('dateTo', e.target.value)}
-                                className="w-full h-8 px-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                                className="w-full h-8 px-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
                             />
                         </div>
                     </>
@@ -64,7 +64,7 @@ const ProductSummaryReportPanel = ({
                             value={filters.warehouseId}
                             onChange={(e) => updateFilter('warehouseId', e.target.value)}
                             disabled={hasCompanyFilter}
-                            className={`w-full h-8 px-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 ${hasCompanyFilter ? 'bg-gray-100 cursor-not-allowed text-gray-400' : 'bg-white'}`}
+                            className={`w-full h-8 px-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 ${hasCompanyFilter ? 'bg-gray-100 cursor-not-allowed text-gray-400' : 'bg-white'}`}
                         >
                             <option value="">All Warehouses</option>
                             {warehouses.map(w => (
@@ -126,7 +126,7 @@ const ProductSummaryReportPanel = ({
                     <button
                         onClick={onGenerate}
                         disabled={!canGenerate || generating}
-                        className="h-8 px-4 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                        className="h-8 px-4 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                     >
                         {generating ? 'Generating...' : 'Generate Report'}
                     </button>

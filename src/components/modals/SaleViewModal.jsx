@@ -42,7 +42,7 @@ const SaleViewModal = ({ sale, products, productPrices, onClose, productFilters 
       <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
         <div className="p-8 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl">
           <h2 className="text-2xl font-bold text-gray-900">Sale Details</h2>
-          <button onClick={onClose} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition">
+          <button onClick={onClose} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition">
             <X size={24} />
           </button>
         </div>
@@ -54,17 +54,17 @@ const SaleViewModal = ({ sale, products, productPrices, onClose, productFilters 
               { label: 'Company', primary: sale.company.companyName, secondary: `TIN: ${sale.tin || 'N/A'}` },
               { label: 'Period', primary: `${months[sale.month - 1]} ${sale.year}` },
             ].map(({ label, primary, secondary }) => (
-              <div key={label} className="p-4 bg-gray-50 rounded-lg">
+              <div key={label} className="p-4 bg-white rounded">
                 <h3 className="font-semibold text-gray-700 mb-2">{label}</h3>
                 <p className="text-gray-900 text-lg">{primary}</p>
                 {secondary && <p className="text-gray-500">{secondary}</p>}
               </div>
             ))}
 
-            <div className="p-4 bg-gray-50 rounded-lg">
+            <div className="p-4 bg-white rounded">
               <h3 className="font-semibold text-gray-700 mb-2">Status</h3>
               <span className={`px-4 py-2 inline-flex text-sm leading-5 font-semibold rounded-full ${sale.status === 'INVOICED' ? 'bg-green-100 text-green-800' :
-                sale.status === 'CONFIRMED' ? 'bg-blue-100 text-blue-800' :
+                sale.status === 'CONFIRMED' ? 'bg-orange-100 text-orange-800' :
                   'bg-yellow-100 text-yellow-800'
                 }`}>
                 {sale.status}
@@ -77,7 +77,7 @@ const SaleViewModal = ({ sale, products, productPrices, onClose, productFilters 
               )}
             </div>
 
-            <div className="p-4 bg-gray-50 rounded-lg">
+            <div className="p-4 bg-white rounded">
               <h3 className="font-semibold text-gray-700 mb-2">Encoded By</h3>
               <p className="text-gray-900 text-lg">{sale.createdBy || sale.generatedBy || 'System'}</p>
               <p className="text-xs text-gray-500 mt-1">Created: {formatPHDateTime(sale.createdAt)}</p>
@@ -87,9 +87,9 @@ const SaleViewModal = ({ sale, products, productPrices, onClose, productFilters 
           <h3 className="font-semibold text-gray-700 mb-4 text-lg">
             Items{hasActiveProductFilter ? ` (filtered: ${displayItems.length} of ${sale.items?.length || 0})` : ''}
           </h3>
-          <div className="overflow-x-auto rounded-lg border border-gray-200">
+          <div className="overflow-x-auto rounded border border-gray-200">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-white">
                 <tr>
                   {['#', 'Product', 'SKU', 'UPC', 'Quantity', 'Unit Price', 'Amount'].map(h => (
                     <th key={h} className={`px-6 py-4 text-sm font-medium text-gray-700 ${h === '#' ? 'text-center' : h === 'Quantity' || h === 'Unit Price' || h === 'Amount' ? 'text-right' : 'text-left'}`}>{h}</th>
@@ -103,7 +103,7 @@ const SaleViewModal = ({ sale, products, productPrices, onClose, productFilters 
                     const hasCustomPrice = originalPrice != null && Number(originalPrice) !== Number(item.unitPrice);
 
                     return (
-                      <tr key={item.id || i} className="hover:bg-gray-50 transition">
+                      <tr key={item.id || i} className="hover:bg-white transition">
                         <td className="px-6 py-4 text-center text-sm text-gray-400 font-medium">{i + 1}</td>
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">
                           {item.product.productName}
@@ -124,7 +124,7 @@ const SaleViewModal = ({ sale, products, productPrices, onClose, productFilters 
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-right font-bold text-blue-600">{formatCurrency(item.amount)}</td>
+                        <td className="px-6 py-4 text-sm text-right font-bold text-orange-600">{formatCurrency(item.amount)}</td>
                       </tr>
                     );
                   })
@@ -141,7 +141,7 @@ const SaleViewModal = ({ sale, products, productPrices, onClose, productFilters 
         </div>
 
         <div className="p-8 border-t border-gray-200 flex justify-end">
-          <button onClick={onClose} className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">Close</button>
+          <button onClick={onClose} className="px-6 py-3 border border-gray-300 rounded hover:bg-white transition font-medium">Close</button>
         </div>
       </div>
     </div>

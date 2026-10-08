@@ -97,7 +97,7 @@ const TransactionCleanupPanel = ({ onCleaned, bare = false }) => {
     };
 
     return (
-        <div className={bare ? 'h-full' : 'border border-slate-200 rounded-lg p-5 bg-white h-full'}>
+        <div className={bare ? 'h-full' : 'border border-slate-200 rounded p-5 bg-white h-full'}>
             <div className="mb-6 pb-4 border-b border-slate-100">
                 <h3 className="text-sm font-semibold text-gray-900">Transaction cleanup</h3>
                 <p className="text-xs text-gray-500 mt-0.5">
@@ -106,7 +106,7 @@ const TransactionCleanupPanel = ({ onCleaned, bare = false }) => {
             </div>
 
             {/* Step 1: Scan + Fix duplicates */}
-            <div className="border border-gray-200 rounded-lg p-3">
+            <div className="border border-gray-200 rounded p-3">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div>
                         <p className="text-sm font-medium text-gray-800">1. Duplicate sale transactions</p>
@@ -115,7 +115,7 @@ const TransactionCleanupPanel = ({ onCleaned, bare = false }) => {
                     <button
                         onClick={handleScan}
                         disabled={scanning}
-                        className="flex items-center gap-2 px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm border border-gray-300 rounded text-gray-700 hover:bg-white disabled:opacity-50"
                     >
                         <Search size={14} className={scanning ? 'animate-pulse' : ''} />
                         {scanning ? 'Scanning...' : 'Scan'}
@@ -134,7 +134,7 @@ const TransactionCleanupPanel = ({ onCleaned, bare = false }) => {
                                 </div>
                                 <div className="max-h-48 overflow-y-auto border border-gray-100 rounded">
                                     <table className="w-full text-xs">
-                                        <thead className="bg-gray-50 sticky top-0">
+                                        <thead className="bg-white sticky top-0">
                                             <tr>
                                                 <th className="text-left px-2 py-1 text-gray-500">Reference</th>
                                                 <th className="text-left px-2 py-1 text-gray-500">Product</th>
@@ -157,7 +157,7 @@ const TransactionCleanupPanel = ({ onCleaned, bare = false }) => {
                                 <button
                                     onClick={handleFix}
                                     disabled={fixing}
-                                    className="mt-3 flex items-center gap-2 px-3 py-1.5 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50"
+                                    className="mt-3 flex items-center gap-2 px-3 py-1.5 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-50"
                                 >
                                     {fixing ? 'Fixing...' : `Fix ${dryRunResult.rowsToRetire} duplicate row(s)`}
                                 </button>
@@ -173,7 +173,7 @@ const TransactionCleanupPanel = ({ onCleaned, bare = false }) => {
             </div>
 
             {/* Step 2: Purge soft-deleted */}
-            <div className="border border-gray-200 rounded-lg p-3 mt-3">
+            <div className="border border-gray-200 rounded p-3 mt-3">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div>
                         <p className="text-sm font-medium text-gray-800">2. Purge soft-deleted transactions</p>
@@ -194,7 +194,7 @@ const TransactionCleanupPanel = ({ onCleaned, bare = false }) => {
                     <button
                         onClick={handlePurge}
                         disabled={purging || !deletedCount}
-                        className="flex items-center gap-2 px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:bg-gray-300"
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:bg-gray-300"
                     >
                         <Trash2 size={14} />
                         {purging ? 'Purging...' : 'Purge permanently'}

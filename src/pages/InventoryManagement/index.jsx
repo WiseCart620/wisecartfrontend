@@ -654,7 +654,7 @@ const InventoryManagement = () => {
 
         <div className="mb-3 flex flex-wrap items-end justify-between gap-x-6 border-b border-gray-200">
           <div className="pb-2">
-            <h1 className="text-lg font-bold text-gray-900 leading-tight">Inventory Management</h1>
+            <h1 className="text-3xl font-bold text-gray-900 leading-tight">Inventory Management</h1>
             <p className="text-xs text-gray-600">Track stock movements across warehouses and branches</p>
           </div>
           <div>
@@ -703,7 +703,7 @@ const InventoryManagement = () => {
               setShowVariationFilter={setShowVariationFilter}
             />
 
-            <div className="bg-white rounded-xl shadow p-3 mb-4">
+            <div className="mb-4">
               <div className="text-xs font-semibold text-gray-700 mb-1">Filter by Product / UPC / SKU</div>
               <div className="w-[380px] max-w-full">
                 <ProductMultiSelectDropdown
@@ -820,7 +820,7 @@ const InventoryManagement = () => {
                 <div className="flex justify-end mb-4">
                   <button
                     onClick={handleRelockStockTools}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50 transition"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 border border-slate-200 rounded hover:bg-slate-50 transition"
                   >
                     <Lock size={12} /> Lock
                   </button>

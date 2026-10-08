@@ -64,7 +64,7 @@ const InventoryTable = ({
     <div className="bg-white rounded-xl shadow-sm overflow-hidden table-panel">
       <div className="overflow-x-auto table-fit">
         <table className="w-full min-w-[800px]">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-white border-b border-gray-200">
             <tr>
               <th className="px-3 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase">No.</th>
               <th className="px-3 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase">Type</th>
@@ -100,9 +100,9 @@ const InventoryTable = ({
                   </td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1">
-                      <div className="h-7 w-7 bg-gray-100 rounded-lg" />
-                      <div className="h-7 w-7 bg-gray-100 rounded-lg" />
-                      <div className="h-7 w-7 bg-gray-100 rounded-lg" />
+                      <div className="h-7 w-7 bg-gray-100 rounded" />
+                      <div className="h-7 w-7 bg-gray-100 rounded" />
+                      <div className="h-7 w-7 bg-gray-100 rounded" />
                     </div>
                   </td>
                 </tr>
@@ -131,7 +131,7 @@ const InventoryTable = ({
                 const tsDate = toManilaDate(ts);
 
                 return (
-                  <tr key={inventory.id} className="hover:bg-gray-50 transition">
+                  <tr key={inventory.id} className="hover:bg-white transition">
                     <td className="px-3 py-2.5 whitespace-nowrap text-xs text-gray-500 font-medium">
                       {indexOfFirstItem + visibleInventories.indexOf(inventory) + 1}
                     </td>
@@ -146,13 +146,13 @@ const InventoryTable = ({
                           <>
                             {inventory.fromWarehouse && (
                               <div className="flex items-center gap-1">
-                                <Warehouse size={14} className="text-blue-600" />
+                                <Warehouse size={14} className="text-gray-600" />
                                 <span className="font-medium">{inventory.fromWarehouse.warehouseName}</span>
                               </div>
                             )}
                             {inventory.fromBranch && (
                               <div className="flex items-center gap-1">
-                                <Store size={14} className="text-green-600" />
+                                <Store size={14} className="text-gray-600" />
                                 <span className="font-medium">{inventory.fromBranch.branchName}</span>
                               </div>
                             )}
@@ -161,13 +161,13 @@ const InventoryTable = ({
                         )}
                         {inventory.toWarehouse && (
                           <div className="flex items-center gap-1">
-                            <Warehouse size={14} className="text-blue-600" />
+                            <Warehouse size={14} className="text-gray-600" />
                             <span className="font-medium">{inventory.toWarehouse.warehouseName}</span>
                           </div>
                         )}
                         {inventory.toBranch && (
                           <div className="flex items-center gap-1">
-                            <Store size={14} className="text-green-600" />
+                            <Store size={14} className="text-gray-600" />
                             <span className="font-medium">{inventory.toBranch.branchName}</span>
                           </div>
                         )}
@@ -187,7 +187,7 @@ const InventoryTable = ({
                       </div>
                     </td>
                     <td className="px-3 py-2.5 whitespace-nowrap">
-                      <span className="text-xs font-bold text-blue-700">
+                      <span className="text-xs font-bold text-gray-700">
                         {getRowItems(inventory).reduce((s, item) => s + (item.quantity || 0), 0).toLocaleString()}
                       </span>
                     </td>
@@ -236,11 +236,11 @@ const InventoryTable = ({
                               <button
                                 onClick={() => onView(inventory)}
                                 disabled={disableAll}
-                                className="flex items-center gap-1 px-2 py-1.5 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex items-center gap-1 px-2 py-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="View"
                               >
                                 {isViewLoading ? (
-                                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                                  <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
                                 ) : (
                                   <Eye size={18} />
                                 )}
@@ -249,11 +249,11 @@ const InventoryTable = ({
                                 <button
                                   onClick={() => onEdit(inventory)}
                                   disabled={disableAll}
-                                  className={`flex items-center gap-2 px-3 py-2 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-lg transition ${disableAll ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                  className={`flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition ${disableAll ? 'opacity-50 cursor-not-allowed' : ''}`}
                                   title={inventory.status === 'CONFIRMED' ? 'Edit (will check if modifiable)' : 'Edit'}
                                 >
                                   {isEditLoading ? (
-                                    <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                                    <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
                                   ) : (
                                     <Edit2 size={18} />
                                   )}
@@ -263,11 +263,11 @@ const InventoryTable = ({
                                 <button
                                   onClick={() => onDelete(inventory.id)}
                                   disabled={disableAll}
-                                  className={`flex items-center gap-2 px-3 py-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition ${disableAll ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                  className={`flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition ${disableAll ? 'opacity-50 cursor-not-allowed' : ''}`}
                                   title={inventory.status === 'CONFIRMED' ? 'Delete (will check if modifiable)' : 'Delete'}
                                 >
                                   {isDeleteLoading ? (
-                                    <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                                    <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
                                   ) : (
                                     <Trash2 size={18} />
                                   )}
@@ -298,7 +298,7 @@ const InventoryTable = ({
                   </div>
                 </td>
                 <td className="px-3 py-2 whitespace-nowrap">
-                  <span className="px-2 py-1 bg-blue-50 border border-blue-200 rounded-lg text-xs font-bold text-blue-700">
+                  <span className="px-2 py-1 bg-gray-100 border border-gray-200 rounded text-xs font-bold text-gray-700">
                     {grandTotalQty.toLocaleString()}
                   </span>
                 </td>

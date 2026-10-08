@@ -157,7 +157,7 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
 
   return (
     <div>
-      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-gray-50 pb-4">
+      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-white pb-4">
         <div className="bg-white border border-gray-200 shadow-sm rounded-xl p-4 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           <Field label="Employee">
             <SearchableSelect
@@ -182,8 +182,8 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
             <input type="number" className={inputCls} value={year} onChange={(e) => setYear(Number(e.target.value))} />
           </Field>
           <div className="flex gap-2">
-            <button onClick={expandAll} className="px-3 py-2 text-xs border border-gray-300 rounded-lg hover:bg-gray-100">Expand all</button>
-            <button onClick={collapseAll} className="px-3 py-2 text-xs border border-gray-300 rounded-lg hover:bg-gray-100">Collapse all</button>
+            <button onClick={expandAll} className="px-3 py-2 text-xs border border-gray-300 rounded hover:bg-gray-100">Expand all</button>
+            <button onClick={collapseAll} className="px-3 py-2 text-xs border border-gray-300 rounded hover:bg-gray-100">Collapse all</button>
           </div>
         </div>
 
@@ -195,7 +195,7 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
                 <button
                   onClick={recalculate}
                   title={`Recalculate remaining balances for ${year}`}
-                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-100"
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded text-sm hover:bg-gray-100"
                 >
                   <Calculator size={16} /> Recalculate
                 </button>
@@ -204,15 +204,15 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
                 onClick={resetYear}
                 disabled={!resetEnabled}
                 title={resetTooltip}
-                className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-sm
+                className={`flex items-center gap-2 px-4 py-2 border rounded text-sm
                 ${resetEnabled
                     ? 'border-gray-300 hover:bg-gray-100'
-                    : 'border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50'}`}
+                    : 'border-gray-200 text-gray-400 cursor-not-allowed bg-white'}`}
               >
                 <RefreshCw size={16} /> {resetLabel}
               </button>
               <button onClick={() => { setForm({ employeeId: '', leaveTypeId: '', days: '', openingBalance: '' }); setShow(true); }}
-                className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm">
+                className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm">
                 <Plus size={18} /> Grant Leave
               </button>
             </>
@@ -223,7 +223,7 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
       <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full tbl-card">
         <div className="overflow-auto w-full tbl-scroll">
           <table className="w-full min-w-[800px]">
-            <thead className="bg-gray-50">
+            <thead className="bg-white">
               <tr>
                 {['Employee', 'Leave Type', 'Opening', 'Granted', 'Used', 'Remaining'].map(h => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
@@ -249,7 +249,7 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
                 );
                 return (
                   <React.Fragment key={g.employeeId}>
-                    <tr className="bg-gray-50 hover:bg-gray-100 cursor-pointer text-sm" onClick={() => toggle(g.employeeId)}>
+                    <tr className="bg-white hover:bg-gray-100 cursor-pointer text-sm" onClick={() => toggle(g.employeeId)}>
                       <td className="px-4 py-3 font-semibold text-gray-900">
                         <div className="flex items-center gap-2">
                           {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -265,7 +265,7 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
                       <td />
                     </tr>
                     {isOpen && g.rows.map(b => (
-                      <tr key={b.id} className="text-sm hover:bg-gray-50">
+                      <tr key={b.id} className="text-sm hover:bg-white">
                         <td className="px-4 py-3 text-gray-400 pl-12">—</td>
                         <td className="px-4 py-3">
                           {b.leaveTypeName}
@@ -277,7 +277,7 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
                         <td className="px-4 py-3 text-right">
                           {canDelete && (
                             <button onClick={(e) => { e.stopPropagation(); remove(b); }}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
+                              className="p-2 text-red-600 hover:bg-red-50 rounded">
                               <Trash2 size={17} />
                             </button>
                           )}
@@ -329,8 +329,8 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
                 placeholder="e.g. 1 for regular, 0.5 for probi" />
             </Field>
             <div className="col-span-2 flex justify-end gap-2 pt-2 border-t">
-              <button type="button" onClick={() => setShow(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
-              <button type="submit" className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">Grant</button>
+              <button type="button" onClick={() => setShow(false)} className="px-4 py-2 border border-gray-300 rounded text-sm">Cancel</button>
+              <button type="submit" className="px-4 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700">Grant</button>
             </div>
           </form>
         </Modal>

@@ -119,7 +119,7 @@ const ManualAdjustmentModal = ({ isOpen, onClose, stock, onSuccess, currentUser 
         </div>
 
         {/* Product info */}
-        <div className="px-5 py-3 bg-gray-50 border-b border-gray-100">
+        <div className="px-5 py-3 bg-white border-b border-gray-100">
           <div className="text-sm font-semibold text-gray-900 truncate">
             {stock.fullProductName || stock.productName}
           </div>
@@ -133,17 +133,17 @@ const ManualAdjustmentModal = ({ isOpen, onClose, stock, onSuccess, currentUser 
 
         {/* Stock summary */}
         <div className="px-5 py-3 grid grid-cols-3 gap-2 border-b border-gray-100">
-          <div className="text-center p-2 bg-gray-50 rounded-lg">
+          <div className="text-center p-2 bg-white rounded">
             <div className="text-xs text-gray-500 mb-1">Total Stock</div>
             <div className="text-base font-bold text-gray-900">{totalStock.toLocaleString()}</div>
           </div>
-          <div className="text-center p-2 bg-orange-50 rounded-lg">
+          <div className="text-center p-2 bg-orange-50 rounded">
             <div className="text-xs text-orange-600 mb-1">Pending (reserved)</div>
             <div className="text-base font-bold text-orange-700">{reserved.toLocaleString()}</div>
           </div>
-          <div className="text-center p-2 bg-blue-50 rounded-lg">
-            <div className="text-xs text-blue-600 mb-1">Available</div>
-            <div className="text-base font-bold text-blue-700">{availableStock.toLocaleString()}</div>
+          <div className="text-center p-2 bg-orange-50 rounded">
+            <div className="text-xs text-orange-600 mb-1">Available</div>
+            <div className="text-base font-bold text-orange-700">{availableStock.toLocaleString()}</div>
           </div>
         </div>
 
@@ -160,13 +160,13 @@ const ManualAdjustmentModal = ({ isOpen, onClose, stock, onSuccess, currentUser 
               value={newQuantity}
               onChange={e => handleQuantityChange(e.target.value)}
               placeholder={`Current: ${totalStock}`}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
 
           {/* Live calculation preview */}
           {newQuantity !== '' && !isNaN(parsedNew) && (
-            <div className={`rounded-lg p-3 text-xs space-y-1.5 border ${
+            <div className={`rounded p-3 text-xs space-y-1.5 border ${
               wouldCauseDiscrepancy
                 ? 'bg-red-50 border-red-200'
                 : 'bg-green-50 border-green-200'
@@ -203,7 +203,7 @@ const ManualAdjustmentModal = ({ isOpen, onClose, stock, onSuccess, currentUser 
 
           {/* Discrepancy error */}
           {discrepancyError && (
-            <div className="bg-red-50 border border-red-300 rounded-lg p-3 text-xs space-y-2">
+            <div className="bg-red-50 border border-red-300 rounded p-3 text-xs space-y-2">
               <div className="flex items-start gap-2">
                 <AlertTriangle size={15} className="text-red-600 mt-0.5 flex-shrink-0" />
                 <div>
@@ -237,12 +237,12 @@ const ManualAdjustmentModal = ({ isOpen, onClose, stock, onSuccess, currentUser 
               onChange={e => setRemarks(e.target.value)}
               placeholder="e.g. Physical count correction, system discrepancy fix..."
               rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 resize-none"
             />
           </div>
 
           {/* Audit warning */}
-          <div className="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+          <div className="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
             <Info size={13} className="mt-0.5 flex-shrink-0" />
             <span>This directly updates warehouse stock and creates an audit record in transaction history.</span>
           </div>
@@ -253,14 +253,14 @@ const ManualAdjustmentModal = ({ isOpen, onClose, stock, onSuccess, currentUser 
           <button
             onClick={handleClose}
             disabled={loading}
-            className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition disabled:opacity-50"
+            className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded text-gray-600 hover:bg-white transition disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={loading || newQuantity === '' || !remarks.trim() || wouldCauseDiscrepancy}
-            className="flex-1 px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50 font-medium"
+            className="flex-1 px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition disabled:opacity-50 font-medium"
           >
             {loading ? 'Applying...' : 'Apply Adjustment'}
           </button>

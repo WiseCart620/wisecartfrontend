@@ -89,7 +89,7 @@ const HmoTab = ({ employees, canCreate, canEdit, canDelete }) => {
 
   return (
     <div>
-      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-gray-50 pb-4 flex items-center gap-3">
+      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-white pb-4 flex items-center gap-3">
         <div className="relative w-full max-w-sm">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input className={inputCls + ' !pl-9'} placeholder="Search employee or provider..."
@@ -97,7 +97,7 @@ const HmoTab = ({ employees, canCreate, canEdit, canDelete }) => {
         </div>
         {canCreate && (
           <button onClick={openCreate}
-            className="ml-auto flex items-center gap-2 px-4 py-2.5 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700">
+            className="ml-auto flex items-center gap-2 px-4 py-2.5 bg-orange-600 text-white rounded text-sm font-medium hover:bg-orange-700">
             <Plus size={16} /> Add HMO
           </button>
         )}
@@ -105,7 +105,7 @@ const HmoTab = ({ employees, canCreate, canEdit, canDelete }) => {
       <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full tbl-card">
         <div className="overflow-auto w-full tbl-scroll">
           <table className="w-full min-w-[1000px]">
-            <thead className="bg-gray-50">
+            <thead className="bg-white">
               <tr>
                 {['Employee', 'Provider / Plan', 'Premium', 'Employee Share', 'Employer Share', 'Coverage', 'Status'].map(h => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
@@ -119,7 +119,7 @@ const HmoTab = ({ employees, canCreate, canEdit, canDelete }) => {
               ) : filtered.length === 0 ? (
                 <tr><td colSpan="8" className="px-4 py-8 text-center text-gray-500">No HMO records</td></tr>
               ) : pageItems.map(h => (
-                <tr key={h.hmoId} className="hover:bg-gray-50 text-sm">
+                <tr key={h.hmoId} className="hover:bg-white text-sm">
                   <td className="px-4 py-3 font-medium text-gray-900">{h.employeeName}</td>
                   <td className="px-4 py-3"><div>{h.hmoProvider}</div><div className="text-xs text-gray-500">{h.planType || ''}</div></td>
                   <td className="px-4 py-3">{money(h.monthlyPremium)}</td>
@@ -131,8 +131,8 @@ const HmoTab = ({ employees, canCreate, canEdit, canDelete }) => {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
-                      {canEdit && <button onClick={() => openEdit(h)} className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"><Edit2 size={17} /></button>}
-                      {canDelete && <button onClick={() => remove(h)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={17} /></button>}
+                      {canEdit && <button onClick={() => openEdit(h)} className="p-2 text-orange-600 hover:bg-orange-50 rounded"><Edit2 size={17} /></button>}
+                      {canDelete && <button onClick={() => remove(h)} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={17} /></button>}
                     </div>
                   </td>
                 </tr>
@@ -160,8 +160,8 @@ const HmoTab = ({ employees, canCreate, canEdit, canDelete }) => {
             <Field label="Effective Date"><input type="date" className={inputCls} value={form.effectiveDate} onChange={set('effectiveDate')} /></Field>
             <Field label="End Date"><input type="date" className={inputCls} value={form.endDate} onChange={set('endDate')} /></Field>
             <div className="md:col-span-2 flex justify-end gap-2 pt-2 border-t">
-              <button type="button" onClick={() => setShow(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
-              <button type="submit" className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">{editing ? 'Save' : 'Create'}</button>
+              <button type="button" onClick={() => setShow(false)} className="px-4 py-2 border border-gray-300 rounded text-sm">Cancel</button>
+              <button type="submit" className="px-4 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700">{editing ? 'Save' : 'Create'}</button>
             </div>
           </form>
         </Modal>

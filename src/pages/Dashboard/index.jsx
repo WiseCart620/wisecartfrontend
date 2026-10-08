@@ -752,8 +752,8 @@ const Dashboard = () => {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/70 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-4 px-10 py-8 bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-sm mx-4">
             <div className="relative w-12 h-12 flex-shrink-0">
-              <div className="absolute inset-0 border-4 border-blue-100 rounded-full" />
-              <div className="absolute inset-0 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              <div className="absolute inset-0 border-4 border-orange-100 rounded-full" />
+              <div className="absolute inset-0 border-4 border-orange-600 border-t-transparent rounded-full animate-spin" />
             </div>
 
             <div className="w-full text-center">
@@ -765,11 +765,11 @@ const Dashboard = () => {
               <div className="w-full">
                 <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-blue-600 rounded-full transition-all duration-500 ease-out"
+                    className="h-full bg-orange-600 rounded-full transition-all duration-500 ease-out"
                     style={{ width: `${loadProgress}%` }}
                   />
                 </div>
-                <p className="text-xs font-semibold text-blue-600 mt-2">{loadProgress}%</p>
+                <p className="text-xs font-semibold text-orange-600 mt-2">{loadProgress}%</p>
               </div>
             </div>
           </div>
@@ -837,14 +837,14 @@ const Dashboard = () => {
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-4 sm:mb-6 gap-3">
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-gray-900 flex items-center gap-2">
-                      <TrendingUp className="text-blue-600" size={16} />
+                      <TrendingUp className="text-orange-600" size={16} />
                       Active Sales Trend ({selectedYear})
                     </h3>
                     <p className="text-xs text-gray-500 mt-0.5">Confirmed & Invoiced sales combined</p>
                     {(selectedCompany !== 'all' || selectedBranch !== 'all') && (
                       <div className="flex flex-wrap items-center gap-1.5 mt-2">
                         {selectedCompany !== 'all' && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[10px] rounded-full">
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-orange-100 text-orange-700 text-[10px] rounded-full">
                             <Users size={10} />
                             <span className="max-w-[100px] truncate">{selectedCompany}</span>
                           </span>
@@ -881,13 +881,13 @@ const Dashboard = () => {
                 </div>
 
                 {/* Chart Filters - Responsive */}
-                <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 sm:gap-3 mb-4 p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 sm:gap-3 mb-4 p-2 sm:p-3 bg-white rounded border border-gray-200">
                   <div className="flex items-center gap-1.5">
                     <Calendar size={12} className="text-gray-400 flex-shrink-0" />
                     <select
                       value={selectedYear}
                       onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                      className="px-1.5 py-1 text-xs border border-gray-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="px-1.5 py-1 text-xs border border-gray-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                     >
                       {[...new Set(sales.map(s => s.year || new Date(s.createdAt || s.date).getFullYear()))].map(year => (
                         <option key={year} value={year}>{year}</option>
@@ -947,18 +947,18 @@ const Dashboard = () => {
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {/* Total Sales */}
-                      <div className="bg-blue-50 p-2 sm:p-3 rounded-lg border border-blue-200">
+                      <div className="bg-orange-50 p-2 sm:p-3 rounded border border-orange-200">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <p className="text-[9px] sm:text-[10px] font-medium text-blue-600 uppercase">Total Sales</p>
-                            <p className="text-xs sm:text-sm font-bold text-blue-800 truncate">
+                            <p className="text-[9px] sm:text-[10px] font-medium text-orange-600 uppercase">Total Sales</p>
+                            <p className="text-xs sm:text-sm font-bold text-orange-800 truncate">
                               {formatCurrency(monthlySalesData.reduce((sum, month) => sum + month.activeRevenue, 0))}
                             </p>
-                            <p className="text-[8px] sm:text-[9px] text-blue-400">For {selectedYear}</p>
+                            <p className="text-[8px] sm:text-[9px] text-orange-400">For {selectedYear}</p>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="text-[8px] sm:text-[9px] text-blue-500">Revenue</p>
-                            <p className="text-[10px] sm:text-xs font-bold text-blue-700 truncate">
+                            <p className="text-[8px] sm:text-[9px] text-orange-500">Revenue</p>
+                            <p className="text-[10px] sm:text-xs font-bold text-orange-700 truncate">
                               {formatCurrency(monthlySalesData.reduce((sum, month) => sum + month.activeRevenue, 0))}
                             </p>
                           </div>
@@ -966,21 +966,21 @@ const Dashboard = () => {
                       </div>
 
                       {/* Avg Monthly */}
-                      <div className="bg-blue-50 p-2 sm:p-3 rounded-lg border border-blue-200">
+                      <div className="bg-orange-50 p-2 sm:p-3 rounded border border-orange-200">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <p className="text-[9px] sm:text-[10px] font-medium text-blue-600 uppercase">Average Monthly</p>
-                            <p className="text-xs sm:text-sm font-bold text-blue-800 truncate">
+                            <p className="text-[9px] sm:text-[10px] font-medium text-orange-600 uppercase">Average Monthly</p>
+                            <p className="text-xs sm:text-sm font-bold text-orange-800 truncate">
                               {formatCurrency(
                                 monthlySalesData.reduce((sum, month) => sum + month.activeRevenue, 0) /
                                 Math.max(monthlySalesData.filter(m => m.activeRevenue > 0).length, 1)
                               )}
                             </p>
-                            <p className="text-[8px] sm:text-[9px] text-blue-400">Per month avg</p>
+                            <p className="text-[8px] sm:text-[9px] text-orange-400">Per month avg</p>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="text-[8px] sm:text-[9px] text-blue-500">Monthly</p>
-                            <p className="text-[10px] sm:text-xs font-bold text-blue-700 truncate">
+                            <p className="text-[8px] sm:text-[9px] text-orange-500">Monthly</p>
+                            <p className="text-[10px] sm:text-xs font-bold text-orange-700 truncate">
                               {formatCurrency(
                                 monthlySalesData.reduce((sum, month) => sum + month.activeRevenue, 0) /
                                 Math.max(monthlySalesData.filter(m => m.activeRevenue > 0).length, 1)
@@ -991,18 +991,18 @@ const Dashboard = () => {
                       </div>
 
                       {/* Transactions */}
-                      <div className="bg-blue-50 p-2 sm:p-3 rounded-lg border border-blue-200">
+                      <div className="bg-orange-50 p-2 sm:p-3 rounded border border-orange-200">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <p className="text-[9px] sm:text-[10px] font-medium text-blue-600 uppercase">Transactions</p>
-                            <p className="text-xs sm:text-sm font-bold text-blue-800">
+                            <p className="text-[9px] sm:text-[10px] font-medium text-orange-600 uppercase">Transactions</p>
+                            <p className="text-xs sm:text-sm font-bold text-orange-800">
                               {formatNumber(monthlySalesData.reduce((sum, month) => sum + month.count, 0))}
                             </p>
-                            <p className="text-[8px] sm:text-[9px] text-blue-400">Total orders</p>
+                            <p className="text-[8px] sm:text-[9px] text-orange-400">Total orders</p>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="text-[8px] sm:text-[9px] text-blue-500">Orders</p>
-                            <p className="text-[10px] sm:text-xs font-bold text-blue-700">
+                            <p className="text-[8px] sm:text-[9px] text-orange-500">Orders</p>
+                            <p className="text-[10px] sm:text-xs font-bold text-orange-700">
                               {formatNumber(monthlySalesData.reduce((sum, month) => sum + month.count, 0))}
                             </p>
                           </div>
@@ -1010,11 +1010,11 @@ const Dashboard = () => {
                       </div>
 
                       {/* Best Month */}
-                      <div className="bg-blue-50 p-2 sm:p-3 rounded-lg border border-blue-200">
+                      <div className="bg-orange-50 p-2 sm:p-3 rounded border border-orange-200">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <p className="text-[9px] sm:text-[10px] font-medium text-blue-600 uppercase">Best Month</p>
-                            <p className="text-xs sm:text-sm font-bold text-blue-800">
+                            <p className="text-[9px] sm:text-[10px] font-medium text-orange-600 uppercase">Best Month</p>
+                            <p className="text-xs sm:text-sm font-bold text-orange-800">
                               {(() => {
                                 const bestMonth = monthlySalesData.reduce((prev, current) =>
                                   (prev.activeRevenue > current.activeRevenue) ? prev : current
@@ -1022,15 +1022,15 @@ const Dashboard = () => {
                                 return bestMonth.month;
                               })()}
                             </p>
-                            <p className="text-[8px] sm:text-[9px] text-blue-400 truncate">
+                            <p className="text-[8px] sm:text-[9px] text-orange-400 truncate">
                               {formatCurrency(monthlySalesData.reduce((prev, current) =>
                                 (prev.activeRevenue > current.activeRevenue) ? prev : current
                               ).activeRevenue)}
                             </p>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="text-[8px] sm:text-[9px] text-blue-500">Peak</p>
-                            <p className="text-[10px] sm:text-xs font-bold text-blue-700">
+                            <p className="text-[8px] sm:text-[9px] text-orange-500">Peak</p>
+                            <p className="text-[10px] sm:text-xs font-bold text-orange-700">
                               {(() => {
                                 const bestMonth = monthlySalesData.reduce((prev, current) =>
                                   (prev.activeRevenue > current.activeRevenue) ? prev : current
@@ -1055,7 +1055,7 @@ const Dashboard = () => {
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
                     <div>
                       <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 flex items-center gap-2">
-                        <Package className="text-blue-600" size={16} />
+                        <Package className="text-orange-600" size={16} />
                         Product Sales ({selectedYear})
                       </h3>
                       <p className="text-xs text-gray-500 mt-1 max-w-[250px] sm:max-w-none truncate">
@@ -1185,7 +1185,7 @@ const Dashboard = () => {
                           {selectedCategoryForMonthly !== 'all' && (
                             <button
                               onClick={() => setSelectedCategoryForMonthly('all')}
-                              className="mt-3 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs"
+                              className="mt-3 px-3 py-1.5 bg-orange-600 text-white rounded hover:bg-orange-700 text-xs"
                             >
                               View All Categories
                             </button>
@@ -1228,7 +1228,7 @@ const Dashboard = () => {
                         <div className="mt-6 pt-6 border-t border-gray-200">
                           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
                             <h4 className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center gap-2">
-                              <Target size={14} className="text-blue-600" />
+                              <Target size={14} className="text-orange-600" />
                               Top Products
                               {selectedCategoryForMonthly !== 'all' && (
                                 <span className="text-xs font-normal text-purple-600">- {selectedCategoryForMonthly}</span>
@@ -1240,7 +1240,7 @@ const Dashboard = () => {
                                 <select
                                   value={selectedCategoryForMonthly}
                                   onChange={(e) => setSelectedCategoryForMonthly(e.target.value)}
-                                  className="w-full sm:w-auto px-3 py-1.5 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8"                                >
+                                  className="w-full sm:w-auto px-3 py-1.5 text-xs border border-gray-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 appearance-none pr-8"                                >
                                   <option value="all">All Categories</option>
                                   {productCategories.map((category, idx) => (
                                     <option key={idx} value={category}>
@@ -1262,10 +1262,10 @@ const Dashboard = () => {
                               return (
                                 <div
                                   key={product.id}
-                                  className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all"                                >
+                                  className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-white rounded border border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-all"                                >
                                   <div className="flex-shrink-0">
-                                    <span className={`flex items-center justify-center w-7 h-7 rounded-full font-bold text-xs ${idx === 0 ? 'bg-blue-100 text-blue-700 border-2 border-blue-400' :
-                                      idx === 1 ? 'bg-blue-50 text-blue-600 border-2 border-blue-300' :
+                                    <span className={`flex items-center justify-center w-7 h-7 rounded-full font-bold text-xs ${idx === 0 ? 'bg-orange-100 text-orange-700 border-2 border-orange-400' :
+                                      idx === 1 ? 'bg-orange-50 text-orange-600 border-2 border-orange-300' :
                                         idx === 2 ? 'bg-gray-100 text-gray-600 border-2 border-gray-300' :
                                           'bg-gray-100 text-gray-500'
                                       }`}>
@@ -1277,7 +1277,7 @@ const Dashboard = () => {
                                     <p className="font-semibold text-gray-900 text-sm truncate">{product.name}</p>
                                     <p className="text-xs text-gray-500">{product.salesCount} transactions</p>
                                     {product.category && product.category !== 'Uncategorized' && (
-                                      <span className="inline-flex items-center px-1.5 py-0.5 mt-1 rounded text-xs bg-blue-100 text-blue-600">
+                                      <span className="inline-flex items-center px-1.5 py-0.5 mt-1 rounded text-xs bg-orange-100 text-orange-600">
                                         {product.category}
                                       </span>
                                     )}
@@ -1291,7 +1291,7 @@ const Dashboard = () => {
 
                                     <div className="text-left sm:text-right">
                                       <p className="text-xs text-gray-500">Qty</p>
-                                      <p className="font-bold text-indigo-600 text-sm">{formatNumber(product.quantity)}</p>
+                                      <p className="font-bold text-orange-600 text-sm">{formatNumber(product.quantity)}</p>
                                     </div>
 
                                     <div className="flex-1 sm:w-24">
@@ -1327,7 +1327,7 @@ const Dashboard = () => {
                                     return (
                                       <div
                                         key={product.id}
-                                        className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all"
+                                        className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-white rounded border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all"
                                       >
                                         <div className="flex-shrink-0">
                                           <span className="flex items-center justify-center w-7 h-7 rounded-full font-bold text-xs bg-gray-100 text-gray-500">
@@ -1339,7 +1339,7 @@ const Dashboard = () => {
                                           <p className="font-semibold text-gray-900 text-sm truncate">{product.name}</p>
                                           <p className="text-xs text-gray-500">{product.salesCount} transactions</p>
                                           {product.category && product.category !== 'Uncategorized' && (
-                                            <span className="inline-flex items-center px-1.5 py-0.5 mt-1 rounded text-xs bg-blue-100 text-blue-600">
+                                            <span className="inline-flex items-center px-1.5 py-0.5 mt-1 rounded text-xs bg-orange-100 text-orange-600">
                                               {product.category}
                                             </span>
                                           )}
@@ -1362,7 +1362,7 @@ const Dashboard = () => {
                                             </div>
                                             <div className="w-full bg-gray-200 rounded-full h-1.5">
                                               <div
-                                                className="bg-gradient-to-r from-blue-400 to-blue-600 h-1.5 rounded-full transition-all duration-500"
+                                                className="bg-gradient-to-r from-orange-400 to-orange-600 h-1.5 rounded-full transition-all duration-500"
                                                 style={{ width: `${percentage}%` }}
                                               ></div>
                                             </div>
@@ -1377,10 +1377,10 @@ const Dashboard = () => {
                           </div>
 
                           {productStats.length > 0 && (
-                            <div className="mt-4 pt-4 border-t border-gray-200 bg-blue-50 rounded-lg p-3 sm:p-4">
+                            <div className="mt-4 pt-4 border-t border-gray-200 bg-orange-50 rounded p-3 sm:p-4">
                               {selectedCategoryForMonthly !== 'all' && (
                                 <div className="mb-2 text-center">
-                                  <span className="text-xs font-semibold text-blue-700">
+                                  <span className="text-xs font-semibold text-orange-700">
                                     Showing: {selectedCategoryForMonthly}
                                   </span>
                                 </div>
@@ -1388,7 +1388,7 @@ const Dashboard = () => {
                               <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
                                 <div>
                                   <p className="text-xs text-gray-600">Products</p>
-                                  <p className="text-sm sm:text-base md:text-lg font-bold text-blue-700">{productStats.length}</p>
+                                  <p className="text-sm sm:text-base md:text-lg font-bold text-orange-700">{productStats.length}</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-600">Sales</p>
@@ -1398,7 +1398,7 @@ const Dashboard = () => {
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-600">Units</p>
-                                  <p className="text-sm sm:text-base md:text-lg font-bold text-blue-700">
+                                  <p className="text-sm sm:text-base md:text-lg font-bold text-orange-700">
                                     {formatNumber(productStats.reduce((sum, p) => sum + p.quantity, 0))}
                                   </p>
                                 </div>

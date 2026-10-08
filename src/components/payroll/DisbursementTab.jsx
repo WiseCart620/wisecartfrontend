@@ -23,7 +23,7 @@ const BatchLines = ({ lines, dir }) => {
     <div className="border-t border-gray-100">
       <div className="overflow-x-auto w-full">
         <table className="w-full min-w-[560px] text-sm">
-          <thead className="bg-gray-50 border-b-2 border-gray-200">
+          <thead className="bg-white border-b-2 border-gray-200">
             <tr>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Beneficiary</th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Account</th>
@@ -72,7 +72,7 @@ const RunCard = ({ run, dir, canManage, autoOpen, refreshKey, onGenerate }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       <div onClick={() => setOpen(o => !o)}
-        className={`p-4 flex flex-wrap items-center justify-between gap-3 cursor-pointer ${open ? 'bg-orange-50/40' : 'hover:bg-gray-50'}`}>
+        className={`p-4 flex flex-wrap items-center justify-between gap-3 cursor-pointer ${open ? 'bg-orange-50/40' : 'hover:bg-white'}`}>
         <div className="flex items-center gap-3">
           <ChevronRight size={16} className={`text-gray-400 transition-transform ${open ? 'rotate-90' : ''}`} />
           <div>
@@ -88,7 +88,7 @@ const RunCard = ({ run, dir, canManage, autoOpen, refreshKey, onGenerate }) => {
           </div>
           {canManage && (
             <button onClick={(e) => { e.stopPropagation(); onGenerate(run); }}
-              className="flex items-center gap-2 px-3 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 whitespace-nowrap">
+              className="flex items-center gap-2 px-3 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 whitespace-nowrap">
               <Send size={16} /> Generate Batch
             </button>
           )}
@@ -96,13 +96,13 @@ const RunCard = ({ run, dir, canManage, autoOpen, refreshKey, onGenerate }) => {
       </div>
 
       {open && (
-        <div className="border-t border-gray-100 bg-gray-50/60 p-4 space-y-3">
+        <div className="border-t border-gray-100 bg-white/60 p-4 space-y-3">
           {loading ? (
             <p className="text-center text-gray-500 py-4 text-sm">Loading...</p>
           ) : !batches || batches.length === 0 ? (
             <p className="text-center text-gray-500 py-4 text-sm">No disbursement batches for this run yet</p>
           ) : batches.map(b => (
-            <div key={b.disbursementId} className="bg-white rounded-lg border border-gray-100">
+            <div key={b.disbursementId} className="bg-white rounded border border-gray-100">
               <div className="p-3 flex items-center justify-between cursor-pointer"
                 onClick={() => setExpandedId(expandedId === b.disbursementId ? null : b.disbursementId)}>
                 <div>
@@ -173,7 +173,7 @@ const DisbursementTab = ({ approvedRuns, canManage }) => {
 
   return (
     <div>
-      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-gray-50 pb-4">
+      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-white pb-4">
         <div className="bg-white border border-gray-200 shadow-sm rounded-xl p-4 flex flex-wrap items-end gap-3">
           <div className="min-w-[150px]">
             <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
@@ -192,7 +192,7 @@ const DisbursementTab = ({ approvedRuns, canManage }) => {
           </div>
           {hasFilters && (
             <button type="button" onClick={() => { setFStatus(''); setFMonth(''); setFYear(''); }}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Clear</button>
+              className="px-3 py-2 border border-gray-300 rounded text-sm hover:bg-white">Clear</button>
           )}
           <div className="ml-auto text-xs text-gray-500 pb-2">
             Showing {filteredRuns.length} of {approvedRuns.length} run{approvedRuns.length === 1 ? '' : 's'}
@@ -230,8 +230,8 @@ const DisbursementTab = ({ approvedRuns, canManage }) => {
             <Field label="Source Account"><input className={inputCls} value={form.sourceAccount} onChange={set('sourceAccount')} placeholder="Optional" /></Field>
             <Field label="Remarks"><input className={inputCls} value={form.remarks} onChange={set('remarks')} placeholder="Optional" /></Field>
             <div className="flex justify-end gap-2 pt-2 border-t">
-              <button type="button" onClick={() => setTargetRun(null)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
-              <button type="submit" disabled={creating} className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 disabled:opacity-50">
+              <button type="button" onClick={() => setTargetRun(null)} className="px-4 py-2 border border-gray-300 rounded text-sm">Cancel</button>
+              <button type="submit" disabled={creating} className="px-4 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 disabled:opacity-50">
                 {creating ? 'Generating...' : 'Generate'}
               </button>
             </div>

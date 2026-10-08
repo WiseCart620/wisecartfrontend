@@ -4,8 +4,8 @@ const WarehouseReportInlineTable = ({ rows = [], loading }) => {
   const cols = [
     ['Beg. Stock', 'begStock', 'bg-gray-100'],
     ['Stock In', 'stockIn', 'bg-green-50'],
-    ['Transfer In', 'transferIn', 'bg-indigo-50'],
-    ['Transfer Out', 'transferOut', 'bg-blue-50'],
+    ['Transfer In', 'transferIn', 'bg-orange-50'],
+    ['Transfer Out', 'transferOut', 'bg-orange-50'],
     ['Returns', 'returns', 'bg-yellow-50'],
     ['Damage', 'damage', 'bg-red-50'],
     ['Adjustment', 'adjustment', 'bg-orange-50'],
@@ -18,12 +18,12 @@ const WarehouseReportInlineTable = ({ rows = [], loading }) => {
 
   return (
     <div className="bg-white rounded-xl shadow overflow-hidden mb-6 inv-table-panel">
-      <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+      <div className="px-6 py-4 border-b border-gray-200 bg-white">
         <h2 className="text-lg font-semibold text-gray-900">Warehouse Product Summary</h2>
       </div>
       <div className="overflow-x-auto table-fit">
         <table className="w-full">
-          <thead className="bg-gray-50">
+          <thead className="bg-white">
             <tr>
               <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
               <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU/UPC</th>
@@ -36,7 +36,7 @@ const WarehouseReportInlineTable = ({ rows = [], loading }) => {
             {loading ? (
               <tr><td colSpan={cols.length + 2} className="px-6 py-16 text-center">
                 <div className="flex flex-col items-center gap-3 text-gray-400">
-                  <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin" />
+                  <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
                   <span className="text-sm">Loading...</span>
                 </div>
               </td></tr>
@@ -44,10 +44,10 @@ const WarehouseReportInlineTable = ({ rows = [], loading }) => {
               <tr><td colSpan={cols.length + 2} className="px-6 py-8 text-center text-gray-500">No data for the selected filters</td></tr>
             ) : (
               rows.map((row) => (
-                <tr key={row.key} className="hover:bg-gray-50">
+                <tr key={row.key} className="hover:bg-white">
                   <td className="px-3 py-3">
                     <div className="font-medium text-gray-900 text-sm">{row.productName}</div>
-                    {row.variationName && <div className="table-sub text-blue-600">{row.variationName}</div>}
+                    {row.variationName && <div className="table-sub text-orange-600">{row.variationName}</div>}
                   </td>
                   <td className="px-3 py-3 text-xs">
                     <div>{row.sku}</div>

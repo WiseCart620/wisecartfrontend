@@ -53,7 +53,7 @@ const ProductSummaryTable = ({
 
   return (
     <div className="bg-white rounded-xl shadow overflow-hidden mb-6 inv-table-panel">
-      <div className="px-4 py-2 border-b border-gray-200 bg-gray-50">
+      <div className="px-4 py-2 border-b border-gray-200 bg-white">
         <h2 className="text-base font-semibold text-black flex items-center gap-2">
           <BarChart3 size={18} />
           Product Inventory Summary
@@ -79,7 +79,7 @@ const ProductSummaryTable = ({
             <col className="w-[6.4%]" />
             <col className="w-[5%]" />
           </colgroup>
-          <thead className="bg-gray-50">
+          <thead className="bg-white">
             <tr>
               <th className="px-2 py-2 th-left"><HeaderIcon Icon={Package} label="Product" align="left" /></th>
               <th className="px-2 py-2 th-left"><HeaderIcon Icon={Barcode} label="SKU/UPC" align="left" /></th>
@@ -140,7 +140,7 @@ const ProductSummaryTable = ({
                 const isThisLoading = loadingId === uniqueKey;
 
                 return (
-                  <tr key={uniqueKey} className="hover:bg-gray-50">
+                  <tr key={uniqueKey} className="hover:bg-white">
                     <td className="px-2 py-2 align-top">
                       <div
                         className="font-normal text-black text-[13px] truncate leading-tight"
@@ -173,10 +173,10 @@ const ProductSummaryTable = ({
                       <Badge value={product.totalStockIn} prefix="+" className="bg-green-100 text-green-800" />
                     </td>
                     <td className="px-1 py-2 text-center">
-                      <Badge value={product.totalTransferIn} prefix="+" className="bg-indigo-100 text-indigo-800" />
+                      <Badge value={product.totalTransferIn} prefix="+" className="bg-orange-100 text-orange-800" />
                     </td>
                     <td className="px-1 py-2 text-center">
-                      <Badge value={product.totalTransferOut} prefix="-" className="bg-blue-100 text-blue-800" />
+                      <Badge value={product.totalTransferOut} prefix="-" className="bg-orange-100 text-orange-800" />
                     </td>
                     <td className="px-1 py-2 text-center">
                       <Badge value={product.totalReturn} prefix="+" className="bg-yellow-100 text-yellow-800" />

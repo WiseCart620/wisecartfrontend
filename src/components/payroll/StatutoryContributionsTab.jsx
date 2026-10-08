@@ -206,7 +206,7 @@ const StatutoryContributionsTab = ({ canDelete }) => {
   return (
     <div>
       {/* Filters */}
-      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-gray-50 pb-4">
+      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-white pb-4">
         <div className="bg-white border border-gray-200 shadow-sm rounded-xl p-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
 
           <Field label="Employee">
@@ -233,7 +233,7 @@ const StatutoryContributionsTab = ({ canDelete }) => {
             <button
               onClick={load}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-sm disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 text-sm disabled:opacity-50"
             >
               <RefreshCw size={16} /> {loading ? 'Loading...' : 'Refresh'}
             </button>
@@ -241,15 +241,15 @@ const StatutoryContributionsTab = ({ canDelete }) => {
             {activeFilterCount > 0 && (
               <button
                 onClick={clearFilters}
-                className="px-3 py-2 text-xs border border-gray-300 rounded-lg hover:bg-gray-100"
+                className="px-3 py-2 text-xs border border-gray-300 rounded hover:bg-gray-100"
               >
                 Clear filters ({activeFilterCount})
               </button>
             )}
 
             <div className="ml-auto flex gap-2">
-              <button onClick={expandAll} className="px-3 py-2 text-xs border border-gray-300 rounded-lg hover:bg-gray-100">Expand all</button>
-              <button onClick={collapseAll} className="px-3 py-2 text-xs border border-gray-300 rounded-lg hover:bg-gray-100">Collapse all</button>
+              <button onClick={expandAll} className="px-3 py-2 text-xs border border-gray-300 rounded hover:bg-gray-100">Expand all</button>
+              <button onClick={collapseAll} className="px-3 py-2 text-xs border border-gray-300 rounded hover:bg-gray-100">Collapse all</button>
             </div>
           </div>
         </div>
@@ -259,7 +259,7 @@ const StatutoryContributionsTab = ({ canDelete }) => {
         <div className="flex justify-end p-3">
           <button
             onClick={() => setShowAdd(s => !s)}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm"
           >
             {showAdd ? 'Close' : '+ Add custom contribution'}
           </button>
@@ -301,14 +301,14 @@ const StatutoryContributionsTab = ({ canDelete }) => {
                 onChange={(e) => setAddForm(p => ({ ...p, employerShare: e.target.value }))} />
             </Field>
             <button type="submit" disabled={saving}
-              className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 disabled:opacity-50">
+              className="px-4 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 disabled:opacity-50">
               {saving ? 'Saving...' : 'Add'}
             </button>
           </form>
         )}
         <div className="overflow-auto w-full tbl-scroll">
           <table className="w-full min-w-[900px]">
-            <thead className="bg-gray-50">
+            <thead className="bg-white">
               <tr>
                 {['Employee', 'Agency', 'Pay Period', 'Employee Share', 'Employer Share', 'Total'].map(h => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
@@ -339,7 +339,7 @@ const StatutoryContributionsTab = ({ canDelete }) => {
                   <React.Fragment key={g.employeeId}>
                     {/* Group header row */}
                     <tr
-                      className="cursor-pointer text-sm [&>td]:sticky [&>td]:top-[39px] [&>td]:z-[5] [&>td]:bg-gray-50 hover:[&>td]:bg-gray-100"
+                      className="cursor-pointer text-sm [&>td]:sticky [&>td]:top-[39px] [&>td]:z-[5] [&>td]:bg-white hover:[&>td]:bg-gray-100"
                       onClick={() => toggle(g.employeeId)}
                     >
                       <td className="px-4 py-3 font-semibold text-gray-900">
@@ -365,7 +365,7 @@ const StatutoryContributionsTab = ({ canDelete }) => {
                       const editingRow = editKey === key;
                       const liveTotal = Number(editVals.ee || 0) + Number(editVals.er || 0);
                       return (
-                        <tr key={key} className="text-sm hover:bg-gray-50">
+                        <tr key={key} className="text-sm hover:bg-white">
                           <td className="px-4 py-3 text-gray-400 pl-12">—</td>
                           <td className="px-4 py-3">
                             {agencyLabel(c.agencyName)}
@@ -389,19 +389,19 @@ const StatutoryContributionsTab = ({ canDelete }) => {
                             <div className="flex justify-end gap-1">
                               {editingRow ? (
                                 <>
-                                  <button onClick={() => saveEdit(c)} title="Save" className="p-2 text-green-600 hover:bg-green-50 rounded-lg"><Check size={17} /></button>
-                                  <button onClick={() => setEditKey(null)} title="Cancel" className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg"><X size={17} /></button>
+                                  <button onClick={() => saveEdit(c)} title="Save" className="p-2 text-green-600 hover:bg-green-50 rounded"><Check size={17} /></button>
+                                  <button onClick={() => setEditKey(null)} title="Cancel" className="p-2 text-gray-500 hover:bg-gray-100 rounded"><X size={17} /></button>
                                 </>
                               ) : (
                                 <>
                                   {canEdit && (
                                     <button onClick={(e) => { e.stopPropagation(); startEdit(c, key); }}
-                                      title="Edit shares" className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"><Edit2 size={17} /></button>
+                                      title="Edit shares" className="p-2 text-orange-600 hover:bg-orange-50 rounded"><Edit2 size={17} /></button>
                                   )}
                                   {canDelete && c.id && (
                                     <button onClick={(e) => { e.stopPropagation(); remove(c); }}
                                       title="Delete (standard agencies go back to the bracket amount)"
-                                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={17} /></button>
+                                      className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={17} /></button>
                                   )}
                                 </>
                               )}

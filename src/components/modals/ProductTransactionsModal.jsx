@@ -176,7 +176,7 @@ const ProductTransactionsModal = ({
         } else if (action === 'RESERVE') {
             sign = '⏳'; colorClass = 'bg-orange-100 text-orange-800';
         } else if (action === 'RELEASE') {
-            sign = '↩️'; colorClass = 'bg-blue-100 text-blue-800';
+            sign = '↩️'; colorClass = 'bg-orange-100 text-orange-800';
         } else {
             sign = '±'; colorClass = 'bg-gray-100 text-gray-800';
         }
@@ -209,7 +209,7 @@ const ProductTransactionsModal = ({
             const dir = getTransferDirection(transaction);
             if (dir === 'TRANSFER_IN') return 'bg-teal-100 text-teal-700';
             if (dir === 'TRANSFER_OUT') return 'bg-orange-100 text-orange-700';
-            return 'bg-blue-100 text-blue-700';
+            return 'bg-orange-100 text-orange-700';
         }
         switch (type) {
             case 'STOCK_IN': return 'bg-green-100 text-green-700';
@@ -611,8 +611,8 @@ const ProductTransactionsModal = ({
                         <h2 className="text-2xl font-bold">Product Movement History</h2>
                         <p className="text-gray-600">
                             {product?.productName} - {product?.sku}
-                            {product?.warehouseName && <span className="ml-2 text-blue-600 font-semibold">@ {product.warehouseName}</span>}
-                            {product?.branchName && <span className="ml-2 text-blue-600 font-semibold">@ {product.branchName}</span>}
+                            {product?.warehouseName && <span className="ml-2 text-orange-600 font-semibold">@ {product.warehouseName}</span>}
+                            {product?.branchName && <span className="ml-2 text-orange-600 font-semibold">@ {product.branchName}</span>}
                         </p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded ml-4 flex-shrink-0">
@@ -624,7 +624,7 @@ const ProductTransactionsModal = ({
                 <div className="p-6 overflow-y-auto flex-1">
 
                     {/* Filters */}
-                    <div className="bg-gray-50 p-4 rounded-lg mb-6 space-y-4">
+                    <div className="bg-white p-4 rounded mb-6 space-y-4">
                         <h3 className="font-semibold text-gray-700 mb-3">Advanced Filters</h3>
                         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                             <div className="relative">
@@ -634,13 +634,13 @@ const ProductTransactionsModal = ({
                                     placeholder="Search transactions..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                    className="w-full pl-9 pr-3 py-2 border rounded text-sm focus:ring-2 focus:ring-orange-500"
                                 />
                             </div>
                             <select
                                 value={filterType}
                                 onChange={(e) => setFilterType(e.target.value)}
-                                className="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                className="px-3 py-2 border rounded text-sm focus:ring-2 focus:ring-orange-500"
                             >
                                 <option value="ALL">All Types</option>
                                 <option value="STOCK_IN">Stock In</option>
@@ -654,7 +654,7 @@ const ProductTransactionsModal = ({
                             <select
                                 value={showDeletedFilter}
                                 onChange={(e) => setShowDeletedFilter(e.target.value)}
-                                className="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white"
+                                className="px-3 py-2 border rounded text-sm focus:ring-2 focus:ring-orange-500 bg-white"
                             >
                                 <option value="ALL">All Transactions</option>
                                 <option value="ACTIVE">Active Only</option>
@@ -664,14 +664,14 @@ const ProductTransactionsModal = ({
                                 type="date"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
-                                className="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                className="px-3 py-2 border rounded text-sm focus:ring-2 focus:ring-orange-500"
                                 placeholder="Start Date"
                             />
                             <input
                                 type="date"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
-                                className="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                className="px-3 py-2 border rounded text-sm focus:ring-2 focus:ring-orange-500"
                                 placeholder="End Date"
                             />
                         </div>
@@ -679,7 +679,7 @@ const ProductTransactionsModal = ({
                             <div className="flex items-center justify-between">
                                 <button
                                     onClick={() => { setSearchTerm(''); setFilterType('ALL'); setShowDeletedFilter('ALL'); setStartDate(''); setEndDate(''); }}
-                                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                                    className="text-sm text-orange-600 hover:text-orange-800 font-medium"
                                 >
                                     Clear All Filters
                                 </button>
@@ -687,7 +687,7 @@ const ProductTransactionsModal = ({
                                     <button
                                         onClick={handleDeleteAllDeleted}
                                         disabled={deletingAll}
-                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${deletingAll ? 'bg-gray-300 text-gray-500 cursor-wait' : 'bg-red-600 text-white hover:bg-red-700'}`}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded font-medium transition ${deletingAll ? 'bg-gray-300 text-gray-500 cursor-wait' : 'bg-red-600 text-white hover:bg-red-700'}`}
                                     >
                                         {deletingAll ? (
                                             <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Deleting...</>
@@ -720,14 +720,14 @@ const ProductTransactionsModal = ({
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={handleExportCsv}
-                                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-white transition"
                                 >
                                     <FileText size={14} />
                                     CSV
                                 </button>
                                 <button
                                     onClick={handleExportExcel}
-                                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-green-600 text-white rounded hover:bg-green-700 transition"
                                 >
                                     <FileText size={14} />
                                     Excel
@@ -753,7 +753,7 @@ const ProductTransactionsModal = ({
                                                 key={key}
                                                 type="button"
                                                 onClick={() => setExpandedCategory(prev => (prev === key ? null : key))}
-                                                className={`flex items-center gap-1.5 px-3 py-1.5 ${bg} border ${border} ${hover} rounded-lg transition-colors`}
+                                                className={`flex items-center gap-1.5 px-3 py-1.5 ${bg} border ${border} ${hover} rounded transition-colors`}
                                             >
                                                 <span className={`text-[10px] font-medium ${text} uppercase tracking-wide`}>{label}</span>
                                                 <span className={`text-sm font-bold ${val}`}>{sign}{value.toLocaleString()}</span>
@@ -766,7 +766,7 @@ const ProductTransactionsModal = ({
                                     </>
                                 ) : (
                                     <>
-                                        <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
+                                        <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded">
                                             <ArrowDownCircle size={15} className="text-green-600" />
                                             <span className="text-xs font-medium text-green-700 uppercase tracking-wide">Total In</span>
                                             <span className="text-sm font-bold text-green-800">{totals.totalIn.toLocaleString()}</span>
@@ -776,19 +776,19 @@ const ProductTransactionsModal = ({
                                                 </span>
                                             )}
                                         </div>
-                                        <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg">
+                                        <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded">
                                             <ArrowUpCircle size={15} className="text-red-600" />
                                             <span className="text-xs font-medium text-red-700 uppercase tracking-wide">Total Out</span>
                                             <span className="text-sm font-bold text-red-800">{totals.totalOut.toLocaleString()}</span>
                                         </div>
-                                        <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-                                            <span className="text-xs font-medium text-blue-700 uppercase tracking-wide">Net</span>
-                                            <span className={`text-sm font-bold ${totals.totalIn - totals.totalOut >= 0 ? 'text-blue-800' : 'text-red-800'}`}>
+                                        <div className="flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-200 rounded">
+                                            <span className="text-xs font-medium text-orange-700 uppercase tracking-wide">Net</span>
+                                            <span className={`text-sm font-bold ${totals.totalIn - totals.totalOut >= 0 ? 'text-orange-800' : 'text-red-800'}`}>
                                                 {totals.totalIn - totals.totalOut >= 0 ? '+' : ''}{(totals.totalIn - totals.totalOut).toLocaleString()}
                                             </span>
                                         </div>
                                         {totals.totalCancelled > 0 && (
-                                            <div className="flex items-center gap-2 px-4 py-2 bg-rose-50 border border-rose-200 rounded-lg">
+                                            <div className="flex items-center gap-2 px-4 py-2 bg-rose-50 border border-rose-200 rounded">
                                                 <span className="text-xs font-medium text-rose-700 uppercase tracking-wide">Cancelled (returned)</span>
                                                 <span className="text-sm font-bold text-rose-800">{totals.totalCancelled.toLocaleString()}</span>
                                             </div>
@@ -806,8 +806,8 @@ const ProductTransactionsModal = ({
                                 }`}
                         >
                             {expandedCategory && (
-                                <div className="bg-white border rounded-lg overflow-hidden">
-                                    <div className="px-4 py-2 bg-gray-50 border-b flex items-center justify-between">
+                                <div className="bg-white border rounded overflow-hidden">
+                                    <div className="px-4 py-2 bg-white border-b flex items-center justify-between">
                                         <h4 className="text-sm font-semibold text-gray-700">
                                             {categoryLabels[expandedCategory]}
                                             <span className="ml-2 text-xs font-normal text-gray-400">
@@ -835,7 +835,7 @@ const ProductTransactionsModal = ({
                                                 return (
                                                     <div
                                                         key={`${expandedCategory}-${t.id}-${i}`}
-                                                        className="px-4 py-2 text-sm flex items-center justify-between gap-4 hover:bg-gray-50"
+                                                        className="px-4 py-2 text-sm flex items-center justify-between gap-4 hover:bg-white"
                                                     >
                                                         <div className="flex-1 min-w-0">
                                                             <div className="font-medium text-gray-800 truncate">
@@ -867,7 +867,7 @@ const ProductTransactionsModal = ({
                             <select
                                 value={pageSize}
                                 onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                                className="px-2 py-1 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                className="px-2 py-1 border rounded text-sm focus:ring-2 focus:ring-orange-500"
                             >
                                 <option value={5}>5</option>
                                 <option value={10}>10</option>
@@ -880,10 +880,10 @@ const ProductTransactionsModal = ({
                     </div>
 
                     {/* Transactions Table */}
-                    <div className="bg-white rounded-lg border overflow-hidden">
+                    <div className="bg-white rounded border overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full">
-                                <thead className="bg-gray-50 sticky top-0">
+                                <thead className="bg-white sticky top-0">
                                     <tr>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User-Entered Date</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">System Timestamp</th>
@@ -932,15 +932,15 @@ const ProductTransactionsModal = ({
 
                                             return (
                                                 <React.Fragment key={`transaction-${idx}-${transaction.id}`}>
-                                                    <tr className={`hover:bg-gray-50 ${isDeleted ? 'bg-red-50 opacity-60' : ''}`}>
+                                                    <tr className={`hover:bg-white ${isDeleted ? 'bg-red-50 opacity-60' : ''}`}>
 
                                                         {/* User-Entered Date Column */}
                                                         <td className="px-4 py-3 text-sm">
                                                             {userEnteredDate ? (
-                                                                <div className="flex flex-col gap-1 p-2 bg-blue-50 rounded-md border-l-2 border-blue-400">
+                                                                <div className="flex flex-col gap-1 p-2 bg-orange-50 rounded border-l-2 border-orange-400">
                                                                     <div className="flex items-center gap-1">
-                                                                        <Calendar size={12} className="text-blue-500" />
-                                                                        <span className="text-[10px] font-semibold text-blue-600 uppercase tracking-wide">
+                                                                        <Calendar size={12} className="text-orange-500" />
+                                                                        <span className="text-[10px] font-semibold text-orange-600 uppercase tracking-wide">
                                                                             {getUserDateLabel(transaction)}
                                                                         </span>
                                                                     </div>
@@ -963,7 +963,7 @@ const ProductTransactionsModal = ({
                                                                     </div>
                                                                 </div>
                                                             ) : (
-                                                                <div className="flex flex-col gap-1 p-2 bg-gray-50 rounded-md border-l-2 border-gray-300">
+                                                                <div className="flex flex-col gap-1 p-2 bg-white rounded border-l-2 border-gray-300">
                                                                     <div className="flex items-center gap-1">
                                                                         <Calendar size={12} className="text-gray-400" />
                                                                         <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
@@ -983,7 +983,7 @@ const ProductTransactionsModal = ({
                                                         {/* System Timestamp Column */}
                                                         <td className="px-4 py-3 text-sm">
                                                             {systemDate ? (
-                                                                <div className="flex flex-col gap-1 p-2 bg-gray-50 rounded-md border-l-2 border-gray-400">
+                                                                <div className="flex flex-col gap-1 p-2 bg-white rounded border-l-2 border-gray-400">
                                                                     <div className="flex items-center gap-1">
                                                                         <Clock size={12} className="text-gray-500" />
                                                                         <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
@@ -998,7 +998,7 @@ const ProductTransactionsModal = ({
                                                                     </div>
                                                                 </div>
                                                             ) : (
-                                                                <div className="p-2 bg-gray-50 rounded-md">
+                                                                <div className="p-2 bg-white rounded">
                                                                     <div className="text-xs text-gray-400 italic">-</div>
                                                                 </div>
                                                             )}
@@ -1119,7 +1119,7 @@ const ProductTransactionsModal = ({
                                                                     transaction.action === 'ADD' ? 'bg-green-100 text-green-700' :
                                                                         transaction.action === 'SUBTRACT' ? 'bg-red-100 text-red-700' :
                                                                             transaction.action === 'RESERVE' ? 'bg-orange-100 text-orange-700' :
-                                                                                transaction.action === 'RELEASE' ? 'bg-blue-100 text-blue-700' :
+                                                                                transaction.action === 'RELEASE' ? 'bg-orange-100 text-orange-700' :
                                                                                     transaction.action === 'INVOICED' ? 'bg-pink-100 text-pink-700' :
                                                                                         'bg-gray-100 text-gray-700'
                                                                     }`}>
@@ -1128,7 +1128,7 @@ const ProductTransactionsModal = ({
                                                                 {hasHistory && (
                                                                     <button
                                                                         onClick={() => toggleRowExpansion(transaction.id)}
-                                                                        className="p-1 hover:bg-blue-100 rounded transition text-blue-600"
+                                                                        className="p-1 hover:bg-orange-100 rounded transition text-orange-600"
                                                                         title="View edit history"
                                                                     >
                                                                         <ChevronDown size={16} className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
@@ -1170,7 +1170,7 @@ const ProductTransactionsModal = ({
 
                                                     {/* Expanded edit history row */}
                                                     {isExpanded && hasHistory && (
-                                                        <tr className="bg-blue-50 border-l-4 border-blue-500">
+                                                        <tr className="bg-orange-50 border-l-4 border-orange-500">
                                                             <td colSpan="8" className="px-4 py-4">
                                                                 <div className="space-y-3">
                                                                     <h4 className="font-semibold text-sm text-gray-700 flex items-center gap-2">
@@ -1182,7 +1182,7 @@ const ProductTransactionsModal = ({
                                                                         const histQty = getQuantityDisplayLocal(historyItem);
                                                                         const isOriginal = historyItem.isOriginal;
                                                                         return (
-                                                                            <div key={`history-${histIdx}`} className="bg-white rounded-lg p-3 border border-gray-200">
+                                                                            <div key={`history-${histIdx}`} className="bg-white rounded p-3 border border-gray-200">
                                                                                 <div className="flex items-start justify-between">
                                                                                     <div className="flex-1 space-y-2">
                                                                                         <div className="flex items-center gap-2">

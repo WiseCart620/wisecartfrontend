@@ -95,13 +95,13 @@ const ViewSection = ({ title, children }) => (
             <div className="w-1 h-4 bg-orange-500 rounded-full" />
             <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">{title}</h3>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 bg-gray-50 rounded-xl p-5 border border-gray-100">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 bg-white rounded-xl p-5 border border-gray-100">
             {children}
         </div>
     </section>
 );
 
-const inputCls = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition';
+const inputCls = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition';
 
 const Field = ({ label, required, children, className = '' }) => (
     <div className={className}>
@@ -118,7 +118,7 @@ const Section = ({ title, children }) => (
             <div className="w-1 h-4 bg-orange-600 rounded-full" />
             <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">{title}</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-gray-50 rounded-xl p-5 border border-gray-100">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-white rounded-xl p-5 border border-gray-100">
             {children}
         </div>
     </section>
@@ -384,17 +384,11 @@ const EmployeeManagement = () => {
     }
 
     return (
-        <PageShell title="Employees" subtitle="Manage employee records and payroll setup"
-            action={canCreate && (
-                <button onClick={openCreate}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-orange-600 text-white rounded-lg text-sm font-medium shadow-sm hover:bg-orange-700 transition-colors">
-                    <Plus size={18} /> Add Employee
-                </button>
-            )}>
+        <PageShell title="Employees" subtitle="Manage employee records and payroll setup">
             <LoadingOverlay show={actionLoading} message={loadingMessage} />
             <Toaster position="top-right" />
 
-            <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-gray-50 pb-4">
+            <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-white pb-4">
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-wrap items-end gap-3">
                     <div className="flex-1 min-w-[220px]">
                         <label className="block text-xs font-medium text-gray-700 mb-1">Employee</label>
@@ -445,7 +439,13 @@ const EmployeeManagement = () => {
                     </div>
                     {(searchTerm || statusFilter !== 'ALL' || scheduleFilter || tenureFilter || idFilter) && (
                         <button type="button" onClick={() => { setSearchTerm(''); setStatusFilter('ALL'); setScheduleFilter(''); setTenureFilter(''); setIdFilter(''); }}
-                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Clear</button>
+                            className="px-3 py-2 border border-gray-300 rounded text-sm hover:bg-white">Clear</button>
+                    )}
+                    {canCreate && (
+                        <button onClick={openCreate}
+                            className="ml-auto flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded text-sm font-medium shadow-sm hover:bg-orange-700 transition-colors">
+                            <Plus size={18} /> Add Employee
+                        </button>
                     )}
                 </div>
             </div>
@@ -453,7 +453,7 @@ const EmployeeManagement = () => {
             <div className="bg-white rounded-xl shadow-sm overflow-hidden tbl-card">
                 <div className="overflow-auto tbl-scroll">
                     <table className="w-full min-w-[1000px]">
-                        <thead className="bg-gray-50">
+                        <thead className="bg-white">
                             <tr>
                                 {['Employee', 'Department / Position', 'Schedule', 'Tenure', 'Basic Salary', 'Status'].map(h => (
                                     <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
@@ -465,7 +465,7 @@ const EmployeeManagement = () => {
                             {pageItems.length === 0 ? (
                                 <tr><td colSpan="7" className="px-6 py-8 text-center text-gray-500">No employees found</td></tr>
                             ) : pageItems.map(emp => (
-                                <tr key={emp.employeeId} className="hover:bg-gray-50">
+                                <tr key={emp.employeeId} className="hover:bg-white">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
                                             {emp.photoUrl
@@ -483,13 +483,13 @@ const EmployeeManagement = () => {
                                                             });
                                                         }}
                                                         onMouseLeave={() => setHoverPhoto(null)}
-                                                        className="flex-shrink-0 rounded-lg cursor-zoom-in transition duration-200 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                                        className="flex-shrink-0 rounded cursor-zoom-in transition duration-200 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
                                                     >
-                                                        <SecureImage path={emp.photoUrl} className="w-10 h-10 rounded-lg object-cover"
-                                                            fallback={<div className="p-2 bg-orange-100 rounded-lg"><User size={20} className="text-orange-600" /></div>} />
+                                                        <SecureImage path={emp.photoUrl} className="w-10 h-10 rounded object-cover"
+                                                            fallback={<div className="p-2 bg-orange-100 rounded"><User size={20} className="text-orange-600" /></div>} />
                                                     </button>
                                                 )
-                                                : <div className="p-2 bg-orange-100 rounded-lg"><User size={20} className="text-orange-600" /></div>}
+                                                : <div className="p-2 bg-orange-100 rounded"><User size={20} className="text-orange-600" /></div>}
                                             <div>
                                                 <div className="font-medium text-gray-900">{emp.fullName}</div>
                                                 <div className="text-sm text-gray-500">{emp.email}</div>
@@ -526,22 +526,22 @@ const EmployeeManagement = () => {
                                             <button
                                                 onClick={() => { setShowSensitive(false); setViewEmp(emp); }}
                                                 title="View details"
-                                                className="p-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                                                className="p-2 text-gray-700 hover:bg-gray-100 rounded"
                                             >
                                                 <Eye size={18} />
                                             </button>
-                                            <button onClick={() => setDocsEmployee(emp)} title="Documents" className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg">
+                                            <button onClick={() => setDocsEmployee(emp)} title="Documents" className="p-2 text-teal-600 hover:bg-teal-50 rounded">
                                                 <FileText size={18} />
                                             </button>
                                             {canEdit && (
                                                 <>
-                                                    <button onClick={() => openEdit(emp)} title="Edit" className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg">
+                                                    <button onClick={() => openEdit(emp)} title="Edit" className="p-2 text-orange-600 hover:bg-orange-50 rounded">
                                                         <Edit2 size={18} />
                                                     </button>
                                                     <button
                                                         onClick={() => toggleStatus(emp)}
                                                         title={emp.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
-                                                        className={`p-2 rounded-lg ${emp.status === 'ACTIVE' ? 'text-orange-600 hover:bg-orange-50' : 'text-green-600 hover:bg-green-50'}`}
+                                                        className={`p-2 rounded ${emp.status === 'ACTIVE' ? 'text-orange-600 hover:bg-orange-50' : 'text-green-600 hover:bg-green-50'}`}
                                                     >
                                                         {emp.status === 'ACTIVE' ? <UserX size={18} /> : <UserCheck size={18} />}
                                                     </button>
@@ -555,7 +555,7 @@ const EmployeeManagement = () => {
                     </table>
                 </div>
                 {filtered.length > 0 && (
-                    <Pagination
+                    <div className="flex-shrink-0"><Pagination
                         currentPage={currentPage}
                         totalPages={totalPages}
                         onPageChange={setCurrentPage}
@@ -564,7 +564,7 @@ const EmployeeManagement = () => {
                         showingStart={first + 1}
                         showingEnd={Math.min(last, filtered.length)}
                         totalItems={filtered.length}
-                    />
+                    /></div>
                 )}
             </div>
 
@@ -577,7 +577,7 @@ const EmployeeManagement = () => {
                                 <h2 className="text-lg font-semibold text-gray-900">
                                     {editing ? `Edit ${editing.fullName}` : 'Add Employee'}
                                 </h2>
-                                <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400">
+                                <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded text-gray-400">
                                     <X size={20} />
                                 </button>
                             </div>
@@ -718,7 +718,7 @@ const EmployeeManagement = () => {
                                         <div className="flex items-center justify-between">
                                             <p className="text-xs text-gray-500">Add any extra employee details as a label and value.</p>
                                             <button type="button" onClick={addOther}
-                                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-orange-600 border border-orange-200 rounded-lg hover:bg-orange-50">
+                                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-orange-600 border border-orange-200 rounded hover:bg-orange-50">
                                                 <Plus size={14} /> Add other
                                             </button>
                                         </div>
@@ -732,7 +732,7 @@ const EmployeeManagement = () => {
                                                 <input className={inputCls} placeholder="Value (e.g. O+)"
                                                     value={o.value} onChange={(e) => updateOther(i, 'value', e.target.value)} />
                                                 <button type="button" onClick={() => removeOther(i)} title="Remove"
-                                                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg flex-shrink-0">
+                                                    className="p-2 text-red-500 hover:bg-red-50 rounded flex-shrink-0">
                                                     <X size={16} />
                                                 </button>
                                             </div>
@@ -742,8 +742,8 @@ const EmployeeManagement = () => {
                             </form>
 
                             <div className="flex-shrink-0 border-t border-gray-200 px-8 py-4 flex justify-end gap-3">
-                                <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">Cancel</button>
-                                <button type="submit" form="employee-form" className="px-5 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
+                                <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded hover:bg-white text-sm font-medium">Cancel</button>
+                                <button type="submit" form="employee-form" className="px-5 py-2.5 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm font-medium">
                                     {editing ? 'Save Changes' : 'Create Employee'}
                                 </button>
                             </div>
@@ -756,7 +756,7 @@ const EmployeeManagement = () => {
                     <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
                         <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
                             <h2 className="text-lg font-bold text-gray-900">Deactivate Employee</h2>
-                            <button onClick={() => setDeactivateEmp(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
+                            <button onClick={() => setDeactivateEmp(null)} className="p-2 hover:bg-gray-100 rounded"><X size={20} /></button>
                         </div>
                         <div className="p-6 space-y-4">
                             <p className="text-sm text-gray-600">
@@ -791,7 +791,7 @@ const EmployeeManagement = () => {
                             </Field>
                         </div>
                         <div className="border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
-                            <button onClick={() => setDeactivateEmp(null)} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+                            <button onClick={() => setDeactivateEmp(null)} className="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-white">Cancel</button>
                             <button
                                 disabled={!deactivateDate || !deactivateReason
                                     || (deactivateReason === 'Others' && !deactivateRemarks.trim())}
@@ -802,7 +802,7 @@ const EmployeeManagement = () => {
                                     setDeactivateEmp(null);
                                     submitStatus(emp, date, deactivateLeave, sep);
                                 }}
-                                className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 disabled:opacity-50">
+                                className="px-4 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 disabled:opacity-50">
                                 Deactivate
                             </button>
                         </div>
@@ -867,7 +867,7 @@ const EmployeeManagement = () => {
                                             </span>
                                         </div>
                                     </div>
-                                    <button onClick={() => setViewEmp(null)} title="Close (Esc)" className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 flex-shrink-0">
+                                    <button onClick={() => setViewEmp(null)} title="Close (Esc)" className="p-2 hover:bg-gray-100 rounded text-gray-400 flex-shrink-0">
                                         <X size={20} />
                                     </button>
                                 </div>
@@ -918,7 +918,7 @@ const EmployeeManagement = () => {
                                     <button
                                         type="button"
                                         onClick={() => setShowSensitive((s) => !s)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-orange-600 border border-orange-200 rounded-lg hover:bg-orange-50"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-orange-600 border border-orange-200 rounded hover:bg-orange-50"
                                     >
                                         {showSensitive ? <EyeOff size={14} /> : <Eye size={14} />}
                                         {showSensitive ? 'Hide sensitive info' : 'Show sensitive info'}
@@ -958,21 +958,21 @@ const EmployeeManagement = () => {
                             <div className="flex-shrink-0 border-t border-gray-200 px-8 py-4 flex justify-end gap-3">
                                 <button
                                     onClick={() => { setViewEmp(null); setDocsEmployee(v); }}
-                                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium"
+                                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-white text-sm font-medium"
                                 >
                                     <FileText size={16} /> Documents
                                 </button>
                                 {canEdit && (
                                     <button
                                         onClick={() => { setViewEmp(null); openEdit(v); }}
-                                        className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium"
+                                        className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm font-medium"
                                     >
                                         <Edit2 size={16} /> Edit
                                     </button>
                                 )}
                                 <button
                                     onClick={() => setViewEmp(null)}
-                                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium"
+                                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-white text-sm font-medium"
                                 >
                                     Close
                                 </button>

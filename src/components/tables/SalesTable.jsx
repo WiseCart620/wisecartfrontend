@@ -46,7 +46,7 @@ const SalesTable = ({
             <col className="w-[9%]" />
             <col className="w-[10%]" />
           </colgroup>
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-white border-b border-gray-200">
             <tr>
               <th className="px-3 py-3 text-center text-[11px] font-medium text-gray-500 uppercase tracking-wider">#</th>
               <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Branch</th>
@@ -80,7 +80,7 @@ const SalesTable = ({
               </tr>
             ) : (
               currentSales.map((sale, idx) => (
-                <tr key={sale.id} className="hover:bg-gray-50 transition">
+                <tr key={sale.id} className="hover:bg-white transition">
                   <td className="px-3 py-3 whitespace-nowrap text-center text-xs text-gray-400 font-medium">
                     {((currentPage - 1) * 10) + idx + 1}
                   </td>
@@ -95,7 +95,7 @@ const SalesTable = ({
                   <td className="pl-6 pr-3 py-3 whitespace-nowrap text-xs font-semibold text-gray-900">{formatCurrency(getRowTotals(sale).amount)}</td>
                   <td className="px-3 py-3 whitespace-nowrap">
                     <span className={`px-2 py-1 inline-flex text-[11px] leading-5 font-semibold rounded-full ${sale.status === 'INVOICED' ? 'bg-green-100 text-green-800' :
-                      sale.status === 'CONFIRMED' ? 'bg-blue-100 text-blue-800' :
+                      sale.status === 'CONFIRMED' ? 'bg-orange-100 text-orange-800' :
                         'bg-yellow-100 text-yellow-800'
                       }`}>
                       {sale.status}
@@ -103,22 +103,22 @@ const SalesTable = ({
                   </td>
                   <td className="px-2 py-3 whitespace-nowrap text-sm font-medium no-print">
                     <div className="flex items-center gap-0.5 flex-nowrap">
-                      <button onClick={() => onView(sale)} disabled={loadingAction?.id === sale.id} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-blue-600 hover:bg-blue-50 transition disabled:opacity-60" title="View">
+                      <button onClick={() => onView(sale)} disabled={loadingAction?.id === sale.id} className="inline-flex items-center justify-center w-7 h-7 rounded text-orange-600 hover:bg-orange-50 transition disabled:opacity-60" title="View">
                         {loadingAction?.id === sale.id && loadingAction?.type === 'view' ? <Loader2 size={15} className="animate-spin" /> : <Eye size={15} />}
                       </button>
 
                       {sale.status === 'PENDING' && canCreate && (
                         <>
                           {canEdit && (
-                            <button onClick={() => onEdit(sale)} disabled={loadingAction?.id === sale.id} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-indigo-600 hover:bg-indigo-50 transition disabled:opacity-60" title="Edit">
+                            <button onClick={() => onEdit(sale)} disabled={loadingAction?.id === sale.id} className="inline-flex items-center justify-center w-7 h-7 rounded text-orange-600 hover:bg-orange-50 transition disabled:opacity-60" title="Edit">
                               {loadingAction?.id === sale.id && loadingAction?.type === 'edit' ? <Loader2 size={15} className="animate-spin" /> : <Edit2 size={15} />}
                             </button>
                           )}
-                          <button onClick={() => onUpdateStatus(sale.id, 'CONFIRMED')} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-green-600 hover:bg-green-50 transition" title="Confirm Sale">
+                          <button onClick={() => onUpdateStatus(sale.id, 'CONFIRMED')} className="inline-flex items-center justify-center w-7 h-7 rounded text-green-600 hover:bg-green-50 transition" title="Confirm Sale">
                             <Check size={15} />
                           </button>
                           {canDelete && (
-                            <button onClick={() => onDelete(sale.id)} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 hover:bg-red-50 transition" title="Delete">
+                            <button onClick={() => onDelete(sale.id)} className="inline-flex items-center justify-center w-7 h-7 rounded text-red-600 hover:bg-red-50 transition" title="Delete">
                               <Trash2 size={15} />
                             </button>
                           )}
@@ -128,7 +128,7 @@ const SalesTable = ({
                       {sale.status === 'CONFIRMED' && canCreate && (
                         <>
                           {canDelete && (
-                            <button onClick={() => onDelete(sale.id)} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 hover:bg-red-50 transition" title="Delete">
+                            <button onClick={() => onDelete(sale.id)} className="inline-flex items-center justify-center w-7 h-7 rounded text-red-600 hover:bg-red-50 transition" title="Delete">
                               <Trash2 size={15} />
                             </button>
                           )}
@@ -136,7 +136,7 @@ const SalesTable = ({
                       )}
 
                       {sale.status === 'INVOICED' && canDelete && (
-                        <button onClick={() => onDelete(sale.id)} className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 hover:bg-red-50 transition" title="Delete">
+                        <button onClick={() => onDelete(sale.id)} className="inline-flex items-center justify-center w-7 h-7 rounded text-red-600 hover:bg-red-50 transition" title="Delete">
                           <Trash2 size={15} />
                         </button>
                       )}

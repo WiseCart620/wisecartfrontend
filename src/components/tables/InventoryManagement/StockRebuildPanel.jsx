@@ -81,7 +81,7 @@ const MultiSelect = ({ label, values, onChange, options, getLabel, getSearchText
                 type="button"
                 disabled={disabled}
                 onClick={() => !disabled && setOpen((o) => !o)}
-                className={`w-full flex items-center justify-between px-3 py-2 text-[13px] border rounded-md text-left transition ${disabled
+                className={`w-full flex items-center justify-between px-3 py-2 text-[13px] border rounded text-left transition ${disabled
                     ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
                     : 'bg-white hover:border-[#185FA5]/50'
                     } ${open ? 'border-[#185FA5] ring-2 ring-[#185FA5]/10' : 'border-slate-200'
@@ -123,7 +123,7 @@ const MultiSelect = ({ label, values, onChange, options, getLabel, getSearchText
             )}
 
             {open && (
-                <div className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-md shadow-lg max-h-72 overflow-hidden flex flex-col">
+                <div className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded shadow-lg max-h-72 overflow-hidden flex flex-col">
                     <div className="relative border-b border-slate-100">
                         <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input
@@ -214,9 +214,9 @@ export const PasswordGate = ({ onUnlock, bare = false }) => {
             }
         `}</style>
 
-            <div className="w-full max-w-sm border border-slate-200 rounded-lg p-6 bg-white shadow-sm">
+            <div className="w-full max-w-sm border border-slate-200 rounded p-6 bg-white shadow-sm">
                 <div className={`flex items-center gap-3 mb-4 pb-4 border-b border-slate-100 ${shake ? 'animate-[shake_0.4s_ease-in-out]' : ''}`}>
-                    <div className="w-8 h-8 rounded-md bg-[#185FA5] flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded bg-[#185FA5] flex items-center justify-center shrink-0">
                         <Lock size={15} className="text-white" />
                     </div>
                     <div>
@@ -242,7 +242,7 @@ export const PasswordGate = ({ onUnlock, bare = false }) => {
                                 if (error) setError('');
                             }}
                             placeholder="Access password"
-                            className={`w-full pl-9 pr-9 py-2.5 text-sm border rounded-md outline-none transition focus:ring-2 disabled:bg-slate-50 ${error
+                            className={`w-full pl-9 pr-9 py-2.5 text-sm border rounded outline-none transition focus:ring-2 disabled:bg-slate-50 ${error
                                 ? 'border-red-300 focus:ring-red-100'
                                 : 'border-slate-200 focus:ring-[#185FA5]/15 focus:border-[#185FA5]'
                                 }`}
@@ -264,7 +264,7 @@ export const PasswordGate = ({ onUnlock, bare = false }) => {
                     <button
                         type="submit"
                         disabled={checking || !value}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-[#185FA5] text-white rounded-md hover:bg-[#0C447C] disabled:opacity-40 disabled:cursor-not-allowed transition"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-[#185FA5] text-white rounded hover:bg-[#0C447C] disabled:opacity-40 disabled:cursor-not-allowed transition"
                     >
                         {checking ? <RefreshCw size={14} className="animate-spin" /> : <Lock size={14} />}
                         {checking ? 'Verifying...' : 'Unlock panel'}
@@ -280,7 +280,7 @@ export const PasswordGate = ({ onUnlock, bare = false }) => {
 const StatusBadge = ({ status }) => {
     if (status === 'RUNNING') {
         return (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-orange-700 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded">
                 <RefreshCw size={11} className="animate-spin" /> Running
             </span>
         );
@@ -349,7 +349,7 @@ const ResultsTable = ({ rows }) => {
     const pendingCount = rows.filter((r) => r.status === 'PENDING' || r.status === 'RUNNING').length;
 
     return (
-        <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
+        <div className="border border-slate-200 rounded overflow-hidden bg-white">
             <div className="flex items-center gap-4 px-4 py-2 bg-slate-50 border-b border-slate-200 text-xs">
                 <span className="font-medium text-slate-500">{rows.length} total</span>
                 <span className="flex items-center gap-1.5 text-emerald-700">
@@ -428,7 +428,7 @@ const BranchQueueBanner = ({ queue, activeIndex }) => {
 
     if (!active) {
         return (
-            <div className="border border-emerald-200 bg-emerald-50 rounded-lg p-4">
+            <div className="border border-emerald-200 bg-emerald-50 rounded p-4">
                 <p className="text-sm font-medium text-emerald-700 flex items-center gap-2">
                     <CheckCircle2 size={14} /> All {queue.length} branches complete
                 </p>
@@ -437,7 +437,7 @@ const BranchQueueBanner = ({ queue, activeIndex }) => {
     }
 
     return (
-        <div className="border border-slate-200 bg-slate-50 rounded-lg p-4">
+        <div className="border border-slate-200 bg-slate-50 rounded p-4">
             <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">
                 Branch {activeIndex + 1} of {queue.length} — {remaining} remaining
             </p>
@@ -827,10 +827,10 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
 
     return (
         <div className="space-y-4">
-            <div className={bare ? '' : 'border border-slate-200 rounded-lg p-5 bg-white'}>
+            <div className={bare ? '' : 'border border-slate-200 rounded p-5 bg-white'}>
                 <div className="max-w-2xl">
                     <div className="flex items-center gap-2.5 mb-4 pb-4 border-b border-slate-100">
-                        <div className="w-8 h-8 rounded-md bg-[#E6F1FB] flex items-center justify-center">
+                        <div className="w-8 h-8 rounded bg-[#E6F1FB] flex items-center justify-center">
                             <Layers size={15} className="text-[#185FA5]" />
                         </div>
                         <div>
@@ -840,7 +840,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                     </div>
 
                     {/* Collapsible warning */}
-                    <div className="rounded-md border border-amber-200 bg-amber-50 overflow-hidden mb-4">
+                    <div className="rounded border border-amber-200 bg-amber-50 overflow-hidden mb-4">
                         <button
                             type="button"
                             onClick={() => setWarningOpen((o) => !o)}
@@ -977,7 +977,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                                         <button
                                             onClick={() => setConfirmOpen(true)}
                                             disabled={!canRun || running}
-                                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-[#185FA5] text-white rounded-md hover:bg-[#0C447C] disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-[#185FA5] text-white rounded hover:bg-[#0C447C] disabled:opacity-40 disabled:cursor-not-allowed transition"
                                         >
                                             <RefreshCw size={14} className={running ? 'animate-spin' : ''} />
                                             {running ? `Rebuilding ${progress.done}/${progress.total}...` : 'Rebuild stock'}
@@ -1033,7 +1033,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                         <Clock size={14} /> Results
                     </h3>
                     {results.length > 500 ? (
-                        <div className="border border-slate-200 rounded-lg p-4 bg-white text-sm text-slate-600">
+                        <div className="border border-slate-200 rounded p-4 bg-white text-sm text-slate-600">
                             <p className="mb-1">
                                 <span className="font-semibold text-slate-900">{results.length.toLocaleString()}</span> operations total —
                                 too many to list live without slowing down your browser.
@@ -1052,9 +1052,9 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
             {/* Confirm modal */}
             {confirmOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+                    <div className="bg-white rounded shadow-xl w-full max-w-md p-6">
                         <div className="flex items-center gap-3 mb-3">
-                            <div className="p-1.5 bg-red-50 rounded-md">
+                            <div className="p-1.5 bg-red-50 rounded">
                                 <AlertTriangle className="text-red-600" size={18} />
                             </div>
                             <h3 className="text-sm font-semibold text-slate-900">Confirm stock rebuild</h3>
@@ -1088,13 +1088,13 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
                         <div className="flex justify-end gap-2">
                             <button
                                 onClick={() => setConfirmOpen(false)}
-                                className="px-4 py-2 text-sm font-medium border border-slate-200 rounded-md text-slate-600 hover:bg-slate-50 transition"
+                                className="px-4 py-2 text-sm font-medium border border-slate-200 rounded text-slate-600 hover:bg-slate-50 transition"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={runRebuild}
-                                className="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-md hover:bg-red-700 transition"
+                                className="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded hover:bg-red-700 transition"
                             >
                                 Yes, rebuild all
                             </button>

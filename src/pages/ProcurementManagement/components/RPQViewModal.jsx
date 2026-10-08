@@ -163,7 +163,7 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
                     <h2 className="text-xl font-bold text-gray-900">Quotation Request Details</h2>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-gray-100 rounded-lg"
+                        className="p-2 hover:bg-gray-100 rounded"
                     >
                         <X size={20} />
                     </button>
@@ -199,7 +199,7 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
                     </div>
 
                     {/* Supplier Details */}
-                    <div className="mb-4 p-3 border border-gray-300 rounded-lg">
+                    <div className="mb-4 p-3 border border-gray-300 rounded">
                         <h3 className="font-bold text-gray-900 mb-2">Supplier Details</h3>
                         <div className="grid grid-cols-2 gap-3 text-sm">
                             <div className="info-row">
@@ -265,7 +265,7 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
                                             </tr>
                                         ))}
                                     </tbody>
-                                    <tfoot className="bg-gray-50">
+                                    <tfoot className="bg-white">
                                         <tr>
                                             <td colSpan="4" className="px-3 py-2 text-right font-bold text-sm border border-gray-300">TOTAL QTY:</td>
                                             <td className="px-3 py-2 font-bold text-sm border border-gray-300 text-right">
@@ -283,7 +283,7 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
                             </div>
                         </div>
                     )}
-                    <div className="mb-4 p-3 border border-gray-300 rounded-lg">
+                    <div className="mb-4 p-3 border border-gray-300 rounded">
                         <h3 className="font-bold text-gray-900 mb-2">Payment Arrangement</h3>
                         <div className="space-y-3">
                             <div className="flex items-center gap-2">
@@ -302,7 +302,7 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
                     </div>
 
                     {/* Payment Method */}
-                    <div className="mb-4 p-3 border border-gray-300 rounded-lg">
+                    <div className="mb-4 p-3 border border-gray-300 rounded">
                         <h3 className="font-bold text-gray-900 mb-2">Payment Method</h3>
                         <div className="grid grid-cols-2 gap-3 text-sm">
                             <div className="info-row">
@@ -341,7 +341,7 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
                     </div>
 
                     {/* Production Details */}
-                    <div className="mb-4 p-3 border border-gray-300 rounded-lg">
+                    <div className="mb-4 p-3 border border-gray-300 rounded">
                         <h3 className="font-bold text-gray-900 mb-2">Production Details</h3>
                         <div className="space-y-3">
                             <div className="flex items-center gap-3">
@@ -358,7 +358,7 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
                     </div>
 
                     {/* Required Documents */}
-                    <div className="mb-4 p-3 border border-gray-300 rounded-lg">
+                    <div className="mb-4 p-3 border border-gray-300 rounded">
                         <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
                             <Upload size={18} />
                             Required Documents
@@ -381,10 +381,10 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
                                                     }
                                                 }}
                                                 disabled={uploadingFiles[docType]}
-                                                className="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+                                                className="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 disabled:opacity-50"
                                             />
                                             {uploadingFiles[docType] && (
-                                                <span className="ml-2 text-xs text-blue-600">
+                                                <span className="ml-2 text-xs text-orange-600">
                                                     <Loader2 size={14} className="inline animate-spin mr-1" />
                                                     Uploading...
                                                 </span>
@@ -398,7 +398,7 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
                                                 href={getFileUrl(viewingRpq.documents[docType])}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                                className="p-1 text-orange-600 hover:bg-orange-100 rounded"
                                                 title="View"
                                             >
                                                 <Eye size={16} />
@@ -436,7 +436,7 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
                             <span className={`px-2 py-1 rounded-full text-xs font-medium badge-nowrap ${viewingRpq.status === 'CONFIRMED'
                                 ? 'bg-green-100 text-green-800'
                                 : viewingRpq.status === 'PENDING'
-                                    ? 'bg-blue-100 text-blue-800'
+                                    ? 'bg-orange-100 text-orange-800'
                                     : 'bg-gray-100 text-gray-800'
                                 }`}>
                                 {viewingRpq.status || 'DRAFT'}
@@ -473,7 +473,7 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
                                 return (
                                     <>
                                         {!isComplete && missingFields.length > 0 && (
-                                            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
                                                 <div className="flex items-start gap-2">
                                                     <div className="text-yellow-600 mt-0.5">⚠️</div>
                                                     <div>
@@ -493,7 +493,7 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
                                         <button
                                             onClick={handleConfirmProduct}
                                             disabled={!isComplete || buttonLoading}
-                                            className={`w-full px-4 py-3 rounded-lg flex items-center justify-center gap-2 font-medium transition-colors ${isComplete
+                                            className={`w-full px-4 py-3 rounded flex items-center justify-center gap-2 font-medium transition-colors ${isComplete
                                                 ? 'bg-green-600 text-white hover:bg-green-700'
                                                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                                 } disabled:opacity-50`}

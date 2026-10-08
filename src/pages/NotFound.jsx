@@ -5,10 +5,10 @@ import { Link } from 'react-router-dom';
 
 const NotFound = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center p-6">
       <div className="text-center">
         <div className="mb-8">
-          <AlertCircle className="w-24 h-24 text-blue-600 mx-auto" />
+          <AlertCircle className="w-24 h-24 text-orange-600 mx-auto" />
         </div>
 
         <h1 className="text-6xl font-bold text-gray-900 mb-4">404</h1>
@@ -20,7 +20,7 @@ const NotFound = () => {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
             to="/welcome"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-orange-600 text-white font-medium rounded hover:bg-orange-700 transition"
           >
             <Home size={20} />
             Back Home
@@ -28,7 +28,7 @@ const NotFound = () => {
 
           <button
             onClick={() => window.history.back()}
-            className="inline-flex items-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition"
+            className="inline-flex items-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded hover:bg-white transition"
           >
             Go Back
           </button>

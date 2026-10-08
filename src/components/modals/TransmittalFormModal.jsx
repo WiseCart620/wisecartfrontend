@@ -588,7 +588,7 @@ const TransmittalFormModal = ({
                         </h2>
                         <p className="text-sm text-gray-500 mt-0.5">Control No.: {formData.controlNumber || '(auto-generated)'}</p>
                     </div>
-                    <button onClick={onClose} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition">
+                    <button onClick={onClose} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition">
                         <X size={22} />
                     </button>
                 </div>
@@ -604,7 +604,7 @@ const TransmittalFormModal = ({
                                 value={formData.controlNumber}
                                 onChange={e => setFormData(p => ({ ...p, controlNumber: e.target.value }))}
                                 placeholder="Auto-generated on save"
-                                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                className="w-full px-3 py-2.5 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
                             />
                         </div>
                         <div>
@@ -613,7 +613,7 @@ const TransmittalFormModal = ({
                                 type="datetime-local"
                                 value={formData.date}
                                 onChange={e => setFormData(p => ({ ...p, date: e.target.value }))}
-                                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                className="w-full px-3 py-2.5 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
                             />
                         </div>
                         <div>
@@ -622,7 +622,7 @@ const TransmittalFormModal = ({
                                 type="text"
                                 value={formData.preparedBy}
                                 onChange={e => setFormData(p => ({ ...p, preparedBy: e.target.value }))}
-                                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                className="w-full px-3 py-2.5 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
                             />
                         </div>
                     </div>
@@ -647,10 +647,10 @@ const TransmittalFormModal = ({
                                 }}
                                 onBlur={() => setTimeout(() => setShowBranchDropdown(false), 150)}
                                 placeholder="Search branch by name or code..."
-                                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                className="w-full px-3 py-2.5 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
                             />
                             {showBranchDropdown && (
-                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded shadow-lg max-h-60 overflow-y-auto">
                                     {branches
                                         .filter(b =>
                                             b.branchName.toLowerCase().includes(branchSearch.toLowerCase()) ||
@@ -664,8 +664,8 @@ const TransmittalFormModal = ({
                                                     setShowBranchDropdown(false);
                                                     setBranchSearch('');
                                                 }}
-                                                className={`px-4 py-2.5 cursor-pointer hover:bg-blue-50 text-sm ${String(formData.branchId) === String(b.id)
-                                                    ? 'bg-blue-50 font-semibold text-blue-700'
+                                                className={`px-4 py-2.5 cursor-pointer hover:bg-orange-50 text-sm ${String(formData.branchId) === String(b.id)
+                                                    ? 'bg-orange-50 font-semibold text-orange-700'
                                                     : 'text-gray-800'
                                                     }`}
                                             >
@@ -686,7 +686,7 @@ const TransmittalFormModal = ({
                             )}
                         </div>
                         {formData.branchName && (
-                            <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+                            <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-800">
                                 <span className="font-semibold">{formData.branchName}</span>
                                 {formData.branchAddress && (
                                     <span className="ml-2 text-green-600">— {formData.branchAddress}</span>
@@ -717,15 +717,15 @@ const TransmittalFormModal = ({
 
                     {/* ── Items Table ── */}
                     {formData.items.length === 0 ? (
-                        <div className="text-center py-10 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                        <div className="text-center py-10 bg-white rounded border-2 border-dashed border-gray-300">
                             <Package size={40} className="mx-auto mb-3 text-gray-400" />
                             <p className="text-sm font-medium text-gray-500">No products added yet</p>
                             <p className="text-xs text-gray-400">Search and select a product above, then click "Add to List"</p>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto rounded-lg border border-gray-200">
+                        <div className="overflow-x-auto rounded border border-gray-200">
                             <table className="w-full text-sm">
-                                <thead className="bg-gray-50 border-b border-gray-200">
+                                <thead className="bg-white border-b border-gray-200">
                                     <tr>
                                         <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase">#</th>
                                         <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase">UPC</th>
@@ -739,7 +739,7 @@ const TransmittalFormModal = ({
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 bg-white">
                                     {formData.items.map((item, i) => (
-                                        <tr key={i} className="hover:bg-gray-50">
+                                        <tr key={i} className="hover:bg-white">
                                             <td className="px-3 py-2.5 text-gray-500 font-semibold">{i + 1}</td>
                                             <td className="px-3 py-2.5 text-xs text-gray-700 font-mono">{item.upc || '—'}</td>
                                             <td className="px-3 py-2.5 font-medium text-gray-900 max-w-xs">
@@ -760,7 +760,7 @@ const TransmittalFormModal = ({
                                                     min="0"
                                                     value={item.unitsPerCase}
                                                     onChange={e => handleItemChange(i, 'unitsPerCase', e.target.value)}
-                                                    className="w-20 px-2 py-1.5 border border-blue-300 bg-blue-50 rounded text-sm text-right font-medium focus:ring-2 focus:ring-blue-500"
+                                                    className="w-20 px-2 py-1.5 border border-orange-300 bg-orange-50 rounded text-sm text-right font-medium focus:ring-2 focus:ring-orange-500"
                                                     placeholder="0"
                                                 />
                                             </td>
@@ -783,7 +783,7 @@ const TransmittalFormModal = ({
                                                 <button
                                                     type="button"
                                                     onClick={() => handleRemoveItem(i)}
-                                                    className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition"
+                                                    className="text-red-500 hover:bg-red-50 p-1.5 rounded transition"
                                                     title="Remove"
                                                 >
                                                     <X size={16} />
@@ -793,7 +793,7 @@ const TransmittalFormModal = ({
                                     ))}
                                 </tbody>
                                 <tfoot>
-                                    <tr className="bg-gray-50 border-t-2 border-gray-300">
+                                    <tr className="bg-white border-t-2 border-gray-300">
                                         <td colSpan={6} className="px-3 py-2.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wide">
                                             Grand Total ({formData.items.length} item{formData.items.length !== 1 ? 's' : ''})
                                         </td>
@@ -814,7 +814,7 @@ const TransmittalFormModal = ({
                         type="button"
                         onClick={onClose}
                         disabled={isLoading}
-                        className="px-5 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+                        className="px-5 py-2.5 border border-gray-300 rounded hover:bg-white transition font-medium text-sm"
                     >
                         Cancel
                     </button>
@@ -822,7 +822,7 @@ const TransmittalFormModal = ({
                         <button
                             type="button"
                             onClick={handlePrint}
-                            className="flex items-center gap-2 px-5 py-2.5 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition font-medium text-sm"
+                            className="flex items-center gap-2 px-5 py-2.5 border border-orange-300 text-orange-700 rounded hover:bg-orange-50 transition font-medium text-sm"
                         >
                             <Printer size={16} />
                             Print Preview
@@ -831,7 +831,7 @@ const TransmittalFormModal = ({
                             type="button"
                             onClick={handleSave}
                             disabled={isLoading}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm disabled:opacity-50"
+                            className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded hover:bg-orange-700 transition font-medium text-sm disabled:opacity-50"
                         >
                             <Save size={16} />
                             {isLoading

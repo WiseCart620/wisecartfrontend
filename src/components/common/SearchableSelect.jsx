@@ -34,7 +34,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled, loa
         type="button"
         onClick={() => !disabled && !loading && setIsOpen(!isOpen)}
         disabled={disabled || loading}
-        className={`w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-left focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 flex items-center justify-between ${(disabled || loading) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-gray-400'
+        className={`w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white text-left focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 flex items-center justify-between ${(disabled || loading) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-gray-400'
           }`}
       >
         {loading ? (
@@ -56,7 +56,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder, disabled, loa
             className="fixed inset-0 z-10"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
+          <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-hidden">
             <div className="p-2 border-b border-gray-200 sticky top-0 bg-white">
               <div className="relative">
                 <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />

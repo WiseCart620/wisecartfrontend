@@ -13,7 +13,7 @@ const InventoryViewModal = ({ selectedInventory, onClose, onConfirm }) => {
           <h2 className="text-lg sm:text-2xl font-bold text-gray-900">Inventory Record Details</h2>
           <button
             onClick={onClose}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition"
           >
             <X size={24} />
           </button>
@@ -21,11 +21,11 @@ const InventoryViewModal = ({ selectedInventory, onClose, onConfirm }) => {
 
         <div className="p-4 sm:p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
-            <div className="p-4 bg-gray-50 rounded-lg">
+            <div className="p-4 bg-white rounded">
               <h3 className="font-semibold text-gray-700 mb-2">Record Information</h3>
               <p className="text-sm text-gray-600 mb-1">
                 <strong>Type:</strong>
-                <span className={`ml-2 px-2 py-1 rounded text-xs ${getTypeColor(selectedInventory.inventoryType)}`}>
+                <span className={`ml-2 px-2 py-1 rounded text-xs whitespace-nowrap ${getTypeColor(selectedInventory.inventoryType)}`}>
                   {selectedInventory.inventoryType?.replace('_', ' ')}
                 </span>
               </p>
@@ -40,7 +40,7 @@ const InventoryViewModal = ({ selectedInventory, onClose, onConfirm }) => {
                 <strong>Processed By:</strong> {selectedInventory.processedBy}
               </p>
             </div>
-            <div className="p-4 bg-gray-50 rounded-lg">
+            <div className="p-4 bg-white rounded">
               <h3 className="font-semibold text-gray-700 mb-2">Locations</h3>
               {selectedInventory.fromWarehouse && (
                 <p className="text-sm text-gray-600 mb-1">
@@ -63,7 +63,7 @@ const InventoryViewModal = ({ selectedInventory, onClose, onConfirm }) => {
                 </p>
               )}
             </div>
-            <div className="p-4 bg-gray-50 rounded-lg">
+            <div className="p-4 bg-white rounded">
               <h3 className="font-semibold text-gray-700 mb-2">Status</h3>
               <div className="space-y-2">
                 <span className={`px-4 py-2 inline-flex text-sm leading-5 font-semibold rounded-full ${getStatusColor(selectedInventory.status)}`}>
@@ -92,7 +92,7 @@ const InventoryViewModal = ({ selectedInventory, onClose, onConfirm }) => {
             </div>
 
             {selectedInventory.status === 'CONFIRMED' && (
-              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="p-4 bg-green-50 rounded border border-green-200">
                 <h3 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
                   <Check size={18} />
                   Stock Update Applied
@@ -124,7 +124,7 @@ const InventoryViewModal = ({ selectedInventory, onClose, onConfirm }) => {
           </div>
 
           {selectedInventory.remarks && (
-            <div className="mb-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+            <div className="mb-8 p-4 bg-yellow-50 rounded border border-yellow-200">
               <h3 className="font-semibold text-gray-700 mb-2">Remarks</h3>
               <p className="text-sm text-gray-600">{selectedInventory.remarks}</p>
             </div>
@@ -132,9 +132,9 @@ const InventoryViewModal = ({ selectedInventory, onClose, onConfirm }) => {
 
           <div>
             <h3 className="font-semibold text-gray-700 mb-4 text-lg">Items</h3>
-            <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <div className="overflow-x-auto rounded border border-gray-200">
               <table className="w-full min-w-[400px]">
-                <thead className="bg-gray-50">
+                <thead className="bg-white">
                   <tr>
                     <th className="px-3 py-2.5 text-center text-xs font-medium text-gray-700 w-10">#</th>
                     <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-700">Product</th>
@@ -147,7 +147,7 @@ const InventoryViewModal = ({ selectedInventory, onClose, onConfirm }) => {
                       const hasVariation = item.variationId != null;
 
                       return (
-                        <tr key={`view-item-${item.id || i}-${item.product?.id || 'unknown'}`} className="hover:bg-gray-50 transition">
+                        <tr key={`view-item-${item.id || i}-${item.product?.id || 'unknown'}`} className="hover:bg-white transition">
                           <td className="px-3 py-2.5 text-center text-xs text-gray-400 font-medium align-top">{i + 1}</td>
                           <td className="px-3 py-2.5 text-xs">
                             <div className="font-medium text-gray-900 mb-1">
@@ -155,10 +155,8 @@ const InventoryViewModal = ({ selectedInventory, onClose, onConfirm }) => {
                             </div>
 
                             {hasVariation && item.variation && (
-                              <div className="text-xs text-blue-600 font-medium mb-2 flex items-center gap-1">
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-100">
-                                  Variation: {item.variation}
-                                </span>
+                              <div className="text-xs text-gray-700 font-medium mb-2 whitespace-nowrap">
+                                Variation: {item.variation}
                               </div>
                             )}
 
@@ -195,7 +193,7 @@ const InventoryViewModal = ({ selectedInventory, onClose, onConfirm }) => {
             {selectedInventory.status === 'PENDING' && (
               <button
                 onClick={() => { onClose(); onConfirm(selectedInventory); }}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition shadow-sm font-medium text-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded transition shadow-sm font-medium text-sm"
               >
                 <Check size={16} />
                 <span>Confirm Inventory</span>
@@ -205,10 +203,10 @@ const InventoryViewModal = ({ selectedInventory, onClose, onConfirm }) => {
             {/* Totals */}
             {selectedInventory.items?.length > 0 && (
               <div className="flex items-center gap-3 text-sm">
-                <span className="px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-lg font-medium text-gray-700">
+                <span className="px-3 py-1.5 bg-gray-100 border border-gray-200 rounded font-medium text-gray-700">
                   📦 {selectedInventory.items.length} product{selectedInventory.items.length !== 1 ? 's' : ''}
                 </span>
-                <span className="px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg font-bold text-blue-700">
+                <span className="px-3 py-1.5 bg-orange-50 border border-orange-200 rounded font-bold text-orange-700">
                   Total Qty: {selectedInventory.items.reduce((sum, item) => sum + (item.quantity || 0), 0).toLocaleString()}
                 </span>
               </div>
@@ -217,7 +215,7 @@ const InventoryViewModal = ({ selectedInventory, onClose, onConfirm }) => {
 
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+            className="px-4 py-2 border border-gray-300 rounded hover:bg-white transition font-medium text-sm"
           >
             Close
           </button>

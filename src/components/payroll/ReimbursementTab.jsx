@@ -155,10 +155,10 @@ const ReimbursementTab = ({ employees, canEdit }) => {
             </Field>
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setShowAdd(false)}
-                className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+                className="px-4 py-2.5 border border-gray-300 rounded text-sm hover:bg-white">
                 Cancel
               </button>
-              <button className="px-4 py-2.5 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">
+              <button className="px-4 py-2.5 bg-orange-600 text-white rounded text-sm hover:bg-orange-700">
                 Add Reimbursement
               </button>
             </div>
@@ -166,7 +166,7 @@ const ReimbursementTab = ({ employees, canEdit }) => {
         </Modal>
       )}
 
-      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-gray-50 pb-4 flex items-center gap-3">
+      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-white pb-4 flex items-center gap-3">
         <div className="relative w-full max-w-sm">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
@@ -184,9 +184,9 @@ const ReimbursementTab = ({ employees, canEdit }) => {
             </button>
           )}
           {open && (
-            <ul className="absolute z-20 mt-1 w-full max-h-60 overflow-auto bg-white border border-gray-200 rounded-lg shadow-lg text-sm">
+            <ul className="absolute z-20 mt-1 w-full max-h-60 overflow-auto bg-white border border-gray-200 rounded shadow-lg text-sm">
               <li onMouseDown={(e) => { e.preventDefault(); clearFilter(); setOpen(false); }}
-                className="px-3 py-2 cursor-pointer hover:bg-gray-50 text-gray-500">
+                className="px-3 py-2 cursor-pointer hover:bg-white text-gray-500">
                 All employees
               </li>
               {dropdownOptions.length === 0 ? (
@@ -203,7 +203,7 @@ const ReimbursementTab = ({ employees, canEdit }) => {
         </div>
         {canEdit && (
           <button type="button" onClick={() => setShowAdd(true)}
-            className="inline-flex items-center gap-1 px-4 py-2.5 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 whitespace-nowrap">
+            className="inline-flex items-center gap-1 px-4 py-2.5 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 whitespace-nowrap">
             <Plus size={16} /> Add Reimbursement
           </button>
         )}
@@ -212,7 +212,7 @@ const ReimbursementTab = ({ employees, canEdit }) => {
       <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full tbl-card">
         <div className="overflow-auto w-full tbl-scroll">
           <table className="w-full min-w-[800px] text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-white">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Records</th>
@@ -232,7 +232,7 @@ const ReimbursementTab = ({ employees, canEdit }) => {
                 const isOpen = expandedKey === g.key;
                 return (
                   <React.Fragment key={g.key}>
-                    <tr className="hover:bg-gray-50 cursor-pointer"
+                    <tr className="hover:bg-white cursor-pointer"
                       onClick={() => setExpandedKey(isOpen ? null : g.key)}>
                       <td className="px-4 py-3 font-medium">
                         <span className="inline-flex items-center gap-3">
@@ -254,8 +254,8 @@ const ReimbursementTab = ({ employees, canEdit }) => {
 
                     {isOpen && (
                       <tr>
-                        <td colSpan="7" className="bg-gray-50 px-4 py-3">
-                          <table className="w-full text-sm bg-white rounded-lg overflow-hidden">
+                        <td colSpan="7" className="bg-white px-4 py-3">
+                          <table className="w-full text-sm bg-white rounded overflow-hidden">
                             <thead className="border-b">
                               <tr>
                                 {['Date', 'Amount', 'Reason', 'Status', ''].map(h => (
@@ -278,11 +278,11 @@ const ReimbursementTab = ({ employees, canEdit }) => {
                                     {canEdit && r.status === 'PENDING' && (
                                       <div className="flex justify-end gap-1">
                                         <button onClick={() => cancelReimbursement(r.id)} title="Cancel"
-                                          className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg">
+                                          className="p-2 text-orange-600 hover:bg-orange-50 rounded">
                                           <Ban size={16} />
                                         </button>
                                         <button onClick={() => del(r.id)} title="Delete"
-                                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
+                                          className="p-2 text-red-600 hover:bg-red-50 rounded">
                                           <Trash2 size={16} />
                                         </button>
                                       </div>

@@ -138,14 +138,14 @@ const EmployeeDocumentsModal = ({ employee, canEdit, canDelete, onClose, onChang
         URL.revokeObjectURL(url);
     };
 
-    const inputCls = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none';
+    const inputCls = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 outline-none';
 
     return (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
                     <h2 className="text-xl font-bold text-gray-900">Documents — {employee.fullName}</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded"><X size={20} /></button>
                 </div>
 
                 <div className="p-6 space-y-8">
@@ -153,7 +153,7 @@ const EmployeeDocumentsModal = ({ employee, canEdit, canDelete, onClose, onChang
                     <section>
                         <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">ID Photo</h3>
                         <div className="flex items-center gap-5">
-                            <div className="w-28 h-28 rounded-xl border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center">
+                            <div className="w-28 h-28 rounded-xl border border-gray-200 bg-white overflow-hidden flex items-center justify-center">
                                 <SecureImage
                                     path={photoUrl}
                                     alt="ID"
@@ -163,12 +163,12 @@ const EmployeeDocumentsModal = ({ employee, canEdit, canDelete, onClose, onChang
                             </div>
                             {canEdit && (
                                 <div className="flex flex-col gap-2">
-                                    <label className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm cursor-pointer hover:bg-orange-700">
+                                    <label className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded text-sm cursor-pointer hover:bg-orange-700">
                                         <Camera size={16} /> {photoUrl ? 'Replace photo' : 'Upload photo'}
                                         <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={uploadPhoto} disabled={busy} />
                                     </label>
                                     {photoUrl && (
-                                        <button onClick={removePhoto} disabled={busy} className="inline-flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50">
+                                        <button onClick={removePhoto} disabled={busy} className="inline-flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 rounded text-sm hover:bg-red-50">
                                             <Trash2 size={16} /> Remove
                                         </button>
                                     )}
@@ -182,12 +182,12 @@ const EmployeeDocumentsModal = ({ employee, canEdit, canDelete, onClose, onChang
                     <section>
                         <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">Contracts</h3>
 
-                        <div className="border border-gray-200 rounded-lg divide-y mb-4">
+                        <div className="border border-gray-200 rounded divide-y mb-4">
                             {contracts.length === 0 && <p className="p-4 text-sm text-gray-500">No contracts uploaded yet.</p>}
                             {contracts.map(c => (
                                 <div key={c.contractId} className="p-3 flex items-center justify-between gap-3">
                                     <div className="flex items-center gap-3 min-w-0">
-                                        <div className="p-2 bg-orange-100 rounded-lg"><FileText size={18} className="text-orange-600" /></div>
+                                        <div className="p-2 bg-orange-100 rounded"><FileText size={18} className="text-orange-600" /></div>
                                         <div className="min-w-0">
                                             <div className="font-medium text-gray-900 text-sm truncate">{c.title}</div>
                                             <div className="text-xs text-gray-500 truncate">
@@ -197,10 +197,10 @@ const EmployeeDocumentsModal = ({ employee, canEdit, canDelete, onClose, onChang
                                         </div>
                                     </div>
                                     <div className="flex gap-1 flex-shrink-0">
-                                        <button onClick={() => viewContract(c)} title="View" className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"><Eye size={16} /></button>
-                                        <button onClick={() => downloadContract(c)} title="Download" className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"><Download size={16} /></button>
+                                        <button onClick={() => viewContract(c)} title="View" className="p-2 text-gray-600 hover:bg-gray-100 rounded"><Eye size={16} /></button>
+                                        <button onClick={() => downloadContract(c)} title="Download" className="p-2 text-orange-600 hover:bg-orange-50 rounded"><Download size={16} /></button>
                                         {canDelete && (
-                                            <button onClick={() => removeContract(c)} title="Delete" className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={16} /></button>
+                                            <button onClick={() => removeContract(c)} title="Delete" className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
                                         )}
                                     </div>
                                 </div>
@@ -208,12 +208,12 @@ const EmployeeDocumentsModal = ({ employee, canEdit, canDelete, onClose, onChang
                         </div>
 
                         {canEdit && (
-                            <form onSubmit={addContract} className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-gray-50 border border-gray-100 rounded-xl p-4">
+                            <form onSubmit={addContract} className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-white border border-gray-100 rounded-xl p-4">
                                 <input className={inputCls} placeholder="Contract title (e.g. Employment Contract 2026)" value={title} onChange={(e) => setTitle(e.target.value)} />
                                 <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={(e) => setFile(e.target.files?.[0] || null)}
-                                    className="text-sm file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-gray-200 file:text-sm" />
+                                    className="text-sm file:mr-3 file:px-3 file:py-2 file:rounded file:border-0 file:bg-gray-200 file:text-sm" />
                                 <div className="md:col-span-2 flex justify-end">
-                                    <button type="submit" disabled={busy} className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 disabled:opacity-50">
+                                    <button type="submit" disabled={busy} className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 disabled:opacity-50">
                                         <Upload size={16} /> Upload Contract
                                     </button>
                                 </div>

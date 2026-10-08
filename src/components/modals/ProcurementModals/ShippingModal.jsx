@@ -199,7 +199,7 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
             <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
                     <h2 className="text-lg font-bold text-gray-900">Shipping Cost — {purchaseOrder?.controlNumber}</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded"><X size={20} /></button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -212,14 +212,14 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
                             <button
                                 type="button"
                                 onClick={() => setShowDropdown(!showDropdown)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-left text-sm focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-2 border border-gray-300 rounded text-left text-sm focus:ring-2 focus:ring-orange-500"
                             >
                                 {selectedForwarderId
                                     ? forwarders.find(f => f.id === parseInt(selectedForwarderId))?.name || 'Select forwarder'
                                     : 'Select forwarder'}
                             </button>
                             {showDropdown && (
-                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded shadow-lg max-h-48 overflow-y-auto">
                                     {forwarders.length === 0 ? (
                                         <div className="px-4 py-3 text-sm text-gray-500">No forwarders found</div>
                                     ) : forwarders.map(f => (
@@ -227,7 +227,7 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
                                             key={f.id}
                                             type="button"
                                             onClick={() => handleForwarderSelect(f.id)}
-                                            className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 border-b border-gray-100 last:border-0"
+                                            className="w-full px-4 py-2 text-left text-sm hover:bg-orange-50 border-b border-gray-100 last:border-0"
                                         >
                                             {f.name}
                                         </button>
@@ -239,7 +239,7 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
 
                     {/* Agent Info */}
                     {agentInfo && (
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+                        <div className="p-4 bg-orange-50 border border-orange-200 rounded text-sm">
                             <h3 className="font-semibold text-gray-800 mb-2">Forwarding Agent Details</h3>
                             <div className="grid grid-cols-2 gap-2">
                                 <div><span className="text-gray-500">Company:</span> <span className="font-medium">{agentInfo.name}</span></div>
@@ -257,7 +257,7 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
                         <div className="grid grid-cols-3 gap-4">
                             <div>
                                 <label className="text-xs text-gray-500 mb-1 block">USD Amount *</label>
-                                <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+                                <div className="flex items-center border border-gray-300 rounded overflow-hidden">
                                     <span className="px-3 py-2 bg-gray-100 text-gray-600 text-sm font-medium">$</span>
                                     <input
                                         type="number"
@@ -272,7 +272,7 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
                             </div>
                             <div>
                                 <label className="text-xs text-gray-500 mb-1 block">PHP Amount</label>
-                                <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+                                <div className="flex items-center border border-gray-300 rounded overflow-hidden">
                                     <span className="px-3 py-2 bg-gray-100 text-gray-600 text-sm font-medium">₱</span>
                                     <input
                                         type="number"
@@ -291,7 +291,7 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
                                     type="date"
                                     value={shippingDate}
                                     onChange={e => setShippingDate(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500"
                                 />
                             </div>
                         </div>
@@ -303,9 +303,9 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
                             <div className="flex items-center justify-between mb-2">
                                 <h3 className="text-sm font-semibold text-gray-700">Shipping Details per Product</h3>
                             </div>
-                            <div className="border rounded-lg overflow-hidden">
+                            <div className="border rounded overflow-hidden">
                                 <table className="w-full text-sm">
-                                    <thead className="bg-gray-50 border-b">
+                                    <thead className="bg-white border-b">
                                         <tr>
                                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Product</th>
                                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Qty</th>
@@ -339,7 +339,7 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
                                                     </td>
                                                     <td className="px-3 py-2">
                                                         <div className="flex items-center gap-1">
-                                                            <span className="w-20 px-2 py-1 bg-gray-50 border border-gray-200 rounded text-xs text-right text-gray-700 inline-block">
+                                                            <span className="w-20 px-2 py-1 bg-white border border-gray-200 rounded text-xs text-right text-gray-700 inline-block">
                                                                 {item.allocationPercent ? parseFloat(item.allocationPercent).toFixed(2) : '0.00'}
                                                             </span>
                                                             <span className="text-xs text-gray-500">%</span>
@@ -352,7 +352,7 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
                                             );
                                         })}
                                     </tbody>
-                                    <tfoot className="bg-gray-50 border-t">
+                                    <tfoot className="bg-white border-t">
                                         <tr>
                                             <td className="px-3 py-2 text-xs font-semibold text-gray-700">Total</td>
                                             <td className="px-3 py-2 text-xs font-semibold text-gray-700 text-right">
@@ -395,15 +395,15 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
                                                 accept="image/*,.pdf,.doc,.docx"
                                                 onChange={e => { if (e.target.files[0]) handleFileUpload(e.target.files[0], key); }}
                                                 disabled={uploadingFiles[key]}
-                                                className="text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                                className="text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
                                             />
-                                            {uploadingFiles[key] && <span className="text-xs text-blue-600 ml-2"><Loader2 size={12} className="inline animate-spin" /> Uploading...</span>}
+                                            {uploadingFiles[key] && <span className="text-xs text-orange-600 ml-2"><Loader2 size={12} className="inline animate-spin" /> Uploading...</span>}
                                         </div>
                                     ) : (
                                         <div className="flex-1 flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded border border-green-200">
                                             <FileText size={14} className="text-green-600" />
                                             <span className="text-sm text-gray-700 flex-1">{uploadedFiles[key].name}</span>
-                                            <a href={getFileUrl(uploadedFiles[key].url)} target="_blank" rel="noopener noreferrer" className="p-1 text-blue-600 hover:bg-blue-100 rounded"><Eye size={14} /></a>
+                                            <a href={getFileUrl(uploadedFiles[key].url)} target="_blank" rel="noopener noreferrer" className="p-1 text-orange-600 hover:bg-orange-100 rounded"><Eye size={14} /></a>
                                             <a href={getFileDownloadUrl(uploadedFiles[key].url)} download className="p-1 text-green-600 hover:bg-green-100 rounded"><Download size={14} /></a>
                                             <button type="button" onClick={() => setUploadedFiles(prev => ({ ...prev, [key]: null }))} className="p-1 text-red-600 hover:bg-red-100 rounded"><X size={14} /></button>
                                         </div>
@@ -415,8 +415,8 @@ const ShippingModal = ({ purchaseOrder, onClose, onSuccess }) => {
 
                     {/* Buttons */}
                     <div className="flex gap-3 pt-4 border-t">
-                        <button type="button" onClick={onClose} disabled={submitting} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50">Cancel</button>
-                        <button type="submit" disabled={submitting} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 disabled:opacity-50">
+                        <button type="button" onClick={onClose} disabled={submitting} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-white disabled:opacity-50">Cancel</button>
+                        <button type="submit" disabled={submitting} className="flex-1 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 flex items-center justify-center gap-2 disabled:opacity-50">
                             {submitting ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : 'Save Shipping Cost'}
                         </button>
                     </div>

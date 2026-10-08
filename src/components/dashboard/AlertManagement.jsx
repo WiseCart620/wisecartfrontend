@@ -22,7 +22,7 @@ const AlertRow = memo(({ alertItem, index, isThisResolving, bulkLoading, onResol
   } else if (alertItem.severity === 'HIGH') {
     alertConfig = { icon: AlertTriangle, iconColor: 'text-orange-600', leftBorder: 'border-l-orange-400', severityColor: 'bg-orange-100 text-orange-800', solidBg: 'bg-orange-500' };
   } else if (alertItem.severity === 'MEDIUM') {
-    alertConfig = { icon: Info, iconColor: 'text-blue-600', leftBorder: 'border-l-blue-400', severityColor: 'bg-blue-100 text-blue-800', solidBg: 'bg-blue-500' };
+    alertConfig = { icon: Info, iconColor: 'text-orange-600', leftBorder: 'border-l-orange-400', severityColor: 'bg-orange-100 text-orange-800', solidBg: 'bg-orange-500' };
   } else if (alertItem.severity === 'LOW') {
     alertConfig = { icon: Bell, iconColor: 'text-gray-500', leftBorder: 'border-l-gray-300', severityColor: 'bg-gray-100 text-gray-700', solidBg: 'bg-gray-400' };
   }
@@ -38,7 +38,7 @@ const AlertRow = memo(({ alertItem, index, isThisResolving, bulkLoading, onResol
   }, [alertItem.resolvedAt]);
 
   return (
-    <div className={`px-4 py-3.5 transition-colors bg-white border-b border-l-4 ${alertConfig.leftBorder} border-gray-100 ${isThisResolving ? 'opacity-60' : 'hover:bg-gray-50'}`}>
+    <div className={`px-4 py-3.5 transition-colors bg-white border-b border-l-4 ${alertConfig.leftBorder} border-gray-100 ${isThisResolving ? 'opacity-60' : 'hover:bg-white'}`}>
       <div className="flex gap-3">
         <div className={`w-9 h-9 rounded-full ${alertConfig.solidBg} flex items-center justify-center flex-shrink-0`}>
           <Icon size={16} className="text-white" strokeWidth={2.5} />
@@ -50,16 +50,16 @@ const AlertRow = memo(({ alertItem, index, isThisResolving, bulkLoading, onResol
                 <h4 className="font-semibold text-gray-900 text-[13px]">
                   {alertItem.title || `Alert #${alertItem.id || index + 1}`}
                 </h4>
-                <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wide ${alertConfig.severityColor}`}>
+                <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide ${alertConfig.severityColor}`}>
                   {alertItem.severity || 'MEDIUM'}
                 </span>
                 {alertItem.alertType && (
-                  <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[9px] rounded-md font-medium">
+                  <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[9px] rounded font-medium">
                     {alertItem.alertType.replace(/_/g, ' ')}
                   </span>
                 )}
                 {alertItem.isResolved && (
-                  <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[9px] rounded-md font-semibold">RESOLVED</span>
+                  <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[9px] rounded font-semibold">RESOLVED</span>
                 )}
               </div>
               <p className="text-gray-600 text-xs leading-relaxed">{alertItem.message || 'No message provided'}</p>
@@ -85,18 +85,18 @@ const AlertRow = memo(({ alertItem, index, isThisResolving, bulkLoading, onResol
           {(alertItem.branch || alertItem.product || alertItem.currentValue !== null) && (
             <div className="grid grid-cols-3 gap-2 mt-2.5">
               {alertItem.branch && (
-                <div className="bg-white p-2 rounded-lg border border-gray-100">
+                <div className="bg-white p-2 rounded border border-gray-100">
                   <p className="text-[9px] text-gray-400 font-medium uppercase tracking-wide">Branch</p>
                   <p className="font-semibold text-gray-900 text-xs truncate mt-0.5">{alertItem.branch.branchName}</p>
                   <p className="text-[9px] text-gray-400 truncate">{alertItem.branch.branchCode}</p>
                 </div>
               )}
               {alertItem.product && (
-                <div className="bg-white p-2 rounded-lg border border-gray-100">
+                <div className="bg-white p-2 rounded border border-gray-100">
                   <p className="text-[9px] text-gray-400 font-medium uppercase tracking-wide">Product</p>
                   <p className="font-semibold text-gray-900 text-xs truncate mt-0.5">{alertItem.product.productName}</p>
                   {alertItem.variationLabel && (
-                    <span className="inline-flex items-center px-1 py-0.5 mt-1 rounded text-[9px] bg-blue-50 text-blue-700 font-medium">
+                    <span className="inline-flex items-center px-1 py-0.5 mt-1 rounded text-[9px] bg-orange-50 text-orange-700 font-medium">
                       {alertItem.variationLabel}
                     </span>
                   )}
@@ -104,7 +104,7 @@ const AlertRow = memo(({ alertItem, index, isThisResolving, bulkLoading, onResol
                 </div>
               )}
               {(alertItem.currentValue !== null || alertItem.thresholdValue !== null) && (
-                <div className="bg-white p-2 rounded-lg border border-gray-100">
+                <div className="bg-white p-2 rounded border border-gray-100">
                   <p className="text-[9px] text-gray-400 font-medium uppercase tracking-wide">
                     {alertItem.currentValue !== null ? 'Current / Threshold' : 'Threshold'}
                   </p>
@@ -128,16 +128,16 @@ const AlertRow = memo(({ alertItem, index, isThisResolving, bulkLoading, onResol
             <div className="flex items-center justify-between mt-3">
               <div className="flex items-center gap-1.5 text-xs text-gray-400">
                 {alertItem.saleId && (
-                  <span className="px-1.5 py-0.5 bg-gray-100 rounded-md text-[10px] font-medium">Sale #{alertItem.saleId}</span>
+                  <span className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-medium">Sale #{alertItem.saleId}</span>
                 )}
                 {alertItem.referenceId && (
-                  <span className="px-1.5 py-0.5 bg-gray-100 rounded-md text-[10px] font-medium">Ref: {alertItem.referenceId}</span>
+                  <span className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-medium">Ref: {alertItem.referenceId}</span>
                 )}
               </div>
               <button
                 onClick={() => onResolve(alertItem)}
                 disabled={isThisResolving || bulkLoading}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
               >
                 {isThisResolving
                   ? <><Loader2 size={12} className="animate-spin" /> Resolving...</>
@@ -406,7 +406,7 @@ const AlertManagement = ({
       >
         {(bulkLoading || pageLoading) && (
           <div className="absolute inset-0 bg-white/85 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-3 rounded-2xl">
-            <Loader2 className="animate-spin text-blue-600" size={36} />
+            <Loader2 className="animate-spin text-orange-600" size={36} />
             <p className="text-gray-700 font-medium text-sm">
               {pageLoading ? 'Loading…' : 'Processing alerts…'}
             </p>
@@ -418,8 +418,8 @@ const AlertManagement = ({
         <div className="px-5 pt-4 pb-3 border-b border-gray-100 bg-white flex-shrink-0">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-blue-50">
-                <Bell className="text-blue-600" size={18} />
+              <div className="p-2 rounded-xl bg-orange-50">
+                <Bell className="text-orange-600" size={18} />
               </div>
               <div>
                 <h3 className="text-[15px] font-bold text-gray-900 leading-tight">Alert Management</h3>
@@ -435,7 +435,7 @@ const AlertManagement = ({
               <button
                 onClick={handleDownloadAndClear}
                 disabled={bulkLoading}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-[11px] font-medium"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded hover:bg-white hover:border-gray-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-[11px] font-medium"
               >
                 <Download size={13} /> Download & Clear
               </button>
@@ -443,7 +443,7 @@ const AlertManagement = ({
                 <button
                   onClick={handleResolveAll}
                   disabled={bulkLoading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-[11px] font-medium shadow-sm"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-[11px] font-medium shadow-sm"
                 >
                   <CheckCheck size={13} /> Resolve All
                 </button>
@@ -467,7 +467,7 @@ const AlertManagement = ({
                 placeholder="Search alerts..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-7 pr-2.5 py-1.5 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 bg-white transition-colors"
+                className="w-full pl-7 pr-2.5 py-1.5 border border-gray-200 rounded text-[12px] focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-400 bg-white transition-colors"
               />
             </div>
 
@@ -480,7 +480,7 @@ const AlertManagement = ({
                   await loadAlerts(0, getResolvedParam(), { ...currentFilters, severity: e.target.value !== 'all' ? e.target.value : undefined });
                 } finally { setPageLoading(false); }
               }}
-              className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-[12px] bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 text-gray-700"
+              className="px-2.5 py-1.5 border border-gray-200 rounded text-[12px] bg-white focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-400 text-gray-700"
             >
               <option value="all">All Severities</option>
               <option value="CRITICAL">Critical</option>
@@ -498,7 +498,7 @@ const AlertManagement = ({
                   await loadAlerts(0, getResolvedParam(), { ...currentFilters, alertType: e.target.value !== 'all' ? e.target.value : undefined });
                 } finally { setPageLoading(false); }
               }}
-              className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-[12px] bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 text-gray-700"
+              className="px-2.5 py-1.5 border border-gray-200 rounded text-[12px] bg-white focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-400 text-gray-700"
             >
               <option value="all">All Types</option>
               <option value="LOW_STOCK">Low Stock</option>
@@ -560,7 +560,7 @@ const AlertManagement = ({
             {activeFilterCount > 0 && (
               <button
                 onClick={clearAllFilters}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-blue-600 hover:text-blue-800 rounded-lg text-[11px] font-medium transition-colors whitespace-nowrap"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-orange-600 hover:text-orange-800 rounded text-[11px] font-medium transition-colors whitespace-nowrap"
               >
                 <XCircle size={12} />
                 Clear all
@@ -571,7 +571,7 @@ const AlertManagement = ({
           {filterChips.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2">
               {filterChips.map(chip => (
-                <span key={chip.key} className="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 bg-blue-50 text-blue-700 rounded-full text-[11px] font-medium border border-blue-100">
+                <span key={chip.key} className="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 bg-orange-50 text-orange-700 rounded-full text-[11px] font-medium border border-orange-100">
                   <span className="leading-none capitalize">{chip.label}</span>
                   <button
                     type="button"
@@ -581,7 +581,7 @@ const AlertManagement = ({
                       try { await loadAlerts(0, getResolvedParam(), {}); }
                       finally { setPageLoading(false); }
                     }}
-                    className="inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-blue-200 hover:text-blue-900 transition-colors flex-shrink-0"
+                    className="inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-orange-200 hover:text-orange-900 transition-colors flex-shrink-0"
                   >
                     <X size={9} strokeWidth={2.5} />
                   </button>
@@ -592,15 +592,15 @@ const AlertManagement = ({
         </div>
 
         {/* ── Tabs ──────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-1.5 px-5 py-2.5 bg-gray-50/70 border-b border-gray-100 flex-shrink-0">
+        <div className="flex items-center gap-1.5 px-5 py-2.5 bg-white/70 border-b border-gray-100 flex-shrink-0">
           <button
-            className={`px-3.5 py-1.5 rounded-lg font-semibold text-[12px] transition-colors ${activeTab === 'active' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}`}
+            className={`px-3.5 py-1.5 rounded font-semibold text-[12px] transition-colors ${activeTab === 'active' ? 'bg-orange-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}`}
             onClick={() => handleTabChange('active')}
           >
             Active Alerts
           </button>
           <button
-            className={`px-3.5 py-1.5 rounded-lg font-semibold text-[12px] transition-colors ${activeTab === 'resolved' ? 'bg-emerald-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}`}
+            className={`px-3.5 py-1.5 rounded font-semibold text-[12px] transition-colors ${activeTab === 'resolved' ? 'bg-emerald-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}`}
             onClick={() => handleTabChange('resolved')}
           >
             Resolved
@@ -608,7 +608,7 @@ const AlertManagement = ({
         </div>
 
         {/* ── Alert list ─────────────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto bg-gray-50/30">
+        <div className="flex-1 overflow-y-auto bg-white/30">
           {alertsLoading ? (
             <div className="p-6 space-y-3 animate-pulse">
               {[...Array(5)].map((_, i) => (
@@ -629,7 +629,7 @@ const AlertManagement = ({
                   <Filter className="text-gray-300 mb-4" size={64} />
                   <p className="text-lg font-semibold text-gray-700">No alerts match your filters</p>
                   <p className="text-gray-400 text-sm mt-1.5">Try adjusting or clearing your filters</p>
-                  <button onClick={clearAllFilters} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm">
+                  <button onClick={clearAllFilters} className="mt-4 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors text-sm font-medium shadow-sm">
                     Clear all filters
                   </button>
                 </>
@@ -641,7 +641,7 @@ const AlertManagement = ({
                 </>
               ) : (
                 <>
-                  <Database className="text-blue-300 mb-4" size={64} />
+                  <Database className="text-orange-300 mb-4" size={64} />
                   <p className="text-lg font-semibold text-gray-700">No Resolved Alerts</p>
                   <p className="text-gray-400 text-sm mt-1.5">No resolved alerts found</p>
                 </>
@@ -673,7 +673,7 @@ const AlertManagement = ({
               <button
                 onClick={() => goToPage(alertsCurrentPage - 1)}
                 disabled={alertsCurrentPage === 0 || pageLoading}
-                className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-gray-500"
+                className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-gray-500"
               >
                 <ChevronLeft size={15} />
               </button>
@@ -685,8 +685,8 @@ const AlertManagement = ({
                       key={item}
                       onClick={() => goToPage(item)}
                       disabled={pageLoading}
-                      className={`min-w-[30px] h-7 px-2 rounded-lg text-[12px] font-semibold transition-colors disabled:cursor-not-allowed
-                        ${item === alertsCurrentPage ? 'bg-blue-600 text-white shadow-sm' : 'hover:bg-gray-100 text-gray-500'}`}
+                      className={`min-w-[30px] h-7 px-2 rounded text-[12px] font-semibold transition-colors disabled:cursor-not-allowed
+                        ${item === alertsCurrentPage ? 'bg-orange-600 text-white shadow-sm' : 'hover:bg-gray-100 text-gray-500'}`}
                     >
                       {item + 1}
                     </button>
@@ -695,7 +695,7 @@ const AlertManagement = ({
               <button
                 onClick={() => goToPage(alertsCurrentPage + 1)}
                 disabled={alertsCurrentPage >= alertsTotalPages - 1 || pageLoading}
-                className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-gray-500"
+                className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-gray-500"
               >
                 <ChevronRight size={15} />
               </button>
@@ -704,7 +704,7 @@ const AlertManagement = ({
         )}
 
         {/* ── Footer ─────────────────────────────────────────────────── */}
-        <div className="px-5 py-2.5 border-t border-gray-100 bg-gray-50/70 flex-shrink-0">
+        <div className="px-5 py-2.5 border-t border-gray-100 bg-white/70 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="text-[10px] text-gray-400 font-medium">
               {alertsTotalElements === 0 ? 'No alerts' : `${alertsTotalElements} total`}
@@ -713,14 +713,14 @@ const AlertManagement = ({
               <button
                 onClick={() => loadAlerts(alertsCurrentPage, getResolvedParam(), currentFilters)}
                 disabled={bulkLoading}
-                className="flex items-center gap-1 px-2.5 py-1 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors text-[10px] font-medium disabled:opacity-50 text-gray-600"
+                className="flex items-center gap-1 px-2.5 py-1 bg-white border border-gray-200 rounded hover:bg-white hover:border-gray-300 transition-colors text-[10px] font-medium disabled:opacity-50 text-gray-600"
               >
                 <RefreshCw size={11} /> Refresh
               </button>
               <button
                 onClick={handleDeleteAllResolved}
                 disabled={bulkLoading}
-                className="flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-600 border border-red-100 rounded-lg hover:bg-red-100 transition-colors text-[10px] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-600 border border-red-100 rounded hover:bg-red-100 transition-colors text-[10px] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Trash2 size={11} /> Clear Resolved
               </button>

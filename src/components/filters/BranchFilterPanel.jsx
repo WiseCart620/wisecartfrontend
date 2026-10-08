@@ -85,7 +85,7 @@ const BranchFilterPanel = ({
     (filters.productKeys?.length > 0) || filters.minQty || filters.maxQty || filters.startDate || filters.endDate;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 px-3 py-1.5 mb-2">
+    <div className="py-1.5 mb-2">
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5">
         {canSeeFilter(user, 'warehouse_inventory', 'company') && (
           <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0 [&>div>button]:!h-8 [&>div>button]:!py-0 [&>div>button]:!text-sm">
@@ -114,7 +114,7 @@ const BranchFilterPanel = ({
 
 
         {canSeeFilter(user, 'warehouse_inventory', 'quantity') && (
-          <div className="h-8 flex items-center gap-1 border border-gray-300 rounded-lg px-2 flex-shrink-0">
+          <div className="h-8 flex items-center gap-1 border border-gray-300 rounded px-2 flex-shrink-0">
             <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Stock</span>
             <input
               type="number"
@@ -135,7 +135,7 @@ const BranchFilterPanel = ({
         )}
 
         {canSeeFilter(user, 'warehouse_inventory', 'date') && (
-          <div className="h-8 flex items-center gap-1 border border-gray-300 rounded-lg px-2 flex-shrink-0">
+          <div className="h-8 flex items-center gap-1 border border-gray-300 rounded px-2 flex-shrink-0">
             <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
             <input
               type="date"

@@ -10,7 +10,7 @@ import EmployeeAvatar from './EmployeeAvatar';
 const LABEL = { DRAFT: 'On-Going', SUBMITTED: 'On-Going (For Approval)', APPROVED: 'Approved', REJECTED: 'Rejected', PAID: 'Paid' };
 const STATUTORY = ['SSS', 'PhilHealth', 'Pag-IBIG'];
 const BADGE = {
-  DRAFT: 'bg-gray-50 text-gray-700 ring-1 ring-gray-200',
+  DRAFT: 'bg-white text-gray-700 ring-1 ring-gray-200',
   SUBMITTED: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
   APPROVED: 'bg-green-50 text-green-700 ring-1 ring-green-200',
   REJECTED: 'bg-red-50 text-red-700 ring-1 ring-red-200',
@@ -76,8 +76,8 @@ const EditModal = ({ payslipId, onClose, onSaved }) => {
             <h3 className="font-semibold text-sm pt-2">Deductions</h3>
             {slip.deductions.map(d => row('d' + d.id, d.deductionType, ded[d.id] ?? '', ev => setDed(p => ({ ...p, [d.id]: ev.target.value }))))}
             <div className="flex justify-end gap-2 pt-4 border-t">
-              <button onClick={onClose} className="px-4 py-2 border rounded-lg text-sm">Cancel</button>
-              <button onClick={save} className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm">Save Changes</button>
+              <button onClick={onClose} className="px-4 py-2 border rounded text-sm">Cancel</button>
+              <button onClick={save} className="px-4 py-2 bg-orange-600 text-white rounded text-sm">Save Changes</button>
             </div>
           </div>
         )}
@@ -268,8 +268,8 @@ const PayrollRunDetail = ({ runId, onBack }) => {
   if (!run) return <div className="p-8 text-gray-500">Loading...</div>;
   const st = run.status;
   const canDownload = perm('download') && (st === 'APPROVED' || st === 'PAID');
-  const btn = 'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
-  const outline = `${btn} bg-white border border-gray-300 text-gray-700 hover:bg-gray-50`;
+  const btn = 'inline-flex items-center gap-2 px-4 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+  const outline = `${btn} bg-white border border-gray-300 text-gray-700 hover:bg-white`;
   const totalGross = Number(run.totalGrossPay || 0);
   const totalNet = Number(run.totalNetPay || 0);
 
@@ -344,9 +344,9 @@ const PayrollRunDetail = ({ runId, onBack }) => {
       )}
 
       {/* payslips table */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-auto max-h-[calc(100vh-14rem)] tbl-scroll">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-auto max-h-[65vh] tbl-scroll">
         <table className="w-full text-sm">
-          <thead className="sticky top-0 z-10 bg-gray-50 shadow-[0_1px_0_0_#e5e7eb]">
+          <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_#e5e7eb]">
             <tr>
               <th className="px-5 py-3 w-10">
                 <input
@@ -371,7 +371,7 @@ const PayrollRunDetail = ({ runId, onBack }) => {
               const tax = Number(s.withholdingTax || 0);
               const net = Number(s.netPay || 0);
               return (
-                <tr key={s.paySlipId} className={`transition-colors hover:bg-gray-50 ${checked.has(s.paySlipId) ? 'bg-orange-50/40' : ''}`}>
+                <tr key={s.paySlipId} className={`transition-colors hover:bg-white ${checked.has(s.paySlipId) ? 'bg-orange-50/40' : ''}`}>
                   <td className="px-5 py-3.5">
                     <input
                       type="checkbox"
@@ -402,14 +402,14 @@ const PayrollRunDetail = ({ runId, onBack }) => {
                   <td className={`px-5 py-3.5 text-right font-semibold tabular-nums ${net < 0 ? 'text-red-600' : 'text-gray-900'}`}>{money(s.netPay)}</td>
                   <td className="px-5 py-3.5 text-right">
                     {st === 'SUBMITTED' && perm('edit') &&
-                      <button onClick={() => setEditId(s.paySlipId)} className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors" title="Edit payslip"><Edit2 size={16} /></button>}
+                      <button onClick={() => setEditId(s.paySlipId)} className="p-2 text-orange-600 hover:bg-orange-50 rounded transition-colors" title="Edit payslip"><Edit2 size={16} /></button>}
                   </td>
                 </tr>
               );
             })}
           </tbody>
           <tfoot>
-            <tr className="bg-gray-50 border-t border-gray-200 font-semibold text-gray-900">
+            <tr className="bg-white border-t border-gray-200 font-semibold text-gray-900">
               <td />
               <td className="px-5 py-3.5" colSpan="6">Total ({run.employeeCount} employees)</td>
               <td className="px-5 py-3.5 text-right tabular-nums">{money(run.totalNetPay)}</td>

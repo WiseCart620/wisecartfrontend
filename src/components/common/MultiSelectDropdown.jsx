@@ -83,7 +83,7 @@ const MultiSelectDropdown = ({
       </button>
 
       {open && !disabled && (
-        <div className="absolute z-50 mt-1 w-72 bg-white border border-gray-200 rounded-lg shadow-xl p-2">
+        <div className="absolute z-50 mt-1 w-72 bg-white border border-gray-200 rounded shadow-xl p-2">
           {options.length > 4 && (
             <div className="relative mb-2">
               <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -93,7 +93,7 @@ const MultiSelectDropdown = ({
                 placeholder={searchPlaceholder}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-7 pr-2 py-1.5 border border-gray-300 rounded-md text-xs focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                className="w-full pl-7 pr-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               />
             </div>
           )}
@@ -113,7 +113,7 @@ const MultiSelectDropdown = ({
               <div className="px-2 py-4 text-xs text-gray-400 italic text-center">No options</div>
             ) : (
               sortedFiltered.map(o => (
-                <label key={o.id} className="flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-gray-50 cursor-pointer rounded">
+                <label key={o.id} className="flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-white cursor-pointer rounded">
                   <input
                     type="checkbox"
                     checked={selectedIds.includes(o.id)}

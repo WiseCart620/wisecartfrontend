@@ -1,13 +1,13 @@
 // src/components/common/filterStyles.js
 export const fieldBase =
-    "h-9 box-border text-sm border border-gray-300 rounded-md bg-white text-gray-700 " +
+    "h-9 box-border text-sm border border-gray-300 rounded bg-white text-gray-700 " +
     "placeholder-gray-400 transition-colors hover:border-gray-400 " +
     "focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500";
 
 export const fieldPadded = `${fieldBase} px-3`;
 
 export const dateBoxWrapper =
-    "h-9 box-border flex items-center gap-1.5 border border-gray-300 rounded-md px-2.5 bg-white " +
+    "h-9 box-border flex items-center gap-1.5 border border-gray-300 rounded px-2.5 bg-white " +
     "hover:border-gray-400 transition-colors focus-within:ring-1 focus-within:ring-orange-500 focus-within:border-orange-500";
 
 export const dateInput =

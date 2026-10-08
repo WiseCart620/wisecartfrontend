@@ -221,7 +221,7 @@ const OvertimeEntries = ({ canEdit }) => {
 
     return (
         <div className="space-y-6">
-            <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-gray-50 pb-4">
+            <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-white pb-4">
                 <div className="bg-white rounded-xl shadow-sm p-4 flex flex-wrap items-end gap-3">
                     <div className="min-w-[150px]">
                         <label className="block text-xs font-medium text-gray-700 mb-1">Month</label>
@@ -252,7 +252,7 @@ const OvertimeEntries = ({ canEdit }) => {
                     <div className="text-xs text-gray-500 pb-2">{fmtShort(from)} to {fmtShort(to)}</div>
                     {canEdit && (
                         <button type="button" onClick={openAdd}
-                            className="ml-auto flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700">
+                            className="ml-auto flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded text-sm font-medium hover:bg-orange-700">
                             <Plus size={16} /> Add Entry
                         </button>
                     )}
@@ -295,8 +295,8 @@ const OvertimeEntries = ({ canEdit }) => {
                         </Field>
                         <div className="md:col-span-2 flex justify-end gap-2 pt-3 border-t border-gray-200">
                             <button type="button" onClick={reset}
-                                className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
-                            <button className="px-5 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700">
+                                className="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-white">Cancel</button>
+                            <button className="px-5 py-2 bg-orange-600 text-white rounded text-sm font-medium hover:bg-orange-700">
                                 {editing ? 'Update Entry' : 'Add Entry'}
                             </button>
                         </div>
@@ -312,21 +312,21 @@ const OvertimeEntries = ({ canEdit }) => {
                 <div className="flex gap-2">
                     {canApprove && pendingAll.length > 0 && (
                         <button onClick={() => approveMany(pendingAll)}
-                            className="px-3 py-2 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700">
+                            className="px-3 py-2 text-xs bg-green-600 text-white rounded hover:bg-green-700">
                             Approve all pending
                         </button>
                     )}
                     <button onClick={() => setExpanded(new Set(pageItems.map(g => g.id)))}
-                        className="px-3 py-2 text-xs border border-gray-300 rounded-lg hover:bg-gray-100">Expand all</button>
+                        className="px-3 py-2 text-xs border border-gray-300 rounded hover:bg-gray-100">Expand all</button>
                     <button onClick={() => setExpanded(new Set())}
-                        className="px-3 py-2 text-xs border border-gray-300 rounded-lg hover:bg-gray-100">Collapse all</button>
+                        className="px-3 py-2 text-xs border border-gray-300 rounded hover:bg-gray-100">Collapse all</button>
                 </div>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full tbl-card">
                 <div className="overflow-auto w-full tbl-scroll">
                     <table className="w-full min-w-[800px] text-sm">
-                        <thead className="bg-gray-50">
+                        <thead className="bg-white">
                             <tr>
                                 <th className="w-10 px-3" />
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Employee</th>
@@ -346,7 +346,7 @@ const OvertimeEntries = ({ canEdit }) => {
                                 return (
                                     <React.Fragment key={g.id}>
                                         <tr onClick={() => toggle(g.id)}
-                                            className={`cursor-pointer [&>td]:sticky [&>td]:top-[39px] [&>td]:z-[5] ${isOpen ? '[&>td]:bg-orange-50' : '[&>td]:bg-white hover:[&>td]:bg-gray-50'}`}>
+                                            className={`cursor-pointer [&>td]:sticky [&>td]:top-[39px] [&>td]:z-[5] ${isOpen ? '[&>td]:bg-orange-50' : '[&>td]:bg-white hover:[&>td]:bg-white'}`}>
                                             <td className="px-3 py-3.5 text-center">
                                                 <ChevronRight size={16} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
                                             </td>
@@ -368,18 +368,18 @@ const OvertimeEntries = ({ canEdit }) => {
                                             <td className="px-4 py-3.5 text-right">
                                                 {canApprove && pending.length > 0 && (
                                                     <button onClick={(e) => { e.stopPropagation(); approveMany(pending); }}
-                                                        className="px-3 py-1.5 text-xs border border-green-300 text-green-700 rounded-lg hover:bg-green-50 whitespace-nowrap">
+                                                        className="px-3 py-1.5 text-xs border border-green-300 text-green-700 rounded hover:bg-green-50 whitespace-nowrap">
                                                         Approve {pending.length} pending
                                                     </button>
                                                 )}
                                             </td>
                                         </tr>
                                         {isOpen && (
-                                            <tr className="bg-gray-50/70">
+                                            <tr className="bg-white/70">
                                                 <td />
                                                 <td colSpan="5" className="px-4 py-3">
                                                     <div className="overflow-x-auto">
-                                                        <table className="w-full min-w-[640px] text-sm bg-white rounded-lg overflow-hidden">
+                                                        <table className="w-full min-w-[640px] text-sm bg-white rounded overflow-hidden">
                                                             <thead className="border-b">
                                                                 <tr>
                                                                     {['Date', 'Type', 'Value', 'Remarks', 'Status'].map(h => (
@@ -405,15 +405,15 @@ const OvertimeEntries = ({ canEdit }) => {
                                                                             <div className="flex justify-end gap-1">
                                                                                 {canApprove && r.status === 'PENDING' && (
                                                                                     <button onClick={() => approveMany([r])} title="Approve"
-                                                                                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg"><CheckCircle size={16} /></button>
+                                                                                        className="p-2 text-green-600 hover:bg-green-50 rounded"><CheckCircle size={16} /></button>
                                                                                 )}
                                                                                 {canEdit && r.status === 'PENDING' && (
                                                                                     <button onClick={() => startEdit(r)} title="Edit"
-                                                                                        className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"><Edit2 size={16} /></button>
+                                                                                        className="p-2 text-orange-600 hover:bg-orange-50 rounded"><Edit2 size={16} /></button>
                                                                                 )}
                                                                                 {canEdit && (
                                                                                     <button onClick={() => del(r)} title="Delete"
-                                                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={16} /></button>
+                                                                                        className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
                                                                                 )}
                                                                             </div>
                                                                         </td>

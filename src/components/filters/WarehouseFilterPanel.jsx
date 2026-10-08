@@ -41,7 +41,7 @@ const WarehouseFilterPanel = ({
     (canDate && (filters.startDate || filters.endDate));
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 px-3 py-1.5 mb-2">
+    <div className="bg-white rounded border border-gray-200 px-3 py-1.5 mb-2">
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5">
         {canWarehouse && (
           <div className="w-52 h-8">
@@ -55,7 +55,7 @@ const WarehouseFilterPanel = ({
         )}
 
         {canQuantity && (
-          <div className="h-8 flex items-center gap-1 border border-gray-300 rounded-lg px-2">
+          <div className="h-8 flex items-center gap-1 border border-gray-300 rounded px-2">
             <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Stock</span>
             <input
               type="number"
@@ -76,7 +76,7 @@ const WarehouseFilterPanel = ({
         )}
 
         {canDate && (
-          <div className="h-8 flex items-center gap-1 border border-gray-300 rounded-lg px-2">
+          <div className="h-8 flex items-center gap-1 border border-gray-300 rounded px-2">
             <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
             <input
               type="date"

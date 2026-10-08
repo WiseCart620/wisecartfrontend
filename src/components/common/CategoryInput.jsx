@@ -53,12 +53,12 @@ const CategoryInput = ({ value, onChange, categories, existingCategories = [] })
         value={isOpen ? searchTerm : inputValue}
         onChange={handleSearchChange}
         onFocus={handleInputFocus}
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
         placeholder="Search or enter category"
       />
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
+        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-hidden">
           <div className="p-3 border-b border-gray-200">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
@@ -67,7 +67,7 @@ const CategoryInput = ({ value, onChange, categories, existingCategories = [] })
                 placeholder="Search categories..."
                 value={searchTerm}
                 onChange={handleSearchChange}
-                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
                 autoFocus
               />
             </div>

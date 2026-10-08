@@ -65,7 +65,7 @@ const Pagination = ({
           onChange={handleInputChange}
           onBlur={commitPage}
           onKeyDown={handleKeyDown}
-          className="w-12 text-center text-sm font-semibold border border-orange-400 rounded-md px-1 py-0.5 focus:outline-none focus:ring-2 focus:ring-orange-500 text-orange-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          className="w-12 text-center text-sm font-semibold border border-orange-400 rounded px-1 py-0.5 focus:outline-none focus:ring-2 focus:ring-orange-500 text-orange-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           title="Type a page number and press Enter"
         />
         {' '}to {showingEnd} of {totalItems} results
@@ -76,10 +76,10 @@ const Pagination = ({
         <button
           onClick={onPrevPage}
           disabled={currentPage === 1}
-          className={`p-2 rounded-lg border ${
+          className={`p-2 rounded border ${
             currentPage === 1
               ? 'text-gray-400 cursor-not-allowed border-gray-200'
-              : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+              : 'text-gray-700 hover:bg-white border-gray-300'
           }`}
         >
           <ChevronLeft size={16} />
@@ -96,10 +96,10 @@ const Pagination = ({
                 )}
                 <button
                   onClick={() => onPageChange(number)}
-                  className={`min-w-[40px] px-3 py-2 text-sm rounded-lg border ${
+                  className={`min-w-[40px] px-3 py-2 text-sm rounded border ${
                     currentPage === number
                       ? 'bg-orange-600 text-white border-orange-600'
-                      : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+                      : 'text-gray-700 hover:bg-white border-gray-300'
                   }`}
                 >
                   {number}
@@ -112,10 +112,10 @@ const Pagination = ({
         <button
           onClick={onNextPage}
           disabled={currentPage === totalPages}
-          className={`p-2 rounded-lg border ${
+          className={`p-2 rounded border ${
             currentPage === totalPages
               ? 'text-gray-400 cursor-not-allowed border-gray-200'
-              : 'text-gray-700 hover:bg-gray-50 border-gray-300'
+              : 'text-gray-700 hover:bg-white border-gray-300'
           }`}
         >
           <ChevronRight size={16} />

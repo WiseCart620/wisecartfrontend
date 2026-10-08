@@ -1,7 +1,8 @@
 // src/components/filters/InventoryFilters.jsx
 import React from 'react';
-import { Search, X } from 'lucide-react';
-import SearchableLocationDropdown from '../common/SearchableLocationDropdown';
+import { Search } from 'lucide-react';
+import SearchableWarehouseDropdown from '../common/SearchableWarehouseDropdown';
+import MultiSelectDropdown from '../common/MultiSelectDropdown';
 import { canSeeFilter } from '../../context/AuthContext';
 
 const InventoryFilters = ({
@@ -32,8 +33,22 @@ const InventoryFilters = ({
     (typeFilter && typeFilter !== 'ALL') || fromWarehouseFilter || toWarehouseFilter ||
     fromBranchFilter || toBranchFilter || startDateFilter || endDateFilter;
 
+  const branchOptions = (branches || []).map(br => ({
+    id: br.id,
+    name: br.branchName,
+    code: br.branchCode,
+  }));
+
+  // Branch filters hold a single id, MultiSelectDropdown works with a list.
+  // Keep only the most recently picked branch so the page logic stays unchanged.
+  const toSingle = (value) => (value ? [Number(value)] : []);
+  const fromList = (ids, setter) => setter(ids.length ? String(ids[ids.length - 1]) : '');
+
+  const dropdownFix =
+    '[&>div>button]:!h-8 [&>div>button]:!py-0 [&>div>button]:!text-sm';
+
   return (
-    <div className="bg-white rounded-lg border border-gray-200 px-3 py-1.5 mb-2">
+    <div className="py-1.5 mb-2">
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5">
         {canSeeFilter(user, 'inventory', 'search') && (
           <div className="relative w-56 h-8">
@@ -43,7 +58,7 @@ const InventoryFilters = ({
               placeholder="Search inventory..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 pr-3 h-8 text-sm border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-orange-500"
+              className="pl-8 pr-3 h-8 text-sm border border-gray-300 rounded w-full bg-white focus:ring-2 focus:ring-orange-500"
             />
           </div>
         )}
@@ -52,7 +67,7 @@ const InventoryFilters = ({
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-8 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 w-36"
+            className="h-8 px-2.5 text-sm border border-gray-300 rounded bg-white focus:ring-2 focus:ring-orange-500 w-36"
           >
             <option value="ALL">All Status</option>
             <option value="PENDING">Pending</option>
@@ -64,7 +79,7 @@ const InventoryFilters = ({
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="h-8 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 w-36"
+            className="h-8 px-2.5 text-sm border border-gray-300 rounded bg-white focus:ring-2 focus:ring-orange-500 w-36"
           >
             <option value="ALL">All Types</option>
             <option value="STOCK_IN">Stock In</option>
@@ -76,23 +91,21 @@ const InventoryFilters = ({
 
         {canSeeFilter(user, 'inventory', 'warehouse') && (
           <>
-            <div className="w-40">
-              <SearchableLocationDropdown
-                locations={warehouses.map(wh => ({ id: wh.id, name: wh.warehouseName, code: wh.warehouseCode }))}
+            <div className="w-52 h-8">
+              <SearchableWarehouseDropdown
+                warehouses={warehouses}
                 value={fromWarehouseFilter}
                 onChange={setFromWarehouseFilter}
                 placeholder="From Warehouse"
-                label="warehouses"
               />
             </div>
 
-            <div className="w-40">
-              <SearchableLocationDropdown
-                locations={warehouses.map(wh => ({ id: wh.id, name: wh.warehouseName, code: wh.warehouseCode }))}
+            <div className="w-52 h-8">
+              <SearchableWarehouseDropdown
+                warehouses={warehouses}
                 value={toWarehouseFilter}
                 onChange={setToWarehouseFilter}
                 placeholder="To Warehouse"
-                label="warehouses"
               />
             </div>
           </>
@@ -100,43 +113,43 @@ const InventoryFilters = ({
 
         {canSeeFilter(user, 'inventory', 'branch') && (
           <>
-            <div className="w-40">
-              <SearchableLocationDropdown
-                locations={branches.map(br => ({ id: br.id, name: br.branchName, code: br.branchCode }))}
-                value={fromBranchFilter}
-                onChange={setFromBranchFilter}
+            <div className={`min-w-[140px] w-fit max-w-[260px] flex-shrink-0 ${dropdownFix}`}>
+              <MultiSelectDropdown
+                options={branchOptions}
+                selectedIds={toSingle(fromBranchFilter)}
+                onChange={(ids) => fromList(ids, setFromBranchFilter)}
                 placeholder="From Branch"
-                label="branches"
+                searchPlaceholder="Search name or code..."
               />
             </div>
 
-            <div className="w-40">
-              <SearchableLocationDropdown
-                locations={branches.map(br => ({ id: br.id, name: br.branchName, code: br.branchCode }))}
-                value={toBranchFilter}
-                onChange={setToBranchFilter}
+            <div className={`min-w-[140px] w-fit max-w-[260px] flex-shrink-0 ${dropdownFix}`}>
+              <MultiSelectDropdown
+                options={branchOptions}
+                selectedIds={toSingle(toBranchFilter)}
+                onChange={(ids) => fromList(ids, setToBranchFilter)}
                 placeholder="To Branch"
-                label="branches"
+                searchPlaceholder="Search name or code..."
               />
             </div>
           </>
         )}
 
         {canSeeFilter(user, 'inventory', 'date') && (
-          <div className="h-8 flex items-center gap-1 border border-gray-300 rounded-lg px-2">
+          <div className="h-8 flex items-center gap-1 border border-gray-300 rounded px-2 bg-white">
             <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
             <input
               type="date"
               value={startDateFilter}
               onChange={(e) => setStartDateFilter(e.target.value)}
-              className="w-32 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
+              className="w-32 h-full px-1.5 text-sm border-0 bg-white focus:outline-none focus:ring-0"
             />
             <span className="text-gray-300">–</span>
             <input
               type="date"
               value={endDateFilter}
               onChange={(e) => setEndDateFilter(e.target.value)}
-              className="w-32 h-full px-1.5 text-sm border-0 focus:outline-none focus:ring-0"
+              className="w-32 h-full px-1.5 text-sm border-0 bg-white focus:outline-none focus:ring-0"
             />
           </div>
         )}

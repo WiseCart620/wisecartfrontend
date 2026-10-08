@@ -173,7 +173,7 @@ const BranchStockExportButton = ({ fetchData }) => {
       <button
         onClick={handleExportCSV}
         disabled={exportingCsv || exportingPdf}
-        className="flex items-center gap-1.5 h-8 px-3 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm whitespace-nowrap"
+        className="flex items-center gap-1.5 h-8 px-3 bg-white text-gray-700 border border-gray-300 rounded hover:bg-white hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm whitespace-nowrap"
       >
         {exportingCsv ? <Loader2 size={14}className="animate-spin" /> : <FileSpreadsheet size={14} />}
         <span>{exportingCsv ? 'Preparing...' : 'Export CSV'}</span>
@@ -181,7 +181,7 @@ const BranchStockExportButton = ({ fetchData }) => {
       <button
         onClick={handleExportPDF}
         disabled={exportingCsv || exportingPdf}
-        className="flex items-center gap-1.5 h-8 px-3 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm whitespace-nowrap"
+        className="flex items-center gap-1.5 h-8 px-3 bg-white text-gray-700 border border-gray-300 rounded hover:bg-white hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm whitespace-nowrap"
       >
         {exportingPdf ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}
         <span>{exportingPdf ? 'Preparing...' : 'Print / PDF'}</span>

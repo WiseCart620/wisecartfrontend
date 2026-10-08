@@ -30,7 +30,7 @@ const periodFor = (opt, month, year) =>
 
 
 const STATUS_STYLE = {
-  DRAFT: 'bg-gray-50 text-gray-700 ring-1 ring-gray-200',
+  DRAFT: 'bg-white text-gray-700 ring-1 ring-gray-200',
   SUBMITTED: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
   APPROVED: 'bg-green-50 text-green-700 ring-1 ring-green-200',
   REJECTED: 'bg-red-50 text-red-700 ring-1 ring-red-200',
@@ -70,7 +70,7 @@ const PayrollRunManagement = () => {
     if (headRef.current && headRef.current.offsetHeight !== headH) setHeadH(headRef.current.offsetHeight);
   });
 
-  const pageStyle = { '--nav-h': '81px', '--head-h': `${headH}px` };
+  const pageStyle = { '--nav-h': 'var(--layout-nav-h)', '--head-h': `${headH}px` };
 
   const approvedRuns = runs.filter(r => r.status === 'APPROVED' || r.status === 'PAID');
 
@@ -99,18 +99,12 @@ const PayrollRunManagement = () => {
   );
 
   const stickyHead = (
-    <div ref={headRef} className="sticky top-[var(--nav-h)] z-20 bg-gray-50 pt-6 pb-6">
+    <div ref={headRef} className="sticky top-[var(--nav-h)] z-20 bg-white pt-6 pb-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{tab === 'runs' ? 'Payroll Runs' : 'Payroll'}</h1>
           {tab === 'runs' && <p className="text-gray-500 mt-1 text-sm">Generate payslips and walk them through submit, approve and pay.</p>}
         </div>
-        {tab === 'runs' && canCreate && (
-          <button onClick={() => setShow(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-orange-600 text-white rounded-lg text-sm font-medium shadow-sm hover:bg-orange-700 transition-colors">
-            <Plus size={18} /> New Run
-          </button>
-        )}
       </div>
       {tabBar}
     </div>
@@ -254,7 +248,7 @@ const PayrollRunManagement = () => {
         ))}
       </div>
 
-      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-10 bg-gray-50 pb-4">
+      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-10 bg-white pb-4">
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-wrap items-end gap-3">
           <div className="min-w-[200px]">
             <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
@@ -282,10 +276,18 @@ const PayrollRunManagement = () => {
           </div>
           {hasFilters && (
             <button type="button" onClick={() => setFilters({ status: '', month: '', year: '' })}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Clear</button>
+              className="px-3 py-2 border border-gray-300 rounded text-sm hover:bg-white">Clear</button>
           )}
-          <div className="ml-auto text-xs text-gray-500 pb-2">
-            Showing {filteredRuns.length} of {runs.length} run{runs.length === 1 ? '' : 's'}
+          <div className="ml-auto flex items-center gap-4">
+            <span className="text-xs text-gray-500">
+              Showing {filteredRuns.length} of {runs.length} run{runs.length === 1 ? '' : 's'}
+            </span>
+            {canCreate && (
+              <button onClick={() => setShow(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded text-sm font-medium shadow-sm hover:bg-orange-700 transition-colors">
+                <Plus size={18} /> New Run
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -293,7 +295,7 @@ const PayrollRunManagement = () => {
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden w-full tbl-card">
         <div className="overflow-auto w-full tbl-scroll">
           <table className="w-full min-w-[860px]">
-            <thead className="bg-gray-50">
+            <thead className="bg-white">
               <tr>
                 {['Schedule', 'Period', 'Pay Date', 'Employees', 'Net Pay', 'Status'].map(h => (
                   <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
@@ -309,7 +311,7 @@ const PayrollRunManagement = () => {
                   {hasFilters ? 'No payroll runs match the filters' : 'No payroll runs yet'}
                 </td></tr>
               ) : pageItems.map(r => (
-                <tr key={r.payRollRunId} className="hover:bg-gray-50 text-sm cursor-pointer transition-colors" onClick={() => setSelectedRunId(r.payRollRunId)}>
+                <tr key={r.payRollRunId} className="hover:bg-white text-sm cursor-pointer transition-colors" onClick={() => setSelectedRunId(r.payRollRunId)}>
                   <td className="px-5 py-4 font-medium text-gray-900 whitespace-nowrap">{r.scheduleName}</td>
                   <td className="px-5 py-4 text-gray-700 whitespace-nowrap">{fmtD(r.periodStart)} – {fmtD(r.periodEnd)}</td>
                   <td className="px-5 py-4 text-gray-700 whitespace-nowrap">{fmtD(r.payDate)}</td>
@@ -327,7 +329,7 @@ const PayrollRunManagement = () => {
                       <button
                         onClick={(e) => { e.stopPropagation(); deleteRun(r); }}
                         title="Delete run"
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                        className="p-2 text-red-500 hover:bg-red-50 rounded transition-colors">
                         <Trash2 size={17} />
                       </button>
                     )}
@@ -366,7 +368,7 @@ const PayrollRunManagement = () => {
                   </Field>
                 </div>
                 {form.periodStart && form.periodEnd && (
-                  <div className="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                  <div className="text-xs text-gray-600 bg-white border border-gray-200 rounded px-3 py-2">
                     Period: <b>{form.periodStart}</b> to <b>{form.periodEnd}</b> · Pay date: <b>{form.payDate || '—'}</b>
                   </div>
                 )}
@@ -391,8 +393,8 @@ const PayrollRunManagement = () => {
                 onChange={set('daysOfWork')} placeholder="e.g. 26" />
             </Field>
             <div className="flex justify-end gap-2 pt-2 border-t">
-              <button type="button" onClick={() => setShow(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
-              <button type="submit" disabled={creating} className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 disabled:opacity-50">
+              <button type="button" onClick={() => setShow(false)} className="px-4 py-2 border border-gray-300 rounded text-sm">Cancel</button>
+              <button type="submit" disabled={creating} className="px-4 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 disabled:opacity-50">
                 {creating ? 'Creating...' : 'Create & Generate'}
               </button>
             </div>

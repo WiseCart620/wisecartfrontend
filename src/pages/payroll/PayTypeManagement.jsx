@@ -12,7 +12,7 @@ import PageShell from '../../components/payroll/PageShell';
 import SearchableSelect from '../../components/payroll/SearchableSelect';
 
 const EMPTY = { payTypeName: '', category: 'EARNING', isTaxable: true, unit: 'HOURS', includeInEntries: false };
-const inputCls = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition';
+const inputCls = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition';
 const CATEGORY_STYLE = {
   EARNING: 'bg-green-100 text-green-800',
   ALLOWANCE: 'bg-orange-100 text-orange-800',
@@ -174,18 +174,13 @@ const PayTypeManagement = () => {
 
   return (
     <PageShell maxW="max-w-5xl" title="Pay Types"
-      subtitle="Earnings, allowances, and deductions used in payroll"
-      action={canCreate && (
-        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
-          <Plus size={20} /> Add Pay Type
-        </button>
-      )}>
+      subtitle="Earnings, allowances, and deductions used in payroll">
       <LoadingOverlay show={saving} message="Saving..." />
       <Toaster position="top-right" />
 
       <div className="mb-6"><OvertimeRatesCard /></div>
 
-      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-gray-50 pb-4 flex flex-wrap items-center gap-3">
+      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-white pb-4 flex flex-wrap items-center gap-3">
         <div className="w-72">
           <SearchableSelect
             allLabel="All pay types" allowCustom placeholder="All pay types"
@@ -199,15 +194,21 @@ const PayTypeManagement = () => {
           {[['ALL', 'All'], ['EARNING', 'Earnings'], ['ALLOWANCE', 'Allowances'], ['DEDUCTION', 'Deductions']].map(([k, l]) => (
             <button key={k} type="button" onClick={() => setCatFilter(k)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium border ${catFilter === k
-                ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}>{l}</button>
+                ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-white'}`}>{l}</button>
           ))}
         </div>
+        {canCreate && (
+          <button onClick={openCreate}
+            className="ml-auto flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded text-sm font-medium hover:bg-orange-700">
+            <Plus size={18} /> Add Pay Type
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full tbl-card">
         <div className="overflow-auto w-full tbl-scroll">
           <table className="w-full min-w-[800px]">
-            <thead className="bg-gray-50">
+            <thead className="bg-white">
               <tr>
                 {['Name', 'Category', 'Taxable', 'Entered As', 'Rate'].map(h => (
                   <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
@@ -219,7 +220,7 @@ const PayTypeManagement = () => {
               {visibleItems.length === 0 ? (
                 <tr><td colSpan="6" className="px-6 py-8 text-center text-gray-500">No pay types yet</td></tr>
               ) : pageItems.map(p => (
-                <tr key={p.payTypeId} className="hover:bg-gray-50">
+                <tr key={p.payTypeId} className="hover:bg-white">
                   <td className="px-6 py-4 font-medium text-gray-900">
                     <span className="inline-flex items-center gap-2">
                       {p.payTypeName}
@@ -236,8 +237,8 @@ const PayTypeManagement = () => {
                   <td className="px-6 py-4 text-sm text-gray-700" title="First hours / excess hours where applicable">{rateLabel(p)}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
-                      {canEdit && <button onClick={() => openEdit(p)} className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"><Edit2 size={18} /></button>}
-                      {canDelete && !p.systemDefined && <button onClick={() => remove(p)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={18} /></button>}
+                      {canEdit && <button onClick={() => openEdit(p)} className="p-2 text-orange-600 hover:bg-orange-50 rounded"><Edit2 size={18} /></button>}
+                      {canDelete && !p.systemDefined && <button onClick={() => remove(p)} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={18} /></button>}
                     </div>
                   </td>
                 </tr>
@@ -253,7 +254,7 @@ const PayTypeManagement = () => {
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-900">{editing ? 'Edit Pay Type' : 'Add Pay Type'}</h2>
-              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded"><X size={20} /></button>
             </div>
             <form onSubmit={submit} className="p-6 space-y-4">
               <div>
@@ -289,7 +290,7 @@ const PayTypeManagement = () => {
               )}
 
               {editing && rates && RATE_FIELDS[editing.code] && (
-                <div className="grid grid-cols-1 gap-3 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="grid grid-cols-1 gap-3 bg-white border border-gray-200 rounded p-4">
                   <div className="flex items-center justify-between">
                     <div className="text-sm font-semibold text-gray-900">Payroll rate</div>
                     {ratesDefaults && (
@@ -320,8 +321,8 @@ const PayTypeManagement = () => {
               )}
 
               <div className="flex gap-3 pt-4 border-t border-gray-200">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-                <button type="submit" className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">{editing ? 'Save' : 'Create'}</button>
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-2 border border-gray-300 rounded hover:bg-white">Cancel</button>
+                <button type="submit" className="flex-1 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700">{editing ? 'Save' : 'Create'}</button>
               </div>
             </form>
           </div>

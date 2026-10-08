@@ -58,7 +58,7 @@ const StatusProductsModal = ({ selectedStatus, productsByStatus, loading, onClos
               Total Amount: ₱{totalAmt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
             </p>
           </div>
-          <button onClick={onClose} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"><X size={22} /></button>
+          <button onClick={onClose} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"><X size={22} /></button>
         </div>
 
         <div className="flex-1 overflow-auto p-5">
@@ -81,11 +81,11 @@ const StatusProductsModal = ({ selectedStatus, productsByStatus, loading, onClos
                 <tr><td colSpan={8} className="px-4 py-12 text-center text-gray-400 italic">No products found</td></tr>
               ) : (
                 products.map((product, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50">
+                  <tr key={idx} className="hover:bg-white">
                     <td className="px-4 py-3 text-center text-gray-400">{idx + 1}</td>
                     <td className="px-4 py-3 font-medium text-gray-900">{product.productName}</td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.variationDisplay !== 'No variation' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-500'}`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.variationDisplay !== 'No variation' ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-500'}`}>
                         {product.variationDisplay}
                       </span>
                     </td>
@@ -93,7 +93,7 @@ const StatusProductsModal = ({ selectedStatus, productsByStatus, loading, onClos
                     <td className="px-4 py-3 text-gray-600">{product.upc}</td>
                     <td className="px-4 py-3 text-right font-semibold text-gray-900">{product.quantity.toLocaleString()}</td>
                     <td className="px-4 py-3 text-right text-gray-700">₱{product.unitPrice.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
-                    <td className="px-4 py-3 text-right font-bold text-blue-600">₱{product.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3 text-right font-bold text-orange-600">₱{product.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
                   </tr>
                 ))
               )}
@@ -103,20 +103,20 @@ const StatusProductsModal = ({ selectedStatus, productsByStatus, loading, onClos
                 <td colSpan={5} className="px-4 py-3 text-right font-bold text-gray-700">TOTALS:</td>
                 <td className="px-4 py-3 text-right font-bold text-gray-900">{totalQty.toLocaleString()}</td>
                 <td />
-                <td className="px-4 py-3 text-right font-bold text-blue-700">₱{totalAmt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                <td className="px-4 py-3 text-right font-bold text-orange-700">₱{totalAmt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
               </tr>
             </tfoot>
           </table>
         </div>
 
         <div className="p-4 border-t border-gray-200 flex justify-end gap-3">
-          <button onClick={handleExportCSV} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">
+          <button onClick={handleExportCSV} className="px-4 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700">
             <FileText size={16} className="inline mr-2" /> Export CSV
           </button>
-          <button onClick={handlePrint} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+          <button onClick={handlePrint} className="px-4 py-2 bg-orange-600 text-white rounded text-sm font-medium hover:bg-orange-700">
             <Printer size={16} className="inline mr-2" /> Print
           </button>
-          <button onClick={onClose} className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Close</button>
+          <button onClick={onClose} className="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-white">Close</button>
         </div>
       </div>
     </div>

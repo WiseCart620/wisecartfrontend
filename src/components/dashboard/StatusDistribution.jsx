@@ -32,13 +32,13 @@ const StatusDistribution = ({ stats, sales, navigate, isLoading = false }) => {
   return (
     <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
       <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-        <PieChart className="text-blue-600" size={20} />
+        <PieChart className="text-orange-600" size={20} />
         Sales Status Overview
       </h3>
       {isLoading ? (
         <div className="space-y-3 animate-pulse">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div key={i} className="p-4 bg-white rounded border border-gray-200">
               <div className="flex justify-between mb-3">
                 <div className="h-4 bg-gray-200 rounded w-1/3" />
                 <div className="h-6 bg-gray-200 rounded w-8" />
@@ -82,10 +82,10 @@ const StatusDistribution = ({ stats, sales, navigate, isLoading = false }) => {
               const Icon = config.icon;
 
               return (
-                <div key={status} className={`${config.bg} border ${config.border} rounded-lg p-4 transition-all hover:shadow-sm`}>
+                <div key={status} className={`${config.bg} border ${config.border} rounded p-4 transition-all hover:shadow-sm`}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <div className={`p-2 rounded-lg bg-gray-50 border ${config.border}`}>
+                      <div className={`p-2 rounded bg-white border ${config.border}`}>
                         <Icon size={18} className={config.text} />
                       </div>
                       <div>
@@ -129,7 +129,7 @@ const StatusDistribution = ({ stats, sales, navigate, isLoading = false }) => {
             </div>
             <div className="text-center">
               <p className="text-xs text-gray-500">Total Sales</p>
-              <p className="text-lg font-bold text-blue-700">
+              <p className="text-lg font-bold text-orange-700">
                 {formatCurrency(Object.values(salesByStatus.revenues).reduce((a, b) => a + b, 0))}
               </p>
             </div>
@@ -147,7 +147,7 @@ const StatusDistribution = ({ stats, sales, navigate, isLoading = false }) => {
                 onClick={() => {
                   navigate('/sales?status=PENDING');
                 }}
-                className="flex-1 px-3 py-2 text-xs bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors font-medium"
+                className="flex-1 px-3 py-2 text-xs bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 transition-colors font-medium"
               >
                 View Pending ({salesByStatus.counts.PENDING || 0})
               </button>
@@ -155,7 +155,7 @@ const StatusDistribution = ({ stats, sales, navigate, isLoading = false }) => {
                 onClick={() => {
                   navigate('/sales?status=ACTIVE');
                 }}
-                className="flex-1 px-3 py-2 text-xs bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors font-medium"
+                className="flex-1 px-3 py-2 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors font-medium"
               >
                 View Active ({salesByStatus.counts.ACTIVE || 0})
               </button>

@@ -6,6 +6,13 @@ import VariationSearchableDropdown from '../common/VariationSearchableDropdown';
 import { INVENTORY_TYPES } from '../../constants/inventoryTypes';
 import { getCurrentUser } from '../../utils/authUtils';
 
+const formatQtyInput = (v) => {
+    const digits = String(v ?? '').replace(/[^\d]/g, '');
+    return digits ? Number(digits).toLocaleString('en-US') : '';
+};
+const parseQtyInput = (v) => String(v).replace(/[^\d]/g, '').replace(/^0+(?=\d)/, '');
+const fmtNum = (n) => Number(n || 0).toLocaleString('en-US');
+
 const InventoryForm = ({
     formData,
     setFormData,
@@ -174,8 +181,8 @@ const InventoryForm = ({
     };
 
     return (
-        <form className="p-8">
-            <div className="space-y-6">
+        <form className="px-6 py-4 flex-1 min-h-0 overflow-y-auto flex flex-col">
+            <div className="space-y-3">
                 {/* Inventory Type */}
                 <div>
                     <h3 className="text-lg font-semibold mb-4">Inventory Type</h3>
@@ -185,7 +192,7 @@ const InventoryForm = ({
                                 type="button"
                                 key={t.value}
                                 onClick={() => onInventoryTypeChange(t.value)}
-                                className={`p-4 rounded-lg border-2 text-left transition ${formData.inventoryType === t.value
+                                className={`px-4 py-2 rounded border-2 text-left transition ${formData.inventoryType === t.value
                                     ? `border-${t.color}-500 bg-${t.color}-50 text-${t.color}-700`
                                     : 'border-gray-200 hover:border-gray-300'
                                     }`}
@@ -199,7 +206,7 @@ const InventoryForm = ({
                 {/* Locations */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {needsFromLocation && (
-                        <div className="p-5 bg-red-50 rounded-lg border border-red-200">
+                        <div className="p-5 bg-red-50 rounded border border-red-200">
                             <label className="block font-medium mb-2 text-red-800">From Location *</label>
                             <GroupedSearchableDropdown
                                 options={getLocationOptions(formData.inventoryType, 'from')}
@@ -209,13 +216,13 @@ const InventoryForm = ({
                             />
                         </div>
                     )}
-                    <div className={`p-5 rounded-lg border ${formData.inventoryType === 'DAMAGE'
+                    <div className={`p-5 rounded border ${formData.inventoryType === 'DAMAGE'
                         ? 'bg-red-50 border-red-200 col-span-2'
                         : needsFromLocation
-                            ? 'bg-blue-50 border-blue-200'
-                            : 'bg-blue-50 border-blue-200 col-span-2'
+                            ? 'bg-orange-50 border-orange-200'
+                            : 'bg-orange-50 border-orange-200 col-span-2'
                         }`}>
-                        <label className={`block font-medium mb-2 ${formData.inventoryType === 'DAMAGE' ? 'text-red-800' : 'text-blue-800'
+                        <label className={`block font-medium mb-2 ${formData.inventoryType === 'DAMAGE' ? 'text-red-800' : 'text-orange-800'
                             }`}>
                             To Location *
                         </label>
@@ -245,7 +252,7 @@ const InventoryForm = ({
                                 setFormData(prev => ({ ...prev, dateProcessed: `${e.target.value}${existingTime}` }));
                             }}
                             required
-                            className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-4 py-3 border rounded focus:ring-2 focus:ring-orange-500"
                         />
                     </div>
                     <div>
@@ -259,7 +266,7 @@ const InventoryForm = ({
                             onChange={e => setFormData(prev => ({ ...prev, processedBy: e.target.value }))}
                             required
                             placeholder="Name"
-                            className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-4 py-3 border rounded focus:ring-2 focus:ring-orange-500"
                         />
                     </div>
                     {(modalMode === 'edit' && selectedInventory?.status === 'PENDING') && (
@@ -273,7 +280,7 @@ const InventoryForm = ({
                                 value={formData.confirmedBy || ''}
                                 onChange={e => setFormData(prev => ({ ...prev, confirmedBy: e.target.value }))}
                                 placeholder={getCurrentUser() || 'Current User'}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
                             />
                             <p className="text-xs text-gray-500 mt-1">
                                 Leave empty to use current user: {getCurrentUser() || 'Current User'}
@@ -289,7 +296,7 @@ const InventoryForm = ({
                             rows={3}
                             value={formData.remarks}
                             onChange={e => setFormData(prev => ({ ...prev, remarks: e.target.value }))}
-                            className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-4 py-3 border rounded focus:ring-2 focus:ring-orange-500"
                         />
                     </div>
                 </div>
@@ -301,29 +308,19 @@ const InventoryForm = ({
                             <Package className="inline mr-2" size={20} />
                             Add Products *
                             {(formData.toWarehouseId || formData.toBranchId || formData.fromWarehouseId || formData.fromBranchId) && (
-                                <span className="ml-2 text-sm font-normal text-blue-600">
+                                <span className="ml-2 text-sm font-normal text-gray-700">
                                     (
-                                    {formData.fromWarehouseId && `From: ${warehouses.find(w => w.id === formData.fromWarehouseId)?.warehouseName}`}
-                                    {formData.fromBranchId && `From: ${branches.find(b => b.id === formData.fromBranchId)?.branchName}`}
-                                    {formData.toWarehouseId && `To: ${warehouses.find(w => w.id === formData.toWarehouseId)?.warehouseName}`}
-                                    {formData.toBranchId && `To: ${branches.find(b => b.id === formData.toBranchId)?.branchName}`}
+                                    {[
+                                        formData.fromWarehouseId && `From: ${warehouses.find(w => w.id === formData.fromWarehouseId)?.warehouseName}`,
+                                        formData.fromBranchId && `From: ${branches.find(b => b.id === formData.fromBranchId)?.branchName}`,
+                                        formData.toWarehouseId && `To: ${warehouses.find(w => w.id === formData.toWarehouseId)?.warehouseName}`,
+                                        formData.toBranchId && `To: ${branches.find(b => b.id === formData.toBranchId)?.branchName}`
+                                    ].filter(Boolean).join(' → ')}
                                     )
                                 </span>
                             )}
                         </label>
 
-                        {/* Location Required Warning */}
-                        {!formData.toWarehouseId && !formData.toBranchId && !(formData.fromWarehouseId || formData.fromBranchId) && (
-                            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                <div className="flex items-start gap-2">
-                                    <AlertCircle className="text-yellow-600 mt-0.5" size={18} />
-                                    <div>
-                                        <p className="text-sm text-yellow-800 font-medium">Select a location first</p>
-                                        <p className="text-xs text-yellow-700">Please select a source or destination location to see available stock levels</p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
 
 
                         {/* Product Selection Row */}
@@ -346,20 +343,20 @@ const InventoryForm = ({
 
                     {/* Items Table */}
                     {formData.items.length === 0 ? (
-                        <div className="text-center py-10 bg-gray-50 rounded-lg text-gray-500 border-2 border-dashed border-gray-300">
+                        <div className="text-center py-10 bg-white rounded text-gray-500 border-2 border-dashed border-gray-300">
                             <Package size={48} className="mx-auto mb-3 text-gray-400" />
                             <p className="font-medium">No products added yet</p>
                             <p className="text-sm">Select a product above and click "Add Product" to start</p>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto rounded-lg border border-gray-200">
+                        <div className="h-[600px] overflow-auto rounded border border-gray-200">
                             <table className="w-full">
-                                <thead className="bg-gray-50 border-b border-gray-200">
+                                <thead className="bg-white border-b border-gray-200 sticky top-0 z-10">
                                     <tr>
                                         <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase w-10">Number</th>
                                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Product Name</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">SKU / UPC</th>
                                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Variation</th>
+                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">SKU / UPC</th>
                                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Stock</th>
                                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Type</th>
                                         <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase w-44">Quantity</th>
@@ -387,7 +384,7 @@ const InventoryForm = ({
                                         const selectedLocation = formData.fromWarehouseId || formData.fromBranchId || formData.toWarehouseId || formData.toBranchId;
 
                                         return (
-                                            <tr key={`item-${i}-${item.productId || 'new'}-${item.variationId || 'none'}`} className="hover:bg-gray-50">
+                                            <tr key={`item-${i}-${item.productId || 'new'}-${item.variationId || 'none'}`} className="hover:bg-white">
                                                 <td className="px-4 py-3 text-center text-sm text-gray-400 font-medium align-top">{i + 1}</td>
                                                 {/* Product Name */}
                                                 <td className="px-4 py-3">
@@ -400,30 +397,24 @@ const InventoryForm = ({
                                                     )}
                                                 </td>
 
-                                                {/* SKU / UPC */}
-                                                <td className="px-4 py-3">
-                                                    {selectedOption && (
-                                                        <div className="text-sm space-y-1">
-                                                            <div>
-                                                                <span className="text-gray-600">SKU:</span>
-                                                                <span className="ml-1 font-medium text-gray-900">{selectedOption.sku || 'N/A'}</span>
-                                                            </div>
-                                                            <div>
-                                                                <span className="text-gray-600">UPC:</span>
-                                                                <span className="ml-1 font-medium text-gray-900">{selectedOption.upc || 'N/A'}</span>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </td>
-
                                                 {/* Variation */}
                                                 <td className="px-4 py-3">
                                                     {selectedOption && selectedOption.subLabel && selectedOption.subLabel !== 'No variations' ? (
-                                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                        <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
                                                             {selectedOption.subLabel}
                                                         </span>
                                                     ) : (
-                                                        <span className="text-sm text-gray-500">None</span>
+                                                        <span className="text-sm text-gray-400">None</span>
+                                                    )}
+                                                </td>
+
+                                                {/* SKU / UPC */}
+                                                <td className="px-4 py-3 text-left">
+                                                    {selectedOption && (
+                                                        <div className="text-sm space-y-1">
+                                                            <div className="font-medium text-gray-700 whitespace-nowrap">{selectedOption.sku || 'N/A'}</div>
+                                                            <div className="font-medium text-gray-700 whitespace-nowrap">{selectedOption.upc || 'N/A'}</div>
+                                                        </div>
                                                     )}
                                                 </td>
 
@@ -433,31 +424,31 @@ const InventoryForm = ({
                                                         <div className="text-sm space-y-1">
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-gray-600">Available:</span>
-                                                                <span className={`font-bold ${item.quantity > (stockInfo.availableQuantity ?? stockInfo.quantity) && formData.inventoryType !== 'STOCK_IN' ? 'text-red-600' : 'text-green-600'
+                                                                <span className={`font-bold ${item.quantity > (stockInfo.availableQuantity ?? stockInfo.quantity) && formData.inventoryType !== 'STOCK_IN' ? 'text-red-600' : 'text-gray-700'
                                                                     }`}>
-                                                                    {stockInfo.availableQuantity ?? stockInfo.quantity ?? 0}
+                                                                    {fmtNum(stockInfo.availableQuantity ?? stockInfo.quantity ?? 0)}
                                                                 </span>
                                                             </div>
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-gray-600">Total:</span>
-                                                                <span className="font-semibold text-gray-900">{stockInfo.quantity || 0}</span>
+                                                                <span className="font-semibold text-gray-700">{fmtNum(stockInfo.quantity)}</span>
                                                             </div>
                                                             {stockInfo.reservedQuantity > 0 && (
                                                                 <div className="flex items-center gap-2">
                                                                     <span className="text-gray-600">Reserved:</span>
-                                                                    <span className="font-semibold text-orange-600">{stockInfo.reservedQuantity}</span>
+                                                                    <span className="font-semibold text-gray-700">{fmtNum(stockInfo.reservedQuantity)}</span>
                                                                 </div>
                                                             )}
                                                             {item.quantity > (stockInfo.availableQuantity ?? stockInfo.quantity) && formData.inventoryType !== 'STOCK_IN' && (
-                                                                <div className="flex items-center gap-1 text-red-600 text-xs font-medium mt-1">
+                                                                <div className="flex items-center gap-1 text-gray-700 text-xs font-medium mt-1">
                                                                     <AlertCircle size={12} />
                                                                     Exceeds stock!
                                                                 </div>
                                                             )}
                                                         </div>
                                                     ) : selectedLocation && loadingStocks[`${i}_${item.productId}_${item.variationId}`] ? (
-                                                        <div className="text-xs text-blue-600 italic flex items-center gap-2">
-                                                            <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                                        <div className="text-xs text-orange-600 italic flex items-center gap-2">
+                                                            <div className="w-3 h-3 border-2 border-orange-600 border-t-transparent rounded-full animate-spin"></div>
                                                             Loading...
                                                         </div>
                                                     ) : !selectedLocation ? (
@@ -475,11 +466,11 @@ const InventoryForm = ({
                                                 <td className="px-4 py-3">
                                                     {selectedOption && (
                                                         selectedOption.isVariation ? (
-                                                            <span className="inline-flex px-2 py-1 text-xs rounded-full bg-blue-50 text-blue-700 font-medium">
+                                                            <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
                                                                 With Variations
                                                             </span>
                                                         ) : (
-                                                            <span className="inline-flex px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700 font-medium">
+                                                            <span className="text-sm font-medium text-gray-400 whitespace-nowrap">
                                                                 No Variations
                                                             </span>
                                                         )
@@ -489,12 +480,12 @@ const InventoryForm = ({
                                                 {/* Quantity */}
                                                 <td className="px-4 py-3">
                                                     <input
-                                                        type="number"
-                                                        min="1"
-                                                        value={item.quantity || ''}
-                                                        onChange={e => onItemChange(i, 'quantity', e.target.value)}
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        value={formatQtyInput(item.quantity)}
+                                                        onChange={e => onItemChange(i, 'quantity', parseQtyInput(e.target.value))}
                                                         required
-                                                        className={`w-full px-3 py-2 border rounded-lg text-center font-semibold min-w-[140px] ${stockInfo && item.quantity > (stockInfo.availableQuantity ?? stockInfo.quantity) && formData.inventoryType !== 'STOCK_IN'
+                                                        className={`w-full px-3 py-2 border rounded text-center font-semibold min-w-[140px] ${stockInfo && item.quantity > (stockInfo.availableQuantity ?? stockInfo.quantity) && formData.inventoryType !== 'STOCK_IN'
                                                             ? 'border-red-300 bg-red-50 text-red-900'
                                                             : 'border-gray-300'
                                                             }`}
@@ -506,7 +497,7 @@ const InventoryForm = ({
                                                     <button
                                                         type="button"
                                                         onClick={() => onRemoveItem(i)}
-                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                                                        className="p-2 text-red-600 hover:bg-red-50 rounded transition"
                                                         title="Remove item"
                                                     >
                                                         <Trash2 size={18} />

@@ -420,7 +420,7 @@ const ProductManagement = () => {
           <select
             value={selectedCategory}
             onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
-            className="appearance-none pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm min-w-[160px]"
+            className="appearance-none pl-4 pr-10 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white text-sm min-w-[160px]"
           >
             <option value="">All Categories</option>
             {existingCategories.map(cat => (
@@ -432,7 +432,7 @@ const ProductManagement = () => {
         {selectedCategory && (
           <button
             onClick={() => { setSelectedCategory(''); setCurrentPage(1); }}
-            className="flex items-center gap-1 px-3 py-2 text-sm text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+            className="flex items-center gap-1 px-3 py-2 text-sm text-gray-500 border border-gray-300 rounded hover:bg-white transition"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
             Clear
@@ -441,7 +441,7 @@ const ProductManagement = () => {
         {canCreate && (
           <button
             onClick={() => { resetForm(); setShowModal(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition md:ml-auto"
+            className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition md:ml-auto"
           >
             <Plus size={20} />
             Add Product
@@ -452,7 +452,7 @@ const ProductManagement = () => {
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-white border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-12"></th>
                 {[
@@ -472,8 +472,8 @@ const ProductManagement = () => {
                       {label}
                       {sortable && (
                         <span className="flex flex-col leading-none ml-0.5">
-                          <svg width="10" height="10" viewBox="0 0 10 10" className={sortConfig.key === key && sortConfig.direction === 'asc' ? 'text-blue-600' : 'text-gray-300'} fill="currentColor"><path d="M5 2l4 5H1z" /></svg>
-                          <svg width="10" height="10" viewBox="0 0 10 10" className={sortConfig.key === key && sortConfig.direction === 'desc' ? 'text-blue-600' : 'text-gray-300'} fill="currentColor"><path d="M5 8L1 3h8z" /></svg>
+                          <svg width="10" height="10" viewBox="0 0 10 10" className={sortConfig.key === key && sortConfig.direction === 'asc' ? 'text-orange-600' : 'text-gray-300'} fill="currentColor"><path d="M5 2l4 5H1z" /></svg>
+                          <svg width="10" height="10" viewBox="0 0 10 10" className={sortConfig.key === key && sortConfig.direction === 'desc' ? 'text-orange-600' : 'text-gray-300'} fill="currentColor"><path d="M5 8L1 3h8z" /></svg>
                         </span>
                       )}
                     </div>

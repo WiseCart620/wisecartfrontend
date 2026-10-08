@@ -13,7 +13,7 @@ const BranchViewModal = ({ branch, onClose, onEdit }) => {
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition"
+            className="p-2 hover:bg-gray-100 rounded transition"
           >
             <X size={20} />
           </button>
@@ -26,7 +26,7 @@ const BranchViewModal = ({ branch, onClose, onEdit }) => {
               <Building2 size={20} />
               Branch Information
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-4 rounded">
               <div>
                 <label className="block text-sm font-medium text-gray-500 mb-1">Branch Code</label>
                 <p className="text-gray-900 font-medium">{branch.branchCode}</p>
@@ -65,7 +65,7 @@ const BranchViewModal = ({ branch, onClose, onEdit }) => {
               Company Information
             </h3>
             {branch.company ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-orange-50 p-4 rounded border border-orange-200">
                 <div>
                   <label className="block text-sm font-medium text-gray-500 mb-1">Company Name</label>
                   <p className="text-gray-900 font-medium">{branch.company.companyName || 'N/A'}</p>
@@ -90,7 +90,7 @@ const BranchViewModal = ({ branch, onClose, onEdit }) => {
                   <label className="block text-sm font-medium text-gray-500 mb-1">Terms</label>
                   <p className="text-gray-900">
                     {(branch.company?.terms || branch.companyTerms) ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                         {branch.company?.terms || branch.companyTerms}
                       </span>
                     ) : 'N/A'}
@@ -98,7 +98,7 @@ const BranchViewModal = ({ branch, onClose, onEdit }) => {
                 </div>
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+              <div className="text-center py-8 text-gray-500 bg-white rounded">
                 No company associated with this branch
               </div>
             )}
@@ -108,14 +108,14 @@ const BranchViewModal = ({ branch, onClose, onEdit }) => {
         <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex gap-3">
           <button
             onClick={onEdit}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition flex items-center justify-center gap-2"
           >
             <Edit2 size={16} />
             Edit Branch
           </button>
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+            className="flex-1 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
           >
             Close
           </button>

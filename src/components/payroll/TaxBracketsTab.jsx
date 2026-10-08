@@ -109,10 +109,10 @@ const TaxBracketsTab = ({ canCreate, canEdit, canDelete }) => {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2 text-sm">
           <span className="text-gray-600">Effective Year</span>
-          <input type="number" className="w-24 px-3 py-2 border border-gray-300 rounded-lg" value={year} onChange={(e) => setYear(Number(e.target.value))} />
+          <input type="number" className="w-24 px-3 py-2 border border-gray-300 rounded" value={year} onChange={(e) => setYear(Number(e.target.value))} />
         </div>
         {canCreate && (
-          <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+          <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700">
             <Plus size={18} /> Add Bracket
           </button>
         )}
@@ -121,7 +121,7 @@ const TaxBracketsTab = ({ canCreate, canEdit, canDelete }) => {
       <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full tbl-card mb-6">
         <div className="overflow-auto w-full tbl-scroll">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-white border-b border-gray-200">
               <tr>
                 {['Min Annual Income', 'Max Annual Income', 'Base Tax', 'Rate %'].map(h => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
@@ -135,15 +135,15 @@ const TaxBracketsTab = ({ canCreate, canEdit, canDelete }) => {
               ) : items.length === 0 ? (
                 <tr><td colSpan="5" className="px-4 py-8 text-center text-gray-500">No brackets for {year}</td></tr>
               ) : pageItems.map(b => (
-                <tr key={b.taxBrancketId} className="hover:bg-gray-50 text-sm">
+                <tr key={b.taxBrancketId} className="hover:bg-white text-sm">
                   <td className="px-4 py-3">{money(b.minAnnualIncome)}</td>
                   <td className="px-4 py-3">{b.maxAnnualIncome != null ? money(b.maxAnnualIncome) : 'and above'}</td>
                   <td className="px-4 py-3">{money(b.baseTax)}</td>
                   <td className="px-4 py-3">{b.ratePercent}%</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
-                      {canEdit && <button onClick={() => openEdit(b)} className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"><Edit2 size={17} /></button>}
-                      {canDelete && <button onClick={() => remove(b)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={17} /></button>}
+                      {canEdit && <button onClick={() => openEdit(b)} className="p-2 text-orange-600 hover:bg-orange-50 rounded"><Edit2 size={17} /></button>}
+                      {canDelete && <button onClick={() => remove(b)} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={17} /></button>}
                     </div>
                   </td>
                 </tr>
@@ -154,7 +154,7 @@ const TaxBracketsTab = ({ canCreate, canEdit, canDelete }) => {
         {!loading && totalItems > 0 && <Pagination {...paginationProps} />}
       </div>
 
-      <div className="bg-gray-50 border border-gray-100 rounded-xl p-5 max-w-md">
+      <div className="bg-white border border-gray-100 rounded-xl p-5 max-w-md">
         <div className="flex items-center gap-2 mb-3">
           <Calculator size={16} className="text-orange-600" />
           <h3 className="text-sm font-semibold text-gray-900">Quick Tax Calculator</h3>
@@ -164,7 +164,7 @@ const TaxBracketsTab = ({ canCreate, canEdit, canDelete }) => {
             <label className="block text-xs font-medium text-gray-700 mb-1">Annual taxable income</label>
             <MoneyInput className={inputCls} value={calcIncome} onChange={(e) => setCalcIncome(e.target.value)} />
           </div>
-          <button type="submit" disabled={calcLoading} className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 disabled:opacity-50">
+          <button type="submit" disabled={calcLoading} className="px-4 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 disabled:opacity-50">
             {calcLoading ? '...' : 'Compute'}
           </button>
         </form>
@@ -183,8 +183,8 @@ const TaxBracketsTab = ({ canCreate, canEdit, canDelete }) => {
             <Field label="Base Tax" required><MoneyInput className={inputCls} value={form.baseTax} onChange={set('baseTax')} /></Field>
             <Field label="Rate %" required><MoneyInput className={inputCls} value={form.ratePercent} onChange={set('ratePercent')} /></Field>
             <div className="md:col-span-2 flex justify-end gap-2 pt-2 border-t">
-              <button type="button" onClick={() => setShow(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
-              <button type="submit" className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">{editing ? 'Save' : 'Create'}</button>
+              <button type="button" onClick={() => setShow(false)} className="px-4 py-2 border border-gray-300 rounded text-sm">Cancel</button>
+              <button type="submit" className="px-4 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700">{editing ? 'Save' : 'Create'}</button>
             </div>
           </form>
         </Modal>

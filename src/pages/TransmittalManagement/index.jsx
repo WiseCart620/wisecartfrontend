@@ -760,7 +760,7 @@ const TransmittalManagement = () => {
                 <div className="mb-6 flex items-center gap-3">
                     <button
                         onClick={() => navigate('/deliveries')}
-                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition"
                     >
                         <ArrowLeft size={20} />
                     </button>
@@ -778,7 +778,7 @@ const TransmittalManagement = () => {
                     <div className="flex items-center gap-3 flex-wrap">
                         <button
                             onClick={handleCreate}
-                            className="flex items-center gap-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors shadow-sm font-medium"
+                            className="flex items-center gap-2 px-6 py-3 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors shadow-sm font-medium"
                         >
                             <Plus size={18} />
                             <span>New Transmittal</span>
@@ -796,7 +796,7 @@ const TransmittalManagement = () => {
                                         setSearchQuery(e.target.value);
                                         setCurrentPage(1);
                                     }}
-                                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm w-80"
+                                    className="pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm w-80"
                                 />
                             </div>
                         )}
@@ -804,7 +804,7 @@ const TransmittalManagement = () => {
                         {/* Advanced Search Toggle Button */}
                         <button
                             onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${showAdvancedSearch || advancedFilters.productSearch || advancedFilters.dateFrom || advancedFilters.dateTo
+                            className={`flex items-center gap-2 px-4 py-2 rounded transition-colors text-sm font-medium ${showAdvancedSearch || advancedFilters.productSearch || advancedFilters.dateFrom || advancedFilters.dateTo
                                 ? 'bg-orange-100 text-orange-700 border border-orange-300'
                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 }`}
@@ -820,7 +820,7 @@ const TransmittalManagement = () => {
                     </div>
 
                     {/* Right: Sort control */}
-                    <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
+                    <div className="flex items-center gap-2 bg-white border border-gray-200 rounded px-3 py-2 shadow-sm">
                         <ArrowUpDown size={16} className="text-gray-500 flex-shrink-0" />
                         <span className="text-xs text-gray-500 font-medium whitespace-nowrap">Sort by:</span>
                         <select
@@ -837,7 +837,7 @@ const TransmittalManagement = () => {
 
                 {/* Advanced Search Panel */}
                 {showAdvancedSearch && (
-                    <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="mb-6 p-4 bg-white rounded border border-gray-200">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {canSeeFilter(user, 'deliveries', 'product') && (
                                 <div>
@@ -882,7 +882,7 @@ const TransmittalManagement = () => {
                                                 setAdvancedFilters(prev => ({ ...prev, dateFrom: e.target.value }));
                                                 setCurrentPage(1);
                                             }}
-                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                                            className="px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
                                         />
                                         <input
                                             type="date"
@@ -892,7 +892,7 @@ const TransmittalManagement = () => {
                                                 setAdvancedFilters(prev => ({ ...prev, dateTo: e.target.value }));
                                                 setCurrentPage(1);
                                             }}
-                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                                            className="px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
                                         />
                                     </div>
                                 </div>
@@ -901,7 +901,7 @@ const TransmittalManagement = () => {
                         <div className="mt-4 flex justify-end">
                             <button
                                 onClick={handleResetFilters}
-                                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition"
+                                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded transition"
                             >
                                 Clear All Filters
                             </button>
@@ -925,7 +925,7 @@ const TransmittalManagement = () => {
                         </div>
                     ) : (
                         <table className="w-full">
-                            <thead className="bg-gray-50 border-b border-gray-200">
+                            <thead className="bg-white border-b border-gray-200">
                                 <tr>
                                     {['Control No.', 'Date', 'Branch', 'Prepared By', 'Items', 'Grand Total', 'Actions'].map(h => (
                                         <th
@@ -944,7 +944,7 @@ const TransmittalManagement = () => {
                                         (t.items || []).reduce((s, it) =>
                                             s + (parseInt(it.unitsPerCase, 10) || 0) * (parseInt(it.caseQty, 10) || 0), 0);
                                     return (
-                                        <tr key={t.id} className="hover:bg-gray-50 transition">
+                                        <tr key={t.id} className="hover:bg-white transition">
                                             <td className="px-4 py-3">
                                                 <span className="font-mono font-semibold text-orange-700 text-sm">{t.controlNumber}</span>
                                             </td>
@@ -968,21 +968,21 @@ const TransmittalManagement = () => {
                                                 <div className="flex items-center justify-center gap-2">
                                                     <button
                                                         onClick={() => handleEdit(t)}
-                                                        className="p-1.5 text-orange-600 hover:bg-orange-50 rounded-lg transition"
+                                                        className="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition"
                                                         title="Edit"
                                                     >
                                                         <Eye size={16} />
                                                     </button>
                                                     <button
                                                         onClick={() => handlePrint(t)}
-                                                        className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition"
+                                                        className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition"
                                                         title="Print"
                                                     >
                                                         <Printer size={16} />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(t.id)}
-                                                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition"
+                                                        className="p-1.5 text-red-500 hover:bg-red-50 rounded transition"
                                                         title="Delete"
                                                     >
                                                         <Trash2 size={16} />
@@ -998,7 +998,7 @@ const TransmittalManagement = () => {
 
                     {/* Pagination */}
                     {totalPages > 1 && (
-                        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
+                        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-white">
                             <span className="text-sm text-gray-600">
                                 Page {currentPage} of {totalPages} ({filtered.length} total)
                             </span>
@@ -1006,14 +1006,14 @@ const TransmittalManagement = () => {
                                 <button
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                     disabled={currentPage === 1}
-                                    className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-100 transition disabled:opacity-50"
+                                    className="px-3 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-100 transition disabled:opacity-50"
                                 >
                                     Previous
                                 </button>
                                 <button
                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                     disabled={currentPage === totalPages}
-                                    className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-100 transition disabled:opacity-50"
+                                    className="px-3 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-100 transition disabled:opacity-50"
                                 >
                                     Next
                                 </button>

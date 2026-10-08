@@ -36,7 +36,7 @@ const BranchStockTable = ({
 
   return (
     <div className="bg-white rounded-xl shadow overflow-hidden inv-table-panel">
-      <div className="px-4 py-2 border-b border-gray-200 bg-gray-50 flex flex-wrap items-center justify-between gap-3">
+      <div className="px-4 py-2 border-b border-gray-200 bg-white flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-base text-black flex items-center gap-2">
           <Store size={20} />
           Consigned Stock Levels
@@ -50,7 +50,7 @@ const BranchStockTable = ({
 
       <div className="overflow-auto max-h-[65vh] table-fit">
         <table className="w-full" style={{ tableLayout: 'fixed' }}>
-          <thead className="bg-gray-50 sticky top-0 z-10">
+          <thead className="bg-white sticky top-0 z-10">
             <tr>
               <th className="px-4 py-3 th-left col-name"><HeaderIcon Icon={Store} label="Branch" align="left" /></th>
               <th className="px-4 py-3 th-left col-prod"><HeaderIcon Icon={Package} label="Product" align="left" /></th>
@@ -93,7 +93,7 @@ const BranchStockTable = ({
               currentBranchStocks.map((stock) => {
                 const isThisLoading = loadingId === stock.id;
                 return (
-                  <tr key={stock.id} className="hover:bg-gray-50">
+                  <tr key={stock.id} className="hover:bg-white">
                     <td className="px-4 py-3">
                       <div className="txt-block">
                         <div className="font-normal text-black truncate" title={stock.branchName}>
@@ -189,7 +189,7 @@ const BranchStockTable = ({
           </tbody>
 
           {!isLoading && totalElements > 0 && (
-            <tfoot className="[&_td]:sticky [&_td]:bottom-0 [&_td]:z-10 [&_td]:bg-gray-50 [&_td]:shadow-[0_-2px_0_#e5e7eb]">
+            <tfoot className="[&_td]:sticky [&_td]:bottom-0 [&_td]:z-10 [&_td]:bg-white [&_td]:shadow-[0_-2px_0_#e5e7eb]">
               <tr>
                 <td className="px-4 py-2 text-xs font-semibold text-black" colSpan={3}>
                   Grand Total ({totalElements.toLocaleString('en-US')} rows)

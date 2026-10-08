@@ -76,19 +76,19 @@ const SalesFilters = ({
   const fmt = (n) => n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-3 lg:p-4 mb-4">
+    <div className="py-3 mb-4">
       <div className="flex flex-col gap-3">
 
         {/* Top row: action buttons + search */}
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2">
             {canCreate && (
-              <button onClick={onNewSale} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm text-sm font-medium">
+              <button onClick={onNewSale} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm text-sm font-medium">
                 <Plus size={16} /> New Sale
               </button>
             )}
             {canInvoice && (
-              <button onClick={onOpenInvoice} className="flex items-center gap-2 px-4 py-2 bg-white border border-orange-300 text-orange-700 rounded-md hover:bg-orange-50 hover:shadow-sm transition-all duration-150 text-sm font-medium">
+              <button onClick={onOpenInvoice} className="flex items-center gap-2 px-4 py-2 bg-white border border-orange-300 text-orange-700 rounded hover:bg-orange-50 hover:shadow-sm transition-all duration-150 text-sm font-medium">
                 <FileText size={16} /> Generate Invoice / COS
               </button>
             )}
@@ -101,7 +101,7 @@ const SalesFilters = ({
                 placeholder="Search branch/company..."
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                className="pl-9 pr-3 py-2 border border-gray-300 rounded-lg w-full text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="pl-9 pr-3 py-2 border border-gray-300 rounded w-full text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               />
             </div>
           )}
@@ -148,7 +148,7 @@ const SalesFilters = ({
             <select
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-              className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-36 flex-shrink-0"
+              className="h-9 px-2.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500 w-36 flex-shrink-0"
             >
               <option value="ALL">All Status</option>
               <option value="PENDING">Pending</option>
@@ -158,7 +158,7 @@ const SalesFilters = ({
           )}
 
           {canSeeFilter(user, 'sales', 'date') && (
-            <div className="h-9 flex items-center gap-1 border border-gray-300 rounded-lg px-2 flex-shrink-0">
+            <div className="h-9 flex items-center gap-1 border border-gray-300 rounded px-2 flex-shrink-0">
               <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
               <input
                 type="date"
@@ -189,7 +189,7 @@ const SalesFilters = ({
           )}
 
           {hasActiveFilters && (
-            <button onClick={onResetFilter} className="text-sm text-blue-600 hover:text-blue-800 font-medium ml-auto whitespace-nowrap">
+            <button onClick={onResetFilter} className="text-sm text-orange-600 hover:text-orange-800 font-medium ml-auto whitespace-nowrap">
               Clear filters
             </button>
           )}
@@ -204,7 +204,7 @@ const SalesFilters = ({
           <div className="pt-2 border-t border-gray-100">
             <button
               onClick={() => setShowSummary(prev => !prev)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm text-xs transition-all duration-150"
+              className="flex items-center gap-1.5 px-4 py-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-white hover:shadow-sm text-xs transition-all duration-150"
             >
               <FileText size={13} /> View Summary
               <ChevronDown size={14} className={`transition-transform duration-200 ${showSummary ? 'rotate-180' : ''}`} />
@@ -217,13 +217,13 @@ const SalesFilters = ({
                 <div className="flex items-center gap-3 flex-wrap">
                   {[
                     { status: 'PENDING', label: 'Pending', amt: pendingAmt, count: allFilteredSales.pendingCount ?? 0, qty: pendingQty, hoverClass: 'hover:bg-yellow-50' },
-                    { status: 'CONFIRMED', label: 'Confirmed', amt: confirmedAmt, count: allFilteredSales.confirmedCount ?? 0, qty: confirmedQty, hoverClass: 'hover:bg-blue-50' },
+                    { status: 'CONFIRMED', label: 'Confirmed', amt: confirmedAmt, count: allFilteredSales.confirmedCount ?? 0, qty: confirmedQty, hoverClass: 'hover:bg-orange-50' },
                     { status: 'INVOICED', label: 'Invoiced', amt: invoicedAmt, count: allFilteredSales.invoicedCount ?? 0, qty: invoicedQty, hoverClass: 'hover:bg-green-50' },
                   ].map(({ status, label, amt, count, qty, hoverClass }) => (
                     <button
                       key={status}
                       onClick={() => onOpenStatusModal(status)}
-                      className={`flex items-center gap-2 border border-black rounded-md px-3 py-1 ${hoverClass} transition-colors cursor-pointer`}
+                      className={`flex items-center gap-2 border border-black rounded px-3 py-1 ${hoverClass} transition-colors cursor-pointer`}
                     >
                       <span className="text-xs text-gray-600">{label}:</span>
                       <span className="text-xs text-gray-800">₱{fmt(amt)}</span>
@@ -232,12 +232,12 @@ const SalesFilters = ({
                     </button>
                   ))}
 
-                  <div className="flex items-center gap-2 border-2 border-black rounded-md px-3 py-1">
+                  <div className="flex items-center gap-2 border-2 border-black rounded px-3 py-1">
                     <span className="text-xs text-gray-700">Total Qty:</span>
                     <span className="text-sm text-gray-800">{(pendingQty + confirmedQty + invoicedQty).toLocaleString()}</span>
                   </div>
 
-                  <div className="flex items-center gap-2 border-2 border-black rounded-md px-3 py-1">
+                  <div className="flex items-center gap-2 border-2 border-black rounded px-3 py-1">
                     <span className="text-xs text-orange-700">Grand Total:</span>
                     <span className="text-sm text-orange-700">₱{fmt(grandTotal)}</span>
                     <button

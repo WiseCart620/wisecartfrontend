@@ -8,7 +8,7 @@ import { formatDateForInput } from '../../utils/dateUtils';
 
 // Small reusable section wrapper — mirrors the "card block" pattern used in Sale forms
 const FormSection = ({ icon: Icon, title, action, children }) => (
-    <div className="bg-white border border-gray-200 rounded-lg">
+    <div className="bg-white border border-gray-200 rounded">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
             <div className="flex items-center gap-2">
                 {Icon && <Icon size={16} className="text-gray-400" />}
@@ -445,17 +445,17 @@ const DeliveryFormModal = ({
     };
 
     // ── Shared input classes (blue theme) ───────────────────────────────
-    const inputClass = 'w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition outline-none';
-    const dateInputClass = 'flex-1 px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition outline-none bg-white';
-    const timeInputClass = 'w-32 px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition outline-none bg-white';
-    const lockedDateInputClass = 'flex-1 px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-100 cursor-not-allowed';
-    const lockedTimeInputClass = 'w-32 px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-100 cursor-not-allowed';
+    const inputClass = 'w-full px-3.5 py-2.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition outline-none';
+    const dateInputClass = 'flex-1 px-3.5 py-2.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition outline-none bg-white';
+    const timeInputClass = 'w-32 px-3.5 py-2.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition outline-none bg-white';
+    const lockedDateInputClass = 'flex-1 px-3.5 py-2.5 border border-gray-200 rounded text-sm bg-gray-100 cursor-not-allowed';
+    const lockedTimeInputClass = 'w-32 px-3.5 py-2.5 border border-gray-200 rounded text-sm bg-gray-100 cursor-not-allowed';
 
     const selectedWarehouse = warehouses?.find(w => w.id === parseInt(formData.selectedWarehouseId));
 
     return (
         <div className="fixed inset-0 bg-gray-900/60 z-50 flex items-center justify-center p-2 sm:p-6">
-            <div className="bg-gray-50 rounded-xl max-w-7xl w-full max-h-[98vh] sm:max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="bg-white rounded-xl max-w-7xl w-full max-h-[98vh] sm:max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
 
                 {/* Header */}
                 <div className="px-5 sm:px-8 py-4 sm:py-5 bg-white border-b border-gray-200 flex justify-between items-center flex-shrink-0">
@@ -471,7 +471,7 @@ const DeliveryFormModal = ({
                         type="button"
                         onClick={onClose}
                         disabled={isLoading}
-                        className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition disabled:opacity-50"
+                        className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition disabled:opacity-50"
                     >
                         <X size={20} />
                     </button>
@@ -500,7 +500,7 @@ const DeliveryFormModal = ({
                                 />
 
                                 {branchInfo && (
-                                    <div className="mt-4 grid grid-cols-1 gap-y-2 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                                    <div className="mt-4 grid grid-cols-1 gap-y-2 p-4 bg-orange-50 rounded border border-orange-100">
                                         <div className="text-sm">
                                             <span className="text-gray-500">Company</span>
                                             <div className="font-semibold text-gray-900">{branchInfo.companyName}</div>
@@ -533,7 +533,7 @@ const DeliveryFormModal = ({
                                 <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
                                     Select Warehouse (applies to all items) *
                                     {formData.status === 'PREPARING'
-                                        ? <span className="ml-2 normal-case text-blue-600">(Editable)</span>
+                                        ? <span className="ml-2 normal-case text-orange-600">(Editable)</span>
                                         : <span className="ml-2 normal-case text-orange-500">(Locked in {formData.status} status)</span>}
                                 </label>
                                 <SearchableDropdown
@@ -548,7 +548,7 @@ const DeliveryFormModal = ({
                                 />
 
                                 {formData.selectedWarehouseId && (
-                                    <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                                    <div className="mt-4 p-4 bg-orange-50 rounded border border-orange-100">
                                         {selectedWarehouse ? (
                                             <div className="grid grid-cols-1 gap-y-2">
                                                 <div className="text-sm">
@@ -701,15 +701,15 @@ const DeliveryFormModal = ({
                         <FormSection icon={Truck} title="Status">
                             {mode === 'create' ? (
                                 <div className="flex items-center gap-3">
-                                    <span className="inline-flex items-center px-4 py-2 rounded-lg bg-yellow-100 text-yellow-800 font-semibold text-sm">
+                                    <span className="inline-flex items-center px-4 py-2 rounded bg-yellow-100 text-yellow-800 font-semibold text-sm">
                                         PREPARING
                                     </span>
                                     <span className="text-xs text-gray-400">New deliveries always start in PREPARING.</span>
                                 </div>
                             ) : mode === 'edit' && delivery && (
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <span className={`inline-flex items-center px-4 py-2 rounded-lg font-semibold text-sm ${delivery.status === 'PREPARING' ? 'bg-yellow-100 text-yellow-800' :
-                                        delivery.status === 'IN_TRANSIT' ? 'bg-blue-100 text-blue-800' :
+                                    <span className={`inline-flex items-center px-4 py-2 rounded font-semibold text-sm ${delivery.status === 'PREPARING' ? 'bg-yellow-100 text-yellow-800' :
+                                        delivery.status === 'IN_TRANSIT' ? 'bg-orange-100 text-orange-800' :
                                             delivery.status === 'DELIVERED' ? 'bg-green-100 text-green-800' :
                                                 'bg-red-100 text-red-800'
                                         }`}>
@@ -722,9 +722,9 @@ const DeliveryFormModal = ({
                                             <button
                                                 type="button"
                                                 onClick={() => setFormData({ ...formData, status: 'IN_TRANSIT', dateDelivered: '' })}
-                                                className={`px-4 py-2 rounded-lg font-semibold text-sm border transition-all ${formData.status === 'IN_TRANSIT'
-                                                    ? 'bg-blue-600 text-white border-blue-600 ring-2 ring-blue-300'
-                                                    : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-50'
+                                                className={`px-4 py-2 rounded font-semibold text-sm border transition-all ${formData.status === 'IN_TRANSIT'
+                                                    ? 'bg-orange-600 text-white border-orange-600 ring-2 ring-orange-300'
+                                                    : 'bg-white text-orange-700 border-orange-300 hover:bg-orange-50'
                                                     }`}
                                             >
                                                 IN_TRANSIT
@@ -749,7 +749,7 @@ const DeliveryFormModal = ({
                                                         items: updatedItems
                                                     });
                                                 }}
-                                                className={`px-4 py-2 rounded-lg font-semibold text-sm border transition-all ${formData.status === 'DELIVERED'
+                                                className={`px-4 py-2 rounded font-semibold text-sm border transition-all ${formData.status === 'DELIVERED'
                                                     ? 'bg-green-600 text-white border-green-600 ring-2 ring-green-300'
                                                     : 'bg-white text-green-700 border-green-300 hover:bg-green-50'
                                                     }`}
@@ -763,7 +763,7 @@ const DeliveryFormModal = ({
                                                         setFormData({ ...formData, status: 'CANCELLED', dateDelivered: '' });
                                                     }
                                                 }}
-                                                className={`px-4 py-2 rounded-lg font-semibold text-sm border transition-all ${formData.status === 'CANCELLED'
+                                                className={`px-4 py-2 rounded font-semibold text-sm border transition-all ${formData.status === 'CANCELLED'
                                                     ? 'bg-red-600 text-white border-red-600 ring-2 ring-red-300'
                                                     : 'bg-white text-red-700 border-red-300 hover:bg-red-50'
                                                     }`}
@@ -803,22 +803,22 @@ const DeliveryFormModal = ({
                             </div>
 
                             {formData.items.length === 0 ? (
-                                <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                                <div className="text-center py-12 bg-white rounded border border-dashed border-gray-300">
                                     <Package size={40} className="mx-auto mb-3 text-gray-300" />
                                     <p className="font-medium text-gray-500 text-sm">No products added yet</p>
                                     <p className="text-xs text-gray-400 mt-1">Select a product above and click "Add Product" to start</p>
                                 </div>
                             ) : visibleItemsWithIndex.length === 0 ? (
-                                <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                                <div className="text-center py-12 bg-white rounded border border-dashed border-gray-300">
                                     <Package size={40} className="mx-auto mb-3 text-gray-300" />
                                     <p className="font-medium text-gray-500 text-sm">No products match the active filter</p>
                                     <p className="text-xs text-gray-400 mt-1">Clear the product filter to see all items in this delivery</p>
                                 </div>
                             ) : (
                                 <>
-                                    <div className="overflow-x-auto rounded-lg border border-gray-200">
+                                    <div className="max-h-[520px] overflow-auto rounded border border-gray-200">
                                         <table className="w-full min-w-[750px] text-sm">
-                                            <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
+                                            <thead className="bg-white sticky top-0 z-10 shadow-[inset_0_-1px_0_#e5e7eb]">
                                                 <tr>
                                                     {['#', 'Product Name', 'Variation', 'SKU', 'UPC', 'UOM', 'Stock', 'Prepared Qty', 'Delivered Qty', ''].map(h => (
                                                         <th key={h} className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
@@ -844,7 +844,7 @@ const DeliveryFormModal = ({
                                                     const isPreparing = formData.status === 'PREPARING';
 
                                                     return (
-                                                        <tr key={`item-${i}`} className="hover:bg-gray-50/80 transition-colors">
+                                                        <tr key={`item-${i}`} className="hover:bg-white/80 transition-colors">
                                                             <td className="px-4 py-3 text-center text-gray-400">{i + 1}</td>
                                                             <td className="px-4 py-3">
                                                                 {selectedOption
@@ -853,23 +853,23 @@ const DeliveryFormModal = ({
                                                             </td>
                                                             <td className="px-4 py-3">
                                                                 {selectedOption?.subLabel && selectedOption.subLabel !== 'No variations'
-                                                                    ? <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">{selectedOption.subLabel}</span>
+                                                                    ? <span className="whitespace-nowrap text-sm font-medium text-gray-700">{selectedOption.subLabel}</span>
                                                                     : <span className="text-xs text-gray-400">None</span>}
                                                             </td>
-                                                            <td className="px-4 py-3 text-gray-700">{selectedOption?.sku || 'N/A'}</td>
-                                                            <td className="px-4 py-3 text-gray-700">{selectedOption?.upc || 'N/A'}</td>
+                                                            <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{selectedOption?.sku || 'N/A'}</td>
+                                                            <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{selectedOption?.upc || 'N/A'}</td>
                                                             <td className="px-4 py-3 text-gray-700 font-medium">{item.uom || 'N/A'}</td>
                                                             <td className="px-4 py-3">
                                                                 {isLoadingStock ? (
-                                                                    <div className="flex items-center gap-2 text-blue-600 text-xs">
-                                                                        <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                                                                    <div className="flex items-center gap-2 text-orange-600 text-xs">
+                                                                        <div className="w-3 h-3 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
                                                                         Loading...
                                                                     </div>
                                                                 ) : stockInfo ? (
                                                                     <div className="space-y-0.5">
-                                                                        <div className={`font-bold text-xs ${hasInsufficientStock ? 'text-red-600' : 'text-blue-600'}`}>Avail: {(stockInfo.availableQuantity || 0).toLocaleString('en-US')}</div>
+                                                                        <div className={`font-bold text-xs ${hasInsufficientStock ? 'text-red-600' : 'text-orange-600'}`}>Avail: {(stockInfo.availableQuantity || 0).toLocaleString('en-US')}</div>
                                                                         <div className="text-[11px] text-gray-400">Total: {(stockInfo.quantity || 0).toLocaleString('en-US')}</div>
-                                                                        {mode === 'edit' && item.originalPreparedQty > 0 && <div className="text-[11px] text-blue-500">Effective: {effectiveAvailable.toLocaleString('en-US')}</div>}
+                                                                        {mode === 'edit' && item.originalPreparedQty > 0 && <div className="text-[11px] text-orange-500">Effective: {effectiveAvailable.toLocaleString('en-US')}</div>}
                                                                     </div>
                                                                 ) : <span className="text-xs text-gray-400 italic">No data</span>}
                                                             </td>
@@ -878,7 +878,7 @@ const DeliveryFormModal = ({
                                                                     type="text"
                                                                     value={item.preparedQty !== '' && item.preparedQty != null ? Number(item.preparedQty).toLocaleString('en-US') : ''}
                                                                     onChange={(e) => handleItemChange(i, 'preparedQty', e.target.value.replace(/,/g, ''))}
-                                                                    className={`w-24 px-3 py-1.5 border rounded-md text-sm font-medium outline-none transition focus:ring-2 ${hasInsufficientStock ? 'border-red-300 bg-red-50 focus:ring-red-200' : 'border-blue-300 bg-blue-50 focus:ring-blue-200'}`}
+                                                                    className={`w-24 px-3 py-1.5 border rounded text-sm font-medium outline-none transition focus:ring-2 ${hasInsufficientStock ? 'border-red-300 bg-red-50 focus:ring-red-200' : 'border-orange-300 bg-orange-50 focus:ring-orange-200'}`}
                                                                     min="1"
                                                                     disabled={isDelivered}
                                                                     required
@@ -890,7 +890,7 @@ const DeliveryFormModal = ({
                                                                     type="text"
                                                                     value={item.deliveredQty !== '' && item.deliveredQty != null ? Number(item.deliveredQty).toLocaleString('en-US') : ''}
                                                                     onChange={(e) => handleItemChange(i, 'deliveredQty', e.target.value.replace(/,/g, ''))}
-                                                                    className={`w-24 px-3 py-1.5 border rounded-md text-sm font-medium outline-none transition focus:ring-2 ${isDelivered ? 'border-green-300 bg-green-50 focus:ring-green-200' : 'border-gray-300 bg-gray-100 cursor-not-allowed'}`}
+                                                                    className={`w-24 px-3 py-1.5 border rounded text-sm font-medium outline-none transition focus:ring-2 ${isDelivered ? 'border-green-300 bg-green-50 focus:ring-green-200' : 'border-gray-300 bg-gray-100 cursor-not-allowed'}`}
                                                                     min="0"
                                                                     disabled={!isDelivered}
                                                                     required={isDelivered}
@@ -898,7 +898,7 @@ const DeliveryFormModal = ({
                                                             </td>
                                                             <td className="px-4 py-3 text-center">
                                                                 {isPreparing && (
-                                                                    <button type="button" onClick={() => handleRemoveItem(i)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition" title="Remove item">
+                                                                    <button type="button" onClick={() => handleRemoveItem(i)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition" title="Remove item">
                                                                         <Trash2 size={16} />
                                                                     </button>
                                                                 )}
@@ -907,14 +907,14 @@ const DeliveryFormModal = ({
                                                     );
                                                 })}
                                             </tbody>
-                                            <tfoot className="bg-gray-50 border-t border-gray-200">
+                                            <tfoot className="bg-white sticky bottom-0 z-10 shadow-[inset_0_1px_0_#e5e7eb]">
                                                 <tr>
                                                     <td colSpan={7} className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">
                                                         Total ({itemsForTotals.length} item{itemsForTotals.length !== 1 ? 's' : ''})
                                                     </td>
                                                     <td className="px-4 py-3 text-right whitespace-nowrap">
-                                                        <span className="text-sm font-bold text-blue-700">{totalPrepared.toLocaleString('en-US')}</span>
-                                                        <span className="text-xs text-blue-400 ml-1">pcs</span>
+                                                        <span className="text-sm font-bold text-orange-700">{totalPrepared.toLocaleString('en-US')}</span>
+                                                        <span className="text-xs text-orange-400 ml-1">pcs</span>
                                                     </td>
                                                     <td className="px-4 py-3 text-right whitespace-nowrap">
                                                         {isDeliveredStatus ? (
@@ -962,7 +962,7 @@ const DeliveryFormModal = ({
                             type="button"
                             onClick={onClose}
                             disabled={isLoading}
-                            className="px-5 py-2.5 text-sm font-semibold text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-5 py-2.5 text-sm font-semibold text-gray-700 border border-gray-300 rounded hover:bg-white active:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Cancel
                         </button>
@@ -970,7 +970,7 @@ const DeliveryFormModal = ({
                             type="submit"
                             form="delivery-form"
                             disabled={isLoading}
-                            className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-5 py-2.5 text-sm font-semibold text-white bg-orange-600 rounded hover:bg-orange-700 active:bg-orange-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {mode === 'create' ? 'Create Delivery' : 'Update Delivery'}
                         </button>

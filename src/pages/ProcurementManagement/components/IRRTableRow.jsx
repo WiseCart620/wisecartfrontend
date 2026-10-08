@@ -15,7 +15,7 @@ const IRRTableRow = ({
     const [isExpanded, setIsExpanded] = useState(false);
 
     return (
-        <tr key={req.id} className="hover:bg-gray-50">
+        <tr key={req.id} className="hover:bg-white">
             <td className="px-6 py-4 font-medium text-gray-900">{req.controlNumber}</td>
             <td className="px-6 py-4 text-gray-900">{req.requestor}</td>
             <td className="px-6 py-4">
@@ -33,13 +33,13 @@ const IRRTableRow = ({
                         <div className="text-sm">
                             <button
                                 onClick={() => setIsExpanded(!isExpanded)}
-                                className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"
+                                className="flex items-center gap-1 text-orange-600 hover:text-orange-700 font-medium"
                             >
                                 {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                                 {req.items.length} products
                             </button>
                             {isExpanded && (
-                                <div className="mt-2 space-y-1.5 pl-5 border-l-2 border-blue-200">
+                                <div className="mt-2 space-y-1.5 pl-5 border-l-2 border-orange-200">
                                     {req.items.map((item, idx) => (
                                         <div key={idx}>
                                             <div className="text-gray-900 font-medium">
@@ -73,7 +73,7 @@ const IRRTableRow = ({
                 <div className="flex items-center justify-end gap-2">
                     <button
                         onClick={() => setViewingIrr(req)}
-                        className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                        className="p-2 text-gray-600 hover:bg-gray-100 rounded"
                     >
                         <Eye size={18} />
                     </button>
@@ -83,7 +83,7 @@ const IRRTableRow = ({
                             setShowIrrModal(true);
                         }}
                         disabled={req.status === 'PROCEEDED_TO_RPQ' || buttonLoading[`edit-${req.id}`]}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-2 text-orange-600 hover:bg-orange-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {buttonLoading[`edit-${req.id}`] ? (
                             <Loader2 size={18} className="animate-spin" />
@@ -94,7 +94,7 @@ const IRRTableRow = ({
                     <button
                         onClick={() => handleDeleteIrr(req.id)}
                         disabled={req.status === 'PROCEEDED_TO_RPQ' || buttonLoading[`delete-irr-${req.id}`]}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {buttonLoading[`delete-irr-${req.id}`] ? (
                             <Loader2 size={18} className="animate-spin" />

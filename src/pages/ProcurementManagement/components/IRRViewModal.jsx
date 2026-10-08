@@ -9,7 +9,7 @@ const IRRViewModal = ({ irr, onClose, formatNumber }) => {
                     <h2 className="text-xl font-bold text-gray-900">Request Details</h2>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-gray-100 rounded-lg"
+                        className="p-2 hover:bg-gray-100 rounded"
                     >
                         <X size={20} />
                     </button>
@@ -39,7 +39,7 @@ const IRRViewModal = ({ irr, onClose, formatNumber }) => {
 
                     {/* Supplier Information */}
                     {irr.supplierName && (
-                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="p-4 bg-orange-50 rounded border border-orange-200">
                             <h3 className="font-semibold text-gray-900 mb-3">Supplier Information</h3>
                             <div className="grid grid-cols-2 gap-3 text-sm">
                                 <div>
@@ -72,10 +72,10 @@ const IRRViewModal = ({ irr, onClose, formatNumber }) => {
                     {irr.items && irr.items.length > 0 && (
                         <div>
                             <h3 className="font-semibold text-gray-900 mb-3">Products</h3>
-                            <div className="border rounded-lg overflow-hidden table-panel">
+                            <div className="border rounded overflow-hidden table-panel">
                                 <div className="overflow-x-auto table-fit" style={{ maxHeight: '260px' }}>
                                     <table className="w-full">
-                                        <thead className="bg-gray-50 border-b">
+                                        <thead className="bg-white border-b">
                                             <tr>
                                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Product</th>
                                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">SKU</th>

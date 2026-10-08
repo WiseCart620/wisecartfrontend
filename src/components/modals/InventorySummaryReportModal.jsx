@@ -156,13 +156,13 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                         <p className="text-xs text-gray-500">{warehouseName} · {fmt(filters.dateFrom)} – {fmt(filters.dateTo)}</p>
                     </div>
                     <div className="flex gap-2">
-                        <button onClick={handlePrint} className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
+                        <button onClick={handlePrint} className="px-3 py-1.5 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 transition flex items-center gap-2">
                             <Printer size={14} />Print / PDF
                         </button>
-                        <button onClick={handleExportExcel} className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2">
+                        <button onClick={handleExportExcel} className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition flex items-center gap-2">
                             <FileSpreadsheet size={14} />Excel
                         </button>
-                        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100"><X size={16} /></button>
+                        <button onClick={onClose} className="p-1.5 rounded hover:bg-gray-100"><X size={16} /></button>
                     </div>
                 </div>
 

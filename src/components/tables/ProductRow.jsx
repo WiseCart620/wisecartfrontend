@@ -146,7 +146,7 @@ const ProductRow = ({
     return (
         <>
             {/* Parent Row */}
-            <tr className="hover:bg-gray-50">
+            <tr className="hover:bg-white">
                 <td className="px-6 py-4">
                     <button
                         onClick={() => setIsExpanded(!isExpanded)}
@@ -165,15 +165,15 @@ const ProductRow = ({
                             <img
                                 src={getImageUrl(product.imageUrl)}
                                 alt={product.productName}
-                                className="w-12 h-12 object-cover rounded-lg border border-gray-200"
+                                className="w-12 h-12 object-cover rounded border border-gray-200"
                                 onError={(e) => {
                                     console.error('Image failed to load:', product.imageUrl);
                                     e.target.src = getPlaceholderImage();
                                 }}
                             />
                         ) : (
-                            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                                <Package size={24} className="text-blue-600" />
+                            <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                                <Package size={24} className="text-gray-400" />
                             </div>
                         )}
                         <div>
@@ -192,11 +192,11 @@ const ProductRow = ({
 
                 <td className="px-6 py-4">
                     {productSuppliers.length > 0 ? (
-                        <div className="flex flex-wrap gap-1 max-w-[250px]">
+                        <div className="flex flex-col gap-0.5 max-w-[250px]">
                             {productSuppliers.slice(0, 3).map((supplier, index) => (
                                 <span
                                     key={`${supplier.id}-${index}`}
-                                    className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium whitespace-nowrap"
+                                    className="text-xs font-medium text-black whitespace-nowrap"
                                     title={supplier.country || ''}
                                 >
                                     {supplier.name || 'Unknown'}
@@ -215,7 +215,7 @@ const ProductRow = ({
 
                 <td className="px-6 py-4">
                     {hasVariations ? (
-                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                        <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
                             {product.variations.length} variation{product.variations.length > 1 ? 's' : ''}
                         </span>
                     ) : (
@@ -259,7 +259,7 @@ const ProductRow = ({
                         {canEdit && (
                             <button
                                 onClick={() => onEdit(product)}
-                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                                className="p-2 text-orange-600 hover:bg-orange-50 rounded transition"
                                 title="Edit product"
                             >
                                 <Edit2 size={18} />
@@ -268,7 +268,7 @@ const ProductRow = ({
                         {canDelete && (
                             <button
                                 onClick={() => onDelete(product.id)}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                                className="p-2 text-red-600 hover:bg-red-50 rounded transition"
                                 title="Delete product"
                             >
                                 <Trash2 size={18} />
@@ -280,9 +280,9 @@ const ProductRow = ({
 
             {isExpanded && !hasVariations && (
                 <tr>
-                    <td colSpan="8" className="bg-gray-50 px-6 py-4">
+                    <td colSpan="8" className="bg-white px-6 py-4">
                         <div className="pl-12">
-                            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                            <div className="bg-white rounded border border-gray-200 overflow-hidden">
                                 <table className="w-full">
                                     <thead className="bg-gray-100">
                                         <tr>
@@ -297,7 +297,7 @@ const ProductRow = ({
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr className="hover:bg-gray-50">
+                                        <tr className="hover:bg-white">
                                             <td className="px-4 py-3 text-sm text-gray-900">{product.sku || '-'}</td>
                                             <td className="px-4 py-3 text-sm text-gray-900 font-mono">{product.upc || '-'}</td>
                                             <td className="px-4 py-3 text-sm text-gray-900">
@@ -327,7 +327,7 @@ const ProductRow = ({
                                             </td>
                                             <td className="px-4 py-3">
                                                 {product.unitCost ? (
-                                                    <span className="text-sm font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded">
+                                                    <span className="text-sm font-semibold text-orange-700 bg-orange-50 px-2 py-1 rounded">
                                                         ₱{parseFloat(product.unitCost).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </span>
                                                 ) : (
@@ -345,9 +345,9 @@ const ProductRow = ({
 
             {isExpanded && hasVariations && (
                 <tr>
-                    <td colSpan="8" className="bg-gray-50 px-6 py-4">
+                    <td colSpan="8" className="bg-white px-6 py-4">
                         <div className="pl-12">
-                            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                            <div className="bg-white rounded border border-gray-200 overflow-hidden">
                                 <table className="w-full">
                                     <thead className="bg-gray-100">
                                         <tr>
@@ -363,7 +363,7 @@ const ProductRow = ({
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
                                         {product.variations.map((variation, index) => (
-                                            <tr key={index} className="hover:bg-gray-50">
+                                            <tr key={index} className="hover:bg-white">
                                                 <td className="px-4 py-3">
                                                     <VariationImage
                                                         imageUrl={variation.imageUrl}
@@ -373,7 +373,7 @@ const ProductRow = ({
                                                 <td className="px-4 py-3">
                                                     <div className="flex flex-wrap gap-1">
                                                         {variation.combinationDisplay?.split('-').map((attr, i) => (
-                                                            <span key={i} className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+                                                            <span key={i} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">
                                                                 {attr}
                                                             </span>
                                                         ))}
@@ -412,7 +412,7 @@ const ProductRow = ({
                                                             uc.variationId && variation.id && uc.variationId === variation.id
                                                         );
                                                         return match ? (
-                                                            <span className="text-sm font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded">
+                                                            <span className="text-sm font-semibold text-orange-700 bg-orange-50 px-2 py-1 rounded">
                                                                 ₱{parseFloat(match.unitCost).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                             </span>
                                                         ) : (

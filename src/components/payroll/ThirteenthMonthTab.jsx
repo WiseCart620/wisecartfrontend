@@ -109,10 +109,10 @@ const ThirteenthMonthTab = ({ canManage }) => {
 
   return (
     <div>
-      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-gray-50 pb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-white pb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-sm">
           <span className="text-gray-600">Year</span>
-          <input type="number" className="w-24 px-3 py-2 border border-gray-300 rounded-lg"
+          <input type="number" className="w-24 px-3 py-2 border border-gray-300 rounded"
             value={year} onChange={(e) => setYear(Number(e.target.value))} />
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -130,7 +130,7 @@ const ThirteenthMonthTab = ({ canManage }) => {
               <button key={k} type="button" onClick={() => setStatusFilter(k)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium border ${statusFilter === k
                   ? 'bg-orange-600 text-white border-orange-600'
-                  : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}>{l}</button>
+                  : 'bg-white text-gray-600 border-gray-300 hover:bg-white'}`}>{l}</button>
             ))}
           </div>
         </div>
@@ -171,7 +171,7 @@ const ThirteenthMonthTab = ({ canManage }) => {
         </div>
         <div className="overflow-auto w-full tbl-scroll">
           <table className="w-full min-w-[900px]">
-            <thead className="bg-gray-50">
+            <thead className="bg-white">
               <tr>
                 <th className="px-4 py-3 w-10"></th>
                 {['Employee', 'Status', 'Months', 'Computed', 'Paid', 'Remaining'].map(h => (
@@ -189,7 +189,7 @@ const ThirteenthMonthTab = ({ canManage }) => {
                 const active = i.employeeStatus === 'ACTIVE';
                 return (
                   <React.Fragment key={k}>
-                    <tr className={`text-sm [&>td]:sticky [&>td]:top-[39px] [&>td]:z-[5] ${i.eligible ? '[&>td]:bg-white hover:[&>td]:bg-gray-50' : '[&>td]:bg-gray-50 text-gray-400'}`}>
+                    <tr className={`text-sm [&>td]:sticky [&>td]:top-[39px] [&>td]:z-[5] ${i.eligible ? '[&>td]:bg-white hover:[&>td]:bg-white' : '[&>td]:bg-white text-gray-400'}`}>
                       <td className="px-4 py-3">
                         <input type="checkbox" checked={!!i.isEnabled && !!i.eligible}
                           disabled={!canManage || !i.eligible || busy}

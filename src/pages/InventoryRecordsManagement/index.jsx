@@ -88,7 +88,7 @@ const DeleteErrorModal = ({ message, onClose }) => {
     switch (status) {
       case 'DELIVERED': return { bg: 'bg-green-500/90', text: 'text-white', border: 'border-green-400', icon: '✅', label: 'Delivered' };
       case 'IN_TRANSIT': return { bg: 'bg-yellow-400/90', text: 'text-yellow-900', border: 'border-yellow-300', icon: '🚚', label: 'In Transit' };
-      case 'PREPARING': return { bg: 'bg-blue-400/90', text: 'text-white', border: 'border-blue-300', icon: '📋', label: 'Preparing' };
+      case 'PREPARING': return { bg: 'bg-orange-400/90', text: 'text-white', border: 'border-orange-300', icon: '📋', label: 'Preparing' };
       case 'PENDING': return { bg: 'bg-gray-400/90', text: 'text-white', border: 'border-gray-300', icon: '⏳', label: 'Pending' };
       default: return { bg: 'bg-gray-300/90', text: 'text-gray-800', border: 'border-gray-200', icon: '📦', label: status || 'Unknown' };
     }
@@ -100,8 +100,8 @@ const DeleteErrorModal = ({ message, onClose }) => {
       leftBar: 'bg-red-500/80', titleColor: 'text-red-900', icon: '⚠️', label: 'Delivery + Sale Conflict', labelBg: 'bg-red-100/80 text-red-700',
     };
     if (hasDelivery) return {
-      borderColor: 'border-blue-400/70', headerBg: 'bg-blue-50/80', headerBorder: 'border-b border-blue-200/70',
-      leftBar: 'bg-blue-500/80', titleColor: 'text-blue-900', icon: '📦', label: 'Delivery Conflict', labelBg: 'bg-blue-100/80 text-blue-700',
+      borderColor: 'border-orange-400/70', headerBg: 'bg-orange-50/80', headerBorder: 'border-b border-orange-200/70',
+      leftBar: 'bg-orange-500/80', titleColor: 'text-orange-900', icon: '📦', label: 'Delivery Conflict', labelBg: 'bg-orange-100/80 text-orange-700',
     };
     return {
       borderColor: 'border-orange-400/70', headerBg: 'bg-orange-50/80', headerBorder: 'border-b border-orange-200/70',
@@ -150,7 +150,7 @@ const DeleteErrorModal = ({ message, onClose }) => {
                 {products.length} product{products.length !== 1 ? 's' : ''}
               </span>
               {totalDeliveries > 0 && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 border border-blue-200/60 rounded-full text-xs font-semibold text-blue-700 shadow-sm backdrop-blur-sm">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-500/10 border border-orange-200/60 rounded-full text-xs font-semibold text-orange-700 shadow-sm backdrop-blur-sm">
                   <Package size={11} />
                   {totalDeliveries} DR{totalDeliveries !== 1 ? 's' : ''} · {totalDeliveryQty} pcs
                 </span>
@@ -199,9 +199,9 @@ const DeleteErrorModal = ({ message, onClose }) => {
                         <span className={`font-semibold text-sm flex-1 min-w-0 truncate ${meta.titleColor}`}>{productName}</span>
                         <div className="flex items-center gap-2">
                           {deliveryReceipts.length > 0 && (
-                            <span className="flex items-center gap-1 text-xs bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-200/60">
-                              <Package size={10} className="text-blue-600" />
-                              <span className="text-blue-700">{deliveryReceipts.length}</span>
+                            <span className="flex items-center gap-1 text-xs bg-orange-500/10 px-2 py-0.5 rounded-full border border-orange-200/60">
+                              <Package size={10} className="text-orange-600" />
+                              <span className="text-orange-700">{deliveryReceipts.length}</span>
                             </span>
                           )}
                           {saleRefs.length > 0 && (
@@ -223,13 +223,13 @@ const DeleteErrorModal = ({ message, onClose }) => {
                           {deliveryReceipts.length > 0 && (
                             <div>
                               <div className="flex items-center gap-1.5 mb-3">
-                                <Package size={12} className="text-blue-500/90 flex-shrink-0" />
-                                <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">
+                                <Package size={12} className="text-orange-500/90 flex-shrink-0" />
+                                <span className="text-xs font-semibold text-orange-600 uppercase tracking-wide">
                                   Delivery Receipt{deliveryReceipts.length !== 1 ? 's' : ''}
                                 </span>
                                 <span className="ml-auto flex items-center gap-1.5">
-                                  <span className="bg-blue-500/10 border border-blue-200/60 text-blue-600 text-xs font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm">{productDrQty} pcs</span>
-                                  <span className="bg-blue-500/20 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">{deliveryReceipts.length} DR{deliveryReceipts.length !== 1 ? 's' : ''}</span>
+                                  <span className="bg-orange-500/10 border border-orange-200/60 text-orange-600 text-xs font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm">{productDrQty} pcs</span>
+                                  <span className="bg-orange-500/20 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">{deliveryReceipts.length} DR{deliveryReceipts.length !== 1 ? 's' : ''}</span>
                                 </span>
                               </div>
 
@@ -238,13 +238,13 @@ const DeleteErrorModal = ({ message, onClose }) => {
                                   const { label, qty, status, from, to } = parseRef(dr);
                                   const sm = status ? getStatusMeta(status) : null;
                                   return (
-                                    <div key={j} className="flex flex-col bg-white/70 backdrop-blur-sm rounded-lg border border-blue-200/60 shadow-sm overflow-visible">
+                                    <div key={j} className="flex flex-col bg-white/70 backdrop-blur-sm rounded border border-orange-200/60 shadow-sm overflow-visible">
                                       <div className="flex w-full min-h-[2rem]">
-                                        <div className="flex-shrink-0 px-2 py-1.5 bg-blue-500/10 border-r border-blue-200/60" style={{ minWidth: '8rem', maxWidth: '14rem', overflowX: 'auto' }}>
-                                          <span className="block text-xs font-mono font-medium text-blue-800 whitespace-nowrap">{label}</span>
+                                        <div className="flex-shrink-0 px-2 py-1.5 bg-orange-500/10 border-r border-orange-200/60" style={{ minWidth: '8rem', maxWidth: '14rem', overflowX: 'auto' }}>
+                                          <span className="block text-xs font-mono font-medium text-orange-800 whitespace-nowrap">{label}</span>
                                         </div>
                                         {qty !== null && (
-                                          <div className="w-16 flex-shrink-0 px-2 py-1.5 bg-blue-500/80 border-r border-blue-300/60 flex items-center justify-center">
+                                          <div className="w-16 flex-shrink-0 px-2 py-1.5 bg-orange-500/80 border-r border-orange-300/60 flex items-center justify-center">
                                             <span className="text-xs font-bold text-white text-center whitespace-nowrap">{qty} pcs</span>
                                           </div>
                                         )}
@@ -258,10 +258,10 @@ const DeleteErrorModal = ({ message, onClose }) => {
                                         )}
                                       </div>
                                       {(from || to) ? (
-                                        <div className="flex items-center justify-between px-2 py-1.5 bg-gray-500/5 border-t border-blue-100/60 text-[10px] backdrop-blur-sm gap-1">
+                                        <div className="flex items-center justify-between px-2 py-1.5 bg-gray-500/5 border-t border-orange-100/60 text-[10px] backdrop-blur-sm gap-1">
                                           <div className="flex items-center gap-1 min-w-0 flex-1">
-                                            <span className="text-blue-400/90 flex-shrink-0">🏭</span>
-                                            <span className="font-medium text-blue-700/90 break-words leading-tight" title={from || ''}>{from || 'Unknown'}</span>
+                                            <span className="text-orange-400/90 flex-shrink-0">🏭</span>
+                                            <span className="font-medium text-orange-700/90 break-words leading-tight" title={from || ''}>{from || 'Unknown'}</span>
                                           </div>
                                           <span className="text-gray-400/70 flex-shrink-0 mx-1">→</span>
                                           <div className="flex items-center gap-1 min-w-0 flex-1 justify-end">
@@ -270,7 +270,7 @@ const DeleteErrorModal = ({ message, onClose }) => {
                                           </div>
                                         </div>
                                       ) : (
-                                        <div className="h-[34px] bg-white/30 border-t border-blue-100/60" />
+                                        <div className="h-[34px] bg-white/30 border-t border-orange-100/60" />
                                       )}
                                     </div>
                                   );
@@ -314,7 +314,7 @@ const DeleteErrorModal = ({ message, onClose }) => {
                                 {saleRefs.map((ref, j) => {
                                   const { label, qty, status, branch, company } = parseRef(ref);
                                   return (
-                                    <div key={j} className="flex flex-col bg-white/70 backdrop-blur-sm rounded-lg border border-orange-200/60 shadow-sm overflow-visible">
+                                    <div key={j} className="flex flex-col bg-white/70 backdrop-blur-sm rounded border border-orange-200/60 shadow-sm overflow-visible">
                                       <div className="flex w-full min-h-[2rem]">
                                         <div className="flex-shrink-0 px-2 py-1.5 bg-orange-500/10 border-r border-orange-200/60" style={{ minWidth: '8rem', maxWidth: '14rem', overflowX: 'auto' }}>
                                           <span className="block text-xs font-mono font-medium text-orange-800 whitespace-nowrap">{label}</span>
@@ -1037,16 +1037,16 @@ const InventoryRecordsManagement = () => {
       <DeleteErrorModal message={deleteErrorMessage} onClose={() => setDeleteErrorMessage(null)} />
       <Toast toasts={toasts} removeToast={removeToast} />
 
-      <div className="min-h-screen bg-gray-50 p-2 sm:p-3 lg:p-4">
+      <div className="min-h-screen bg-white p-2 sm:p-3 lg:p-4">
         <div className="max-w-full mx-auto">
           <div className="mb-4">
-            <h1 className="text-xl lg:text-2xl font-bold text-gray-900 mb-1">Inventory Records Management</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-1">Inventory Records Management</h1>
             <p className="text-sm text-gray-600">Track and manage inventory movements</p>
           </div>
 
           <div className="flex justify-between items-center mb-4">
             {canCreate && (
-              <button onClick={() => handleOpenModal('create')} className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium text-sm">
+              <button onClick={() => handleOpenModal('create')} className="flex items-center gap-2 px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors shadow-sm font-medium text-sm">
                 <Plus size={16} />
                 <span>New Inventory Record</span>
               </button>
@@ -1068,7 +1068,7 @@ const InventoryRecordsManagement = () => {
           />
 
           {canSeeFilter(user, 'inventory', 'product') && (
-            <div className="bg-white rounded-xl shadow-sm p-3 mb-3">
+            <div className="mb-3">
               <label className="block text-xs font-medium text-gray-700 mb-1">
                 Filter by Product / UPC / SKU
               </label>

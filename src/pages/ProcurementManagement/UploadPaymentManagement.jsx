@@ -416,7 +416,7 @@ const UploadPaymentManagement = () => {
     const getPaymentStatusBadge = (status) => {
         const statusMap = {
             'PAYMENT_PENDING': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Payment Pending' },
-            'PARTIAL_PAID': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Partial Paid' },
+            'PARTIAL_PAID': { bg: 'bg-orange-100', text: 'text-orange-800', label: 'Partial Paid' },
             'FULL_PAID': { bg: 'bg-green-100', text: 'text-green-800', label: 'Fully Paid' }
         };
         const badge = statusMap[status] || statusMap['PAYMENT_PENDING'];
@@ -458,14 +458,14 @@ const UploadPaymentManagement = () => {
                             placeholder="Search by control number or product..."
                             value={searchPayment}
                             onChange={(e) => setSearchPayment(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
                         />
                     </div>
 
                     <div className="bg-white rounded-xl shadow-sm overflow-hidden table-panel">
                         <div className="overflow-x-auto table-fit">
                             <table className="w-full">
-                                <thead className="bg-gray-50 border-b">
+                                <thead className="bg-white border-b">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Control #</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Supplier</th>
@@ -493,14 +493,14 @@ const UploadPaymentManagement = () => {
                                             const totalPaidPHP = productPaidPHP + shippingCostPHP + otherChargesPHP;
 
                                             return (
-                                                <tr key={po.id} className="hover:bg-gray-50">
+                                                <tr key={po.id} className="hover:bg-white">
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="flex items-center gap-2">
                                                             <span className="font-medium text-gray-900">{po.controlNumber}</span>
                                                             {po.items && po.items.length > 0 && (
                                                                 <button
                                                                     onClick={() => setViewingProducts(po)}
-                                                                    className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                                    className="p-1 text-orange-600 hover:bg-orange-50 rounded transition-colors"
                                                                     title="View Products"
                                                                 >
                                                                     <Package size={16} />
@@ -514,7 +514,7 @@ const UploadPaymentManagement = () => {
                                                             <span className="font-medium text-gray-900 cursor-default">
                                                                 ${formatNumberWithCommas(totalAmountWAC_USD.toFixed(2))}
                                                             </span>
-                                                            <div className="absolute left-0 top-full mt-1 z-50 hidden group-hover:block bg-gray-800 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
+                                                            <div className="absolute left-0 top-full mt-1 z-50 hidden group-hover:block bg-gray-800 text-white text-xs rounded px-3 py-2 whitespace-nowrap shadow-lg">
                                                                 <div>Product USD: ${formatNumberWithCommas(totalAmountWAC_USD.toFixed(2))}</div>
                                                                 <div>Paid PHP: ₱{formatNumberWithCommas(totalPaidPHP.toFixed(2))}</div>
                                                                 <div>Product PHP: ₱{formatNumberWithCommas(productPaidPHP.toFixed(2))}</div>
@@ -543,14 +543,14 @@ const UploadPaymentManagement = () => {
                                                         <div className="flex items-center justify-end gap-2">
                                                             <button
                                                                 onClick={() => handleViewPayments(po)}
-                                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                                                className="p-2 text-orange-600 hover:bg-orange-50 rounded"
                                                                 title="View Payments"
                                                             >
                                                                 <FileText size={18} />
                                                             </button>
                                                             <button
                                                                 onClick={() => { setShippingPO(po); setShowShippingModal(true); }}
-                                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                                                className="p-2 text-orange-600 hover:bg-orange-50 rounded"
                                                                 title="Shipping Cost"
                                                             >
                                                                 <Ship size={18} />
@@ -558,7 +558,7 @@ const UploadPaymentManagement = () => {
                                                             <button
                                                                 onClick={() => handlePayNow(po)}
                                                                 disabled={isLoadingOverlay || po.paymentStatus === 'FULL_PAID'}
-                                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                className="p-2 text-orange-600 hover:bg-orange-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                                                                 title={po.paymentStatus === 'FULL_PAID' ? 'Order is fully paid' : 'Product Cost'}
                                                             >
                                                                 {isLoadingOverlay ? (
@@ -569,7 +569,7 @@ const UploadPaymentManagement = () => {
                                                             </button>
                                                             <button
                                                                 onClick={() => { setOthersPO(po); setShowOthersModal(true); }}
-                                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                                                className="p-2 text-orange-600 hover:bg-orange-50 rounded"
                                                                 title="Other Charges"
                                                             >
                                                                 <MoreHorizontal size={18} />
@@ -706,7 +706,7 @@ const ViewingModal = ({ po, onClose, onSubmit, getPaymentStatusBadge, getFileUrl
             <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="border-b px-6 py-4 flex items-center justify-between sticky top-0 bg-white">
                     <h2 className="text-xl font-bold text-gray-900">Purchase Order Details</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded">
                         <X size={20} />
                     </button>
                 </div>
@@ -723,7 +723,7 @@ const ViewingModal = ({ po, onClose, onSubmit, getPaymentStatusBadge, getFileUrl
                         </div>
                     </div>
 
-                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="p-4 bg-orange-50 rounded border border-orange-200">
                         <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                             <Building2 size={18} />
                             Supplier Information
@@ -758,10 +758,10 @@ const ViewingModal = ({ po, onClose, onSubmit, getPaymentStatusBadge, getFileUrl
                         </div>
                     </div>
 
-                    <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="p-4 bg-white rounded">
                         <h3 className="font-semibold text-gray-900 mb-3">Product Information</h3>
                         {po.items && po.items.length > 0 ? (
-                            <div className="border rounded-lg overflow-hidden bg-white">
+                            <div className="border rounded overflow-hidden bg-white">
                                 <table className="w-full">
                                     <thead className="bg-gray-100 border-b">
                                         <tr>
@@ -776,7 +776,7 @@ const ViewingModal = ({ po, onClose, onSubmit, getPaymentStatusBadge, getFileUrl
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
                                         {po.items.map((item, idx) => (
-                                            <tr key={idx} className="hover:bg-gray-50">
+                                            <tr key={idx} className="hover:bg-white">
                                                 <td className="px-4 py-2 text-sm font-medium text-gray-900">{item.productName}</td>
                                                 <td className="px-4 py-2 text-sm text-gray-600">{item.sku || '-'}</td>
                                                 <td className="px-4 py-2 text-sm text-gray-600">{item.upc || '-'}</td>
@@ -810,7 +810,7 @@ const ViewingModal = ({ po, onClose, onSubmit, getPaymentStatusBadge, getFileUrl
                     </div>
 
                     {po.uploadedFileUrl && (
-                        <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                        <div className="p-4 bg-purple-50 rounded border border-purple-200">
                             <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                                 <FileText size={18} className="text-purple-600" />
                                 Purchase Order Document
@@ -828,7 +828,7 @@ const ViewingModal = ({ po, onClose, onSubmit, getPaymentStatusBadge, getFileUrl
                                     <button
                                         type="button"
                                         onClick={() => window.open(getFileUrl(po.uploadedFileUrl), '_blank')}
-                                        className="w-full flex items-center gap-3 text-blue-600 hover:bg-blue-50 p-3 rounded"
+                                        className="w-full flex items-center gap-3 text-orange-600 hover:bg-orange-50 p-3 rounded"
                                     >
                                         <FileText size={40} />
                                         <span>View Document</span>
@@ -850,7 +850,7 @@ const ViewingModal = ({ po, onClose, onSubmit, getPaymentStatusBadge, getFileUrl
                         <button
                             onClick={() => onSubmit(po)}
                             disabled={po.paymentStatus !== 'PAYMENT_PENDING' || !hasAllPrices}
-                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             title={!hasAllPrices ? 'Set all item prices first' : ''}
                         >
                             Submit Order
@@ -880,13 +880,13 @@ const EditingModal = ({ po, poFormData, setPoFormData, selectedFile, selectedFil
                         <h2 className="text-xl font-bold text-gray-900">Edit Purchase Order</h2>
                         <p className="text-sm text-gray-500 mt-1">Update pricing and upload purchase order document</p>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded">
                         <X size={20} />
                     </button>
                 </div>
 
                 <form onSubmit={onSubmit} className="p-6 space-y-6">
-                    <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="grid grid-cols-2 gap-4 p-4 bg-white rounded border border-gray-200">
                         <div>
                             <span className="text-sm text-gray-600 font-medium">Control Number</span>
                             <p className="font-bold text-gray-900 text-lg">{po.controlNumber}</p>
@@ -897,7 +897,7 @@ const EditingModal = ({ po, poFormData, setPoFormData, selectedFile, selectedFil
                         </div>
                     </div>
 
-                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="p-4 bg-orange-50 rounded border border-orange-200">
                         <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                             <Building2 size={18} />
                             Supplier Information
@@ -932,14 +932,14 @@ const EditingModal = ({ po, poFormData, setPoFormData, selectedFile, selectedFil
                         </div>
                     </div>
 
-                    <div className="p-4 bg-green-50 rounded-lg border border-gray-200">
+                    <div className="p-4 bg-green-50 rounded border border-gray-200">
                         <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                             <Edit2 size={18} />
                             Edit Product Pricing
                         </h3>
 
                         {po.items && po.items.length > 0 ? (
-                            <div className="border rounded-lg overflow-hidden bg-white">
+                            <div className="border rounded overflow-hidden bg-white">
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
                                         <thead className="bg-gray-100 border-b">
@@ -957,7 +957,7 @@ const EditingModal = ({ po, poFormData, setPoFormData, selectedFile, selectedFil
                                             {po.items.map((item, idx) => {
                                                 const itemFormData = poFormData.items.find(i => i.id === item.id) || {};
                                                 return (
-                                                    <tr key={idx} className="hover:bg-gray-50">
+                                                    <tr key={idx} className="hover:bg-white">
                                                         <td className="px-4 py-3 text-sm font-medium text-gray-900">
                                                             {item.productName}
                                                         </td>
@@ -980,7 +980,7 @@ const EditingModal = ({ po, poFormData, setPoFormData, selectedFile, selectedFil
                                                                 onChange={(e) => handleItemPriceChange(item.id, 'unitPrice', e.target.value)}
                                                                 step="0.01"
                                                                 min="0"
-                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                                                                 placeholder="0.00"
                                                             />
                                                         </td>
@@ -991,7 +991,7 @@ const EditingModal = ({ po, poFormData, setPoFormData, selectedFile, selectedFil
                                                                 onChange={(e) => handleItemPriceChange(item.id, 'totalAmount', e.target.value)}
                                                                 step="0.01"
                                                                 min="0"
-                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                                                                 placeholder="0.00"
                                                             />
                                                         </td>
@@ -1028,23 +1028,23 @@ const EditingModal = ({ po, poFormData, setPoFormData, selectedFile, selectedFil
                             type="date"
                             value={poFormData.date}
                             onChange={(e) => setPoFormData({ ...poFormData, date: e.target.value })}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                         />
                     </div>
 
-                    <div className="p-4 bg-violet-50 rounded-lg border border-gray-200">
+                    <div className="p-4 bg-violet-50 rounded border border-gray-200">
                         <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                             <FileText size={18} />
                             Purchase Order Document
                         </h3>
 
                         {(selectedFile || po.uploadedFileUrl) && (
-                            <div className="mb-4 p-3 bg-white rounded-lg border border-gray-300">
+                            <div className="mb-4 p-3 bg-white rounded border border-gray-300">
                                 {selectedFilePreview ? (
                                     <img
                                         src={selectedFilePreview}
                                         alt="Preview"
-                                        className="w-full h-64 object-contain bg-gray-50 rounded"
+                                        className="w-full h-64 object-contain bg-white rounded"
                                     />
                                 ) : selectedFile ? (
                                     <div className="flex items-center gap-3 p-2">
@@ -1061,7 +1061,7 @@ const EditingModal = ({ po, poFormData, setPoFormData, selectedFile, selectedFil
                                         <img
                                             src={getFileUrl(po.uploadedFileUrl)}
                                             alt="Current Document"
-                                            className="w-full h-64 object-contain bg-gray-50 rounded cursor-pointer"
+                                            className="w-full h-64 object-contain bg-white rounded cursor-pointer"
                                             onClick={() => window.open(getFileUrl(po.uploadedFileUrl), '_blank')}
                                             onError={(e) => e.target.src = getPlaceholderImage()}
                                         />
@@ -1089,7 +1089,7 @@ const EditingModal = ({ po, poFormData, setPoFormData, selectedFile, selectedFil
                         />
                         <label
                             htmlFor="po-file-upload"
-                            className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:border-gray-400 hover:bg-gray-50"
+                            className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded text-center cursor-pointer hover:border-gray-400 hover:bg-white"
                         >
                             <Upload size={20} />
                             <div>
@@ -1107,14 +1107,14 @@ const EditingModal = ({ po, poFormData, setPoFormData, selectedFile, selectedFil
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-white"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={actionLoading || isLoadingOverlay}
-                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="flex-1 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             {actionLoading || isLoadingOverlay ? (
                                 <>
@@ -1139,9 +1139,9 @@ const QuotationDetailsSection = ({ quotationRequest }) => {
     if (!quotationRequest || !quotationRequest.items) return null;
 
     return (
-        <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="mb-6 p-4 bg-orange-50 rounded border border-orange-200">
             <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <Package size={18} className="text-blue-600" />
+                <Package size={18} className="text-orange-600" />
                 Product Quotation Details
             </h3>
 
@@ -1158,7 +1158,7 @@ const QuotationDetailsSection = ({ quotationRequest }) => {
             </div>
 
             {/* Products Table */}
-            <div className="border rounded-lg overflow-hidden bg-white">
+            <div className="border rounded overflow-hidden bg-white">
                 <table className="w-full">
                     <thead className="bg-gray-100 border-b">
                         <tr>
@@ -1172,7 +1172,7 @@ const QuotationDetailsSection = ({ quotationRequest }) => {
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                         {quotationRequest.items.map((item, idx) => (
-                            <tr key={idx} className="hover:bg-gray-50">
+                            <tr key={idx} className="hover:bg-white">
                                 <td className="px-3 py-2 text-sm font-medium text-gray-900">{item.productName}</td>
                                 <td className="px-3 py-2 text-sm text-gray-600">{item.sku || '-'}</td>
                                 <td className="px-3 py-2 text-sm text-gray-600">{item.variation || '-'}</td>
@@ -1186,7 +1186,7 @@ const QuotationDetailsSection = ({ quotationRequest }) => {
                             </tr>
                         ))}
                     </tbody>
-                    <tfoot className="bg-gray-50 border-t">
+                    <tfoot className="bg-white border-t">
                         <tr>
                             <td colSpan="3" className="px-3 py-2 text-right font-bold text-sm">TOTAL QTY:</td>
                             <td className="px-3 py-2 text-right font-bold text-sm">
@@ -1417,7 +1417,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
             <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="border-b px-6 py-4 flex items-center justify-between sticky top-0 bg-white">
                     <h2 className="text-xl font-bold text-gray-900">Record Payment</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded">
                         <X size={20} />
                     </button>
                 </div>
@@ -1425,7 +1425,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                 <form onSubmit={handleSubmitWithWarning} className="p-6 space-y-5">
                     {po.quotationRequest && <QuotationDetailsSection quotationRequest={po.quotationRequest} />}
 
-                    <div className="p-4 bg-blue-50 rounded-lg">
+                    <div className="p-4 bg-orange-50 rounded">
                         <div className="grid grid-cols-3 gap-3 text-sm">
                             <div>
                                 <span className="text-gray-600">PO Number:</span>
@@ -1477,11 +1477,11 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                     }}
                                     onFocus={() => setShowBankDropdown(true)}
                                     required
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-orange-500"
                                     placeholder="Search or select bank"
                                 />
                                 {showBankDropdown && (
-                                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto">
                                         {filteredBanks.length === 0 ? (
                                             <div className="px-4 py-2 text-sm text-gray-500">No banks found</div>
                                         ) : (
@@ -1494,7 +1494,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                                         setBankSearch(bank);
                                                         setShowBankDropdown(false);
                                                     }}
-                                                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-sm"
+                                                    className="w-full text-left px-4 py-2 hover:bg-orange-50 text-sm"
                                                 >
                                                     {bank}
                                                 </button>
@@ -1514,7 +1514,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                     value={formData.referenceNumber}
                                     onChange={(e) => setFormData({ ...formData, referenceNumber: e.target.value })}
                                     required
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-orange-500"
                                     placeholder="Enter reference number"
                                 />
                             </div>
@@ -1529,7 +1529,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                     value={formData.paymentDate}
                                     onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
                                     required
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-orange-500"
                                 />
                             </div>
                         </div>
@@ -1563,7 +1563,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                         setFormData({ ...formData, productDollarAmount: newValue });
                                     }}
                                     required
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right"
+                                    className="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-orange-500 text-right"
                                     placeholder="0.0000"
                                 />
                             </div>
@@ -1591,7 +1591,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                         setFormData({ ...formData, productPesoAmount: newValue });
                                     }}
                                     required
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right"
+                                    className="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-orange-500 text-right"
                                     placeholder="0.00"
                                 />
                             </div>
@@ -1621,7 +1621,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                         }
                                         setFormData({ ...formData, processingFeeDollar: newValue });
                                     }}
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right"
+                                    className="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-orange-500 text-right"
                                     placeholder="0.0000"
                                 />
                             </div>
@@ -1644,7 +1644,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                         }
                                         setFormData({ ...formData, processingFeePeso: newValue });
                                     }}
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right"
+                                    className="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-orange-500 text-right"
                                     placeholder="0.00"
                                 />
                             </div>
@@ -1656,12 +1656,12 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                 Total
                             </div>
                             <div>
-                                <div className="w-full px-4 py-2 bg-gray-100 rounded-lg font-semibold text-gray-900 text-right">
+                                <div className="w-full px-4 py-2 bg-gray-100 rounded font-semibold text-gray-900 text-right">
                                     ${formatNumberWithCommas(calculateDollarTotal().toFixed(4))}
                                 </div>
                             </div>
                             <div>
-                                <div className="w-full px-4 py-2 bg-gray-100 rounded-lg font-semibold text-gray-900 text-right">
+                                <div className="w-full px-4 py-2 bg-gray-100 rounded font-semibold text-gray-900 text-right">
                                     ₱{formatNumberWithCommas(calculatePesoTotal().toFixed(2))}
                                 </div>
                             </div>
@@ -1669,19 +1669,19 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                     </div>
 
                     {/* Upload Payment Proof */}
-                    <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                    <div className="p-4 bg-purple-50 rounded border border-purple-200">
                         <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                             <FileText size={18} className="text-purple-600" />
                             Upload Payment Proof
                         </h3>
 
                         {(selectedFile || selectedFilePreview) && (
-                            <div className="mb-4 p-3 bg-white rounded-lg border border-gray-300">
+                            <div className="mb-4 p-3 bg-white rounded border border-gray-300">
                                 {selectedFilePreview ? (
                                     <img
                                         src={selectedFilePreview}
                                         alt="Preview"
-                                        className="w-full h-64 object-contain bg-gray-50 rounded"
+                                        className="w-full h-64 object-contain bg-white rounded"
                                     />
                                 ) : selectedFile ? (
                                     <div className="flex items-center gap-3 p-2">
@@ -1716,7 +1716,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                         />
                         <label
                             htmlFor="payment-proof-upload"
-                            className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:border-gray-400 hover:bg-gray-50"
+                            className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded text-center cursor-pointer hover:border-gray-400 hover:bg-white"
                         >
                             <Upload size={20} />
                             <div>
@@ -1736,7 +1736,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                             Payment Percentage
                         </div>
                         <div className="col-span-2">
-                            <div className={`p-4 rounded-lg ${isOverpayment() ? 'bg-red-50 border border-red-200' : 'bg-amber-50'}`}>
+                            <div className={`p-4 rounded ${isOverpayment() ? 'bg-red-50 border border-red-200' : 'bg-amber-50'}`}>
                                 <p className={`font-semibold text-xl mb-2 ${isOverpayment() ? 'text-red-700' : 'text-gray-900'}`}>
                                     {formData.productDollarAmount
                                         ? `${calculateNewTotalPercentage()}%`
@@ -1777,7 +1777,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
+                            className="flex-1 px-4 py-2 border rounded hover:bg-white"
                         >
                             Cancel
                         </button>
@@ -1785,7 +1785,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                             type="button"
                             onClick={() => handleSubmitPayment()}
                             disabled={actionLoading || uploadingFile}
-                            className={`flex-1 px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2 ${isOverpayment() ? 'bg-yellow-500 hover:bg-yellow-600 text-white' : 'bg-green-600 text-white'}`}
+                            className={`flex-1 px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2 ${isOverpayment() ? 'bg-yellow-500 hover:bg-yellow-600 text-white' : 'bg-green-600 text-white'}`}
                         >
                             {actionLoading || uploadingFile ? (
                                 <>
@@ -1819,7 +1819,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                 </p>
                             </div>
 
-                            <div className="mb-6 p-4 bg-red-50 rounded-lg border border-red-200">
+                            <div className="mb-6 p-4 bg-red-50 rounded border border-red-200">
                                 <div className="grid grid-cols-2 gap-3 text-sm">
                                     <div>
                                         <span className="text-gray-600">Total Amount:</span>
@@ -1849,7 +1849,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                 <button
                                     type="button"
                                     onClick={() => setShowOverpaymentWarning(false)}
-                                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-white"
                                 >
                                     Cancel
                                 </button>
@@ -1857,7 +1857,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                     type="button"
                                     onClick={(e) => handleSubmitPayment(e)}
                                     disabled={actionLoading}
-                                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
                                 >
                                     {actionLoading ? (
                                         <>
@@ -1882,7 +1882,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                     <div className="bg-white rounded-xl shadow-xl max-w-7xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="border-b px-6 py-4 flex items-center justify-between sticky top-0 bg-white">
                             <h2 className="text-xl font-bold text-gray-900">Product Details</h2>
-                            <button onClick={() => setShowProductDetails(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                            <button onClick={() => setShowProductDetails(false)} className="p-2 hover:bg-gray-100 rounded">
                                 <X size={20} />
                             </button>
                         </div>
@@ -1914,7 +1914,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                             {/* Products Table */}
                             <div>
                                 <h3 className="font-bold text-gray-900 mb-2">Products</h3>
-                                <div className="border rounded-lg overflow-hidden bg-white">
+                                <div className="border rounded overflow-hidden bg-white">
                                     <table className="w-full border-collapse border border-gray-300">
                                         <thead className="bg-gray-100">
                                             <tr>
@@ -1930,7 +1930,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                         </thead>
                                         <tbody>
                                             {po.items.map((item, idx) => (
-                                                <tr key={idx} className="hover:bg-gray-50">
+                                                <tr key={idx} className="hover:bg-white">
                                                     <td className="px-4 py-3 border border-gray-300">
                                                         <div className="text-sm font-medium text-gray-900">{item.productName}</div>
                                                     </td>
@@ -1953,7 +1953,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                                                 </tr>
                                             ))}
                                         </tbody>
-                                        <tfoot className="bg-gray-50">
+                                        <tfoot className="bg-white">
                                             <tr>
                                                 <td colSpan="5" className="px-4 py-3 text-right font-bold text-sm border border-gray-300">TOTAL QTY:</td>
                                                 <td className="px-4 py-3 font-bold text-sm border border-gray-300 text-right">
@@ -1973,7 +1973,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
 
                             {/* Payment Arrangement (if available from quotation) */}
                             {po.quotationRequest && (po.quotationRequest.initialPaymentAmount > 0 || po.quotationRequest.finalPaymentAmount > 0) && (
-                                <div className="mb-4 p-3 border border-gray-300 rounded-lg">
+                                <div className="mb-4 p-3 border border-gray-300 rounded">
                                     <h3 className="font-bold text-gray-900 mb-2">Payment Arrangement</h3>
                                     <div className="space-y-3">
                                         {po.quotationRequest.initialPaymentAmount > 0 && (
@@ -1999,7 +1999,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
                             )}
 
                             {/* Supplier Information */}
-                            <div className="mb-4 p-3 border border-gray-300 rounded-lg">
+                            <div className="mb-4 p-3 border border-gray-300 rounded">
                                 <h3 className="font-bold text-gray-900 mb-2">Supplier Information</h3>
                                 <div className="grid grid-cols-2 gap-3 text-sm">
                                     <div className="info-row">
@@ -2186,12 +2186,12 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
             <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="border-b px-6 py-4 flex items-center justify-between sticky top-0 bg-white">
                     <h2 className="text-xl font-bold text-gray-900">Payment History</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded"><X size={20} /></button>
                 </div>
 
                 <div className="p-6 space-y-6">
 
-                    <div className="p-4 bg-blue-50 rounded-lg">
+                    <div className="p-4 bg-orange-50 rounded">
                         <div className="grid grid-cols-2 gap-3 text-sm">
                             <div><span className="text-gray-600">PO Number:</span><p className="font-medium text-gray-900">{data.po.controlNumber}</p></div>
                             <div><span className="text-gray-600">Status:</span><div className="mt-1">{getPaymentStatusBadge(localPo.paymentStatus)}</div></div>
@@ -2207,9 +2207,9 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                             </div>
 
                             {/* Total Due vs Paid summary */}
-                            <div className="col-span-2 mt-2 pt-3 border-t border-blue-200">
+                            <div className="col-span-2 mt-2 pt-3 border-t border-orange-200">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="p-3 bg-white rounded-lg border border-blue-200">
+                                    <div className="p-3 bg-white rounded border border-orange-200">
                                         <p className="text-xs text-gray-500 uppercase font-semibold mb-2">Total Amount Due</p>
                                         <div className="flex flex-col gap-1">
                                             <div className="flex justify-between items-center">
@@ -2228,7 +2228,7 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="p-3 bg-white rounded-lg border border-blue-200">
+                                    <div className="p-3 bg-white rounded border border-orange-200">
                                         <p className="text-xs text-gray-500 uppercase font-semibold mb-2">Total Paid</p>
                                         <div className="flex flex-col gap-1">
                                             <div className="flex justify-between items-center">
@@ -2257,7 +2257,7 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                     </div>
                                     <div className="bg-gray-200 rounded-full h-2.5">
                                         <div
-                                            className={`rounded-full h-2.5 transition-all duration-300 ${localPo.paymentStatus === 'FULL_PAID' ? 'bg-green-500' : 'bg-blue-500'}`}
+                                            className={`rounded-full h-2.5 transition-all duration-300 ${localPo.paymentStatus === 'FULL_PAID' ? 'bg-green-500' : 'bg-orange-500'}`}
                                             style={{ width: `${Math.min(data.po.totalAmount > 0 ? (localPo.totalPaidDollar / data.po.totalAmount) * 100 : 0, 100)}%` }}
                                         />
                                     </div>
@@ -2269,7 +2269,7 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                     {/* ── 1. PRODUCT PAYMENTS ── */}
                     <div>
                         <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">1</span>
+                            <span className="w-6 h-6 rounded-full bg-orange-100 text-orange-700 text-xs flex items-center justify-center font-bold">1</span>
                             Product Payments
                         </h3>
                         {!payments || payments.length === 0 ? (
@@ -2277,17 +2277,17 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                         ) : (
                             <div className="space-y-3">
                                 {payments.map((payment) => (
-                                    <div key={payment.id} className="border border-gray-200 rounded-lg p-4">
+                                    <div key={payment.id} className="border border-gray-200 rounded p-4">
                                         {/* Header row */}
                                         <div className="flex items-center justify-between mb-3">
                                             <span className="font-semibold text-gray-900">Payment #{payment.paymentNumber}</span>
                                             <div className="flex items-center gap-2">
                                                 {editingPaymentId !== payment.id && (
                                                     <>
-                                                        <span className="text-blue-600 font-bold text-sm">
+                                                        <span className="text-orange-600 font-bold text-sm">
                                                             ${formatNumberWithCommas(payment.productDollarAmount?.toFixed(4) || '0.0000')}
                                                         </span>
-                                                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                                                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
                                                             {payment.percentageOfTotal?.toFixed(4) || '0.0000'}%
                                                         </span>
                                                     </>
@@ -2297,13 +2297,13 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                                         <button
                                                             onClick={() => handleSavePayment(payment.id)}
                                                             disabled={savingPayment}
-                                                            className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 disabled:opacity-50"
+                                                            className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50"
                                                         >
                                                             {savingPayment ? 'Saving...' : 'Save'}
                                                         </button>
                                                         <button
                                                             onClick={cancelEdit}
-                                                            className="flex items-center gap-1 px-3 py-1 border border-gray-300 text-gray-600 text-xs rounded-lg hover:bg-gray-50"
+                                                            className="flex items-center gap-1 px-3 py-1 border border-gray-300 text-gray-600 text-xs rounded hover:bg-white"
                                                         >
                                                             Cancel
                                                         </button>
@@ -2311,7 +2311,7 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                                 ) : (
                                                     <button
                                                         onClick={() => startEdit(payment)}
-                                                        className="flex items-center gap-1 px-3 py-1 border border-gray-300 text-gray-600 text-xs rounded-lg hover:bg-gray-50"
+                                                        className="flex items-center gap-1 px-3 py-1 border border-gray-300 text-gray-600 text-xs rounded hover:bg-white"
                                                     >
                                                         <Edit2 size={12} /> Edit
                                                     </button>
@@ -2329,7 +2329,7 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                                             type="text"
                                                             value={editForm.bank}
                                                             onChange={e => setEditForm(p => ({ ...p, bank: e.target.value }))}
-                                                            className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                                            className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500"
                                                         />
                                                     </div>
                                                     <div>
@@ -2338,7 +2338,7 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                                             type="text"
                                                             value={editForm.referenceNumber}
                                                             onChange={e => setEditForm(p => ({ ...p, referenceNumber: e.target.value }))}
-                                                            className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                                            className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500"
                                                         />
                                                     </div>
                                                     <div>
@@ -2347,11 +2347,11 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                                             type="date"
                                                             value={editForm.paymentDate}
                                                             onChange={e => setEditForm(p => ({ ...p, paymentDate: e.target.value }))}
-                                                            className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                                            className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500"
                                                         />
                                                     </div>
                                                 </div>
-                                                <div className="bg-gray-50 rounded-lg p-3">
+                                                <div className="bg-white rounded p-3">
                                                     <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-gray-500 uppercase mb-2">
                                                         <div></div>
                                                         <div className="text-center">USD</div>
@@ -2364,14 +2364,14 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                                             step="0.0001"
                                                             value={editForm.productDollarAmount}
                                                             onChange={e => setEditForm(p => ({ ...p, productDollarAmount: e.target.value }))}
-                                                            className="px-2 py-1.5 border border-gray-300 rounded text-sm text-right focus:ring-2 focus:ring-blue-500"
+                                                            className="px-2 py-1.5 border border-gray-300 rounded text-sm text-right focus:ring-2 focus:ring-orange-500"
                                                         />
                                                         <input
                                                             type="number"
                                                             step="0.01"
                                                             value={editForm.productPesoAmount}
                                                             onChange={e => setEditForm(p => ({ ...p, productPesoAmount: e.target.value }))}
-                                                            className="px-2 py-1.5 border border-gray-300 rounded text-sm text-right focus:ring-2 focus:ring-blue-500"
+                                                            className="px-2 py-1.5 border border-gray-300 rounded text-sm text-right focus:ring-2 focus:ring-orange-500"
                                                         />
                                                     </div>
                                                     <div className="grid grid-cols-3 gap-2 items-center mb-2">
@@ -2381,14 +2381,14 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                                             step="0.0001"
                                                             value={editForm.processingFeeDollar}
                                                             onChange={e => setEditForm(p => ({ ...p, processingFeeDollar: e.target.value }))}
-                                                            className="px-2 py-1.5 border border-gray-300 rounded text-sm text-right focus:ring-2 focus:ring-blue-500"
+                                                            className="px-2 py-1.5 border border-gray-300 rounded text-sm text-right focus:ring-2 focus:ring-orange-500"
                                                         />
                                                         <input
                                                             type="number"
                                                             step="0.01"
                                                             value={editForm.processingFeePeso}
                                                             onChange={e => setEditForm(p => ({ ...p, processingFeePeso: e.target.value }))}
-                                                            className="px-2 py-1.5 border border-gray-300 rounded text-sm text-right focus:ring-2 focus:ring-blue-500"
+                                                            className="px-2 py-1.5 border border-gray-300 rounded text-sm text-right focus:ring-2 focus:ring-orange-500"
                                                         />
                                                     </div>
                                                     <div className="grid grid-cols-3 gap-2 items-center border-t border-gray-200 pt-2 font-bold text-sm">
@@ -2409,7 +2409,7 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                                 </div>
                                                 <div className="flex items-center gap-2 text-xs text-gray-500">
                                                     <span>This payment:</span>
-                                                    <span className="font-bold text-blue-600">
+                                                    <span className="font-bold text-orange-600">
                                                         {calcPercentage(editForm.productDollarAmount)}%
                                                     </span>
                                                     <span className="text-gray-400 mx-1">·</span>
@@ -2428,7 +2428,7 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                                     <div><span className="text-gray-400">Ref #:</span> {payment.referenceNumber || 'N/A'}</div>
                                                     <div><span className="text-gray-400">Date:</span> {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : 'N/A'}</div>
                                                 </div>
-                                                <div className="bg-gray-50 rounded p-3 text-sm">
+                                                <div className="bg-white rounded p-3 text-sm">
                                                     <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-gray-500 uppercase mb-1">
                                                         <div></div><div className="text-center">USD</div><div className="text-center">PHP</div>
                                                     </div>
@@ -2454,7 +2454,7 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                                     <div className="mt-2 flex items-center gap-2 text-xs">
                                                         <FileText size={12} className="text-purple-500" />
                                                         <span className="text-gray-500">Proof:</span>
-                                                        <a href={getFileUrl(payment.paymentProofUrl)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1"><Eye size={12} /> View</a>
+                                                        <a href={getFileUrl(payment.paymentProofUrl)} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline flex items-center gap-1"><Eye size={12} /> View</a>
                                                         <a href={getFileDownloadUrl(payment.paymentProofUrl)} download className="text-green-600 hover:underline flex items-center gap-1"><Download size={12} /> Download</a>
                                                     </div>
                                                 )}
@@ -2475,7 +2475,7 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                         {!shippingData ? (
                             <p className="text-sm text-gray-400 italic">No shipping cost recorded.</p>
                         ) : (
-                            <div className="border border-gray-200 rounded-lg p-4">
+                            <div className="border border-gray-200 rounded p-4">
                                 <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                                     <div><span className="text-gray-400 text-xs">Forwarding Agent:</span><p className="font-medium text-gray-900">{shippingData.forwarderName || `ID: ${shippingData.forwarderId}` || '-'}</p></div>
                                     <div><span className="text-gray-400 text-xs">Date:</span><p className="font-medium text-gray-900">{shippingData.shippingDate ? new Date(shippingData.shippingDate).toLocaleDateString() : '-'}</p></div>
@@ -2487,7 +2487,7 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                 {shippingData.items && shippingData.items.length > 0 && (
                                     <div className="border rounded overflow-hidden mb-3">
                                         <table className="w-full text-xs">
-                                            <thead className="bg-gray-50 border-b">
+                                            <thead className="bg-white border-b">
                                                 <tr>
                                                     <th className="px-3 py-2 text-left text-gray-500">Product</th>
                                                     <th className="px-3 py-2 text-left text-gray-500">Qty</th>
@@ -2507,7 +2507,7 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                                     </tr>
                                                 ))}
                                             </tbody>
-                                            <tfoot className="bg-gray-50 border-t">
+                                            <tfoot className="bg-white border-t">
                                                 <tr>
                                                     <td className="px-3 py-2 text-xs font-semibold text-gray-700">Total</td>
                                                     <td className="px-3 py-2 text-xs font-semibold text-gray-700">
@@ -2524,9 +2524,9 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                     </div>
                                 )}
                                 <div className="flex gap-4 text-xs">
-                                    {shippingData.commercialInvoiceUrl && <a href={getFileUrl(shippingData.commercialInvoiceUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline"><Eye size={12} /> Commercial Invoice</a>}
-                                    {shippingData.proofOfPaymentUrl && <a href={getFileUrl(shippingData.proofOfPaymentUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline"><Eye size={12} /> Proof of Payment</a>}
-                                    {shippingData.packingListUrl && <a href={getFileUrl(shippingData.packingListUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline"><Eye size={12} /> Packing List</a>}
+                                    {shippingData.commercialInvoiceUrl && <a href={getFileUrl(shippingData.commercialInvoiceUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-orange-600 hover:underline"><Eye size={12} /> Commercial Invoice</a>}
+                                    {shippingData.proofOfPaymentUrl && <a href={getFileUrl(shippingData.proofOfPaymentUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-orange-600 hover:underline"><Eye size={12} /> Proof of Payment</a>}
+                                    {shippingData.packingListUrl && <a href={getFileUrl(shippingData.packingListUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-orange-600 hover:underline"><Eye size={12} /> Packing List</a>}
                                 </div>
                             </div>
                         )}
@@ -2541,9 +2541,9 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                         {!othersData || !othersData.items || othersData.items.length === 0 ? (
                             <p className="text-sm text-gray-400 italic">No other charges recorded.</p>
                         ) : (
-                            <div className="border border-gray-200 rounded-lg overflow-hidden">
+                            <div className="border border-gray-200 rounded overflow-hidden">
                                 <table className="w-full text-sm">
-                                    <thead className="bg-gray-50 border-b">
+                                    <thead className="bg-white border-b">
                                         <tr>
                                             <th className="px-3 py-2 text-left text-xs text-gray-500">No.</th>
                                             <th className="px-3 py-2 text-left text-xs text-gray-500">Particulars</th>
@@ -2563,15 +2563,15 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                                 <td className="px-3 py-2 text-right font-medium text-gray-900">₱{formatNumberWithCommas(parseFloat(item.cost || 0).toFixed(2))}</td>
                                                 <td className="px-3 py-2 text-center">
                                                     <div className="flex items-center justify-center gap-2">
-                                                        {item.commercialInvoiceUrl && <a href={getFileUrl(item.commercialInvoiceUrl)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs flex items-center gap-0.5"><Eye size={11} /> CI</a>}
-                                                        {item.proofOfPaymentUrl && <a href={getFileUrl(item.proofOfPaymentUrl)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs flex items-center gap-0.5"><Eye size={11} /> POP</a>}
+                                                        {item.commercialInvoiceUrl && <a href={getFileUrl(item.commercialInvoiceUrl)} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline text-xs flex items-center gap-0.5"><Eye size={11} /> CI</a>}
+                                                        {item.proofOfPaymentUrl && <a href={getFileUrl(item.proofOfPaymentUrl)} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline text-xs flex items-center gap-0.5"><Eye size={11} /> POP</a>}
                                                         {!item.commercialInvoiceUrl && !item.proofOfPaymentUrl && <span className="text-gray-300">—</span>}
                                                     </div>
                                                 </td>
                                             </tr>
                                         ))}
                                     </tbody>
-                                    <tfoot className="bg-gray-50 border-t">
+                                    <tfoot className="bg-white border-t">
                                         <tr>
                                             <td colSpan="3" className="px-3 py-2 text-right text-sm font-bold text-gray-900">Total</td>
                                             <td className="px-3 py-2 text-right text-sm font-bold text-gray-900">₱{formatNumberWithCommas(parseFloat(othersData.totalCost || 0).toFixed(2))}</td>
@@ -2607,7 +2607,7 @@ const ProductDetailsModal = ({ products, onClose, po }) => {
             <div className="bg-white rounded-xl shadow-xl max-w-7xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="border-b px-6 py-4 flex items-center justify-between sticky top-0 bg-white">
                     <h2 className="text-xl font-bold text-gray-900">Product Quotation Details</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded">
                         <X size={20} />
                     </button>
                 </div>
@@ -2638,7 +2638,7 @@ const ProductDetailsModal = ({ products, onClose, po }) => {
                     {/* Products Table */}
                     <div>
                         <h3 className="font-bold text-gray-900 mb-2">Products</h3>
-                        <div className="border rounded-lg overflow-hidden bg-white">
+                        <div className="border rounded overflow-hidden bg-white">
                             <table className="w-full border-collapse border border-gray-300">
                                 <thead className="bg-gray-100">
                                     <tr>
@@ -2654,7 +2654,7 @@ const ProductDetailsModal = ({ products, onClose, po }) => {
                                 </thead>
                                 <tbody>
                                     {displayProducts.map((item, idx) => (
-                                        <tr key={idx} className="hover:bg-gray-50">
+                                        <tr key={idx} className="hover:bg-white">
                                             <td className="px-4 py-3 border border-gray-300">
                                                 <div className="text-sm font-medium text-gray-900">{item.productName}</div>
                                             </td>
@@ -2677,7 +2677,7 @@ const ProductDetailsModal = ({ products, onClose, po }) => {
                                         </tr>
                                     ))}
                                 </tbody>
-                                <tfoot className="bg-gray-50">
+                                <tfoot className="bg-white">
                                     <tr>
                                         <td colSpan="5" className="px-4 py-3 text-right font-bold text-sm border border-gray-300">TOTAL QTY:</td>
                                         <td className="px-4 py-3 font-bold text-sm border border-gray-300 text-right">

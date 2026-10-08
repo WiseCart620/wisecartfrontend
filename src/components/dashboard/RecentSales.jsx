@@ -19,7 +19,7 @@ const RecentSales = ({ recentSales, sales, isLoading = false }) => {
         {isLoading ? (
           <>
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="animate-pulse flex items-center justify-between p-3 border border-gray-100 rounded-lg">
+              <div key={i} className="animate-pulse flex items-center justify-between p-3 border border-gray-100 rounded">
                 <div className="flex-1 space-y-2">
                   <div className="h-3 bg-gray-200 rounded w-1/2" />
                   <div className="h-2 bg-gray-100 rounded w-1/3" />
@@ -58,7 +58,7 @@ const RecentSales = ({ recentSales, sales, isLoading = false }) => {
             }
 
             return (
-              <div key={index} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors border border-gray-100">
+              <div key={index} className="flex items-center justify-between p-3 hover:bg-white rounded transition-colors border border-gray-100">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="font-medium text-gray-900 truncate">

@@ -121,7 +121,7 @@ const InvoiceFilterModal = ({
       <div className="bg-white rounded-xl sm:rounded-2xl max-w-2xl w-full shadow-2xl max-h-[98vh] overflow-y-auto">
         <div className="p-4 sm:p-8 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-lg sm:text-2xl font-bold text-gray-900">Generate Invoice Report</h2>
-          <button onClick={onClose} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition">
+          <button onClick={onClose} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition">
             <X size={24} />
           </button>
         </div>
@@ -156,7 +156,7 @@ const InvoiceFilterModal = ({
                       setSelectedBranchIds(prev => [...new Set([...prev, ...filteredBranches.map(b => b.id)])]);
                     }
                   }}
-                  className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                  className="text-xs text-orange-600 hover:text-orange-800 font-medium"
                 >
                   {allBranchesSelected ? 'Clear all' : 'Select all'}
                 </button>
@@ -171,12 +171,12 @@ const InvoiceFilterModal = ({
                   placeholder="Search branches..."
                   value={branchSearch}
                   onChange={(e) => setBranchSearch(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 />
               </div>
             )}
 
-            <div className="border border-gray-200 rounded-lg max-h-40 overflow-y-auto divide-y divide-gray-100">
+            <div className="border border-gray-200 rounded max-h-40 overflow-y-auto divide-y divide-gray-100">
               {dataLoading ? (
                 <div className="flex items-center justify-center gap-2 px-3 py-6 text-gray-400 text-xs">
                   <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
@@ -188,7 +188,7 @@ const InvoiceFilterModal = ({
                 </div>
               ) : (
                 sortedFilteredBranches.map(b => (
-                  <label key={b.id} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer">
+                  <label key={b.id} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-white cursor-pointer">
                     <input
                       type="checkbox"
                       checked={selectedBranchIds.includes(b.id)}
@@ -222,7 +222,7 @@ const InvoiceFilterModal = ({
                       setSelectedProductIds(prev => [...new Set([...prev, ...ids])]);
                     }
                   }}
-                  className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                  className="text-xs text-orange-600 hover:text-orange-800 font-medium"
                 >
                   {allProductsSelected ? 'Clear all' : 'Select all'}
                 </button>
@@ -237,11 +237,11 @@ const InvoiceFilterModal = ({
                   placeholder="Search products..."
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 />
               </div>
             )}
-            <div className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto divide-y divide-gray-100">
+            <div className="border border-gray-200 rounded max-h-48 overflow-y-auto divide-y divide-gray-100">
               {dataLoading ? (
                 <div className="flex items-center justify-center gap-2 px-3 py-6 text-gray-400 text-xs">
                   <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
@@ -251,7 +251,7 @@ const InvoiceFilterModal = ({
                 <div className="px-3 py-4 text-xs text-gray-400 italic text-center">No products found</div>
               ) : (
                 sortedFilteredProducts.map(p => (
-                  <label key={p.id} className="flex items-start gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer">
+                  <label key={p.id} className="flex items-start gap-2 px-3 py-2 text-sm hover:bg-white cursor-pointer">
                     <input
                       type="checkbox"
                       checked={selectedProductIds.includes(p.id)}
@@ -279,13 +279,13 @@ const InvoiceFilterModal = ({
           <div className="grid grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">Start Month</label>
-              <select value={filterData.startMonth} onChange={(e) => setFilterData(prev => ({ ...prev, startMonth: parseInt(e.target.value) }))} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              <select value={filterData.startMonth} onChange={(e) => setFilterData(prev => ({ ...prev, startMonth: parseInt(e.target.value) }))} className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition">
                 {monthsFull.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">End Month</label>
-              <select value={filterData.endMonth} onChange={(e) => setFilterData(prev => ({ ...prev, endMonth: parseInt(e.target.value) }))} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              <select value={filterData.endMonth} onChange={(e) => setFilterData(prev => ({ ...prev, endMonth: parseInt(e.target.value) }))} className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition">
                 {monthsFull.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
               </select>
             </div>
@@ -294,17 +294,17 @@ const InvoiceFilterModal = ({
           <div className="grid grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">Start Year</label>
-              <input type="number" value={filterData.startYear} onChange={(e) => setFilterData(prev => ({ ...prev, startYear: parseInt(e.target.value) }))} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition" />
+              <input type="number" value={filterData.startYear} onChange={(e) => setFilterData(prev => ({ ...prev, startYear: parseInt(e.target.value) }))} className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 transition" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">End Year</label>
-              <input type="number" value={filterData.endYear} onChange={(e) => setFilterData(prev => ({ ...prev, endYear: parseInt(e.target.value) }))} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition" />
+              <input type="number" value={filterData.endYear} onChange={(e) => setFilterData(prev => ({ ...prev, endYear: parseInt(e.target.value) }))} className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 transition" />
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">Status Filter</label>
-            <select value={filterData.status} onChange={(e) => setFilterData(prev => ({ ...prev, status: e.target.value }))} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition">
+            <select value={filterData.status} onChange={(e) => setFilterData(prev => ({ ...prev, status: e.target.value }))} className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 transition">
               <option value="">Both (Confirmed & Invoiced)</option>
               <option value="CONFIRMED">Confirmed Only</option>
               <option value="INVOICED">Invoiced Only</option>
@@ -319,7 +319,7 @@ const InvoiceFilterModal = ({
                 { key: 'PT', label: 'Percentage Tax (PT)', sub: 'Gross sales × 3%, EWT', color: 'purple' },
               ].map(({ key, label, sub, color }) => (
                 <button key={key} type="button" onClick={() => setTaxType(key)}
-                  className={`flex-1 py-3 px-4 rounded-lg border-2 text-sm font-medium transition ${taxType === key ? `border-${color}-600 bg-${color}-50 text-${color}-700` : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'}`}
+                  className={`flex-1 py-3 px-4 rounded border-2 text-sm font-medium transition ${taxType === key ? `border-${color}-600 bg-${color}-50 text-${color}-700` : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'}`}
                 >
                   <div className="font-semibold">{label}</div>
                   <div className="text-xs mt-0.5 font-normal opacity-75">{sub}</div>
@@ -327,7 +327,7 @@ const InvoiceFilterModal = ({
               ))}
             </div>
 
-            <div className="flex items-center justify-between border border-gray-300 rounded-lg px-4 py-3 bg-gray-50">
+            <div className="flex items-center justify-between border border-gray-300 rounded px-4 py-3 bg-white">
               <div>
                 <div className="text-sm font-medium text-gray-700">Include Withholding Tax</div>
                 <div className="text-xs text-gray-500 mt-0.5">Applies to the Sales Invoice and Sales Journal table</div>
@@ -336,14 +336,14 @@ const InvoiceFilterModal = ({
                 <button
                   type="button"
                   onClick={() => setIncludeWithholdingTax(true)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition ${includeWithholdingTax ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'}`}
+                  className={`px-4 py-2 rounded text-sm font-medium border-2 transition ${includeWithholdingTax ? 'border-orange-600 bg-orange-50 text-orange-700' : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'}`}
                 >
                   Yes
                 </button>
                 <button
                   type="button"
                   onClick={() => setIncludeWithholdingTax(false)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition ${!includeWithholdingTax ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'}`}
+                  className={`px-4 py-2 rounded text-sm font-medium border-2 transition ${!includeWithholdingTax ? 'border-orange-600 bg-orange-50 text-orange-700' : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'}`}
                 >
                   No
                 </button>
@@ -360,7 +360,7 @@ const InvoiceFilterModal = ({
                   <input
                     type="text" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)}
                     placeholder="e.g. SI-2025-0001"
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${(invoiceSubmitted && !invoiceNumber.trim()) || invoiceNumberError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                    className={`w-full px-4 py-3 border rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition ${(invoiceSubmitted && !invoiceNumber.trim()) || invoiceNumberError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                   />
                   {checkingInvoiceNumber && (
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 animate-pulse">
@@ -387,7 +387,7 @@ const InvoiceFilterModal = ({
                     else setInvoiceDate(val);
                   }}
                   max="9999-12-31"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
                 />
               </div>
             </div>
@@ -395,13 +395,13 @@ const InvoiceFilterModal = ({
         </div>
 
         <div className="p-8 border-t border-gray-200 flex justify-end gap-4">
-          <button onClick={onClose} className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">Cancel</button>
+          <button onClick={onClose} className="px-6 py-3 border border-gray-300 rounded hover:bg-white transition font-medium">Cancel</button>
           <button
             onClick={onSubmit}
             disabled={!!invoiceNumberError || checkingInvoiceNumber}
-            className={`px-6 py-3 rounded-lg transition font-medium shadow-md ${invoiceNumberError || checkingInvoiceNumber
+            className={`px-6 py-3 rounded transition font-medium shadow-md ${invoiceNumberError || checkingInvoiceNumber
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
+              : 'bg-orange-600 text-white hover:bg-orange-700'
               }`}
           >
             Preview Invoice

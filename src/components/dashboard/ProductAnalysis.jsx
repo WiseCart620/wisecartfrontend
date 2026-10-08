@@ -260,11 +260,11 @@ const ProductAnalysis = ({
               </h3>
 
               <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                <div className="flex items-center gap-1 bg-gray-100 rounded p-1">
                   <button
                     onClick={() => setPerformanceView('overall')}
                     className={`px-3 py-1 text-xs rounded ${performanceView === 'overall'
-                      ? 'bg-white text-blue-600 font-semibold shadow-sm'
+                      ? 'bg-white text-orange-600 font-semibold shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                       }`}
                   >
@@ -273,7 +273,7 @@ const ProductAnalysis = ({
                   <button
                     onClick={() => setPerformanceView('year')}
                     className={`px-3 py-1 text-xs rounded ${performanceView === 'year'
-                      ? 'bg-white text-blue-600 font-semibold shadow-sm'
+                      ? 'bg-white text-orange-600 font-semibold shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                       }`}
                   >
@@ -282,7 +282,7 @@ const ProductAnalysis = ({
                   <button
                     onClick={() => setPerformanceView('month')}
                     className={`px-3 py-1 text-xs rounded ${performanceView === 'month'
-                      ? 'bg-white text-blue-600 font-semibold shadow-sm'
+                      ? 'bg-white text-orange-600 font-semibold shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                       }`}
                   >
@@ -294,7 +294,7 @@ const ProductAnalysis = ({
                   <select
                     value={performanceYear}
                     onChange={(e) => setPerformanceYear(parseInt(e.target.value))}
-                    className="px-2 py-1 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="px-2 py-1 text-xs border border-gray-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                   >
                     {availableYears.length > 0 ? (
                       availableYears.map(year => (
@@ -310,7 +310,7 @@ const ProductAnalysis = ({
                   <select
                     value={performanceMonth}
                     onChange={(e) => setPerformanceMonth(parseInt(e.target.value))}
-                    className="px-2 py-1 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="px-2 py-1 text-xs border border-gray-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                   >
                     {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, idx) => (
                       <option key={idx} value={idx + 1}>{month}</option>
@@ -326,7 +326,7 @@ const ProductAnalysis = ({
                         setSelectedCategory(e.target.value);
                         setSelectedProductId(null);
                       }}
-                      className="px-2 py-1 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-6"
+                      className="px-2 py-1 text-xs border border-gray-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 appearance-none pr-6"
                     >
                       <option value="all">All Categories</option>
                       {productCategories.map((category, idx) => (
@@ -342,9 +342,9 @@ const ProductAnalysis = ({
             </div>
 
             {/* Period Indicator */}
-            <div className="mb-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="mb-3 p-2 bg-orange-50 rounded border border-orange-200">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-blue-700">
+                <span className="text-xs font-medium text-orange-700">
                   {performanceView === 'overall'
                     ? 'Showing all-time data'
                     : performanceView === 'year'
@@ -360,9 +360,9 @@ const ProductAnalysis = ({
 
             <div className="space-y-2 max-h-[700px] overflow-y-auto">
               {selectedCategory !== 'all' && (
-                <div className="mb-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="mb-3 p-2 bg-orange-50 rounded border border-orange-200">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-blue-700">{selectedCategory}</span>
+                    <span className="text-xs font-medium text-orange-700">{selectedCategory}</span>
                     <span className="text-xs text-gray-500">
                       {(() => {
                         const productsInCategory = filteredTopProducts.length;
@@ -377,9 +377,9 @@ const ProductAnalysis = ({
                 filteredTopProducts.map((product, idx) => (
                   <div
                     key={product.id || idx}
-                    className={`p-3 rounded-lg transition-all cursor-pointer border ${selectedProductId === product.id
-                      ? 'bg-blue-50 border-blue-500 shadow-sm'
-                      : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
+                    className={`p-3 rounded transition-all cursor-pointer border ${selectedProductId === product.id
+                      ? 'bg-orange-50 border-orange-500 shadow-sm'
+                      : 'bg-white border-gray-200 hover:bg-gray-100 hover:border-gray-300'
                       }`}
                     onClick={() => {
                       setSelectedProductId(product.id);
@@ -394,7 +394,7 @@ const ProductAnalysis = ({
                         #{idx + 1}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium ${selectedProductId === product.id ? 'text-blue-700' : 'text-gray-900'
+                        <p className={`text-sm font-medium ${selectedProductId === product.id ? 'text-orange-700' : 'text-gray-900'
                           }`}>
                           {product.name}
                         </p>
@@ -433,7 +433,7 @@ const ProductAnalysis = ({
                     <div className="mt-2 pt-2 border-t border-gray-200">
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-500">Avg/Unit</span>
-                        <span className="text-xs font-semibold text-blue-600">
+                        <span className="text-xs font-semibold text-orange-600">
                           {formatCurrency(product.revenue / product.quantity)}
                         </span>
                       </div>
@@ -451,7 +451,7 @@ const ProductAnalysis = ({
                   {selectedCategory !== 'all' && (
                     <button
                       onClick={() => setSelectedCategory('all')}
-                      className="mt-2 text-xs text-blue-600 hover:text-blue-700"
+                      className="mt-2 text-xs text-orange-600 hover:text-orange-700"
                     >
                       View all categories →
                     </button>
@@ -490,7 +490,7 @@ const ProductAnalysis = ({
                           return (
                             <div
                               key={category}
-                              className="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer"
+                              className="flex items-center justify-between p-2 hover:bg-white rounded cursor-pointer"
                               onClick={() => setSelectedCategory(category)}
                             >
                               <span className="text-xs text-gray-600">{category}</span>
@@ -517,14 +517,14 @@ const ProductAnalysis = ({
             <div className="flex justify-between items-center mb-3">
               <div>
                 <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-                  <BarChart2 className="text-blue-600" size={18} />
+                  <BarChart2 className="text-orange-600" size={18} />
                   Product Analysis
                   {selectedProductId && (
                     <>
                       <span className="text-xs text-gray-500">
                         - {productSalesData.find(p => p.id === selectedProductId)?.name}
                       </span>
-                      <span className="text-xs text-blue-600">
+                      <span className="text-xs text-orange-600">
                         ({performanceView === 'overall'
                           ? 'All Time'
                           : performanceView === 'year'
@@ -541,8 +541,8 @@ const ProductAnalysis = ({
             {selectedProductId ? (
               <>
                 {/* Product Summary */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 mb-3 border border-blue-200">
-                  <div className="text-xs font-semibold text-blue-700 mb-2 text-center">
+                <div className="bg-gradient-to-r from-orange-50 to-orange-50 rounded p-3 mb-3 border border-orange-200">
+                  <div className="text-xs font-semibold text-orange-700 mb-2 text-center">
                     {performanceView === 'overall'
                       ? 'All-Time Performance'
                       : performanceView === 'year'
@@ -558,7 +558,7 @@ const ProductAnalysis = ({
                         <>
                           <div className="text-center">
                             <p className="text-xs text-gray-600">Total Sales</p>
-                            <p className="text-sm font-bold text-blue-700">
+                            <p className="text-sm font-bold text-orange-700">
                               {formatCurrency(stats.totalRevenue)}
                             </p>
                           </div>
@@ -682,7 +682,7 @@ const ProductAnalysis = ({
                 ) : (
                   /* Company Branch Breakdown */
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-blue-50 p-2 rounded-lg border border-purple-200">
+                    <div className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-orange-50 p-2 rounded border border-purple-200">
                       <div className="flex items-center gap-2">
                         <Building className="text-purple-600" size={16} />
                         <div>
@@ -692,7 +692,7 @@ const ProductAnalysis = ({
                       </div>
                       <button
                         onClick={() => setSelectedCompanyForBranches(null)}
-                        className="px-2 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-50 transition-colors flex items-center gap-1"
+                        className="px-2 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-white transition-colors flex items-center gap-1"
                       >
                         <X size={12} />
                         Back
@@ -719,7 +719,7 @@ const ProductAnalysis = ({
                           const quantityBarWidth = maxQuantity > 0 ? (branch.quantity / maxQuantity * 100) : 0;
 
                           return (
-                            <div key={idx} className="bg-gray-50 rounded-lg p-2 border border-gray-200">
+                            <div key={idx} className="bg-white rounded p-2 border border-gray-200">
                               <div className="flex items-center gap-2 mb-2">
                                 <span className={`text-base font-bold flex-shrink-0 ${idx === 0 ? 'text-yellow-600' :
                                   idx === 1 ? 'text-gray-400' :
@@ -779,7 +779,7 @@ const ProductAnalysis = ({
                 {/* Top Companies */}
                 <div>
                   <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                    <Users size={16} className="text-blue-600" />
+                    <Users size={16} className="text-orange-600" />
                     Top Companies ({performanceView === 'overall'
                       ? 'All Time'
                       : performanceView === 'year'
@@ -796,9 +796,9 @@ const ProductAnalysis = ({
                         return (
                           <div
                             key={company.id || idx}
-                            className={`p-3 rounded-lg border transition-all cursor-pointer ${selectedCompanyForTopBranches === company.name
-                              ? 'bg-blue-50 border-blue-500 shadow-md'
-                              : 'bg-gray-50 border-gray-200 hover:border-blue-300'
+                            className={`p-3 rounded border transition-all cursor-pointer ${selectedCompanyForTopBranches === company.name
+                              ? 'bg-orange-50 border-orange-500 shadow-md'
+                              : 'bg-white border-gray-200 hover:border-orange-300'
                               }`}
                             onClick={() => setSelectedCompanyForTopBranches(
                               selectedCompanyForTopBranches === company.name ? null : company.name
@@ -822,7 +822,7 @@ const ProductAnalysis = ({
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div
-                                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500"
+                                  className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-500"
                                   style={{ width: `${barWidth}%` }}
                                 ></div>
                               </div>
@@ -854,7 +854,7 @@ const ProductAnalysis = ({
                         : `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][performanceMonth - 1]} ${performanceYear}`
                     })
                     {selectedCompanyForTopBranches && (
-                      <span className="text-xs font-normal text-blue-600">
+                      <span className="text-xs font-normal text-orange-600">
                         - {selectedCompanyForTopBranches}
                       </span>
                     )}
@@ -972,7 +972,7 @@ const ProductAnalysis = ({
                           const barWidth = (branch.revenue / maxRevenue) * 100;
 
                           return (
-                            <div key={branch.id || idx} className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-purple-300 transition-all">
+                            <div key={branch.id || idx} className="p-3 bg-white rounded border border-gray-200 hover:border-purple-300 transition-all">
                               <div className="flex items-center gap-2 mb-2">
                                 <span className={`text-lg font-bold ${idx === 0 ? 'text-yellow-600' :
                                   idx === 1 ? 'text-gray-400' :

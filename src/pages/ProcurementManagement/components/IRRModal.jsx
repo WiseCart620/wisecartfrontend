@@ -387,7 +387,7 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
                     </h2>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-gray-100 rounded-lg"
+                        className="p-2 hover:bg-gray-100 rounded"
                     >
                         <X size={20} />
                     </button>
@@ -403,7 +403,7 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
                             value={irrFormData.supplierId}
                             onChange={(e) => handleSupplierChange(e.target.value)}
                             required
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
                         >
                             <option value="">Select supplier</option>
                             {suppliers.map((supplier) => (
@@ -416,7 +416,7 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
 
                     {/* Supplier Details */}
                     {selectedSupplier && (
-                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="p-4 bg-orange-50 rounded border border-orange-200">
                             <h3 className="font-semibold text-gray-900 mb-3">Supplier Information</h3>
                             <div className="grid grid-cols-2 gap-3 text-sm">
                                 <div>
@@ -455,12 +455,12 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
                                     }}
                                     onFocus={() => setShowProductDropdown(true)}
                                     disabled={!irrFormData.supplierId || loadingProducts}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                                     placeholder={loadingProducts ? 'Loading products...' : 'Search products...'}
                                 />
 
                                 {showProductDropdown && !loadingProducts && irrFormData.supplierId && supplierProducts.length > 0 && (
-                                    <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                    <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto">
                                         {filteredProducts.length === 0 ? (
                                             <div className="px-4 py-6 text-center text-gray-500 text-sm">
                                                 No products found
@@ -493,8 +493,8 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
                                                         className={`w-full px-4 py-2.5 text-left transition border-b border-gray-100 last:border-b-0 ${isAlreadyAdded
                                                             ? 'bg-gray-100 cursor-not-allowed opacity-60'
                                                             : selectedProductForAdd === key
-                                                                ? 'bg-blue-50 hover:bg-blue-100'
-                                                                : 'hover:bg-blue-50'
+                                                                ? 'bg-orange-50 hover:bg-orange-100'
+                                                                : 'hover:bg-orange-50'
                                                             }`}
                                                     >
                                                         <div className="flex items-center justify-between">
@@ -515,7 +515,7 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
                                                                     </span>
                                                                 )}
                                                                 {selectedProductForAdd === key && !isAlreadyAdded && (
-                                                                    <Check size={16} className="text-blue-600" />
+                                                                    <Check size={16} className="text-orange-600" />
                                                                 )}
                                                             </div>
                                                         </div>
@@ -528,7 +528,7 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
 
                                 {/* Show message when no products available */}
                                 {showProductDropdown && !loadingProducts && irrFormData.supplierId && supplierProducts.length === 0 && (
-                                    <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg">
+                                    <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded shadow-lg">
                                         <div className="px-4 py-6 text-center text-gray-500 text-sm">
                                             No products available for this supplier
                                         </div>
@@ -540,7 +540,7 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
                                 type="button"
                                 onClick={handleAddProductToTable}
                                 disabled={!selectedProductForAdd}
-                                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                className="px-6 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                             >
                                 <Plus size={18} />
                                 Add Product
@@ -550,9 +550,9 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
 
                     {/* Product Preview Card */}
                     {selectedProductForAdd && (
-                        <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200">
+                        <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-50 rounded border-2 border-orange-200">
                             <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                <Eye size={16} className="text-blue-600" />
+                                <Eye size={16} className="text-orange-600" />
                                 Selected Product Preview
                             </h4>
                             {(() => {
@@ -607,10 +607,10 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
 
                     {/* Products Table */}
                     {irrFormData.items.length > 0 && (
-                        <div className="border rounded-lg overflow-hidden table-panel">
+                        <div className="border rounded overflow-hidden table-panel">
                             <div className="overflow-x-auto table-fit" style={{ maxHeight: '260px' }}>
                                 <table className="w-full">
-                                    <thead className="bg-gray-50 border-b">
+                                    <thead className="bg-white border-b">
                                         <tr>
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product Name</th>
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
@@ -623,7 +623,7 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
                                         {irrFormData.items.map((item, index) => (
-                                            <tr key={index} className="hover:bg-gray-50">
+                                            <tr key={index} className="hover:bg-white">
                                                 <td className="px-4 py-3 text-sm text-gray-900 font-medium">
                                                     {item.productName}
                                                 </td>
@@ -670,7 +670,7 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
                     )}
 
                     {irrFormData.items.length === 0 && (
-                        <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                        <div className="text-center py-8 bg-white rounded border-2 border-dashed border-gray-300">
                             <Package size={40} className="mx-auto text-gray-400 mb-2" />
                             <p className="text-gray-500 text-sm">No products added yet</p>
                             <p className="text-gray-400 text-xs">Select a product above and click "Add Product"</p>
@@ -686,7 +686,7 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
                             type="text"
                             value={editingIrr ? editingIrr.controlNumber : generateControlNumber()}
                             disabled
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+                            className="w-full px-4 py-2 border border-gray-300 rounded bg-gray-100 cursor-not-allowed"
                         />
                     </div>
 
@@ -699,7 +699,7 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
                             value={irrFormData.remarks}
                             onChange={(e) => setIrrFormData({ ...irrFormData, remarks: e.target.value })}
                             rows="3"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
                             placeholder="Enter any remarks or special instructions..."
                         />
                     </div>
@@ -710,7 +710,7 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
                             type="button"
                             onClick={onClose}
                             disabled={submitting}
-                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-white disabled:opacity-50"
                         >
                             Cancel
                         </button>
@@ -719,7 +719,7 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
                                 type="button"
                                 onClick={handleProceedToRpq}
                                 disabled={submitting || buttonLoading['proceed-rpq']}
-                                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2 disabled:opacity-50"
+                                className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center justify-center gap-2 disabled:opacity-50"
                             >
                                 {buttonLoading['proceed-rpq'] ? (
                                     <>
@@ -737,7 +737,7 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 disabled:opacity-50"
+                            className="flex-1 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                             {submitting ? (
                                 <>

@@ -239,7 +239,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
 
   return (
     <div>
-      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-gray-50 pb-4">
+      <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-white pb-4">
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-wrap items-end gap-3">
           <div className="flex-1 min-w-[200px]">
             <label className="block text-xs font-medium text-gray-700 mb-1">Employee</label>
@@ -269,11 +269,11 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
           </div>
           {hasFilters && (
             <button type="button" onClick={() => setFilters({ search: '', status: '', type: '' })}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Clear</button>
+              className="px-3 py-2 border border-gray-300 rounded text-sm hover:bg-white">Clear</button>
           )}
           {canCreate && (
             <button onClick={openAdd}
-              className="ml-auto flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700">
+              className="ml-auto flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded text-sm font-medium hover:bg-orange-700">
               <Plus size={16} /> Add Cash Advance
             </button>
           )}
@@ -292,7 +292,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
       <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full tbl-card">
         <div className="overflow-auto w-full tbl-scroll">
          <table className="w-full min-w-0 [&_th]:!px-3 [&_td]:!px-3">
-            <thead className="bg-gray-50">
+            <thead className="bg-white">
               <tr>
                 {['Employee', 'Type', 'Purpose', 'Amount', 'Period', 'Paid', 'Balance', 'Status'].map(h => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
@@ -308,7 +308,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                   {hasFilters ? 'No cash advances match the filters' : 'No records'}
                 </td></tr>
               ) : pageItems.map(i => (
-                <tr key={i.id} className="hover:bg-gray-50 text-sm">
+                <tr key={i.id} className="hover:bg-white text-sm">
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center gap-3 font-medium text-gray-900">
                       <EmployeeAvatar name={i.employeeName} photoUrl={photoOf[i.employeeId]} />
@@ -316,7 +316,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                     </div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${i.advanceType === 'RECURRING' ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200' : 'bg-gray-100 text-gray-700 ring-1 ring-gray-200'}`}>
+                    <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${i.advanceType === 'RECURRING' ? 'bg-orange-50 text-orange-700 ring-1 ring-orange-200' : 'bg-gray-100 text-gray-700 ring-1 ring-gray-200'}`}>
                       {TYPE_LABEL[i.advanceType] || '—'}
                     </span>
                   </td>
@@ -358,20 +358,20 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                   <td className="px-4 py-3 text-right whitespace-nowrap">
                     <div className="flex justify-end gap-1">
                       {i.docReference && i.docReference.startsWith('contracts/') && (
-                        <button onClick={() => viewDoc(i.docReference)} title="View document" className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"><Paperclip size={17} /></button>
+                        <button onClick={() => viewDoc(i.docReference)} title="View document" className="p-2 text-gray-600 hover:bg-gray-100 rounded"><Paperclip size={17} /></button>
                       )}
-                      <button onClick={() => openView(i)} title="View details & payments" className="p-2 text-gray-700 hover:bg-gray-100 rounded-lg"><Eye size={17} /></button>
+                      <button onClick={() => openView(i)} title="View details & payments" className="p-2 text-gray-700 hover:bg-gray-100 rounded"><Eye size={17} /></button>
                       {canApprove && i.status === 'PENDING' && (
-                        <button onClick={() => approve(i)} title="Approve" className="p-2 text-green-600 hover:bg-green-50 rounded-lg"><CheckCircle size={17} /></button>
+                        <button onClick={() => approve(i)} title="Approve" className="p-2 text-green-600 hover:bg-green-50 rounded"><CheckCircle size={17} /></button>
                       )}
                       {canEdit && i.status === 'PENDING' && (
-                        <button onClick={() => openEdit(i)} title="Edit" className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"><Edit2 size={17} /></button>
+                        <button onClick={() => openEdit(i)} title="Edit" className="p-2 text-orange-600 hover:bg-orange-50 rounded"><Edit2 size={17} /></button>
                       )}
                       {canEdit && (i.status === 'ACTIVE' || i.status === 'PENDING') && (
-                        <button onClick={() => cancel(i)} title="Cancel" className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Ban size={17} /></button>
+                        <button onClick={() => cancel(i)} title="Cancel" className="p-2 text-red-600 hover:bg-red-50 rounded"><Ban size={17} /></button>
                       )}
                       {canEdit && i.status === 'CANCELLED' && (
-                        <button onClick={() => remove(i)} title="Delete" className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={17} /></button>
+                        <button onClick={() => remove(i)} title="Delete" className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={17} /></button>
                       )}
                     </div>
                   </td>
@@ -468,9 +468,9 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
 
             <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
               <button type="button" onClick={() => setShowForm(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+                className="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-white">Cancel</button>
               <button type="submit" disabled={saving}
-                className="px-5 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 disabled:opacity-50">
+                className="px-5 py-2 bg-orange-600 text-white rounded text-sm font-medium hover:bg-orange-700 disabled:opacity-50">
                 {saving ? 'Saving...' : editing ? 'Update Cash Advance' : 'Create Cash Advance'}
               </button>
             </div>
@@ -487,7 +487,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                 <div className="sm:pr-6"><div className="text-sm text-gray-500">Amount</div><div className="text-2xl font-semibold mt-1">{money(v.amount)}</div></div>
                 <div className="sm:px-6"><div className="text-sm text-gray-500">Total Paid</div><div className="text-2xl font-semibold mt-1">{money(v.totalPaid)}</div></div>
                 <div className="sm:pl-6"><div className="text-sm text-gray-500">Balance</div><div className="text-2xl font-semibold mt-1">{v.advanceType === 'RECURRING' ? '—' : money(v.remainingBalance)}</div></div>              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 bg-gray-50 rounded-xl p-5 border border-gray-100">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 bg-white rounded-xl p-5 border border-gray-100">
                 <Detail label="Purpose">{v.purpose}</Detail>
                 <Detail label="Status">{v.status}</Detail>
                 {v.advanceType === 'RECURRING' ? (
@@ -513,7 +513,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                 <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-2 flex items-center gap-2"><Wallet size={14} /> Payment History</h3>
                 <div className="border border-gray-200 rounded-xl overflow-hidden">
                   <table className="w-full text-sm">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+                    <thead className="bg-white border-b border-gray-200">
                       <tr>
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pay Period</th>
                         <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Amount Paid</th>
@@ -536,7 +536,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                 <p className="text-xs text-gray-500 mt-2">Payments are recorded automatically when a payroll run is approved.</p>
               </div>
               <div className="flex justify-end pt-2 border-t">
-                <button onClick={() => setViewFor(null)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Close</button>
+                <button onClick={() => setViewFor(null)} className="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-white">Close</button>
               </div>
             </div>
           </Modal>

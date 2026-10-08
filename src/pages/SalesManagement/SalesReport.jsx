@@ -689,7 +689,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
 
     // Report view
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-white">
             {/* Top bar */}
             <div className="bg-white border-b border-gray-200 px-5 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
                 <div className="flex items-center gap-4">
@@ -709,27 +709,27 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                 <div className="flex gap-2">
                     {salesReportData && (
                         <>
-                            <button onClick={exportReportToExcel} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">
+                            <button onClick={exportReportToExcel} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700">
                                 <FileText size={16} /> Export CSV
                             </button>
                             <div className="relative">
-                                <button onClick={() => setShowPrintMenu(p => !p)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+                                <button onClick={() => setShowPrintMenu(p => !p)} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded text-sm font-medium hover:bg-orange-700">
                                     <Printer size={16} /> Print
                                 </button>
                                 {showPrintMenu && (
                                     <>
                                         <div className="fixed inset-0 z-10" onClick={() => setShowPrintMenu(false)} />
-                                        <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                                        <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded shadow-lg z-20 overflow-hidden">
                                             <button
                                                 onClick={printSalesReportByBranch}
-                                                className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition border-b border-gray-100"
+                                                className="w-full text-left px-4 py-3 text-sm hover:bg-white transition border-b border-gray-100"
                                             >
                                                 <div className="font-medium text-gray-900">Print by Branch</div>
                                                 <div className="text-xs text-gray-500">Invoices grouped per branch</div>
                                             </button>
                                             <button
                                                 onClick={printSalesReportByProducts}
-                                                className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition"
+                                                className="w-full text-left px-4 py-3 text-sm hover:bg-white transition"
                                             >
                                                 <div className="font-medium text-gray-900">Print All Products</div>
                                                 <div className="text-xs text-gray-500">Aggregated products per company</div>
@@ -740,7 +740,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                             </div>
                         </>
                     )}
-                    <button onClick={onBack} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
+                    <button onClick={onBack} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded">
                         <X size={20} />
                     </button>
                 </div>
@@ -805,18 +805,18 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                                     <label className="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
                                     <input type="date" value={salesReportFilter.startDate}
                                         onChange={e => setSalesReportFilter(p => ({ ...p, startDate: e.target.value }))}
-                                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+                                        className="px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500" />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-medium text-gray-700 mb-1">End Date</label>
                                     <input type="date" value={salesReportFilter.endDate}
                                         onChange={e => setSalesReportFilter(p => ({ ...p, endDate: e.target.value }))}
-                                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+                                        className="px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500" />
                                 </div>
                             </>
                         )}
                         <button onClick={() => generateSalesReport(reportCompanyIds, reportBranchIds, reportProductFilters)} disabled={salesReportLoading}
-                            className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition">
+                            className="px-5 py-2 bg-orange-600 text-white rounded text-sm font-medium hover:bg-orange-700 disabled:opacity-50 transition">
                             {salesReportLoading ? 'Generating...' : 'Generate Report'}
                         </button>
                     </div>
@@ -824,12 +824,12 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                     {reportProductFilters.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-3">
                             {reportProductFilters.map((pf, idx) => (
-                                <span key={idx} className="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                <span key={idx} className="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
                                     {pf.label}
                                     <button
                                         type="button"
                                         onClick={() => removeProductFilter(idx)}
-                                        className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-200 hover:bg-red-200 hover:text-red-700 transition-colors"
+                                        className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-orange-200 hover:bg-red-200 hover:text-red-700 transition-colors"
                                     >
                                         <X size={9} strokeWidth={2.5} />
                                     </button>
@@ -842,8 +842,8 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                         <div className="flex flex-wrap gap-6 text-sm mt-4 pt-4 border-t border-gray-100">
                             <div><span className="text-gray-500">Years:</span> <span className="font-semibold">{salesReportData.length}</span></div>
                             <div><span className="text-gray-500">Months:</span> <span className="font-semibold">{salesReportData.reduce((s, r) => s + r.products.length, 0)}</span></div>
-                            <div><span className="text-gray-500">Gross / Vatable:</span> <span className="font-semibold text-blue-700">₱{salesReportData.reduce((s, r) => s + r.vatableTotal, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span></div>
-                            <div><span className="text-gray-500">VAT/PT:</span> <span className="font-semibold text-indigo-700">₱{salesReportData.reduce((s, r) => s + r.vatTotal, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span></div>
+                            <div><span className="text-gray-500">Gross / Vatable:</span> <span className="font-semibold text-orange-700">₱{salesReportData.reduce((s, r) => s + r.vatableTotal, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span></div>
+                            <div><span className="text-gray-500">VAT/PT:</span> <span className="font-semibold text-orange-700">₱{salesReportData.reduce((s, r) => s + r.vatTotal, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span></div>
                             <div><span className="text-gray-500">Less EWT:</span> <span className="font-semibold text-red-600">₱{salesReportData.reduce((s, r) => s + r.ewtTotal, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span></div>
                             <div><span className="text-gray-500">Total Due:</span> <span className="font-semibold text-green-700">₱{salesReportData.reduce((s, r) => s + r.dueTotal, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span></div>
                         </div>
@@ -881,7 +881,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
 
                                     return (
                                         <React.Fragment key={`report-row-${row.year}`}>
-                                            <tr className="border-b border-gray-200 hover:bg-gray-50 transition">
+                                            <tr className="border-b border-gray-200 hover:bg-white transition">
                                                 <td className="px-4 py-3 text-center text-xs text-gray-400 font-medium">{idx + 1}</td>
                                                 <td className="px-4 py-3 text-sm font-bold text-gray-900">{row.year}</td>
                                                 <td className="px-4 py-3">
@@ -894,7 +894,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                                                                 setExpandedReportMonths(prev => ({ ...prev, [`${row.year}_${newMonth}`]: false }));
                                                                 setExpandedCompanyProducts({});
                                                             }}
-                                                            className="appearance-none pl-3 pr-8 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-800 bg-white focus:ring-2 focus:ring-gray-400 cursor-pointer font-medium"
+                                                            className="appearance-none pl-3 pr-8 py-1.5 border border-gray-300 rounded text-sm text-gray-800 bg-white focus:ring-2 focus:ring-gray-400 cursor-pointer font-medium"
                                                         >
                                                             {row.products.map(p => (
                                                                 <option key={p.month} value={p.month}>
@@ -970,7 +970,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                                                                                 <button
                                                                                     type="button"
                                                                                     onClick={() => setExpandedCompanyProducts(prev => ({ ...prev, [productsKey]: !prev[productsKey] }))}
-                                                                                    className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-medium transition-all ${isProductsExpanded ? 'bg-purple-700 border-purple-700 text-white' : 'bg-white border-purple-300 text-purple-700 hover:bg-purple-50'}`}
+                                                                                    className={`flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium transition-all ${isProductsExpanded ? 'bg-purple-700 border-purple-700 text-white' : 'bg-white border-purple-300 text-purple-700 hover:bg-purple-50'}`}
                                                                                     title={isProductsExpanded ? 'Hide all products' : 'View all products'}
                                                                                 >
                                                                                     <Package size={13} />
@@ -1010,7 +1010,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                                                                                                 <td className="px-4 py-2 font-medium text-gray-900">{product.productName}</td>
                                                                                                 <td className="px-4 py-2">
                                                                                                     {product.variationDisplay
-                                                                                                        ? <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-800">{product.variationDisplay}</span>
+                                                                                                        ? <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-orange-100 text-orange-800">{product.variationDisplay}</span>
                                                                                                         : <span className="text-gray-400 italic">None</span>
                                                                                                     }
                                                                                                 </td>
@@ -1018,7 +1018,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                                                                                                 <td className="px-4 py-2 text-gray-500">{product.upc}</td>
                                                                                                 <td className="px-4 py-2 text-right font-semibold text-gray-900">{product.quantity.toLocaleString()}</td>
                                                                                                 <td className="px-4 py-2 text-right text-gray-700">₱{formatCurrency(product.unitPrice)}</td>
-                                                                                                <td className="px-4 py-2 text-right font-bold text-blue-700">₱{formatCurrency(product.amount)}</td>
+                                                                                                <td className="px-4 py-2 text-right font-bold text-orange-700">₱{formatCurrency(product.amount)}</td>
                                                                                             </tr>
                                                                                         ))}
                                                                                     </tbody>
@@ -1027,7 +1027,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                                                                                             <td colSpan={5} className="px-4 py-2 font-bold text-purple-800 text-right">TOTAL</td>
                                                                                             <td className="px-4 py-2 text-right font-bold text-gray-900">{cg.aggregatedProducts.reduce((s, p) => s + p.quantity, 0).toLocaleString()}</td>
                                                                                             <td className="px-4 py-2"></td>
-                                                                                            <td className="px-4 py-2 text-right font-bold text-blue-800">₱{cg.aggregatedProducts.reduce((s, p) => s + p.amount, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                                                                                            <td className="px-4 py-2 text-right font-bold text-orange-800">₱{cg.aggregatedProducts.reduce((s, p) => s + p.amount, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
                                                                                         </tr>
                                                                                     </tfoot>
                                                                                 </table>
@@ -1057,7 +1057,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                                                                                         const saleProductsExpanded = expandedReportMonths[saleProductsKey];
                                                                                         return (
                                                                                             <React.Fragment key={s.id}>
-                                                                                                <tr className={`hover:bg-gray-50 transition ${si % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                                                                                                <tr className={`hover:bg-white transition ${si % 2 === 0 ? 'bg-white' : 'bg-white'}`}>
                                                                                                     <td className="px-4 py-2">
                                                                                                         <div className="font-medium text-gray-900">{s.branch?.branchName}</div>
                                                                                                         <div className="text-[10px] text-gray-400">{s.branch?.branchCode}</div>
@@ -1087,8 +1087,8 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                                                                                                 </tr>
                                                                                                 {saleProductsExpanded && (
                                                                                                     <tr>
-                                                                                                        <td colSpan={7} className="p-0 bg-gray-50">
-                                                                                                            <div className="mx-6 my-2 rounded-lg border border-gray-200 overflow-hidden">
+                                                                                                        <td colSpan={7} className="p-0 bg-white">
+                                                                                                            <div className="mx-6 my-2 rounded border border-gray-200 overflow-hidden">
                                                                                                                 <table className="w-full text-xs">
                                                                                                                     <thead className="bg-gray-100 border-b border-gray-200">
                                                                                                                         <tr>
@@ -1104,7 +1104,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                                                                                                                     </thead>
                                                                                                                     <tbody className="divide-y divide-gray-100 bg-white">
                                                                                                                         {(s.items || []).map((item, ii) => (
-                                                                                                                            <tr key={item.id || ii} className="hover:bg-gray-50">
+                                                                                                                            <tr key={item.id || ii} className="hover:bg-white">
                                                                                                                                 <td className="px-3 py-2 text-gray-400">{ii + 1}</td>
                                                                                                                                 <td className="px-3 py-2 font-medium text-gray-900">{item.product?.productName || '—'}</td>
                                                                                                                                 <td className="px-3 py-2 text-gray-600">
@@ -1121,7 +1121,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                                                                                                                             </tr>
                                                                                                                         ))}
                                                                                                                     </tbody>
-                                                                                                                    <tfoot className="bg-gray-50 border-t border-gray-200">
+                                                                                                                    <tfoot className="bg-white border-t border-gray-200">
                                                                                                                         <tr>
                                                                                                                             <td colSpan={5} className="px-3 py-2 text-xs font-bold text-gray-600">Sale Total</td>
                                                                                                                             <td className="px-3 py-2 text-right text-xs font-bold">{(s.items || []).reduce((sum, i) => sum + (i.quantity || 0), 0).toLocaleString()}</td>
@@ -1138,7 +1138,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                                                                                         );
                                                                                     })}
                                                                                 </tbody>
-                                                                                <tfoot className="bg-gray-50 border-t border-gray-200">
+                                                                                <tfoot className="bg-white border-t border-gray-200">
                                                                                     <tr>
                                                                                         <td colSpan={3} className="px-4 py-2 text-xs font-bold text-gray-600 uppercase">{cg.company?.companyName} Total</td>
                                                                                         <td className="px-4 py-2 text-right text-xs font-bold text-gray-700">₱{cg.vatableSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>

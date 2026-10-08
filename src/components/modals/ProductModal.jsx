@@ -311,7 +311,7 @@ const ProductModal = ({
                     <h2 className="text-xl font-semibold text-slate-900">
                         {editingProduct ? 'Edit Product' : 'Add New Product'}
                     </h2>
-                    <button onClick={onClose} className="p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 rounded-lg transition">
+                    <button onClick={onClose} className="p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 rounded transition">
                         <X size={20} />
                     </button>
                 </div>
@@ -334,7 +334,7 @@ const ProductModal = ({
                                     value={formData.productName}
                                     onChange={handleInputChange}
                                     required
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
                                     placeholder="Enter product name"
                                 />
                             </div>
@@ -362,14 +362,14 @@ const ProductModal = ({
                                         />
                                         <label
                                             htmlFor="product-image-upload"
-                                            className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer transition ${uploadingImage
-                                                ? 'border-blue-400 bg-blue-50'
-                                                : 'border-gray-300 hover:border-blue-500 bg-gray-50 hover:bg-gray-100'}`}
+                                            className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded cursor-pointer transition ${uploadingImage
+                                                ? 'border-orange-400 bg-orange-50'
+                                                : 'border-gray-300 hover:border-orange-500 bg-white hover:bg-gray-100'}`}
                                         >
                                             {uploadingImage ? (
                                                 <div className="flex flex-col items-center">
-                                                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-2"></div>
-                                                    <p className="text-sm text-blue-600 font-medium">Uploading...</p>
+                                                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-600 mb-2"></div>
+                                                    <p className="text-sm text-orange-600 font-medium">Uploading...</p>
                                                 </div>
                                             ) : (
                                                 <>
@@ -385,7 +385,7 @@ const ProductModal = ({
                                         <img
                                             src={getFileUrl(formData.imageUrl)}
                                             alt="Product"
-                                            className="h-40 w-40 object-cover rounded-lg border-2 border-gray-200"
+                                            className="h-40 w-40 object-cover rounded border-2 border-gray-200"
                                         />
                                         <button
                                             type="button"
@@ -397,7 +397,7 @@ const ProductModal = ({
                                         <div className="mt-2">
                                             <label
                                                 htmlFor="product-image-change"
-                                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition"
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-orange-600 text-white rounded hover:bg-orange-700 cursor-pointer transition"
                                             >
                                                 <Edit2 size={12} />
                                                 Change Image
@@ -424,7 +424,7 @@ const ProductModal = ({
                                     name="brand"
                                     value={formData.brand}
                                     onChange={handleInputChange}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
                                     placeholder="Enter brand"
                                 />
                             </div>
@@ -444,7 +444,7 @@ const ProductModal = ({
                                     <button
                                         type="button"
                                         onClick={() => setSupplierDropdownOpen(prev => !prev)}
-                                        className="w-full flex items-center justify-between px-4 py-2 border border-gray-300 rounded-lg bg-white hover:border-blue-500 focus:ring-2 focus:ring-blue-500 transition text-sm"
+                                        className="w-full flex items-center justify-between px-4 py-2 border border-gray-300 rounded bg-white hover:border-orange-500 focus:ring-2 focus:ring-orange-500 transition text-sm"
                                     >
                                         <span className={formData.supplierIds?.length > 0 ? 'text-gray-900' : 'text-gray-400'}>
                                             {formData.supplierIds?.length > 0
@@ -457,7 +457,7 @@ const ProductModal = ({
                                     </button>
 
                                     {supplierDropdownOpen && (
-                                        <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
+                                        <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded shadow-lg">
                                             <div className="p-2 border-b border-gray-100">
                                                 <div className="relative">
                                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
@@ -466,7 +466,7 @@ const ProductModal = ({
                                                         placeholder="Search suppliers..."
                                                         value={supplierSearch}
                                                         onChange={(e) => setSupplierSearch(e.target.value)}
-                                                        className="w-full pl-8 pr-4 py-1.5 border border-gray-300 rounded-md focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-sm"
+                                                        className="w-full pl-8 pr-4 py-1.5 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 text-sm"
                                                         autoFocus
                                                     />
                                                 </div>
@@ -479,13 +479,13 @@ const ProductModal = ({
                                                             key={`supplier-${supplier.id}`}
                                                             onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleSupplierToggle(supplier.id); }}
                                                             onMouseDown={(e) => e.preventDefault()}
-                                                            className={`flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-blue-50 transition ${isSelected ? 'bg-blue-50' : ''}`}
+                                                            className={`flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-orange-50 transition ${isSelected ? 'bg-orange-50' : ''}`}
                                                         >
                                                             <div>
                                                                 <p className="text-sm font-medium text-gray-800">{supplier.name}</p>
                                                                 {supplier.country && <p className="text-xs text-gray-500">{supplier.country}</p>}
                                                             </div>
-                                                            {isSelected && <span className="text-blue-600">✓</span>}
+                                                            {isSelected && <span className="text-orange-600">✓</span>}
                                                         </div>
                                                     );
                                                 })}
@@ -494,7 +494,7 @@ const ProductModal = ({
                                                 <button
                                                     type="button"
                                                     onClick={() => setSupplierDropdownOpen(false)}
-                                                    className="w-full py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition"
+                                                    className="w-full py-1.5 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded transition"
                                                 >
                                                     Done
                                                 </button>
@@ -520,13 +520,13 @@ const ProductModal = ({
                                                 const supplier = suppliers.find(s => s.id === id);
                                                 if (!supplier) return null;
                                                 return (
-                                                    <div key={`selected-${id}`} className="flex items-center gap-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg group hover:bg-blue-100 transition">
+                                                    <div key={`selected-${id}`} className="flex items-center gap-3 px-3 py-2 bg-orange-50 border border-orange-200 rounded group hover:bg-orange-100 transition">
                                                         <div className="flex-1 min-w-0">
                                                             <p className="text-sm font-medium text-gray-800">{supplier.name}</p>
                                                         </div>
                                                         <div className="flex items-center gap-1.5 flex-shrink-0">
                                                             <Globe size={13} className="text-gray-400" />
-                                                            <div className="w-40 px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-md text-gray-700">
+                                                            <div className="w-40 px-3 py-1.5 text-sm bg-white border border-gray-200 rounded text-gray-700">
                                                                 {formData.supplierCountries?.[id] || supplier?.country || 'Not specified'}
                                                             </div>
                                                         </div>
@@ -564,7 +564,7 @@ const ProductModal = ({
                                     name="shelfLife"
                                     value={formData.shelfLife}
                                     onChange={handleInputChange}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
                                     placeholder="Example: 12 months, 2 years"
                                 />
                             </div>
@@ -575,7 +575,7 @@ const ProductModal = ({
                                     type="text"
                                     value={editingProduct?.createdAt ? new Date(editingProduct.createdAt).toLocaleDateString() : 'Auto-generated on save'}
                                     disabled
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed text-gray-600"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded bg-gray-100 cursor-not-allowed text-gray-600"
                                 />
                                 <p className="text-xs text-gray-500 mt-1">
                                     {editingProduct?.createdAt ? 'Product created on this date' : 'Will be set automatically when product is created'}
@@ -602,7 +602,7 @@ const ProductModal = ({
                                         value={formData.sku}
                                         onChange={handleInputChange}
                                         required={variationCombinations.length === 0}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
                                         placeholder="Enter SKU"
                                     />
                                 </div>
@@ -622,7 +622,7 @@ const ProductModal = ({
                                         required={variationCombinations.length === 0}
                                         maxLength={13}
                                         pattern="\d{13}"
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
                                         placeholder="Enter 13-digit UPC"
                                     />
                                     {formData.upc && formData.upc.length !== 13 && (
@@ -646,7 +646,7 @@ const ProductModal = ({
                                         required={variationCombinations.length === 0}
                                         step="0.01"
                                         min="0"
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
                                         placeholder="0.00"
                                     />
                                 </div>
@@ -670,7 +670,7 @@ const ProductModal = ({
                                                     step="0.01"
                                                     min="0"
                                                     required={variationCombinations.length === 0}
-                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
                                                 />
                                             </React.Fragment>
                                         ))}
@@ -685,7 +685,7 @@ const ProductModal = ({
                                     name="materials"
                                     value={formData.materials}
                                     onChange={handleInputChange}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
                                     placeholder="Enter materials"
                                 />
                             </div>
@@ -697,7 +697,7 @@ const ProductModal = ({
                                     name="uom"
                                     value={formData.uom}
                                     onChange={handleInputChange}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
                                     placeholder="e.g., pcs, box, kg, liter"
                                 />
                             </div>
@@ -709,7 +709,7 @@ const ProductModal = ({
                                         type="text"
                                         value={formData.unitCost ? `₱${parseFloat(formData.unitCost).toFixed(2)}` : ''}
                                         disabled
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed text-gray-900"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded bg-gray-100 cursor-not-allowed text-gray-900"
                                         placeholder="Set via Purchase Orders"
                                     />
                                     <p className={`text-xs mt-1 ${formData.unitCost ? 'text-green-600' : 'text-gray-500'}`}>
@@ -722,7 +722,7 @@ const ProductModal = ({
                         </div>
 
                         {variationCombinations.length > 0 && (
-                            <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                            <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded">
                                 <div className="flex items-center gap-2 text-amber-700">
                                     <AlertCircle size={18} />
                                     <div>
@@ -761,7 +761,7 @@ const ProductModal = ({
                             </p>
                         </div>
                     ) : (
-                        <div className="p-4 bg-gray-100 border border-gray-300 rounded-lg">
+                        <div className="p-4 bg-gray-100 border border-gray-300 rounded">
                             <div className="flex items-center gap-2 text-gray-600">
                                 <AlertCircle size={18} />
                                 <div>
@@ -783,8 +783,8 @@ const ProductModal = ({
 
                         <div className="space-y-4">
                             {variationCombinations.length > 0 && (
-                                <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                    <div className="flex items-center gap-2 text-blue-700">
+                                <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded">
+                                    <div className="flex items-center gap-2 text-orange-700">
                                         <AlertCircle size={18} />
                                         <div>
                                             <p className="text-sm font-medium">Variations Active</p>
@@ -798,7 +798,7 @@ const ProductModal = ({
                             )}
 
                             {variationTypes.map((varType, typeIndex) => (
-                                <div key={typeIndex} className="p-5 bg-gray-50 rounded-xl border border-gray-200">
+                                <div key={typeIndex} className="p-5 bg-white rounded-xl border border-gray-200">
                                     <div className="flex items-center justify-between mb-4">
                                         <div className="flex items-center gap-3">
                                             <select
@@ -809,7 +809,7 @@ const ProductModal = ({
                                                     newTypes[typeIndex].customType = '';
                                                     setVariationTypes(newTypes);
                                                 }}
-                                                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-medium"
+                                                className="px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 font-medium"
                                             >
                                                 {['SIZE', 'COLOR', 'PACK', 'FLAVOR', 'MATERIAL', 'STYLE', 'VOLUME', 'OTHER'].map(type => (
                                                     <option key={type} value={type}>{type.charAt(0) + type.slice(1).toLowerCase()}</option>
@@ -825,14 +825,14 @@ const ProductModal = ({
                                                         newTypes[typeIndex].customType = e.target.value;
                                                         setVariationTypes(newTypes);
                                                     }}
-                                                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                    className="px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
                                                 />
                                             )}
                                         </div>
                                         <button
                                             type="button"
                                             onClick={() => setVariationTypes(variationTypes.filter((_, i) => i !== typeIndex))}
-                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                                            className="p-2 text-red-600 hover:bg-red-50 rounded transition"
                                         >
                                             <Trash2 size={18} />
                                         </button>
@@ -852,7 +852,7 @@ const ProductModal = ({
                                                             e.target.value = '';
                                                         }
                                                     }}
-                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
                                                 >
                                                     <option value="">Quick add size...</option>
                                                     {['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'SMALL', 'MEDIUM', 'LARGE'].map(s => (
@@ -875,7 +875,7 @@ const ProductModal = ({
                                                             }
                                                         }
                                                     }}
-                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
                                                 />
                                             </div>
                                         ) : varType.type === 'COLOR' ? (
@@ -891,7 +891,7 @@ const ProductModal = ({
                                                             e.target.value = '';
                                                         }
                                                     }}
-                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
                                                 >
                                                     <option value="">Quick add color...</option>
                                                     {['RED', 'BLUE', 'GREEN', 'YELLOW', 'BLACK', 'WHITE', 'GRAY', 'BROWN', 'ORANGE', 'PURPLE', 'PINK', 'BEIGE', 'NAVY'].map(c => (
@@ -914,7 +914,7 @@ const ProductModal = ({
                                                             }
                                                         }
                                                     }}
-                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
                                                 />
                                             </div>
                                         ) : (
@@ -935,7 +935,7 @@ const ProductModal = ({
                                                             }
                                                         }
                                                     }}
-                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
                                                 />
                                                 <button
                                                     type="button"
@@ -951,7 +951,7 @@ const ProductModal = ({
                                                             }
                                                         }
                                                     }}
-                                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                                                    className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition"
                                                 >
                                                     <Plus size={18} />
                                                 </button>
@@ -966,7 +966,7 @@ const ProductModal = ({
                                             </p>
                                             <div className="flex flex-wrap gap-2">
                                                 {varType.values.map((value, valueIndex) => (
-                                                    <div key={valueIndex} className="flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm">
+                                                    <div key={valueIndex} className="flex items-center gap-2 px-3 py-1.5 bg-orange-100 text-orange-700 rounded text-sm">
                                                         <span>{value}</span>
                                                         <button
                                                             type="button"
@@ -975,7 +975,7 @@ const ProductModal = ({
                                                                 newTypes[typeIndex].values = newTypes[typeIndex].values.filter((_, i) => i !== valueIndex);
                                                                 setVariationTypes(newTypes);
                                                             }}
-                                                            className="hover:bg-blue-200 rounded p-0.5 transition"
+                                                            className="hover:bg-orange-200 rounded p-0.5 transition"
                                                         >
                                                             <X size={14} />
                                                         </button>
@@ -990,7 +990,7 @@ const ProductModal = ({
                             <button
                                 type="button"
                                 onClick={() => setVariationTypes([...variationTypes, { type: 'SIZE', values: [], customType: '' }])}
-                                className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition flex items-center justify-center gap-2"
+                                className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded text-gray-600 hover:border-orange-500 hover:text-orange-600 transition flex items-center justify-center gap-2"
                             >
                                 <Plus size={18} />
                                 {variationTypes.length === 0 ? 'Add Variation Type' : 'Add Another Variation Type'}
@@ -999,19 +999,19 @@ const ProductModal = ({
                             {/* ── Variation Combinations (responsive card grid, no horizontal scroll) ── */}
                             {variationCombinations.length > 0 && (
                                 <div className="mt-6 border border-slate-200 rounded-xl overflow-hidden">
-                                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-3.5 flex items-center justify-between gap-4 flex-wrap">
+                                    <div className="bg-gradient-to-r from-orange-600 to-orange-700 px-5 py-3.5 flex items-center justify-between gap-4 flex-wrap">
                                         <h4 className="text-white font-semibold flex items-center gap-2 whitespace-nowrap">
                                             <Package size={18} />
                                             Variation Combinations ({filteredCombos.length}{filteredCombos.length !== variationCombinations.length ? ` of ${variationCombinations.length}` : ''})
                                         </h4>
                                         <div className="relative w-full sm:w-64">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-200" size={14} />
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-orange-200" size={14} />
                                             <input
                                                 type="text"
                                                 placeholder="Search SKU, UPC, or variation..."
                                                 value={comboSearchTerm}
                                                 onChange={(e) => setComboSearchTerm(e.target.value)}
-                                                className="w-full pl-8 pr-3 py-1.5 text-sm bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-blue-200 focus:bg-white focus:text-slate-900 focus:placeholder:text-slate-400 focus:ring-4 focus:ring-white/20 focus:border-white transition"
+                                                className="w-full pl-8 pr-3 py-1.5 text-sm bg-white/10 border border-white/20 rounded text-white placeholder:text-orange-200 focus:bg-white focus:text-slate-900 focus:placeholder:text-slate-400 focus:ring-4 focus:ring-white/20 focus:border-white transition"
                                             />
                                         </div>
                                     </div>
@@ -1046,16 +1046,16 @@ const ProductModal = ({
                                                                     />
                                                                     <label
                                                                         htmlFor={`variation-image-${comboIndex}`}
-                                                                        className={`flex items-center justify-center w-16 h-16 border-2 border-dashed rounded-lg cursor-pointer transition overflow-hidden ${uploadingVariationImage[comboIndex] ? 'border-blue-400 bg-blue-50' : 'border-slate-300 hover:border-blue-500 bg-slate-50'}`}
+                                                                        className={`flex items-center justify-center w-16 h-16 border-2 border-dashed rounded cursor-pointer transition overflow-hidden ${uploadingVariationImage[comboIndex] ? 'border-orange-400 bg-orange-50' : 'border-slate-300 hover:border-orange-500 bg-slate-50'}`}
                                                                     >
                                                                         {uploadingVariationImage[comboIndex]
-                                                                            ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                                                                            ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-600"></div>
                                                                             : <Package size={16} className="text-slate-400" />}
                                                                     </label>
                                                                 </div>
                                                             ) : (
                                                                 <div className="relative group flex-shrink-0">
-                                                                    <div className="w-16 h-16 overflow-hidden rounded-lg border border-slate-200">
+                                                                    <div className="w-16 h-16 overflow-hidden rounded border border-slate-200">
                                                                         <img
                                                                             src={getFileUrl(combo.imageUrl)}
                                                                             alt="Variation"
@@ -1077,7 +1077,7 @@ const ProductModal = ({
 
                                                             <div className="flex flex-wrap gap-1 min-w-0">
                                                                 {Object.entries(combo.attributes).map(([type, value]) => (
-                                                                    <span key={type} className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium whitespace-nowrap">
+                                                                    <span key={type} className="px-2 py-1 bg-orange-50 text-orange-700 rounded text-xs font-medium whitespace-nowrap">
                                                                         {type}: {value}
                                                                     </span>
                                                                 ))}
@@ -1094,7 +1094,7 @@ const ProductModal = ({
                                                                     onChange={(e) => updateVariationCombination(comboIndex, 'sku', e.target.value)}
                                                                     placeholder="Enter SKU"
                                                                     required
-                                                                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                                                                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
                                                                 />
                                                             </div>
 
@@ -1107,7 +1107,7 @@ const ProductModal = ({
                                                                     placeholder="Enter UPC"
                                                                     required
                                                                     maxLength={13}
-                                                                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                                                                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
                                                                 />
                                                             </div>
 
@@ -1121,7 +1121,7 @@ const ProductModal = ({
                                                                     step="0.01"
                                                                     min="0"
                                                                     required
-                                                                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                                                                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
                                                                 />
                                                             </div>
 
@@ -1131,7 +1131,7 @@ const ProductModal = ({
                                                                     type="text"
                                                                     value={combo.unitCost ? `₱${parseFloat(combo.unitCost).toFixed(2)}` : ''}
                                                                     disabled
-                                                                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-slate-100 text-slate-900 cursor-not-allowed"
+                                                                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded bg-slate-100 text-slate-900 cursor-not-allowed"
                                                                     placeholder="Set via PO"
                                                                 />
                                                             </div>
@@ -1148,7 +1148,7 @@ const ProductModal = ({
                                                                             placeholder={dim.charAt(0).toUpperCase()}
                                                                             step="0.01"
                                                                             required
-                                                                            className="w-full px-2 py-2 text-sm border border-slate-300 rounded-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                                                                            className="w-full px-2 py-2 text-sm border border-slate-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
                                                                         />
                                                                     ))}
                                                                 </div>
@@ -1167,7 +1167,7 @@ const ProductModal = ({
                                                                     min="0"
                                                                     id={`apply-all-price-${comboIndex}`}
                                                                     onWheel={(e) => e.target.blur()}
-                                                                    className="no-spinner w-20 px-2 py-1 text-sm border border-blue-200 rounded-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-blue-50"
+                                                                    className="no-spinner w-20 px-2 py-1 text-sm border border-orange-200 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 bg-orange-50"
                                                                 />
                                                                 <button
                                                                     type="button"
@@ -1175,7 +1175,7 @@ const ProductModal = ({
                                                                         const input = document.getElementById(`apply-all-price-${comboIndex}`);
                                                                         if (input?.value) applyPriceToAllCompanies(comboIndex, input.value);
                                                                     }}
-                                                                    className="flex items-center gap-1 px-2.5 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition font-medium"
+                                                                    className="flex items-center gap-1 px-2.5 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700 transition font-medium"
                                                                 >
                                                                     <Copy size={12} />
                                                                     Apply
@@ -1193,7 +1193,7 @@ const ProductModal = ({
                                                                         value={companySearchTerm[comboIndex] || ''}
                                                                         onChange={(e) => handleCompanySearchChange(comboIndex, e.target.value)}
                                                                         onFocus={() => toggleCompanyDropdown(comboIndex, true)}
-                                                                        className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 pr-8"
+                                                                        className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 pr-8"
                                                                     />
                                                                     {companyDropdownOpen[comboIndex] && (
                                                                         <button
@@ -1207,7 +1207,7 @@ const ProductModal = ({
                                                                 </div>
 
                                                                 {companyDropdownOpen[comboIndex] && (
-                                                                    <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg">
+                                                                    <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded shadow-lg">
                                                                         <div className="max-h-48 overflow-y-auto">
                                                                             {companies.filter(c =>
                                                                                 !(selectedPriceCompanyIds[comboIndex] || []).includes(c.id) &&
@@ -1226,7 +1226,7 @@ const ProductModal = ({
                                                                                                 handleCompanySearchChange(comboIndex, '');
                                                                                                 toggleCompanyDropdown(comboIndex, false);
                                                                                             }}
-                                                                                            className="px-3 py-2.5 hover:bg-blue-50 cursor-pointer transition border-b border-slate-100 last:border-b-0"
+                                                                                            className="px-3 py-2.5 hover:bg-orange-50 cursor-pointer transition border-b border-slate-100 last:border-b-0"
                                                                                         >
                                                                                             <p className="text-sm font-medium text-slate-800">{company.companyName}</p>
                                                                                         </div>
@@ -1245,7 +1245,7 @@ const ProductModal = ({
                                                                         const company = companies.find(c => c.id === companyId);
                                                                         if (!company) return null;
                                                                         return (
-                                                                            <div key={companyId} className="border border-slate-200 rounded-lg p-2.5 bg-slate-50">
+                                                                            <div key={companyId} className="border border-slate-200 rounded p-2.5 bg-slate-50">
                                                                                 <div className="flex items-center justify-between mb-1.5">
                                                                                     <span className="text-sm font-medium text-slate-900 truncate" title={company.companyName}>
                                                                                         {company.companyName}
@@ -1270,7 +1270,7 @@ const ProductModal = ({
                                                                                             onChange={(e) => updateVariationCompanyPrice(comboIndex, companyId, e.target.value)}
                                                                                             onWheel={(e) => e.target.blur()}
                                                                                             placeholder="0.00"
-                                                                                            className="no-spinner w-full px-2 py-1.5 text-sm border border-slate-300 rounded-lg bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                                                                                            className="no-spinner w-full px-2 py-1.5 text-sm border border-slate-300 rounded bg-white focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
                                                                                         />
                                                                                     </div>
                                                                                     <input
@@ -1278,7 +1278,7 @@ const ProductModal = ({
                                                                                         value={combo.companySkus?.[companyId] ?? ''}
                                                                                         onChange={(e) => updateVariationCompanySku(comboIndex, companyId, e.target.value)}
                                                                                         placeholder="SKU"
-                                                                                        className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-lg bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                                                                                        className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded bg-white focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
                                                                                     />
                                                                                 </div>
                                                                             </div>
@@ -1328,13 +1328,13 @@ const ProductModal = ({
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-white transition"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                            className="flex-1 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition"
                         >
                             {editingProduct ? 'Update Product' : 'Create Product'}
                         </button>

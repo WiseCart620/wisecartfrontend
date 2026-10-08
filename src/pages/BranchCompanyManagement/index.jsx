@@ -146,7 +146,7 @@ const BranchCompanyManagement = () => {
           <button
             onClick={() => setActiveTab('branches')}
             className={`pb-4 px-1 border-b-2 font-medium text-sm transition ${activeTab === 'branches'
-              ? 'border-blue-600 text-blue-600'
+              ? 'border-orange-600 text-orange-600'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
           >
@@ -155,7 +155,7 @@ const BranchCompanyManagement = () => {
           <button
             onClick={() => setActiveTab('companies')}
             className={`pb-4 px-1 border-b-2 font-medium text-sm transition ${activeTab === 'companies'
-              ? 'border-blue-600 text-blue-600'
+              ? 'border-orange-600 text-orange-600'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
           >
@@ -177,13 +177,13 @@ const BranchCompanyManagement = () => {
             }
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
           />
         </div>
         {canCreate && (
           <button
             onClick={handleAddNew}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition"
           >
             <Plus size={20} />
             Add Branch & Company

@@ -89,13 +89,13 @@ const ColumnTogglePanel = ({ visible, cols, onChange, onClose }) => {
       <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
         <button
           onClick={() => ALL_TOGGLE_KEYS.forEach((k) => !cols[k] && onChange(k))}
-          className="flex-1 text-xs py-1 rounded-lg border border-gray-200 text-black hover:bg-gray-50"
+          className="flex-1 text-xs py-1 rounded border border-gray-200 text-black hover:bg-white"
         >
           Show all
         </button>
         <button
           onClick={() => ALL_TOGGLE_KEYS.forEach((k) => cols[k] && onChange(k))}
-          className="flex-1 text-xs py-1 rounded-lg border border-gray-200 text-black hover:bg-gray-50"
+          className="flex-1 text-xs py-1 rounded border border-gray-200 text-black hover:bg-white"
         >
           Hide all
         </button>
@@ -173,13 +173,13 @@ const WarehouseStockTable = ({
   return (
     <div className="bg-white rounded-xl shadow overflow-hidden inv-table-panel">
       {/* Header */}
-      <div className="px-4 py-2 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+      <div className="px-4 py-2 border-b border-gray-200 bg-white flex items-center justify-between">
         <h2 className="text-base text-gray-900 flex items-center gap-2">
           <Building size={20} />
           Warehouse Stock Levels
           {movLoading && (
             <span className="ml-2 text-xs text-gray-400 font-normal flex items-center gap-1">
-              <span className="w-3 h-3 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin inline-block" />
+              <span className="w-3 h-3 border-2 border-orange-300 border-t-orange-600 rounded-full animate-spin inline-block" />
               Loading movements…
             </span>
           )}
@@ -188,10 +188,10 @@ const WarehouseStockTable = ({
         <div className="relative">
           <button
             onClick={() => setShowColPanel((v) => !v)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded border transition
               ${showColPanel || anyMovVisible
                 ? 'bg-gray-100 border-gray-400 text-black'
-                : 'bg-white border-gray-300 text-black hover:bg-gray-50'
+                : 'bg-white border-gray-300 text-black hover:bg-white'
               }`}
           >
             <SlidersHorizontal size={13} />
@@ -214,7 +214,7 @@ const WarehouseStockTable = ({
 
       <div className="border-t border-gray-100 overflow-auto max-h-[65vh] table-fit">
         <table className="w-full text-sm text-black" style={{ fontSize: '11px', tableLayout: 'fixed' }}>
-          <thead className="bg-gray-50 sticky top-0 z-10">
+          <thead className="bg-white sticky top-0 z-10">
             <tr>
               <th className="px-2 py-2 th-left col-name"><HeaderIcon Icon={Building} label="Warehouse" align="left" /></th>
               <th className="px-2 py-2 th-left col-prod"><HeaderIcon Icon={Package} label="Product" align="left" /></th>
@@ -268,7 +268,7 @@ const WarehouseStockTable = ({
                 const mv = getMovements(stock);
                 const isThisLoading = loadingId === stock.id;
                 return (
-                  <tr key={stock.id} className="hover:bg-gray-50 transition-colors text-black">
+                  <tr key={stock.id} className="hover:bg-white transition-colors text-black">
                     {/* Warehouse */}
                     <td className="px-2 py-2">
                       <div className="txt-block">
@@ -392,7 +392,7 @@ const WarehouseStockTable = ({
           </tbody>
 
           {!isLoading && totalElements > 0 && (
-            <tfoot className="[&_td]:sticky [&_td]:bottom-0 [&_td]:z-10 [&_td]:bg-gray-50 [&_td]:shadow-[0_-2px_0_#e5e7eb]">
+            <tfoot className="[&_td]:sticky [&_td]:bottom-0 [&_td]:z-10 [&_td]:bg-white [&_td]:shadow-[0_-2px_0_#e5e7eb]">
               <tr>
                 <td className="px-2 py-2 text-xs font-semibold text-black" colSpan={2 + (visibleCols.sku ? 1 : 0)}>
                   Grand Total ({totalElements.toLocaleString('en-US')} rows)

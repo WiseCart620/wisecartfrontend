@@ -97,7 +97,7 @@ const DeliveryFilters = ({
   );
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 mb-4">
+    <div className="py-1.5 mb-2">
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
         {canSeeFilter(user, 'deliveries', 'company') && (
           <div className="min-w-[140px] w-fit max-w-[260px] flex-shrink-0">
@@ -151,7 +151,7 @@ const DeliveryFilters = ({
           <select
             value={filterData.status}
             onChange={(e) => onFilterChange({ status: e.target.value })}
-            className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-36 flex-shrink-0"
+            className="h-9 px-2.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500 w-36 flex-shrink-0"
           >
             <option value="">All Status</option>
             {statusOptions.map(status => (
@@ -172,7 +172,7 @@ const DeliveryFilters = ({
         )}
 
         {canSeeFilter(user, 'deliveries', 'date') && (
-          <div className="h-9 flex items-center gap-1 border border-gray-300 rounded-lg px-2">
+          <div className="h-9 flex items-center gap-1 border border-gray-300 rounded px-2">
             <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
             <input
               type="date"
@@ -196,7 +196,7 @@ const DeliveryFilters = ({
             placeholder="Receipt #..."
             value={filterData.receiptNumber || ''}
             onChange={(e) => onFilterChange({ receiptNumber: e.target.value })}
-            className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-32"
+            className="h-9 px-2.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 w-32"
           />
         )}
 
@@ -206,14 +206,14 @@ const DeliveryFilters = ({
             placeholder="PO #..."
             value={filterData.poNumber || ''}
             onChange={(e) => onFilterChange({ poNumber: e.target.value })}
-            className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-28"
+            className="h-9 px-2.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 w-28"
           />
         )}
 
         {hasActiveFilters && (
           <button
             onClick={onReset}
-            className="col-span-2 sm:col-span-1 text-sm text-blue-600 hover:text-blue-800 font-medium sm:ml-auto whitespace-nowrap text-right sm:text-left"
+            className="col-span-2 sm:col-span-1 text-sm text-orange-600 hover:text-orange-800 font-medium sm:ml-auto whitespace-nowrap text-right sm:text-left"
           >
             Clear filters
           </button>

@@ -231,7 +231,7 @@ const WarehouseManagement = () => {
             placeholder="Search by name, code, city, or contact person..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
           />
         </div>
         <button
@@ -239,7 +239,7 @@ const WarehouseManagement = () => {
             resetForm();
             setShowModal(true);
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition"
         >
           <Plus size={20} />
           Add Warehouse
@@ -260,8 +260,8 @@ const WarehouseManagement = () => {
             <div key={warehouse.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-blue-100 rounded-lg">
-                    <Warehouse size={24} className="text-blue-600" />
+                  <div className="p-3 bg-gray-100 rounded">
+                    <Warehouse size={24} className="text-gray-500" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">{warehouse.warehouseName}</h3>
@@ -269,7 +269,7 @@ const WarehouseManagement = () => {
                   </div>
                 </div>
                 {warehouse.isDefault && (
-                  <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-xs font-medium">
+                  <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-medium">
                     <Star size={14} fill="currentColor" />
                     Default
                   </div>
@@ -304,14 +304,14 @@ const WarehouseManagement = () => {
               <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
                 <button
                   onClick={() => handleEdit(warehouse)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition text-sm font-medium"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-orange-600 hover:bg-orange-50 rounded transition text-sm font-medium"
                 >
                   <Edit2 size={16} />
                   Edit
                 </button>
                 <button
                   onClick={() => handleDelete(warehouse.id)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition text-sm font-medium"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded transition text-sm font-medium"
                 >
                   <Trash2 size={16} />
                   Delete
@@ -350,7 +350,7 @@ const WarehouseManagement = () => {
                   setShowModal(false);
                   resetForm();
                 }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
+                className="p-2 hover:bg-gray-100 rounded transition"
               >
                 <X size={20} />
               </button>
@@ -374,7 +374,7 @@ const WarehouseManagement = () => {
                       value={formData.warehouseCode}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                       placeholder="WH-001"
                     />
                     <p className="text-xs text-gray-500 mt-1">Format: WH-XXX (auto-formatted)</p>
@@ -390,7 +390,7 @@ const WarehouseManagement = () => {
                       value={formData.warehouseName}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                       placeholder="Enter warehouse name"
                     />
                   </div>
@@ -413,7 +413,7 @@ const WarehouseManagement = () => {
                       name="contactPerson"
                       value={formData.contactPerson}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                       placeholder="Enter contact person name"
                     />
                   </div>
@@ -428,7 +428,7 @@ const WarehouseManagement = () => {
                       value={formData.contactNumber}
                       onChange={handleInputChange}
                       maxLength={14}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                       placeholder="0000-000-0000"
                     />
                     <p className="text-xs text-gray-500 mt-1">Format: 0000-000-0000 (auto-formatted)</p>
@@ -453,7 +453,7 @@ const WarehouseManagement = () => {
                       value={formData.address}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                       placeholder="Street address"
                     />
                   </div>
@@ -469,7 +469,7 @@ const WarehouseManagement = () => {
                         value={formData.city}
                         onChange={handleInputChange}
                         required
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                         placeholder="City"
                       />
                     </div>
@@ -484,7 +484,7 @@ const WarehouseManagement = () => {
                         value={formData.province}
                         onChange={handleInputChange}
                         required
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                         placeholder="Province"
                       />
                     </div>
@@ -498,7 +498,7 @@ const WarehouseManagement = () => {
                         name="area"
                         value={formData.area}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                         placeholder="e.g., Metro Manila"
                       />
                     </div>
@@ -509,14 +509,14 @@ const WarehouseManagement = () => {
               {/* Settings */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Settings</h3>
-                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3 p-4 bg-white rounded">
                   <input
                     type="checkbox"
                     id="isDefault"
                     name="isDefault"
                     checked={formData.isDefault}
                     onChange={handleInputChange}
-                    className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    className="w-5 h-5 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
                   />
                   <label htmlFor="isDefault" className="flex-1 cursor-pointer">
                     <div className="font-medium text-gray-900">Set as Default Warehouse</div>
@@ -533,13 +533,13 @@ const WarehouseManagement = () => {
                     setShowModal(false);
                     resetForm();
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-white transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  className="flex-1 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition"
                 >
                   {editingWarehouse ? 'Update Warehouse' : 'Create Warehouse'}
                 </button>

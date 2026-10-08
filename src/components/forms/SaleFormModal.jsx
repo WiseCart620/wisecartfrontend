@@ -7,7 +7,7 @@ import { months } from '../../constants/salesConstants';
 import MassUploadModal from '../modals/MassUploadModal';
 
 const FormSection = ({ icon: Icon, title, action, children }) => (
-  <div className="bg-white border border-gray-200 rounded-lg">
+  <div className="bg-white border border-gray-200 rounded">
     <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
       <div className="flex items-center gap-2">
         {Icon && <Icon size={16} className="text-gray-400" />}
@@ -164,7 +164,7 @@ const SaleFormModal = ({
 
   return (
     <div className="fixed inset-0 bg-gray-900/60 z-50 flex items-center justify-center p-2 sm:p-6">
-      <div className="bg-gray-50 rounded-xl max-w-7xl w-full max-h-[98vh] sm:max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-white rounded-xl max-w-7xl w-full max-h-[98vh] sm:max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
 
         {/* Header */}
         <div className="px-5 sm:px-8 py-4 sm:py-5 bg-white border-b border-gray-200 flex justify-between items-center flex-shrink-0">
@@ -179,7 +179,7 @@ const SaleFormModal = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+            className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition"
           >
             <X size={20} />
           </button>
@@ -197,7 +197,7 @@ const SaleFormModal = ({
                 <button
                   type="button"
                   onClick={() => setShowMassUpload(true)}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 transition"
+                  className="flex items-center gap-1.5 text-xs font-semibold text-orange-600 hover:text-orange-700 transition"
                 >
                   <UploadCloud size={14} />
                   Mass Upload
@@ -217,7 +217,7 @@ const SaleFormModal = ({
               />
 
               {branchInfo && (
-                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 p-4 bg-transparent rounded border border-orange-500">
                   <div className="text-sm">
                     <span className="text-gray-500">Branch</span>
                     <div className="font-semibold text-gray-900">{branchInfo.branchName}</div>
@@ -248,7 +248,7 @@ const SaleFormModal = ({
                   <select
                     value={formData.month}
                     onChange={(e) => setFormData(prev => ({ ...prev, month: parseInt(e.target.value) }))}
-                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition outline-none"
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition outline-none"
                     required
                   >
                     {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
@@ -262,7 +262,7 @@ const SaleFormModal = ({
                     type="number"
                     value={formData.year}
                     onChange={(e) => setFormData(prev => ({ ...prev, year: parseInt(e.target.value) }))}
-                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition outline-none"
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition outline-none"
                     required
                   />
                 </div>
@@ -277,15 +277,15 @@ const SaleFormModal = ({
                     onFocus={() => setShowEncodedByDropdown(true)}
                     onBlur={() => setTimeout(() => setShowEncodedByDropdown(false), 150)}
                     placeholder="Type a name..."
-                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition outline-none"
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition outline-none"
                   />
                   {showEncodedByDropdown && encodedByOptions.filter(n => n.toLowerCase().includes(formData.createdBy.toLowerCase())).length > 0 && (
-                    <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                    <div className="absolute z-50 w-full bg-white border border-gray-200 rounded shadow-lg mt-1 max-h-48 overflow-y-auto">
                       {encodedByOptions.filter(n => n.toLowerCase().includes(formData.createdBy.toLowerCase())).map(name => (
                         <button
                           key={name} type="button"
                           onMouseDown={() => { setFormData(prev => ({ ...prev, createdBy: name })); setShowEncodedByDropdown(false); }}
-                          className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition ${formData.createdBy === name ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'}`}
+                          className={`w-full px-4 py-2 text-left text-sm hover:bg-white transition ${formData.createdBy === name ? 'bg-orange-50 text-orange-700 font-medium' : 'text-gray-900'}`}
                         >
                           {name}
                         </button>
@@ -306,13 +306,13 @@ const SaleFormModal = ({
                     type="button"
                     onClick={() => setShowPasteDropdown(prev => !prev)}
                     title="Paste consignment report to set amounts"
-                    className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 transition"
+                    className="flex items-center gap-1.5 text-xs font-semibold text-orange-600 hover:text-orange-700 transition"
                   >
                     <ClipboardPaste size={14} />
                     Paste Report
                   </button>
                   {showPasteDropdown && (
-                    <div className="absolute z-50 top-full right-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg p-3">
+                    <div className="absolute z-50 top-full right-0 mt-1 w-80 bg-white border border-gray-200 rounded shadow-lg p-3">
                       <label className="block text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
                         Paste Report (Article / GTIN / Description / Qty / Unit Cost / Amount)
                       </label>
@@ -321,13 +321,13 @@ const SaleFormModal = ({
                         onChange={(e) => setBulkPasteInput(e.target.value)}
                         placeholder="Paste the full report block here, including header row."
                         rows={4}
-                        className="w-full px-2 py-1.5 border border-gray-300 rounded-md text-[11px] font-mono focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none"
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-[11px] font-mono focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 outline-none"
                       />
                       <button
                         type="button"
                         onClick={() => { applyBulkPaste(); setShowPasteDropdown(false); }}
                         disabled={!bulkPasteInput.trim()}
-                        className="mt-2 w-full px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="mt-2 w-full px-3 py-1.5 text-xs font-semibold text-white bg-orange-600 rounded hover:bg-orange-700 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         Apply Amounts to Table
                       </button>
@@ -368,24 +368,24 @@ const SaleFormModal = ({
               </div>
 
               {massUploadStockLoading ? (
-                <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                  <div className="flex items-center justify-center gap-2 text-blue-600">
-                    <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                <div className="text-center py-12 bg-white rounded border border-dashed border-gray-300">
+                  <div className="flex items-center justify-center gap-2 text-orange-600">
+                    <div className="w-5 h-5 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
                     <span className="font-medium text-sm">Loading stock for all items...</span>
                   </div>
                 </div>
               ) : formData.items.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                <div className="text-center py-12 bg-white rounded border border-dashed border-gray-300">
                   <p className="font-medium text-gray-500 text-sm">No products added yet</p>
                   <p className="text-xs text-gray-400 mt-1">Select a product above and click "Add to List" to start</p>
                 </div>
               ) : visibleItemsWithIndex.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                <div className="text-center py-12 bg-white rounded border border-dashed border-gray-300">
                   <p className="font-medium text-gray-500 text-sm">No products match the active filter</p>
                   <p className="text-xs text-gray-400 mt-1">Clear the product filter to see all items in this sale</p>
                 </div>
               ) : (
-                <div className="rounded-lg border border-gray-200">
+                <div className="max-h-[440px] overflow-auto rounded border border-gray-200">
                   <table className="w-full text-sm table-fixed">
                     <colgroup>
                       <col className="w-8" />
@@ -398,7 +398,7 @@ const SaleFormModal = ({
                       <col className="w-[12%]" />
                       <col className="w-8" />
                     </colgroup>
-                    <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
+                    <thead className="bg-white sticky top-0 z-10 shadow-[inset_0_-1px_0_#e5e7eb]">
                       <tr>
                         {['#', 'Product', 'Variation', 'SKU / UPC', 'Price', 'Stock', 'Qty', 'Amount', ''].map(h => (
                           <th key={h} className="px-2 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wide truncate">{h}</th>
@@ -430,7 +430,7 @@ const SaleFormModal = ({
                         const amount = price * (item.quantity || 0);
 
                         return (
-                          <tr key={`${item.productId}_${item.variationId ?? 'base'}`} className="hover:bg-gray-50/80 transition-colors">
+                          <tr key={`${item.productId}_${item.variationId ?? 'base'}`} className="hover:bg-white/80 transition-colors">
                             <td className="px-2 py-2 text-center text-gray-400">{i + 1}</td>
                             <td className="px-2 py-2">
                               {selectedOption
@@ -443,13 +443,13 @@ const SaleFormModal = ({
                             </td>
                             <td className="px-2 py-2">
                               {selectedOption?.variationLabel && selectedOption.variationLabel !== 'No variations'
-                                ? <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100 truncate max-w-full">{selectedOption.variationLabel}</span>
+                                ? <span className="block truncate text-xs font-medium text-gray-700" title={selectedOption.variationLabel}>{selectedOption.variationLabel}</span>
                                 : <span className="text-[10px] text-gray-400">None</span>
                               }
                             </td>
-                            <td className="px-2 py-2 text-[11px] text-gray-600 leading-tight">
+                            <td className="px-2 py-2 text-xs text-gray-700 leading-tight">
                               <div className="truncate">{selectedOption?.sku || 'N/A'}</div>
-                              <div className="truncate text-gray-400">{selectedOption?.upc || 'N/A'}</div>
+                              <div className="truncate">{selectedOption?.upc || 'N/A'}</div>
                             </td>
                             <td className="px-2 py-2 text-right">
                               <div className="flex flex-col items-end gap-0.5">
@@ -462,7 +462,7 @@ const SaleFormModal = ({
                                     onItemChange(i, 'unitPriceExact', undefined);
                                   }}
                                   placeholder="0.00"
-                                  className="w-full min-w-0 px-1.5 py-1 border border-gray-300 rounded-md text-xs font-semibold text-blue-600 text-right focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition"
+                                  className="w-full min-w-0 px-1.5 py-1 border border-gray-300 rounded text-xs font-semibold text-gray-700 text-right focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 outline-none transition"
                                 />
                                 {originalPrice > 0 && Number(price) !== Number(originalPrice) && (
                                   <span className="text-[9px] text-gray-400 line-through">
@@ -473,18 +473,18 @@ const SaleFormModal = ({
                             </td>
                             <td className="px-2 py-2">
                               {isLoadingStock ? (
-                                <div className="flex items-center gap-1 text-blue-600 text-[10px]">
-                                  <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                                <div className="flex items-center gap-1 text-orange-600 text-[10px]">
+                                  <div className="w-3 h-3 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
                                   ...
                                 </div>
                               ) : stockInfo ? (
                                 <div className="space-y-0 leading-tight">
-                                  <div className={`font-bold text-[10px] ${hasEnoughStock ? 'text-blue-600' : 'text-red-600'}`}>Avail: {stockInfo.availableQuantity ?? 0}</div>
+                                  <div className={`font-bold text-[10px] ${hasEnoughStock ? 'text-orange-600' : 'text-red-600'}`}>Avail: {stockInfo.availableQuantity ?? 0}</div>
                                   <div className="text-[9px] text-gray-400">Tot: {stockInfo.quantity ?? 0}</div>
                                   {stockInfo.reservedQuantity > 0 && <div className="text-[9px] text-orange-500">Res: {stockInfo.reservedQuantity}</div>}
                                 </div>
                               ) : (
-                                <button type="button" onClick={() => onLoadStock(item.productId, formData.branchId, item.variationId)} className="text-[10px] text-blue-600 hover:underline font-medium">
+                                <button type="button" onClick={() => onLoadStock(item.productId, formData.branchId, item.variationId)} className="text-[10px] text-orange-600 hover:underline font-medium">
                                   Load
                                 </button>
                               )}
@@ -495,7 +495,7 @@ const SaleFormModal = ({
                                 value={item.quantity && item.quantity !== 0 ? Number(item.quantity).toLocaleString('en-US') : ''}
                                 onChange={(e) => onItemChange(i, 'quantity', e.target.value.replace(/,/g, ''))}
                                 placeholder="Qty"
-                                className={`w-full min-w-0 px-1.5 py-1 border rounded-md text-xs font-medium outline-none transition focus:ring-2 ${!hasEnoughStock && !isLoadingStock && item.quantity > 0 ? 'border-red-300 bg-red-50 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-500/30 focus:border-blue-500'}`}
+                                className={`w-full min-w-0 px-1.5 py-1 border rounded text-xs font-medium outline-none transition focus:ring-2 ${!hasEnoughStock && !isLoadingStock && item.quantity > 0 ? 'border-red-300 bg-red-50 focus:ring-red-200' : 'border-gray-300 focus:ring-orange-500/30 focus:border-orange-500'}`}
                                 min="1" max={maxAllowed} required disabled={isLoadingStock}
                               />
                               {!hasEnoughStock && !isLoadingStock && item.quantity > 0 && (
@@ -509,7 +509,7 @@ const SaleFormModal = ({
                               }
                             </td>
                             <td className="px-1 py-2 text-center">
-                              <button type="button" onClick={() => onRemoveItem(i)} disabled={isLoadingStock} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition">
+                              <button type="button" onClick={() => onRemoveItem(i)} disabled={isLoadingStock} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition">
                                 <Trash2 size={14} />
                               </button>
                             </td>
@@ -517,7 +517,7 @@ const SaleFormModal = ({
                         );
                       })}
                     </tbody>
-                    <tfoot className="bg-gray-50 border-t border-gray-200">
+                    <tfoot className="bg-white sticky bottom-0 z-10 shadow-[inset_0_1px_0_#e5e7eb]">
                       <tr>
                         <td colSpan={6} className="px-2 py-2 text-right text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Grand Total</td>
                         <td className="px-2 py-2 text-center text-xs font-bold text-gray-900">
@@ -550,14 +550,14 @@ const SaleFormModal = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 text-sm font-semibold text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 active:bg-gray-100 transition-colors"
+              className="px-5 py-2.5 text-sm font-semibold text-gray-700 border border-gray-300 rounded hover:bg-white active:bg-gray-100 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               form="sale-form"
-              className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm"
+              className="px-5 py-2.5 text-sm font-semibold text-white bg-orange-600 rounded hover:bg-orange-700 active:bg-orange-800 transition-colors shadow-sm"
             >
               {modalMode === 'create' ? 'Create Sale' : 'Update Sale'}
             </button>

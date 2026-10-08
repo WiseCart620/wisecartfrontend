@@ -177,7 +177,7 @@ const BranchSummaryReportModal = ({ isOpen, onClose, data = [], filters = {} }) 
                                     setCompanyFilter(e.target.value);
                                     setBranchFilter('ALL'); // reset branch when company changes
                                 }}
-                                className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                className="h-9 px-2.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
                             >
                                 <option value="ALL">All Companies</option>
                                 {companyOptions.map(c => (
@@ -189,7 +189,7 @@ const BranchSummaryReportModal = ({ isOpen, onClose, data = [], filters = {} }) 
                             <select
                                 value={branchFilter}
                                 onChange={(e) => setBranchFilter(e.target.value)}
-                                className="h-9 px-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                className="h-9 px-2.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
                             >
                                 <option value="ALL">All Branches</option>
                                 {branchOptions.map(b => (
@@ -197,13 +197,13 @@ const BranchSummaryReportModal = ({ isOpen, onClose, data = [], filters = {} }) 
                                 ))}
                             </select>
                         )}
-                        <button onClick={handlePrint} className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                        <button onClick={handlePrint} className="px-3 py-1.5 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 flex items-center gap-2">
                             <Printer size={14} />Print / PDF
                         </button>
-                        <button onClick={handleExportExcel} className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2">
+                        <button onClick={handleExportExcel} className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2">
                             <FileSpreadsheet size={14} />Excel
                         </button>
-                        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100"><X size={16} /></button>
+                        <button onClick={onClose} className="p-1.5 rounded hover:bg-gray-100"><X size={16} /></button>
                     </div>
                 </div>
 

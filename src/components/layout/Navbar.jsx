@@ -34,7 +34,7 @@ const Navbar = ({ toggleSidebar }) => {
           <div className="relative">
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2 hover:bg-gray-50 rounded-lg px-2 py-0.5 transition-colors"
+              className="flex items-center gap-2 hover:bg-white rounded px-2 py-0.5 transition-colors"
             >
               <div className="text-right">
                 <p className="text-sm leading-tight text-gray-900">
@@ -93,7 +93,7 @@ const Navbar = ({ toggleSidebar }) => {
                 <div className="py-2">
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-50 text-red-600"
+                    className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-white text-red-600"
                   >
                     <LogOut size={16} />
                     <span className="text-sm">Logout</span>

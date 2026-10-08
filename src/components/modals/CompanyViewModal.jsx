@@ -35,7 +35,7 @@ const CompanyViewModal = ({ company, branches, onClose }) => {
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition"
+            className="p-2 hover:bg-gray-100 rounded transition"
           >
             <X size={20} />
           </button>
@@ -48,7 +48,7 @@ const CompanyViewModal = ({ company, branches, onClose }) => {
               <Users size={20} />
               Company Information
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-4 rounded">
               <div>
                 <label className="block text-sm font-medium text-gray-500 mb-1">Company Name</label>
                 <p className="text-gray-900 font-medium">{company.companyName}</p>
@@ -73,7 +73,7 @@ const CompanyViewModal = ({ company, branches, onClose }) => {
                 <label className="block text-sm font-medium text-gray-500 mb-1">Terms</label>
                 <p className="text-gray-900">
                   {company.terms ? (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                       {company.terms}
                     </span>
                   ) : 'N/A'}
@@ -96,15 +96,15 @@ const CompanyViewModal = ({ company, branches, onClose }) => {
                   placeholder="Search branches..."
                   value={companyBranchSearch}
                   onChange={(e) => setCompanyBranchSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
                 />
               </div>
             </div>
 
             {filteredBranches.length > 0 ? (
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="border border-gray-200 rounded overflow-hidden">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-white border-b border-gray-200">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Branch Code</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Branch Name</th>
@@ -113,11 +113,11 @@ const CompanyViewModal = ({ company, branches, onClose }) => {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {filteredBranches.map((branch) => (
-                      <tr key={branch.id} className="hover:bg-gray-50">
+                      <tr key={branch.id} className="hover:bg-white">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <div className="p-1.5 bg-blue-100 rounded">
-                              <Building2 size={14} className="text-blue-600" />
+                            <div className="p-1.5 bg-orange-100 rounded">
+                              <Building2 size={14} className="text-orange-600" />
                             </div>
                             <span className="font-medium text-gray-900 text-sm">{branch.branchCode}</span>
                           </div>
@@ -134,7 +134,7 @@ const CompanyViewModal = ({ company, branches, onClose }) => {
                 </table>
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+              <div className="text-center py-8 text-gray-500 bg-white rounded">
                 {company.branches?.length > 0 ? 'No branches match your search' : 'No branches found for this company'}
               </div>
             )}
@@ -144,7 +144,7 @@ const CompanyViewModal = ({ company, branches, onClose }) => {
         <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4">
           <button
             onClick={onClose}
-            className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+            className="w-full px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
           >
             Close
           </button>

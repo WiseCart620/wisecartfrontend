@@ -63,7 +63,7 @@ const SearchableDropdown = ({
       </button>
 
       {isOpen && !disabled && (
-        <div className="absolute z-50 w-72 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-hidden">
+        <div className="absolute z-50 w-72 mt-2 bg-white border border-gray-300 rounded shadow-lg max-h-80 overflow-hidden">
           <div className="p-3 border-b border-gray-200">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
@@ -72,7 +72,7 @@ const SearchableDropdown = ({
                 placeholder="Search..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
                 autoFocus
               />
             </div>
@@ -86,7 +86,7 @@ const SearchableDropdown = ({
                   setIsOpen(false);
                   setSearchTerm('');
                 }}
-                className="w-full px-4 py-2 text-left hover:bg-gray-50 transition text-gray-500 italic text-sm"
+                className="w-full px-4 py-2 text-left hover:bg-white transition text-gray-500 italic text-sm"
               >
                 -- None --
               </button>
