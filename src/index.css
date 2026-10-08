@@ -166,9 +166,15 @@ code {
   font-size: 12px !important;
 }
 
-/* variation / sub-entry: same font and size, thinner weight */
-.inv-table-panel table .table-sub {
-  font-weight: 300 !important;
+/* one font weight everywhere in the inventory tables */
+.inv-table-panel table,
+.inv-table-panel table th,
+.inv-table-panel table th *,
+.inv-table-panel table td,
+.inv-table-panel table td *,
+.inv-table-panel table .table-sub,
+.inv-table-panel h2 {
+  font-weight: 400 !important;
 }
 
 /* row hover: whole row, including colored columns, turns light orange */
@@ -218,11 +224,30 @@ code {
   font-variant-numeric: tabular-nums;
 }
 
-.inv-table-panel th.col-name { width: 220px; min-width: 220px; }
-.inv-table-panel th.col-prod { width: 260px; min-width: 260px; }
-.inv-table-panel th.col-sku  { width: 200px; min-width: 200px; }
-.inv-table-panel th.col-date { width: 130px; min-width: 130px; }
-.inv-table-panel th.col-act  { width: 110px; min-width: 110px; }
+.inv-table-panel th.col-name {
+  width: 220px;
+  min-width: 220px;
+}
+
+.inv-table-panel th.col-prod {
+  width: 260px;
+  min-width: 260px;
+}
+
+.inv-table-panel th.col-sku {
+  width: 200px;
+  min-width: 200px;
+}
+
+.inv-table-panel th.col-date {
+  width: 130px;
+  min-width: 130px;
+}
+
+.inv-table-panel th.col-act {
+  width: 110px;
+  min-width: 110px;
+}
 
 /* text-column header icons sit at the left, over the start of the text */
 .inv-table-panel thead th.th-left {
