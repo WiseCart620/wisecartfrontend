@@ -177,6 +177,12 @@ code {
   font-weight: 400 !important;
 }
 
+/* thinner icon strokes to match the lighter text (Lucide default is 2) */
+.inv-table-panel table svg:not(.animate-spin),
+.inv-table-panel h2 svg {
+  stroke-width: 1.5 !important;
+}
+
 /* row hover: whole row, including colored columns, turns light orange */
 .inv-table-panel tbody tr:hover,
 .inv-table-panel tbody tr:hover>td {
