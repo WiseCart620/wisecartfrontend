@@ -100,6 +100,8 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
         const excelData = data.map(row => ({
             'Product': truncateText(row.productName, 40),
             'Variation': row.variationName || '',
+            'SKU': row.sku || '',
+            'UPC': row.upc || '',
             'Beg. Stock': row.begStock || 0,
             'Stock In': row.stockIn || 0,
             'Transfer In': row.transferIn || 0,
@@ -118,6 +120,8 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
             excelData.push({
                 'Product': 'TOTAL',
                 'Variation': '',
+                'SKU': '',
+                'UPC': '',
                 'Beg. Stock': totals.begStock,
                 'Stock In': totals.stockIn,
                 'Transfer In': totals.transferIn,
@@ -135,9 +139,9 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
 
         const ws = XLSX.utils.json_to_sheet(excelData);
         ws['!cols'] = [
-            { wch: 35 }, { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 10 },
+            { wch: 35 }, { wch: 15 }, { wch: 18 }, { wch: 18 }, { wch: 10 }, { wch: 10 }, { wch: 10 },
             { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 10 },
-            { wch: 12 }, { wch: 12 }, { wch: 20 }
+            { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 25 }
         ];
 
         const wb = XLSX.utils.book_new();
@@ -192,6 +196,7 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                                 <tr>
                                     {/* Product */}
                                     <th rowSpan="2" style={{ width: '18%', textAlign: 'left', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Product</th>
+                                    <th rowSpan="2" style={{ width: '10%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>SKU/UPC</th>
                                     {/* Beg. Stock */}
                                     <th rowSpan="2" style={{ width: '6%', textAlign: 'center', verticalAlign: 'middle', fontSize: '7pt', padding: '6px 4px', border: '1px solid #aaa', background: '#E6F1FB', color: '#0C447C' }}>Beg. Stock</th>
                                     {/* Stock In */}
@@ -224,7 +229,7 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                             <tbody>
                                 {data.length === 0 ? (
                                     <tr>
-                                        <td colSpan="14" style={{ textAlign: 'center', padding: '30px', color: '#888', border: '1px solid #aaa' }}>
+                                        <td colSpan="15" style={{ textAlign: 'center', padding: '30px', color: '#888', border: '1px solid #aaa' }}>
                                             No data available for the selected filters.
                                         </td>
                                     </tr>
@@ -238,6 +243,11 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                                                     {row.variationName && (
                                                         <div style={{ fontSize: '6.5pt', color: '#666', marginTop: '2px' }}>{truncateText(row.variationName, 35)}</div>
                                                     )}
+                                                </td>
+                                                {/* SKU / UPC */}
+                                                <td style={{ textAlign: 'center', padding: '5px 4px', fontSize: '6.5pt', border: '1px solid #aaa' }}>
+                                                    <div>{row.sku && row.sku !== 'N/A' ? row.sku : ''}</div>
+                                                    {row.upc && row.upc !== 'N/A' && <div style={{ color: '#888' }}>{row.upc}</div>}
                                                 </td>
                                                 {/* Beg. Stock */}
                                                 <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa' }}>{(row.begStock || 0).toLocaleString()}</td>
@@ -276,6 +286,7 @@ const InventorySummaryReportModal = ({ isOpen, onClose, data = [], filters, ware
                                         {/* Totals row */}
                                         <tr style={{ backgroundColor: '#E6F1FB', fontWeight: 'bold' }}>
                                             <td style={{ textAlign: 'left', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>TOTAL</td>
+                                            <td style={{ padding: '5px 4px', border: '1px solid #aaa' }}></td>
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>{totals.begStock.toLocaleString()}</td>
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>{totals.stockIn.toLocaleString()}</td>
                                             <td style={{ textAlign: 'right', padding: '5px 4px', border: '1px solid #aaa', color: '#0C447C' }}>{totals.transferIn.toLocaleString()}</td>

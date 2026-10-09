@@ -503,6 +503,8 @@ const InventoryManagement = () => {
         if (!productMap[key]) {
           productMap[key] = {
             productName: row.productName,
+            sku: row.variationSku || row.productSku || 'N/A',
+            upc: row.variationUpc || row.productUpc || 'N/A',
             variationName: row.variationName || '',
             variationId: row.variationId || null,
             stockIn: 0,
