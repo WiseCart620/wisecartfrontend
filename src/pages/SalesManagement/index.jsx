@@ -14,7 +14,7 @@ import { useSalesForm } from '../../hooks/useSalesForm';
 import { useProductOptions } from '../../hooks/useProductOptions';
 import InvoiceReportModal from '../../components/modals/InvoiceReportModal'
 import SalesFilters from '../../components/filters/SalesFilters';
-import SalesTable from '../../components/tables/SalesTable';  
+import SalesTable from '../../components/tables/SalesTable';
 import SaleFormModal from '../../components/forms/SaleFormModal';
 import SaleViewModal from '../../components/modals/SaleViewModal';
 import InvoiceFilterModal from '../../components/modals/InvoiceFilterModal';
@@ -306,7 +306,7 @@ const SalesManagement = () => {
 
   if (showInvoicingProfile) return <InvoicingProfile onBack={() => navigate('/sales')} />;
   if (showSalesReport) return <SalesReport onBack={() => navigate('/sales')} filterData={filterData} companies={companies} branches={branches} allProductOptions={allProductOptions} />;
-  
+
   return (
     <div className="min-h-screen bg-white p-2 sm:p-3 lg:p-4">
       <LoadingOverlay show={actionLoading && !!loadingMessage} message={loadingMessage} />
@@ -377,6 +377,11 @@ const SalesManagement = () => {
           onUpdateStatus={handleUpdateStatus}
           onDelete={(saleId) => {
             if (!canDelete) { toast.error('You do not have permission to delete sales'); return; }
+            const target = sales.find(s => s.id === saleId);
+            if (target?.status === 'INVOICED') {
+              toast.error('Invoiced sales cannot be deleted because they are recorded in the Sales Journal.');
+              return;
+            }
             handleDelete(saleId);
           }}
           onPageChange={setCurrentPage}

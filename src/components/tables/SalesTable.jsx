@@ -135,11 +135,6 @@ const SalesTable = ({
                         </>
                       )}
 
-                      {sale.status === 'INVOICED' && canDelete && (
-                        <button onClick={() => onDelete(sale.id)} className="inline-flex items-center justify-center w-7 h-7 rounded text-red-600 hover:bg-red-50 transition" title="Delete">
-                          <Trash2 size={15} />
-                        </button>
-                      )}
                     </div>
                   </td>
                 </tr>
