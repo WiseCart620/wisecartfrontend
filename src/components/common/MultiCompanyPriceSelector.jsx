@@ -98,7 +98,7 @@ const MultiCompanyPriceSelector = ({
                   type="checkbox"
                   checked={isSelected}
                   onChange={() => handleCompanySelect(company.id)}
-                  className="mt-1 h-4 w-4 text-orange-600 rounded border-gray-300 focus:ring-orange-500"
+                  className="checkbox-orange mt-1"
                 />
                 <div className="flex-1">
                   <label
@@ -148,7 +148,7 @@ const MultiCompanyPriceSelector = ({
               id="assign-remaining"
               checked={assignToRemaining}
               onChange={(e) => handleRemainingToggle(e.target.checked)}
-              className="mt-1 h-4 w-4 text-amber-600 rounded border-amber-300 focus:ring-amber-500 cursor-pointer"
+              className="checkbox-orange mt-1"
             />
             <div className="flex-1">
               <label

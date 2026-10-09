@@ -54,9 +54,9 @@ const DeliveryFormModal = ({
     const [stockErrors, setStockErrors] = useState({});
     const [selectedProductForAdd, setSelectedProductForAdd] = useState('');
     const [branchStocks, setBranchStocks] = useState({});
-
-    // ── Date helpers ──────────────────────────────────────────────────────
-    // Split a stored "YYYY-MM-DDTHH:mm:ss" value into its date and time parts
+    const infoBox = 'mt-4 p-4 bg-slate-50 rounded border border-slate-200';
+    const infoLabel = 'text-xs font-medium text-slate-500 uppercase tracking-wide';
+    const infoValue = 'font-semibold text-slate-800';
     const getDatePart = (val) => {
         if (!val) return '';
         const t = val.indexOf('T');
@@ -156,6 +156,7 @@ const DeliveryFormModal = ({
                 const company = delivery.branch.company || delivery.company;
                 if (company) {
                     setBranchInfo({
+                        companyId: company.id ?? null,
                         companyName: company.companyName || '',
                         fullAddress: `${company.address || ''}, ${company.city || ''}, ${company.province || ''}`.trim(),
                         branchName: delivery.branch.branchName || '',
@@ -362,6 +363,7 @@ const DeliveryFormModal = ({
             const branch = branches.find(b => b.id === branchId);
             if (branch && branch.company) {
                 setBranchInfo({
+                    companyId: branch.company.id,
                     companyName: branch.company.companyName,
                     fullAddress: `${branch.company.address || ''}, ${branch.company.city || ''}, ${branch.company.province || ''}`.trim(),
                     branchName: branch.branchName,
@@ -499,30 +501,31 @@ const DeliveryFormModal = ({
                                     disabled={formData.status === 'IN_TRANSIT' || formData.status === 'DELIVERED' || formData.status === 'CANCELLED'}
                                 />
 
+                                {/* Branch info */}
                                 {branchInfo && (
-                                    <div className="mt-4 grid grid-cols-1 gap-y-2 p-4 bg-orange-50 rounded border border-orange-100">
+                                    <div className={`${infoBox} grid grid-cols-1 gap-y-3`}>
                                         <div className="text-sm">
-                                            <span className="text-gray-500">Company</span>
-                                            <div className="font-semibold text-gray-900">{branchInfo.companyName}</div>
+                                            <span className={infoLabel}>Company</span>
+                                            <div className={infoValue}>{branchInfo.companyName}</div>
                                         </div>
                                         <div className="text-sm">
-                                            <span className="text-gray-500">Branch</span>
-                                            <div className="font-semibold text-gray-900">{branchInfo.branchName} ({branchInfo.branchCode})</div>
+                                            <span className={infoLabel}>Branch</span>
+                                            <div className={infoValue}>{branchInfo.branchName} ({branchInfo.branchCode})</div>
                                         </div>
                                         {branchInfo.branchTin && (
                                             <div className="text-sm">
-                                                <span className="text-gray-500">TIN</span>
-                                                <div className="font-semibold text-gray-900">{branchInfo.branchTin}</div>
+                                                <span className={infoLabel}>TIN</span>
+                                                <div className={infoValue}>{branchInfo.branchTin}</div>
                                             </div>
                                         )}
                                         <div className="text-sm">
-                                            <span className="text-gray-500">Address</span>
-                                            <div className="font-semibold text-gray-900">{branchInfo.branchAddress}</div>
+                                            <span className={infoLabel}>Address</span>
+                                            <div className={infoValue}>{branchInfo.branchAddress}</div>
                                         </div>
                                         {branchInfo.branchContactNumber && (
                                             <div className="text-sm">
-                                                <span className="text-gray-500">Contact</span>
-                                                <div className="font-semibold text-gray-900">{branchInfo.branchContactNumber}</div>
+                                                <span className={infoLabel}>Contact</span>
+                                                <div className={infoValue}>{branchInfo.branchContactNumber}</div>
                                             </div>
                                         )}
                                     </div>
@@ -547,27 +550,30 @@ const DeliveryFormModal = ({
                                     disabled={formData.status === 'IN_TRANSIT' || formData.status === 'DELIVERED'}
                                 />
 
+                                {/* Warehouse info */}
                                 {formData.selectedWarehouseId && (
-                                    <div className="mt-4 p-4 bg-orange-50 rounded border border-orange-100">
+                                    <div className={infoBox}>
                                         {selectedWarehouse ? (
-                                            <div className="grid grid-cols-1 gap-y-2">
+                                            <div className="grid grid-cols-1 gap-y-3">
                                                 <div className="text-sm">
-                                                    <span className="text-gray-500">Warehouse</span>
-                                                    <div className="font-semibold text-gray-900">{selectedWarehouse.warehouseName}</div>
+                                                    <span className={infoLabel}>Warehouse</span>
+                                                    <div className={infoValue}>{selectedWarehouse.warehouseName}</div>
                                                 </div>
                                                 <div className="text-sm">
-                                                    <span className="text-gray-500">Code</span>
-                                                    <div className="font-semibold text-gray-900">{selectedWarehouse.warehouseCode}</div>
+                                                    <span className={infoLabel}>Code</span>
+                                                    <div className={infoValue}>{selectedWarehouse.warehouseCode}</div>
                                                 </div>
                                                 {selectedWarehouse.address && (
                                                     <div className="text-sm">
-                                                        <span className="text-gray-500">Address</span>
-                                                        <div className="font-semibold text-gray-900">{`${selectedWarehouse.address || ''}, ${selectedWarehouse.city || ''}, ${selectedWarehouse.province || ''}`.trim()}</div>
+                                                        <span className={infoLabel}>Address</span>
+                                                        <div className={infoValue}>
+                                                            {[selectedWarehouse.address, selectedWarehouse.city, selectedWarehouse.province].filter(Boolean).join(', ')}
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
                                         ) : (
-                                            <div className="text-sm text-gray-400 italic">Select a warehouse to view details</div>
+                                            <div className="text-sm text-slate-400 italic">Select a warehouse to view details</div>
                                         )}
                                     </div>
                                 )}

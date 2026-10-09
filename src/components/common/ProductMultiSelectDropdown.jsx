@@ -124,7 +124,7 @@ const ProductMultiSelectDropdown = ({
                                         type="checkbox"
                                         checked={selectedIds.includes(o.id)}
                                         onChange={() => toggle(o.id)}
-                                        className="w-4 h-4 mt-0.5 flex-shrink-0 accent-orange-600"
+                                        className="checkbox-orange mt-0.5"
                                     />
                                     <div className="flex-1 min-w-0">
                                         <div className="text-gray-800 whitespace-normal break-words">

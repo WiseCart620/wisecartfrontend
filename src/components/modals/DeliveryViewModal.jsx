@@ -50,7 +50,14 @@ const DeliveryViewModal = ({
   const totalDelivered = displayItems.reduce((s, it) => s + (it.deliveredQty ?? 0), 0);
   const isDelivered = delivery.status === 'DELIVERED';
   const hasVariance = isDelivered && totalPrepared !== totalDelivered;
-
+  const warehouses = Object.values(
+    (delivery.items || []).reduce((acc, it) => {
+      if (it.warehouse?.id != null) acc[it.warehouse.id] = it.warehouse;
+      return acc;
+    }, {})
+  );
+  const warehouseAddress = (w) =>
+    [w.address, w.city, w.province].filter(Boolean).join(', ');
   return (
     <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-2 sm:p-6">
       <div className="bg-white rounded-xl sm:rounded-2xl max-w-5xl w-full max-h-[98vh] sm:max-h-[95vh] overflow-y-auto shadow-2xl">
@@ -132,52 +139,75 @@ const DeliveryViewModal = ({
               </div>
             )}
 
-            {/* Branch and Company Info */}
-            <div className="p-4 bg-orange-50 rounded border border-orange-200">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-orange-700 mb-1">Delivered To (Branch)</label>
-                  <p className="text-base font-semibold text-orange-900">{delivery.branch?.branchName}</p>
-                  <p className="text-sm text-orange-700">Code: {delivery.branch?.branchCode || 'N/A'}</p>
+            {/* Branch / Company + Warehouse */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="p-4 bg-slate-50 rounded border border-slate-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Delivered To (Branch)</label>
+                    <p className="text-base font-semibold text-slate-800">{delivery.branch?.branchName}</p>
+                    <p className="text-sm text-slate-600">Code: {delivery.branch?.branchCode || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Company</label>
+                    <p className="text-base font-semibold text-slate-800">{delivery.company?.companyName}</p>
+                    <p className="text-sm text-slate-600">TIN: {delivery.company?.tin || 'N/A'}</p>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-orange-700 mb-1">Company</label>
-                  <p className="text-base font-semibold text-orange-900">{delivery.company?.companyName}</p>
-                  <p className="text-sm text-orange-700">TIN: {delivery.company?.tin || 'N/A'}</p>
+                <div className="mt-3">
+                  <label className="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Delivery Address</label>
+                  <p className="text-sm text-slate-700">
+                    {delivery.branch?.address
+                      ? `${delivery.branch.address}, ${delivery.branch.city || ''}, ${delivery.branch.province || ''}`.trim()
+                      : 'No address specified'}
+                  </p>
                 </div>
+                {delivery.branch?.contactNumber && (
+                  <div className="mt-2">
+                    <label className="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Contact Number</label>
+                    <p className="text-sm text-slate-700">{delivery.branch.contactNumber}</p>
+                  </div>
+                )}
               </div>
-              <div className="mt-3">
-                <label className="block text-sm font-medium text-orange-700 mb-1">Delivery Address</label>
-                <p className="text-sm text-orange-800">
-                  {delivery.branch?.address
-                    ? `${delivery.branch.address}, ${delivery.branch.city || ''}, ${delivery.branch.province || ''}`.trim()
-                    : 'No address specified'}
-                </p>
+
+              <div className="p-4 bg-slate-50 rounded border border-slate-200">
+                <label className="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+                  Shipped From (Warehouse)
+                </label>
+                {warehouses.length === 0 ? (
+                  <p className="text-sm text-slate-400 italic">No warehouse specified</p>
+                ) : (
+                  <div className="space-y-3">
+                    {warehouses.map((w) => (
+                      <div key={w.id}>
+                        <p className="text-base font-semibold text-slate-800">{w.warehouseName}</p>
+                        <p className="text-sm text-slate-600">Code: {w.warehouseCode || 'N/A'}</p>
+                        {warehouseAddress(w) && (
+                          <p className="text-sm text-slate-700 mt-1">{warehouseAddress(w)}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              {delivery.branch?.contactNumber && (
-                <div className="mt-2">
-                  <label className="block text-sm font-medium text-orange-700 mb-1">Contact Number</label>
-                  <p className="text-sm text-orange-800">{delivery.branch.contactNumber}</p>
-                </div>
-              )}
             </div>
 
             {/* Delivery Info */}
-            <div className="p-4 bg-green-50 rounded border border-green-200">
+            <div className="p-4 bg-slate-50 rounded border border-slate-200">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-green-700 mb-1">Delivery Prepared By</label>
-                  <p className="text-base font-semibold text-green-900">{delivery.preparedBy || 'Not specified'}</p>
+                  <label className="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Delivery Prepared By</label>
+                  <p className="text-base font-semibold text-slate-800">{delivery.preparedBy || 'Not specified'}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-green-700 mb-1">Transmittal</label>
-                  <p className="text-base text-green-900">{delivery.transmittal || 'Not specified'}</p>
+                  <label className="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Transmittal</label>
+                  <p className="text-base text-slate-800">{delivery.transmittal || 'Not specified'}</p>
                 </div>
               </div>
               {delivery.remarks && (
                 <div className="mt-3">
-                  <label className="block text-sm font-medium text-green-700 mb-1">Delivery Remarks</label>
-                  <p className="text-sm text-green-800 p-2 bg-white rounded">{delivery.remarks}</p>
+                  <label className="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Delivery Remarks</label>
+                  <p className="text-sm text-slate-700 p-2 bg-white rounded">{delivery.remarks}</p>
                 </div>
               )}
             </div>
@@ -282,7 +312,7 @@ const DeliveryViewModal = ({
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="6" className="px-4 py-8 text-center text-gray-500 italic">
+                        <td colSpan="7" className="px-4 py-8 text-center text-gray-500 italic">
                           {hasActiveProductFilter ? 'No items match the active product filter' : 'No items found'}
                         </td>
                       </tr>

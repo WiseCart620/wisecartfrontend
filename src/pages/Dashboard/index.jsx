@@ -66,6 +66,8 @@ const Dashboard = () => {
   const [trendView, setTrendView] = useState('year');
   const [monthlyTotals, setMonthlyTotals] = useState([]);
   const [drillYear, setDrillYear] = useState(null);
+  const [rangeDraft, setRangeDraft] = useState({ start: '', end: '' });
+  const [appliedRange, setAppliedRange] = useState(null);
   const [recentSales, setRecentSales] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [alerts, setAlerts] = useState([]);
@@ -84,6 +86,7 @@ const Dashboard = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedCategoryForMonthly, setSelectedCategoryForMonthly] = useState('all');
   const [productRankBy, setProductRankBy] = useState('revenue');
+  const [chartProductIds, setChartProductIds] = useState([]);
   const [productCategories, setProductCategories] = useState([]);
   const [performanceYear, setPerformanceYear] = useState(new Date().getFullYear() - 1);
   const [performanceView, setPerformanceView] = useState('year');
@@ -216,6 +219,19 @@ const Dashboard = () => {
     }
   };
 
+  const getOverallRange = () => {
+    if (appliedRange) return appliedRange;
+    if (monthlyTotals.length === 0) return null;
+    const sorted = [...monthlyTotals].sort((a, b) => a.year - b.year || a.month - b.month);
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    const pad = (n) => String(n).padStart(2, '0');
+    return {
+      start: `${first.year}-${pad(first.month)}`,
+      end: `${last.year}-${pad(last.month)}`,
+    };
+  };
+
   const getMonthlySalesData = () => {
     if (trendView === 'overall') {
       const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -226,6 +242,30 @@ const Dashboard = () => {
           activeRevenue: r.revenue || 0,
           count: r.count || 0,
         }));
+      let activeRange = appliedRange;
+      if (!activeRange && !drillYear && monthlyTotals.length > 0) {
+        const sorted = [...monthlyTotals].sort((a, b) => a.year - b.year || a.month - b.month);
+        const first = sorted[0];
+        const last = sorted[sorted.length - 1];
+        const pad = (n) => String(n).padStart(2, '0');
+        activeRange = {
+          start: `${first.year}-${pad(first.month)}`,
+          end: `${last.year}-${pad(last.month)}`,
+        };
+      }
+      if (activeRange) {
+        const [sy, sm] = activeRange.start.split('-').map(Number);
+        const [ey, em] = activeRange.end.split('-').map(Number);
+        const out = [];
+        let y = sy, m = sm;
+        while ((y < ey || (y === ey && m <= em)) && out.length < 120) {
+          const r = monthlyTotals.find(t => t.year === y && t.month === m);
+          out.push({ month: `${names[m - 1]} ${y}`, year: y, activeRevenue: r?.revenue || 0, count: r?.count || 0 });
+          m++;
+          if (m > 12) { m = 1; y++; }
+        }
+        return out;
+      }
       if (drillYear) {
         return names.map((n, i) => {
           const r = monthlyTotals.find(t => t.year === drillYear && t.month === i + 1);
@@ -267,7 +307,7 @@ const Dashboard = () => {
 
   const getTrendChartRows = () => {
     const rows = getMonthlySalesData();
-    if (trendView !== 'overall' || drillYear) return rows;
+    if (trendView !== 'overall' || drillYear || appliedRange || monthlyTotals.length > 0) return rows;
 
     const byYear = new Map();
     monthlyTotals.forEach(r => {
@@ -301,7 +341,7 @@ const Dashboard = () => {
         }
       ]
     };
-  }, [sales, selectedYear, selectedCompany, selectedBranch, trendView, monthlyTotals, drillYear]);
+  }, [sales, selectedYear, selectedCompany, selectedBranch, trendView, monthlyTotals, drillYear, appliedRange]);
 
   const monthlySalesData = getMonthlySalesData();
   const trendChartRows = getTrendChartRows();
@@ -736,7 +776,7 @@ const Dashboard = () => {
                     <div className="flex-1 min-w-0">
                       <h3 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-gray-900 flex items-center gap-2">
                         <TrendingUp className="text-gray-900" size={16} />
-                        Active Sales Trend ({trendView === 'overall' ? (drillYear ? `Overall › ${drillYear}` : 'Overall · by year') : selectedYear})
+                        Active Sales Trend ({trendView === 'overall' ? (appliedRange ? `${appliedRange.start} to ${appliedRange.end}` : drillYear ? `Overall › ${drillYear}` : 'Overall · by year') : selectedYear})
                       </h3>
                       <p className="text-xs text-gray-500 mt-0.5">Confirmed & Invoiced sales combined</p>
                       {(selectedCompany !== 'all' || selectedBranch !== 'all') && (
@@ -793,24 +833,42 @@ const Dashboard = () => {
                   </div>
 
                   {trendView === 'overall' && (
-                    <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                      <span className="text-[11px] text-gray-500">From</span>
+                      <input
+                        type="month"
+                        value={rangeDraft.start}
+                        onChange={(e) => setRangeDraft(d => ({ ...d, start: e.target.value }))}
+                        className="px-2 py-1 text-xs border border-gray-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                      <span className="text-[11px] text-gray-500">to</span>
+                      <input
+                        type="month"
+                        value={rangeDraft.end}
+                        onChange={(e) => setRangeDraft(d => ({ ...d, end: e.target.value }))}
+                        className="px-2 py-1 text-xs border border-gray-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
                       <button
-                        onClick={() => setDrillYear(null)}
-                        className={`px-2.5 py-1 text-[11px] rounded-full border transition-colors ${!drillYear ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-gray-600 border-gray-300 hover:border-orange-400'}`}
+                        disabled={!rangeDraft.start || !rangeDraft.end}
+                        onClick={() => {
+                          const { start, end } = rangeDraft;
+                          setDrillYear(null);
+                          setAppliedRange(start <= end ? { start, end } : { start: end, end: start });
+                        }}
+                        className="px-3 py-1 text-xs bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
-                        All years
+                        Apply
                       </button>
-                      {[...new Set(monthlyTotals.map(r => r.year))].sort((a, b) => a - b).map(y => (
+                      {appliedRange && (
                         <button
-                          key={y}
-                          onClick={() => setDrillYear(drillYear === y ? null : y)}
-                          className={`px-2.5 py-1 text-[11px] rounded-full border transition-colors ${drillYear === y ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-gray-600 border-gray-300 hover:border-orange-400'}`}
+                          onClick={() => { setAppliedRange(null); setRangeDraft({ start: '', end: '' }); }}
+                          className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                         >
-                          {y}
+                          Clear
                         </button>
-                      ))}
-                      <span className="text-[10px] text-gray-400 ml-1">
-                        {drillYear ? `Showing the months of ${drillYear}` : 'Click a year on the chart to see its months'}
+                      )}
+                      <span className="text-[10px] text-gray-400">
+                        {appliedRange ? `Showing each month from ${appliedRange.start} to ${appliedRange.end}` : 'Showing every month from the first sale to the latest. Pick a range to narrow it'}
                       </span>
                     </div>
                   )}
@@ -878,8 +936,8 @@ const Dashboard = () => {
                       chartData={chartData}
                       sales={sales}
                       selectedYear={selectedYear}
-                      drillable={trendView === 'overall' && !drillYear}
-                      showAllTicks={trendView === 'overall' && !!drillYear}
+                      drillable={false}
+                      showAllTicks={trendView === 'overall' && (!!drillYear || !!appliedRange)}
                       onPointClick={(i) => {
                         const row = trendChartRows[i];
                         if (row?.year) setDrillYear(row.year);
@@ -899,7 +957,7 @@ const Dashboard = () => {
                               <p className="text-xs sm:text-sm font-bold text-gray-900 truncate">
                                 {formatCurrency(monthlySalesData.reduce((sum, month) => sum + month.activeRevenue, 0))}
                               </p>
-                              <p className="text-[8px] sm:text-[9px] text-gray-500">{trendView === 'overall' ? (drillYear ? `For ${drillYear}` : 'All time') : `For ${selectedYear}`}</p>
+                              <p className="text-[8px] sm:text-[9px] text-gray-500">{trendView === 'overall' ? (appliedRange ? `${appliedRange.start} to ${appliedRange.end}` : drillYear ? `For ${drillYear}` : 'All time') : `For ${selectedYear}`}</p>
                             </div>
                             <div className="text-right flex-shrink-0">
                               <p className="text-[8px] sm:text-[9px] text-gray-500">Revenue</p>
@@ -1001,7 +1059,7 @@ const Dashboard = () => {
                       <div>
                         <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 flex items-center gap-2">
                           <Package className="text-gray-900" size={16} />
-                          Product Sales ({trendView === 'overall' ? (drillYear ? `Overall › ${drillYear}` : 'Overall · by year') : selectedYear})
+                          Product Sales ({trendView === 'overall' ? (appliedRange ? `${appliedRange.start} to ${appliedRange.end}` : 'Overall · first sale to latest') : selectedYear})
                           {trendView === 'overall' && drillYear && (
                             <button
                               onClick={() => setDrillYear(null)}
@@ -1028,7 +1086,8 @@ const Dashboard = () => {
                       const getProductMonthlySales = () => {
                         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                         const isOverall = trendView === 'overall';
-                        const yearly = isOverall && !drillYear;
+                        const overallRange = isOverall ? getOverallRange() : null;
+                        const yearly = false;
                         const productMonthlyData = {};
                         const productQuantityData = {};
                         const productSalesCount = {};
@@ -1041,9 +1100,12 @@ const Dashboard = () => {
                           };
                         };
 
+                        const toKey = (ym) => { const [y, m] = ym.split('-').map(Number); return y * 100 + m; };
                         const filteredSales = sales.filter(sale => {
-                          const { year } = periodOf(sale);
-                          const yearMatch = isOverall ? (!drillYear || year === drillYear) : year === selectedYear;
+                          const { year, month } = periodOf(sale);
+                          const yearMatch = isOverall
+                            ? (!overallRange || (year * 100 + month >= toKey(overallRange.start) && year * 100 + month <= toKey(overallRange.end)))
+                            : year === selectedYear;
                           const statusMatch = (sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING');
                           const companyMatch = selectedCompany === 'all' || sale.company?.companyName === selectedCompany;
                           const branchMatch = selectedBranch === 'all' || sale.branch?.branchName === selectedBranch;
@@ -1051,12 +1113,16 @@ const Dashboard = () => {
                           return yearMatch && statusMatch && companyMatch && branchMatch;
                         });
 
-                        // x-axis: one point per year (Overall), otherwise the 12 months
-                        let periods;
-                        if (yearly) {
-                          periods = [...new Set(filteredSales.map(s => periodOf(s).year))]
-                            .sort((a, b) => a - b)
-                            .map(y => ({ key: y, label: String(y), year: y }));
+                        let periods = [];
+                        if (isOverall && overallRange) {
+                          const [sy, sm] = overallRange.start.split('-').map(Number);
+                          const [ey, em] = overallRange.end.split('-').map(Number);
+                          let y = sy, m = sm;
+                          while ((y < ey || (y === ey && m <= em)) && periods.length < 120) {
+                            periods.push({ key: y * 100 + m, label: `${monthNames[m - 1]} ${y}`, year: y });
+                            m++;
+                            if (m > 12) { m = 1; y++; }
+                          }
                         } else {
                           periods = monthNames.map((m, i) => ({ key: i + 1, label: m }));
                         }
@@ -1064,7 +1130,7 @@ const Dashboard = () => {
 
                         filteredSales.forEach(sale => {
                           const { year, month } = periodOf(sale);
-                          const periodIndex = indexByKey.get(yearly ? year : month);
+                          const periodIndex = indexByKey.get(isOverall && overallRange ? year * 100 + month : month);
                           if (periodIndex === undefined) return;
 
                           sale.items?.forEach(item => {
@@ -1172,7 +1238,14 @@ const Dashboard = () => {
                         );
                       }
 
-                      const topProductsForChart = productStats.slice(0, 5);
+                      const toggleChartProduct = (id) =>
+                        setChartProductIds(prev =>
+                          prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+                        );
+                      const selectedForChart = productStats.filter(p => chartProductIds.includes(p.id));
+                      const topProductsForChart = selectedForChart.length > 0
+                        ? selectedForChart
+                        : productStats.slice(0, 5);
 
                       const colors = [
                         { border: '#FF4800', bg: 'rgba(255, 72, 0, 0.1)' },
@@ -1203,7 +1276,7 @@ const Dashboard = () => {
                             <ProductSalesChart
                               productChartData={productChartData}
                               drillable={productData.yearly}
-                              showAllTicks={!productData.yearly}
+                              showAllTicks={productData.months.length <= 24}
                               onPointClick={(i) => {
                                 const y = productData.periodYears[i];
                                 if (y) setDrillYear(y);
@@ -1254,6 +1327,21 @@ const Dashboard = () => {
                               )}
                             </div>
 
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-[11px] text-gray-500">
+                                {chartProductIds.length > 0
+                                  ? `Chart shows ${selectedForChart.length} selected product${selectedForChart.length !== 1 ? 's' : ''}`
+                                  : 'Click a product to show it in the chart (default: top 5)'}
+                              </span>
+                              {chartProductIds.length > 0 && (
+                                <button
+                                  onClick={() => setChartProductIds([])}
+                                  className="px-2 py-0.5 text-[10px] bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                                >
+                                  Clear selection
+                                </button>
+                              )}
+                            </div>
                             <div className="space-y-2 sm:space-y-3 max-h-[400px] overflow-y-auto pr-1">
                               {productStats.slice(0, 3).map((product, idx) => {
                                 const percentage = rankValue(productStats[0]) > 0
@@ -1263,7 +1351,11 @@ const Dashboard = () => {
                                 return (
                                   <div
                                     key={product.id}
-                                    className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-white rounded border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all"                                >
+                                    onClick={() => toggleChartProduct(product.id)}
+                                    className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded border cursor-pointer transition-all ${chartProductIds.includes(product.id)
+                                      ? 'bg-orange-50 border-orange-500 shadow-sm'
+                                      : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                      }`}                               >
                                     <div className="flex-shrink-0">
                                       <span className={`flex items-center justify-center w-7 h-7 rounded-full font-bold text-xs ${idx === 0 ? 'bg-gray-100 text-gray-900 border-2 border-orange-400' :
                                         idx === 1 ? 'bg-gray-50 text-gray-900 border-2 border-orange-300' :
@@ -1321,14 +1413,18 @@ const Dashboard = () => {
                                   <div className="hidden sm:block">
                                     {productStats.slice(3).map((product, idx) => {
                                       const actualIdx = idx + 3;
-                                      const percentage = productStats[0].totalSales > 0
-                                        ? (product.totalSales / productStats[0].totalSales * 100)
+                                      const percentage = rankValue(productStats[0]) > 0
+                                        ? (rankValue(product) / rankValue(productStats[0]) * 100)
                                         : 0;
 
                                       return (
                                         <div
                                           key={product.id}
-                                          className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-white rounded border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all"
+                                          onClick={() => toggleChartProduct(product.id)}
+                                          className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded border cursor-pointer transition-all ${chartProductIds.includes(product.id)
+                                            ? 'bg-orange-50 border-orange-500 shadow-sm'
+                                            : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                            }`}
                                         >
                                           <div className="flex-shrink-0">
                                             <span className="flex items-center justify-center w-7 h-7 rounded-full font-bold text-xs bg-gray-100 text-gray-500">

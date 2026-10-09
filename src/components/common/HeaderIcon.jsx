@@ -10,7 +10,7 @@ const HeaderIcon = ({ Icon, icon, label, align = 'center' }) => {
   const iconEl = icon ?? <Icon className="w-4 h-4 shrink-0" />;
   return (
     <span
-      className="group/hdr relative inline-flex h-6 items-center cursor-pointer text-black"
+      className="group/hdr relative inline-flex h-6 items-center cursor-pointer text-slate-600"
       aria-label={label}
     >
       {iconEl}
