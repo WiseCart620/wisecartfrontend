@@ -5,23 +5,23 @@ const StatusBadge = ({ status }) => {
   const getStatusConfig = (status) => {
     const configs = {
       ACTIVE: {
-        bg: 'bg-green-100',
-        text: 'text-green-800',
-        border: 'border-green-200',
+        bg: 'bg-gray-900',
+        text: 'text-white',
+        border: 'border-gray-900',
         icon: CheckCheck,
         label: 'Active'
       },
       PENDING: {
-        bg: 'bg-yellow-100',
-        text: 'text-yellow-800',
-        border: 'border-yellow-200',
+        bg: 'bg-gray-100',
+        text: 'text-gray-800',
+        border: 'border-gray-300',
         icon: Clock,
         label: 'Pending'
       },
       CANCELLED: {
-        bg: 'bg-red-100',
-        text: 'text-red-800',
-        border: 'border-red-200',
+        bg: 'bg-white',
+        text: 'text-gray-500',
+        border: 'border-gray-300',
         icon: AlertCircle,
         label: 'Cancelled'
       }

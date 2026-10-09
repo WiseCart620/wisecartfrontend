@@ -2,11 +2,19 @@ import React from 'react';
 import { Line } from 'react-chartjs-2';
 import { formatCurrency } from '../../utils/currencyUtils';
 
-const ProductSalesChart = ({ productChartData }) => {
+const ProductSalesChart = ({ productChartData, onPointClick, drillable = false, showAllTicks = false }) => {
   // Mobile-optimized chart options
   const mobileChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    onClick: (evt, elements) => {
+      if (drillable && onPointClick && elements.length > 0) onPointClick(elements[0].index);
+    },
+    onHover: (evt, elements) => {
+      const el = evt?.native?.target;
+      if (el) el.style.cursor = drillable && elements.length > 0 ? 'pointer' : 'default';
+    },
     plugins: {
       legend: {
         display: window.innerWidth > 640,
@@ -34,8 +42,9 @@ const ProductSalesChart = ({ productChartData }) => {
       },
       tooltip: {
         callbacks: {
+          footer: () => (drillable ? 'Click to view months' : ''),
           label: function (context) {
-            return `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`;
+            return [context.dataset.label, `   ${formatCurrency(context.parsed.y)}`];
           },
           title: function (context) {
             return context[0].label;
@@ -74,7 +83,7 @@ const ProductSalesChart = ({ productChartData }) => {
           },
           maxRotation: window.innerWidth > 640 ? 45 : 90,
           minRotation: window.innerWidth > 640 ? 45 : 90,
-          autoSkip: true,
+          autoSkip: !showAllTicks,
           maxTicksLimit: window.innerWidth > 640 ? 12 : 6
         },
         grid: {
@@ -96,8 +105,8 @@ const ProductSalesChart = ({ productChartData }) => {
 
   return (
     <div className="w-full h-full">
-      <Line 
-        data={productChartData} 
+      <Line
+        data={productChartData}
         options={mobileChartOptions}
       />
     </div>

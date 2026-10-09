@@ -32,7 +32,7 @@ const StatusDistribution = ({ stats, sales, navigate, isLoading = false }) => {
   return (
     <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
       <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-        <PieChart className="text-orange-600" size={20} />
+        <PieChart className="text-gray-900" size={20} />
         Sales Status Overview
       </h3>
       {isLoading ? (
@@ -55,27 +55,9 @@ const StatusDistribution = ({ stats, sales, navigate, isLoading = false }) => {
               const percentage = stats.totalSales > 0 ? ((count / stats.totalSales) * 100).toFixed(1) : 0;
 
               const statusConfig = {
-                ACTIVE: {
-                  color: 'green',
-                  bg: 'bg-white',
-                  border: 'border-gray-200',
-                  text: 'text-green-700',
-                  icon: CheckCheck
-                },
-                PENDING: {
-                  color: 'amber',
-                  bg: 'bg-white',
-                  border: 'border-gray-200',
-                  text: 'text-amber-700',
-                  icon: Clock
-                },
-                CANCELLED: {
-                  color: 'red',
-                  bg: 'bg-white',
-                  border: 'border-gray-200',
-                  text: 'text-red-700',
-                  icon: AlertCircle
-                }
+                ACTIVE: { bar: 'bg-gray-900', bg: 'bg-white', border: 'border-gray-200', text: 'text-gray-900', icon: CheckCheck },
+                PENDING: { bar: 'bg-gray-500', bg: 'bg-white', border: 'border-gray-200', text: 'text-gray-900', icon: Clock },
+                CANCELLED: { bar: 'bg-gray-300', bg: 'bg-white', border: 'border-gray-200', text: 'text-gray-500', icon: AlertCircle }
               };
 
               const config = statusConfig[status] || statusConfig.PENDING;
@@ -106,7 +88,7 @@ const StatusDistribution = ({ stats, sales, navigate, isLoading = false }) => {
                     </div>
                     <div className="w-full bg-white rounded-full h-2 border border-gray-200">
                       <div
-                        className={`h-full rounded-full bg-${config.color}-500`}
+                        className={`h-full rounded-full ${config.bar}`}
                         style={{ width: `${percentage}%` }}
                       ></div>
                     </div>
@@ -129,13 +111,13 @@ const StatusDistribution = ({ stats, sales, navigate, isLoading = false }) => {
             </div>
             <div className="text-center">
               <p className="text-xs text-gray-500">Total Sales</p>
-              <p className="text-lg font-bold text-orange-700">
+              <p className="text-lg font-bold text-gray-900">
                 {formatCurrency(Object.values(salesByStatus.revenues).reduce((a, b) => a + b, 0))}
               </p>
             </div>
             <div className="text-center">
               <p className="text-xs text-gray-500">Conversion</p>
-              <p className="text-lg font-bold text-green-700">
+              <p className="text-lg font-bold text-gray-900">
                 {stats.totalSales > 0 ? ((stats.activeSales / stats.totalSales) * 100).toFixed(1) : 0}%
               </p>
             </div>
@@ -147,7 +129,7 @@ const StatusDistribution = ({ stats, sales, navigate, isLoading = false }) => {
                 onClick={() => {
                   navigate('/sales?status=PENDING');
                 }}
-                className="flex-1 px-3 py-2 text-xs bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 transition-colors font-medium"
+                className="flex-1 px-3 py-2 text-xs bg-gray-100 text-gray-900 rounded hover:bg-gray-200 transition-colors font-medium"
               >
                 View Pending ({salesByStatus.counts.PENDING || 0})
               </button>
@@ -155,7 +137,7 @@ const StatusDistribution = ({ stats, sales, navigate, isLoading = false }) => {
                 onClick={() => {
                   navigate('/sales?status=ACTIVE');
                 }}
-                className="flex-1 px-3 py-2 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors font-medium"
+                className="flex-1 px-3 py-2 text-xs bg-gray-100 text-gray-900 rounded hover:bg-gray-200 transition-colors font-medium"
               >
                 View Active ({salesByStatus.counts.ACTIVE || 0})
               </button>

@@ -43,7 +43,7 @@ const DashboardHeader = ({
           <Bell size={18} className="text-gray-600" />
           <span className="text-sm text-gray-700 font-medium">Alerts</span>
           {alerts.some(a => !a.isResolved) && (
-            <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white"></span>
+            <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-orange-500 rounded-full ring-2 ring-white"></span>
           )}
         </button>
       </div>

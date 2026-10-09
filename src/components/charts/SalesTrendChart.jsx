@@ -3,9 +3,9 @@ import { Line } from 'react-chartjs-2';
 import { TrendingUp } from 'lucide-react';
 import { formatCurrency } from '../../utils/currencyUtils';
 
-const SalesTrendChart = ({ chartData, sales, selectedYear }) => {
+const SalesTrendChart = ({ chartData, sales, selectedYear, onPointClick, drillable = false, showAllTicks = false }) => {
     const chartRef = useRef();
-    
+
     // Get dynamic font size based on screen width
     const getFontSize = () => {
         if (typeof window !== 'undefined') {
@@ -28,6 +28,13 @@ const SalesTrendChart = ({ chartData, sales, selectedYear }) => {
     const chartOptions = {
         responsive: true,
         maintainAspectRatio: false,
+        onClick: (evt, elements) => {
+            if (drillable && onPointClick && elements.length > 0) onPointClick(elements[0].index);
+        },
+        onHover: (evt, elements) => {
+            const el = evt?.native?.target;
+            if (el) el.style.cursor = drillable && elements.length > 0 ? 'pointer' : 'default';
+        },
         plugins: {
             legend: {
                 display: typeof window !== 'undefined' ? window.innerWidth > 768 : true,
@@ -49,6 +56,7 @@ const SalesTrendChart = ({ chartData, sales, selectedYear }) => {
                 bodyFont: { size: getFontSize() },
                 titleFont: { size: getFontSize() + 1 },
                 callbacks: {
+                    footer: () => (drillable ? 'Click to view months' : ''),
                     label: function (context) {
                         return `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`;
                     }
@@ -89,7 +97,7 @@ const SalesTrendChart = ({ chartData, sales, selectedYear }) => {
                     font: { size: getFontSize() },
                     maxRotation: typeof window !== 'undefined' && window.innerWidth < 640 ? 90 : 45,
                     minRotation: typeof window !== 'undefined' && window.innerWidth < 640 ? 90 : 45,
-                    autoSkip: true,
+                    autoSkip: !showAllTicks,
                     maxTicksLimit: getTickLimit()
                 }
             }
@@ -100,7 +108,7 @@ const SalesTrendChart = ({ chartData, sales, selectedYear }) => {
         },
         elements: {
             line: { tension: 0.4, borderWidth: typeof window !== 'undefined' && window.innerWidth < 640 ? 2 : 3 },
-            point: { 
+            point: {
                 radius: typeof window !== 'undefined' && window.innerWidth < 640 ? 2 : 4,
                 hoverRadius: typeof window !== 'undefined' && window.innerWidth < 640 ? 4 : 6,
                 borderWidth: 2,
@@ -123,9 +131,9 @@ const SalesTrendChart = ({ chartData, sales, selectedYear }) => {
     return (
         <div className="relative w-full h-full">
             {sales.length > 0 ? (
-                <Line 
+                <Line
                     ref={chartRef}
-                    data={chartData} 
+                    data={chartData}
                     options={chartOptions}
                 />
             ) : (

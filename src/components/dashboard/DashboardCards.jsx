@@ -73,8 +73,8 @@ const DashboardCards = ({ stats, totalAlerts, isLoading = false }) => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 w-full overflow-hidden">
             {cards.map((card, i) => {
                 const trendIcon = card.trend > 0 ?
-                    <ArrowUpRight className="text-green-500" size={10} /> :
-                    card.trend < 0 ? <ArrowDownRight className="text-red-500" size={10} /> : null;
+                    <ArrowUpRight className="text-gray-500" size={10} /> :
+                    card.trend < 0 ? <ArrowDownRight className="text-gray-500" size={10} /> : null;
 
                 return (
                     <div key={i} className="bg-white rounded shadow-sm p-2 border border-gray-200 w-full min-w-0">
@@ -83,7 +83,7 @@ const DashboardCards = ({ stats, totalAlerts, isLoading = false }) => {
                             {card.trend !== undefined && trendIcon && (
                                 <div className="flex items-center gap-0.5 flex-shrink-0">
                                     {trendIcon}
-                                    <span className={`text-[9px] sm:text-[10px] font-medium ${card.trend > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                    <span className={`text-[9px] sm:text-[10px] font-medium ${card.trend > 0 ? 'text-gray-900' : 'text-gray-500'}`}>
                                         {Math.abs(card.trend).toFixed(0)}%
                                     </span>
                                 </div>

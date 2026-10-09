@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { BarChart2, Package, Users, Building, ChevronDown, ChevronRight, X, Target, BarChart, TrendingUpIcon } from 'lucide-react';
 import { Bar } from 'react-chartjs-2';
 import { formatCurrency, formatNumber } from '../../utils/currencyUtils';
@@ -25,113 +25,83 @@ const ProductAnalysis = ({
   selectedCompanyForTopBranches,
   setSelectedCompanyForTopBranches
 }) => {
+
+  const [rankBy, setRankBy] = useState('quantity');
+
   const filteredTopProducts = useMemo(() => {
-    let products = performanceData.topProducts || [];
+    let list = [...(performanceData.topProducts || [])];
 
     if (selectedCategory !== 'all') {
-      products = products.filter(product =>
-        product.category === selectedCategory
-      );
+      list = list.filter(product => product.category === selectedCategory);
     }
 
-    return products;
-  }, [performanceData.topProducts, selectedCategory]);
+    list.sort((a, b) =>
+      rankBy === 'revenue'
+        ? b.revenue - a.revenue
+        : b.quantity - a.quantity
+    );
+
+    return list;
+  }, [performanceData.topProducts, selectedCategory, rankBy]);
+
+  const getItemKey = (item) => `${item.product?.id}_${item.variation?.id || 'base'}`;
+
+  const itemMatchesSelection = (item) => {
+    if (selectedProductId) return getItemKey(item) === selectedProductId;
+    if (selectedCategory === 'all') return true;
+    const fullProduct = products.find(p => String(p.id) === String(item.product?.id));
+    const category = fullProduct?.category || item.product?.category || 'Uncategorized';
+    return category === selectedCategory;
+  };
+
+  const isSaleInPeriod = (sale) => {
+    const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING';
+    if (!statusMatch) return false;
+    if (performanceView === 'overall') return true;
+
+    const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
+    const saleMonth = sale.month || (new Date(sale.createdAt || sale.date).getMonth() + 1);
+    const yearMatch = saleYear === performanceYear;
+    const monthMatch = performanceView === 'month' ? saleMonth === performanceMonth : true;
+    return yearMatch && monthMatch;
+  };
 
   const getSelectedProductStats = () => {
-    if (!selectedProductId) return null;
-
-    const product = productSalesData.find(p => p.id === selectedProductId);
-    if (!product) return null;
-
-    const filteredSales = sales.filter(sale => {
-      const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING';
-
-      if (performanceView === 'overall') {
-        return statusMatch;
-      }
-
-      const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
-      const saleMonth = sale.month || (new Date(sale.createdAt || sale.date).getMonth() + 1);
-
-      const yearMatch = saleYear === performanceYear;
-      const monthMatch = performanceView === 'month' ? saleMonth === performanceMonth : true;
-
-      return statusMatch && yearMatch && monthMatch;
-    });
-
-    const transactionsWithProduct = new Set();
+    const transactions = new Set();
     let totalRevenue = 0;
     let totalQuantity = 0;
 
-    filteredSales.forEach(sale => {
-      const hasProduct = sale.items?.some(item => {
-        const itemVariationId = item.variation?.id || 'base';
-        const itemKey = `${item.product?.id}_${itemVariationId}`;
-        return itemKey === selectedProductId;
+    sales.filter(isSaleInPeriod).forEach(sale => {
+      sale.items?.forEach(item => {
+        if (!itemMatchesSelection(item)) return;
+        transactions.add(sale.id);
+        totalRevenue += item.amount || 0;
+        totalQuantity += item.quantity || 0;
       });
-
-      if (hasProduct) {
-        transactionsWithProduct.add(sale.id);
-
-        sale.items?.forEach(item => {
-          const itemVariationId = item.variation?.id || 'base';
-          const itemKey = `${item.product?.id}_${itemVariationId}`;
-          if (itemKey === selectedProductId) {
-            totalRevenue += item.amount || 0;
-            totalQuantity += item.quantity || 0;
-          }
-        });
-      }
     });
+
+    if (transactions.size === 0) return null;
 
     return {
       totalRevenue,
       totalQuantity,
-      transactions: transactionsWithProduct.size,
+      transactions: transactions.size,
       avgPerUnit: totalQuantity > 0 ? totalRevenue / totalQuantity : 0
     };
   };
 
-  const getProductChartData = (productKey) => {
-    if (!productKey) return null;
-
-    const [productId, variationIdStr] = productKey.split('_');
-    const variationId = variationIdStr !== 'base' ? variationIdStr : null;
-
-    const filteredSales = sales.filter(sale => {
-      const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING';
-
-      if (performanceView === 'overall') {
-        return statusMatch;
-      }
-
-      const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
-      const saleMonth = sale.month || (new Date(sale.createdAt || sale.date).getMonth() + 1);
-
-      const yearMatch = saleYear === performanceYear;
-      const monthMatch = performanceView === 'month' ? saleMonth === performanceMonth : true;
-
-      return statusMatch && yearMatch && monthMatch;
-    });
-
+  const getProductChartData = () => {
     const companyData = {};
 
-    filteredSales.forEach(sale => {
+    sales.filter(isSaleInPeriod).forEach(sale => {
       const companyName = sale.company?.companyName || 'Unknown Company';
       sale.items?.forEach(item => {
-        const itemVariationId = item.variation?.id || 'base';
-        const itemKey = `${item.product?.id}_${itemVariationId}`;
-
-        if (itemKey === productKey) {
-          if (!companyData[companyName]) {
-            companyData[companyName] = {
-              revenue: 0,
-              quantity: 0
-            };
-          }
-          companyData[companyName].revenue += item.amount || 0;
-          companyData[companyName].quantity += item.quantity || 0;
+        if (!itemMatchesSelection(item)) return;
+        if (!companyData[companyName]) {
+          companyData[companyName] = { revenue: 0, quantity: 0 };
         }
+        companyData[companyName].revenue += item.amount || 0;
+        companyData[companyName].quantity += item.quantity || 0;
       });
     });
 
@@ -141,26 +111,22 @@ const ProductAnalysis = ({
 
     if (companies.length === 0) return null;
 
-    const labels = companies;
-    const salesData = companies.map(company => companyData[company].revenue);
-    const quantityData = companies.map(company => companyData[company].quantity);
-
     return {
-      labels,
+      labels: companies,
       datasets: [
         {
           label: 'Sales',
-          data: salesData,
-          backgroundColor: 'rgba(59, 130, 246, 0.8)',
-          borderColor: '#3B82F6',
+          data: companies.map(c => companyData[c].revenue),
+          backgroundColor: 'rgba(255, 109, 0, 0.85)',
+          borderColor: '#FF6D00',
           borderWidth: 2,
           yAxisID: 'y',
         },
         {
           label: 'Quantity Sold',
-          data: quantityData,
-          backgroundColor: 'rgba(16, 185, 129, 0.8)',
-          borderColor: '#10B981',
+          data: companies.map(c => companyData[c].quantity),
+          backgroundColor: 'rgba(255, 182, 0, 0.85)',
+          borderColor: '#FFB600',
           borderWidth: 2,
           yAxisID: 'y1',
         }
@@ -169,64 +135,20 @@ const ProductAnalysis = ({
   };
 
   const getCompanyBranchBreakdown = (companyName) => {
-    const product = productSalesData.find(p => p.id === selectedProductId);
-    if (!product) return [];
-
-    const [selectedProductIdNum, selectedVariationIdStr] = selectedProductId.split('_');
-    const selectedVariationId = selectedVariationIdStr !== 'base' ? selectedVariationIdStr : null;
-
-    const companySales = sales.filter(sale => {
-      const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING';
-      const companyMatch = sale.company?.companyName === companyName;
-
-      const hasProduct = sale.items?.some(item => {
-        const itemProductId = item.product?.id;
-        const itemVariationId = item.variation?.id || null;
-
-        if (selectedVariationId) {
-          return itemProductId == selectedProductIdNum &&
-            itemVariationId == selectedVariationId;
-        } else {
-          return itemProductId == selectedProductIdNum;
-        }
-      });
-      if (!hasProduct) return false;
-
-      if (performanceView === 'overall') {
-        return statusMatch && companyMatch;
-      }
-
-      const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
-      const saleMonth = sale.month || (new Date(sale.createdAt || sale.date).getMonth() + 1);
-
-      const yearMatch = saleYear === performanceYear;
-      const monthMatch = performanceView === 'month' ? saleMonth === performanceMonth : true;
-
-      return statusMatch && companyMatch && yearMatch && monthMatch;
-    });
-
     const branchData = {};
     const salesByBranch = {};
 
-    companySales.forEach(sale => {
-      const branchName = sale.branch?.branchName || 'Unknown Branch';
+    sales
+      .filter(sale => isSaleInPeriod(sale) && sale.company?.companyName === companyName)
+      .forEach(sale => {
+        const branchName = sale.branch?.branchName || 'Unknown Branch';
 
-      sale.items?.forEach(item => {
-        const itemProductId = item.product?.id;
-        const itemVariationId = item.variation?.id || null;
+        sale.items?.forEach(item => {
+          if (!itemMatchesSelection(item)) return;
 
-        let matches = false;
-        if (selectedVariationId) {
-          matches = itemProductId == selectedProductIdNum &&
-            itemVariationId == selectedVariationId;
-        } else {
-          matches = itemProductId == selectedProductIdNum;
-        }
-
-        if (matches) {
           if (!branchData[branchName]) {
             branchData[branchName] = {
-              branchName: branchName,
+              branchName,
               branchCode: sale.branch?.branchCode || 'N/A',
               sales: 0,
               quantity: 0,
@@ -237,16 +159,18 @@ const ProductAnalysis = ({
           branchData[branchName].sales += item.amount || 0;
           branchData[branchName].quantity += item.quantity || 0;
           salesByBranch[branchName].add(sale.id);
-        }
+        });
       });
-    });
 
-    Object.keys(branchData).forEach(branchName => {
-      branchData[branchName].salesCount = salesByBranch[branchName].size;
+    Object.keys(branchData).forEach(name => {
+      branchData[name].salesCount = salesByBranch[name].size;
     });
 
     return Object.values(branchData).sort((a, b) => b.sales - a.sales);
   };
+
+
+
 
   return (
     <div className="grid grid-cols-1 gap-4">
@@ -255,7 +179,7 @@ const ProductAnalysis = ({
           <div className="lg:col-span-4">
             <div className="flex flex-col gap-2 mb-3">
               <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-                <Target className="text-green-600" size={18} />
+                <Target className="text-gray-900" size={18} />
                 Top Performing Products
               </h3>
 
@@ -264,7 +188,7 @@ const ProductAnalysis = ({
                   <button
                     onClick={() => setPerformanceView('overall')}
                     className={`px-3 py-1 text-xs rounded ${performanceView === 'overall'
-                      ? 'bg-white text-orange-600 font-semibold shadow-sm'
+                      ? 'bg-white text-gray-900 font-semibold shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                       }`}
                   >
@@ -273,7 +197,7 @@ const ProductAnalysis = ({
                   <button
                     onClick={() => setPerformanceView('year')}
                     className={`px-3 py-1 text-xs rounded ${performanceView === 'year'
-                      ? 'bg-white text-orange-600 font-semibold shadow-sm'
+                      ? 'bg-white text-gray-900 font-semibold shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                       }`}
                   >
@@ -282,11 +206,32 @@ const ProductAnalysis = ({
                   <button
                     onClick={() => setPerformanceView('month')}
                     className={`px-3 py-1 text-xs rounded ${performanceView === 'month'
-                      ? 'bg-white text-orange-600 font-semibold shadow-sm'
+                      ? 'bg-white text-gray-900 font-semibold shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                       }`}
                   >
                     Month
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1 bg-gray-100 rounded p-1">
+                  <button
+                    onClick={() => setRankBy('quantity')}
+                    className={`px-3 py-1 text-xs rounded ${rankBy === 'quantity'
+                      ? 'bg-white text-gray-900 font-semibold shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                  >
+                    By Quantity
+                  </button>
+                  <button
+                    onClick={() => setRankBy('revenue')}
+                    className={`px-3 py-1 text-xs rounded ${rankBy === 'revenue'
+                      ? 'bg-white text-gray-900 font-semibold shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                  >
+                    By Sales
                   </button>
                 </div>
 
@@ -342,9 +287,9 @@ const ProductAnalysis = ({
             </div>
 
             {/* Period Indicator */}
-            <div className="mb-3 p-2 bg-orange-50 rounded border border-orange-200">
+            <div className="mb-3 p-2 bg-gray-50 rounded border border-gray-200">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-orange-700">
+                <span className="text-xs font-medium text-gray-900">
                   {performanceView === 'overall'
                     ? 'Showing all-time data'
                     : performanceView === 'year'
@@ -360,9 +305,9 @@ const ProductAnalysis = ({
 
             <div className="space-y-2 max-h-[700px] overflow-y-auto">
               {selectedCategory !== 'all' && (
-                <div className="mb-3 p-2 bg-orange-50 rounded border border-orange-200">
+                <div className="mb-3 p-2 bg-gray-50 rounded border border-gray-200">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-orange-700">{selectedCategory}</span>
+                    <span className="text-xs font-medium text-gray-900">{selectedCategory}</span>
                     <span className="text-xs text-gray-500">
                       {(() => {
                         const productsInCategory = filteredTopProducts.length;
@@ -378,23 +323,23 @@ const ProductAnalysis = ({
                   <div
                     key={product.id || idx}
                     className={`p-3 rounded transition-all cursor-pointer border ${selectedProductId === product.id
-                      ? 'bg-orange-50 border-orange-500 shadow-sm'
+                      ? 'bg-gray-50 border-orange-500 shadow-sm'
                       : 'bg-white border-gray-200 hover:bg-gray-100 hover:border-gray-300'
                       }`}
                     onClick={() => {
-                      setSelectedProductId(product.id);
+                      setSelectedProductId(selectedProductId === product.id ? null : product.id);
                       setSelectedCompanyForBranches(null);
                     }}
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <span className={`text-xl font-bold flex-shrink-0 ${idx === 0 ? 'text-yellow-600' :
+                      <span className={`text-xl font-bold flex-shrink-0 ${idx === 0 ? 'text-gray-900' :
                         idx === 1 ? 'text-gray-400' :
-                          idx === 2 ? 'text-amber-800' : 'text-gray-400'
+                          idx === 2 ? 'text-gray-900' : 'text-gray-400'
                         }`}>
                         #{idx + 1}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium ${selectedProductId === product.id ? 'text-orange-700' : 'text-gray-900'
+                        <p className={`text-sm font-medium ${selectedProductId === product.id ? 'text-gray-900' : 'text-gray-900'
                           }`}>
                           {product.name}
                         </p>
@@ -404,7 +349,7 @@ const ProductAnalysis = ({
                           </span>
                         )}
                         <p className="text-xs text-gray-500 mt-1">
-                          Ranked by quantity sold
+                          {rankBy === 'revenue' ? 'Ranked by sales' : 'Ranked by quantity sold'}
                         </p>
                       </div>
                     </div>
@@ -412,19 +357,19 @@ const ProductAnalysis = ({
                     <div className="grid grid-cols-2 gap-3 mt-3">
                       <div>
                         <div className="flex items-baseline gap-1">
-                          <h4 className="text-green-600 font-bold text-m">₱</h4>
+                          <h4 className="text-gray-900 font-bold text-m">₱</h4>
                           <span className="text-xs text-gray-600">Sales</span>
                         </div>
-                        <p className="text-sm font-bold text-green-600 mt-1">
+                        <p className="text-sm font-bold text-gray-900 mt-1">
                           {formatCurrency(product.revenue)}
                         </p>
                       </div>
                       <div>
                         <div className="flex items-baseline gap-1">
-                          <Package size={12} className="text-purple-500" />
+                          <Package size={12} className="text-gray-500" />
                           <span className="text-xs text-gray-600">Quantity</span>
                         </div>
-                        <p className="text-sm font-bold text-purple-600 mt-1">
+                        <p className="text-sm font-bold text-gray-900 mt-1">
                           {product.quantity} units
                         </p>
                       </div>
@@ -433,7 +378,7 @@ const ProductAnalysis = ({
                     <div className="mt-2 pt-2 border-t border-gray-200">
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-500">Avg/Unit</span>
-                        <span className="text-xs font-semibold text-orange-600">
+                        <span className="text-xs font-semibold text-gray-900">
                           {formatCurrency(product.revenue / product.quantity)}
                         </span>
                       </div>
@@ -451,7 +396,7 @@ const ProductAnalysis = ({
                   {selectedCategory !== 'all' && (
                     <button
                       onClick={() => setSelectedCategory('all')}
-                      className="mt-2 text-xs text-orange-600 hover:text-orange-700"
+                      className="mt-2 text-xs text-gray-900 hover:text-gray-900"
                     >
                       View all categories →
                     </button>
@@ -495,7 +440,7 @@ const ProductAnalysis = ({
                             >
                               <span className="text-xs text-gray-600">{category}</span>
                               <div className="flex items-center gap-2">
-                                <span className="text-xs font-semibold text-green-600">
+                                <span className="text-xs font-semibold text-gray-900">
                                   {formatCurrency(data.revenue)}
                                 </span>
                                 <span className="text-xs text-gray-400">({percentage}%)</span>
@@ -516,33 +461,44 @@ const ProductAnalysis = ({
           <div className="lg:col-span-8 border-t lg:border-t-0 lg:border-l border-gray-200 pt-4 lg:pt-0 lg:pl-4">
             <div className="flex justify-between items-center mb-3">
               <div>
-                <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-                  <BarChart2 className="text-orange-600" size={18} />
+                <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2 flex-wrap">
+                  <BarChart2 className="text-gray-900" size={18} />
                   Product Analysis
+                  <span className="text-xs text-gray-500">
+                    - {selectedProductId
+                      ? productSalesData.find(p => p.id === selectedProductId)?.name
+                      : selectedCategory !== 'all'
+                        ? `All ${selectedCategory}`
+                        : 'All Products'}
+                  </span>
+                  <span className="text-xs text-gray-900">
+                    ({performanceView === 'overall'
+                      ? 'All Time'
+                      : performanceView === 'year'
+                        ? performanceYear
+                        : `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][performanceMonth - 1]} ${performanceYear}`
+                    })
+                  </span>
                   {selectedProductId && (
-                    <>
-                      <span className="text-xs text-gray-500">
-                        - {productSalesData.find(p => p.id === selectedProductId)?.name}
-                      </span>
-                      <span className="text-xs text-orange-600">
-                        ({performanceView === 'overall'
-                          ? 'All Time'
-                          : performanceView === 'year'
-                            ? performanceYear
-                            : `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][performanceMonth - 1]} ${performanceYear}`
-                        })
-                      </span>
-                    </>
+                    <button
+                      onClick={() => {
+                        setSelectedProductId(null);
+                        setSelectedCompanyForBranches(null);
+                      }}
+                      className="ml-1 px-2 py-0.5 text-[10px] bg-gray-100 text-gray-700 rounded hover:bg-gray-200 flex items-center gap-1"
+                    >
+                      <X size={10} /> Show all products
+                    </button>
                   )}
                 </h3>
               </div>
             </div>
 
-            {selectedProductId ? (
+            {true ? (
               <>
                 {/* Product Summary */}
-                <div className="bg-gradient-to-r from-orange-50 to-orange-50 rounded p-3 mb-3 border border-orange-200">
-                  <div className="text-xs font-semibold text-orange-700 mb-2 text-center">
+                <div className="bg-gradient-to-r from-gray-50 to-gray-50 rounded p-3 mb-3 border border-gray-200">
+                  <div className="text-xs font-semibold text-gray-900 mb-2 text-center">
                     {performanceView === 'overall'
                       ? 'All-Time Performance'
                       : performanceView === 'year'
@@ -558,25 +514,25 @@ const ProductAnalysis = ({
                         <>
                           <div className="text-center">
                             <p className="text-xs text-gray-600">Total Sales</p>
-                            <p className="text-sm font-bold text-orange-700">
+                            <p className="text-sm font-bold text-gray-900">
                               {formatCurrency(stats.totalRevenue)}
                             </p>
                           </div>
                           <div className="text-center">
                             <p className="text-xs text-gray-600">Total Quantity</p>
-                            <p className="text-sm font-bold text-green-700">
+                            <p className="text-sm font-bold text-gray-900">
                               {formatNumber(stats.totalQuantity)}
                             </p>
                           </div>
                           <div className="text-center">
                             <p className="text-xs text-gray-600">Transactions</p>
-                            <p className="text-sm font-bold text-purple-700">
+                            <p className="text-sm font-bold text-gray-900">
                               {formatNumber(stats.transactions)}
                             </p>
                           </div>
                           <div className="text-center">
                             <p className="text-xs text-gray-600">Avg/Unit</p>
-                            <p className="text-sm font-bold text-amber-700">
+                            <p className="text-sm font-bold text-gray-900">
                               {formatCurrency(stats.avgPerUnit)}
                             </p>
                           </div>
@@ -594,7 +550,7 @@ const ProductAnalysis = ({
                 {!selectedCompanyForBranches ? (
                   <div style={{ height: '250px' }}>
                     {(() => {
-                      const chartData = getProductChartData(selectedProductId);
+                      const chartData = getProductChartData();
                       return chartData ? (
                         <Bar
                           data={chartData}
@@ -630,7 +586,7 @@ const ProductAnalysis = ({
                                 title: {
                                   display: true,
                                   text: 'Sales (₱)',
-                                  color: '#3B82F6',
+                                  color: '#FF6D00',
                                   font: { size: 10 }
                                 },
                                 ticks: {
@@ -649,7 +605,7 @@ const ProductAnalysis = ({
                                 title: {
                                   display: true,
                                   text: 'Quantity',
-                                  color: '#10B981',
+                                  color: '#FFB600',
                                   font: { size: 10 }
                                 },
                                 ticks: {
@@ -682,9 +638,9 @@ const ProductAnalysis = ({
                 ) : (
                   /* Company Branch Breakdown */
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-orange-50 p-2 rounded border border-purple-200">
+                    <div className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-50 p-2 rounded border border-gray-200">
                       <div className="flex items-center gap-2">
-                        <Building className="text-purple-600" size={16} />
+                        <Building className="text-gray-900" size={16} />
                         <div>
                           <h4 className="text-sm font-bold text-gray-900">{selectedCompanyForBranches}</h4>
                           <p className="text-xs text-gray-600">Branch Breakdown</p>
@@ -721,9 +677,9 @@ const ProductAnalysis = ({
                           return (
                             <div key={idx} className="bg-white rounded p-2 border border-gray-200">
                               <div className="flex items-center gap-2 mb-2">
-                                <span className={`text-base font-bold flex-shrink-0 ${idx === 0 ? 'text-yellow-600' :
+                                <span className={`text-base font-bold flex-shrink-0 ${idx === 0 ? 'text-gray-900' :
                                   idx === 1 ? 'text-gray-400' :
-                                    idx === 2 ? 'text-amber-800' : 'text-gray-400'
+                                    idx === 2 ? 'text-gray-900' : 'text-gray-400'
                                   }`}>
                                   #{idx + 1}
                                 </span>
@@ -738,11 +694,11 @@ const ProductAnalysis = ({
                                 <div className="flex-1 flex items-center gap-1">
                                   <div className="flex-1 bg-gray-200 rounded-full h-3">
                                     <div
-                                      className="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all duration-500"
+                                      className="bg-gradient-to-r from-orange-500 to-orange-600 h-3 rounded-full transition-all duration-500"
                                       style={{ width: `${salesBarWidth}%` }}
                                     ></div>
                                   </div>
-                                  <span className="text-xs font-bold text-green-600 w-16 text-right">{formatCurrency(branch.sales)}</span>
+                                  <span className="text-xs font-bold text-gray-900 w-16 text-right">{formatCurrency(branch.sales)}</span>
                                 </div>
                               </div>
 
@@ -751,11 +707,11 @@ const ProductAnalysis = ({
                                 <div className="flex-1 flex items-center gap-1">
                                   <div className="flex-1 bg-gray-200 rounded-full h-3">
                                     <div
-                                      className="bg-gradient-to-r from-purple-500 to-purple-600 h-3 rounded-full transition-all duration-500"
+                                      className="bg-gradient-to-r from-orange-500 to-orange-600 h-3 rounded-full transition-all duration-500"
                                       style={{ width: `${quantityBarWidth}%` }}
                                     ></div>
                                   </div>
-                                  <span className="text-xs font-bold text-purple-600 w-16 text-right">{formatNumber(branch.quantity)}</span>
+                                  <span className="text-xs font-bold text-gray-900 w-16 text-right">{formatNumber(branch.quantity)}</span>
                                 </div>
                               </div>
                             </div>
@@ -779,7 +735,7 @@ const ProductAnalysis = ({
                 {/* Top Companies */}
                 <div>
                   <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                    <Users size={16} className="text-orange-600" />
+                    <Users size={16} className="text-gray-900" />
                     Top Companies ({performanceView === 'overall'
                       ? 'All Time'
                       : performanceView === 'year'
@@ -797,17 +753,17 @@ const ProductAnalysis = ({
                           <div
                             key={company.id || idx}
                             className={`p-3 rounded border transition-all cursor-pointer ${selectedCompanyForTopBranches === company.name
-                              ? 'bg-orange-50 border-orange-500 shadow-md'
-                              : 'bg-white border-gray-200 hover:border-orange-300'
+                              ? 'bg-gray-50 border-orange-500 shadow-md'
+                              : 'bg-white border-gray-200 hover:border-gray-300'
                               }`}
                             onClick={() => setSelectedCompanyForTopBranches(
                               selectedCompanyForTopBranches === company.name ? null : company.name
                             )}
                           >
                             <div className="flex items-center gap-2 mb-2">
-                              <span className={`text-lg font-bold ${idx === 0 ? 'text-yellow-600' :
+                              <span className={`text-lg font-bold ${idx === 0 ? 'text-gray-900' :
                                 idx === 1 ? 'text-gray-400' :
-                                  idx === 2 ? 'text-amber-800' : 'text-gray-400'
+                                  idx === 2 ? 'text-gray-900' : 'text-gray-400'
                                 }`}>
                                 #{idx + 1}
                               </span>
@@ -818,7 +774,7 @@ const ProductAnalysis = ({
                             <div className="space-y-1">
                               <div className="flex justify-between items-center text-xs">
                                 <span className="text-gray-600">Sales</span>
-                                <span className="font-bold text-green-600">{formatCurrency(company.revenue)}</span>
+                                <span className="font-bold text-gray-900">{formatCurrency(company.revenue)}</span>
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div
@@ -846,7 +802,7 @@ const ProductAnalysis = ({
                 {/* Top Branches */}
                 <div>
                   <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <Building size={16} className="text-purple-600" />
+                    <Building size={16} className="text-gray-900" />
                     Top Branches ({performanceView === 'overall'
                       ? 'All Time'
                       : performanceView === 'year'
@@ -854,7 +810,7 @@ const ProductAnalysis = ({
                         : `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][performanceMonth - 1]} ${performanceYear}`
                     })
                     {selectedCompanyForTopBranches && (
-                      <span className="text-xs font-normal text-orange-600">
+                      <span className="text-xs font-normal text-gray-900">
                         - {selectedCompanyForTopBranches}
                       </span>
                     )}
@@ -864,102 +820,40 @@ const ProductAnalysis = ({
                       let branchesToShow = performanceData.topBranches || [];
 
                       if (selectedCompanyForTopBranches) {
-                        let selectedProductIdNum = null;
-                        let selectedVariationId = null;
-
-                        if (selectedProductId) {
-                          const [productIdNum, variationIdStr] = selectedProductId.split('_');
-                          selectedProductIdNum = productIdNum;
-                          selectedVariationId = variationIdStr !== 'base' ? variationIdStr : null;
-                        }
-
-                        const companySales = sales.filter(sale => {
-                          const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING';
-                          const companyMatch = sale.company?.companyName === selectedCompanyForTopBranches;
-
-                          if (selectedProductId) {
-                            const hasProduct = sale.items?.some(item => {
-                              const itemProductId = item.product?.id;
-                              const itemVariationId = item.variation?.id || null;
-
-                              if (selectedVariationId) {
-                                return itemProductId == selectedProductIdNum &&
-                                  itemVariationId == selectedVariationId;
-                              } else {
-                                return itemProductId == selectedProductIdNum;
-                              }
-                            });
-                            if (!hasProduct) return false;
-                          }
-
-                          if (performanceView === 'overall') {
-                            return statusMatch && companyMatch;
-                          }
-
-                          const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
-                          const saleMonth = sale.month || (new Date(sale.createdAt || sale.date).getMonth() + 1);
-
-                          const yearMatch = saleYear === performanceYear;
-                          const monthMatch = performanceView === 'month' ? saleMonth === performanceMonth : true;
-
-                          return statusMatch && companyMatch && yearMatch && monthMatch;
-                        });
-
                         const branchRevenue = {};
                         const salesByBranch = {};
 
-                        companySales.forEach(sale => {
-                          const branchId = sale.branch?.id;
-                          const branchName = sale.branch?.branchName || 'Unknown Branch';
-                          const branchCode = sale.branch?.branchCode || 'N/A';
+                        sales
+                          .filter(sale => isSaleInPeriod(sale) && sale.company?.companyName === selectedCompanyForTopBranches)
+                          .forEach(sale => {
+                            const scopedItems = (sale.items || []).filter(itemMatchesSelection);
+                            if (scopedItems.length === 0) return;
 
-                          if (!branchRevenue[branchId]) {
-                            branchRevenue[branchId] = {
-                              id: branchId,
-                              name: branchName,
-                              code: branchCode,
-                              revenue: 0,
-                              salesCount: 0,
-                              quantity: 0,
-                              averageOrderValue: 0
-                            };
-                            salesByBranch[branchId] = new Set();
-                          }
+                            const branchId = sale.branch?.id;
+                            if (!branchRevenue[branchId]) {
+                              branchRevenue[branchId] = {
+                                id: branchId,
+                                name: sale.branch?.branchName || 'Unknown Branch',
+                                code: sale.branch?.branchCode || 'N/A',
+                                revenue: 0,
+                                salesCount: 0,
+                                quantity: 0,
+                                averageOrderValue: 0
+                              };
+                              salesByBranch[branchId] = new Set();
+                            }
 
-                          if (selectedProductId) {
-                            sale.items?.forEach(item => {
-                              const itemProductId = item.product?.id;
-                              const itemVariationId = item.variation?.id || null;
-
-                              let matches = false;
-                              if (selectedVariationId) {
-                                matches = itemProductId == selectedProductIdNum &&
-                                  itemVariationId == selectedVariationId;
-                              } else {
-                                matches = itemProductId == selectedProductIdNum;
-                              }
-
-                              if (matches) {
-                                branchRevenue[branchId].revenue += item.amount || 0;
-                                branchRevenue[branchId].quantity += item.quantity || 0;
-                              }
-                            });
-                            salesByBranch[branchId].add(sale.id);
-                          } else {
-                            branchRevenue[branchId].revenue += sale.totalAmount || 0;
-                            sale.items?.forEach(item => {
+                            scopedItems.forEach(item => {
+                              branchRevenue[branchId].revenue += item.amount || 0;
                               branchRevenue[branchId].quantity += item.quantity || 0;
                             });
                             salesByBranch[branchId].add(sale.id);
-                          }
-                        });
+                          });
 
                         Object.keys(branchRevenue).forEach(branchId => {
-                          branchRevenue[branchId].salesCount = salesByBranch[branchId].size;
-                          branchRevenue[branchId].averageOrderValue =
-                            branchRevenue[branchId].salesCount > 0
-                              ? branchRevenue[branchId].revenue / branchRevenue[branchId].salesCount
-                              : 0;
+                          const b = branchRevenue[branchId];
+                          b.salesCount = salesByBranch[branchId].size;
+                          b.averageOrderValue = b.salesCount > 0 ? b.revenue / b.salesCount : 0;
                         });
 
                         branchesToShow = Object.values(branchRevenue)
@@ -972,11 +866,11 @@ const ProductAnalysis = ({
                           const barWidth = (branch.revenue / maxRevenue) * 100;
 
                           return (
-                            <div key={branch.id || idx} className="p-3 bg-white rounded border border-gray-200 hover:border-purple-300 transition-all">
+                            <div key={branch.id || idx} className="p-3 bg-white rounded border border-gray-200 hover:border-gray-300 transition-all">
                               <div className="flex items-center gap-2 mb-2">
-                                <span className={`text-lg font-bold ${idx === 0 ? 'text-yellow-600' :
+                                <span className={`text-lg font-bold ${idx === 0 ? 'text-gray-900' :
                                   idx === 1 ? 'text-gray-400' :
-                                    idx === 2 ? 'text-amber-800' : 'text-gray-400'
+                                    idx === 2 ? 'text-gray-900' : 'text-gray-400'
                                   }`}>
                                   #{idx + 1}
                                 </span>
@@ -989,11 +883,11 @@ const ProductAnalysis = ({
                                 <div>
                                   <div className="flex justify-between items-center text-xs mb-1">
                                     <span className="text-gray-600">Sales</span>
-                                    <span className="font-bold text-green-600">{formatCurrency(branch.revenue)}</span>
+                                    <span className="font-bold text-gray-900">{formatCurrency(branch.revenue)}</span>
                                   </div>
                                   <div className="w-full bg-gray-200 rounded-full h-2">
                                     <div
-                                      className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-500"
+                                      className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-500"
                                       style={{ width: `${barWidth}%` }}
                                     ></div>
                                   </div>
@@ -1002,11 +896,11 @@ const ProductAnalysis = ({
                                 <div>
                                   <div className="flex justify-between items-center text-xs mb-1">
                                     <span className="text-gray-600">Quantity</span>
-                                    <span className="font-bold text-purple-600">{formatNumber(branch.quantity || 0)} units</span>
+                                    <span className="font-bold text-gray-900">{formatNumber(branch.quantity || 0)} units</span>
                                   </div>
                                   <div className="w-full bg-gray-200 rounded-full h-2">
                                     <div
-                                      className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full transition-all duration-500"
+                                      className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-500"
                                       style={{
                                         width: `${(() => {
                                           const maxQuantity = Math.max(...branchesToShow.map(b => b.quantity || 0));

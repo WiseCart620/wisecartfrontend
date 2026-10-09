@@ -9,20 +9,20 @@ const PAGE_SIZE = 20;
 const AlertRow = memo(({ alertItem, index, isThisResolving, bulkLoading, onResolve }) => {
   let alertConfig = {
     icon: AlertCircle,
-    iconColor: 'text-amber-600',
-    leftBorder: 'border-l-amber-400',
-    severityColor: 'bg-amber-100 text-amber-800',
-    solidBg: 'bg-amber-500'
+    iconColor: 'text-orange-600',
+    leftBorder: 'border-l-orange-400',
+    severityColor: 'bg-orange-100 text-orange-800',
+    solidBg: 'bg-orange-500'
   };
 
   if (alertItem.isResolved) {
-    alertConfig = { icon: CheckCircle, iconColor: 'text-emerald-600', leftBorder: 'border-l-emerald-400', severityColor: 'bg-emerald-100 text-emerald-800', solidBg: 'bg-emerald-500' };
+    alertConfig = { icon: CheckCircle, iconColor: 'text-gray-500', leftBorder: 'border-l-gray-300', severityColor: 'bg-gray-100 text-gray-700', solidBg: 'bg-gray-400' };
   } else if (alertItem.severity === 'CRITICAL') {
-    alertConfig = { icon: AlertTriangle, iconColor: 'text-red-600', leftBorder: 'border-l-red-500', severityColor: 'bg-red-100 text-red-800', solidBg: 'bg-red-500' };
+    alertConfig = { icon: AlertTriangle, iconColor: 'text-orange-800', leftBorder: 'border-l-orange-800', severityColor: 'bg-orange-800 text-white', solidBg: 'bg-orange-800' };
   } else if (alertItem.severity === 'HIGH') {
-    alertConfig = { icon: AlertTriangle, iconColor: 'text-orange-600', leftBorder: 'border-l-orange-400', severityColor: 'bg-orange-100 text-orange-800', solidBg: 'bg-orange-500' };
+    alertConfig = { icon: AlertTriangle, iconColor: 'text-orange-600', leftBorder: 'border-l-orange-600', severityColor: 'bg-orange-100 text-orange-900', solidBg: 'bg-orange-600' };
   } else if (alertItem.severity === 'MEDIUM') {
-    alertConfig = { icon: Info, iconColor: 'text-orange-600', leftBorder: 'border-l-orange-400', severityColor: 'bg-orange-100 text-orange-800', solidBg: 'bg-orange-500' };
+    alertConfig = { icon: Info, iconColor: 'text-orange-400', leftBorder: 'border-l-orange-400', severityColor: 'bg-orange-50 text-orange-800', solidBg: 'bg-orange-400' };
   } else if (alertItem.severity === 'LOW') {
     alertConfig = { icon: Bell, iconColor: 'text-gray-500', leftBorder: 'border-l-gray-300', severityColor: 'bg-gray-100 text-gray-700', solidBg: 'bg-gray-400' };
   }
@@ -59,7 +59,7 @@ const AlertRow = memo(({ alertItem, index, isThisResolving, bulkLoading, onResol
                   </span>
                 )}
                 {alertItem.isResolved && (
-                  <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[9px] rounded font-semibold">RESOLVED</span>
+                  <span className="px-1.5 py-0.5 bg-orange-100 text-orange-800 text-[9px] rounded font-semibold">RESOLVED</span>
                 )}
               </div>
               <p className="text-gray-600 text-xs leading-relaxed">{alertItem.message || 'No message provided'}</p>
@@ -389,7 +389,7 @@ const AlertManagement = ({
     <>
       {toast && (
         <div className={`fixed top-6 right-6 z-[9999] flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-white text-sm font-medium
-          ${toast.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'}`}>
+          ${toast.type === 'error' ? 'bg-orange-600' : 'bg-orange-600'}`}>
           {toast.type === 'error' ? <AlertCircle size={16} /> : <CheckCircle size={16} />}
           {toast.message}
         </div>
@@ -600,7 +600,7 @@ const AlertManagement = ({
             Active Alerts
           </button>
           <button
-            className={`px-3.5 py-1.5 rounded font-semibold text-[12px] transition-colors ${activeTab === 'resolved' ? 'bg-emerald-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}`}
+            className={`px-3.5 py-1.5 rounded font-semibold text-[12px] transition-colors ${activeTab === 'resolved' ? 'bg-gray-700 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}`}
             onClick={() => handleTabChange('resolved')}
           >
             Resolved
@@ -635,7 +635,7 @@ const AlertManagement = ({
                 </>
               ) : activeTab === 'active' ? (
                 <>
-                  <CheckCircle className="text-emerald-400 mb-4" size={64} />
+                  <CheckCircle className="text-orange-400 mb-4" size={64} />
                   <p className="text-lg font-semibold text-gray-700">No Active Alerts</p>
                   <p className="text-gray-400 text-sm mt-1.5">All alerts have been resolved</p>
                 </>
@@ -720,7 +720,7 @@ const AlertManagement = ({
               <button
                 onClick={handleDeleteAllResolved}
                 disabled={bulkLoading}
-                className="flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-600 border border-red-100 rounded hover:bg-red-100 transition-colors text-[10px] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-600 border border-orange-100 rounded hover:bg-orange-100 transition-colors text-[10px] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Trash2 size={11} /> Clear Resolved
               </button>

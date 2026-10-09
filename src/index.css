@@ -1,8 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
 @import "tailwindcss";
 
+@theme {
+  --color-orange-50: #FFF6EC;
+  --color-orange-100: #FFEAD5;
+  --color-orange-200: #FFD7A6;
+  --color-orange-300: #FFB600;
+  --color-orange-400: #FF9E00;
+  --color-orange-500: #FF8500;
+  --color-orange-600: #FF6D00;
+  --color-orange-700: #FF5400;
+  --color-orange-800: #FF4800;
+  --color-orange-900: #B83400;
+}
 
-/* Your custom resets & fonts */
 *,
 *::before,
 *::after {
@@ -180,10 +191,9 @@ code {
   stroke-width: 1.5 !important;
 }
 
-/* row hover: whole row, including colored columns, turns light orange */
 .inv-table-panel tbody tr:hover,
 .inv-table-panel tbody tr:hover>td {
-  background-color: #fff7ed !important;
+  background-color: #FFF6EC !important;
 }
 
 /* header icons centered; text cells left-aligned (number cells keep their own text-center) */
