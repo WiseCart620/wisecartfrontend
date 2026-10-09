@@ -90,7 +90,7 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
                 return {
                     ...item,
                     unitCost: exactUnitCost,
-                    matched: matchProductToItem(item, productOptions),
+                    matched: matchProductToItem(item, productOptions, companyFilterId || null),
                 };
             });
             const guessedBranch = matchBranch(r.siteName, branchPool);
@@ -212,7 +212,10 @@ const MassUploadModal = ({ branches, companies, productOptions, onClose, onConfi
         const failed = [];
 
         for (const report of eligible) {
-            const items = buildSaleItemsFromMatches(report.matchedRows);
+            const items = buildSaleItemsFromMatches(report.matchedRows).map(({ unitPriceExact, ...rest }) => ({
+                ...rest,
+                unitPrice: unitPriceExact !== undefined ? Number(unitPriceExact).toFixed(10) : rest.unitPrice,
+            }));
             try {
                 const res = await api.post('/sales', {
                     branchId: report.branchId,

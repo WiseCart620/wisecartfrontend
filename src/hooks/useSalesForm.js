@@ -238,12 +238,16 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
 
     const payload = {
       ...formData,
-      items: formData.items.map(item => ({
-        ...item,
-        unitPrice: item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== ''
-          ? item.unitPrice.toString()
-          : null,
-      })),
+      items: formData.items.map(item => {
+        const { unitPriceExact, pastedQtyMismatch, ...rest } = item;
+        let unitPrice = null;
+        if (unitPriceExact !== undefined && unitPriceExact !== null) {
+          unitPrice = Number(unitPriceExact).toFixed(10);
+        } else if (item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== '') {
+          unitPrice = item.unitPrice.toString();
+        }
+        return { ...rest, unitPrice };
+      }),
     };
 
     try {

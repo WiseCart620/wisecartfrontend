@@ -78,7 +78,7 @@ export const parseMassUploadText = (rawText) => {
         if (tokens.length < 6) return;
 
         const articleCode = tokens[0];
-        const gtin = tokens[1];
+        const gtin = tokens[1].replace(/^S(?=\d)/i, '');
         if (!/^\d+$/.test(articleCode)) return;
 
         const amountRaw = tokens[tokens.length - 1];
@@ -298,7 +298,7 @@ const normalizeCode = (v) => {
 const last9Digits = (v) => (v || '').toString().replace(/\D/g, '').slice(-9);
 const last7Digits = (v) => (v || '').toString().replace(/\D/g, '').slice(-7);
 
-export const matchProductToItem = (item, productOptions) => {
+export const matchProductToItem = (item, productOptions, companyId = null) => {
     if (!Array.isArray(productOptions) || !productOptions.length) return null;
 
     const article = normalizeCode(item.articleCode);
@@ -306,6 +306,26 @@ export const matchProductToItem = (item, productOptions) => {
     const rawSkuNorm = (v) => (v || '').toString().trim().toLowerCase();
 
     const codeFields = ['sku', 'upc', 'companySku'];
+
+    // Same source the Select Product dropdown searches: option.companySkus { companyId: sku }
+    const companySkuList = (opt) => {
+        const map = opt.companySkus;
+        if (!map) return [];
+        const own = companyId != null
+            ? (map[companyId] ?? map[String(companyId)] ?? map[Number(companyId)])
+            : null;
+        return own ? [own] : Object.values(map).filter(Boolean);
+    };
+    const matchesCompanySku = (opt) =>
+        companySkuList(opt).some(v => {
+            const n = normalizeCode(v);
+            return (n && (n === article || n === gtin))
+                || rawSkuNorm(v) === rawSkuNorm(item.articleCode)
+                || rawSkuNorm(v) === rawSkuNorm(item.gtin);
+        });
+
+    const byCompanySku = productOptions.find(matchesCompanySku);
+    if (byCompanySku) return { option: byCompanySku, matchedBy: 'companySkus (company SKU)' };
 
     for (const field of codeFields) {
         const match = productOptions.find(opt => {
@@ -355,6 +375,31 @@ export const matchProductToItem = (item, productOptions) => {
                     || (gtinLast7.length === 7 && valLast7 === gtinLast7);
             });
             if (match) return { option: match, matchedBy: `${field} (last-7-digit match)` };
+        }
+    }
+
+    // Last resort: match by product name + variation (only if exactly one clear winner)
+    const synonyms = { nb: 'notebook', grey: 'gray', nbk: 'notebook' };
+    const noise = new Set(['the', 'and', 'of', 'pcs', 'pc']);
+    const nameTokens = (s) =>
+        ((s || '').toString().toLowerCase().match(/[a-z0-9]+/g) || [])
+            .map(t => synonyms[t] || t)
+            .filter(t => !noise.has(t));
+
+    const descTokens = [...new Set(nameTokens(item.description))];
+    if (descTokens.length >= 3) {
+        const scored = productOptions.map(opt => {
+            const hay = new Set(nameTokens([
+                opt.fullName, opt.productName, opt.name, opt.label, opt.variationLabel,
+            ].filter(Boolean).join(' ')));
+            const hits = descTokens.filter(t => hay.has(t)).length;
+            return { opt, score: hits / descTokens.length };
+        }).sort((a, b) => b.score - a.score);
+
+        const best = scored[0];
+        const second = scored[1];
+        if (best && best.score >= 0.7 && (!second || best.score - second.score >= 0.1)) {
+            return { option: best.opt, matchedBy: `name match (${Math.round(best.score * 100)}%)` };
         }
     }
 
