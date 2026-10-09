@@ -16,6 +16,7 @@ const DeliveryTable = ({
   totalItems = 0,
   isLoading = false,
   productFilters = [],
+  grandTotals = { totalPrepared: 0, totalDelivered: 0 },
   canEdit = true,
   canDelete = true,
   canCancel = true,
@@ -76,8 +77,9 @@ const DeliveryTable = ({
     return { sku: matchingItems.length, qty };
   };
 
-  const grandTotalPrepared = sortedDeliveries.reduce((s, d) => s + getRowTotals(d).qty, 0);
-  const grandTotalSKU = sortedDeliveries.reduce((s, d) => s + getRowTotals(d).sku, 0);
+  const activeDeliveries = sortedDeliveries.filter(d => d.status !== 'CANCELLED');
+  const grandTotalPrepared = activeDeliveries.reduce((s, d) => s + getRowTotals(d).qty, 0);
+  const grandTotalSKU = activeDeliveries.reduce((s, d) => s + getRowTotals(d).sku, 0);
 
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full table-panel">
@@ -343,6 +345,26 @@ const DeliveryTable = ({
                 </td>
                 <td className="px-2 py-2 text-right">
                   <span className="text-sm font-bold text-orange-800">{grandTotalPrepared.toLocaleString('en-US')}</span>
+                </td>
+                <td colSpan={2} />
+              </tr>
+              <tr className="bg-orange-50 border-t border-orange-200">
+                <td colSpan={2} className="px-2 py-2 sticky left-0 bg-orange-50 z-10 border-r border-orange-200">
+                  <span className="text-xs font-bold text-orange-700 uppercase tracking-wide">
+                    Grand Total
+                  </span>
+                </td>
+                <td colSpan={4} className="px-2 py-2 text-right text-xs text-gray-500">
+                  All pages, excl. cancelled · Delivered:{' '}
+                  <span className="font-bold text-green-700">
+                    {(grandTotals?.totalDelivered || 0).toLocaleString('en-US')}
+                  </span>
+                </td>
+                <td className="px-2 py-2" />
+                <td className="px-2 py-2 text-right">
+                  <span className="text-sm font-bold text-orange-800">
+                    {(grandTotals?.totalPrepared || 0).toLocaleString('en-US')}
+                  </span>
                 </td>
                 <td colSpan={2} />
               </tr>

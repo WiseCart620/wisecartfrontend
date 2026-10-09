@@ -288,7 +288,12 @@ const DeliveryViewModal = ({
                             {item.product?.productName || 'Unknown Product'}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-600">
-                            <div className="text-xs whitespace-nowrap">{item.product?.sku || 'N/A'} / {item.product?.upc || 'N/A'}</div>
+                            <div className="text-xs text-gray-800 break-all">
+                              <span className="text-gray-400">SKU:</span> {item.product?.sku || 'N/A'}
+                            </div>
+                            <div className="text-xs text-gray-500 break-all mt-0.5">
+                              <span className="text-gray-400">UPC:</span> {item.product?.upc || 'N/A'}
+                            </div>
                           </td>
                           <td className="px-4 py-3 text-sm">
                             <div className="flex items-center gap-2">

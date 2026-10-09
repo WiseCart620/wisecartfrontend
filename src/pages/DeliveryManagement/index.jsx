@@ -36,6 +36,7 @@ const DeliveryManagement = () => {
     loadData,
     totalPages: serverTotalPages,
     totalElements: serverTotalElements,
+    grandTotals,
     refreshDeliveries,
     updateDeliveryLocally,
     createDelivery,
@@ -411,6 +412,7 @@ const DeliveryManagement = () => {
           currentPage={currentPage}
           itemsPerPage={itemsPerPage}
           totalItems={serverTotalElements}
+          grandTotals={grandTotals}
           isLoading={loading}
           canDelete={canDelete}
           canCreate={canCreate}

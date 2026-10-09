@@ -71,6 +71,24 @@ export const useDeliveries = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const lastPageRef = useRef({ page: 0, size: 10, filterData: {} });
+  const [grandTotals, setGrandTotals] = useState({ totalPrepared: 0, totalDelivered: 0 });
+
+  const fetchTotals = useCallback(async (filterData = {}) => {
+    try {
+      const params = buildDeliveryParams(filterData, 0, 1);
+      params.delete('page');
+      params.delete('size');
+      const res = await api.get(`/deliveries/totals?${params}`);
+      if (res.success) {
+        setGrandTotals({
+          totalPrepared: res.data?.totalPrepared || 0,
+          totalDelivered: res.data?.totalDelivered || 0,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load totals', err);
+    }
+  }, []);
 
   const loadData = useCallback(async (page = 0, size = 10, filterData = {}) => {
     try {
@@ -79,6 +97,7 @@ export const useDeliveries = () => {
       lastPageRef.current = { page, size, filterData };
 
       const params = buildDeliveryParams(filterData, page, size);
+      fetchTotals(filterData);
       const res = await api.get(`/deliveries/list?${params}`);
 
       if (res.success) {
@@ -92,12 +111,13 @@ export const useDeliveries = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchTotals]);
 
   const refreshDeliveries = useCallback(async () => {
     try {
       const { page, size, filterData } = lastPageRef.current;
       const params = buildDeliveryParams(filterData, page, size);
+      fetchTotals(filterData);
       const res = await api.get(`/deliveries/list?${params}`);
       if (res.success) {
         setDeliveries(normalizeDeliveries(res.data?.content || []));
@@ -107,7 +127,7 @@ export const useDeliveries = () => {
     } catch (err) {
       console.error('Failed to refresh deliveries', err);
     }
-  }, []);
+  }, [fetchTotals]);
 
   const updateDeliveryLocally = useCallback((id, changes) => {
     setDeliveries(prev =>
@@ -461,6 +481,7 @@ export const useDeliveries = () => {
     error,
     totalPages,
     totalElements,
+    grandTotals,
     loadData,
     refreshDeliveries,
     updateDeliveryLocally,
