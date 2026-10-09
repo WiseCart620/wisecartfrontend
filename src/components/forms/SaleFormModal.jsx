@@ -239,7 +239,7 @@ const SaleFormModal = ({
             </FormSection>
 
             {/* Sale details */}
-            <FormSection icon={Calendar} title="Sale Details">
+            <FormSection icon={Calendar} title="Sale Period">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
                 <div>
                   <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
