@@ -51,7 +51,7 @@ const WarehouseReportInlineTable = ({ rows = [], loading }) => {
                   </td>
                   <td className="px-3 py-3 text-xs">
                     <div>{row.sku}</div>
-                    {row.upc !== 'N/A' && <div className="text-gray-500">{row.upc}</div>}
+                    {row.upc && row.upc !== 'N/A' && <div className="text-gray-500">{row.upc}</div>}
                   </td>
                   {cols.map(([label, key, colorClass]) => (
                     <td key={key} className={`px-2 py-3 text-center text-sm ${colorClass || ''}`}>{(row[key] || 0).toLocaleString()}</td>
