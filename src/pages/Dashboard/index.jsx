@@ -178,19 +178,6 @@ const Dashboard = () => {
     api.get('/branches/list')
       .then(r => setBranches(extractArray(r)))
       .catch(err => console.error('Failed to load branches', err));
-
-    // Deliveries (background)
-    api.get('/deliveries?page=0&size=50&sort=createdAt,desc')
-      .then(res => {
-        const d = extractArray(res);
-        setDeliveries(d);
-        setStats(prev => ({
-          ...prev,
-          pendingDeliveries: d.filter(x => x.status === 'PENDING').length,
-          deliveredOrders: d.filter(x => x.status === 'DELIVERED').length,
-        }));
-      })
-      .catch(() => { });
   };
 
 
