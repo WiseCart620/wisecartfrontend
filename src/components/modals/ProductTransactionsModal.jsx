@@ -161,10 +161,28 @@ const ProductTransactionsModal = ({
         return grouped;
     };
 
+    const isBranchReturnOut = (t) =>
+        (t.inventoryType || t.transactionType) === 'RETURN' &&
+        product?.locationType === 'branch' &&
+        product?.branchId != null &&
+        t.fromBranch?.id === product.branchId;
+
+
+    const isHiddenReturnRow = (t) => {
+        if ((t.inventoryType || t.transactionType) !== 'RETURN') return false;
+        if (!t.fromBranch) return false;
+        const isBranchView = product?.locationType === 'branch';
+        return isBranchView ? t.action === 'ADD' : t.action === 'SUBTRACT';
+    };
+
     const getQuantityDisplayLocal = (transaction) => {
         const quantity = Math.abs(transaction.quantity || transaction.quantityChanged || 0);
         const action = transaction.action || '';
         const type = transaction.inventoryType || transaction.transactionType || '';
+
+        if (isBranchReturnOut(transaction)) {
+            return { quantity, sign: '-', colorClass: 'bg-yellow-100 text-yellow-800' };
+        }
 
         let sign = '';
         let colorClass = '';
@@ -230,6 +248,7 @@ const ProductTransactionsModal = ({
         if (!transactions || transactions.length === 0) return [];
         const latestTransactions = Object.values(groupedTransactionsRef).flat();
         return latestTransactions.filter(transaction => {
+            if (isHiddenReturnRow(transaction)) return false;
             const searchLower = searchTerm.toLowerCase();
             const type = transaction.inventoryType || transaction.transactionType;
             const { userEnteredDate } = getTransactionDates(transaction);
@@ -275,7 +294,7 @@ const ProductTransactionsModal = ({
             const { userEnteredDate: dateB } = getTransactionDates(b);
             return (dateB || 0) - (dateA || 0);
         });
-    }, [groupedTransactionsRef, searchTerm, filterType, showDeletedFilter, startDate, endDate]);
+    }, [groupedTransactionsRef, searchTerm, filterType, showDeletedFilter, startDate, endDate, product]);
 
 
 
@@ -289,6 +308,8 @@ const ProductTransactionsModal = ({
             const type = t.inventoryType || t.transactionType || '';
             const isDeleted = t.isDeleted === true || action === 'DELETED';
             if (isDeleted) return;
+
+            if (isBranchReturnOut(t)) { totalOut += qty; return; }
 
             const isCancelled = isCancellationTransaction(t);
 
