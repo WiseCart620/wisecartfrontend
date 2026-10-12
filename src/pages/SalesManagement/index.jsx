@@ -107,6 +107,16 @@ const SalesManagement = () => {
   });
 
   useEffect(() => {
+    setProductsByStatus({ pending: [], confirmed: [], invoiced: [] });
+  }, [
+    JSON.stringify(filterData.companyIds),
+    JSON.stringify(filterData.branchIds),
+    JSON.stringify(filterData.productFilters),
+    filterData.startDate, filterData.endDate,
+    statusFilter, searchTerm,
+  ]);
+
+  useEffect(() => {
     if (showModal) setLoadingAction(null);
   }, [showModal]);
 
@@ -135,6 +145,14 @@ const SalesManagement = () => {
       }
       if (filterData.branchIds?.length) {
         filterData.branchIds.forEach(id => params.append('branchIds', id));
+      }
+      if (filterData.productFilters?.length) {
+        filterData.productFilters.forEach(pf => {
+          if (pf.productId) {
+            params.append('productIds', pf.productId);
+            params.append('variationIds', pf.variationId ?? 0);
+          }
+        });
       }
       const response = await api.get(`/sales/items-by-status?${params}`);
       const sorted = (response.data?.products || []).sort((a, b) => a.productName.localeCompare(b.productName));
