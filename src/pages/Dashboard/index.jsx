@@ -31,6 +31,9 @@ const extractArray = (res) => {
   return [];
 };
 
+const extractObject = (res) =>
+  (res && res.data && !Array.isArray(res.data) && typeof res.data === 'object') ? res.data : (res || {});
+
 const Dashboard = () => {
   const [stats, setStats] = useState({
     totalSales: 0,
@@ -49,15 +52,21 @@ const Dashboard = () => {
 
   const [alertsTotalElements, setAlertsTotalElements] = useState(0);
   const navigate = useNavigate();
-  const [sales, setSales] = useState([]);
+  const [overview, setOverview] = useState(null);
+  const [statusRows, setStatusRows] = useState([]);
+  const [availableYears, setAvailableYears] = useState([]);
+  const [topProducts, setTopProducts] = useState([]);
+  const [scopedRows, setScopedRows] = useState([]);
+  const [productMonthlyRows, setProductMonthlyRows] = useState([]);
+  const [perfLoading, setPerfLoading] = useState(true);
   const [companies, setCompanies] = useState([]);
   const [branches, setBranches] = useState([]);
   const [products, setProducts] = useState([]);
   const [salesLoading, setSalesLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(true);
-  const initialSalesLoading = salesLoading && sales.length === 0;
+  const initialSalesLoading = salesLoading && !overview;
   const initialProductsLoading =
-    initialSalesLoading || (productsLoading && products.length === 0);
+    (productsLoading && products.length === 0) || (perfLoading && topProducts.length === 0);
   const [deliveries, setDeliveries] = useState([]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear() - 1);
   const [selectedCompany, setSelectedCompany] = useState('all');
@@ -71,11 +80,6 @@ const Dashboard = () => {
   const [recentSales, setRecentSales] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [alerts, setAlerts] = useState([]);
-  const [performanceData, setPerformanceData] = useState({
-    topProducts: [],
-    topBranches: [],
-    topCompanies: [],
-  });
   const [showInsights, setShowInsights] = useState(false);
   const [businessInsights, setBusinessInsights] = useState([]);
   const [productSalesData, setProductSalesData] = useState([]);
@@ -100,14 +104,6 @@ const Dashboard = () => {
     loadAlerts(0, false);
   }, []);
 
-  useEffect(() => {
-    if (sales.length > 0 && products.length > 0) {
-      loadPerformance(products);
-      generateInsights();
-      const productAnalysis = getProductSalesAnalysis(sales, products);
-      setProductSalesData(productAnalysis);
-    }
-  }, [sales, products, selectedYear, selectedCompany, selectedBranch, performanceYear, performanceView, performanceMonth, selectedProductId, selectedCategory]);
 
   useEffect(() => {
     setSelectedProductId(null);
@@ -118,57 +114,41 @@ const Dashboard = () => {
     setSalesLoading(true);
     setProductsLoading(true);
 
-    // Sales: cards, trend chart, recent sales, status
-    api.get('/sales/dashboard-summary?months=18')
+    api.get('/sales/dashboard/overview')
       .then(res => {
-        const salesData = extractArray(res);
-        setSales(salesData);
-        setRecentSales(
-          [...salesData]
-            .sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0))
-            .slice(0, 10)
-        );
+        const o = extractObject(res);
+        const rows = o.statusSummary || [];
+        const sum = (list, f) => list.reduce((s, r) => s + (Number(r[f]) || 0), 0);
+        const activeRows = rows.filter(r => ['CONFIRMED', 'INVOICED', 'PENDING'].includes(r.status));
+        const activeSales = sum(activeRows, 'count');
+        const activeRevenue = sum(activeRows, 'revenue');
+        const thisM = Number(o.thisMonthRevenue) || 0;
+        const prevM = Number(o.prevMonthRevenue) || 0;
+        const revenueGrowth = prevM > 0 ? ((thisM - prevM) / prevM) * 100 : thisM > 0 ? 100 : 0;
 
-        const activeSales = salesData.filter(s =>
-          ['CONFIRMED', 'INVOICED', 'PENDING'].includes(s.status));
-        const activeRevenue = activeSales.reduce((sum, s) => sum + (s.totalAmount || 0), 0);
-        const isActive = s => s.status === 'CONFIRMED' || s.status === 'INVOICED';
-
-        const currentMonth = new Date().getMonth();
-        const monthRevenue = (m) => salesData
-          .filter(s => new Date(s.createdAt || s.date).getMonth() === m && isActive(s))
-          .reduce((sum, s) => sum + (s.totalAmount || 0), 0);
-        const thisMonthRevenue = monthRevenue(currentMonth);
-        const prevMonthRevenue = monthRevenue((currentMonth - 1 + 12) % 12);
-        const revenueGrowth = prevMonthRevenue > 0
-          ? ((thisMonthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100
-          : thisMonthRevenue > 0 ? 100 : 0;
-
-        const salesVelocity = salesData.filter(s =>
-          (new Date() - new Date(s.createdAt || s.date)) / 86400000 <= 30 && isActive(s)
-        ).length / 30;
-
-        const years = [...new Set(salesData.map(s => s.year || new Date(s.createdAt || s.date).getFullYear()))];
+        const years = (o.years || []).map(Number);
         if (years.length > 0) {
           const latest = Math.max(...years);
           setPerformanceYear(latest);
           setSelectedYear(latest);
         }
-
+        setStatusRows(rows);
+        setAvailableYears(years);
+        setRecentSales(o.recent || []);
         setStats(prev => ({
           ...prev,
-          totalSales: salesData.length,
-          activeSales: activeSales.length,
+          totalSales: sum(rows, 'count'),
+          activeSales,
           activeRevenue,
-          averageOrderValue: parseFloat((activeSales.length ? activeRevenue / activeSales.length : 0).toFixed(2)),
+          averageOrderValue: parseFloat((activeSales ? activeRevenue / activeSales : 0).toFixed(2)),
           revenueGrowth: parseFloat(revenueGrowth.toFixed(1)),
-          salesVelocity: parseFloat(salesVelocity.toFixed(2)),
+          salesVelocity: parseFloat(((Number(o.last30Count) || 0) / 30).toFixed(2)),
         }));
+        setOverview(o);
       })
-      .catch(err => console.error('Failed to load sales', err))
+      .catch(err => console.error('Failed to load overview', err))
       .finally(() => setSalesLoading(false));
 
-    // Independent lookups, each shows as soon as it arrives
     api.get('/products')
       .then(r => setProducts(extractArray(r)))
       .catch(err => console.error('Failed to load products', err))
@@ -276,33 +256,10 @@ const Dashboard = () => {
     }
 
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const monthlyData = months.map((month, index) => ({
-      month,
-      monthNumber: index + 1,
-      activeRevenue: 0,
-      count: 0
-    }));
-
-    const filteredSales = sales.filter(sale => {
-      const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
-      const yearMatch = saleYear === selectedYear;
-      const statusMatch = (sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING');
-      const companyMatch = selectedCompany === 'all' || sale.company?.companyName === selectedCompany;
-      const branchMatch = selectedBranch === 'all' || sale.branch?.branchName === selectedBranch;
-
-      return yearMatch && statusMatch && companyMatch && branchMatch;
+    return months.map((month, index) => {
+      const r = monthlyTotals.find(t => t.year === selectedYear && t.month === index + 1);
+      return { month, monthNumber: index + 1, activeRevenue: r?.revenue || 0, count: r?.count || 0 };
     });
-
-    filteredSales.forEach(sale => {
-      const monthIndex = sale.month ? sale.month - 1 : new Date(sale.createdAt || sale.date).getMonth();
-      if (monthIndex >= 0 && monthIndex < 12) {
-        const amount = sale.totalAmount || 0;
-        monthlyData[monthIndex].count += 1;
-        monthlyData[monthIndex].activeRevenue += amount;
-      }
-    });
-
-    return monthlyData;
   };
 
   const getTrendChartRows = () => {
@@ -341,363 +298,230 @@ const Dashboard = () => {
         }
       ]
     };
-  }, [sales, selectedYear, selectedCompany, selectedBranch, trendView, monthlyTotals, drillYear, appliedRange]);
+  }, [selectedYear, trendView, monthlyTotals, drillYear, appliedRange]);
 
   const monthlySalesData = getMonthlySalesData();
   const trendChartRows = getTrendChartRows();
 
+  const companyId = useMemo(
+    () => (selectedCompany === 'all' ? null : companies.find(c => c.companyName === selectedCompany)?.id ?? null),
+    [selectedCompany, companies]
+  );
+  const branchId = useMemo(
+    () => (selectedBranch === 'all' ? null : branches.find(b => b.branchName === selectedBranch)?.id ?? null),
+    [selectedBranch, branches]
+  );
+
   useEffect(() => {
-    if (trendView !== 'overall') return;
-
-    const companyId = selectedCompany === 'all'
-      ? null
-      : companies.find(c => c.companyName === selectedCompany)?.id;
-    const branchId = selectedBranch === 'all'
-      ? null
-      : branches.find(b => b.branchName === selectedBranch)?.id;
-
+    if (!overview) return;
+    let cancelled = false;
     const params = new URLSearchParams();
     if (companyId) params.set('companyId', companyId);
     if (branchId) params.set('branchId', branchId);
-
     api.get(`/sales/monthly-totals?${params.toString()}`)
-      .then(res => setMonthlyTotals(extractArray(res)))
+      .then(res => { if (!cancelled) setMonthlyTotals(extractArray(res)); })
       .catch(err => console.error('Failed to load monthly totals', err));
-  }, [trendView, selectedCompany, selectedBranch, companies, branches]);
+    return () => { cancelled = true; };
+  }, [overview, companyId, branchId]);
+
+  useEffect(() => {
+    if (!overview) return;
+    let cancelled = false;
+    const params = new URLSearchParams();
+    if (companyId) params.set('companyId', companyId);
+    if (branchId) params.set('branchId', branchId);
+    if (trendView === 'year') params.set('year', selectedYear);
+    api.get(`/sales/dashboard/product-monthly?${params.toString()}`)
+      .then(res => { if (!cancelled) setProductMonthlyRows(extractArray(res)); })
+      .catch(err => console.error('Failed to load product monthly', err));
+    return () => { cancelled = true; };
+  }, [overview, companyId, branchId, trendView, selectedYear]);
+
+
   const totalAlerts = alerts.filter(a => !a.isResolved).length;
-  const loadPerformance = (productsOverride) => {
-    const productsList = productsOverride || products;
-    try {
-      const filteredSales = sales.filter(sale => {
-        const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING';
-        if (performanceView === 'overall') {
-          return statusMatch;
-        }
-
-        const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
-        const saleMonth = sale.month || (new Date(sale.createdAt || sale.date).getMonth() + 1);
-
-        const yearMatch = performanceView === 'overall' ? true : saleYear === performanceYear;
-        const monthMatch = performanceView === 'month' ? saleMonth === performanceMonth : true;
-
-        return yearMatch && monthMatch && statusMatch;
-      });
-
-      const productPerformance = {};
-      filteredSales.forEach(sale => {
-        if (sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING') {
-          sale.items?.forEach(item => {
-            const variationId = item.variation?.id || 'base';
-            const uniqueKey = `${item.product?.id}_${variationId}`;
-
-            const variationName = item.variation?.combinationDisplay ||
-              item.variation?.variationValue ||
-              (variationId !== 'base' ? 'Default Variation' : null);
-
-            const displayName = variationId !== 'base' && variationName
-              ? `${item.product?.productName || 'Unknown Product'} (${variationName})`
-              : item.product?.productName || 'Unknown Product';
-
-            if (!productPerformance[uniqueKey]) {
-              const fullProduct = productsList.find(p => String(p.id) === String(item.product?.id));
-              productPerformance[uniqueKey] = {
-                id: uniqueKey,
-                productId: item.product?.id,
-                variationId: variationId !== 'base' ? variationId : null,
-                name: displayName,
-                baseProductName: item.product?.productName || 'Unknown Product',
-                variationName: variationName,
-                category: fullProduct?.category || item.product?.category || 'Uncategorized',
-                revenue: 0,
-                quantity: 0,
-                margin: item.product?.margin || 0,
-              };
-            }
-            productPerformance[uniqueKey].revenue += item.amount || 0;
-            productPerformance[uniqueKey].quantity += item.quantity || 0;
-          });
-        }
-      });
-
-      const topProducts = Object.values(productPerformance)
-        .sort((a, b) => b.quantity - a.quantity);
-
-      const itemInScope = (item) => {
-        if (selectedProductId) {
-          return `${item.product?.id}_${item.variation?.id || 'base'}` === selectedProductId;
-        }
-        if (selectedCategory === 'all') return true;
-        const fp = productsList.find(p => String(p.id) === String(item.product?.id));
-        return (fp?.category || item.product?.category || 'Uncategorized') === selectedCategory;
-      };
-
-      const branchPerformance = {};
-      const companyPerformance = {};
-
-      filteredSales.forEach(sale => {
-        const scopedItems = (sale.items || []).filter(itemInScope);
-        if (scopedItems.length === 0) return;
-
-        const revenue = scopedItems.reduce((s, i) => s + (i.amount || 0), 0);
-        const quantity = scopedItems.reduce((s, i) => s + (i.quantity || 0), 0);
-
-        const bKey = sale.branch?.id;
-        if (!branchPerformance[bKey]) {
-          branchPerformance[bKey] = {
-            id: bKey,
-            name: sale.branch?.branchName || 'Unknown Branch',
-            code: sale.branch?.branchCode || 'N/A',
-            revenue: 0, salesCount: 0, quantity: 0, averageOrderValue: 0,
-          };
-        }
-        branchPerformance[bKey].revenue += revenue;
-        branchPerformance[bKey].quantity += quantity;
-        branchPerformance[bKey].salesCount += 1;
-
-        const cKey = sale.company?.id;
-        if (!companyPerformance[cKey]) {
-          companyPerformance[cKey] = {
-            id: cKey,
-            name: sale.company?.companyName || 'Unknown Company',
-            revenue: 0, salesCount: 0, averageOrderValue: 0,
-          };
-        }
-        companyPerformance[cKey].revenue += revenue;
-        companyPerformance[cKey].salesCount += 1;
-      });
-
-      Object.values(branchPerformance).forEach(b => {
-        b.averageOrderValue = b.salesCount > 0 ? b.revenue / b.salesCount : 0;
-      });
-      Object.values(companyPerformance).forEach(c => {
-        c.averageOrderValue = c.salesCount > 0 ? c.revenue / c.salesCount : 0;
-      });
-
-      const topBranches = Object.values(branchPerformance)
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 10);
-
-      const topCompanies = Object.values(companyPerformance)
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 10);
-
-      setPerformanceData({ topProducts, topBranches, topCompanies });
-    } catch (err) {
-      console.error('Failed to load performance data', err);
-    }
+  const periodQuery = () => {
+    const p = new URLSearchParams();
+    if (performanceView !== 'overall') p.set('year', performanceYear);
+    if (performanceView === 'month') p.set('month', performanceMonth);
+    return p;
   };
 
-  const getProductSalesAnalysis = (salesOverride, productsOverride) => {
-    const productAnalysis = {};
-    const salesSource = salesOverride || sales;
+  useEffect(() => {
+    if (!overview) return;
+    let cancelled = false;
+    setPerfLoading(true);
+    api.get(`/sales/dashboard/top-products?${periodQuery().toString()}`)
+      .then(res => {
+        if (cancelled) return;
+        setTopProducts(extractArray(res).map(r => {
+          const baseName = r.productName || 'Unknown Product';
+          const variationName = r.variationId != null
+            ? (r.combinationDisplay || r.variationValue || 'Default Variation') : null;
+          return {
+            id: `${r.productId}_${r.variationId ?? 'base'}`,
+            productId: r.productId,
+            variationId: r.variationId ?? null,
+            name: variationName ? `${baseName} (${variationName})` : baseName,
+            baseProductName: baseName,
+            variationName,
+            category: r.category && String(r.category).trim() ? r.category : 'Uncategorized',
+            revenue: Number(r.revenue) || 0,
+            quantity: Number(r.quantity) || 0,
+          };
+        }));
+      })
+      .catch(err => console.error('Failed to load top products', err))
+      .finally(() => { if (!cancelled) setPerfLoading(false); });
+    return () => { cancelled = true; };
+  }, [overview, performanceView, performanceYear, performanceMonth]);
 
-    const filteredSales = salesSource.filter(sale => {
-      const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING';
+  useEffect(() => {
+    if (!overview) return;
+    let cancelled = false;
+    const p = periodQuery();
+    if (selectedProductId) {
+      const [pid, vid] = String(selectedProductId).split('_');
+      p.set('productId', pid);
+      p.set('variationId', vid === 'base' ? 0 : vid);
+    } else if (selectedCategory !== 'all') {
+      p.set('category', selectedCategory);
+    }
+    api.get(`/sales/dashboard/scoped?${p.toString()}`)
+      .then(res => { if (!cancelled) setScopedRows(extractArray(res)); })
+      .catch(err => console.error('Failed to load breakdown', err));
+    return () => { cancelled = true; };
+  }, [overview, performanceView, performanceYear, performanceMonth, selectedProductId, selectedCategory]);
 
-      if (performanceView === 'overall') {
-        return statusMatch;
-      }
-
-      const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
-      const saleMonth = sale.month || (new Date(sale.createdAt || sale.date).getMonth() + 1);
-
-      const yearMatch = saleYear === performanceYear;
-      const monthMatch = performanceView === 'month' ? saleMonth === performanceMonth : true;
-
-      return yearMatch && monthMatch && statusMatch;
+  const performanceData = useMemo(() => {
+    const branchMap = {};
+    const companyMap = {};
+    scopedRows.forEach(r => {
+      const rev = Number(r.revenue) || 0;
+      const qty = Number(r.quantity) || 0;
+      const cnt = Number(r.salesCount) || 0;
+      const b = branchMap[r.branchId] || (branchMap[r.branchId] = {
+        id: r.branchId, name: r.branchName || 'Unknown Branch', code: r.branchCode || 'N/A',
+        revenue: 0, quantity: 0, salesCount: 0,
+      });
+      b.revenue += rev; b.quantity += qty; b.salesCount += cnt;
+      const c = companyMap[r.companyId] || (companyMap[r.companyId] = {
+        id: r.companyId, name: r.companyName || 'Unknown Company', revenue: 0, salesCount: 0,
+      });
+      c.revenue += rev; c.salesCount += cnt;
     });
-
-    filteredSales.forEach(sale => {
-      sale.items?.forEach(item => {
-        const variationId = item.variation?.id || 'base';
-        const productId = item.product?.id;
-        const uniqueKey = `${productId}_${variationId}`;
-
-        const productName = item.product?.productName || 'Unknown Product';
-        const variationName = item.variation?.combinationDisplay ||
-          item.variation?.variationValue ||
-          (variationId !== 'base' ? 'Default Variation' : null);
-
-        const displayName = variationId !== 'base' && variationName
-          ? `${productName} (${variationName})`
-          : productName;
-
-        const branchName = sale.branch?.branchName || 'Unknown Branch';
-        const companyName = sale.company?.companyName || 'Unknown Company';
-
-        let month, year;
-        if (sale.month && sale.year) {
-          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-          month = monthNames[sale.month - 1];
-          year = sale.year;
-        } else {
-          const saleDate = new Date(sale.createdAt || sale.date);
-          month = saleDate.toLocaleString('default', { month: 'short' });
-          year = saleDate.getFullYear();
-        }
-        const monthYear = `${month} ${year}`;
-
-        if (!productAnalysis[uniqueKey]) {
-          const fullProduct = (productsOverride || products).find(p => String(p.id) === String(productId));
-          productAnalysis[uniqueKey] = {
-            id: uniqueKey,
-            productId: productId,
-            variationId: variationId !== 'base' ? variationId : null,
-            name: displayName,
-            baseProductName: productName,
-            variationName: variationName,
-            category: fullProduct?.category || 'Uncategorized',
-            totalRevenue: 0,
-            totalQuantity: 0,
-            byMonth: {},
-            byBranch: {},
-            byCompany: {},
-            salesCount: 0
-          };
-        }
-
-        const product = productAnalysis[uniqueKey];
-        product.totalRevenue += item.amount || 0;
-        product.totalQuantity += item.quantity || 0;
-        product.salesCount += 1;
-
-        if (!product.byMonth[monthYear]) {
-          product.byMonth[monthYear] = {
-            revenue: 0,
-            quantity: 0,
-            count: 0
-          };
-        }
-        product.byMonth[monthYear].revenue += item.amount || 0;
-        product.byMonth[monthYear].quantity += item.quantity || 0;
-        product.byMonth[monthYear].count += 1;
-
-        if (!product.byBranch[branchName]) {
-          product.byBranch[branchName] = {
-            revenue: 0,
-            quantity: 0,
-            count: 0
-          };
-        }
-        product.byBranch[branchName].revenue += item.amount || 0;
-        product.byBranch[branchName].quantity += item.quantity || 0;
-        product.byBranch[branchName].count += 1;
-
-        if (!product.byCompany[companyName]) {
-          product.byCompany[companyName] = {
-            revenue: 0,
-            quantity: 0,
-            count: 0
-          };
-        }
-        product.byCompany[companyName].revenue += item.amount || 0;
-        product.byCompany[companyName].quantity += item.quantity || 0;
-        product.byCompany[companyName].count += 1;
-      });
-    });
-
-    return Object.values(productAnalysis)
-      .sort((a, b) => b.totalRevenue - a.totalRevenue);
-  };
-
-  const generateInsights = () => {
-    const insights = [];
-    const now = new Date();
-    const last7DaysSales = sales.filter(sale => {
-      const saleDate = new Date(sale.createdAt || sale.date);
-      const daysDiff = (now - saleDate) / (1000 * 60 * 60 * 24);
-      return daysDiff <= 7 && (sale.status === 'CONFIRMED' || sale.status === 'INVOICED');
-    });
-
-    const salesPerDay = last7DaysSales.length / 7;
-    if (salesPerDay > 5) {
-      insights.push({
-        type: 'positive',
-        title: 'High Sales Velocity',
-        message: `Averaging ${salesPerDay.toFixed(1)} sales per day last week`,
-        icon: TrendingUpIcon,
-      });
-    }
-
-    const topProduct = performanceData.topProducts[0];
-    if (topProduct && topProduct.revenue > 10000) {
-      insights.push({
-        type: 'info',
-        title: 'Best Selling Product',
-        message: `${topProduct.name} generated ${formatCurrency(topProduct.revenue)}`,
-        icon: Package,
-      });
-    }
-
-    if (performanceData.topBranches.length > 0) {
-      const bestBranch = performanceData.topBranches[0];
-      const worstBranch = performanceData.topBranches[performanceData.topBranches.length - 1];
-
-      if (bestBranch && worstBranch && bestBranch.revenue > worstBranch.revenue * 3) {
-        insights.push({
-          type: 'warning',
-          title: 'Branch Performance Gap',
-          message: `${bestBranch.name} is outperforming ${worstBranch.name} by ${formatCurrency(bestBranch.revenue - worstBranch.revenue)}`,
-          icon: AlertTriangle,
-        });
-      }
-    }
-
-    const morningSales = sales.filter(sale => {
-      const saleDate = new Date(sale.createdAt || sale.date);
-      return saleDate.getHours() < 12;
-    }).length;
-
-    const afternoonSales = sales.filter(sale => {
-      const saleDate = new Date(sale.createdAt || sale.date);
-      return saleDate.getHours() >= 12;
-    }).length;
-
-    if (morningSales > afternoonSales * 1.5) {
-      insights.push({
-        type: 'info',
-        title: 'Morning Sales Peak',
-        message: `${morningSales} sales in AM vs ${afternoonSales} in PM`,
-        icon: Clock,
-      });
-    }
-
-    setBusinessInsights(insights);
-  };
+    const finish = (m) => Object.values(m)
+      .map(x => ({ ...x, averageOrderValue: x.salesCount > 0 ? x.revenue / x.salesCount : 0 }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 10);
+    return { topProducts, topBranches: finish(branchMap), topCompanies: finish(companyMap) };
+  }, [topProducts, scopedRows]);
 
 
   useEffect(() => {
-    const active = sales.filter(s => ['CONFIRMED', 'INVOICED', 'PENDING'].includes(s.status)).length;
+    if (!overview) return;
+    const insights = [];
+    const salesPerDay = (Number(overview.last7Count) || 0) / 7;
+    if (salesPerDay > 5) {
+      insights.push({
+        type: 'positive', title: 'High Sales Velocity',
+        message: `Averaging ${salesPerDay.toFixed(1)} sales per day last week`, icon: TrendingUpIcon
+      });
+    }
+    const topProduct = performanceData.topProducts[0];
+    if (topProduct && topProduct.revenue > 10000) {
+      insights.push({
+        type: 'info', title: 'Best Selling Product',
+        message: `${topProduct.name} generated ${formatCurrency(topProduct.revenue)}`, icon: Package
+      });
+    }
+    if (performanceData.topBranches.length > 0) {
+      const best = performanceData.topBranches[0];
+      const worst = performanceData.topBranches[performanceData.topBranches.length - 1];
+      if (best.revenue > worst.revenue * 3) {
+        insights.push({
+          type: 'warning', title: 'Branch Performance Gap',
+          message: `${best.name} is outperforming ${worst.name} by ${formatCurrency(best.revenue - worst.revenue)}`,
+          icon: AlertTriangle
+        });
+      }
+    }
+    const morning = Number(overview.morningCount) || 0;
+    const afternoon = Number(overview.afternoonCount) || 0;
+    if (morning > afternoon * 1.5) {
+      insights.push({
+        type: 'info', title: 'Morning Sales Peak',
+        message: `${morning} sales in AM vs ${afternoon} in PM`, icon: Clock
+      });
+    }
+    setBusinessInsights(insights);
+  }, [overview, performanceData]);
+
+
+  const getProductMonthlySales = () => {
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const isOverall = trendView === 'overall';
+    const overallRange = isOverall ? getOverallRange() : null;
+    const productMonthlyData = {};
+    const productQuantityData = {};
+    const productSalesCount = {};
+
+    let periods = [];
+    if (isOverall && overallRange) {
+      const [sy, sm] = overallRange.start.split('-').map(Number);
+      const [ey, em] = overallRange.end.split('-').map(Number);
+      let y = sy, m = sm;
+      while ((y < ey || (y === ey && m <= em)) && periods.length < 120) {
+        periods.push({ key: y * 100 + m, label: `${monthNames[m - 1]} ${y}`, year: y });
+        m++;
+        if (m > 12) { m = 1; y++; }
+      }
+    } else {
+      periods = monthNames.map((m, i) => ({ key: i + 1, label: m }));
+    }
+    const indexByKey = new Map(periods.map((p, i) => [p.key, i]));
+
+    productMonthlyRows.forEach(([productId, variationId, year, month, amount, qty, cnt]) => {
+      if (!isOverall && year !== selectedYear) return;
+      const idx = indexByKey.get(isOverall && overallRange ? year * 100 + month : month);
+      if (idx === undefined) return;
+      const uniqueKey = `${productId}_${variationId ?? 'base'}`;
+      if (!productMonthlyData[uniqueKey]) {
+        productMonthlyData[uniqueKey] = periods.map(() => 0);
+        productQuantityData[uniqueKey] = 0;
+        productSalesCount[uniqueKey] = 0;
+      }
+      productMonthlyData[uniqueKey][idx] += Number(amount) || 0;
+      productQuantityData[uniqueKey] += Number(qty) || 0;
+      productSalesCount[uniqueKey] += Number(cnt) || 0;
+    });
+
+    return {
+      months: periods.map(p => p.label),
+      periodYears: periods.map(p => p.year),
+      yearly: false,
+      products: productMonthlyData,
+      quantities: productQuantityData,
+      salesCounts: productSalesCount,
+    };
+  };
+
+  useEffect(() => {
     const totalLeads = companies.length * 2;
     setStats(prev => ({
       ...prev,
       totalCompanies: companies.length,
       lowStock: products.filter(p => p.quantity < 10).length,
-      conversionRate: totalLeads > 0 && sales.length > 0
-        ? parseFloat(((active / totalLeads) * 100).toFixed(1)) : 0,
+      conversionRate: totalLeads > 0 && prev.activeSales > 0
+        ? parseFloat(((prev.activeSales / totalLeads) * 100).toFixed(1)) : 0,
     }));
-  }, [sales, companies, products]);
+  }, [stats.activeSales, companies, products]);
 
   useEffect(() => {
-    if (selectedCompany === 'all') {
-      setAvailableBranches(branches);
-      setSelectedBranch('all');
-    } else {
-      const companyBranches = [...new Set(
-        sales
-          .filter(s => s.company?.companyName === selectedCompany)
-          .map(s => s.branch?.branchName)
-          .filter(Boolean)
-      )];
-
-      const filteredBranches = branches.filter(b =>
-        companyBranches.includes(b.branchName)
-      );
-
-      setAvailableBranches(filteredBranches);
-      setSelectedBranch('all');
-    }
-  }, [selectedCompany, branches, sales]);
+    setAvailableBranches(
+      selectedCompany === 'all' ? branches : branches.filter(b => b.companyName === selectedCompany)
+    );
+    setSelectedBranch('all');
+  }, [selectedCompany, branches]);
 
   useEffect(() => {
     if (products.length > 0) {
@@ -760,9 +584,9 @@ const Dashboard = () => {
                 setPerformanceView={setPerformanceView}
                 performanceMonth={performanceMonth}
                 setPerformanceMonth={setPerformanceMonth}
-                availableYears={[...new Set(sales.map(s => s.year || new Date(s.createdAt || s.date).getFullYear()))]}
+                availableYears={availableYears}
                 products={products}
-                sales={sales}
+                scopedRows={scopedRows}
                 selectedCompanyForBranches={selectedCompanyForBranches}
                 setSelectedCompanyForBranches={setSelectedCompanyForBranches}
                 selectedCompanyForTopBranches={selectedCompanyForTopBranches}
@@ -882,7 +706,7 @@ const Dashboard = () => {
                         onChange={(e) => setSelectedYear(parseInt(e.target.value))} disabled={trendView === 'overall'}
                         className="px-1.5 py-1 text-xs border border-gray-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                       >
-                        {[...new Set(sales.map(s => s.year || new Date(s.createdAt || s.date).getFullYear()))].map(year => (
+                        {availableYears.map(year => (
                           <option key={year} value={year}>{year}</option>
                         ))}
                       </select>
@@ -934,7 +758,7 @@ const Dashboard = () => {
                   <div className="w-full h-[280px] sm:h-[350px] md:h-[400px]">
                     <SalesTrendChart
                       chartData={chartData}
-                      sales={sales}
+                      sales={stats.totalSales > 0 ? trendChartRows : []}
                       selectedYear={selectedYear}
                       drillable={false}
                       showAllTicks={trendView === 'overall' && (!!drillYear || !!appliedRange)}
@@ -946,7 +770,7 @@ const Dashboard = () => {
                   </div>
 
                   {/* Summary Stats - 2 columns on tablet/desktop, 1 column on mobile */}
-                  {sales.length > 0 && (
+                  {stats.totalSales > 0 && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {/* Total Sales */}
@@ -1083,92 +907,6 @@ const Dashboard = () => {
                     </div>
 
                     {(() => {
-                      const getProductMonthlySales = () => {
-                        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                        const isOverall = trendView === 'overall';
-                        const overallRange = isOverall ? getOverallRange() : null;
-                        const yearly = false;
-                        const productMonthlyData = {};
-                        const productQuantityData = {};
-                        const productSalesCount = {};
-
-                        const periodOf = (sale) => {
-                          const d = new Date(sale.createdAt || sale.date);
-                          return {
-                            year: sale.year || d.getFullYear(),
-                            month: sale.month || (d.getMonth() + 1),
-                          };
-                        };
-
-                        const toKey = (ym) => { const [y, m] = ym.split('-').map(Number); return y * 100 + m; };
-                        const filteredSales = sales.filter(sale => {
-                          const { year, month } = periodOf(sale);
-                          const yearMatch = isOverall
-                            ? (!overallRange || (year * 100 + month >= toKey(overallRange.start) && year * 100 + month <= toKey(overallRange.end)))
-                            : year === selectedYear;
-                          const statusMatch = (sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING');
-                          const companyMatch = selectedCompany === 'all' || sale.company?.companyName === selectedCompany;
-                          const branchMatch = selectedBranch === 'all' || sale.branch?.branchName === selectedBranch;
-
-                          return yearMatch && statusMatch && companyMatch && branchMatch;
-                        });
-
-                        let periods = [];
-                        if (isOverall && overallRange) {
-                          const [sy, sm] = overallRange.start.split('-').map(Number);
-                          const [ey, em] = overallRange.end.split('-').map(Number);
-                          let y = sy, m = sm;
-                          while ((y < ey || (y === ey && m <= em)) && periods.length < 120) {
-                            periods.push({ key: y * 100 + m, label: `${monthNames[m - 1]} ${y}`, year: y });
-                            m++;
-                            if (m > 12) { m = 1; y++; }
-                          }
-                        } else {
-                          periods = monthNames.map((m, i) => ({ key: i + 1, label: m }));
-                        }
-                        const indexByKey = new Map(periods.map((p, i) => [p.key, i]));
-
-                        filteredSales.forEach(sale => {
-                          const { year, month } = periodOf(sale);
-                          const periodIndex = indexByKey.get(isOverall && overallRange ? year * 100 + month : month);
-                          if (periodIndex === undefined) return;
-
-                          sale.items?.forEach(item => {
-                            const variationId = item.variation?.id || 'base';
-                            const uniqueKey = `${item.product?.id}_${variationId}`;
-
-                            if (!productMonthlyData[uniqueKey]) {
-                              productMonthlyData[uniqueKey] = periods.map(() => 0);
-                              productQuantityData[uniqueKey] = 0;
-                              productSalesCount[uniqueKey] = 0;
-                            }
-                            productMonthlyData[uniqueKey][periodIndex] += item.amount || 0;
-                            productQuantityData[uniqueKey] += item.quantity || 0;
-                          });
-                        });
-
-                        filteredSales.forEach(sale => {
-                          const productsInSale = new Set();
-                          sale.items?.forEach(item => {
-                            const variationId = item.variation?.id || 'base';
-                            productsInSale.add(`${item.product?.id}_${variationId}`);
-                          });
-                          productsInSale.forEach(uniqueKey => {
-                            if (productSalesCount[uniqueKey] !== undefined) {
-                              productSalesCount[uniqueKey] += 1;
-                            }
-                          });
-                        });
-
-                        return {
-                          months: periods.map(p => p.label),
-                          periodYears: periods.map(p => p.year),
-                          yearly,
-                          products: productMonthlyData,
-                          quantities: productQuantityData,
-                          salesCounts: productSalesCount
-                        };
-                      };
 
                       const productData = getProductMonthlySales();
                       const rankValue = (p) => (productRankBy === 'quantity' ? p.quantity : p.totalSales);
@@ -1511,8 +1249,8 @@ const Dashboard = () => {
 
               )} {/* Status Distribution and Recent Sales */}
               <div className="space-y-4 sm:space-y-6">
-                <StatusDistribution stats={stats} sales={sales} navigate={navigate} isLoading={initialSalesLoading} />
-                <RecentSales recentSales={recentSales} sales={sales} isLoading={initialSalesLoading} />
+                <StatusDistribution stats={stats} statusRows={statusRows} navigate={navigate} isLoading={initialSalesLoading} />
+                <RecentSales recentSales={recentSales} totalCount={stats.totalSales} isLoading={initialSalesLoading} />
               </div>
             </div>
           </div>

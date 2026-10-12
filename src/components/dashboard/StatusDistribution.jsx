@@ -3,28 +3,16 @@ import { PieChart, CheckCheck, Clock, AlertCircle, ShoppingCart, Users, Database
 import StatusBadge from '../common/StatusBadge';
 import { formatCurrency, formatNumber } from '../../utils/currencyUtils';
 
-const StatusDistribution = ({ stats, sales, navigate, isLoading = false }) => {
+const StatusDistribution = ({ stats, statusRows = [], navigate, isLoading = false }) => {
   const getSalesByStatus = () => {
-    const normalizedSales = sales.map(sale => ({
-      ...sale,
-      displayStatus: (sale.status === 'CONFIRMED' || sale.status === 'INVOICED') ? 'ACTIVE' : sale.status
-    }));
-
-    const statusCounts = normalizedSales.reduce((acc, sale) => {
-      acc[sale.displayStatus] = (acc[sale.displayStatus] || 0) + 1;
-      return acc;
-    }, {});
-
-    const statusRevenue = normalizedSales.reduce((acc, sale) => {
-      const amount = sale.totalAmount || 0;
-      acc[sale.displayStatus] = (acc[sale.displayStatus] || 0) + amount;
-      return acc;
-    }, {});
-
-    return {
-      counts: statusCounts,
-      revenues: statusRevenue
-    };
+    const counts = {};
+    const revenues = {};
+    statusRows.forEach(r => {
+      const key = (r.status === 'CONFIRMED' || r.status === 'INVOICED') ? 'ACTIVE' : r.status;
+      counts[key] = (counts[key] || 0) + (Number(r.count) || 0);
+      revenues[key] = (revenues[key] || 0) + (Number(r.revenue) || 0);
+    });
+    return { counts, revenues };
   };
 
   const salesByStatus = getSalesByStatus();

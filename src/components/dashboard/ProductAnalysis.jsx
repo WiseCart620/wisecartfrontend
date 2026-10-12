@@ -19,7 +19,7 @@ const ProductAnalysis = ({
   setPerformanceMonth,
   availableYears,
   products,
-  sales,
+  scopedRows = [],
   selectedCompanyForBranches,
   setSelectedCompanyForBranches,
   selectedCompanyForTopBranches,
@@ -44,73 +44,30 @@ const ProductAnalysis = ({
     return list;
   }, [performanceData.topProducts, selectedCategory, rankBy]);
 
-  const getItemKey = (item) => `${item.product?.id}_${item.variation?.id || 'base'}`;
-
-  const itemMatchesSelection = (item) => {
-    if (selectedProductId) return getItemKey(item) === selectedProductId;
-    if (selectedCategory === 'all') return true;
-    const fullProduct = products.find(p => String(p.id) === String(item.product?.id));
-    const category = fullProduct?.category || item.product?.category || 'Uncategorized';
-    return category === selectedCategory;
-  };
-
-  const isSaleInPeriod = (sale) => {
-    const statusMatch = sale.status === 'CONFIRMED' || sale.status === 'INVOICED' || sale.status === 'PENDING';
-    if (!statusMatch) return false;
-    if (performanceView === 'overall') return true;
-
-    const saleYear = sale.year || new Date(sale.createdAt || sale.date).getFullYear();
-    const saleMonth = sale.month || (new Date(sale.createdAt || sale.date).getMonth() + 1);
-    const yearMatch = saleYear === performanceYear;
-    const monthMatch = performanceView === 'month' ? saleMonth === performanceMonth : true;
-    return yearMatch && monthMatch;
-  };
-
   const getSelectedProductStats = () => {
-    const transactions = new Set();
-    let totalRevenue = 0;
-    let totalQuantity = 0;
-
-    sales.filter(isSaleInPeriod).forEach(sale => {
-      sale.items?.forEach(item => {
-        if (!itemMatchesSelection(item)) return;
-        transactions.add(sale.id);
-        totalRevenue += item.amount || 0;
-        totalQuantity += item.quantity || 0;
-      });
+    if (!scopedRows.length) return null;
+    let totalRevenue = 0, totalQuantity = 0, transactions = 0;
+    scopedRows.forEach(r => {
+      totalRevenue += Number(r.revenue) || 0;
+      totalQuantity += Number(r.quantity) || 0;
+      transactions += Number(r.salesCount) || 0;
     });
-
-    if (transactions.size === 0) return null;
-
     return {
-      totalRevenue,
-      totalQuantity,
-      transactions: transactions.size,
+      totalRevenue, totalQuantity, transactions,
       avgPerUnit: totalQuantity > 0 ? totalRevenue / totalQuantity : 0
     };
   };
 
   const getProductChartData = () => {
     const companyData = {};
-
-    sales.filter(isSaleInPeriod).forEach(sale => {
-      const companyName = sale.company?.companyName || 'Unknown Company';
-      sale.items?.forEach(item => {
-        if (!itemMatchesSelection(item)) return;
-        if (!companyData[companyName]) {
-          companyData[companyName] = { revenue: 0, quantity: 0 };
-        }
-        companyData[companyName].revenue += item.amount || 0;
-        companyData[companyName].quantity += item.quantity || 0;
-      });
+    scopedRows.forEach(r => {
+      const name = r.companyName || 'Unknown Company';
+      if (!companyData[name]) companyData[name] = { revenue: 0, quantity: 0 };
+      companyData[name].revenue += Number(r.revenue) || 0;
+      companyData[name].quantity += Number(r.quantity) || 0;
     });
-
-    const companies = Object.keys(companyData).sort((a, b) =>
-      companyData[b].revenue - companyData[a].revenue
-    );
-
+    const companies = Object.keys(companyData).sort((a, b) => companyData[b].revenue - companyData[a].revenue);
     if (companies.length === 0) return null;
-
     return {
       labels: companies,
       datasets: [
@@ -134,43 +91,17 @@ const ProductAnalysis = ({
     };
   };
 
-  const getCompanyBranchBreakdown = (companyName) => {
-    const branchData = {};
-    const salesByBranch = {};
-
-    sales
-      .filter(sale => isSaleInPeriod(sale) && sale.company?.companyName === companyName)
-      .forEach(sale => {
-        const branchName = sale.branch?.branchName || 'Unknown Branch';
-
-        sale.items?.forEach(item => {
-          if (!itemMatchesSelection(item)) return;
-
-          if (!branchData[branchName]) {
-            branchData[branchName] = {
-              branchName,
-              branchCode: sale.branch?.branchCode || 'N/A',
-              sales: 0,
-              quantity: 0,
-              salesCount: 0
-            };
-            salesByBranch[branchName] = new Set();
-          }
-          branchData[branchName].sales += item.amount || 0;
-          branchData[branchName].quantity += item.quantity || 0;
-          salesByBranch[branchName].add(sale.id);
-        });
-      });
-
-    Object.keys(branchData).forEach(name => {
-      branchData[name].salesCount = salesByBranch[name].size;
-    });
-
-    return Object.values(branchData).sort((a, b) => b.sales - a.sales);
-  };
-
-
-
+  const getCompanyBranchBreakdown = (companyName) =>
+    scopedRows
+      .filter(r => r.companyName === companyName)
+      .map(r => ({
+        branchName: r.branchName || 'Unknown Branch',
+        branchCode: r.branchCode || 'N/A',
+        sales: Number(r.revenue) || 0,
+        quantity: Number(r.quantity) || 0,
+        salesCount: Number(r.salesCount) || 0,
+      }))
+      .sort((a, b) => b.sales - a.sales);
 
   return (
     <div className="grid grid-cols-1 gap-4">
@@ -466,7 +397,7 @@ const ProductAnalysis = ({
                   Product Analysis
                   <span className="text-xs text-gray-500">
                     - {selectedProductId
-                      ? productSalesData.find(p => p.id === selectedProductId)?.name
+                      ? performanceData.topProducts.find(p => p.id === selectedProductId)?.name
                       : selectedCategory !== 'all'
                         ? `All ${selectedCategory}`
                         : 'All Products'}
@@ -820,43 +751,21 @@ const ProductAnalysis = ({
                       let branchesToShow = performanceData.topBranches || [];
 
                       if (selectedCompanyForTopBranches) {
-                        const branchRevenue = {};
-                        const salesByBranch = {};
-
-                        sales
-                          .filter(sale => isSaleInPeriod(sale) && sale.company?.companyName === selectedCompanyForTopBranches)
-                          .forEach(sale => {
-                            const scopedItems = (sale.items || []).filter(itemMatchesSelection);
-                            if (scopedItems.length === 0) return;
-
-                            const branchId = sale.branch?.id;
-                            if (!branchRevenue[branchId]) {
-                              branchRevenue[branchId] = {
-                                id: branchId,
-                                name: sale.branch?.branchName || 'Unknown Branch',
-                                code: sale.branch?.branchCode || 'N/A',
-                                revenue: 0,
-                                salesCount: 0,
-                                quantity: 0,
-                                averageOrderValue: 0
-                              };
-                              salesByBranch[branchId] = new Set();
-                            }
-
-                            scopedItems.forEach(item => {
-                              branchRevenue[branchId].revenue += item.amount || 0;
-                              branchRevenue[branchId].quantity += item.quantity || 0;
-                            });
-                            salesByBranch[branchId].add(sale.id);
-                          });
-
-                        Object.keys(branchRevenue).forEach(branchId => {
-                          const b = branchRevenue[branchId];
-                          b.salesCount = salesByBranch[branchId].size;
-                          b.averageOrderValue = b.salesCount > 0 ? b.revenue / b.salesCount : 0;
-                        });
-
-                        branchesToShow = Object.values(branchRevenue)
+                        branchesToShow = scopedRows
+                          .filter(r => r.companyName === selectedCompanyForTopBranches)
+                          .map(r => {
+                            const revenue = Number(r.revenue) || 0;
+                            const salesCount = Number(r.salesCount) || 0;
+                            return {
+                              id: r.branchId,
+                              name: r.branchName || 'Unknown Branch',
+                              code: r.branchCode || 'N/A',
+                              revenue,
+                              quantity: Number(r.quantity) || 0,
+                              salesCount,
+                              averageOrderValue: salesCount > 0 ? revenue / salesCount : 0
+                            };
+                          })
                           .sort((a, b) => b.revenue - a.revenue);
                       }
 

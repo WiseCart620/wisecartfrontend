@@ -3,7 +3,7 @@ import { Clock, ShoppingCart } from 'lucide-react';
 import StatusBadge from '../common/StatusBadge';
 import { formatCurrency } from '../../utils/currencyUtils';
 
-const RecentSales = ({ recentSales, sales, isLoading = false }) => {
+const RecentSales = ({ recentSales = [], totalCount = 0, isLoading = false }) => {
   return (
     <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
       <div className="flex justify-between items-center mb-4">
@@ -12,7 +12,7 @@ const RecentSales = ({ recentSales, sales, isLoading = false }) => {
           Recent Sales Activity
         </h3>
         <span className="text-sm text-gray-500">
-          {sales.length} total sales
+          {totalCount} total sales
         </span>
       </div>
       <div className="space-y-3 max-h-80 overflow-y-auto">
@@ -80,7 +80,7 @@ const RecentSales = ({ recentSales, sales, isLoading = false }) => {
                 <div className="text-right ml-4">
                   <p className="font-semibold text-gray-900">{formatCurrency(sale.totalAmount || 0)}</p>
                   <p className="text-xs text-gray-500">
-                    {sale.items?.length || 0} item{(sale.items?.length || 0) !== 1 ? 's' : ''}
+                    {sale.itemCount || 0} item{(sale.itemCount || 0) !== 1 ? 's' : ''}
                   </p>
                 </div>
               </div>
