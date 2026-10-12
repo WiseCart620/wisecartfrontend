@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Store, CheckCircle, ShoppingCart, Truck, Clock, Eye, Loader2, Package, Barcode, Boxes, PackageCheck, CalendarClock, MousePointerClick } from 'lucide-react';
+import { RotateCcw, Store, CheckCircle, ShoppingCart, Truck, Clock, Eye, Loader2, Package, Barcode, Boxes, PackageCheck, CalendarClock, MousePointerClick } from 'lucide-react';
 import Pagination from '../../common/Pagination';
 import HeaderIcon from '../../common/HeaderIcon';
 import { parseDate } from '../../../utils/dateUtils';
@@ -22,8 +22,11 @@ const BranchStockTable = ({
   const [loadingId, setLoadingId] = useState(null);
 
   const totals = grandTotals || {
-    quantity: 0, delivered: 0, totalSales: 0, pendingDelivery: 0, pendingSale: 0, available: 0,
+    quantity: 0, delivered: 0, totalSales: 0, returned: 0, pendingDelivery: 0, pendingSale: 0, available: 0,
   };
+  const returnedTotal = totals.returned != null
+    ? totals.returned
+    : (currentBranchStocks || []).reduce((s, r) => s + (r.returnedQuantity || 0), 0);
 
   const handleView = async (stock) => {
     setLoadingId(stock.id);
@@ -58,6 +61,7 @@ const BranchStockTable = ({
               <th className="px-3 py-3 text-center th-num"><HeaderIcon Icon={Boxes} label="Total Stock" /></th>
               <th className="px-3 py-3 text-center th-num"><HeaderIcon Icon={CheckCircle} label="Delivered" /></th>
               <th className="px-3 py-3 text-center th-num"><HeaderIcon Icon={ShoppingCart} label="Total Sales" /></th>
+              <th className="px-3 py-3 text-center th-num"><HeaderIcon Icon={RotateCcw} label="Returns" /></th>
               <th className="px-3 py-3 text-center th-num"><HeaderIcon Icon={Truck} label="Pending Delivery" /></th>
               <th className="px-3 py-3 text-center th-num"><HeaderIcon Icon={Clock} label="Pending Sale" /></th>
               <th className="px-3 py-3 text-center th-num"><HeaderIcon Icon={PackageCheck} label="Available" /></th>
@@ -79,13 +83,14 @@ const BranchStockTable = ({
                   <td className="px-3 py-3"><div className="h-5 bg-gray-100 rounded-full w-12 mx-auto" /></td>
                   <td className="px-3 py-3"><div className="h-5 bg-gray-100 rounded-full w-12 mx-auto" /></td>
                   <td className="px-3 py-3"><div className="h-5 bg-gray-100 rounded-full w-12 mx-auto" /></td>
+                  <td className="px-3 py-3"><div className="h-5 bg-gray-100 rounded-full w-12 mx-auto" /></td>
                   <td className="px-4 py-3"><div className="h-4 bg-gray-100 rounded w-20" /></td>
                   <td className="px-4 py-3"><div className="h-4 bg-gray-100 rounded w-16 mx-auto" /></td>
                 </tr>
               ))
             ) : currentBranchStocks.length === 0 ? (
               <tr>
-                <td colSpan="11" className="px-6 py-8 text-center text-black">
+                <td colSpan="12" className="px-6 py-8 text-center text-black">
                   No branch stock records found
                 </td>
               </tr>
@@ -142,6 +147,9 @@ const BranchStockTable = ({
                     </td>
                     <td className="px-3 py-3 text-center text-sm text-black td-num">
                       {(stock.totalSales || 0).toLocaleString('en-US')}
+                    </td>
+                    <td className="px-3 py-3 text-center text-sm text-black td-num">
+                      {(stock.returnedQuantity || 0).toLocaleString('en-US')}
                     </td>
                     <td className="px-3 py-3 text-center text-sm text-black td-num">
                       {(stock.pendingDeliveries || 0).toLocaleString('en-US')}
@@ -202,6 +210,9 @@ const BranchStockTable = ({
                 </td>
                 <td className="px-3 py-2 text-center text-sm font-semibold text-black">
                   {totals.totalSales.toLocaleString('en-US')}
+                </td>
+                <td className="px-3 py-2 text-center text-sm font-semibold text-black">
+                  {returnedTotal.toLocaleString('en-US')}
                 </td>
                 <td className="px-3 py-2 text-center text-sm font-semibold text-black">
                   {totals.pendingDelivery.toLocaleString('en-US')}

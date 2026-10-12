@@ -185,12 +185,13 @@ const mapBranchSummary = (d) => ({
   quantity: d.quantity || 0,
   delivered: d.delivered || 0,
   totalSales: d.totalSales || 0,
+  returned: d.returned || 0,
   pendingDelivery: d.pendingDelivery || 0,
   pendingSale: d.pendingSale || 0,
   available: d.available || 0,
 });
 const BRANCH_EMPTY_TOTALS = {
-  quantity: 0, delivered: 0, totalSales: 0, pendingDelivery: 0, pendingSale: 0, available: 0,
+  quantity: 0, delivered: 0, totalSales: 0, returned: 0, pendingDelivery: 0, pendingSale: 0, available: 0,
 };
 
 export const useBranchStockData = ({
