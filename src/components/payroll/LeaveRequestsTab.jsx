@@ -25,7 +25,7 @@ const weekdays = (from, to) => {
   return n;
 };
 
-const EMPTY = { employeeId: '', leaveTypeId: '', dateFrom: today(), dateTo: today(), daysUsed: '' };
+const EMPTY = { employeeId: '', leaveTypeIds: [], dateFrom: today(), dateTo: today(), reason: '', dateFiled: today() };
 
 const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete }) => {
   const [items, setItems] = useState([]);
@@ -34,8 +34,41 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
   const [search, setSearch] = useState('');
   const [show, setShow] = useState(false);
   const [form, setForm] = useState(EMPTY);
+  const [granted, setGranted] = useState([]);
 
   useEffect(() => { load(); }, [statusFilter]);
+
+  const formYear = (form.dateFrom || '').slice(0, 4);
+  useEffect(() => {
+    if (!show || !form.employeeId) { setGranted([]); return; }
+    (async () => {
+      try {
+        const res = await api.get(`/leave-balances?year=${formYear || new Date().getFullYear()}&employeeId=${form.employeeId}`);
+        setGranted(res.success ? res.data || [] : []);
+      } catch (e) { setGranted([]); }
+    })();
+  }, [show, form.employeeId, formYear]);
+
+  // leaves the chosen employee actually has: granted paid leaves + every unpaid type
+  const leaveOptions = useMemo(() => {
+    if (!form.employeeId) return [];
+    const typeOf = Object.fromEntries((leaveTypes || []).map(t => [t.leaveTypeId, t]));
+    const paid = granted
+      .filter(b => typeOf[b.leaveTypeId]?.paid !== false)
+      .map(b => ({
+        id: b.leaveTypeId, name: b.leaveTypeName, paid: true,
+        balance: b.closingBalance, max: typeOf[b.leaveTypeId]?.maxPerMonth
+      }));
+    const unpaid = (leaveTypes || []).filter(t => t.paid === false)
+      .map(t => ({ id: t.leaveTypeId, name: t.leaveTypeName, paid: false }));
+    return [...paid, ...unpaid].sort((a, b) =>
+      a.name === 'Vacation Leave' ? -1 : b.name === 'Vacation Leave' ? 1 : a.name.localeCompare(b.name));
+  }, [granted, leaveTypes, form.employeeId]);
+
+  const toggleLeave = (id) => setForm(p => ({
+    ...p,
+    leaveTypeIds: p.leaveTypeIds.includes(id) ? p.leaveTypeIds.filter(x => x !== id) : [...p.leaveTypeIds, id],
+  }));
 
   const load = async () => {
     setLoading(true);
@@ -61,17 +94,23 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!form.employeeId || !form.leaveTypeId || !form.dateFrom || !form.dateTo) {
-      toast.error('Employee, leave type and dates are required');
+    if (!form.employeeId || !form.dateFrom || !form.dateTo) {
+      toast.error('Employee and dates are required');
+      return;
+    }
+    const ids = leaveOptions.filter(o => form.leaveTypeIds.includes(o.id)).map(o => o.id);
+    if (ids.length === 0) {
+      toast.error('Tick at least one leave');
       return;
     }
     try {
       await api.post('/leave-transactions', {
         employeeId: Number(form.employeeId),
-        leaveTypeId: Number(form.leaveTypeId),
+        leaveTypeIds: ids,
         dateFrom: form.dateFrom,
         dateTo: form.dateTo,
-        daysUsed: form.daysUsed === '' ? null : Number(form.daysUsed),
+        reason: form.reason,
+        dateFiled: form.dateFiled,
       });
       toast.success('Leave request filed');
       setShow(false);
@@ -196,22 +235,39 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
                 searchPlaceholder="Search employee..."
                 value={form.employeeId}
                 options={employees.map(e => ({ value: String(e.employeeId), label: e.fullName }))}
-                onChange={(v) => setForm(p => ({ ...p, employeeId: v }))}
+                onChange={(v) => setForm(p => ({ ...p, employeeId: v, leaveTypeIds: [] }))}
               />
             </Field>
-            <Field label="Leave Type" required className="col-span-2">
-              <SearchableSelect
-                placeholder="Select leave type..."
-                searchPlaceholder="Search leave type..."
-                value={form.leaveTypeId}
-                options={leaveTypes.map(t => ({ value: String(t.leaveTypeId), label: t.leaveTypeName }))}
-                onChange={(v) => setForm(p => ({ ...p, leaveTypeId: v }))}
-              />
-            </Field>
+
+            {form.employeeId && (
+              <div className="col-span-2 space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Leave <span className="text-red-500">*</span></label>
+                {leaveOptions.length === 0 ? (
+                  <p className="text-xs text-gray-500">This employee has no leave granted for {formYear}.</p>
+                ) : leaveOptions.map(o => (
+                  <label key={o.id} className="flex items-center gap-2 text-sm text-gray-800 cursor-pointer">
+                    <input type="checkbox" checked={form.leaveTypeIds.includes(o.id)} onChange={() => toggleLeave(o.id)} />
+                    <span className="font-medium">{o.name}</span>
+                    <span className="text-xs text-gray-500">
+                      {o.paid
+                        ? `Balance: ${o.balance} day(s) · Max ${o.max ?? 'no limit'}${o.max != null ? ' per month' : ''}`
+                        : 'Unpaid · unlimited'}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+
             <Field label="From" required><input type="date" className={inputCls} value={form.dateFrom} onChange={set('dateFrom')} /></Field>
             <Field label="To" required><input type="date" className={inputCls} value={form.dateTo} onChange={set('dateTo')} /></Field>
-            <Field label="Days (blank = weekdays)" className="col-span-2">
-              <MoneyInput className={inputCls} value={form.daysUsed} onChange={set('daysUsed')} placeholder={`Auto: ${weekdays(form.dateFrom, form.dateTo)}`} />
+            <p className="col-span-2 -mt-2 text-xs text-gray-500">
+              Days: {weekdays(form.dateFrom, form.dateTo)} (Mon to Fri). With more than one leave ticked, the days are divided between them.
+            </p>
+            <Field label="Reason" className="col-span-2">
+              <textarea className={inputCls} rows={2} value={form.reason} onChange={set('reason')} />
+            </Field>
+            <Field label="Date Filed" required className="col-span-2">
+              <input type="date" className={inputCls} value={form.dateFiled} onChange={set('dateFiled')} />
             </Field>
             <div className="col-span-2 flex justify-end gap-2 pt-2 border-t">
               <button type="button" onClick={() => setShow(false)} className="px-4 py-2 border border-gray-300 rounded text-sm">Cancel</button>

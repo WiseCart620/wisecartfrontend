@@ -21,9 +21,21 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
   const [search, setSearch] = useState('');
   const [leaveTypeFilter, setLeaveTypeFilter] = useState('ALL');
   const [show, setShow] = useState(false);
-  const [form, setForm] = useState({ employeeId: '', leaveTypeId: '', days: '', openingBalance: '' });
+  const [form, setForm] = useState({ employeeId: '', leaveTypeId: '', days: '' });
+  const [unpaidUsed, setUnpaidUsed] = useState({});
 
-  useEffect(() => { load(); }, [year]);
+  useEffect(() => { load(); }, [year, leaveTypes]);
+
+  const hireOf = Object.fromEntries((employees || []).map(e => [e.employeeId, e.hireDate]));
+  const tenureOf = (hire) => {
+    if (!hire) return '—';
+    const s = new Date(hire + 'T00:00:00');
+    const n = new Date();
+    let months = (n.getFullYear() - s.getFullYear()) * 12 + (n.getMonth() - s.getMonth());
+    if (n.getDate() < s.getDate()) months--;
+    if (months < 0) months = 0;
+    return `${String(Math.floor(months / 12)).padStart(2, '0')}Y/${String(months % 12).padStart(2, '0')}M`;
+  };
 
   const currentYear = new Date().getFullYear();
   const photoOf = Object.fromEntries((employees || []).map(e => [e.employeeId, e.photoUrl]));
@@ -53,8 +65,19 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/leave-balances?year=${year}`);
+      const [res, tx] = await Promise.all([
+        api.get(`/leave-balances?year=${year}`),
+        api.get('/leave-transactions?status=APPROVED'),
+      ]);
       setItems(res.success ? res.data || [] : []);
+      const unpaidIds = new Set((leaveTypes || []).filter(t => t.paid === false).map(t => t.leaveTypeId));
+      const map = {};
+      (tx.success ? tx.data || [] : []).forEach(t => {
+        if (unpaidIds.has(t.leaveTypeId) && String(t.dateFrom).startsWith(String(year))) {
+          map[t.employeeId] = (map[t.employeeId] || 0) + Number(t.daysUsed || 0);
+        }
+      });
+      setUnpaidUsed(map);
     } catch (e) {
       toast.error('Failed to load balances');
     } finally {
@@ -145,7 +168,6 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
         leaveTypeId: Number(form.leaveTypeId),
         year,
         days: Number(form.days),
-        openingBalance: form.openingBalance === '' ? null : Number(form.openingBalance),
       });
       toast.success(res.data?.message || 'Leave granted');
       setShow(false);
@@ -211,7 +233,7 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
               >
                 <RefreshCw size={16} /> {resetLabel}
               </button>
-              <button onClick={() => { setForm({ employeeId: '', leaveTypeId: '', days: '', openingBalance: '' }); setShow(true); }}
+              <button onClick={() => { setForm({ employeeId: '', leaveTypeId: '', days: '' }); setShow(true); }}
                 className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm">
                 <Plus size={18} /> Grant Leave
               </button>
@@ -225,7 +247,7 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
           <table className="w-full min-w-[800px]">
             <thead className="bg-white">
               <tr>
-                {['Employee', 'Leave Type', 'Opening', 'Granted', 'Used', 'Remaining'].map(h => (
+                {['Employee', 'Leave Type', 'Opening', 'Granted', 'Used', 'Remaining', 'Tenure', 'Unpaid Leave'].map(h => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
                 ))}
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -233,9 +255,9 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
             </thead>
             <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-200">
               {loading ? (
-                <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
+                <tr><td colSpan="9" className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
               ) : grouped.length === 0 ? (
-                <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">No balances for {year}</td></tr>
+                <tr><td colSpan="9" className="px-4 py-8 text-center text-gray-500">No balances for {year}</td></tr>
               ) : pageItems.map(g => {
                 const isOpen = expanded.has(g.employeeId);
                 const totals = g.rows.reduce(
@@ -262,6 +284,10 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
                       <td className="px-4 py-3 font-medium">{totals.granted}</td>
                       <td className="px-4 py-3 font-medium">{totals.used}</td>
                       <td className="px-4 py-3 font-bold">{totals.remaining}</td>
+                      <td className="px-4 py-3 font-mono text-gray-700">{tenureOf(hireOf[g.employeeId])}</td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {unpaidUsed[g.employeeId] ? `${unpaidUsed[g.employeeId]} day(s) used (unlimited)` : '—'}
+                      </td>
                       <td />
                     </tr>
                     {isOpen && g.rows.map(b => (
@@ -274,6 +300,7 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
                         <td className="px-4 py-3">{b.accrued}</td>
                         <td className="px-4 py-3">{b.used}</td>
                         <td className={`px-4 py-3 font-medium ${Number(b.closingBalance) <= 0 ? 'text-red-600' : 'text-gray-900'}`}>{b.closingBalance}</td>
+                        <td /><td />
                         <td className="px-4 py-3 text-right">
                           {canDelete && (
                             <button onClick={(e) => { e.stopPropagation(); remove(b); }}
@@ -311,22 +338,16 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
                 placeholder="Select leave type..."
                 searchPlaceholder="Search leave type..."
                 value={form.leaveTypeId}
-                options={leaveTypes.map(t => ({
+                options={leaveTypes.filter(t => t.paid !== false).map(t => ({
                   value: String(t.leaveTypeId),
                   label: t.leaveTypeName,
                 }))}
                 onChange={(v) => setForm(p => ({ ...p, leaveTypeId: v }))}
               />
             </Field>
-            <Field label="Days to add (0 = none)" required>
+            <Field label="Days to add" required className="col-span-2">
               <MoneyInput className={inputCls}
                 value={form.days} onChange={(e) => setForm(p => ({ ...p, days: e.target.value }))} />
-            </Field>
-            <Field label="Opening balance (blank = keep current)">
-              <MoneyInput className={inputCls}
-                value={form.openingBalance}
-                onChange={(e) => setForm(p => ({ ...p, openingBalance: e.target.value }))}
-                placeholder="e.g. 1 for regular, 0.5 for probi" />
             </Field>
             <div className="col-span-2 flex justify-end gap-2 pt-2 border-t">
               <button type="button" onClick={() => setShow(false)} className="px-4 py-2 border border-gray-300 rounded text-sm">Cancel</button>

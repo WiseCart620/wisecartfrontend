@@ -8,6 +8,7 @@ import Pagination from '../../common/Pagination';
 import HeaderIcon from '../../common/HeaderIcon';
 import { parseDate } from '../../../utils/dateUtils';
 import ManualAdjustmentModal from '../../modals/ManualAdjustmentModal';
+import WarehouseDeliveredAuditModal from './WarehouseDeliveredAuditModal';
 
 
 const MOVEMENT_COLS = [
@@ -129,6 +130,7 @@ const WarehouseStockTable = ({
   const totals = grandTotals || { quantity: 0, delivered: 0, pendingDelivery: 0, available: 0 };
   const [adjustmentStock, setAdjustmentStock] = useState(null);
   const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
+  const [showAudit, setShowAudit] = useState(false);
 
   const [visibleCols, setVisibleCols] = useState({
     sku: true,
@@ -184,8 +186,17 @@ const WarehouseStockTable = ({
             </span>
           )}
         </h2>
-
-        <div className="relative">
+        <div className="relative flex items-center gap-2">
+          {isAdmin && (
+            <button
+              onClick={() => setShowAudit(true)}
+              title="Check the Delivered counter against deliveries"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded border bg-white border-gray-300 text-black hover:bg-gray-100"
+            >
+              <PackageCheck size={13} />
+              Audit Delivered
+            </button>
+          )}
           <button
             onClick={() => setShowColPanel((v) => !v)}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded border transition
@@ -431,6 +442,11 @@ const WarehouseStockTable = ({
           totalItems={totalElements}
         />
       )}
+      <WarehouseDeliveredAuditModal
+        isOpen={showAudit}
+        onClose={() => setShowAudit(false)}
+        onFixed={() => { onStockUpdated && onStockUpdated(); }}
+      />
       <ManualAdjustmentModal
         isOpen={showAdjustmentModal}
         onClose={() => {
