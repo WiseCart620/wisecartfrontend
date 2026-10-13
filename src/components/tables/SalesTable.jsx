@@ -37,10 +37,11 @@ const SalesTable = ({
         <table className="w-full min-w-[680px] sales-print-table table-fixed">
           <colgroup>
             <col className="w-10" />
-            <col className="w-[18%]" />
-            <col className="w-[20%]" />
+            <col className="w-[8%]" />
+            <col className="w-[16%]" />
+            <col className="w-[16%]" />
             <col className="w-[9%]" />
-            <col className="w-[12%]" />
+            <col className="w-[10%]" />
             <col className="w-[10%]" />
             <col className="w-[12%]" />
             <col className="w-[9%]" />
@@ -49,6 +50,7 @@ const SalesTable = ({
           <thead className="bg-white border-b border-gray-200">
             <tr>
               <th className="px-3 py-3 text-center text-[11px] font-medium text-gray-500 uppercase tracking-wider">#</th>
+              <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Sale No.</th>
               <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Branch</th>
               <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider truncate">Company</th>
               <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Period</th>
@@ -64,6 +66,7 @@ const SalesTable = ({
               [...Array(5)].map((_, i) => (
                 <tr key={i} className="animate-pulse">
                   <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-6 mx-auto" /></td>
+                  <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-10" /></td>
                   <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-28" /></td>
                   <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-24" /></td>
                   <td className="px-3 py-3"><div className="h-4 bg-gray-100 rounded w-16" /></td>
@@ -76,7 +79,7 @@ const SalesTable = ({
               ))
             ) : currentSales.length === 0 ? (
               <tr>
-                <td colSpan="9" className="px-6 py-12 text-center text-gray-500">No sales found</td>
+                <td colSpan="10" className="px-6 py-12 text-center text-gray-500">No sales found</td>
               </tr>
             ) : (
               currentSales.map((sale, idx) => (
@@ -84,6 +87,7 @@ const SalesTable = ({
                   <td className="px-3 py-3 whitespace-nowrap text-center text-xs text-gray-400 font-medium">
                     {((currentPage - 1) * 10) + idx + 1}
                   </td>
+                  <td className="px-3 py-3 whitespace-nowrap text-xs font-medium text-gray-900">{sale.id}</td>
                   <td className="px-3 py-3">
                     <div className="text-xs font-medium text-gray-900 truncate" title={sale.branch.branchName}>{sale.branch.branchName}</div>
                     <div className="text-xs text-gray-500">{sale.branch.branchCode}</div>
