@@ -115,7 +115,7 @@ const buildRows = (slip) => {
         { label: 'Balance', text: amt(slip.cashAdvanceBalance) },
         { header: 'LEAVE BALANCE' },
         { label: 'Vacation Leave', text: slip.vacationLeaveBalance != null ? String(slip.vacationLeaveBalance) : '0' },
-        { label: 'Sick Leave', text: slip.sickLeaveBalance != null ? String(slip.sickLeaveBalance) : '0' },
+        { label: 'Service Incentive Leave', text: slip.sickLeaveBalance != null ? String(slip.sickLeaveBalance) : '0' },
     ];
     return { earnings, deductions, advances };
 };
