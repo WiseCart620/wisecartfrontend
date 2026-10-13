@@ -63,15 +63,9 @@ const SalesFilters = ({
   const invoicedAmt = allFilteredSales.invoicedAmount || 0;
   const grandTotal = pendingAmt + confirmedAmt + invoicedAmt;
 
-  const pendingQty = productsByStatus.pending.length > 0
-    ? productsByStatus.pending.reduce((sum, p) => sum + p.quantity, 0)
-    : allFilteredSales.pendingQty || 0;
-  const confirmedQty = productsByStatus.confirmed.length > 0
-    ? productsByStatus.confirmed.reduce((sum, p) => sum + p.quantity, 0)
-    : allFilteredSales.confirmedQty || 0;
-  const invoicedQty = productsByStatus.invoiced.length > 0
-    ? productsByStatus.invoiced.reduce((sum, p) => sum + p.quantity, 0)
-    : allFilteredSales.invoicedQty || 0;
+  const pendingQty = allFilteredSales.pendingQty || 0;
+  const confirmedQty = allFilteredSales.confirmedQty || 0;
+  const invoicedQty = allFilteredSales.invoicedQty || 0;
 
   const fmt = (n) => n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -223,26 +217,26 @@ const SalesFilters = ({
                     <button
                       key={status}
                       onClick={() => onOpenStatusModal(status)}
-                      className={`flex items-center gap-2 border border-black rounded px-3 py-1 ${hoverClass} transition-colors cursor-pointer`}
+                      className={`flex items-center gap-2 rounded px-3 py-1 ${hoverClass} transition-colors cursor-pointer`}
                     >
-                      <span className="text-xs text-gray-600">{label}:</span>
-                      <span className="text-xs text-gray-800">₱{fmt(amt)}</span>
-                      <span className="text-xs text-gray-700">{count}</span>
-                      <span className="text-xs text-gray-500 ml-1">(Qty: {qty.toLocaleString()})</span>
+                      <span className="text-xs text-black">{label}:</span>
+                      <span className="text-xs text-black">₱{fmt(amt)}</span>
+                      <span className="text-xs text-black">{count}</span>
+                      <span className="text-xs text-black ml-1">(Qty: {qty.toLocaleString()})</span>
                     </button>
                   ))}
 
-                  <div className="flex items-center gap-2 border-2 border-black rounded px-3 py-1">
-                    <span className="text-xs text-gray-700">Total Qty:</span>
-                    <span className="text-sm text-gray-800">{(pendingQty + confirmedQty + invoicedQty).toLocaleString()}</span>
+                  <div className="flex items-center gap-2 rounded px-3 py-1">
+                    <span className="text-xs text-black">Total Qty:</span>
+                    <span className="text-sm text-black">{(pendingQty + confirmedQty + invoicedQty).toLocaleString()}</span>
                   </div>
 
-                  <div className="flex items-center gap-2 border-2 border-black rounded px-3 py-1">
-                    <span className="text-xs text-orange-700">Grand Total:</span>
-                    <span className="text-sm text-orange-700">₱{fmt(grandTotal)}</span>
+                  <div className="flex items-center gap-2 rounded px-3 py-1">
+                    <span className="text-xs text-black">Grand Total:</span>
+                    <span className="text-sm text-black">₱{fmt(grandTotal)}</span>
                     <button
                       onClick={onOpenSummary}
-                      className="flex items-center gap-1 pl-2 ml-1 border-l border-orange-300 text-orange-700 hover:text-orange-900 text-xs transition-colors"
+                      className="flex items-center gap-1 pl-2 ml-1 text-black hover:underline text-xs transition-colors"
                     >
                       Open Summary <ChevronDown size={12} className="-rotate-90" />
                     </button>

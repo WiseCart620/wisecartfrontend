@@ -52,13 +52,13 @@ const StatusProductsModal = ({ selectedStatus, productsByStatus, loading, onClos
       <div className="bg-white rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl">
         <div className="p-5 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">{statusLabels[selectedStatus]} Sales — All Products</h2>
-            <p className="text-sm text-gray-500 mt-1">
+            <h2 className="text-xl font-bold text-black">{statusLabels[selectedStatus]} Sales — All Products</h2>
+            <p className="text-sm text-black mt-1">
               Total Products: {products.length} | Total Quantity: {totalQty.toLocaleString()} |
               Total Amount: ₱{totalAmt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
             </p>
           </div>
-          <button onClick={onClose} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"><X size={22} /></button>
+          <button onClick={onClose} className="p-2 text-black hover:text-black hover:bg-gray-100 rounded"><X size={22} /></button>
         </div>
 
         <div className="flex-1 overflow-auto p-5">
@@ -66,11 +66,11 @@ const StatusProductsModal = ({ selectedStatus, productsByStatus, loading, onClos
             <thead className="sticky top-0 bg-gray-100">
               <tr>
                 {['#', 'Product', 'Variation', 'SKU', 'UPC', 'Qty', 'Unit Price', 'Amount'].map(h => (
-                  <th key={h} className={`px-4 py-3 text-xs font-semibold text-gray-600 uppercase ${['Qty', 'Unit Price', 'Amount'].includes(h) ? 'text-right' : 'text-left'}`}>{h}</th>
+                  <th key={h} className={`px-4 py-3 text-xs font-semibold text-black uppercase ${['Qty', 'Unit Price', 'Amount'].includes(h) ? 'text-right' : 'text-left'}`}>{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="">
               {loading ? (
                 [...Array(5)].map((_, i) => (
                   <tr key={i} className="animate-pulse">
@@ -78,32 +78,32 @@ const StatusProductsModal = ({ selectedStatus, productsByStatus, loading, onClos
                   </tr>
                 ))
               ) : products.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-12 text-center text-gray-400 italic">No products found</td></tr>
+                <tr><td colSpan={8} className="px-4 py-12 text-center text-black italic">No products found</td></tr>
               ) : (
                 products.map((product, idx) => (
                   <tr key={idx} className="hover:bg-white">
-                    <td className="px-4 py-3 text-center text-gray-400">{idx + 1}</td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{product.productName}</td>
+                    <td className="px-4 py-3 text-center text-black">{idx + 1}</td>
+                    <td className="px-4 py-3 font-medium text-black">{product.productName}</td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.variationDisplay !== 'No variation' ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-500'}`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.variationDisplay !== 'No variation' ? 'bg-orange-100 text-black' : 'bg-gray-100 text-black'}`}>
                         {product.variationDisplay}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{product.sku}</td>
-                    <td className="px-4 py-3 text-gray-600">{product.upc}</td>
-                    <td className="px-4 py-3 text-right font-semibold text-gray-900">{product.quantity.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-right text-gray-700">₱{product.unitPrice.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
-                    <td className="px-4 py-3 text-right font-bold text-orange-600">₱{product.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3 text-black">{product.sku}</td>
+                    <td className="px-4 py-3 text-black">{product.upc}</td>
+                    <td className="px-4 py-3 text-right font-semibold text-black">{product.quantity.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right text-black">₱{product.unitPrice.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3 text-right font-bold text-black">₱{product.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
                   </tr>
                 ))
               )}
             </tbody>
-            <tfoot className="sticky bottom-0 bg-gray-100 border-t-2 border-gray-300">
+            <tfoot className="sticky bottom-0 bg-gray-100 ">
               <tr>
-                <td colSpan={5} className="px-4 py-3 text-right font-bold text-gray-700">TOTALS:</td>
-                <td className="px-4 py-3 text-right font-bold text-gray-900">{totalQty.toLocaleString()}</td>
+                <td colSpan={5} className="px-4 py-3 text-right font-bold text-black">TOTALS:</td>
+                <td className="px-4 py-3 text-right font-bold text-black">{totalQty.toLocaleString()}</td>
                 <td />
-                <td className="px-4 py-3 text-right font-bold text-orange-700">₱{totalAmt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                <td className="px-4 py-3 text-right font-bold text-black">₱{totalAmt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
               </tr>
             </tfoot>
           </table>

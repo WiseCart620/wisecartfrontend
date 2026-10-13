@@ -85,14 +85,14 @@ const SalesSummaryModal = ({ onClose, filterData, statusFilter, searchTerm, comp
         h2 { font-size: 13pt; font-weight: bold; margin-bottom: 8pt; }
         .meta { display: grid; grid-template-columns: repeat(4,1fr); gap: 4pt; margin-bottom: 10pt; }
         .meta-item { border: 0.5pt solid #ccc; padding: 3pt 5pt; border-radius: 2pt; }
-        .meta-label { display: block; font-size: 6.5pt; color: #666; text-transform: uppercase; margin-bottom: 1pt; }
+        .meta-label { display: block; font-size: 6.5pt; color: #000; text-transform: uppercase; margin-bottom: 1pt; }
         table { width: 100%; border-collapse: collapse; font-size: 7.5pt; }
         th { background: #f0f0f0; border: 0.5pt solid #999; padding: 3pt 4pt; text-align: left; font-size: 7pt; }
         td { border: 0.5pt solid #ccc; padding: 2.5pt 4pt; }
         tr:nth-child(even) td { background: #fafafa; }
         tfoot td { border-top: 1.5pt solid #333; font-weight: bold; }
-        .sub { font-size: 6.5pt; color: #555; }
-        .footer { margin-top: 8pt; font-size: 7pt; color: #666; text-align: right; }
+        .sub { font-size: 6.5pt; color: #000; }
+        .footer { margin-top: 8pt; font-size: 7pt; color: #000; text-align: right; }
         @page { size: A4 portrait; margin: 10mm 8mm; }
       </style>
     </head><body>${content}</body></html>`);
@@ -140,8 +140,8 @@ const SalesSummaryModal = ({ onClose, filterData, statusFilter, searchTerm, comp
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 flex-shrink-0">
           <div>
-            <h2 className="text-base font-semibold text-gray-800">Sales Summary Report</h2>
-            <p className="text-xs text-gray-500">{selectedCompany} · {selectedBranch} · {statusLabel}</p>
+            <h2 className="text-base font-semibold text-black">Sales Summary Report</h2>
+            <p className="text-xs text-black">{selectedCompany} · {selectedBranch} · {statusLabel}</p>
           </div>
           <div className="flex gap-2">
             <button
@@ -163,7 +163,7 @@ const SalesSummaryModal = ({ onClose, filterData, statusFilter, searchTerm, comp
         </div>
 
         {/* Body */}
-        <div className="overflow-auto flex-1 p-5" id="sales-summary-modal-body">
+        <div className="overflow-auto flex-1 p-5 text-black" id="sales-summary-modal-body">
           <h2 style={{ fontSize: '13pt', fontWeight: 'bold', marginBottom: '8pt', fontFamily: 'Arial, sans-serif' }}>
             Sales Report — WISECART MERCHANTS CORP.
           </h2>
@@ -175,8 +175,8 @@ const SalesSummaryModal = ({ onClose, filterData, statusFilter, searchTerm, comp
               ['Status', statusLabel],
               ['Date of Coverage', `${dateFrom} to ${dateTo}`]
             ].map(([label, val]) => (
-              <div key={label} style={{ border: '0.5pt solid #ccc', padding: '3pt 5pt', borderRadius: '2pt' }}>
-                <span style={{ display: 'block', fontSize: '6.5pt', color: '#666', textTransform: 'uppercase', marginBottom: '1pt' }}>
+              <div key={label} style={{ border: 'none', padding: '3pt 5pt', borderRadius: '2pt' }}>
+                <span style={{ display: 'block', fontSize: '6.5pt', color: '#000', textTransform: 'uppercase', marginBottom: '1pt' }}>
                   {label}
                 </span>
                 {val}
@@ -185,37 +185,37 @@ const SalesSummaryModal = ({ onClose, filterData, statusFilter, searchTerm, comp
           </div>
 
           {loading ? (
-            <div className="py-16 text-center text-gray-400 text-sm animate-pulse">Loading report data...</div>
+            <div className="py-16 text-center text-black text-sm animate-pulse">Loading report data...</div>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '7.5pt', fontFamily: 'Arial, sans-serif' }}>
               <thead>
                 <tr>
-                  <th style={{ border: '0.5pt solid #999', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'left', width: '30px', fontSize: '7pt' }}>#</th>
-                  <th style={{ border: '0.5pt solid #999', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'left', fontSize: '7pt' }}>PRODUCT / SKU / UPC</th>
-                  <th style={{ border: '0.5pt solid #999', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'right', fontSize: '7pt' }}>QTY</th>
-                  <th style={{ border: '0.5pt solid #999', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'right', fontSize: '7pt' }}>UNIT PRICE</th>
-                  <th style={{ border: '0.5pt solid #999', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'right', fontSize: '7pt' }}>TOTAL</th>
+                  <th style={{ border: 'none', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'left', width: '30px', fontSize: '7pt' }}>#</th>
+                  <th style={{ border: 'none', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'left', fontSize: '7pt' }}>PRODUCT / SKU / UPC</th>
+                  <th style={{ border: 'none', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'right', fontSize: '7pt' }}>QTY</th>
+                  <th style={{ border: 'none', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'right', fontSize: '7pt' }}>UNIT PRICE</th>
+                  <th style={{ border: 'none', padding: '3pt 4pt', background: '#f0f0f0', textAlign: 'right', fontSize: '7pt' }}>TOTAL</th>
                 </tr>
               </thead>
               <tbody>
                 {printRows.map((row, idx) => (
                   <tr key={idx} style={{ background: idx % 2 === 1 ? '#fafafa' : '#fff' }}>
-                    <td style={{ border: '0.5pt solid #ccc', padding: '2.5pt 4pt' }}>{idx + 1}</td>
-                    <td style={{ border: '0.5pt solid #ccc', padding: '2.5pt 4pt' }}>
+                    <td style={{ border: 'none', padding: '2.5pt 4pt' }}>{idx + 1}</td>
+                    <td style={{ border: 'none', padding: '2.5pt 4pt' }}>
                       <div style={{ fontWeight: 600 }}>
                         {row.productName}{row.variationDisplay ? ` — ${row.variationDisplay}` : ''}
                       </div>
-                      <div style={{ fontSize: '6.5pt', color: '#555' }}>
+                      <div style={{ fontSize: '6.5pt', color: '#000' }}>
                         SKU: {row.sku} &nbsp;|&nbsp; UPC: {row.upc}
                       </div>
                     </td>
-                    <td style={{ border: '0.5pt solid #ccc', padding: '2.5pt 4pt', textAlign: 'right' }}>
+                    <td style={{ border: 'none', padding: '2.5pt 4pt', textAlign: 'right' }}>
                       {row.quantity.toLocaleString()}
                     </td>
-                    <td style={{ border: '0.5pt solid #ccc', padding: '2.5pt 4pt', textAlign: 'right' }}>
+                    <td style={{ border: 'none', padding: '2.5pt 4pt', textAlign: 'right' }}>
                       {Number(row.unitPrice).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                     </td>
-                    <td style={{ border: '0.5pt solid #ccc', padding: '2.5pt 4pt', textAlign: 'right' }}>
+                    <td style={{ border: 'none', padding: '2.5pt 4pt', textAlign: 'right' }}>
                       {Number(row.amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                     </td>
                   </tr>
@@ -223,21 +223,21 @@ const SalesSummaryModal = ({ onClose, filterData, statusFilter, searchTerm, comp
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={2} style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt', fontWeight: 'bold', textAlign: 'right', borderTop: '1.5pt solid #333' }}>
+                  <td colSpan={2} style={{ border: 'none', padding: '3pt 4pt', fontWeight: 'bold', textAlign: 'right', borderTop: '1.5pt solid #333' }}>
                     TOTAL QTY
                   </td>
-                  <td style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt', fontWeight: 'bold', textAlign: 'right', borderTop: '1.5pt solid #333' }}>
+                  <td style={{ border: 'none', padding: '3pt 4pt', fontWeight: 'bold', textAlign: 'right', borderTop: '1.5pt solid #333' }}>
                     {totalQty.toLocaleString()}
                   </td>
-                  <td colSpan={2} style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt', borderTop: '1.5pt solid #333' }} />
+                  <td colSpan={2} style={{ border: 'none', padding: '3pt 4pt', borderTop: '1.5pt solid #333' }} />
                 </tr>
                 <tr>
-                  <td colSpan={2} style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt', fontWeight: 'bold', textAlign: 'right' }}>
+                  <td colSpan={2} style={{ border: 'none', padding: '3pt 4pt', fontWeight: 'bold', textAlign: 'right' }}>
                     GRAND TOTAL
                   </td>
-                  <td style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt' }} />
-                  <td style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt' }} />
-                  <td style={{ border: '0.5pt solid #ccc', padding: '3pt 4pt', fontWeight: 'bold', textAlign: 'right' }}>
+                  <td style={{ border: 'none', padding: '3pt 4pt' }} />
+                  <td style={{ border: 'none', padding: '3pt 4pt' }} />
+                  <td style={{ border: 'none', padding: '3pt 4pt', fontWeight: 'bold', textAlign: 'right' }}>
                     ₱{totalAmt.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                   </td>
                 </tr>
@@ -245,7 +245,7 @@ const SalesSummaryModal = ({ onClose, filterData, statusFilter, searchTerm, comp
             </table>
           )}
 
-          <div style={{ marginTop: '8pt', fontSize: '7pt', color: '#666', textAlign: 'right', fontFamily: 'Arial, sans-serif' }}>
+          <div style={{ marginTop: '8pt', fontSize: '7pt', color: '#000', textAlign: 'right', fontFamily: 'Arial, sans-serif' }}>
             Generated: {new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })} &nbsp;|&nbsp; Total Products: {printRows.length}
           </div>
         </div>
