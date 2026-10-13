@@ -7,7 +7,7 @@ import Pagination from '../common/Pagination';
 import usePagination from './usePagination';
 import SearchableSelect from './SearchableSelect';
 
-const EMPTY = { leaveTypeName: '', paid: true, maxPerMonth: '' };
+const EMPTY = { leaveTypeName: '', paid: true, maxPerMonth: '', monthlyAccrual: '0.5' };
 const SYSTEM = ['Vacation Leave', 'Service Incentive Leave'];
 
 const LeaveTypesTab = ({ leaveTypes, canCreate, canEdit, canDelete, onChanged }) => {
@@ -24,6 +24,7 @@ const LeaveTypesTab = ({ leaveTypes, canCreate, canEdit, canDelete, onChanged })
       leaveTypeName: t.leaveTypeName,
       paid: t.paid !== false,
       maxPerMonth: t.maxPerMonth ?? '',
+      monthlyAccrual: t.probationaryMonthly ?? '0',
     });
     setShow(true);
   };
@@ -35,6 +36,7 @@ const LeaveTypesTab = ({ leaveTypes, canCreate, canEdit, canDelete, onChanged })
       leaveTypeName: form.leaveTypeName.trim(),
       paid: !!form.paid,
       maxPerMonth: form.paid && form.maxPerMonth !== '' ? Number(form.maxPerMonth) : null,
+      monthlyAccrual: form.paid ? Number(form.monthlyAccrual === '' ? 0 : form.monthlyAccrual) : 0,
     };
     try {
       if (editing) await api.put(`/leave-types/${editing.leaveTypeId}`, payload);
@@ -57,6 +59,16 @@ const LeaveTypesTab = ({ leaveTypes, canCreate, canEdit, canDelete, onChanged })
     } catch (err) {
       toast.error(err.message || 'Failed to delete');
     }
+  };
+
+  const accrualText = (t) => {
+    if (t.paid === false) return '—';
+    const m = Number(t.probationaryMonthly || 0);
+    const y = Number(t.annualResetRegular || 0);
+    const parts = [];
+    if (m > 0) parts.push(`${m} per month`);
+    if (y > 0) parts.push(`${y} per year (1 yr+)`);
+    return parts.length ? parts.join(' + ') : 'Manual grant only';
   };
 
   const filteredTypes = leaveTypes.filter(t =>
@@ -88,10 +100,10 @@ const LeaveTypesTab = ({ leaveTypes, canCreate, canEdit, canDelete, onChanged })
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full tbl-card mb-4">
         <div className="overflow-auto w-full tbl-scroll">
-          <table className="w-full min-w-[600px] text-sm">
+          <table className="w-full min-w-[700px] text-sm">
             <thead className="bg-white">
               <tr>
-                {['Leave Type', 'Pay', 'Max use per month', 'Granting', ''].map(h => (
+                {['Leave Type', 'Pay', 'Accrual', 'Max use per month', ''].map(h => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
                 ))}
               </tr>
@@ -103,8 +115,8 @@ const LeaveTypesTab = ({ leaveTypes, canCreate, canEdit, canDelete, onChanged })
                 <tr key={t.leaveTypeId} className="hover:bg-white">
                   <td className="px-4 py-3 font-medium text-gray-900">{t.leaveTypeName}</td>
                   <td className="px-4 py-3">{t.paid === false ? 'Unpaid (unlimited)' : 'Paid'}</td>
+                  <td className="px-4 py-3">{accrualText(t)}</td>
                   <td className="px-4 py-3">{t.paid === false ? '—' : (t.maxPerMonth ?? 'No limit')}</td>
-                  <td className="px-4 py-3 text-gray-500">{t.autoGrant ? 'Automatic (by tenure)' : 'Manual'}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
                       {canEdit && <button onClick={() => startEdit(t)} className="p-2 text-orange-600 hover:bg-orange-50 rounded"><Edit2 size={16} /></button>}
@@ -136,11 +148,18 @@ const LeaveTypesTab = ({ leaveTypes, canCreate, canEdit, canDelete, onChanged })
               Paid leave (uncheck for unpaid leave = unlimited days)
             </label>
             {form.paid && (
-              <Field label="Max use per month (blank = no limit)">
-                <MoneyInput className={inputCls} value={form.maxPerMonth}
-                  onChange={(e) => setForm(p => ({ ...p, maxPerMonth: e.target.value }))}
-                  placeholder="e.g. 1" />
-              </Field>
+              <>
+                <Field label="Days accrued per month (0 = none, grant manually)">
+                  <MoneyInput className={inputCls} value={form.monthlyAccrual}
+                    onChange={(e) => setForm(p => ({ ...p, monthlyAccrual: e.target.value }))}
+                    placeholder="0.5, 1 or 2" />
+                </Field>
+                <Field label="Max use per month (blank = no limit)">
+                  <MoneyInput className={inputCls} value={form.maxPerMonth}
+                    onChange={(e) => setForm(p => ({ ...p, maxPerMonth: e.target.value }))}
+                    placeholder="e.g. 1" />
+                </Field>
+              </>
             )}
             <div className="flex justify-end gap-2 pt-2 border-t">
               <button type="button" onClick={() => setShow(false)} className="px-4 py-2 border border-gray-300 rounded text-sm">Cancel</button>
