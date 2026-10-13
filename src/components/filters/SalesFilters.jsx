@@ -9,6 +9,7 @@ const SalesFilters = ({
   filterData, setFilterData,
   statusFilter, setStatusFilter,
   searchTerm, setSearchTerm,
+  saleNoTerm, setSaleNoTerm,
   companies, branches,
   allFilteredSales,
   productsByStatus,
@@ -56,7 +57,7 @@ const SalesFilters = ({
   };
 
   const hasActiveFilters = (filterData.companyIds?.length > 0) || (filterData.branchIds?.length > 0) || filterData.startDate ||
-    filterData.endDate || filterData.productFilters.length > 0 || searchTerm || statusFilter !== 'ALL';
+    filterData.endDate || filterData.productFilters.length > 0 || searchTerm || saleNoTerm || statusFilter !== 'ALL';
 
   const pendingAmt = allFilteredSales.pendingAmount || 0;
   const confirmedAmt = allFilteredSales.confirmedAmount || 0;
@@ -92,7 +93,7 @@ const SalesFilters = ({
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <input
                 type="text"
-                placeholder="Search branch/company/sale ID..."
+                placeholder="Search branch/company..."
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                 className="pl-9 pr-3 py-2 border border-gray-300 rounded w-full text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
@@ -180,6 +181,16 @@ const SalesFilters = ({
                 disabled={dataLoading}
               />
             </div>
+          )}
+
+          {canSeeFilter(user, 'sales', 'search') && (
+            <input
+              type="text"
+              value={saleNoTerm || ''}
+              onChange={(e) => { setSaleNoTerm(e.target.value); setCurrentPage(1); }}
+              placeholder="Sale No. (e.g. 3258, 7753)"
+              className="h-9 px-2.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500 w-52 flex-shrink-0"
+            />
           )}
 
           {hasActiveFilters && (

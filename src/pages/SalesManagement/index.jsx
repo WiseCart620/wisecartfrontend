@@ -38,6 +38,9 @@ const SalesManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState(SALE_STATUS.ALL);
   const [searchTerm, setSearchTerm] = useState('');
+  const [saleNoTerm, setSaleNoTerm] = useState('');
+  // Sale No. filter takes priority over the general search text
+  const effectiveSearch = saleNoTerm.trim() || searchTerm;
   const [filterData, setFilterData] = useState(DEFAULT_FILTER_DATA);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showSummaryModal, setShowSummaryModal] = useState(false);
@@ -65,7 +68,7 @@ const SalesManagement = () => {
     inventories, warehouses, warehouseStocks, productSummaries,
     loading, staticDataLoading, totalPages, totalElements, allFilteredSales,
     fetchSales, setCompanies, setProducts,
-  } = useSalesData({ filterData, statusFilter, searchTerm, currentPage });
+  } = useSalesData({ filterData, statusFilter, searchTerm: effectiveSearch, currentPage });
 
   const { allProductOptions, productOptions } = useProductOptions({
     products,
@@ -113,7 +116,7 @@ const SalesManagement = () => {
     JSON.stringify(filterData.branchIds),
     JSON.stringify(filterData.productFilters),
     filterData.startDate, filterData.endDate,
-    statusFilter, searchTerm,
+    statusFilter, effectiveSearch,
   ]);
 
   useEffect(() => {
@@ -126,6 +129,7 @@ const SalesManagement = () => {
     setFilterData(DEFAULT_FILTER_DATA);
     setStatusFilter(SALE_STATUS.ALL);
     setSearchTerm('');
+    setSaleNoTerm('');
     setCurrentPage(1);
   };
 
@@ -136,7 +140,7 @@ const SalesManagement = () => {
       const endDateObj = filterData.endDate ? new Date(filterData.endDate) : null;
       const params = new URLSearchParams({
         status: statusToFetch,
-        ...(searchTerm && { searchTerm }),
+        ...(effectiveSearch && { searchTerm: effectiveSearch }),
         ...(startDateObj && { startYear: startDateObj.getFullYear(), startMonth: startDateObj.getMonth() + 1 }),
         ...(endDateObj && { endYear: endDateObj.getFullYear(), endMonth: endDateObj.getMonth() + 1 }),
       });
@@ -342,6 +346,8 @@ const SalesManagement = () => {
           setStatusFilter={setStatusFilter}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
+          saleNoTerm={saleNoTerm}
+          setSaleNoTerm={setSaleNoTerm}
           companies={companies}
           branches={branches}
           allFilteredSales={allFilteredSales}
@@ -489,7 +495,7 @@ const SalesManagement = () => {
             onClose={() => setShowSummaryModal(false)}
             filterData={filterData}
             statusFilter={statusFilter}
-            searchTerm={searchTerm}
+            searchTerm={effectiveSearch}
             companies={companies}
             branches={branches}
           />
