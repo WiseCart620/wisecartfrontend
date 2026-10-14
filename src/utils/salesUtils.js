@@ -31,6 +31,32 @@ export const formatPHDateTime = (dateString) => {
   });
 };
 
+export const parseServerUtc = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value === 'number') return new Date(value);
+  if (typeof value !== 'string') return null;
+  const hasZone = /([zZ]|[+-]\d{2}:?\d{2})$/.test(value);
+  const iso = value.includes('T') ? value : value.replace(' ', 'T');
+  const d = new Date(hasZone ? iso : iso + 'Z');
+  return isNaN(d.getTime()) ? null : d;
+};
+
+export const formatServerUtcToPH = (value) => {
+  const d = parseServerUtc(value);
+  if (!d) return '';
+  return d.toLocaleString('en-PH', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
+  });
+};
+
 export const formatDate = (dateString) => {
   if (!dateString) return new Date().toLocaleDateString('en-US', {
     year: 'numeric', month: 'long', day: 'numeric'

@@ -1,6 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import { formatCurrency, formatPHDateTime } from '../../utils/salesUtils';
+import { formatCurrency, formatPHDateTime, formatServerUtcToPH } from '../../utils/salesUtils';
 import { months } from '../../constants/salesConstants';
 
 const SaleViewModal = ({ sale, products, productPrices, onClose, productFilters = [] }) => {
@@ -80,7 +80,7 @@ const SaleViewModal = ({ sale, products, productPrices, onClose, productFilters 
             <div className="p-4 bg-white rounded">
               <h3 className="font-semibold text-gray-700 mb-2">Encoded By</h3>
               <p className="text-gray-900 text-lg">{sale.createdBy || sale.generatedBy || 'System'}</p>
-              <p className="text-xs text-gray-500 mt-1">Created: {formatPHDateTime(sale.createdAt)}</p>
+              <p className="text-xs text-gray-500 mt-1">Created: {formatServerUtcToPH(sale.createdAt)}</p>
             </div>
           </div>
 
