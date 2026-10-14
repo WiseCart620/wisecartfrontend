@@ -374,20 +374,6 @@ const DeliveryManagement = () => {
               </button>
             )}
           </div>
-
-          <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded px-2 py-1.5 shadow-sm">
-            <ArrowUpDown size={14} className="text-gray-500 flex-shrink-0" />
-            <span className="text-xs text-gray-500 font-medium whitespace-nowrap hidden sm:inline">Sort by:</span>
-            <select
-              value={sortMode}
-              onChange={e => { setSortMode(e.target.value); setCurrentPage(1); }}
-              className="text-xs text-gray-700 bg-transparent border-none outline-none cursor-pointer pr-1"
-            >
-              {SORT_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
         </div>
 
         <DeliveryFilters
