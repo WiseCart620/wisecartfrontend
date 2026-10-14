@@ -137,6 +137,9 @@ const BranchStockTable = ({
                             {stock.variationUpc || stock.productUpc || stock.upc}
                           </div>
                         )}
+                        {stock.companySku && (
+                          <div className="font-normal text-black truncate">Co. SKU: {stock.companySku}</div>
+                        )}
                       </div>
                     </td>
                     <td className="px-3 py-3 text-center text-sm font-semibold text-black td-num">

@@ -19,6 +19,7 @@ const buildRows = (data) => data.map(s => {
     product: s.fullProductName || s.productName || '',
     variation: s.combinationDisplay || s.variationName || '',
     sku, upc,
+    companySku: s.companySku || '',
     totalStock: s.quantity || 0,
     delivered: s.deliveredQuantity || 0,
     totalSales: s.totalSales || 0,
@@ -58,13 +59,13 @@ const BranchStockExportButton = ({ fetchData }) => {
         available: sumCol(rows, 'available'),
       };
 
-      const headers = ['Branch', 'Branch Code', 'Product', 'Variation', 'SKU', 'UPC',
+      const headers = ['Branch', 'Branch Code', 'Product', 'Variation', 'SKU', 'Company SKU', 'UPC',
         'Total Stock', 'Delivered', 'Total Sales', 'Pending Delivery', 'Pending Sale', 'Available', 'Last Updated'];
       const lines = rows.map(r => [
-        r.branch, r.branchCode, r.product, r.variation, r.sku, r.upc,
+        r.branch, r.branchCode, r.product, r.variation, r.sku, r.companySku, r.upc,
         r.totalStock, r.delivered, r.totalSales, r.pendingDelivery, r.pendingSale, r.available, r.lastUpdated
       ]);
-      lines.push(['TOTAL', '', '', '', '', '',
+      lines.push(['TOTAL', '', '', '', '', '', '',
         totals.totalStock, totals.delivered, totals.totalSales,
         totals.pendingDelivery, totals.pendingSale, totals.available, '']);
 
@@ -109,7 +110,7 @@ const BranchStockExportButton = ({ fetchData }) => {
       <tr>
         <td class="left">${r.branch}<br/><span class="sub">${r.branchCode}</span></td>
         <td class="left">${r.product}${r.variation ? `<br/><span class="sub">${r.variation}</span>` : ''}</td>
-        <td class="left">${r.sku}<br/><span class="sub">${r.upc}</span></td>
+        <td class="left">${r.sku}${r.companySku ? `<br/><span class="sub">Co. SKU: ${r.companySku}</span>` : ''}<br/><span class="sub">${r.upc}</span></td>
         <td>${r.totalStock.toLocaleString()}</td>
         <td>${r.delivered.toLocaleString()}</td>
         <td>${r.totalSales.toLocaleString()}</td>
@@ -175,7 +176,7 @@ const BranchStockExportButton = ({ fetchData }) => {
         disabled={exportingCsv || exportingPdf}
         className="flex items-center gap-1.5 h-8 px-3 bg-white text-gray-700 border border-gray-300 rounded hover:bg-white hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm whitespace-nowrap"
       >
-        {exportingCsv ? <Loader2 size={14}className="animate-spin" /> : <FileSpreadsheet size={14} />}
+        {exportingCsv ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />}
         <span>{exportingCsv ? 'Preparing...' : 'Export CSV'}</span>
       </button>
       <button
