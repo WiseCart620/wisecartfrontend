@@ -10,12 +10,14 @@ const BranchReportInlineTable = ({ rows = [], loading, hasDateFilter = false }) 
           sku: r.variationSku || r.productSku || 'N/A',
           upc: r.variationUpc || r.productUpc || 'N/A',
           variationName: r.variationName || '',
+          companySkus: new Set(),
           begStock: 0, transferIn: 0, returns: 0, delivered: 0, totalSales: 0,
           pendingDelivery: 0, pendingSale: 0, stockOnHand: 0, availableStock: 0,
           periodStock: 0, periodAvailableStock: 0,
         });
       }
       const e = map.get(key);
+      if (r.companySku) e.companySkus.add(r.companySku);
       e.begStock += Number(r.begStock) || 0;
       e.transferIn += Number(r.transferIn) || 0;
       e.returns += Number(r.returns) || 0;
@@ -85,6 +87,7 @@ const BranchReportInlineTable = ({ rows = [], loading, hasDateFilter = false }) 
                   </td>
                   <td className="px-3 py-3 text-xs">
                     <div>SKU: {row.sku}</div>
+                    {row.companySkus.size > 0 && <div>Co. SKU: {[...row.companySkus].join(', ')}</div>}
                     {row.upc !== 'N/A' && <div className="text-gray-500">UPC: {row.upc}</div>}
                   </td>
                   {cols.map(([label, key, colorClass]) => (

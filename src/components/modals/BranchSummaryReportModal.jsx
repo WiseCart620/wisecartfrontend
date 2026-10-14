@@ -55,11 +55,13 @@ const BranchSummaryReportModal = ({ isOpen, onClose, data = [], filters = {} }) 
                     sku: r.variationSku || r.productSku || 'N/A',
                     upc: r.variationUpc || r.productUpc || 'N/A',
                     variationName: r.variationName || '',
+                    companySkus: new Set(),
                     begStock: 0, transferIn: 0, returns: 0, delivered: 0, totalSales: 0,
                     pendingDelivery: 0, pendingSale: 0, stockOnHand: 0, availableStock: 0,
                 });
             }
             const e = map.get(key);
+            if (r.companySku) e.companySkus.add(r.companySku);
             e.begStock += Number(r.begStock) || 0;
             e.transferIn += Number(r.transferIn) || 0;
             e.returns += Number(r.returns) || 0;
@@ -141,13 +143,13 @@ const BranchSummaryReportModal = ({ isOpen, onClose, data = [], filters = {} }) 
     const handleExportExcel = () => {
         const rows = aggregated.map(r => ({
             Product: truncate(r.productName), Variation: r.variationName,
-            SKU: r.sku, UPC: r.upc,
+            SKU: r.sku, 'Company SKU': [...r.companySkus].join(', '), UPC: r.upc,
             'Beg. Stock': r.begStock, 'Transfer In': r.transferIn, 'Return': r.returns,
             'Delivered': r.delivered, 'Total Sales': r.totalSales,
             'Pending Delivery': r.pendingDelivery, 'Pending Sale': r.pendingSale,
             'Total Stock': r.stockOnHand, 'Available Stock': r.availableStock,
         }));
-        rows.push({ Product: 'TOTAL', Variation: '', SKU: '', UPC: '', ...totals });
+        rows.push({ Product: 'TOTAL', Variation: '', SKU: '', 'Company SKU': '', UPC: '', ...totals });
         const ws = XLSX.utils.json_to_sheet(rows);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Company Stock Summary');
@@ -247,6 +249,7 @@ const BranchSummaryReportModal = ({ isOpen, onClose, data = [], filters = {} }) 
                                         </td>
                                         <td style={{ textAlign: 'center', padding: '5px 4px', fontSize: '6.5pt', border: '1px solid #aaa' }}>
                                             <div>{row.sku}</div>
+                                            {row.companySkus.size > 0 && <div style={{ color: '#888' }}>Co. SKU: {[...row.companySkus].join(', ')}</div>}
                                             {row.upc !== 'N/A' && <div style={{ color: '#888' }}>{row.upc}</div>}
                                         </td>
                                         {columns.map(([label, key]) => (
