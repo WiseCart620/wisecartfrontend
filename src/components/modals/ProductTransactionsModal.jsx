@@ -1178,7 +1178,7 @@ const ProductTransactionsModal = ({
                                                                         <div className="text-xs text-gray-500 line-through">{transaction.remarks || 'No remarks'}</div>
                                                                         {transaction.deletedAt && (
                                                                             <div className="text-xs text-red-600 mt-1 font-semibold">
-                                                                                ⚠️ Deleted: {formatDate(parseDate(transaction.deletedAt))}
+                                                                                ⚠️ Deleted: {formatDate(parseServerUtc(transaction.deletedAt))}
                                                                             </div>
                                                                         )}
                                                                     </div>
