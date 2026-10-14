@@ -15,6 +15,18 @@ export const parseDate = (dateString) => {
   return toManila(dateString);
 };
 
+
+export const parseServerUtc = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value === 'number') return new Date(value);
+  if (typeof value !== 'string') return null;
+  const hasZone = /([zZ]|[+-]\d{2}:?\d{2})$/.test(value);
+  const iso = value.includes('T') ? value : value.replace(' ', 'T');
+  const d = new Date(hasZone ? iso : iso + 'Z');
+  return isNaN(d.getTime()) ? null : d;
+};
+
 export const formatDateForInput = (dateString) => {
   if (!dateString) return '';
   try {

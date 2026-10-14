@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
-import { parseDate } from '../../utils/dateUtils';
+import { parseDate, parseServerUtc } from '../../utils/dateUtils';
 import Pagination from '../../components/common/Pagination';
 import * as XLSX from 'xlsx';
 
@@ -41,7 +41,7 @@ const ProductTransactionsModal = ({
             : null;
 
         const systemDate = transaction.createdAt
-            ? parseDate(transaction.createdAt)
+            ? parseServerUtc(transaction.createdAt)
             : userEnteredDate;
 
         return { userEnteredDate, systemDate };
@@ -138,8 +138,8 @@ const ProductTransactionsModal = ({
         });
         Object.keys(grouped).forEach(refKey => {
             grouped[refKey].sort((a, b) => {
-                const dateA = a.createdAt ? parseDate(a.createdAt) : null;
-                const dateB = b.createdAt ? parseDate(b.createdAt) : null;
+                const dateA = a.createdAt ? parseServerUtc(a.createdAt) : null;
+                const dateB = b.createdAt ? parseServerUtc(b.createdAt) : null;
                 if (dateA && dateB) return (dateB || 0) - (dateA || 0);
                 return (b.id || 0) - (a.id || 0);
             });
