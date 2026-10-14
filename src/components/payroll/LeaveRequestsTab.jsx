@@ -312,7 +312,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
                         <span className="text-xs text-gray-500">
                           {o.paid
                             ? `Balance: ${o.balance} day(s) · Max ${o.max ?? 'no limit'}${o.max != null ? ' per month' : ''}`
-                            : 'Unpaid · unlimited'}
+                            : 'Unpaid'}
                         </span>
                         {on && (
                           <input type="number" min="0" step="1"
