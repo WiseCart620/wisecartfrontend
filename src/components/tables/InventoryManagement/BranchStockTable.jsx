@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { RotateCcw, Store, CheckCircle, ShoppingCart, Truck, Clock, Eye, Loader2, Package, Barcode, Boxes, PackageCheck, CalendarClock, MousePointerClick } from 'lucide-react';
 import Pagination from '../../common/Pagination';
 import HeaderIcon from '../../common/HeaderIcon';
-import { parseDate } from '../../../utils/dateUtils';
+import { parseServerUtc } from '../../../utils/salesUtils';
 
 const SKELETON_ROWS = 5;
 
@@ -165,12 +165,12 @@ const BranchStockTable = ({
                     </td>
                     <td className="px-4 py-3 text-xs text-black">
                       {(() => {
-                        const date = parseDate(stock.lastUpdated);
+                        const date = parseServerUtc(stock.lastUpdated);
                         if (!date) return 'N/A';
                         return (
                           <>
-                            {date.toLocaleDateString()}<br />
-                            <span className="text-black">{date.toLocaleTimeString()}</span>
+                            {date.toLocaleDateString('en-US', { timeZone: 'Asia/Manila' })}<br />
+                            <span className="text-black">{date.toLocaleTimeString('en-US', { timeZone: 'Asia/Manila' })}</span>
                           </>
                         );
                       })()}
