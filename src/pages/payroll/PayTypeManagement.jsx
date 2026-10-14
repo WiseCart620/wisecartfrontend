@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, X, Search, Lock } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Lock } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { api } from '../../services/api';
 import { LoadingOverlay } from '../../components/common/LoadingOverlay';
@@ -13,11 +13,6 @@ import SearchableSelect from '../../components/payroll/SearchableSelect';
 
 const EMPTY = { payTypeName: '', category: 'EARNING', isTaxable: true, unit: 'HOURS', includeInEntries: false };
 const inputCls = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition';
-const CATEGORY_STYLE = {
-  EARNING: 'bg-green-100 text-green-800',
-  ALLOWANCE: 'bg-orange-100 text-orange-800',
-  DEDUCTION: 'bg-red-100 text-red-800',
-};
 
 const HIDDEN_NAMES = new Set(['sss', 'philhealth', 'pag-ibig', 'pagibig', 'withholding tax', 'basic pay']);
 const HIDDEN_CODES = new Set(['SSS', 'PHILHEALTH', 'PAGIBIG', 'WITHHOLDING_TAX', 'CASH_ADVANCE', 'LOAN', 'HMO', 'REIMBURSEMENT', 'THIRTEENTH_MONTH', 'LEAVE_CONVERSION']);
@@ -227,9 +222,7 @@ const PayTypeManagement = () => {
                       {p.systemDefined && <Lock size={13} className="text-gray-400" title="System pay type: cannot be deleted" />}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${CATEGORY_STYLE[p.category] || 'bg-gray-100 text-gray-800'}`}>{p.category}</span>
-                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900">{p.category}</td>
                   <td className="px-6 py-4 text-sm">{p.category === 'DEDUCTION' ? '—' : p.isTaxable ? 'Yes' : 'No'}</td>
                   <td className="px-6 py-4 text-sm">
                     {p.unit === 'AMOUNT' ? 'Amount (₱)' : p.unit ? p.unit.charAt(0) + p.unit.slice(1).toLowerCase() : '—'}
