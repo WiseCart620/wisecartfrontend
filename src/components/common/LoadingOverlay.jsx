@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Database } from 'lucide-react';
 
-export const LoadingOverlay = ({ show, message = 'Loading...', progress }) => {
+export const LoadingOverlay = ({ show, message = 'Loading...', subMessage = '', progress }) => {
   const [simulatedProgress, setSimulatedProgress] = useState(0);
   const intervalRef = useRef(null);
   const isReal = typeof progress === 'number';
@@ -44,9 +44,9 @@ export const LoadingOverlay = ({ show, message = 'Loading...', progress }) => {
 
           <div className="text-center">
             <p className="text-lg font-semibold text-gray-900">{message}</p>
-            <p className="text-sm text-gray-600 mt-1">
-              Please wait, we're syncing a large volume of delivery data to ensure real-time accuracy.
-            </p>
+            {subMessage && (
+              <p className="text-sm text-gray-600 mt-1">{subMessage}</p>
+            )}
           </div>
 
           <div className="w-full">

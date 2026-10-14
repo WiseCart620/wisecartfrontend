@@ -352,6 +352,7 @@ const DeliveryManagement = () => {
       <LoadingOverlay
         show={actionLoading}
         message={loadingMessage || 'Please wait...'}
+        subMessage="Please wait, we're syncing a large volume of delivery data to ensure real-time accuracy."
       />
 
       <div className="p-2 sm:p-3 lg:p-4 max-w-full mx-auto overflow-x-hidden">
