@@ -492,305 +492,219 @@ const ProductAnalysis = ({
 
                 {/* Product Chart or Company Branch Breakdown */}
                 {!selectedCompanyForBranches ? (
-                  {(() => {
-                    const chartData = getProductChartData();
-                    return chartData ? (
-                      <Bar
-                        data={chartData}
-                        options={{
-                          responsive: true,
-                          maintainAspectRatio: false,
-                          plugins: {
-                            legend: {
-                              display: true,
-                              position: 'top',
-                              labels: {
-                                font: { size: 10 },
-                                padding: 8
-                              }
-                            },
-                            tooltip: {
-                              callbacks: {
-                                label: function (context) {
-                                  if (context.dataset.label === 'Sales') {
-                                    return `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`;
-                                  } else {
-                                    return `${context.dataset.label}: ${context.parsed.y} units`;
+                  <div className="relative" style={{ height: '250px' }}>
+                    {(() => {
+                      const chartData = getProductChartData();
+                      return chartData ? (
+                        <Bar
+                          data={chartData}
+                          options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                              legend: {
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                  font: { size: 10 },
+                                  padding: 8
+                                }
+                              },
+                              tooltip: {
+                                callbacks: {
+                                  label: function (context) {
+                                    if (context.dataset.label === 'Sales') {
+                                      return `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`;
+                                    } else {
+                                      return `${context.dataset.label}: ${context.parsed.y} units`;
+                                    }
                                   }
                                 }
                               }
-                            }
-                          },
-                          scales: {
-                            y: {
-                              type: 'linear',
-                              display: true,
-                              position: 'left',
-                              title: {
+                            },
+                            scales: {
+                              y: {
+                                type: 'linear',
                                 display: true,
-                                text: 'Sales (₱)',
-                                color: '#FF6D00',
-                                font: { size: 10 }
+                                position: 'left',
+                                title: {
+                                  display: true,
+                                  text: 'Sales (₱)',
+                                  color: '#FF6D00',
+                                  font: { size: 10 }
+                                },
+                                ticks: {
+                                  font: { size: 9 },
+                                  callback: function (value) {
+                                    if (value >= 1000000) return '₱' + (value / 1000000).toFixed(1) + 'M';
+                                    if (value >= 1000) return '₱' + (value / 1000).toFixed(0) + 'K';
+                                    return '₱' + value;
+                                  }
+                                }
                               },
-                              ticks: {
-                                font: { size: 9 },
-                                callback: function (value) {
-                                  if (value >= 1000000) return '₱' + (value / 1000000).toFixed(1) + 'M';
-                                  if (value >= 1000) return '₱' + (value / 1000).toFixed(0) + 'K';
-                                  return '₱' + value;
+                              y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                title: {
+                                  display: true,
+                                  text: 'Quantity',
+                                  color: '#FFB600',
+                                  font: { size: 10 }
+                                },
+                                ticks: {
+                                  font: { size: 9 }
+                                },
+                                grid: {
+                                  drawOnChartArea: false,
+                                },
+                              },
+                              x: {
+                                ticks: {
+                                  maxRotation: 45,
+                                  minRotation: 45,
+                                  font: { size: 8 },
+                                  autoSkip: true,
+                                  maxTicksLimit: 20
                                 }
                               }
-                            },
-                            y1: {
-                              type: 'linear',
-                              display: true,
-                              position: 'right',
-                              title: {
-                                display: true,
-                                text: 'Quantity',
-                                color: '#FFB600',
-                                font: { size: 10 }
-                              },
-                              ticks: {
-                                font: { size: 9 }
-                              },
-                              grid: {
-                                drawOnChartArea: false,
-                              },
-                            },
-                            x: {
-                              ticks: {
-                                maxRotation: 45,
-                                minRotation: 45,
-                                font: { size: 8 },
-                                autoSkip: true,
-                                maxTicksLimit: 20
-                              }
                             }
-                          }
-                        }}
-                      />
-                    ) : (
-                      <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                        <BarChart size={36} className="mb-2 opacity-50" />
-                        <p className="text-sm">No sales data for this product</p>
-                      </div>
-                    );
-                  })()}
-              </div>
-            ) : (
-            /* Company Branch Breakdown */
-            <div className="space-y-2">
-              <div className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-50 p-2 rounded border border-gray-200">
-                <div className="flex items-center gap-2">
-                  <Building className="text-gray-900" size={16} />
-                  <div>
-                    <h4 className="text-sm font-bold text-gray-900">{selectedCompanyForBranches}</h4>
-                    <p className="text-xs text-gray-600">Branch Breakdown</p>
+                          }}
+                        />
+                      ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                          <BarChart size={36} className="mb-2 opacity-50" />
+                          <p className="text-sm">No sales data for this product</p>
+                        </div>
+                      );
+                    })()}
                   </div>
-                </div>
-                <button
-                  onClick={() => setSelectedCompanyForBranches(null)}
-                  className="px-2 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-white transition-colors flex items-center gap-1"
-                >
-                  <X size={12} />
-                  Back
-                </button>
-              </div>
-
-              <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                {(() => {
-                  const branches = getCompanyBranchBreakdown(selectedCompanyForBranches);
-                  if (branches.length === 0) {
-                    return (
-                      <div className="text-center py-6 text-gray-400">
-                        <Building size={28} className="mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">No branch data available</p>
-                      </div>
-                    );
-                  }
-
-                  const maxSales = Math.max(...branches.map(b => b.sales));
-                  const maxQuantity = Math.max(...branches.map(b => b.quantity));
-
-                  return branches.map((branch, idx) => {
-                    const salesBarWidth = maxSales > 0 ? (branch.sales / maxSales * 100) : 0;
-                    const quantityBarWidth = maxQuantity > 0 ? (branch.quantity / maxQuantity * 100) : 0;
-
-                    return (
-                      <div key={idx} className="bg-white rounded p-2 border border-gray-200">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className={`text-base font-bold flex-shrink-0 ${idx === 0 ? 'text-gray-900' :
-                            idx === 1 ? 'text-gray-400' :
-                              idx === 2 ? 'text-gray-900' : 'text-gray-400'
-                            }`}>
-                            #{idx + 1}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-gray-900">{branch.branchName}</p>
-                            <p className="text-xs text-gray-500">{branch.branchCode} • {branch.salesCount} trans</p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs text-gray-600 w-10 flex-shrink-0">Sales</span>
-                          <div className="flex-1 flex items-center gap-1">
-                            <div className="flex-1 bg-gray-200 rounded-full h-3">
-                              <div
-                                className="bg-gradient-to-r from-orange-500 to-orange-600 h-3 rounded-full transition-all duration-500"
-                                style={{ width: `${salesBarWidth}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-xs font-bold text-gray-900 w-16 text-right">{formatCurrency(branch.sales)}</span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-600 w-10 flex-shrink-0">Qty</span>
-                          <div className="flex-1 flex items-center gap-1">
-                            <div className="flex-1 bg-gray-200 rounded-full h-3">
-                              <div
-                                className="bg-gradient-to-r from-orange-500 to-orange-600 h-3 rounded-full transition-all duration-500"
-                                style={{ width: `${quantityBarWidth}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-xs font-bold text-gray-900 w-16 text-right">{formatNumber(branch.quantity)}</span>
-                          </div>
+                ) : (
+                  /* Company Branch Breakdown */
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-50 p-2 rounded border border-gray-200">
+                      <div className="flex items-center gap-2">
+                        <Building className="text-gray-900" size={16} />
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-900">{selectedCompanyForBranches}</h4>
+                          <p className="text-xs text-gray-600">Branch Breakdown</p>
                         </div>
                       </div>
-                    );
-                  });
-                })()}
-              </div>
-            </div>
-                )}
-          </>
-          ) : (
-          <div className="h-64 flex flex-col items-center justify-center text-gray-400">
-            <Package size={36} className="mb-3 opacity-50" />
-            <p className="text-sm">Select a product to view analysis</p>
-            <p className="text-xs mt-1">Click on any product from the list</p>
-          </div>
-            )}
-          {/* Top Companies & Branches Section */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Top Companies */}
-              <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                  <Users size={16} className="text-gray-900" />
-                  Top Companies ({performanceView === 'overall'
-                    ? 'All Time'
-                    : performanceView === 'year'
-                      ? performanceYear
-                      : `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][performanceMonth - 1]} ${performanceYear}`
-                  })
-                </h4>
-                <div className="relative min-h-[120px]">
-                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                    {performanceData.topCompanies && performanceData.topCompanies.length > 0 ? (
-                      performanceData.topCompanies.map((company, idx) => {
-                        const maxRevenue = performanceData.topCompanies[0]?.revenue || 1;
-                        const barWidth = (company.revenue / maxRevenue) * 100;
+                      <button
+                        onClick={() => setSelectedCompanyForBranches(null)}
+                        className="px-2 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-white transition-colors flex items-center gap-1"
+                      >
+                        <X size={12} />
+                        Back
+                      </button>
+                    </div>
 
-                        return (
-                          <div
-                            key={company.id || idx}
-                            className={`p-3 rounded border transition-all cursor-pointer ${selectedCompanyForTopBranches === company.name
-                              ? 'bg-gray-50 border-orange-500 shadow-md'
-                              : 'bg-white border-gray-200 hover:border-gray-300'
-                              }`}
-                            onClick={() => setSelectedCompanyForTopBranches(
-                              selectedCompanyForTopBranches === company.name ? null : company.name
-                            )}
-                          >
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className={`text-lg font-bold ${idx === 0 ? 'text-gray-900' :
-                                idx === 1 ? 'text-gray-400' :
-                                  idx === 2 ? 'text-gray-900' : 'text-gray-400'
-                                }`}>
-                                #{idx + 1}
-                              </span>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-gray-900 truncate">{company.name}</p>
-                              </div>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                      {(() => {
+                        const branches = getCompanyBranchBreakdown(selectedCompanyForBranches);
+                        if (branches.length === 0) {
+                          return (
+                            <div className="text-center py-6 text-gray-400">
+                              <Building size={28} className="mx-auto mb-2 opacity-50" />
+                              <p className="text-sm">No branch data available</p>
                             </div>
-                            <div className="space-y-1">
-                              <div className="flex justify-between items-center text-xs">
-                                <span className="text-gray-600">Sales</span>
-                                <span className="font-bold text-gray-900">{formatCurrency(company.revenue)}</span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div
-                                  className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-500"
-                                  style={{ width: `${barWidth}%` }}
-                                ></div>
-                              </div>
-                              <div className="flex justify-between items-center text-xs text-gray-500">
-                                <span>{company.salesCount} sales</span>
-                                <span>Avg/Sale: {formatCurrency(company.averageOrderValue)}</span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="text-center py-6 text-gray-400">
-                        <Users size={24} className="mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">No company data for this period</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+                          );
+                        }
 
-              {/* Top Branches */}
-              <div>
-                <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                  <Building size={16} className="text-gray-900" />
-                  Top Branches ({performanceView === 'overall'
-                    ? 'All Time'
-                    : performanceView === 'year'
-                      ? performanceYear
-                      : `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][performanceMonth - 1]} ${performanceYear}`
-                  })
-                  {selectedCompanyForTopBranches && (
-                    <span className="text-xs font-normal text-gray-900">
-                      - {selectedCompanyForTopBranches}
-                    </span>
-                  )}
-                </h4>
-                <div className="relative min-h-[120px]">
-                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                    {(() => {
-                      let branchesToShow = performanceData.topBranches || [];
+                        const maxSales = Math.max(...branches.map(b => b.sales));
+                        const maxQuantity = Math.max(...branches.map(b => b.quantity));
 
-                      if (selectedCompanyForTopBranches) {
-                        branchesToShow = scopedRows
-                          .filter(r => r.companyName === selectedCompanyForTopBranches)
-                          .map(r => {
-                            const revenue = Number(r.revenue) || 0;
-                            const salesCount = Number(r.salesCount) || 0;
-                            return {
-                              id: r.branchId,
-                              name: r.branchName || 'Unknown Branch',
-                              code: r.branchCode || 'N/A',
-                              revenue,
-                              quantity: Number(r.quantity) || 0,
-                              salesCount,
-                              averageOrderValue: salesCount > 0 ? revenue / salesCount : 0
-                            };
-                          })
-                          .sort((a, b) => b.revenue - a.revenue);
-                      }
-
-                      return branchesToShow.length > 0 ? (
-                        branchesToShow.map((branch, idx) => {
-                          const maxRevenue = branchesToShow.length > 0 ? branchesToShow[0]?.revenue || 1 : 1;
-                          const barWidth = (branch.revenue / maxRevenue) * 100;
+                        return branches.map((branch, idx) => {
+                          const salesBarWidth = maxSales > 0 ? (branch.sales / maxSales * 100) : 0;
+                          const quantityBarWidth = maxQuantity > 0 ? (branch.quantity / maxQuantity * 100) : 0;
 
                           return (
-                            <div key={branch.id || idx} className="p-3 bg-white rounded border border-gray-200 hover:border-gray-300 transition-all">
+                            <div key={idx} className="bg-white rounded p-2 border border-gray-200">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className={`text-base font-bold flex-shrink-0 ${idx === 0 ? 'text-gray-900' :
+                                  idx === 1 ? 'text-gray-400' :
+                                    idx === 2 ? 'text-gray-900' : 'text-gray-400'
+                                  }`}>
+                                  #{idx + 1}
+                                </span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-semibold text-gray-900">{branch.branchName}</p>
+                                  <p className="text-xs text-gray-500">{branch.branchCode} • {branch.salesCount} trans</p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs text-gray-600 w-10 flex-shrink-0">Sales</span>
+                                <div className="flex-1 flex items-center gap-1">
+                                  <div className="flex-1 bg-gray-200 rounded-full h-3">
+                                    <div
+                                      className="bg-gradient-to-r from-orange-500 to-orange-600 h-3 rounded-full transition-all duration-500"
+                                      style={{ width: `${salesBarWidth}%` }}
+                                    ></div>
+                                  </div>
+                                  <span className="text-xs font-bold text-gray-900 w-16 text-right">{formatCurrency(branch.sales)}</span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-600 w-10 flex-shrink-0">Qty</span>
+                                <div className="flex-1 flex items-center gap-1">
+                                  <div className="flex-1 bg-gray-200 rounded-full h-3">
+                                    <div
+                                      className="bg-gradient-to-r from-orange-500 to-orange-600 h-3 rounded-full transition-all duration-500"
+                                      style={{ width: `${quantityBarWidth}%` }}
+                                    ></div>
+                                  </div>
+                                  <span className="text-xs font-bold text-gray-900 w-16 text-right">{formatNumber(branch.quantity)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="h-64 flex flex-col items-center justify-center text-gray-400">
+                <Package size={36} className="mb-3 opacity-50" />
+                <p className="text-sm">Select a product to view analysis</p>
+                <p className="text-xs mt-1">Click on any product from the list</p>
+              </div>
+            )}
+            {/* Top Companies & Branches Section */}
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Top Companies */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <Users size={16} className="text-gray-900" />
+                    Top Companies ({performanceView === 'overall'
+                      ? 'All Time'
+                      : performanceView === 'year'
+                        ? performanceYear
+                        : `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][performanceMonth - 1]} ${performanceYear}`
+                    })
+                  </h4>
+                  <div className="relative min-h-[120px]">
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                      {performanceData.topCompanies && performanceData.topCompanies.length > 0 ? (
+                        performanceData.topCompanies.map((company, idx) => {
+                          const maxRevenue = performanceData.topCompanies[0]?.revenue || 1;
+                          const barWidth = (company.revenue / maxRevenue) * 100;
+
+                          return (
+                            <div
+                              key={company.id || idx}
+                              className={`p-3 rounded border transition-all cursor-pointer ${selectedCompanyForTopBranches === company.name
+                                ? 'bg-gray-50 border-orange-500 shadow-md'
+                                : 'bg-white border-gray-200 hover:border-gray-300'
+                                }`}
+                              onClick={() => setSelectedCompanyForTopBranches(
+                                selectedCompanyForTopBranches === company.name ? null : company.name
+                              )}
+                            >
                               <div className="flex items-center gap-2 mb-2">
                                 <span className={`text-lg font-bold ${idx === 0 ? 'text-gray-900' :
                                   idx === 1 ? 'text-gray-400' :
@@ -799,40 +713,23 @@ const ProductAnalysis = ({
                                   #{idx + 1}
                                 </span>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-semibold text-gray-900 truncate">{branch.name}</p>
-                                  <p className="text-xs text-gray-500">{branch.code} • {branch.salesCount} sales</p>
+                                  <p className="text-sm font-semibold text-gray-900 truncate">{company.name}</p>
                                 </div>
                               </div>
-                              <div className="space-y-2">
-                                <div>
-                                  <div className="flex justify-between items-center text-xs mb-1">
-                                    <span className="text-gray-600">Sales</span>
-                                    <span className="font-bold text-gray-900">{formatCurrency(branch.revenue)}</span>
-                                  </div>
-                                  <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div
-                                      className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-500"
-                                      style={{ width: `${barWidth}%` }}
-                                    ></div>
-                                  </div>
+                              <div className="space-y-1">
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="text-gray-600">Sales</span>
+                                  <span className="font-bold text-gray-900">{formatCurrency(company.revenue)}</span>
                                 </div>
-
-                                <div>
-                                  <div className="flex justify-between items-center text-xs mb-1">
-                                    <span className="text-gray-600">Quantity</span>
-                                    <span className="font-bold text-gray-900">{formatNumber(branch.quantity || 0)} units</span>
-                                  </div>
-                                  <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div
-                                      className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-500"
-                                      style={{
-                                        width: `${(() => {
-                                          const maxQuantity = Math.max(...branchesToShow.map(b => b.quantity || 0));
-                                          return maxQuantity > 0 ? ((branch.quantity || 0) / maxQuantity * 100) : 0;
-                                        })()}%`
-                                      }}
-                                    ></div>
-                                  </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                  <div
+                                    className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-500"
+                                    style={{ width: `${barWidth}%` }}
+                                  ></div>
+                                </div>
+                                <div className="flex justify-between items-center text-xs text-gray-500">
+                                  <span>{company.salesCount} sales</span>
+                                  <span>Avg/Sale: {formatCurrency(company.averageOrderValue)}</span>
                                 </div>
                               </div>
                             </div>
@@ -840,14 +737,119 @@ const ProductAnalysis = ({
                         })
                       ) : (
                         <div className="text-center py-6 text-gray-400">
-                          <Building size={24} className="mx-auto mb-2 opacity-50" />
-                          <p className="text-sm">No branch data for this period</p>
-                          {selectedProductId && (
-                            <p className="text-xs mt-1">No sales found for this product/variation</p>
-                          )}
+                          <Users size={24} className="mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">No company data for this period</p>
                         </div>
-                      )
-                    })()}
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Top Branches */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <Building size={16} className="text-gray-900" />
+                    Top Branches ({performanceView === 'overall'
+                      ? 'All Time'
+                      : performanceView === 'year'
+                        ? performanceYear
+                        : `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][performanceMonth - 1]} ${performanceYear}`
+                    })
+                    {selectedCompanyForTopBranches && (
+                      <span className="text-xs font-normal text-gray-900">
+                        - {selectedCompanyForTopBranches}
+                      </span>
+                    )}
+                  </h4>
+                  <div className="relative min-h-[120px]">
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                      {(() => {
+                        let branchesToShow = performanceData.topBranches || [];
+
+                        if (selectedCompanyForTopBranches) {
+                          branchesToShow = scopedRows
+                            .filter(r => r.companyName === selectedCompanyForTopBranches)
+                            .map(r => {
+                              const revenue = Number(r.revenue) || 0;
+                              const salesCount = Number(r.salesCount) || 0;
+                              return {
+                                id: r.branchId,
+                                name: r.branchName || 'Unknown Branch',
+                                code: r.branchCode || 'N/A',
+                                revenue,
+                                quantity: Number(r.quantity) || 0,
+                                salesCount,
+                                averageOrderValue: salesCount > 0 ? revenue / salesCount : 0
+                              };
+                            })
+                            .sort((a, b) => b.revenue - a.revenue);
+                        }
+
+                        return branchesToShow.length > 0 ? (
+                          branchesToShow.map((branch, idx) => {
+                            const maxRevenue = branchesToShow.length > 0 ? branchesToShow[0]?.revenue || 1 : 1;
+                            const barWidth = (branch.revenue / maxRevenue) * 100;
+
+                            return (
+                              <div key={branch.id || idx} className="p-3 bg-white rounded border border-gray-200 hover:border-gray-300 transition-all">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className={`text-lg font-bold ${idx === 0 ? 'text-gray-900' :
+                                    idx === 1 ? 'text-gray-400' :
+                                      idx === 2 ? 'text-gray-900' : 'text-gray-400'
+                                    }`}>
+                                    #{idx + 1}
+                                  </span>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold text-gray-900 truncate">{branch.name}</p>
+                                    <p className="text-xs text-gray-500">{branch.code} • {branch.salesCount} sales</p>
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <div>
+                                    <div className="flex justify-between items-center text-xs mb-1">
+                                      <span className="text-gray-600">Sales</span>
+                                      <span className="font-bold text-gray-900">{formatCurrency(branch.revenue)}</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                      <div
+                                        className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-500"
+                                        style={{ width: `${barWidth}%` }}
+                                      ></div>
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <div className="flex justify-between items-center text-xs mb-1">
+                                      <span className="text-gray-600">Quantity</span>
+                                      <span className="font-bold text-gray-900">{formatNumber(branch.quantity || 0)} units</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                      <div
+                                        className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-500"
+                                        style={{
+                                          width: `${(() => {
+                                            const maxQuantity = Math.max(...branchesToShow.map(b => b.quantity || 0));
+                                            return maxQuantity > 0 ? ((branch.quantity || 0) / maxQuantity * 100) : 0;
+                                          })()}%`
+                                        }}
+                                      ></div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="text-center py-6 text-gray-400">
+                            <Building size={24} className="mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">No branch data for this period</p>
+                            {selectedProductId && (
+                              <p className="text-xs mt-1">No sales found for this product/variation</p>
+                            )}
+                          </div>
+                        )
+                      })()}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -855,7 +857,6 @@ const ProductAnalysis = ({
           </div>
         </div>
       </div>
-    </div>
     </div >
   );
 };
