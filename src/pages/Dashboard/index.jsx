@@ -23,6 +23,7 @@ import RecentSales from '../../components/dashboard/RecentSales';
 import StatusDistribution from '../../components/dashboard/StatusDistribution';
 import { formatCurrency, formatNumber } from '../../utils/currencyUtils';
 
+
 const extractArray = (res) => {
   if (Array.isArray(res)) return res;
   if (Array.isArray(res?.data)) return res.data;
@@ -52,6 +53,7 @@ const Dashboard = () => {
 
   const [alertsTotalElements, setAlertsTotalElements] = useState(0);
   const navigate = useNavigate();
+  const [scopedLoading, setScopedLoading] = useState(true);
   const [overview, setOverview] = useState(null);
   const [statusRows, setStatusRows] = useState([]);
   const [availableYears, setAvailableYears] = useState([]);
@@ -378,6 +380,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (!overview) return;
     let cancelled = false;
+    setScopedLoading(true);
     const p = periodQuery();
     if (selectedProductId) {
       const [pid, vid] = String(selectedProductId).split('_');
@@ -388,7 +391,8 @@ const Dashboard = () => {
     }
     api.get(`/sales/dashboard/scoped?${p.toString()}`)
       .then(res => { if (!cancelled) setScopedRows(extractArray(res)); })
-      .catch(err => console.error('Failed to load breakdown', err));
+      .catch(err => console.error('Failed to load breakdown', err))
+      .finally(() => { if (!cancelled) setScopedLoading(false); });
     return () => { cancelled = true; };
   }, [overview, performanceView, performanceYear, performanceMonth, selectedProductId, selectedCategory]);
 
@@ -585,6 +589,8 @@ const Dashboard = () => {
                 performanceMonth={performanceMonth}
                 setPerformanceMonth={setPerformanceMonth}
                 availableYears={availableYears}
+                topLoading={perfLoading}
+                scopedLoading={scopedLoading}
                 products={products}
                 scopedRows={scopedRows}
                 selectedCompanyForBranches={selectedCompanyForBranches}

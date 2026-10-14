@@ -3,6 +3,14 @@ import { BarChart2, Package, Users, Building, ChevronDown, ChevronRight, X, Targ
 import { Bar } from 'react-chartjs-2';
 import { formatCurrency, formatNumber } from '../../utils/currencyUtils';
 
+
+const LoadingOverlay = ({ show }) =>
+  show ? (
+    <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 rounded">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-orange-500" />
+    </div>
+  ) : null;
+
 const ProductAnalysis = ({
   performanceData,
   productSalesData,
@@ -23,7 +31,9 @@ const ProductAnalysis = ({
   selectedCompanyForBranches,
   setSelectedCompanyForBranches,
   selectedCompanyForTopBranches,
-  setSelectedCompanyForTopBranches
+  setSelectedCompanyForTopBranches,
+  topLoading = false,
+  scopedLoading = false,
 }) => {
 
   const [rankBy, setRankBy] = useState('quantity');
@@ -234,106 +244,109 @@ const ProductAnalysis = ({
               </div>
             </div>
 
-            <div className="space-y-2 max-h-[700px] overflow-y-auto">
-              {selectedCategory !== 'all' && (
-                <div className="mb-3 p-2 bg-gray-50 rounded border border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-gray-900">{selectedCategory}</span>
-                    <span className="text-xs text-gray-500">
-                      {(() => {
-                        const productsInCategory = filteredTopProducts.length;
-                        return `${productsInCategory} product${productsInCategory !== 1 ? 's' : ''}`;
-                      })()}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {filteredTopProducts.length > 0 ? (
-                filteredTopProducts.map((product, idx) => (
-                  <div
-                    key={product.id || idx}
-                    className={`p-3 rounded transition-all cursor-pointer border ${selectedProductId === product.id
-                      ? 'bg-gray-50 border-orange-500 shadow-sm'
-                      : 'bg-white border-gray-200 hover:bg-gray-100 hover:border-gray-300'
-                      }`}
-                    onClick={() => {
-                      setSelectedProductId(selectedProductId === product.id ? null : product.id);
-                      setSelectedCompanyForBranches(null);
-                    }}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`text-xl font-bold flex-shrink-0 ${idx === 0 ? 'text-gray-900' :
-                        idx === 1 ? 'text-gray-400' :
-                          idx === 2 ? 'text-gray-900' : 'text-gray-400'
-                        }`}>
-                        #{idx + 1}
+            <div className="relative min-h-[120px]">
+              <LoadingOverlay show={topLoading} />
+              <div className="space-y-2 max-h-[700px] overflow-y-auto">
+                {selectedCategory !== 'all' && (
+                  <div className="mb-3 p-2 bg-gray-50 rounded border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-gray-900">{selectedCategory}</span>
+                      <span className="text-xs text-gray-500">
+                        {(() => {
+                          const productsInCategory = filteredTopProducts.length;
+                          return `${productsInCategory} product${productsInCategory !== 1 ? 's' : ''}`;
+                        })()}
                       </span>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium ${selectedProductId === product.id ? 'text-gray-900' : 'text-gray-900'
-                          }`}>
-                          {product.name}
-                        </p>
-                        {product.category && product.category !== 'Uncategorized' && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600 mt-1">
-                            {product.category}
-                          </span>
-                        )}
-                        <p className="text-xs text-gray-500 mt-1">
-                          {rankBy === 'revenue' ? 'Ranked by sales' : 'Ranked by quantity sold'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 mt-3">
-                      <div>
-                        <div className="flex items-baseline gap-1">
-                          <h4 className="text-gray-900 font-bold text-m">₱</h4>
-                          <span className="text-xs text-gray-600">Sales</span>
-                        </div>
-                        <p className="text-sm font-bold text-gray-900 mt-1">
-                          {formatCurrency(product.revenue)}
-                        </p>
-                      </div>
-                      <div>
-                        <div className="flex items-baseline gap-1">
-                          <Package size={12} className="text-gray-500" />
-                          <span className="text-xs text-gray-600">Quantity</span>
-                        </div>
-                        <p className="text-sm font-bold text-gray-900 mt-1">
-                          {product.quantity} units
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-2 pt-2 border-t border-gray-200">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">Avg/Unit</span>
-                        <span className="text-xs font-semibold text-gray-900">
-                          {formatCurrency(product.revenue / product.quantity)}
-                        </span>
-                      </div>
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-6 text-gray-400">
-                  <Package size={28} className="mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">
-                    {selectedCategory === 'all'
-                      ? 'No product data available'
-                      : `No products found in "${selectedCategory}" category`}
-                  </p>
-                  {selectedCategory !== 'all' && (
-                    <button
-                      onClick={() => setSelectedCategory('all')}
-                      className="mt-2 text-xs text-gray-900 hover:text-gray-900"
+                )}
+
+                {filteredTopProducts.length > 0 ? (
+                  filteredTopProducts.map((product, idx) => (
+                    <div
+                      key={product.id || idx}
+                      className={`p-3 rounded transition-all cursor-pointer border ${selectedProductId === product.id
+                        ? 'bg-gray-50 border-orange-500 shadow-sm'
+                        : 'bg-white border-gray-200 hover:bg-gray-100 hover:border-gray-300'
+                        }`}
+                      onClick={() => {
+                        setSelectedProductId(selectedProductId === product.id ? null : product.id);
+                        setSelectedCompanyForBranches(null);
+                      }}
                     >
-                      View all categories →
-                    </button>
-                  )}
-                </div>
-              )}
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={`text-xl font-bold flex-shrink-0 ${idx === 0 ? 'text-gray-900' :
+                          idx === 1 ? 'text-gray-400' :
+                            idx === 2 ? 'text-gray-900' : 'text-gray-400'
+                          }`}>
+                          #{idx + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium ${selectedProductId === product.id ? 'text-gray-900' : 'text-gray-900'
+                            }`}>
+                            {product.name}
+                          </p>
+                          {product.category && product.category !== 'Uncategorized' && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600 mt-1">
+                              {product.category}
+                            </span>
+                          )}
+                          <p className="text-xs text-gray-500 mt-1">
+                            {rankBy === 'revenue' ? 'Ranked by sales' : 'Ranked by quantity sold'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div>
+                          <div className="flex items-baseline gap-1">
+                            <h4 className="text-gray-900 font-bold text-m">₱</h4>
+                            <span className="text-xs text-gray-600">Sales</span>
+                          </div>
+                          <p className="text-sm font-bold text-gray-900 mt-1">
+                            {formatCurrency(product.revenue)}
+                          </p>
+                        </div>
+                        <div>
+                          <div className="flex items-baseline gap-1">
+                            <Package size={12} className="text-gray-500" />
+                            <span className="text-xs text-gray-600">Quantity</span>
+                          </div>
+                          <p className="text-sm font-bold text-gray-900 mt-1">
+                            {product.quantity} units
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-2 pt-2 border-t border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-500">Avg/Unit</span>
+                          <span className="text-xs font-semibold text-gray-900">
+                            {formatCurrency(product.revenue / product.quantity)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-6 text-gray-400">
+                    <Package size={28} className="mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">
+                      {selectedCategory === 'all'
+                        ? 'No product data available'
+                        : `No products found in "${selectedCategory}" category`}
+                    </p>
+                    {selectedCategory !== 'all' && (
+                      <button
+                        onClick={() => setSelectedCategory('all')}
+                        className="mt-2 text-xs text-gray-900 hover:text-gray-900"
+                      >
+                        View all categories →
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {selectedCategory === 'all' && productCategories.length > 0 && filteredTopProducts.length > 0 && (
@@ -428,7 +441,8 @@ const ProductAnalysis = ({
             {true ? (
               <>
                 {/* Product Summary */}
-                <div className="bg-gradient-to-r from-gray-50 to-gray-50 rounded p-3 mb-3 border border-gray-200">
+                <div className="relative bg-gradient-to-r from-gray-50 to-gray-50 rounded p-3 mb-3 border border-gray-200">
+                  <LoadingOverlay show={scopedLoading} />
                   <div className="text-xs font-semibold text-gray-900 mb-2 text-center">
                     {performanceView === 'overall'
                       ? 'All-Time Performance'
@@ -479,7 +493,8 @@ const ProductAnalysis = ({
 
                 {/* Product Chart or Company Branch Breakdown */}
                 {!selectedCompanyForBranches ? (
-                  <div style={{ height: '250px' }}>
+                  <div className="relative" style={{ height: '250px' }}>
+                    <LoadingOverlay show={scopedLoading} />
                     {(() => {
                       const chartData = getProductChartData();
                       return chartData ? (
@@ -674,59 +689,62 @@ const ProductAnalysis = ({
                         : `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][performanceMonth - 1]} ${performanceYear}`
                     })
                   </h4>
-                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                    {performanceData.topCompanies && performanceData.topCompanies.length > 0 ? (
-                      performanceData.topCompanies.map((company, idx) => {
-                        const maxRevenue = performanceData.topCompanies[0]?.revenue || 1;
-                        const barWidth = (company.revenue / maxRevenue) * 100;
+                  <div className="relative min-h-[120px]">
+                    <LoadingOverlay show={scopedLoading} />
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                      {performanceData.topCompanies && performanceData.topCompanies.length > 0 ? (
+                        performanceData.topCompanies.map((company, idx) => {
+                          const maxRevenue = performanceData.topCompanies[0]?.revenue || 1;
+                          const barWidth = (company.revenue / maxRevenue) * 100;
 
-                        return (
-                          <div
-                            key={company.id || idx}
-                            className={`p-3 rounded border transition-all cursor-pointer ${selectedCompanyForTopBranches === company.name
-                              ? 'bg-gray-50 border-orange-500 shadow-md'
-                              : 'bg-white border-gray-200 hover:border-gray-300'
-                              }`}
-                            onClick={() => setSelectedCompanyForTopBranches(
-                              selectedCompanyForTopBranches === company.name ? null : company.name
-                            )}
-                          >
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className={`text-lg font-bold ${idx === 0 ? 'text-gray-900' :
-                                idx === 1 ? 'text-gray-400' :
-                                  idx === 2 ? 'text-gray-900' : 'text-gray-400'
-                                }`}>
-                                #{idx + 1}
-                              </span>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-gray-900 truncate">{company.name}</p>
+                          return (
+                            <div
+                              key={company.id || idx}
+                              className={`p-3 rounded border transition-all cursor-pointer ${selectedCompanyForTopBranches === company.name
+                                ? 'bg-gray-50 border-orange-500 shadow-md'
+                                : 'bg-white border-gray-200 hover:border-gray-300'
+                                }`}
+                              onClick={() => setSelectedCompanyForTopBranches(
+                                selectedCompanyForTopBranches === company.name ? null : company.name
+                              )}
+                            >
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className={`text-lg font-bold ${idx === 0 ? 'text-gray-900' :
+                                  idx === 1 ? 'text-gray-400' :
+                                    idx === 2 ? 'text-gray-900' : 'text-gray-400'
+                                  }`}>
+                                  #{idx + 1}
+                                </span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-semibold text-gray-900 truncate">{company.name}</p>
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="text-gray-600">Sales</span>
+                                  <span className="font-bold text-gray-900">{formatCurrency(company.revenue)}</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                  <div
+                                    className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-500"
+                                    style={{ width: `${barWidth}%` }}
+                                  ></div>
+                                </div>
+                                <div className="flex justify-between items-center text-xs text-gray-500">
+                                  <span>{company.salesCount} sales</span>
+                                  <span>Avg/Sale: {formatCurrency(company.averageOrderValue)}</span>
+                                </div>
                               </div>
                             </div>
-                            <div className="space-y-1">
-                              <div className="flex justify-between items-center text-xs">
-                                <span className="text-gray-600">Sales</span>
-                                <span className="font-bold text-gray-900">{formatCurrency(company.revenue)}</span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div
-                                  className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-500"
-                                  style={{ width: `${barWidth}%` }}
-                                ></div>
-                              </div>
-                              <div className="flex justify-between items-center text-xs text-gray-500">
-                                <span>{company.salesCount} sales</span>
-                                <span>Avg/Sale: {formatCurrency(company.averageOrderValue)}</span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="text-center py-6 text-gray-400">
-                        <Users size={24} className="mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">No company data for this period</p>
-                      </div>
-                    )}
+                          );
+                        })
+                      ) : (
+                        <div className="text-center py-6 text-gray-400">
+                          <Users size={24} className="mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">No company data for this period</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -746,93 +764,96 @@ const ProductAnalysis = ({
                       </span>
                     )}
                   </h4>
-                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                    {(() => {
-                      let branchesToShow = performanceData.topBranches || [];
+                  <div className="relative min-h-[120px]">
+                    <LoadingOverlay show={scopedLoading} />
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                      {(() => {
+                        let branchesToShow = performanceData.topBranches || [];
 
-                      if (selectedCompanyForTopBranches) {
-                        branchesToShow = scopedRows
-                          .filter(r => r.companyName === selectedCompanyForTopBranches)
-                          .map(r => {
-                            const revenue = Number(r.revenue) || 0;
-                            const salesCount = Number(r.salesCount) || 0;
-                            return {
-                              id: r.branchId,
-                              name: r.branchName || 'Unknown Branch',
-                              code: r.branchCode || 'N/A',
-                              revenue,
-                              quantity: Number(r.quantity) || 0,
-                              salesCount,
-                              averageOrderValue: salesCount > 0 ? revenue / salesCount : 0
-                            };
+                        if (selectedCompanyForTopBranches) {
+                          branchesToShow = scopedRows
+                            .filter(r => r.companyName === selectedCompanyForTopBranches)
+                            .map(r => {
+                              const revenue = Number(r.revenue) || 0;
+                              const salesCount = Number(r.salesCount) || 0;
+                              return {
+                                id: r.branchId,
+                                name: r.branchName || 'Unknown Branch',
+                                code: r.branchCode || 'N/A',
+                                revenue,
+                                quantity: Number(r.quantity) || 0,
+                                salesCount,
+                                averageOrderValue: salesCount > 0 ? revenue / salesCount : 0
+                              };
+                            })
+                            .sort((a, b) => b.revenue - a.revenue);
+                        }
+
+                        return branchesToShow.length > 0 ? (
+                          branchesToShow.map((branch, idx) => {
+                            const maxRevenue = branchesToShow.length > 0 ? branchesToShow[0]?.revenue || 1 : 1;
+                            const barWidth = (branch.revenue / maxRevenue) * 100;
+
+                            return (
+                              <div key={branch.id || idx} className="p-3 bg-white rounded border border-gray-200 hover:border-gray-300 transition-all">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className={`text-lg font-bold ${idx === 0 ? 'text-gray-900' :
+                                    idx === 1 ? 'text-gray-400' :
+                                      idx === 2 ? 'text-gray-900' : 'text-gray-400'
+                                    }`}>
+                                    #{idx + 1}
+                                  </span>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold text-gray-900 truncate">{branch.name}</p>
+                                    <p className="text-xs text-gray-500">{branch.code} • {branch.salesCount} sales</p>
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <div>
+                                    <div className="flex justify-between items-center text-xs mb-1">
+                                      <span className="text-gray-600">Sales</span>
+                                      <span className="font-bold text-gray-900">{formatCurrency(branch.revenue)}</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                      <div
+                                        className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-500"
+                                        style={{ width: `${barWidth}%` }}
+                                      ></div>
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <div className="flex justify-between items-center text-xs mb-1">
+                                      <span className="text-gray-600">Quantity</span>
+                                      <span className="font-bold text-gray-900">{formatNumber(branch.quantity || 0)} units</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                      <div
+                                        className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-500"
+                                        style={{
+                                          width: `${(() => {
+                                            const maxQuantity = Math.max(...branchesToShow.map(b => b.quantity || 0));
+                                            return maxQuantity > 0 ? ((branch.quantity || 0) / maxQuantity * 100) : 0;
+                                          })()}%`
+                                        }}
+                                      ></div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
                           })
-                          .sort((a, b) => b.revenue - a.revenue);
-                      }
-
-                      return branchesToShow.length > 0 ? (
-                        branchesToShow.map((branch, idx) => {
-                          const maxRevenue = branchesToShow.length > 0 ? branchesToShow[0]?.revenue || 1 : 1;
-                          const barWidth = (branch.revenue / maxRevenue) * 100;
-
-                          return (
-                            <div key={branch.id || idx} className="p-3 bg-white rounded border border-gray-200 hover:border-gray-300 transition-all">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className={`text-lg font-bold ${idx === 0 ? 'text-gray-900' :
-                                  idx === 1 ? 'text-gray-400' :
-                                    idx === 2 ? 'text-gray-900' : 'text-gray-400'
-                                  }`}>
-                                  #{idx + 1}
-                                </span>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-semibold text-gray-900 truncate">{branch.name}</p>
-                                  <p className="text-xs text-gray-500">{branch.code} • {branch.salesCount} sales</p>
-                                </div>
-                              </div>
-                              <div className="space-y-2">
-                                <div>
-                                  <div className="flex justify-between items-center text-xs mb-1">
-                                    <span className="text-gray-600">Sales</span>
-                                    <span className="font-bold text-gray-900">{formatCurrency(branch.revenue)}</span>
-                                  </div>
-                                  <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div
-                                      className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-500"
-                                      style={{ width: `${barWidth}%` }}
-                                    ></div>
-                                  </div>
-                                </div>
-
-                                <div>
-                                  <div className="flex justify-between items-center text-xs mb-1">
-                                    <span className="text-gray-600">Quantity</span>
-                                    <span className="font-bold text-gray-900">{formatNumber(branch.quantity || 0)} units</span>
-                                  </div>
-                                  <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div
-                                      className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-500"
-                                      style={{
-                                        width: `${(() => {
-                                          const maxQuantity = Math.max(...branchesToShow.map(b => b.quantity || 0));
-                                          return maxQuantity > 0 ? ((branch.quantity || 0) / maxQuantity * 100) : 0;
-                                        })()}%`
-                                      }}
-                                    ></div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="text-center py-6 text-gray-400">
-                          <Building size={24} className="mx-auto mb-2 opacity-50" />
-                          <p className="text-sm">No branch data for this period</p>
-                          {selectedProductId && (
-                            <p className="text-xs mt-1">No sales found for this product/variation</p>
-                          )}
-                        </div>
-                      )
-                    })()}
+                        ) : (
+                          <div className="text-center py-6 text-gray-400">
+                            <Building size={24} className="mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">No branch data for this period</p>
+                            {selectedProductId && (
+                              <p className="text-xs mt-1">No sales found for this product/variation</p>
+                            )}
+                          </div>
+                        )
+                      })()}
+                    </div>
                   </div>
                 </div>
               </div>
