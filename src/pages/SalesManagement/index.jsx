@@ -62,6 +62,7 @@ const SalesManagement = () => {
   const [productsByStatus, setProductsByStatus] = useState({ pending: [], confirmed: [], invoiced: [] });
   const [productsByStatusLoading, setProductsByStatusLoading] = useState(false);
   const [loadingAction, setLoadingAction] = useState(null);
+  const [journalBlock, setJournalBlock] = useState(null);
 
   const {
     sales, branches, companies, products,
@@ -399,12 +400,22 @@ const SalesManagement = () => {
           }}
           loadingAction={loadingAction}
           onUpdateStatus={handleUpdateStatus}
-          onDelete={(saleId) => {
+          onDelete={async (saleId) => {
             if (!canDelete) { toast.error('You do not have permission to delete sales'); return; }
             const target = sales.find(s => s.id === saleId);
             if (target?.status === 'INVOICED') {
-              toast.error('Invoiced sales cannot be deleted because they are recorded in the Sales Journal.');
-              return;
+              try {
+                const res = await api.get(`/sales/${saleId}/journal-check`);
+                if (!res.success) { toast.error('Could not verify the Sales Journal. Try again.'); return; }
+                const data = res.data?.data || res.data;
+                if (data?.inJournal) {
+                  setJournalBlock({ saleId, journals: data.journals || [] });
+                  return;
+                }
+              } catch {
+                toast.error('Could not verify the Sales Journal. Try again.');
+                return;
+              }
             }
             handleDelete(saleId);
           }}
@@ -524,6 +535,44 @@ const SalesManagement = () => {
             onGenerate={handleGenerateToProfile}
             invoiceNumberError={invoiceNumberError}
           />
+        )}
+
+        {journalBlock && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+              <div className="p-5 border-b border-gray-100 font-medium text-black">
+                Cannot delete this invoiced sale
+              </div>
+              <div className="p-5 text-sm text-gray-700 space-y-3">
+                <p>
+                  Sale #{journalBlock.saleId} is already recorded in the Sales Journal.
+                  Delete the journal entry first, then come back to delete this sale.
+                </p>
+                <div className="space-y-1">
+                  {journalBlock.journals.map(j => (
+                    <div key={j.id} className="bg-gray-50 rounded px-3 py-2 text-xs">
+                      <span className="font-mono font-semibold">{j.invoiceNumber || `Journal #${j.id}`}</span>
+                      {j.soldTo && <span className="text-gray-500"> · {j.soldTo}</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="p-5 border-t border-gray-100 flex justify-end gap-2">
+                <button
+                  onClick={() => setJournalBlock(null)}
+                  className="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => { setJournalBlock(null); navigate('/sales/journal'); }}
+                  className="px-4 py-2 bg-[#2CA01C] text-white rounded text-sm font-medium hover:bg-[#268d19]"
+                >
+                  Go to Sales Journal
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
