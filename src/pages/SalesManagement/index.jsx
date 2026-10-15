@@ -25,6 +25,16 @@ import InvoicingProfile from './InvoicingProfile';
 import SalesReport from './SalesReport';
 import { LoadingOverlay } from '../../components/common/LoadingOverlay';
 
+const extractDuplicateMessage = (rawMsg) => {
+  if (typeof rawMsg === 'string' && rawMsg.startsWith('DUPLICATE_INVOICE_NUMBER:')) {
+    return { field: true, text: rawMsg.replace('DUPLICATE_INVOICE_NUMBER:', '').trim() };
+  }
+  if (typeof rawMsg === 'string' && rawMsg.startsWith('DUPLICATE_INVOICE:')) {
+    return { field: false, text: rawMsg.replace('DUPLICATE_INVOICE:', '').trim() };
+  }
+  return null;
+};
+
 const SalesManagement = () => {
   const { user } = useAuth();
   const canCreate = can(user, 'sales', 'create');
@@ -291,12 +301,7 @@ const SalesManagement = () => {
         })),
       ],
     };
-    const extractDuplicateMessage = (rawMsg) => {
-      if (typeof rawMsg === 'string' && rawMsg.startsWith('DUPLICATE_INVOICE_NUMBER:')) {
-        return rawMsg.replace('DUPLICATE_INVOICE_NUMBER:', '').trim();
-      }
-      return null;
-    };
+
 
     setInvoiceNumberError('');
     try {
@@ -310,8 +315,9 @@ const SalesManagement = () => {
       } else {
         const rawMsg = res.error || res.message || 'Failed to save to Sales Journal';
         const dupMsg = extractDuplicateMessage(rawMsg);
-        if (dupMsg) {
-          setInvoiceNumberError(dupMsg);
+        if (dupMsg && dupMsg.field) {
+          setInvoiceNumberError(dupMsg.text);
+        } else if (dupMsg) {
         } else {
           toast.error(rawMsg);
         }
@@ -319,8 +325,9 @@ const SalesManagement = () => {
     } catch (err) {
       const rawMsg = err.response?.data?.message || err.response?.data?.error || 'Failed to save to Sales Journal';
       const dupMsg = extractDuplicateMessage(rawMsg);
-      if (dupMsg) {
-        setInvoiceNumberError(dupMsg);
+      if (dupMsg && dupMsg.field) {
+        setInvoiceNumberError(dupMsg.text);
+      } else if (dupMsg) {
       } else {
         toast.error(rawMsg);
       }
