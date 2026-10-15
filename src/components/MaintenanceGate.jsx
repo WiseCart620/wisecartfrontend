@@ -13,7 +13,7 @@ export default function MaintenanceGate({ children }) {
       try {
         const res = await fetch(HEALTH_URL, { cache: 'no-store' });
         const ct = res.headers.get('content-type') || '';
-        const up = res.ok && ct.includes('application/json');
+        const up = res.ok && ct.includes('json');
         if (!cancelled) setState(up ? 'up' : 'down');
       } catch {
         if (!cancelled) setState('down');
