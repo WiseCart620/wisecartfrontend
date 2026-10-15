@@ -51,37 +51,6 @@ function MaintenancePage() {
       textAlign: 'center',
       padding: '48px 24px',
     }}>
-      {/* Brand mark */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        marginBottom: 48,
-      }}>
-        <div style={{
-          width: 32,
-          height: 32,
-          borderRadius: 8,
-          background: '#0077c5',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <svg viewBox="0 0 24 24" width="18" height="18"
-               fill="none" stroke="#ffffff" strokeWidth="2.2"
-               strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 7l3 10 3-7 3 7 3-10" />
-          </svg>
-        </div>
-        <span style={{
-          fontSize: 19,
-          fontWeight: 700,
-          letterSpacing: '-0.02em',
-          color: '#21201c',
-        }}>
-          WiseCart<span style={{ color: '#0077c5' }}> ERP</span>
-        </span>
-      </div>
 
       {/* Icon */}
       <div style={{
