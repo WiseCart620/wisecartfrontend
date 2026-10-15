@@ -206,12 +206,12 @@ const handleResponse = async (response) => {
                             .map(([field, message]) => `${field}: ${message}`)
                             .join(', ');
                         errorMessage = fieldErrors || jsonError.error || 'Validation failed';
-                    } else if (jsonError.message) {
-                        errorMessage = jsonError.message;
-                    } else if (jsonError.error) {
-                        errorMessage = jsonError.error;
                     } else {
-                        errorMessage = text;
+                        const candidates = [jsonError.message, jsonError.error]
+                            .filter(v => typeof v === 'string' && v.trim());
+                        errorMessage = candidates.length
+                            ? candidates.reduce((a, b) => (b.length > a.length ? b : a))
+                            : text;
                     }
                 } catch {
                     errorMessage = text;
@@ -222,10 +222,10 @@ const handleResponse = async (response) => {
         }
 
         if (response.status !== 429) {
-            const displayMsg = errorMessage.length > 300
-                ? errorMessage.slice(0, 297) + '...'
+            const displayMsg = errorMessage.length > 600
+                ? errorMessage.slice(0, 597) + '...'
                 : errorMessage;
-            toast.error(`❌ ${displayMsg}`, { duration: 5000 });
+            toast.error(`❌ ${displayMsg}`, { duration: 7000 });
         }
 
         return { success: false, error: errorMessage, status: response.status };
