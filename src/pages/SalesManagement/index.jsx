@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import '../../styles/invoice-print.css';
 import '../../styles/sales-report-print.css';
@@ -73,6 +73,7 @@ const SalesManagement = () => {
   const [productsByStatusLoading, setProductsByStatusLoading] = useState(false);
   const [loadingAction, setLoadingAction] = useState(null);
   const [journalBlock, setJournalBlock] = useState(null);
+  const generatingRef = useRef(false);
 
   const {
     sales, branches, companies, products,
@@ -182,6 +183,8 @@ const SalesManagement = () => {
   const handleGenerateInvoice = async () => {
     if (!filterData.companyIds?.length) { toast.error('Please select a company first'); return; }
     if (filterData.companyIds.length > 1) { toast.error('Please select only one company for invoice generation'); return; }
+    if (generatingRef.current) return;
+    generatingRef.current = true;
     toast.loading('Generating Invoice...', { id: 'invoice-loading' });
     try {
       const toNumericProductId = (rawId) => {
@@ -248,6 +251,8 @@ const SalesManagement = () => {
     } catch (error) {
       toast.dismiss('invoice-loading');
       toast.error(error.response?.data?.message || error.message || 'Failed to generate invoice');
+    } finally {
+      generatingRef.current = false;
     }
   };
 
