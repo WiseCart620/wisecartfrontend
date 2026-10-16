@@ -11,7 +11,7 @@ import usePagination from './usePagination';
 const LOAN_TYPES = ['Salary Loan', 'Housing Loan', 'Emergency Loan'];
 const EMPTY = {
   employeeId: '', agencyId: '', loanType: '', amount: '', durationMonths: '',
-  amortization: '', cutoffAmount: '', deductionSchedule: 'SPLIT', startTerm: today(), endTerm: '', referenceNo: '',
+  amortization: '', cutoffAmount: '', overrideDate: '', overrideAmount: '', deductionSchedule: 'SPLIT', startTerm: today(), endTerm: '', referenceNo: '',
 };
 const SCHEDULE_LABEL = { SPLIT: 'Split (15th & 30th)', FIRST_CUTOFF: '15th only', SECOND_CUTOFF: '30th only', ONE_TIME: 'One-time (single date)' };
 
@@ -129,6 +129,10 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
     const endErr = endDateError(form.startTerm, form.endTerm);
     if (endErr) { toast.error(endErr); return; }
     if (!(Number(form.amortization) > 0)) { toast.error('Amortization is required'); return; }
+    if (!!form.overrideDate !== !!form.overrideAmount) {
+      toast.error('Set both the override date and amount, or leave both empty');
+      return;
+    }
     setSaving(true);
     try {
       let docPath = null;
@@ -148,6 +152,8 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
         durationMonths: Number(form.durationMonths),
         amortization: Number(form.amortization),
         deductionSchedule: form.deductionSchedule || 'SPLIT',
+        overrideDate: form.overrideDate || null,
+        overrideAmount: form.overrideAmount ? Number(form.overrideAmount) : null,
         applicationNo: form.referenceNo.trim() || null,
         startTerm: form.startTerm,
         endTerm: form.endTerm || null,
@@ -211,6 +217,8 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
       durationMonths: String(item.durationMonths ?? ''),
       amortization: item.amortization != null ? Number(item.amortization).toFixed(2) : '',
       cutoffAmount: item.amortization != null ? (Number(item.amortization) / 2).toFixed(2) : '',
+      overrideDate: item.overrideDate || '',
+      overrideAmount: item.overrideAmount != null ? Number(item.overrideAmount).toFixed(2) : '',
       deductionSchedule: item.deductionSchedule || 'SPLIT',
       startTerm: item.startTerm || '',
       endTerm: item.endTerm || '',
@@ -606,6 +614,22 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
                 <p className="text-xs text-red-600 mt-1">{endDateError(form.startTerm, form.endTerm)}</p>
               )}
             </Field>
+            {form.deductionSchedule !== 'ONE_TIME' && (
+              <>
+                <Field label="Special Deduction Date (optional)">
+                  <input type="date" className={inputCls} value={form.overrideDate} onChange={set('overrideDate')} />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {form.deductionSchedule === 'FIRST_CUTOFF' ? 'Use a date from the 1st to the 15th.'
+                      : form.deductionSchedule === 'SECOND_CUTOFF' ? 'Use a date from the 16th to the end of the month.'
+                        : 'Any date inside the cutoff, e.g. 10/30/2026 for the 30th cutoff.'}
+                  </p>
+                </Field>
+                <Field label="Amount on That Cutoff (optional)">
+                  <MoneyInput className={inputCls} value={form.overrideAmount} onChange={set('overrideAmount')}
+                    placeholder="Deducted once, then normal amount resumes" />
+                </Field>
+              </>
+            )}
             <Field label="Reference No." className="md:col-span-2">
               <input className={inputCls} value={form.referenceNo} onChange={set('referenceNo')}
                 placeholder="e.g. loan application / reference number" />
