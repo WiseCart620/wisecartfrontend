@@ -119,10 +119,6 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
       return;
     }
     if (!recurring && !form.dateReleased) { toast.error('Date released is required'); return; }
-    if (recurring && form.endTerm && form.endTerm < today()) {
-      toast.error('End date cannot be in the past');
-      return;
-    }
     if (recurring && form.startTerm && form.endTerm && form.endTerm < form.startTerm) {
       toast.error('End date cannot be before start date');
       return;

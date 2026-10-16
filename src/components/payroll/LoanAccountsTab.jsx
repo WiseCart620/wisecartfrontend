@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Wallet, Ban, Paperclip, Eye, Edit2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Wallet, Ban, Paperclip, Eye, Edit2, ChevronDown, ChevronRight, Trash2, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { inputCls, money, today, Field, Modal, STATUS_STYLE, MoneyInput } from './Shared';
@@ -13,29 +13,31 @@ const EMPTY = {
   employeeId: '', agencyId: '', loanType: '', amount: '', durationMonths: '',
   amortization: '', deductionSchedule: 'SPLIT', startTerm: today(), endTerm: '', referenceNo: '',
 };
-const SCHEDULE_LABEL = { SPLIT: 'Split (15th & 30th)', FIRST_CUTOFF: '15th only', SECOND_CUTOFF: '30th only' };
+const SCHEDULE_LABEL = { SPLIT: 'Split (15th & 30th)', FIRST_CUTOFF: '15th only', SECOND_CUTOFF: '30th only', ONE_TIME: 'One-time (single date)' };
 
 const toISO = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 const isCashAdvance = (t) => (t || '').trim().toLowerCase() === 'cash advance';
-const lastDayAfter = (s, n) => {
-  const d = new Date(s + 'T00:00:00');
-  return toISO(new Date(d.getFullYear(), d.getMonth() + n + 1, 0));
-};
-const monthDiff = (a, b) => {
-  const x = new Date(a + 'T00:00:00');
-  const y = new Date(b + 'T00:00:00');
-  return (y.getFullYear() - x.getFullYear()) * 12 + (y.getMonth() - x.getMonth());
-};
-const endDateError = (start, end, duration) => {
+
+const computeEndDate = (start, duration, schedule) => {
   const dur = Number(duration);
-  if (!start || !end || !(dur > 0)) return '';
-  if (end < start) return 'End date cannot be before the start date';
-  if (monthDiff(start, end) !== dur) {
-    return `End date must be ${dur} month${dur === 1 ? '' : 's'} after the start date (in ${new Date(lastDayAfter(start, dur) + 'T00:00:00').toLocaleDateString('en-PH', { month: 'long', year: 'numeric' })})`;
+  if (!start || !(dur > 0)) return '';
+  if (schedule === 'ONE_TIME') return start;
+  const d = new Date(start + 'T00:00:00');
+  const day = d.getDate();
+  let monthsAhead;
+  if (schedule === 'SPLIT') {
+    const pos = day <= 15 ? 0 : 1; // 0 = 15th cutoff, 1 = 30th cutoff
+    monthsAhead = Math.floor((pos + dur - 1) / 2);
+  } else if (schedule === 'FIRST_CUTOFF') {
+    monthsAhead = (day <= 15 ? 0 : 1) + dur - 1;
+  } else {
+    monthsAhead = (day <= 30 ? 0 : 1) + dur - 1;
   }
-  return '';
+  return toISO(new Date(d.getFullYear(), d.getMonth() + monthsAhead + 1, 0));
 };
+const endDateError = (start, end) =>
+  start && end && end < start ? 'End date cannot be before the start date' : '';
 const serveUrl = (path) => `/files/serve?path=${encodeURIComponent(path)}`;
 const loanName = (i) => (i.agencyName ? `${i.agencyName} - ${i.loanType || 'Loan'}` : i.loanType || '');
 const fmtDate = (d) =>
@@ -43,7 +45,7 @@ const fmtDate = (d) =>
 
 const fmtShort = (d) =>
   d ? new Date(d + 'T00:00:00').toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
-const SCHEDULE_SHORT = { SPLIT: 'both cutoffs', FIRST_CUTOFF: '15th only', SECOND_CUTOFF: '30th only' };
+const SCHEDULE_SHORT = { SPLIT: 'both cutoffs', FIRST_CUTOFF: '15th only', SECOND_CUTOFF: '30th only', ONE_TIME: 'one-time' };
 const STATUS_BADGE = {
   ACTIVE: 'bg-green-50 text-green-700 ring-1 ring-green-200',
   PAID: 'bg-orange-50 text-orange-700 ring-1 ring-orange-200',
@@ -88,14 +90,27 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
     }
   };
 
-  // any change recomputes amortization (amount / duration) and end date (start + duration)
+  // amount/duration/schedule recompute the suggested amortization; amortization itself stays editable
   const update = (patch) => setForm(p => {
     const n = { ...p, ...patch };
+    if (n.deductionSchedule === 'ONE_TIME') n.durationMonths = '1';
+    else if (patch.deductionSchedule && p.deductionSchedule === 'ONE_TIME') n.durationMonths = '';
     const amt = Number(n.amount);
     const dur = Number(n.durationMonths);
-    n.amortization = amt > 0 && dur > 0 ? (amt / dur).toFixed(2) : '';
-    if ('startTerm' in patch || 'durationMonths' in patch) {
-      n.endTerm = n.startTerm && dur > 0 ? lastDayAfter(n.startTerm, dur) : '';
+    if (['amount', 'durationMonths', 'deductionSchedule'].some(k => k in patch)) {
+      if (n.deductionSchedule === 'ONE_TIME') {
+        // only auto-fill when switching to One-time or when the field is empty; otherwise keep what the user typed
+        if ('deductionSchedule' in patch || !p.amortization) {
+          n.amortization = amt > 0 ? amt.toFixed(2) : '';
+        }
+      } else if (amt > 0 && dur > 0) {
+        n.amortization = ((n.deductionSchedule === 'SPLIT' ? amt * 2 : amt) / dur).toFixed(2);
+      } else {
+        n.amortization = '';
+      }
+    }
+    if (['startTerm', 'durationMonths', 'deductionSchedule'].some(k => k in patch)) {
+      n.endTerm = computeEndDate(n.startTerm, dur, n.deductionSchedule);
     }
     return n;
   });
@@ -107,8 +122,9 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
       toast.error('Employee, loan type, amount, duration and start date are required');
       return;
     }
-    const endErr = endDateError(form.startTerm, form.endTerm, form.durationMonths);
+    const endErr = endDateError(form.startTerm, form.endTerm);
     if (endErr) { toast.error(endErr); return; }
+    if (!(Number(form.amortization) > 0)) { toast.error('Amortization is required'); return; }
     setSaving(true);
     try {
       let docPath = null;
@@ -206,6 +222,28 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
       load();
     } catch (err) {
       toast.error(err.message || 'Failed to cancel');
+    }
+  };
+
+  const reactivate = async (item) => {
+    if (!window.confirm(`Enable this loan again for ${item.employeeName}?`)) return;
+    try {
+      await api.patch(`/loans/${item.id}/reactivate`);
+      toast.success('Loan enabled again');
+      load();
+    } catch (err) {
+      toast.error(err.message || 'Failed to enable');
+    }
+  };
+
+  const remove = async (item) => {
+    if (!window.confirm(`Permanently delete this cancelled loan for ${item.employeeName}? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/loans/${item.id}`);
+      toast.success('Loan deleted');
+      load();
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete');
     }
   };
 
@@ -464,6 +502,12 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
                                 {canEdit && i.status === 'ACTIVE' && (
                                   <button onClick={() => cancel(i)} title="Cancel" className="p-2 text-red-600 hover:bg-red-50 rounded"><Ban size={17} /></button>
                                 )}
+                                {canEdit && i.status === 'CANCELLED' && (
+                                  <>
+                                    <button onClick={() => reactivate(i)} title="Enable again" className="p-2 text-green-600 hover:bg-green-50 rounded"><RotateCcw size={17} /></button>
+                                    <button onClick={() => remove(i)} title="Delete" className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={17} /></button>
+                                  </>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -514,11 +558,17 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
             <Field label="Loan Amount" required>
               <MoneyInput className={inputCls} value={form.amount} onChange={set('amount')} />
             </Field>
-            <Field label="Duration (months)" required>
-              <input type="number" min="1" step="1" className={inputCls} value={form.durationMonths} onChange={set('durationMonths')} />
+            <Field label={form.deductionSchedule === 'SPLIT' ? 'Duration (cutoffs)' : form.deductionSchedule === 'ONE_TIME' ? 'Duration' : 'Duration (months)'} required>
+              <input type="number" min="1" step="1"
+                disabled={form.deductionSchedule === 'ONE_TIME'}
+                className={`${inputCls} ${form.deductionSchedule === 'ONE_TIME' ? 'bg-gray-100' : ''}`}
+                value={form.durationMonths} onChange={set('durationMonths')} />
             </Field>
-            <Field label="Amortization (monthly, auto)">
-              <MoneyInput className={`${inputCls} bg-gray-100`} readOnly value={form.amortization} placeholder="Amount ÷ duration" />
+            <Field label={form.deductionSchedule === 'ONE_TIME' ? 'Amount to Deduct (one-time)' : 'Amortization (monthly, editable)'}>
+              <MoneyInput className={inputCls} value={form.amortization} onChange={set('amortization')} placeholder="Auto-filled, you can change it" />
+              {form.deductionSchedule === 'SPLIT' && Number(form.amortization) > 0 && (
+                <p className="text-xs text-gray-500 mt-1">{(Number(form.amortization) / 2).toFixed(2)} per cutoff</p>
+              )}
             </Field>
             <Field label="Deduction Schedule">
               <SearchableSelect
@@ -528,19 +578,20 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
                   { value: 'SPLIT', label: 'Split across cutoffs (15th and 30th)' },
                   { value: 'FIRST_CUTOFF', label: '15th cutoff only' },
                   { value: 'SECOND_CUTOFF', label: '30th cutoff only' },
+                  { value: 'ONE_TIME', label: 'One-time (single date)' },
                 ]}
                 onChange={(v) => update({ deductionSchedule: v })}
               />
             </Field>
-            <Field label="Start Date (first deduction)" required>
+            <Field label={form.deductionSchedule === 'ONE_TIME' ? 'Deduction Date' : 'Start Date (first deduction)'} required>
               <input type="date" className={inputCls} value={form.startTerm} onChange={set('startTerm')} />
             </Field>
             <Field label="End Date (auto, editable)">
               <input type="date"
-                className={`${inputCls} ${endDateError(form.startTerm, form.endTerm, form.durationMonths) ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''}`}
+                className={`${inputCls} ${endDateError(form.startTerm, form.endTerm) ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''}`}
                 value={form.endTerm} onChange={set('endTerm')} />
-              {endDateError(form.startTerm, form.endTerm, form.durationMonths) && (
-                <p className="text-xs text-red-600 mt-1">{endDateError(form.startTerm, form.endTerm, form.durationMonths)}</p>
+              {endDateError(form.startTerm, form.endTerm) && (
+                <p className="text-xs text-red-600 mt-1">{endDateError(form.startTerm, form.endTerm)}</p>
               )}
             </Field>
             <Field label="Reference No." className="md:col-span-2">
@@ -610,7 +661,13 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
                   <Detail label="Reference No.">{v.applicationNo}</Detail>
                   <Detail label="Monthly Amortization">{money(v.amortization)}</Detail>
                   <Detail label="Deduction Schedule">{SCHEDULE_LABEL[v.deductionSchedule] || v.deductionSchedule}</Detail>
-                  <Detail label="Duration">{v.durationMonths ? `${v.durationMonths} month${v.durationMonths === 1 ? '' : 's'}` : null}</Detail>
+                  <Detail label="Duration">
+                    {v.deductionSchedule === 'ONE_TIME'
+                      ? 'One-time'
+                      : v.durationMonths
+                        ? `${v.durationMonths} ${v.deductionSchedule === 'SPLIT' ? 'cutoff' : 'month'}${v.durationMonths === 1 ? '' : 's'}`
+                        : null}
+                  </Detail>
                   <Detail label="Payments Made">{payments.length}</Detail>
                   <Detail label="Start Date">{fmtDate(v.startTerm)}</Detail>
                   <Detail label="End Date">{fmtDate(v.endTerm)}</Detail>
