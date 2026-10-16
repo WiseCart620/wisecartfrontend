@@ -11,7 +11,7 @@ import usePagination from './usePagination';
 const LOAN_TYPES = ['Salary Loan', 'Housing Loan', 'Emergency Loan'];
 const EMPTY = {
   employeeId: '', agencyId: '', loanType: '', amount: '', durationMonths: '',
-  amortization: '', deductionSchedule: 'SPLIT', startTerm: today(), endTerm: '', referenceNo: '',
+  amortization: '', cutoffAmount: '', deductionSchedule: 'SPLIT', startTerm: today(), endTerm: '', referenceNo: '',
 };
 const SCHEDULE_LABEL = { SPLIT: 'Split (15th & 30th)', FIRST_CUTOFF: '15th only', SECOND_CUTOFF: '30th only', ONE_TIME: 'One-time (single date)' };
 
@@ -108,6 +108,10 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
       } else {
         n.amortization = '';
       }
+    }
+    if (n.deductionSchedule === 'SPLIT' && !('cutoffAmount' in patch)
+      && ['amount', 'durationMonths', 'deductionSchedule', 'amortization'].some(k => k in patch)) {
+      n.cutoffAmount = Number(n.amortization) > 0 ? (Number(n.amortization) / 2).toFixed(2) : '';
     }
     if (['startTerm', 'durationMonths', 'deductionSchedule'].some(k => k in patch)) {
       n.endTerm = computeEndDate(n.startTerm, dur, n.deductionSchedule);
@@ -206,6 +210,7 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
       amount: String(item.amount ?? ''),
       durationMonths: String(item.durationMonths ?? ''),
       amortization: item.amortization != null ? Number(item.amortization).toFixed(2) : '',
+      cutoffAmount: item.amortization != null ? (Number(item.amortization) / 2).toFixed(2) : '',
       deductionSchedule: item.deductionSchedule || 'SPLIT',
       startTerm: item.startTerm || '',
       endTerm: item.endTerm || '',
@@ -566,10 +571,17 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
             </Field>
             <Field label={form.deductionSchedule === 'ONE_TIME' ? 'Amount to Deduct (one-time)' : 'Amortization (monthly, editable)'}>
               <MoneyInput className={inputCls} value={form.amortization} onChange={set('amortization')} placeholder="Auto-filled, you can change it" />
-              {form.deductionSchedule === 'SPLIT' && Number(form.amortization) > 0 && (
-                <p className="text-xs text-gray-500 mt-1">{(Number(form.amortization) / 2).toFixed(2)} per cutoff</p>
-              )}
             </Field>
+            {form.deductionSchedule === 'SPLIT' && (
+              <Field label="Amount per Cutoff (editable)">
+                <MoneyInput className={inputCls} value={form.cutoffAmount}
+                  onChange={(e) => update({
+                    cutoffAmount: e.target.value,
+                    amortization: Number(e.target.value) > 0 ? (Number(e.target.value) * 2).toFixed(2) : '',
+                  })}
+                  placeholder="Deducted on each 15th and 30th" />
+              </Field>
+            )}
             <Field label="Deduction Schedule">
               <SearchableSelect
                 typeable={false}
