@@ -495,7 +495,7 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
                                   <button onClick={() => viewDoc(i.docReference)} title="View document" className="p-2 text-gray-600 hover:bg-gray-100 rounded"><Paperclip size={17} /></button>
                                 )}
                                 <button onClick={() => openView(i)} title="View details" className="p-2 text-gray-700 hover:bg-gray-100 rounded"><Eye size={17} /></button>
-                                {canEdit && i.status === 'ACTIVE' && Number(i.totalPaid || 0) === 0 && (
+                                {canEdit && i.status === 'ACTIVE' && (
                                   <button onClick={() => openEdit(i)} title="Edit loan" className="p-2 text-orange-600 hover:bg-orange-50 rounded"><Edit2 size={17} /></button>
                                 )}
                                 <button onClick={() => openPayments(i)} title="Payment history" className="p-2 text-purple-600 hover:bg-purple-50 rounded"><Wallet size={17} /></button>
@@ -709,7 +709,7 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
               </div>
 
               <div className="flex justify-end pt-2 border-t">
-                {canEdit && v.status === 'ACTIVE' && Number(v.totalPaid || 0) === 0 && (
+                {canEdit && v.status === 'ACTIVE' && (
                   <button onClick={() => { setViewFor(null); openEdit(v); }} className="mr-2 px-4 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700">Edit</button>
                 )}
                 <button onClick={() => setViewFor(null)} className="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-white">Close</button>
