@@ -11,7 +11,7 @@ import usePagination from './usePagination';
 const LOAN_TYPES = ['Salary Loan', 'Housing Loan', 'Emergency Loan'];
 const EMPTY = {
   employeeId: '', agencyId: '', loanType: '', amount: '', durationMonths: '',
-  amortization: '', cutoffAmount: '', overrideDate: '', overrideAmount: '', deductionSchedule: 'SPLIT', startTerm: today(), endTerm: '', referenceNo: '',
+  amortization: '', cutoffAmount: '', overrides: [], deductionSchedule: 'SPLIT', startTerm: today(), endTerm: '', referenceNo: '',
 };
 const SCHEDULE_LABEL = { SPLIT: 'Split (15th & 30th)', FIRST_CUTOFF: '15th only', SECOND_CUTOFF: '30th only', ONE_TIME: 'One-time (single date)' };
 
@@ -130,6 +130,11 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
     return n;
   });
   const set = (k) => (e) => update({ [k]: e.target.value });
+  const addOverride = () => setForm(p => ({ ...p, overrides: [...(p.overrides || []), { date: '', amount: '' }] }));
+  const setOverride = (idx, k, v) => setForm(p => ({
+    ...p, overrides: p.overrides.map((o, i) => (i === idx ? { ...o, [k]: v } : o)),
+  }));
+  const removeOverride = (idx) => setForm(p => ({ ...p, overrides: p.overrides.filter((_, i) => i !== idx) }));
 
   const submit = async (e) => {
     e.preventDefault();
@@ -140,8 +145,8 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
     const endErr = endDateError(form.startTerm, form.endTerm);
     if (endErr) { toast.error(endErr); return; }
     if (!(Number(form.amortization) > 0)) { toast.error('Amortization is required'); return; }
-    if (!!form.overrideDate !== !!form.overrideAmount) {
-      toast.error('Set both the override date and amount, or leave both empty');
+    if ((form.overrides || []).some(o => !!o.date !== !!o.amount)) {
+      toast.error('Each special deduction needs both a date and an amount');
       return;
     }
     setSaving(true);
@@ -163,8 +168,9 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
         durationMonths: Number(form.durationMonths),
         amortization: Number(form.amortization),
         deductionSchedule: form.deductionSchedule || 'SPLIT',
-        overrideDate: form.overrideDate || null,
-        overrideAmount: form.overrideAmount ? Number(form.overrideAmount) : null,
+        overrides: (form.overrides || [])
+          .filter(o => o.date && o.amount)
+          .map(o => ({ date: o.date, amount: Number(o.amount) })),
         applicationNo: form.referenceNo.trim() || null,
         startTerm: form.startTerm,
         endTerm: form.endTerm || null,
@@ -228,8 +234,7 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
       durationMonths: String(item.durationMonths ?? ''),
       amortization: item.amortization != null ? Number(item.amortization).toFixed(2) : '',
       cutoffAmount: item.amortization != null ? (Number(item.amortization) / 2).toFixed(2) : '',
-      overrideDate: item.overrideDate || '',
-      overrideAmount: item.overrideAmount != null ? Number(item.overrideAmount).toFixed(2) : '',
+      overrides: (item.overrides || []).map(o => ({ date: o.date, amount: Number(o.amount).toFixed(2) })),
       deductionSchedule: item.deductionSchedule || 'SPLIT',
       startTerm: item.startTerm || '',
       endTerm: item.endTerm || '',
@@ -650,22 +655,31 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
               </Field>
             </FormSection>
 
-            {/* 4. Special deduction (hidden for one-time loans) */}
+            {/* 4. Special deductions (hidden for one-time loans) */}
             {form.deductionSchedule !== 'ONE_TIME' && (
               <FormSection
-                title="Special deduction (optional)"
+                title="Special deductions (optional)"
                 hint={
-                  form.deductionSchedule === 'FIRST_CUTOFF' ? 'Deduct a different amount once. Use a date from the 1st to the 15th.'
-                    : form.deductionSchedule === 'SECOND_CUTOFF' ? 'Deduct a different amount once. Use a date from the 16th to the end of the month.'
-                      : 'Deduct a different amount once. Use any date inside the cutoff, e.g. 10/30/2026 for the 30th cutoff.'
+                  form.deductionSchedule === 'FIRST_CUTOFF' ? 'Deduct a different amount on chosen cutoffs. Use dates from the 1st to the 15th.'
+                    : form.deductionSchedule === 'SECOND_CUTOFF' ? 'Deduct a different amount on chosen cutoffs. Use dates from the 16th to the end of the month.'
+                      : 'Deduct a different amount on chosen cutoffs. Use any date inside the cutoff, e.g. 10/30/2026 for the 30th cutoff.'
                 }>
-                <Field label="Date">
-                  <input type="date" className={inputCls} value={form.overrideDate} onChange={set('overrideDate')} />
-                </Field>
-                <Field label="Amount">
-                  <MoneyInput className={inputCls} value={form.overrideAmount} onChange={set('overrideAmount')}
-                    placeholder="Normal amount resumes afterwards" />
-                </Field>
+                <div className="md:col-span-2 space-y-2">
+                  {(form.overrides || []).map((o, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input type="date" className={inputCls} value={o.date}
+                        onChange={(e) => setOverride(idx, 'date', e.target.value)} />
+                      <MoneyInput className={inputCls} value={o.amount} placeholder="Amount"
+                        onChange={(e) => setOverride(idx, 'amount', e.target.value)} />
+                      <button type="button" onClick={() => removeOverride(idx)} title="Remove"
+                        className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={17} /></button>
+                    </div>
+                  ))}
+                  <button type="button" onClick={addOverride}
+                    className="inline-flex items-center gap-1 text-sm font-medium text-orange-600 hover:text-orange-700">
+                    <Plus size={14} /> Add cutoff
+                  </button>
+                </div>
               </FormSection>
             )}
 
@@ -747,6 +761,11 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
                         : null}
                   </Detail>
                   <Detail label="Payments Made">{payments.length}</Detail>
+                  {(v.overrides || []).length > 0 && (
+                    <Detail label="Special Deductions">
+                      {v.overrides.map(o => `${fmtShort(o.date)}: ${money(o.amount)}`).join(' · ')}
+                    </Detail>
+                  )}
                   <Detail label="Start Date">{fmtDate(v.startTerm)}</Detail>
                   <Detail label="End Date">{fmtDate(v.endTerm)}</Detail>
                   <Detail label="Document">
