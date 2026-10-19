@@ -40,7 +40,14 @@ const peso = (n) =>
 
 const classify = (type = '') => {
   const t = type.toLowerCase();
-  if (t === 'cash advance' || t === 'loan - cash advance') return 'cashAdvance';
+  {
+    const parts = t.split(' - ');
+    const loanType = parts.pop().trim();
+    const prefix = parts.join(' - ').trim();
+    if (loanType === 'cash advance' && (prefix === '' || prefix === 'loan' || prefix === 'company')) {
+      return 'cashAdvance';
+    }
+  }
   if (t.includes('hmo')) return 'hmo';
   if (t.includes('mp2')) return 'mp2';
   if (t.includes(' - ')) {
