@@ -10,7 +10,7 @@ import usePagination from './usePagination';
 
 const LOAN_TYPES = ['Salary Loan', 'Housing Loan', 'Emergency Loan'];
 const EMPTY = {
-  employeeId: '', agencyId: '', loanType: '', amount: '', durationMonths: '',
+  employeeId: '', agencyId: '', loanType: '', amount: '', interest: '', durationMonths: '',
   amortization: '', cutoffAmount: '', overrides: [], deductionSchedule: 'SPLIT', startTerm: today(), endTerm: '', referenceNo: '',
 };
 const SCHEDULE_LABEL = { SPLIT: 'Split (15th & 30th)', FIRST_CUTOFF: '15th only', SECOND_CUTOFF: '30th only', ONE_TIME: 'One-time (single date)' };
@@ -139,20 +139,27 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
 
     const amt = Number(n.amount);
     const dur = Number(n.durationMonths);
+    const intr = Number(n.interest) || 0;
+    const total = amt + intr;
+    const manualAmort = 'amortization' in patch;
 
-    if (['amount', 'durationMonths', 'deductionSchedule'].some(k => k in changed)) {
+    if (!manualAmort && ['amount', 'interest', 'durationMonths', 'deductionSchedule'].some(k => k in changed)) {
       if (n.deductionSchedule === 'ONE_TIME') {
-        if ('deductionSchedule' in changed || !p.amortization) {
-          n.amortization = amt > 0 ? amt.toFixed(2) : '';
-        }
-      } else if (amt > 0 && dur > 0) {
-        n.amortization = ((n.deductionSchedule === 'SPLIT' ? amt * 2 : amt) / dur).toFixed(2);
+        n.amortization = total > 0 ? total.toFixed(2) : '';
+      } else if (total > 0 && dur > 0) {
+        n.amortization = ((n.deductionSchedule === 'SPLIT' ? total * 2 : total) / dur).toFixed(2);
       } else {
         n.amortization = '';
       }
     }
+    if (manualAmort && amt > 0 && Number(n.amortization) > 0) {
+      const am = Number(n.amortization);
+      const payable = n.deductionSchedule === 'ONE_TIME' ? am
+        : dur > 0 ? am * (n.deductionSchedule === 'SPLIT' ? dur / 2 : dur) : 0;
+      if (payable > 0) n.interest = payable > amt ? (payable - amt).toFixed(2) : '';
+    }
     if (n.deductionSchedule === 'SPLIT' && !('cutoffAmount' in patch)
-      && ['amount', 'durationMonths', 'deductionSchedule', 'amortization'].some(k => k in changed)) {
+      && ['amount', 'interest', 'durationMonths', 'deductionSchedule', 'amortization'].some(k => k in changed)) {
       n.cutoffAmount = Number(n.amortization) > 0 ? (Number(n.amortization) / 2).toFixed(2) : '';
     }
     if (!endEdited && ['startTerm', 'durationMonths', 'deductionSchedule'].some(k => k in changed)) {
@@ -196,7 +203,8 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
         employeeId: Number(form.employeeId),
         agencyId: form.agencyId ? Number(form.agencyId) : null,
         loanType: form.loanType.trim(),
-        loanAmount: Number(form.amount),
+        loanAmount: Number((Number(form.amount) + (Number(form.interest) || 0)).toFixed(2)),
+        interestAmount: Number(form.interest) || 0,
         durationMonths: Number(form.durationMonths),
         amortization: Number(form.amortization),
         deductionSchedule: form.deductionSchedule || 'SPLIT',
@@ -262,7 +270,8 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
       employeeId: String(item.employeeId),
       agencyId: item.agencyId ? String(item.agencyId) : '',
       loanType: item.loanType || '',
-      amount: String(item.amount ?? ''),
+      amount: item.amount != null ? (Number(item.amount) - Number(item.interestAmount || 0)).toFixed(2) : '',
+      interest: Number(item.interestAmount) > 0 ? Number(item.interestAmount).toFixed(2) : '',
       durationMonths: String(item.durationMonths ?? ''),
       amortization: item.amortization != null ? Number(item.amortization).toFixed(2) : '',
       cutoffAmount: item.amortization != null ? (Number(item.amortization) / 2).toFixed(2) : '',
@@ -628,8 +637,8 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
             {/* 2. Repayment terms */}
             <FormSection
               title="Repayment terms"
-              hint="Amortization is calculated from the amount, schedule and duration. You can still edit it.">
-              <Field label="Loan amount" required>
+              hint="Amortization is calculated from the amount, interest, schedule and duration. If you type the amortization yourself, the interest is worked out for you.">
+              <Field label="Loan amount (principal)" required>
                 <MoneyInput className={inputCls} value={form.amount} onChange={set('amount')} />
               </Field>
               <Field label="Deduction schedule" required>
@@ -644,6 +653,13 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
                   ]}
                   onChange={(v) => update({ deductionSchedule: v })}
                 />
+              </Field>
+              <Field label="Interest (optional)">
+                <MoneyInput className={inputCls} value={form.interest} onChange={set('interest')}
+                  placeholder="Total interest, if any" />
+                <p className="text-xs text-gray-500 mt-1">
+                  Total payable: {money(Number(form.amount || 0) + Number(form.interest || 0))}
+                </p>
               </Field>
               <Field
                 label={form.deductionSchedule === 'SPLIT' ? 'Duration (cutoffs)'
@@ -661,7 +677,7 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
                   placeholder="Auto-filled" />
               </Field>
               {form.deductionSchedule === 'SPLIT' && (
-                <Field label="Amount per cutoff" className="md:col-span-2">
+                <Field label="Amount per cutoff" >
                   <MoneyInput className={inputCls} value={form.cutoffAmount}
                     onChange={(e) => update({
                       cutoffAmount: e.target.value,
@@ -783,6 +799,12 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
                   <Detail label="Loan Type">{v.loanType}</Detail>
                   <Detail label="Agency">{v.agencyName || 'Company loan'}</Detail>
                   <Detail label="Reference No.">{v.applicationNo}</Detail>
+                  {Number(v.interestAmount) > 0 && (
+                    <>
+                      <Detail label="Principal">{money(Number(v.amount) - Number(v.interestAmount))}</Detail>
+                      <Detail label="Interest">{money(v.interestAmount)}</Detail>
+                    </>
+                  )}
                   <Detail label="Monthly Amortization">{money(v.amortization)}</Detail>
                   <Detail label="Deduction Schedule">{SCHEDULE_LABEL[v.deductionSchedule] || v.deductionSchedule}</Detail>
                   <Detail label="Duration">
