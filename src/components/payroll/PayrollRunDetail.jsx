@@ -25,7 +25,7 @@ const csv = (rows) => rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g,
 const saveFile = (name, text, type = 'text/csv') => {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([text], { type }));
-  a.download = name; a.click(); URL.revokeObjectURL(a.href);
+  a.download = name; a.click(); URL.revokeObjectURL(a.href); 
 };
 
 const EditModal = ({ payslipId, onClose, onSaved }) => {
