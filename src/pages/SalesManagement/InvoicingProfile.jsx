@@ -1487,7 +1487,7 @@ const InvoicingProfile = ({ onBack }) => {
                                     <tbody>
                                         {(receiptProfile.items || []).map((item, i) => (
                                             <tr key={i} className="align-top">
-                                                <td className="py-1 px-4 text-sm text-black leading-tight">{item.productName}{item.variationDisplay && item.variationDisplay !== 'Adjustment' && <span> {item.variationDisplay}{item.upc ? ` - ${item.upc}` : ''}</span>}{item.variationDisplay === 'Adjustment' && <span className="ml-2 text-sm text-black italic">(Adjustment)</span>}</td>
+                                                <td className="py-1 px-4 text-sm text-black leading-tight">{item.productName}{item.companySku && <span> [{item.companySku}]</span>}{item.variationDisplay && item.variationDisplay !== 'Adjustment' && <span> {item.variationDisplay}{item.upc ? ` - ${item.upc}` : ''}</span>}{item.variationDisplay === 'Adjustment' && <span className="ml-2 text-sm text-black italic">(Adjustment)</span>}</td>
                                                 <td className="py-1 px-4 text-right text-sm text-black leading-tight">{Number(item.totalQuantity).toLocaleString()}</td>
                                                 <td className="py-1 px-4 text-right text-sm text-black leading-tight">{fmt(item.unitCost)}</td>
                                                 <td className="py-1 px-4 text-right text-sm text-black leading-tight">{fmt(item.totalAmount)}</td>

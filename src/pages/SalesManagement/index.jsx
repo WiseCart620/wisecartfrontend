@@ -290,6 +290,7 @@ const SalesManagement = () => {
       items: [
         ...(invoiceReport.products || []).map(p => ({
           productName: p.productName,
+          companySku: p.companySku || null,
           variationDisplay: p.variation ? (p.variation.combinationDisplay || `${p.variation.variationType}: ${p.variation.variationValue}`) : null,
           upc: p.variation?.upc || null,
           totalQuantity: p.totalQuantity,

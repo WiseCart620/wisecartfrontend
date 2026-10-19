@@ -218,6 +218,7 @@ const InvoiceReportModal = ({
                   <tr key={i} className="align-top">
                     <td className="py-2 px-4 text-sm text-gray-900">
                       {product.productName}
+                      {product.companySku && ` [${product.companySku}]`}
                       {product.variation && ` ${product.variation.combinationDisplay ||
                         (product.variation.variationType && product.variation.variationValue
                           ? `${product.variation.variationType}: ${product.variation.variationValue}`
