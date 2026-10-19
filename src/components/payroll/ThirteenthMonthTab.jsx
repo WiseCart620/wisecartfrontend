@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ChevronDown, ChevronRight, Search, UserCheck, UserX, Info } from 'lucide-react';
+import { ChevronDown, ChevronRight, UserCheck, UserX, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { money } from './Shared';
@@ -16,6 +16,90 @@ const StatCard = ({ label, value }) => (
     <div className="text-xl font-bold text-gray-900 mt-1">{value}</div>
   </div>
 );
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+  'August', 'September', 'October', 'November', 'December'];
+
+const BreakdownPanel = ({ item }) => {
+  const [rows, setRows] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    setRows(null);
+    api.get(`/payroll/thirteenth-month/${item.id}/breakdown`)
+      .then(r => { if (alive) setRows(r.success ? r.data || [] : []); })
+      .catch(() => { if (alive) setRows([]); });
+    return () => { alive = false; };
+  }, [item.id, item.computedAmount]);
+
+  const counted = (rows || []).filter(r => r.dutyDays > 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="text-sm font-semibold text-gray-800">13th month computation · {item.year}</div>
+
+      {rows === null ? (
+        <div className="text-gray-500">Loading breakdown...</div>
+      ) : counted.length === 0 ? (
+        <div className="text-gray-500">No duty days recorded for this year.</div>
+      ) : (
+        <table className="w-full max-w-xl text-sm bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+            <tr>
+              <th className="px-3 py-2 text-left font-medium">Month</th>
+              <th className="px-3 py-2 text-left font-medium">Days worked</th>
+              <th className="px-3 py-2 text-right font-medium">Basic earned</th>
+            </tr>
+          </thead>
+          <tbody className="[&>tr>td]:border-t [&>tr>td]:border-gray-100">
+            {counted.map(r => (
+              <tr key={r.month}>
+                <td className="px-3 py-2 text-gray-800">{MONTH_NAMES[r.month - 1]}</td>
+                <td className="px-3 py-2 text-gray-600">
+                  {r.dutyDays === r.workDays ? 'Full month' : `${r.dutyDays} of ${r.workDays} working days`}
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums">{money(r.base)}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot className="bg-gray-50 text-sm">
+            <tr className="border-t border-gray-200">
+              <td className="px-3 py-2 font-medium text-gray-700" colSpan="2">Total basic earned</td>
+              <td className="px-3 py-2 text-right font-medium tabular-nums">{money(item.totalBasicEarned)}</td>
+            </tr>
+            <tr>
+              <td className="px-3 py-2 text-gray-600" colSpan="2">÷ 12 months</td>
+              <td />
+            </tr>
+            <tr className="border-t border-gray-200">
+              <td className="px-3 py-2 font-semibold text-gray-900" colSpan="2">13th month pay</td>
+              <td className="px-3 py-2 text-right font-semibold text-orange-700 tabular-nums">{money(item.computedAmount)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      )}
+
+      <div className="grid grid-cols-3 gap-4 max-w-xl">
+        <div>
+          <div className="text-xs uppercase text-gray-500">Paid so far</div>
+          <div className="font-semibold">{money(item.paidAmount || 0)}</div>
+        </div>
+        <div>
+          <div className="text-xs uppercase text-gray-500">Remaining</div>
+          <div className="font-semibold">{money(item.remainingAmount || 0)}</div>
+        </div>
+        <div>
+          <div className="text-xs uppercase text-gray-500">Last paid</div>
+          <div className="font-semibold">
+            {item.lastPaidAt
+              ? new Date(item.lastPaidAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+              : 'Not yet paid'}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ThirteenthMonthTab = ({ canManage }) => {
   const [year, setYear] = useState(thisYear);
@@ -221,17 +305,9 @@ const ThirteenthMonthTab = ({ canManage }) => {
                       </td>
                     </tr>
                     {expanded.has(k) && i.eligible && (
-                      <tr className="bg-orange-50 text-xs">
-                        <td colSpan="7" className="px-4 py-3 pl-12">
-                          <div className="space-y-1">
-                            <div className="font-semibold text-gray-700">How this was computed</div>
-                            <div className="font-mono text-gray-600">{i.formula || 'No formula available yet'}</div>
-                            <div className="grid grid-cols-3 gap-4 mt-2 pt-2 border-t border-orange-100">
-                              <div><span className="text-gray-500">Total 13th month base:</span> <span className="font-semibold">{money(i.totalBasicEarned)}</span></div>
-                              <div><span className="text-gray-500">Paid so far:</span> <span className="font-semibold">{money(i.paidAmount || 0)}</span></div>
-                              <div><span className="text-gray-500">Last paid:</span> <span className="font-semibold">{i.lastPaidAt ? new Date(i.lastPaidAt).toLocaleString() : '—'}</span></div>
-                            </div>
-                          </div>
+                      <tr className="bg-orange-50">
+                        <td colSpan="7" className="px-4 py-4 pl-12">
+                          <BreakdownPanel item={i} />
                         </td>
                       </tr>
                     )}
