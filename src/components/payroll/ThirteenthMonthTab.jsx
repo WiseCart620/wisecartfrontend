@@ -227,7 +227,7 @@ const ThirteenthMonthTab = ({ canManage }) => {
                             <div className="font-semibold text-gray-700">How this was computed</div>
                             <div className="font-mono text-gray-600">{i.formula || 'No formula available yet'}</div>
                             <div className="grid grid-cols-3 gap-4 mt-2 pt-2 border-t border-orange-100">
-                              <div><span className="text-gray-500">Total basic earned:</span> <span className="font-semibold">{money(i.totalBasicEarned)}</span></div>
+                              <div><span className="text-gray-500">Total 13th month base:</span> <span className="font-semibold">{money(i.totalBasicEarned)}</span></div>
                               <div><span className="text-gray-500">Paid so far:</span> <span className="font-semibold">{money(i.paidAmount || 0)}</span></div>
                               <div><span className="text-gray-500">Last paid:</span> <span className="font-semibold">{i.lastPaidAt ? new Date(i.lastPaidAt).toLocaleString() : '—'}</span></div>
                             </div>
