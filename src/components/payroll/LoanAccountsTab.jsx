@@ -60,6 +60,17 @@ const Detail = ({ label, children }) => (
   </div>
 );
 
+const FormSection = ({ title, hint, children }) => (
+  <section className="pt-5 first:pt-0 border-t border-gray-200 first:border-t-0">
+    <div className="flex items-center gap-2">
+      <div className="w-1 h-4 bg-orange-600 rounded-full" />
+      <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+    </div>
+    {hint && <p className="text-xs text-gray-500 mt-1 ml-3">{hint}</p>}
+    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">{children}</div>
+  </section>
+);
+
 const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -538,111 +549,142 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
 
       {showForm && (
         <Modal title={editing ? 'Edit Loan' : 'Add Loan'} onClose={() => setShowForm(false)}>
-          <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="Employee" required className="md:col-span-2">
-              <SearchableSelect
-                disabled={!!editing}
-                placeholder="Select employee..."
-                searchPlaceholder="Search employee..."
-                value={form.employeeId}
-                options={employees.map(e => ({ value: String(e.employeeId), label: e.fullName }))}
-                onChange={(v) => update({ employeeId: v })}
-              />
-            </Field>
-            <Field label="Agency">
-              <SearchableSelect
-                allLabel="None (company loan)"
-                searchPlaceholder="Search agency..."
-                value={form.agencyId}
-                options={agencies.map(a => ({ value: String(a.agencyId), label: a.name }))}
-                onChange={(v) => update({ agencyId: v })}
-              />
-            </Field>
-            <Field label="Loan Type" required>
-              <SearchableSelect
-                allowCustom
-                placeholder="Select or type..."
-                searchPlaceholder="Search or type a new type..."
-                value={form.loanType}
-                options={LOAN_TYPES.map(t => ({ value: t, label: t }))}
-                onChange={(v) => update({ loanType: v })}
-              />
-            </Field>
-            <Field label="Loan Amount" required>
-              <MoneyInput className={inputCls} value={form.amount} onChange={set('amount')} />
-            </Field>
-            <Field label={form.deductionSchedule === 'SPLIT' ? 'Duration (cutoffs)' : form.deductionSchedule === 'ONE_TIME' ? 'Duration' : 'Duration (months)'} required>
-              <input type="number" min="1" step="1"
-                disabled={form.deductionSchedule === 'ONE_TIME'}
-                className={`${inputCls} ${form.deductionSchedule === 'ONE_TIME' ? 'bg-gray-100' : ''}`}
-                value={form.durationMonths} onChange={set('durationMonths')} />
-            </Field>
-            <Field label={form.deductionSchedule === 'ONE_TIME' ? 'Amount to Deduct (one-time)' : 'Amortization (monthly, editable)'}>
-              <MoneyInput className={inputCls} value={form.amortization} onChange={set('amortization')} placeholder="Auto-filled, you can change it" />
-            </Field>
-            {form.deductionSchedule === 'SPLIT' && (
-              <Field label="Amount per Cutoff (editable)">
-                <MoneyInput className={inputCls} value={form.cutoffAmount}
-                  onChange={(e) => update({
-                    cutoffAmount: e.target.value,
-                    amortization: Number(e.target.value) > 0 ? (Number(e.target.value) * 2).toFixed(2) : '',
-                  })}
-                  placeholder="Deducted on each 15th and 30th" />
+          <form onSubmit={submit} className="space-y-5">
+
+            {/* 1. Loan details */}
+            <FormSection title="Loan details">
+              <Field label="Employee" required className="md:col-span-2">
+                <SearchableSelect
+                  disabled={!!editing}
+                  placeholder="Select employee..."
+                  searchPlaceholder="Search employee..."
+                  value={form.employeeId}
+                  options={employees.map(e => ({ value: String(e.employeeId), label: e.fullName }))}
+                  onChange={(v) => update({ employeeId: v })}
+                />
               </Field>
-            )}
-            <Field label="Deduction Schedule">
-              <SearchableSelect
-                typeable={false}
-                value={form.deductionSchedule}
-                options={[
-                  { value: 'SPLIT', label: 'Split across cutoffs (15th and 30th)' },
-                  { value: 'FIRST_CUTOFF', label: '15th cutoff only' },
-                  { value: 'SECOND_CUTOFF', label: '30th cutoff only' },
-                  { value: 'ONE_TIME', label: 'One-time (single date)' },
-                ]}
-                onChange={(v) => update({ deductionSchedule: v })}
-              />
-            </Field>
-            <Field label={form.deductionSchedule === 'ONE_TIME' ? 'Deduction Date' : 'Start Date (first deduction)'} required>
-              <input type="date" className={inputCls} value={form.startTerm} onChange={set('startTerm')} />
-            </Field>
-            <Field label="End Date (auto, editable)">
-              <input type="date"
-                className={`${inputCls} ${endDateError(form.startTerm, form.endTerm) ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''}`}
-                value={form.endTerm} onChange={set('endTerm')} />
-              {endDateError(form.startTerm, form.endTerm) && (
-                <p className="text-xs text-red-600 mt-1">{endDateError(form.startTerm, form.endTerm)}</p>
+              <Field label="Loan type" required>
+                <SearchableSelect
+                  allowCustom
+                  placeholder="Select or type..."
+                  searchPlaceholder="Search or type a new type..."
+                  value={form.loanType}
+                  options={LOAN_TYPES.map(t => ({ value: t, label: t }))}
+                  onChange={(v) => update({ loanType: v })}
+                />
+              </Field>
+              <Field label="Agency">
+                <SearchableSelect
+                  allLabel="None (company loan)"
+                  searchPlaceholder="Search agency..."
+                  value={form.agencyId}
+                  options={agencies.map(a => ({ value: String(a.agencyId), label: a.name }))}
+                  onChange={(v) => update({ agencyId: v })}
+                />
+              </Field>
+              <Field label="Reference no." className="md:col-span-2">
+                <input className={inputCls} value={form.referenceNo} onChange={set('referenceNo')}
+                  placeholder="Loan application or reference number" />
+              </Field>
+            </FormSection>
+
+            {/* 2. Repayment terms */}
+            <FormSection
+              title="Repayment terms"
+              hint="Amortization is calculated from the amount, schedule and duration. You can still edit it.">
+              <Field label="Loan amount" required>
+                <MoneyInput className={inputCls} value={form.amount} onChange={set('amount')} />
+              </Field>
+              <Field label="Deduction schedule" required>
+                <SearchableSelect
+                  typeable={false}
+                  value={form.deductionSchedule}
+                  options={[
+                    { value: 'SPLIT', label: 'Split across cutoffs (15th and 30th)' },
+                    { value: 'FIRST_CUTOFF', label: '15th cutoff only' },
+                    { value: 'SECOND_CUTOFF', label: '30th cutoff only' },
+                    { value: 'ONE_TIME', label: 'One-time (single date)' },
+                  ]}
+                  onChange={(v) => update({ deductionSchedule: v })}
+                />
+              </Field>
+              <Field
+                label={form.deductionSchedule === 'SPLIT' ? 'Duration (cutoffs)'
+                  : form.deductionSchedule === 'ONE_TIME' ? 'Duration' : 'Duration (months)'}
+                required>
+                <input type="number" min="1" step="1"
+                  disabled={form.deductionSchedule === 'ONE_TIME'}
+                  className={`${inputCls} ${form.deductionSchedule === 'ONE_TIME' ? 'bg-gray-100' : ''}`}
+                  value={form.durationMonths} onChange={set('durationMonths')} />
+              </Field>
+              <Field
+                label={form.deductionSchedule === 'ONE_TIME' ? 'Amount to deduct' : 'Monthly amortization'}
+                required>
+                <MoneyInput className={inputCls} value={form.amortization} onChange={set('amortization')}
+                  placeholder="Auto-filled" />
+              </Field>
+              {form.deductionSchedule === 'SPLIT' && (
+                <Field label="Amount per cutoff" className="md:col-span-2">
+                  <MoneyInput className={inputCls} value={form.cutoffAmount}
+                    onChange={(e) => update({
+                      cutoffAmount: e.target.value,
+                      amortization: Number(e.target.value) > 0 ? (Number(e.target.value) * 2).toFixed(2) : '',
+                    })}
+                    placeholder="Deducted on each 15th and 30th" />
+                </Field>
               )}
-            </Field>
+            </FormSection>
+
+            {/* 3. Term dates */}
+            <FormSection title="Loan term">
+              <Field label={form.deductionSchedule === 'ONE_TIME' ? 'Deduction date' : 'Start date (first deduction)'} required>
+                <input type="date" className={inputCls} value={form.startTerm} onChange={set('startTerm')} />
+              </Field>
+              <Field label="End date">
+                <input type="date"
+                  className={`${inputCls} ${endDateError(form.startTerm, form.endTerm) ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''}`}
+                  value={form.endTerm} onChange={set('endTerm')} />
+                {endDateError(form.startTerm, form.endTerm)
+                  ? <p className="text-xs text-red-600 mt-1">{endDateError(form.startTerm, form.endTerm)}</p>
+                  : <p className="text-xs text-gray-500 mt-1">Set automatically. You can change it.</p>}
+              </Field>
+            </FormSection>
+
+            {/* 4. Special deduction (hidden for one-time loans) */}
             {form.deductionSchedule !== 'ONE_TIME' && (
-              <>
-                <Field label="Special Deduction Date (optional)">
+              <FormSection
+                title="Special deduction (optional)"
+                hint={
+                  form.deductionSchedule === 'FIRST_CUTOFF' ? 'Deduct a different amount once. Use a date from the 1st to the 15th.'
+                    : form.deductionSchedule === 'SECOND_CUTOFF' ? 'Deduct a different amount once. Use a date from the 16th to the end of the month.'
+                      : 'Deduct a different amount once. Use any date inside the cutoff, e.g. 10/30/2026 for the 30th cutoff.'
+                }>
+                <Field label="Date">
                   <input type="date" className={inputCls} value={form.overrideDate} onChange={set('overrideDate')} />
-                  <p className="text-xs text-gray-500 mt-1">
-                    {form.deductionSchedule === 'FIRST_CUTOFF' ? 'Use a date from the 1st to the 15th.'
-                      : form.deductionSchedule === 'SECOND_CUTOFF' ? 'Use a date from the 16th to the end of the month.'
-                        : 'Any date inside the cutoff, e.g. 10/30/2026 for the 30th cutoff.'}
-                  </p>
                 </Field>
-                <Field label="Amount on That Cutoff (optional)">
+                <Field label="Amount">
                   <MoneyInput className={inputCls} value={form.overrideAmount} onChange={set('overrideAmount')}
-                    placeholder="Deducted once, then normal amount resumes" />
+                    placeholder="Normal amount resumes afterwards" />
                 </Field>
-              </>
+              </FormSection>
             )}
-            <Field label="Reference No." className="md:col-span-2">
-              <input className={inputCls} value={form.referenceNo} onChange={set('referenceNo')}
-                placeholder="e.g. loan application / reference number" />
-            </Field>
-            <Field label="Document (optional)" className="md:col-span-2">
-              <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" className={inputCls}
-                onChange={(e) => setFile(e.target.files?.[0] || null)} />
-              <p className="text-xs text-gray-500 mt-1">Also saved under the employee's Documents.</p>
-            </Field>
-            <div className="md:col-span-2 flex justify-end gap-2 pt-2 border-t">
-              <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border border-gray-300 rounded text-sm">Cancel</button>
-              <button type="submit" disabled={saving} className="px-4 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 disabled:opacity-50">
-                {saving ? 'Saving...' : editing ? 'Update' : 'Create'}
+
+            {/* 5. Attachment */}
+            <FormSection title="Attachment">
+              <Field label="Document (optional)" className="md:col-span-2">
+                <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" className={inputCls}
+                  onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                <p className="text-xs text-gray-500 mt-1">PDF, Word or image. Also saved under the employee's Documents.</p>
+              </Field>
+            </FormSection>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
+              <button type="button" onClick={() => setShowForm(false)}
+                className="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50">Cancel</button>
+              <button type="submit" disabled={saving}
+                className="px-5 py-2 bg-orange-600 text-white rounded text-sm font-medium hover:bg-orange-700 disabled:opacity-50">
+                {saving ? 'Saving...' : editing ? 'Save changes' : 'Create loan'}
               </button>
             </div>
           </form>
