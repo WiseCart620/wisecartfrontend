@@ -17,83 +17,114 @@ const StatCard = ({ label, value }) => (
   </div>
 );
 
-const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
-  'August', 'September', 'October', 'November', 'December'];
+
+const MONTH_FULL = {
+  Jan: 'January', Feb: 'February', Mar: 'March', Apr: 'April', May: 'May', Jun: 'June',
+  Jul: 'July', Aug: 'August', Sep: 'September', Oct: 'October', Nov: 'November', Dec: 'December',
+};
+
+const parseFormula = (formula = '') => {
+  const left = formula.split(' = ₱')[0];
+  if (!left || left === 'No duty days') return [];
+  return left.split(' + ').map(part => {
+    const m = part.match(/^(\w{3}) ₱([\d.]+)(?: \((\d+)\/(\d+) days\))?$/);
+    if (!m) return null;
+    return {
+      month: MONTH_FULL[m[1]] || m[1],
+      amount: Number(m[2]),
+      worked: m[3] ? Number(m[3]) : null,
+      total: m[4] ? Number(m[4]) : null,
+    };
+  }).filter(Boolean);
+};
 
 const BreakdownPanel = ({ item }) => {
-  const [rows, setRows] = useState(null);
-
-  useEffect(() => {
-    let alive = true;
-    setRows(null);
-    api.get(`/payroll/thirteenth-month/${item.id}/breakdown`)
-      .then(r => { if (alive) setRows(r.success ? r.data || [] : []); })
-      .catch(() => { if (alive) setRows([]); });
-    return () => { alive = false; };
-  }, [item.id, item.computedAmount]);
-
-  const counted = (rows || []).filter(r => r.dutyDays > 0);
+  const rows = parseFormula(item.formula);
+  const countsToToday = item.employeeStatus === 'ACTIVE' && item.year === new Date().getFullYear();
 
   return (
-    <div className="space-y-4">
-      <div className="text-sm font-semibold text-gray-800">13th month computation · {item.year}</div>
-
-      {rows === null ? (
-        <div className="text-gray-500">Loading breakdown...</div>
-      ) : counted.length === 0 ? (
-        <div className="text-gray-500">No duty days recorded for this year.</div>
-      ) : (
-        <table className="w-full max-w-xl text-sm bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-            <tr>
-              <th className="px-3 py-2 text-left font-medium">Month</th>
-              <th className="px-3 py-2 text-left font-medium">Days worked</th>
-              <th className="px-3 py-2 text-right font-medium">Basic earned</th>
-            </tr>
-          </thead>
-          <tbody className="[&>tr>td]:border-t [&>tr>td]:border-gray-100">
-            {counted.map(r => (
-              <tr key={r.month}>
-                <td className="px-3 py-2 text-gray-800">{MONTH_NAMES[r.month - 1]}</td>
-                <td className="px-3 py-2 text-gray-600">
-                  {r.dutyDays === r.workDays ? 'Full month' : `${r.dutyDays} of ${r.workDays} working days`}
-                </td>
-                <td className="px-3 py-2 text-right tabular-nums">{money(r.base)}</td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot className="bg-gray-50 text-sm">
-            <tr className="border-t border-gray-200">
-              <td className="px-3 py-2 font-medium text-gray-700" colSpan="2">Total basic earned</td>
-              <td className="px-3 py-2 text-right font-medium tabular-nums">{money(item.totalBasicEarned)}</td>
-            </tr>
-            <tr>
-              <td className="px-3 py-2 text-gray-600" colSpan="2">÷ 12 months</td>
-              <td />
-            </tr>
-            <tr className="border-t border-gray-200">
-              <td className="px-3 py-2 font-semibold text-gray-900" colSpan="2">13th month pay</td>
-              <td className="px-3 py-2 text-right font-semibold text-orange-700 tabular-nums">{money(item.computedAmount)}</td>
-            </tr>
-          </tfoot>
-        </table>
-      )}
-
-      <div className="grid grid-cols-3 gap-4 max-w-xl">
-        <div>
-          <div className="text-xs uppercase text-gray-500">Paid so far</div>
-          <div className="font-semibold">{money(item.paidAmount || 0)}</div>
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      {/* monthly table */}
+      <div className="lg:col-span-3">
+        <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+          Basic pay earned per month · {item.year}
         </div>
+        {rows.length === 0 ? (
+          <div className="text-sm text-gray-500">No duty days recorded for this year.</div>
+        ) : (
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+                <tr>
+                  <th className="px-4 py-2 text-left font-medium">Month</th>
+                  <th className="px-4 py-2 text-left font-medium">Days counted</th>
+                  <th className="px-4 py-2 text-right font-medium">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="[&>tr>td]:border-t [&>tr>td]:border-gray-100">
+                {rows.map(r => (
+                  <tr key={r.month}>
+                    <td className="px-4 py-2 text-gray-900">{r.month}</td>
+                    <td className="px-4 py-2">
+                      {r.worked == null ? (
+                        <span className="text-gray-500">Full month</span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-medium">
+                          {r.worked} of {r.total} working days
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-right tabular-nums text-gray-900">{money(r.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {countsToToday && (
+          <p className="text-xs text-gray-500 mt-2">The current month is counted up to today and updates automatically.</p>
+        )}
+      </div>
+
+      {/* summary */}
+      <div className="lg:col-span-2 space-y-4">
         <div>
-          <div className="text-xs uppercase text-gray-500">Remaining</div>
-          <div className="font-semibold">{money(item.remainingAmount || 0)}</div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Computation</div>
+          <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100 text-sm">
+            <div className="flex justify-between px-4 py-2.5">
+              <span className="text-gray-600">Total basic pay earned</span>
+              <span className="font-medium tabular-nums">{money(item.totalBasicEarned)}</span>
+            </div>
+            <div className="flex justify-between px-4 py-2.5">
+              <span className="text-gray-600">Divided by</span>
+              <span className="font-medium">12 months</span>
+            </div>
+            <div className="flex justify-between px-4 py-3 bg-orange-50/60 rounded-b-lg">
+              <span className="font-semibold text-gray-900">13th month pay</span>
+              <span className="font-semibold text-orange-700 tabular-nums">{money(item.computedAmount)}</span>
+            </div>
+          </div>
         </div>
+
         <div>
-          <div className="text-xs uppercase text-gray-500">Last paid</div>
-          <div className="font-semibold">
-            {item.lastPaidAt
-              ? new Date(item.lastPaidAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
-              : 'Not yet paid'}
+          <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Payment status</div>
+          <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100 text-sm">
+            <div className="flex justify-between px-4 py-2.5">
+              <span className="text-gray-600">Paid so far</span>
+              <span className="font-medium tabular-nums">{money(item.paidAmount || 0)}</span>
+            </div>
+            <div className="flex justify-between px-4 py-2.5">
+              <span className="text-gray-600">Remaining</span>
+              <span className="font-medium tabular-nums">{money(item.remainingAmount || 0)}</span>
+            </div>
+            <div className="flex justify-between px-4 py-2.5">
+              <span className="text-gray-600">Last paid</span>
+              <span className="font-medium">
+                {item.lastPaidAt
+                  ? new Date(item.lastPaidAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+                  : 'Not yet paid'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
