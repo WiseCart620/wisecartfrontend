@@ -26,16 +26,35 @@ const computeEndDate = (start, duration, schedule) => {
   const d = new Date(start + 'T00:00:00');
   const day = d.getDate();
   let monthsAhead;
+  let lastIsFirstHalf = false;
   if (schedule === 'SPLIT') {
-    const pos = day <= 15 ? 0 : 1; // 0 = 15th cutoff, 1 = 30th cutoff
-    monthsAhead = Math.floor((pos + dur - 1) / 2);
+    const idx = (day <= 15 ? 0 : 1) + dur - 1;
+    monthsAhead = Math.floor(idx / 2);
+    lastIsFirstHalf = idx % 2 === 0;
   } else if (schedule === 'FIRST_CUTOFF') {
     monthsAhead = (day <= 15 ? 0 : 1) + dur - 1;
+    lastIsFirstHalf = true;
   } else {
     monthsAhead = (day <= 30 ? 0 : 1) + dur - 1;
   }
-  return toISO(new Date(d.getFullYear(), d.getMonth() + monthsAhead + 1, 0));
+  return lastIsFirstHalf
+    ? toISO(new Date(d.getFullYear(), d.getMonth() + monthsAhead, 15))
+    : toISO(new Date(d.getFullYear(), d.getMonth() + monthsAhead + 1, 0));
 };
+
+const durationFromEnd = (start, end, schedule) => {
+  if (!start || !end || schedule === 'ONE_TIME') return 0;
+  const s = new Date(start + 'T00:00:00');
+  const e = new Date(end + 'T00:00:00');
+  if (isNaN(s) || isNaN(e) || e < s) return 0;
+  const m = (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
+  if (schedule === 'SPLIT') {
+    return m * 2 + (e.getDate() <= 15 ? 0 : 1) - (s.getDate() <= 15 ? 0 : 1) + 1;
+  }
+  if (schedule === 'FIRST_CUTOFF') return m - (s.getDate() <= 15 ? 0 : 1) + 1;
+  return m - (s.getDate() <= 30 ? 0 : 1) + 1;
+};
+
 const endDateError = (start, end) =>
   start && end && end < start ? 'End date cannot be before the start date' : '';
 const serveUrl = (path) => `/files/serve?path=${encodeURIComponent(path)}`;
@@ -101,17 +120,29 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
     }
   };
 
-  // amount/duration/schedule recompute the suggested amortization; amortization itself stays editable
   const update = (patch) => setForm(p => {
     const n = { ...p, ...patch };
+    const endEdited = 'endTerm' in patch;
+    const changed = { ...patch };
+
     if (n.deductionSchedule === 'ONE_TIME') n.durationMonths = '1';
     else if (patch.deductionSchedule && p.deductionSchedule === 'ONE_TIME') n.durationMonths = '';
+
+    // End date edited by the user -> derive the duration from it
+    if (endEdited && n.deductionSchedule !== 'ONE_TIME') {
+      const d = durationFromEnd(n.startTerm, n.endTerm, n.deductionSchedule);
+      if (d > 0) {
+        n.durationMonths = String(d);
+        changed.durationMonths = n.durationMonths;
+      }
+    }
+
     const amt = Number(n.amount);
     const dur = Number(n.durationMonths);
-    if (['amount', 'durationMonths', 'deductionSchedule'].some(k => k in patch)) {
+
+    if (['amount', 'durationMonths', 'deductionSchedule'].some(k => k in changed)) {
       if (n.deductionSchedule === 'ONE_TIME') {
-        // only auto-fill when switching to One-time or when the field is empty; otherwise keep what the user typed
-        if ('deductionSchedule' in patch || !p.amortization) {
+        if ('deductionSchedule' in changed || !p.amortization) {
           n.amortization = amt > 0 ? amt.toFixed(2) : '';
         }
       } else if (amt > 0 && dur > 0) {
@@ -121,14 +152,15 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
       }
     }
     if (n.deductionSchedule === 'SPLIT' && !('cutoffAmount' in patch)
-      && ['amount', 'durationMonths', 'deductionSchedule', 'amortization'].some(k => k in patch)) {
+      && ['amount', 'durationMonths', 'deductionSchedule', 'amortization'].some(k => k in changed)) {
       n.cutoffAmount = Number(n.amortization) > 0 ? (Number(n.amortization) / 2).toFixed(2) : '';
     }
-    if (['startTerm', 'durationMonths', 'deductionSchedule'].some(k => k in patch)) {
+    if (!endEdited && ['startTerm', 'durationMonths', 'deductionSchedule'].some(k => k in changed)) {
       n.endTerm = computeEndDate(n.startTerm, dur, n.deductionSchedule);
     }
     return n;
   });
+
   const set = (k) => (e) => update({ [k]: e.target.value });
   const addOverride = () => setForm(p => ({ ...p, overrides: [...(p.overrides || []), { date: '', amount: '' }] }));
   const setOverride = (idx, k, v) => setForm(p => ({
