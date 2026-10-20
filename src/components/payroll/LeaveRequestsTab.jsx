@@ -263,7 +263,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
   return (
     <div>
       <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-white pb-4">
-        <div className="bg-white border border-gray-200 shadow-sm rounded-xl p-4 flex flex-col md:flex-row gap-4 md:items-end">
+        <div className="bg-white border border-gray-200 shadow-sm rounded-xl p-4 flex flex-col md:flex-row md:flex-wrap gap-4 md:items-end">
           <Field label="Employee" className="flex-1">
             <SearchableSelect
               allLabel="All employees" allowCustom placeholder="All employees"
