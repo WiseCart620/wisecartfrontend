@@ -62,6 +62,12 @@ const OvertimeEntries = ({ canEdit }) => {
     const [filterType, setFilterType] = useState('');
     const [editing, setEditing] = useState(null);
     const [showForm, setShowForm] = useState(false);
+    const [expandedSub, setExpandedSub] = useState(() => new Set());
+    const toggleSub = (key) => setExpandedSub(prev => {
+        const next = new Set(prev);
+        next.has(key) ? next.delete(key) : next.add(key);
+        return next;
+    });
     const [expanded, setExpanded] = useState(() => new Set());
     const dir = useEmployeeDirectory();
     const { from, to } = rangeFor(month, year, cutoff);
@@ -217,6 +223,33 @@ const OvertimeEntries = ({ canEdit }) => {
         next.has(id) ? next.delete(id) : next.add(id);
         return next;
     });
+
+    const subGroupsOf = (rows) => {
+        const map = new Map();
+        rows.forEach(r => {
+            const [y, m, d] = String(r.workDate).split('-').map(Number);
+            const first = d <= 15;
+            const last = new Date(y, m, 0).getDate();
+            const mon = MONTHS[m - 1].label;
+            const key = `${y}-${pad(m)}-${first ? 'A' : 'B'}|${r.entryType}`;
+            if (!map.has(key)) {
+                map.set(key, {
+                    key,
+                    entryType: r.entryType,
+                    period: first ? `${mon} 1 – 15, ${y}` : `${mon} 16 – ${last}, ${y}`,
+                    rows: [],
+                    total: 0,
+                });
+            }
+            const s = map.get(key);
+            s.rows.push(r);
+            s.total += Number(r.hours) || 0;
+        });
+        return Array.from(map.values())
+            .map(s => ({ ...s, total: Math.round(s.total * 100) / 100 }))
+            .sort((a, b) => a.key.localeCompare(b.key));
+    };
+
     const pendingAll = filteredRows.filter(r => r.status === 'PENDING');
 
     return (
@@ -318,7 +351,7 @@ const OvertimeEntries = ({ canEdit }) => {
                     )}
                     <button onClick={() => setExpanded(new Set(pageItems.map(g => g.id)))}
                         className="px-3 py-2 text-xs border border-gray-300 rounded hover:bg-gray-100">Expand all</button>
-                    <button onClick={() => setExpanded(new Set())}
+                    <button onClick={() => { setExpanded(new Set()); setExpandedSub(new Set()); }}
                         className="px-3 py-2 text-xs border border-gray-300 rounded hover:bg-gray-100">Collapse all</button>
                 </div>
             </div>
@@ -378,49 +411,92 @@ const OvertimeEntries = ({ canEdit }) => {
                                             <tr className="bg-white/70">
                                                 <td />
                                                 <td colSpan="5" className="px-4 py-3">
-                                                    <div className="overflow-x-auto">
-                                                        <table className="w-full min-w-[640px] text-sm bg-white rounded overflow-hidden">
-                                                            <thead className="border-b">
-                                                                <tr>
-                                                                    {['Date', 'Type', 'Value', 'Remarks', 'Status'].map(h => (
-                                                                        <th key={h} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">{h}</th>
-                                                                    ))}
-                                                                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-200">
-                                                                {g.rows.map(r => (
-                                                                    <tr key={r.id}>
-                                                                        <td className="px-4 py-2 whitespace-nowrap">{fmtShort(r.workDate)}</td>
-                                                                        <td className="px-4 py-2 whitespace-nowrap">{label(r.entryType)}</td>
-                                                                        <td className="px-4 py-2 whitespace-nowrap font-medium">{formatStored(r.entryType, r.hours)}</td>
-                                                                        <td className="px-4 py-2 text-gray-600 max-w-[220px] truncate" title={r.remarks}>{r.remarks || '—'}</td>
-                                                                        <td className="px-4 py-2 whitespace-nowrap">
-                                                                            <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${STATUS_BADGE[r.status] || STATUS_BADGE.APPROVED}`}>
-                                                                                {r.status === 'PENDING' ? 'Pending' : 'Approved'}
+                                                    <div className="space-y-2">
+                                                        {subGroupsOf(g.rows).map(s => {
+                                                            const subKey = `${g.id}|${s.key}`;
+                                                            const subOpen = expandedSub.has(subKey);
+                                                            const subPending = s.rows.filter(r => r.status === 'PENDING');
+                                                            return (
+                                                                <div key={s.key} className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                                                                    <div role="button" tabIndex={0}
+                                                                        onClick={() => toggleSub(subKey)}
+                                                                        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleSub(subKey)}
+                                                                        className={`flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 cursor-pointer hover:bg-gray-50 ${subOpen ? 'bg-orange-50/60' : ''}`}>
+                                                                        <ChevronRight size={16}
+                                                                            className={`text-gray-400 transition-transform ${subOpen ? 'rotate-90' : ''}`} />
+                                                                        <span className="font-medium text-gray-900 min-w-[140px]">{label(s.entryType)}</span>
+                                                                        <span className="text-sm text-gray-600 flex-1 min-w-[160px]">{s.period}</span>
+                                                                        <span className="text-xs text-gray-500">
+                                                                            {s.rows.length} entr{s.rows.length === 1 ? 'y' : 'ies'}
+                                                                        </span>
+                                                                        <span className="text-sm font-semibold text-gray-900 min-w-[90px] text-right">
+                                                                            {formatStored(s.entryType, s.total)}
+                                                                        </span>
+                                                                        {subPending.length > 0 ? (
+                                                                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-amber-50 text-amber-700 ring-1 ring-amber-200">
+                                                                                {subPending.length} pending
                                                                             </span>
-                                                                            {r.approvedBy && <div className="text-xs text-gray-500 mt-1">by {r.approvedBy}</div>}
-                                                                        </td>
-                                                                        <td className="px-4 py-2 text-right whitespace-nowrap">
-                                                                            <div className="flex justify-end gap-1">
-                                                                                {canApprove && r.status === 'PENDING' && (
-                                                                                    <button onClick={() => approveMany([r])} title="Approve"
-                                                                                        className="p-2 text-green-600 hover:bg-green-50 rounded"><CheckCircle size={16} /></button>
-                                                                                )}
-                                                                                {canEdit && r.status === 'PENDING' && (
-                                                                                    <button onClick={() => startEdit(r)} title="Edit"
-                                                                                        className="p-2 text-orange-600 hover:bg-orange-50 rounded"><Edit2 size={16} /></button>
-                                                                                )}
-                                                                                {canEdit && (
-                                                                                    <button onClick={() => del(r)} title="Delete"
-                                                                                        className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
-                                                                                )}
-                                                                            </div>
-                                                                        </td>
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
+                                                                        ) : (
+                                                                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-50 text-green-700 ring-1 ring-green-200">
+                                                                                Approved
+                                                                            </span>
+                                                                        )}
+                                                                        {canApprove && subPending.length > 0 && (
+                                                                            <button onClick={(e) => { e.stopPropagation(); approveMany(subPending); }}
+                                                                                className="px-3 py-1 text-xs border border-green-300 text-green-700 rounded hover:bg-green-50 whitespace-nowrap">
+                                                                                Approve {subPending.length}
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {subOpen && (
+                                                                        <div className="overflow-x-auto border-t border-gray-200">
+                                                                            <table className="w-full min-w-[560px] text-sm">
+                                                                                <thead className="border-b">
+                                                                                    <tr>
+                                                                                        {['Date', 'Value', 'Remarks', 'Status'].map(h => (
+                                                                                            <th key={h} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">{h}</th>
+                                                                                        ))}
+                                                                                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-100">
+                                                                                    {s.rows.map(r => (
+                                                                                        <tr key={r.id}>
+                                                                                            <td className="px-4 py-2 whitespace-nowrap">{fmtShort(r.workDate)}</td>
+                                                                                            <td className="px-4 py-2 whitespace-nowrap font-medium">{formatStored(r.entryType, r.hours)}</td>
+                                                                                            <td className="px-4 py-2 text-gray-600 max-w-[220px] truncate" title={r.remarks}>{r.remarks || '—'}</td>
+                                                                                            <td className="px-4 py-2 whitespace-nowrap">
+                                                                                                <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${STATUS_BADGE[r.status] || STATUS_BADGE.APPROVED}`}>
+                                                                                                    {r.status === 'PENDING' ? 'Pending' : 'Approved'}
+                                                                                                </span>
+                                                                                                {r.approvedBy && <div className="text-xs text-gray-500 mt-1">by {r.approvedBy}</div>}
+                                                                                            </td>
+                                                                                            <td className="px-4 py-2 text-right whitespace-nowrap">
+                                                                                                <div className="flex justify-end gap-1">
+                                                                                                    {canApprove && r.status === 'PENDING' && (
+                                                                                                        <button onClick={() => approveMany([r])} title="Approve"
+                                                                                                            className="p-2 text-green-600 hover:bg-green-50 rounded"><CheckCircle size={16} /></button>
+                                                                                                    )}
+                                                                                                    {canEdit && r.status === 'PENDING' && (
+                                                                                                        <button onClick={() => startEdit(r)} title="Edit"
+                                                                                                            className="p-2 text-orange-600 hover:bg-orange-50 rounded"><Edit2 size={16} /></button>
+                                                                                                    )}
+                                                                                                    {canEdit && (
+                                                                                                        <button onClick={() => del(r)} title="Delete"
+                                                                                                            className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
+                                                                                                    )}
+                                                                                                </div>
+                                                                                            </td>
+                                                                                        </tr>
+                                                                                    ))}
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </td>
                                             </tr>
