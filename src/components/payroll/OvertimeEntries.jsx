@@ -437,7 +437,7 @@ const OvertimeEntries = ({ canEdit }) => {
 
             <p className="text-xs text-gray-500">
                 Only approved entries dated inside a payroll run's period are included when the run is created or regenerated.
-                Overtime and holiday rates are edited under Pay Types.
+                Rates and which types appear here are managed under Pay Types.
             </p>
         </div>
     );

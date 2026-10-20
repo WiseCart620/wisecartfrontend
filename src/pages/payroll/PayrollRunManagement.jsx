@@ -91,7 +91,7 @@ const PayrollRunManagement = () => {
 
   const tabBar = (
     <div className="flex gap-6 border-b border-gray-200 mt-3 overflow-x-auto overflow-y-hidden">
-      {[['runs', 'Payroll Runs'], ['ot', 'Overtime & Undertime'], ['rb', 'Reimbursements'], ['db', 'Disbursement'], ['an', 'Annual Monitoring']].map(([k, l]) => (
+      {[['runs', 'Payroll Runs'], ['ot', 'Pay Entries'], ['rb', 'Reimbursements'], ['db', 'Disbursement'], ['an', 'Annual Monitoring']].map(([k, l]) => (
         <button key={k} onClick={() => setTab(k)}
           className={`pb-3 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${tab === k ? 'border-orange-600 text-orange-700' : 'border-transparent text-gray-500 hover:text-gray-800'}`}>{l}</button>
       ))}

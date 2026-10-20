@@ -309,7 +309,7 @@ const PayTypeManagement = () => {
                 <label className="flex items-center gap-2 text-sm text-gray-700">
                   <input type="checkbox" checked={form.includeInEntries}
                     onChange={(e) => setForm(p => ({ ...p, includeInEntries: e.target.checked }))} />
-                  Show in Overtime &amp; Undertime entries
+                  Show in Pay Entries
                 </label>
               )}
 
