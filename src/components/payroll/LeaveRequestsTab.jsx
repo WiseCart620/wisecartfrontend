@@ -46,7 +46,8 @@ const EMPTY = { employeeId: '', dateFrom: today(), dateTo: today(), reason: '', 
 const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('');
+  const [fFrom, setFFrom] = useState('');
+  const [fTo, setFTo] = useState('');
   const [search, setSearch] = useState('');
   const [show, setShow] = useState(false);
   const [form, setForm] = useState(EMPTY);
@@ -79,8 +80,13 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return items.filter(t => !q || (t.employeeName || '').toLowerCase().includes(q));
-  }, [items, search]);
+    return items.filter(t => {
+      if (q && !(t.employeeName || '').toLowerCase().includes(q)) return false;
+      if (fFrom && String(t.dateTo) < fFrom) return false;
+      if (fTo && String(t.dateFrom) > fTo) return false;
+      return true;
+    });
+  }, [items, search, fFrom, fTo]);
 
   const groups = useMemo(() => {
     const map = new Map();
@@ -111,7 +117,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
       .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   }, [filtered]);
 
-  const { pageItems, paginationProps, totalItems } = usePagination(groups, `${search}|${statusFilter}`);
+  const { pageItems, paginationProps, totalItems } = usePagination(groups, `${search}|${statusFilter}|${fFrom}|${fTo}`);
 
   const set = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
   const photoOf = Object.fromEntries((employees || []).map(e => [e.employeeId, e.photoUrl]));
@@ -275,6 +281,23 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
               onChange={(v) => setStatusFilter(v)}
             />
           </Field>
+
+          <Field label="From">
+            <input type="date" className={inputCls} value={fFrom} max={fTo || undefined}
+              onChange={(e) => setFFrom(e.target.value)} />
+          </Field>
+          <Field label="To">
+            <input type="date" className={inputCls} value={fTo} min={fFrom || undefined}
+              onChange={(e) => setFTo(e.target.value)} />
+          </Field>
+          {(fFrom || fTo) && (
+            <button type="button" onClick={() => { setFFrom(''); setFTo(''); }}
+              className="px-3 py-2 border border-gray-300 rounded text-sm hover:bg-gray-100 whitespace-nowrap">
+              Clear dates
+            </button>
+          )}
+
+          
           {canCreate && (
             <button onClick={openForm}
               className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm whitespace-nowrap">
