@@ -219,6 +219,7 @@ const SalesManagement = () => {
 
       const payload = {
         ...filterData,
+        companyId: filterData.companyIds[0],
         branchIds: invoiceBranchIds,
         productIds: numericProductIds,
         variationIds: numericVariationIds,
