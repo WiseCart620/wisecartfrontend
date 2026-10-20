@@ -46,6 +46,7 @@ const EMPTY = { employeeId: '', dateFrom: today(), dateTo: today(), reason: '', 
 const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('');
   const [fFrom, setFFrom] = useState('');
   const [fTo, setFTo] = useState('');
   const [search, setSearch] = useState('');
@@ -297,7 +298,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
             </button>
           )}
 
-          
+
           {canCreate && (
             <button onClick={openForm}
               className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm whitespace-nowrap">
