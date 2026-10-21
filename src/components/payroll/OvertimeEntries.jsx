@@ -20,6 +20,7 @@ const CUTOFFS = [
     { value: 'FIRST', label: '1st - 15th' },
     { value: 'SECOND', label: '16th - end of month' },
 ];
+const DEDUCTION_CODES = new Set(['UNDERTIME_HOUR', 'LATE_HOUR', 'ABSENCE_DAY']);
 const pad = (n) => String(n).padStart(2, '0');
 const rangeFor = (month, year, cutoff) => {
     const m = Number(month), y = Number(year);
@@ -60,6 +61,8 @@ const OvertimeEntries = ({ canEdit }) => {
     const [empSearch, setEmpSearch] = useState('');
     const [empSelected, setEmpSelected] = useState('');
     const [filterType, setFilterType] = useState('');
+    const [showEarnings, setShowEarnings] = useState(true);
+    const [showDeductions, setShowDeductions] = useState(true);
     const [editing, setEditing] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const [expandedSub, setExpandedSub] = useState(() => new Set());
@@ -81,7 +84,12 @@ const OvertimeEntries = ({ canEdit }) => {
                         && (p.code
                             ? ENTRY_CODES.has(p.code) && p.includeInEntries !== false
                             : !!p.includeInEntries))
-                    .map(p => [p.code || String(p.payTypeId), p.payTypeName, p.unit || 'HOURS']));
+                    .map(p => [
+                        p.code || String(p.payTypeId),
+                        p.payTypeName,
+                        p.unit || 'HOURS',
+                        (p.category === 'DEDUCTION' || DEDUCTION_CODES.has(p.code)) ? 'DEDUCTION' : 'EARNING',
+                    ]));
             }
         }).catch(() => { });
     }, []);
@@ -199,8 +207,23 @@ const OvertimeEntries = ({ canEdit }) => {
     const q = empSearch.trim().toLowerCase();
     const rowName = (r) => (dir[r.employeeId]?.name || r.employeeName || '').toLowerCase();
 
+    const kindOf = (code) => (metaOf(code) || [])[3] || 'EARNING';
+    const kindAllowed = (kind) => (kind === 'DEDUCTION' ? showDeductions : showEarnings);
+
+    const typeOptions = TYPES
+        .filter(t => kindAllowed(t[3] || 'EARNING'))
+        .map(([k, l]) => ({ value: k, label: l }));
+
+    const toggleKind = (kind) => {
+        const next = kind === 'DEDUCTION' ? !showDeductions : !showEarnings;
+        if (kind === 'DEDUCTION') setShowDeductions(next); else setShowEarnings(next);
+        // clear the selected type if its category just got hidden
+        if (!next && filterType && kindOf(filterType) === kind) setFilterType('');
+    };
+
     const filteredRows = rows.filter(r =>
         (empSelected ? String(r.employeeId) === selectedId : (!q || rowName(r).includes(q))) &&
+        kindAllowed(kindOf(r.entryType)) &&
         (!filterType || r.entryType === filterType));
 
     const groups = useMemo(() => {
@@ -216,7 +239,7 @@ const OvertimeEntries = ({ canEdit }) => {
     }, [filteredRows]);
 
     const { pageItems, paginationProps } =
-        usePagination(groups, `${month}|${year}|${cutoff}|${empSearch}|${empSelected}|${filterType}`);
+        usePagination(groups, `${month}|${year}|${cutoff}|${empSearch}|${empSelected}|${filterType}|${showEarnings}|${showDeductions}`);
 
     const toggle = (id) => setExpanded(prev => {
         const next = new Set(prev);
@@ -277,10 +300,25 @@ const OvertimeEntries = ({ canEdit }) => {
                             search={empSearch} selected={empSelected}
                             onSearch={setEmpSearch} onSelect={setEmpSelected} />
                     </div>
-                    <div className="min-w-[180px]">
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
-                        <SearchableSelect allLabel="All types" typeable={false} value={filterType}
-                            options={TYPES.map(([k, l]) => ({ value: k, label: l }))} onChange={setFilterType} />
+                    <div className="min-w-[220px]">
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="block text-xs font-medium text-gray-700">Type</label>
+                            <div className="flex items-center gap-3">
+                                <label className="flex items-center gap-1 text-xs text-gray-700 cursor-pointer select-none">
+                                    <input type="checkbox" className="accent-orange-600"
+                                        checked={showEarnings} onChange={() => toggleKind('EARNING')} />
+                                    Earnings
+                                </label>
+                                <label className="flex items-center gap-1 text-xs text-gray-700 cursor-pointer select-none">
+                                    <input type="checkbox" className="accent-orange-600"
+                                        checked={showDeductions} onChange={() => toggleKind('DEDUCTION')} />
+                                    Deductions
+                                </label>
+                            </div>
+                        </div>
+                        <SearchableSelect allLabel="All types" typeable={false}
+                            searchPlaceholder="Search type..."
+                            value={filterType} options={typeOptions} onChange={setFilterType} />
                     </div>
                     <div className="text-xs text-gray-500 pb-2">{fmtShort(from)} to {fmtShort(to)}</div>
                     {canEdit && (

@@ -23,6 +23,7 @@ const buildRows = (data) => data.map(s => {
     totalStock: s.quantity || 0,
     delivered: s.deliveredQuantity || 0,
     totalSales: s.totalSales || 0,
+    returns: s.returnedQuantity || 0,
     pendingDelivery: s.pendingDeliveries || 0,
     pendingSale: s.pendingSales || 0,
     available,
@@ -54,19 +55,20 @@ const BranchStockExportButton = ({ fetchData }) => {
         totalStock: sumCol(rows, 'totalStock'),
         delivered: sumCol(rows, 'delivered'),
         totalSales: sumCol(rows, 'totalSales'),
+        returns: sumCol(rows, 'returns'),
         pendingDelivery: sumCol(rows, 'pendingDelivery'),
         pendingSale: sumCol(rows, 'pendingSale'),
         available: sumCol(rows, 'available'),
       };
 
       const headers = ['Branch', 'Branch Code', 'Product', 'Variation', 'SKU', 'Company SKU', 'UPC',
-        'Total Stock', 'Delivered', 'Total Sales', 'Pending Delivery', 'Pending Sale', 'Available', 'Last Updated'];
+        'Total Stock', 'Delivered', 'Total Sales', 'Returns', 'Pending Delivery', 'Pending Sale', 'Available', 'Last Updated'];
       const lines = rows.map(r => [
         r.branch, r.branchCode, r.product, r.variation, r.sku, r.companySku, r.upc,
-        r.totalStock, r.delivered, r.totalSales, r.pendingDelivery, r.pendingSale, r.available, r.lastUpdated
+        r.totalStock, r.delivered, r.totalSales, r.returns, r.pendingDelivery, r.pendingSale, r.available, r.lastUpdated
       ]);
       lines.push(['TOTAL', '', '', '', '', '', '',
-        totals.totalStock, totals.delivered, totals.totalSales,
+        totals.totalStock, totals.delivered, totals.totalSales, totals.returns,
         totals.pendingDelivery, totals.pendingSale, totals.available, '']);
 
       const csv = [headers, ...lines]
