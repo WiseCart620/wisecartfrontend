@@ -1361,7 +1361,6 @@ const InvoicingProfile = ({ onBack }) => {
                                                                         <th className="text-left pb-1">SKU</th>
                                                                         <th className="text-left pb-1">UPC</th>
                                                                         <th className="text-left pb-1">Description</th>
-                                                                        <th className="text-left pb-1">Description</th>
                                                                         <th className="text-right pb-1">Qty</th>
                                                                         <th className="text-right pb-1">Unit Cost</th>
                                                                         <th className="text-right pb-1 text-orange-700 font-bold">Total Cost</th>
@@ -1370,7 +1369,6 @@ const InvoicingProfile = ({ onBack }) => {
                                                                 <tbody className="divide-y divide-orange-100">
                                                                     {itemsWithBreakdown.map((item, i) => (
                                                                         <tr key={i} className="hover:bg-orange-100 transition">
-                                                                            <td className="py-1.5 text-gray-500 font-mono text-[10px]">{item.sku || '—'}</td>
                                                                             <td className="py-1.5 text-gray-500 font-mono text-[10px]">{item.sku || '—'}</td>
                                                                             <td className="py-1.5 text-gray-500 font-mono text-[10px]">{item.upc || '—'}</td>
                                                                             <td className="py-1.5 text-gray-800 font-medium">
