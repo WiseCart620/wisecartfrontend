@@ -74,6 +74,7 @@ const SalesManagement = () => {
   const [loadingAction, setLoadingAction] = useState(null);
   const [journalBlock, setJournalBlock] = useState(null);
   const generatingRef = useRef(false);
+  const savingRef = useRef(false);
 
   const {
     sales, branches, companies, products,
@@ -258,6 +259,16 @@ const SalesManagement = () => {
   };
 
   const handleGenerateToProfile = async () => {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    try {
+      await saveToProfile();
+    } finally {
+      savingRef.current = false;
+    }
+  };
+
+  const saveToProfile = async () => {
     if (!invoiceReport) return;
     const adjustmentTotal = (invoiceReport.adjustments || []).reduce((sum, adj) => sum + (adj.amount || 0), 0);
     let vatableSales, vat, wht, totalAmountDue;
