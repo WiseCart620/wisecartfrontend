@@ -281,20 +281,13 @@ const ProductManagement = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) return;
 
-    try {
-      const response = await deleteProductHook(id);
-      if (response?.success) {
-        toast.success('Product deleted successfully');
-        await loadData();
-        if (filteredProducts.length % itemsPerPage === 1 && currentPage > 1) {
-          setCurrentPage(currentPage - 1);
-        }
-      } else {
-        toast.error(response?.error || 'Failed to delete product');
+    const response = await deleteProductHook(id);
+    if (response?.success) {
+      toast.success('Product deleted successfully');
+      await loadData();
+      if (filteredProducts.length % itemsPerPage === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
       }
-    } catch (error) {
-      toast.error('Failed to delete product');
-      console.error('Delete error:', error);
     }
   };
 

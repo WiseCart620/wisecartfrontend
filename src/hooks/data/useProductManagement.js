@@ -226,7 +226,8 @@ const useProductManagement = (api) => {
                     length: '',
                     width: '',
                     height: '',
-                    companyPrices: {}
+                    companyPrices: {},
+                    companySkus: {}
                 };
             });
 

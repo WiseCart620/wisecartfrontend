@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    X, Package, Globe, Box, Tag, AlertCircle,
-    Edit2, Plus, Trash2, Copy, Search
+    X, Package, Globe, Box, Tag,
+    Edit2, Plus, Trash2, Copy, Search, ChevronDown
 } from 'lucide-react';
 import CategoryInput from '../forms/CategoryInput';
 import MultiCompanyPriceSelector from '../common/MultiCompanyPriceSelector';
@@ -30,6 +30,8 @@ const ProductModal = ({
     onClose,
     onSubmit
 }) => {
+
+    const card = "bg-white border border-slate-200 rounded-lg p-6 shadow-sm";
     // ─── Helpers ────────────────────────────────────────────────────────────────
 
     /**
@@ -106,22 +108,14 @@ const ProductModal = ({
     const [supplierSearch, setSupplierSearch] = useState('');
     const [supplierDropdownOpen, setSupplierDropdownOpen] = useState(false);
     const [comboSearchTerm, setComboSearchTerm] = useState('');
-
-    /**
-     * Per-combo list of selected company IDs.
-     * Shape: { [comboIndex]: number[] }
-     * This is the single source of truth for WHICH companies are shown in each
-     * combo's price table. variationCombinations.companyPrices holds the values.
-     */
+    const [expandedCombos, setExpandedCombos] = useState({});
+    const toggleCombo = (i) => setExpandedCombos(prev => ({ ...prev, [i]: !prev[i] }));
     const [selectedPriceCompanyIds, setSelectedPriceCompanyIds] = useState({});
 
     const [companySearchTerm, setCompanySearchTerm] = useState({});
     const [companyDropdownOpen, setCompanyDropdownOpen] = useState({});
     const companyDropdownRefs = useRef({});
 
-    // Tracks which product ID has already been seeded.
-    // undefined = "never seeded this session"
-    // Stored as a ref so changing it never triggers a re-render.
     const seededForProductId = useRef(undefined);
 
     // ─── Click-outside handler for company dropdowns ─────────────────────────────
@@ -248,36 +242,6 @@ const ProductModal = ({
 
     const handleSubmit = (e) => {
         e.preventDefault();
-
-        // Deduplicate supplier IDs
-        if (formData.supplierIds?.length > 0) {
-            formData.supplierIds = [...new Set(formData.supplierIds)];
-        }
-
-        // Strip prices/SKUs for companies that are no longer selected or have
-        // no price entered, so the backend receives clean data.
-        const cleanedCombinations = variationCombinations.map((combo, comboIndex) => {
-            const selectedIds = selectedPriceCompanyIds[comboIndex] || [];
-
-            const cleanedPrices = {};
-            const cleanedSkus = {};
-
-            selectedIds.forEach(companyId => {
-                const price = combo.companyPrices?.[companyId];
-                const sku = combo.companySkus?.[companyId];
-
-                if (price) cleanedPrices[companyId] = price;
-                if (sku !== undefined) cleanedSkus[companyId] = sku;
-            });
-
-            return {
-                ...combo,
-                companyPrices: cleanedPrices,
-                companySkus: cleanedSkus
-            };
-        });
-
-        setVariationCombinations(cleanedCombinations);
         onSubmit(e);
     };
 
@@ -305,1043 +269,1040 @@ const ProductModal = ({
     // ─── Render ──────────────────────────────────────────────────────────────────
 
     return (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/5 w-[95vw] max-w-[1400px] max-h-[95vh] overflow-y-auto">
-                <div className="sticky top-0 bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between z-10">
-                    <h2 className="text-xl font-semibold text-slate-900">
-                        {editingProduct ? 'Edit Product' : 'Add New Product'}
-                    </h2>
-                    <button onClick={onClose} className="p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 rounded transition">
+        <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-[1100px] max-h-[92vh] rounded-xl shadow-2xl flex flex-col overflow-hidden">
+                <div className="shrink-0 bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between">
+                    <div>
+                        <h2 className="text-lg font-semibold text-slate-900">
+                            {editingProduct ? 'Edit product' : 'New product'}
+                        </h2>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                            {editingProduct ? editingProduct.productName : 'Fill in the details below'}
+                        </p>
+                    </div>
+                    <button type="button" onClick={onClose} className="p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 rounded-md transition">
                         <X size={20} />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="px-8 py-8 space-y-10">
-                    {/* ── Basic Information ── */}
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                            <Package size={20} />
-                            Basic Information
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Product Name <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    name="productName"
-                                    value={formData.productName}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
-                                    placeholder="Enter product name"
-                                />
-                            </div>
+                <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+                    <div className="flex-1 overflow-y-auto bg-slate-50 px-8 py-6 space-y-5">
+                        {/* ── Basic Information ── */}
+                        <div className={card}>
+                            <h3 className="text-base font-semibold text-slate-900 mb-5 pb-3 border-b border-slate-100 flex items-center gap-2">
+                                <Package size={20} />
+                                Basic Information
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
+                                <div className="md:col-span-2">
+                                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                                        Product Name <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="productName"
+                                        value={formData.productName}
+                                        onChange={handleInputChange}
+                                        required
+                                        className="w-full h-10 px-3 text-sm border border-slate-300 rounded-md bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                        placeholder="Enter product name"
+                                    />
+                                </div>
 
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Product Image
-                                </label>
-                                {!formData.imageUrl ? (
-                                    <div className="relative">
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={async (e) => {
-                                                const file = e.target.files[0];
-                                                if (file) {
-                                                    const imageUrl = await handleImageUpload(file);
-                                                    if (imageUrl) setFormData(prev => ({ ...prev, imageUrl }));
-                                                }
-                                                e.target.value = '';
-                                            }}
-                                            className="hidden"
-                                            id="product-image-upload"
-                                            disabled={uploadingImage}
-                                        />
-                                        <label
-                                            htmlFor="product-image-upload"
-                                            className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded cursor-pointer transition ${uploadingImage
-                                                ? 'border-orange-400 bg-orange-50'
-                                                : 'border-gray-300 hover:border-orange-500 bg-white hover:bg-gray-100'}`}
-                                        >
-                                            {uploadingImage ? (
-                                                <div className="flex flex-col items-center">
-                                                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-600 mb-2"></div>
-                                                    <p className="text-sm text-orange-600 font-medium">Uploading...</p>
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <Package size={40} className="text-gray-400 mb-2" />
-                                                    <p className="text-sm text-gray-600 font-medium">Click to upload product image</p>
-                                                    <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
-                                                </>
-                                            )}
-                                        </label>
-                                    </div>
-                                ) : (
-                                    <div className="relative inline-block">
-                                        <img
-                                            src={getFileUrl(formData.imageUrl)}
-                                            alt="Product"
-                                            className="h-40 w-40 object-cover rounded border-2 border-gray-200"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setFormData(prev => ({ ...prev, imageUrl: '' }))}
-                                            className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition shadow-lg"
-                                        >
-                                            <X size={16} />
-                                        </button>
-                                        <div className="mt-2">
+                                <div className="md:row-span-2">
+                                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                                        Product Image
+                                    </label>
+                                    {!formData.imageUrl ? (
+                                        <div className="relative">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files[0];
+                                                    if (file) {
+                                                        const imageUrl = await handleImageUpload(file);
+                                                        if (imageUrl) setFormData(prev => ({ ...prev, imageUrl }));
+                                                    }
+                                                    e.target.value = '';
+                                                }}
+                                                className="hidden"
+                                                id="product-image-upload"
+                                                disabled={uploadingImage}
+                                            />
                                             <label
-                                                htmlFor="product-image-change"
-                                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-orange-600 text-white rounded hover:bg-orange-700 cursor-pointer transition"
+                                                htmlFor="product-image-upload"
+                                                className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded cursor-pointer transition ${uploadingImage
+                                                    ? 'border-orange-400 bg-orange-50'
+                                                    : 'border-slate-300 hover:border-orange-500 bg-white hover:bg-slate-50'}`}
                                             >
-                                                <Edit2 size={12} />
-                                                Change Image
+                                                {uploadingImage ? (
+                                                    <div className="flex flex-col items-center">
+                                                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-600 mb-2"></div>
+                                                        <p className="text-sm text-orange-600 font-medium">Uploading...</p>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <Package size={40} className="text-gray-400 mb-2" />
+                                                        <p className="text-sm text-gray-600 font-medium">Click to upload product image</p>
+                                                        <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
+                                                    </>
+                                                )}
                                             </label>
                                         </div>
-                                    </div>
-                                )}
-                            </div>
+                                    ) : (
+                                        <div className="relative inline-block">
+                                            <img
+                                                src={getFileUrl(formData.imageUrl)}
+                                                alt="Product"
+                                                className="h-40 w-40 object-cover rounded border-2 border-gray-200"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData(prev => ({ ...prev, imageUrl: '' }))}
+                                                className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition shadow-lg"
+                                            >
+                                                <X size={16} />
+                                            </button>
+                                            <div className="mt-2">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    id="product-image-change"
+                                                    className="hidden"
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files[0];
+                                                        if (file) {
+                                                            const imageUrl = await handleImageUpload(file);
+                                                            if (imageUrl) setFormData(prev => ({ ...prev, imageUrl }));
+                                                        }
+                                                        e.target.value = '';
+                                                    }}
+                                                />
+                                                <label
+                                                    htmlFor="product-image-change"
+                                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-orange-600 text-white rounded hover:bg-orange-700 cursor-pointer transition"
+                                                >
+                                                    <Edit2 size={12} />
+                                                    Change Image
+                                                </label>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                                <CategoryInput
-                                    value={formData.category}
-                                    onChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
-                                    categories={productCategories}
-                                    existingCategories={existingCategories}
-                                />
-                            </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Category</label>
+                                    <CategoryInput
+                                        value={formData.category}
+                                        onChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                                        categories={productCategories}
+                                        existingCategories={existingCategories}
+                                    />
+                                </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
-                                <input
-                                    type="text"
-                                    name="brand"
-                                    value={formData.brand}
-                                    onChange={handleInputChange}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
-                                    placeholder="Enter brand"
-                                />
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Brand</label>
+                                    <input
+                                        type="text"
+                                        name="brand"
+                                        value={formData.brand}
+                                        onChange={handleInputChange}
+                                        className="w-full h-10 px-3 text-sm border border-slate-300 rounded-md bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                        placeholder="Enter brand"
+                                    />
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* ── Supplier & Origin ── */}
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                            <Globe size={20} />
-                            Supplier & Origin
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Suppliers</label>
-                                <div className="relative">
-                                    <button
-                                        type="button"
-                                        onClick={() => setSupplierDropdownOpen(prev => !prev)}
-                                        className="w-full flex items-center justify-between px-4 py-2 border border-gray-300 rounded bg-white hover:border-orange-500 focus:ring-2 focus:ring-orange-500 transition text-sm"
-                                    >
-                                        <span className={formData.supplierIds?.length > 0 ? 'text-gray-900' : 'text-gray-400'}>
-                                            {formData.supplierIds?.length > 0
-                                                ? `${[...new Set(formData.supplierIds)].length} supplier(s) selected`
-                                                : 'Select suppliers...'}
-                                        </span>
-                                        <svg className={`w-4 h-4 text-gray-500 transition-transform ${supplierDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </button>
+                        {/* ── Supplier & Origin ── */}
+                        <div className={card}>
+                            <h3 className="text-base font-semibold text-slate-900 mb-5 pb-3 border-b border-slate-100 flex items-center gap-2">
+                                <Globe size={20} />
+                                Supplier & Origin
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
+                                <div className="md:col-span-2">
+                                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Suppliers</label>
+                                    <div className="relative">
+                                        <button
+                                            type="button"
+                                            onClick={() => setSupplierDropdownOpen(prev => !prev)}
+                                            className="w-full h-10 flex items-center justify-between px-3 border border-slate-300 rounded-md bg-white hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition text-sm"
+                                        >
+                                            <span className={formData.supplierIds?.length > 0 ? 'text-gray-900' : 'text-gray-400'}>
+                                                {formData.supplierIds?.length > 0
+                                                    ? `${[...new Set(formData.supplierIds)].length} supplier(s) selected`
+                                                    : 'Select suppliers...'}
+                                            </span>
+                                            <svg className={`w-4 h-4 text-gray-500 transition-transform ${supplierDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
 
-                                    {supplierDropdownOpen && (
-                                        <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded shadow-lg">
-                                            <div className="p-2 border-b border-gray-100">
-                                                <div className="relative">
-                                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Search suppliers..."
-                                                        value={supplierSearch}
-                                                        onChange={(e) => setSupplierSearch(e.target.value)}
-                                                        className="w-full pl-8 pr-4 py-1.5 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 text-sm"
-                                                        autoFocus
-                                                    />
+                                        {supplierDropdownOpen && (
+                                            <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded shadow-lg">
+                                                <div className="p-2 border-b border-gray-100">
+                                                    <div className="relative">
+                                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Search suppliers..."
+                                                            value={supplierSearch}
+                                                            onChange={(e) => setSupplierSearch(e.target.value)}
+                                                            className="w-full pl-8 pr-4 py-1.5 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 text-sm"
+                                                            autoFocus
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="max-h-52 overflow-y-auto">
+                                                    {filteredSuppliers.map(supplier => {
+                                                        const isSelected = formData.supplierIds?.includes(supplier.id);
+                                                        return (
+                                                            <div
+                                                                key={`supplier-${supplier.id}`}
+                                                                onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleSupplierToggle(supplier.id); }}
+                                                                onMouseDown={(e) => e.preventDefault()}
+                                                                className={`flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-orange-50 transition ${isSelected ? 'bg-orange-50' : ''}`}
+                                                            >
+                                                                <div>
+                                                                    <p className="text-sm font-medium text-gray-800">{supplier.name}</p>
+                                                                    {supplier.country && <p className="text-xs text-gray-500">{supplier.country}</p>}
+                                                                </div>
+                                                                {isSelected && <span className="text-orange-600">✓</span>}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                                <div className="p-2 border-t border-gray-100">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSupplierDropdownOpen(false)}
+                                                        className="w-full py-1.5 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded transition"
+                                                    >
+                                                        Done
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <div className="max-h-52 overflow-y-auto">
-                                                {filteredSuppliers.map(supplier => {
-                                                    const isSelected = formData.supplierIds?.includes(supplier.id);
+                                        )}
+                                    </div>
+
+                                    {formData.supplierIds?.length > 0 && (
+                                        <div className="mt-2">
+                                            <div className="flex items-center gap-3 px-3 py-1.5 mb-1">
+                                                <div className="flex-1 min-w-0">
+                                                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Supplier</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                    <Globe size={13} className="text-gray-400" />
+                                                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide w-40">Country of Origin</span>
+                                                </div>
+                                                <div className="w-8 flex-shrink-0"></div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {[...new Set(formData.supplierIds)].map(id => {
+                                                    const supplier = suppliers.find(s => s.id === id);
+                                                    if (!supplier) return null;
                                                     return (
-                                                        <div
-                                                            key={`supplier-${supplier.id}`}
-                                                            onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleSupplierToggle(supplier.id); }}
-                                                            onMouseDown={(e) => e.preventDefault()}
-                                                            className={`flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-orange-50 transition ${isSelected ? 'bg-orange-50' : ''}`}
-                                                        >
-                                                            <div>
+                                                        <div key={`selected-${id}`} className="flex items-center gap-3 px-3 py-2 bg-orange-50 border border-orange-200 rounded group hover:bg-orange-100 transition">
+                                                            <div className="flex-1 min-w-0">
                                                                 <p className="text-sm font-medium text-gray-800">{supplier.name}</p>
-                                                                {supplier.country && <p className="text-xs text-gray-500">{supplier.country}</p>}
                                                             </div>
-                                                            {isSelected && <span className="text-orange-600">✓</span>}
+                                                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                                <Globe size={13} className="text-gray-400" />
+                                                                <div className="w-40 px-3 py-1.5 text-sm bg-white border border-gray-200 rounded text-gray-700">
+                                                                    {formData.supplierCountries?.[id] || supplier?.country || 'Not specified'}
+                                                                </div>
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleSupplierToggle(id)}
+                                                                className="w-8 h-8 flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-100 rounded-full transition opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                                            >
+                                                                <X size={16} />
+                                                            </button>
                                                         </div>
                                                     );
                                                 })}
                                             </div>
-                                            <div className="p-2 border-t border-gray-100">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setSupplierDropdownOpen(false)}
-                                                    className="w-full py-1.5 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded transition"
-                                                >
-                                                    Done
-                                                </button>
-                                            </div>
+                                            {formData.supplierIds.length > 1 && (
+                                                <div className="mt-3 flex justify-end">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { if (window.confirm('Remove all suppliers?')) formData.supplierIds.forEach(id => handleSupplierToggle(id)); }}
+                                                        className="text-xs text-red-600 hover:text-red-700 font-medium flex items-center gap-1"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                        Remove All
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
 
-                                {formData.supplierIds?.length > 0 && (
-                                    <div className="mt-2">
-                                        <div className="flex items-center gap-3 px-3 py-1.5 mb-1">
-                                            <div className="flex-1 min-w-0">
-                                                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Supplier</span>
-                                            </div>
-                                            <div className="flex items-center gap-1.5 flex-shrink-0">
-                                                <Globe size={13} className="text-gray-400" />
-                                                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide w-40">Country of Origin</span>
-                                            </div>
-                                            <div className="w-8 flex-shrink-0"></div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            {[...new Set(formData.supplierIds)].map(id => {
-                                                const supplier = suppliers.find(s => s.id === id);
-                                                if (!supplier) return null;
-                                                return (
-                                                    <div key={`selected-${id}`} className="flex items-center gap-3 px-3 py-2 bg-orange-50 border border-orange-200 rounded group hover:bg-orange-100 transition">
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-medium text-gray-800">{supplier.name}</p>
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                                                            <Globe size={13} className="text-gray-400" />
-                                                            <div className="w-40 px-3 py-1.5 text-sm bg-white border border-gray-200 rounded text-gray-700">
-                                                                {formData.supplierCountries?.[id] || supplier?.country || 'Not specified'}
-                                                            </div>
-                                                        </div>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleSupplierToggle(id)}
-                                                            className="w-8 h-8 flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-100 rounded-full transition opacity-0 group-hover:opacity-100 focus:opacity-100"
-                                                        >
-                                                            <X size={16} />
-                                                        </button>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                        {formData.supplierIds.length > 1 && (
-                                            <div className="mt-3 flex justify-end">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => { if (window.confirm('Remove all suppliers?')) formData.supplierIds.forEach(id => handleSupplierToggle(id)); }}
-                                                    className="text-xs text-red-600 hover:text-red-700 font-medium flex items-center gap-1"
-                                                >
-                                                    <Trash2 size={12} />
-                                                    Remove All
-                                                </button>
-                                            </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Shelf Life</label>
+                                    <input
+                                        type="text"
+                                        name="shelfLife"
+                                        value={formData.shelfLife}
+                                        onChange={handleInputChange}
+                                        className="w-full h-10 px-3 text-sm border border-slate-300 rounded-md bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                        placeholder="Example: 12 months, 2 years"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Creation Date</label>
+                                    <input
+                                        type="text"
+                                        value={editingProduct?.createdAt ? new Date(editingProduct.createdAt).toLocaleDateString() : 'Auto-generated on save'}
+                                        disabled
+                                        className="w-full h-10 px-3 text-sm border border-slate-200 rounded-md bg-slate-100 cursor-not-allowed text-slate-600"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        {editingProduct?.createdAt ? 'Product created on this date' : 'Will be set automatically when product is created'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ── Physical Details ── */}
+                        <div className={card}>
+                            <h3 className="text-base font-semibold text-slate-900 mb-5 pb-3 border-b border-slate-100 flex items-center gap-2">
+                                <Box size={20} />
+                                Physical Details
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
+                                {variationCombinations.length === 0 && (
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                                            SKU <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="sku"
+                                            value={formData.sku}
+                                            onChange={handleInputChange}
+                                            required={variationCombinations.length === 0}
+                                            className="w-full h-10 px-3 text-sm border border-slate-300 rounded-md bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                            placeholder="Enter SKU"
+                                        />
+                                    </div>
+                                )}
+
+                                {variationCombinations.length === 0 && (
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                                            UPC <span className="text-red-500">*</span>
+                                            <span className="text-xs text-gray-500 ml-2">(13 digits)</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="upc"
+                                            value={formData.upc}
+                                            onChange={handleInputChange}
+                                            required={variationCombinations.length === 0}
+                                            maxLength={13}
+                                            pattern="\d{13}"
+                                            className="w-full h-10 px-3 text-sm border border-slate-300 rounded-md bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                            placeholder="Enter 13-digit UPC"
+                                        />
+                                        {formData.upc && formData.upc.length !== 13 && (
+                                            <p className="text-xs text-red-600 mt-1">
+                                                UPC must be exactly 13 digits ({formData.upc.length}/13)
+                                            </p>
                                         )}
                                     </div>
                                 )}
-                            </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Shelf Life</label>
-                                <input
-                                    type="text"
-                                    name="shelfLife"
-                                    value={formData.shelfLife}
-                                    onChange={handleInputChange}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
-                                    placeholder="Example: 12 months, 2 years"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Creation Date</label>
-                                <input
-                                    type="text"
-                                    value={editingProduct?.createdAt ? new Date(editingProduct.createdAt).toLocaleDateString() : 'Auto-generated on save'}
-                                    disabled
-                                    className="w-full px-4 py-2 border border-gray-300 rounded bg-gray-100 cursor-not-allowed text-gray-600"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                    {editingProduct?.createdAt ? 'Product created on this date' : 'Will be set automatically when product is created'}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* ── Physical Details ── */}
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                            <Box size={20} />
-                            Physical Details
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {variationCombinations.length === 0 && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        SKU <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="sku"
-                                        value={formData.sku}
-                                        onChange={handleInputChange}
-                                        required={variationCombinations.length === 0}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
-                                        placeholder="Enter SKU"
-                                    />
-                                </div>
-                            )}
-
-                            {variationCombinations.length === 0 && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        UPC <span className="text-red-500">*</span>
-                                        <span className="text-xs text-gray-500 ml-2">(13 digits)</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="upc"
-                                        value={formData.upc}
-                                        onChange={handleInputChange}
-                                        required={variationCombinations.length === 0}
-                                        maxLength={13}
-                                        pattern="\d{13}"
-                                        className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
-                                        placeholder="Enter 13-digit UPC"
-                                    />
-                                    {formData.upc && formData.upc.length !== 13 && (
-                                        <p className="text-xs text-red-600 mt-1">
-                                            UPC must be exactly 13 digits ({formData.upc.length}/13)
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-
-                            {variationCombinations.length === 0 && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Weight (kg) <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="number"
-                                        name="weight"
-                                        value={formData.weight}
-                                        onChange={handleInputChange}
-                                        required={variationCombinations.length === 0}
-                                        step="0.01"
-                                        min="0"
-                                        className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
-                                        placeholder="0.00"
-                                    />
-                                </div>
-                            )}
-
-                            {variationCombinations.length === 0 && (
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Dimensions (L×W×H cm) <span className="text-red-500">*</span>
-                                    </label>
-                                    <div className="flex items-center gap-2">
-                                        {['length', 'width', 'height'].map((dim, i) => (
-                                            <React.Fragment key={dim}>
-                                                {i > 0 && <X size={16} className="text-gray-400" />}
-                                                <input
-                                                    type="number"
-                                                    name={dim}
-                                                    value={formData[dim]}
-                                                    onChange={handleInputChange}
-                                                    placeholder={dim.charAt(0).toUpperCase() + dim.slice(1)}
-                                                    step="0.01"
-                                                    min="0"
-                                                    required={variationCombinations.length === 0}
-                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
-                                                />
-                                            </React.Fragment>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Materials</label>
-                                <input
-                                    type="text"
-                                    name="materials"
-                                    value={formData.materials}
-                                    onChange={handleInputChange}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
-                                    placeholder="Enter materials"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Unit of Measure (UOM)</label>
-                                <input
-                                    type="text"
-                                    name="uom"
-                                    value={formData.uom}
-                                    onChange={handleInputChange}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
-                                    placeholder="e.g., pcs, box, kg, liter"
-                                />
-                            </div>
-
-                            {variationCombinations.length === 0 && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Unit Cost (₱)</label>
-                                    <input
-                                        type="text"
-                                        value={formData.unitCost ? `₱${parseFloat(formData.unitCost).toFixed(2)}` : ''}
-                                        disabled
-                                        className="w-full px-4 py-2 border border-gray-300 rounded bg-gray-100 cursor-not-allowed text-gray-900"
-                                        placeholder="Set via Purchase Orders"
-                                    />
-                                    <p className={`text-xs mt-1 ${formData.unitCost ? 'text-green-600' : 'text-gray-500'}`}>
-                                        {formData.unitCost
-                                            ? `WAC from latest PO: ₱${parseFloat(formData.unitCost).toFixed(2)}`
-                                            : 'Set unit price in Purchase Orders to update this value'}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-
-                        {variationCombinations.length > 0 && (
-                            <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded">
-                                <div className="flex items-center gap-2 text-amber-700">
-                                    <AlertCircle size={18} />
+                                {variationCombinations.length === 0 && (
                                     <div>
-                                        <p className="text-sm font-medium">SKU, UPC, Weight, Dimensions & Unit Cost Disabled</p>
-                                        <p className="text-xs mt-1">This product has variations. Please set these values for each variation in the table below.</p>
+                                        <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                                            Weight (kg) <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name="weight"
+                                            value={formData.weight}
+                                            onChange={handleInputChange}
+                                            required={variationCombinations.length === 0}
+                                            step="0.01"
+                                            min="0"
+                                            className="w-full h-10 px-3 text-sm border border-slate-300 rounded-md bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                            placeholder="0.00"
+                                        />
                                     </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                                )}
 
-                    {/* ── Company Selling Price (no-variation products only) ── */}
-                    {variationCombinations.length === 0 ? (
-                        <div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                Company Selling Price
-                                <span className="text-xs font-normal text-gray-500 ml-2">(For products without variations)</span>
-                            </h3>
-                            <MultiCompanyPriceSelector
-                                companies={companies}
-                                selectedPrices={formData.companyBasePrices}
-                                onChange={(prices, assignRemaining, remainingPrice) => {
-                                    setFormData(prev => ({
-                                        ...prev,
-                                        companyBasePrices: prices,
-                                        assignToRemainingBase: assignRemaining,
-                                        remainingBasePriceValue: remainingPrice
-                                    }));
-                                }}
-                                assignToRemaining={formData.assignToRemainingBase || false}
-                                remainingPrice={formData.remainingBasePriceValue || ''}
-                            />
-                            <p className="text-xs text-amber-600 mt-3 flex items-center gap-1">
-                                <AlertCircle size={14} />
-                                Note: Company base prices are only available for products without variations.
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="p-4 bg-gray-100 border border-gray-300 rounded">
-                            <div className="flex items-center gap-2 text-gray-600">
-                                <AlertCircle size={18} />
-                                <div>
-                                    <p className="text-sm font-medium">Company Selling Price Disabled</p>
-                                    <p className="text-xs mt-1">This product has variations. Please set company prices for each variation in the table below.</p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ── Product Variations ── */}
-                    <div>
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                                <Tag size={20} />
-                                Product Variations
-                            </h3>
-                        </div>
-
-                        <div className="space-y-4">
-                            {variationCombinations.length > 0 && (
-                                <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded">
-                                    <div className="flex items-center gap-2 text-orange-700">
-                                        <AlertCircle size={18} />
-                                        <div>
-                                            <p className="text-sm font-medium">Variations Active</p>
-                                            <p className="text-xs mt-1">
-                                                Company base prices and base product fields (SKU, UPC, Weight, Dimensions) are disabled.
-                                                Set these values for each variation in the table below.
-                                            </p>
+                                {variationCombinations.length === 0 && (
+                                    <div className="md:col-span-2">
+                                        <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                                            Dimensions (L×W×H cm) <span className="text-red-500">*</span>
+                                        </label>
+                                        <div className="flex items-center gap-2">
+                                            {['length', 'width', 'height'].map((dim, i) => (
+                                                <React.Fragment key={dim}>
+                                                    {i > 0 && <X size={16} className="text-gray-400" />}
+                                                    <input
+                                                        type="number"
+                                                        name={dim}
+                                                        value={formData[dim]}
+                                                        onChange={handleInputChange}
+                                                        placeholder={dim.charAt(0).toUpperCase() + dim.slice(1)}
+                                                        step="0.01"
+                                                        min="0"
+                                                        required={variationCombinations.length === 0}
+                                                        className="flex-1 h-10 px-3 text-sm border border-slate-300 rounded-md bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                                    />
+                                                </React.Fragment>
+                                            ))}
                                         </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            {variationTypes.map((varType, typeIndex) => (
-                                <div key={typeIndex} className="p-5 bg-white rounded-xl border border-gray-200">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="flex items-center gap-3">
-                                            <select
-                                                value={varType.type}
-                                                onChange={(e) => {
-                                                    const newTypes = [...variationTypes];
-                                                    newTypes[typeIndex].type = e.target.value;
-                                                    newTypes[typeIndex].customType = '';
-                                                    setVariationTypes(newTypes);
-                                                }}
-                                                className="px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 font-medium"
-                                            >
-                                                {['SIZE', 'COLOR', 'PACK', 'FLAVOR', 'MATERIAL', 'STYLE', 'VOLUME', 'OTHER'].map(type => (
-                                                    <option key={type} value={type}>{type.charAt(0) + type.slice(1).toLowerCase()}</option>
-                                                ))}
-                                            </select>
-                                            {varType.type === 'OTHER' && (
-                                                <input
-                                                    type="text"
-                                                    placeholder="Custom type name (e.g., Pattern, Scent)"
-                                                    value={varType.customType || ''}
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Materials</label>
+                                    <input
+                                        type="text"
+                                        name="materials"
+                                        value={formData.materials}
+                                        onChange={handleInputChange}
+                                        className="w-full h-10 px-3 text-sm border border-slate-300 rounded-md bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                        placeholder="Enter materials"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Unit of Measure (UOM)</label>
+                                    <input
+                                        type="text"
+                                        name="uom"
+                                        value={formData.uom}
+                                        onChange={handleInputChange}
+                                        className="w-full h-10 px-3 text-sm border border-slate-300 rounded-md bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                        placeholder="e.g., pcs, box, kg, liter"
+                                    />
+                                </div>
+
+                                {variationCombinations.length === 0 && (
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-600 mb-1.5">Unit Cost (₱)</label>
+                                        <input
+                                            type="text"
+                                            value={formData.unitCost ? `₱${parseFloat(formData.unitCost).toFixed(2)}` : ''}
+                                            disabled
+                                            className="w-full h-10 px-3 text-sm border border-slate-200 rounded-md bg-slate-100 cursor-not-allowed text-slate-900"
+                                            placeholder="Set via Purchase Orders"
+                                        />
+                                        <p className={`text-xs mt-1 ${formData.unitCost ? 'text-green-600' : 'text-gray-500'}`}>
+                                            {formData.unitCost
+                                                ? `WAC from latest PO: ₱${parseFloat(formData.unitCost).toFixed(2)}`
+                                                : 'Set unit price in Purchase Orders to update this value'}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* ── Company Selling Price (no-variation products only) ── */}
+                        {variationCombinations.length === 0 ? (
+                            <div className={card}>
+                                <h3 className="text-base font-semibold text-slate-900 mb-5 pb-3 border-b border-slate-100 flex items-center gap-2">
+                                    Company Selling Price
+                                    <span className="text-xs font-normal text-gray-500 ml-2">(For products without variations)</span>
+                                </h3>
+                                <MultiCompanyPriceSelector
+                                    companies={companies}
+                                    selectedPrices={formData.companyBasePrices}
+                                    onChange={(prices, assignRemaining, remainingPrice) => {
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            companyBasePrices: prices,
+                                            assignToRemainingBase: assignRemaining,
+                                            remainingBasePriceValue: remainingPrice
+                                        }));
+                                    }}
+                                    assignToRemaining={formData.assignToRemainingBase || false}
+                                    remainingPrice={formData.remainingBasePriceValue || ''}
+                                />
+                            </div>
+                        ) : null}
+
+                        {/* ── Product Variations ── */}
+                        <div className={card}>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+                                    <Tag size={20} />
+                                    Product Variations
+                                </h3>
+                            </div>
+
+                            <div className="space-y-4">
+
+                                {variationTypes.map((varType, typeIndex) => (
+                                    <div key={typeIndex} className="p-5 bg-white rounded-xl border border-gray-200">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-3">
+                                                <select
+                                                    value={varType.type}
                                                     onChange={(e) => {
                                                         const newTypes = [...variationTypes];
-                                                        newTypes[typeIndex].customType = e.target.value;
+                                                        newTypes[typeIndex].type = e.target.value;
+                                                        newTypes[typeIndex].customType = '';
                                                         setVariationTypes(newTypes);
                                                     }}
-                                                    className="px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
-                                                />
+                                                    className="h-10 px-3 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 font-medium"
+                                                >
+                                                    {['SIZE', 'COLOR', 'PACK', 'FLAVOR', 'MATERIAL', 'STYLE', 'VOLUME', 'OTHER'].map(type => (
+                                                        <option key={type} value={type}>{type.charAt(0) + type.slice(1).toLowerCase()}</option>
+                                                    ))}
+                                                </select>
+                                                {varType.type === 'OTHER' && (
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Custom type name (e.g., Pattern, Scent)"
+                                                        value={varType.customType || ''}
+                                                        onChange={(e) => {
+                                                            const newTypes = [...variationTypes];
+                                                            newTypes[typeIndex].customType = e.target.value;
+                                                            setVariationTypes(newTypes);
+                                                        }}
+                                                        className="h-10 px-3 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                                    />
+                                                )}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setVariationTypes(variationTypes.filter((_, i) => i !== typeIndex))}
+                                                className="p-2 text-red-600 hover:bg-red-50 rounded transition"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
+
+                                        <div className="mb-4">
+                                            {varType.type === 'SIZE' ? (
+                                                <div className="flex gap-2">
+                                                    <select
+                                                        onChange={(e) => {
+                                                            if (e.target.value) {
+                                                                const newTypes = [...variationTypes];
+                                                                if (!newTypes[typeIndex].values.includes(e.target.value)) {
+                                                                    newTypes[typeIndex].values.push(e.target.value);
+                                                                    setVariationTypes(newTypes);
+                                                                }
+                                                                e.target.value = '';
+                                                            }
+                                                        }}
+                                                        className="flex-1 h-10 px-3 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                                    >
+                                                        <option value="">Quick add size...</option>
+                                                        {['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'SMALL', 'MEDIUM', 'LARGE'].map(s => (
+                                                            <option key={s} value={s}>{s}</option>
+                                                        ))}
+                                                    </select>
+                                                    <input
+                                                        ref={(el) => variationInputRefs.current[`size-input-${typeIndex}`] = el}
+                                                        type="text"
+                                                        placeholder="Or type custom size"
+                                                        onKeyPress={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                const value = e.target.value.trim();
+                                                                if (value && !variationTypes[typeIndex].values.includes(value)) {
+                                                                    const newTypes = [...variationTypes];
+                                                                    newTypes[typeIndex].values.push(value);
+                                                                    setVariationTypes(newTypes);
+                                                                    e.target.value = '';
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="flex-1 h-10 px-3 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                                    />
+                                                </div>
+                                            ) : varType.type === 'COLOR' ? (
+                                                <div className="flex gap-2">
+                                                    <select
+                                                        onChange={(e) => {
+                                                            if (e.target.value) {
+                                                                const newTypes = [...variationTypes];
+                                                                if (!newTypes[typeIndex].values.includes(e.target.value)) {
+                                                                    newTypes[typeIndex].values.push(e.target.value);
+                                                                    setVariationTypes(newTypes);
+                                                                }
+                                                                e.target.value = '';
+                                                            }
+                                                        }}
+                                                        className="flex-1 h-10 px-3 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                                    >
+                                                        <option value="">Quick add color...</option>
+                                                        {['RED', 'BLUE', 'GREEN', 'YELLOW', 'BLACK', 'WHITE', 'GRAY', 'BROWN', 'ORANGE', 'PURPLE', 'PINK', 'BEIGE', 'NAVY'].map(c => (
+                                                            <option key={c} value={c}>{c}</option>
+                                                        ))}
+                                                    </select>
+                                                    <input
+                                                        ref={(el) => variationInputRefs.current[`color-input-${typeIndex}`] = el}
+                                                        type="text"
+                                                        placeholder="Or type custom color"
+                                                        onKeyPress={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                const value = e.target.value.trim();
+                                                                if (value && !variationTypes[typeIndex].values.includes(value)) {
+                                                                    const newTypes = [...variationTypes];
+                                                                    newTypes[typeIndex].values.push(value);
+                                                                    setVariationTypes(newTypes);
+                                                                    e.target.value = '';
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="flex-1 h-10 px-3 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        ref={(el) => variationInputRefs.current[`input-${typeIndex}`] = el}
+                                                        type="text"
+                                                        placeholder={`Add ${varType.type === 'OTHER' ? (varType.customType || 'variation') : varType.type.toLowerCase()} value`}
+                                                        onKeyPress={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                const value = e.target.value.trim();
+                                                                if (value && !variationTypes[typeIndex].values.includes(value)) {
+                                                                    const newTypes = [...variationTypes];
+                                                                    newTypes[typeIndex].values.push(value);
+                                                                    setVariationTypes(newTypes);
+                                                                    e.target.value = '';
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="flex-1 h-10 px-3 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const input = variationInputRefs.current[`input-${typeIndex}`];
+                                                            if (input?.value) {
+                                                                const value = input.value.trim();
+                                                                if (value && !variationTypes[typeIndex].values.includes(value)) {
+                                                                    const newTypes = [...variationTypes];
+                                                                    newTypes[typeIndex].values.push(value);
+                                                                    setVariationTypes(newTypes);
+                                                                    input.value = '';
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition"
+                                                    >
+                                                        <Plus size={18} />
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => setVariationTypes(variationTypes.filter((_, i) => i !== typeIndex))}
-                                            className="p-2 text-red-600 hover:bg-red-50 rounded transition"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </div>
 
-                                    <div className="mb-4">
-                                        {varType.type === 'SIZE' ? (
-                                            <div className="flex gap-2">
-                                                <select
-                                                    onChange={(e) => {
-                                                        if (e.target.value) {
-                                                            const newTypes = [...variationTypes];
-                                                            if (!newTypes[typeIndex].values.includes(e.target.value)) {
-                                                                newTypes[typeIndex].values.push(e.target.value);
-                                                                setVariationTypes(newTypes);
-                                                            }
-                                                            e.target.value = '';
-                                                        }
-                                                    }}
-                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
-                                                >
-                                                    <option value="">Quick add size...</option>
-                                                    {['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'SMALL', 'MEDIUM', 'LARGE'].map(s => (
-                                                        <option key={s} value={s}>{s}</option>
+                                        {varType.values.length > 0 && (
+                                            <div className="space-y-2">
+                                                <p className="text-sm font-medium text-gray-700">
+                                                    {varType.values.length} value{varType.values.length > 1 ? 's' : ''}:
+                                                </p>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {varType.values.map((value, valueIndex) => (
+                                                        <div key={valueIndex} className="flex items-center gap-2 px-3 py-1.5 bg-orange-100 text-orange-700 rounded text-sm">
+                                                            <span>{value}</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const newTypes = [...variationTypes];
+                                                                    newTypes[typeIndex].values = newTypes[typeIndex].values.filter((_, i) => i !== valueIndex);
+                                                                    setVariationTypes(newTypes);
+                                                                }}
+                                                                className="hover:bg-orange-200 rounded p-0.5 transition"
+                                                            >
+                                                                <X size={14} />
+                                                            </button>
+                                                        </div>
                                                     ))}
-                                                </select>
-                                                <input
-                                                    ref={(el) => variationInputRefs.current[`size-input-${typeIndex}`] = el}
-                                                    type="text"
-                                                    placeholder="Or type custom size"
-                                                    onKeyPress={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            e.preventDefault();
-                                                            const value = e.target.value.trim();
-                                                            if (value && !variationTypes[typeIndex].values.includes(value)) {
-                                                                const newTypes = [...variationTypes];
-                                                                newTypes[typeIndex].values.push(value);
-                                                                setVariationTypes(newTypes);
-                                                                e.target.value = '';
-                                                            }
-                                                        }
-                                                    }}
-                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
-                                                />
-                                            </div>
-                                        ) : varType.type === 'COLOR' ? (
-                                            <div className="flex gap-2">
-                                                <select
-                                                    onChange={(e) => {
-                                                        if (e.target.value) {
-                                                            const newTypes = [...variationTypes];
-                                                            if (!newTypes[typeIndex].values.includes(e.target.value)) {
-                                                                newTypes[typeIndex].values.push(e.target.value);
-                                                                setVariationTypes(newTypes);
-                                                            }
-                                                            e.target.value = '';
-                                                        }
-                                                    }}
-                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
-                                                >
-                                                    <option value="">Quick add color...</option>
-                                                    {['RED', 'BLUE', 'GREEN', 'YELLOW', 'BLACK', 'WHITE', 'GRAY', 'BROWN', 'ORANGE', 'PURPLE', 'PINK', 'BEIGE', 'NAVY'].map(c => (
-                                                        <option key={c} value={c}>{c}</option>
-                                                    ))}
-                                                </select>
-                                                <input
-                                                    ref={(el) => variationInputRefs.current[`color-input-${typeIndex}`] = el}
-                                                    type="text"
-                                                    placeholder="Or type custom color"
-                                                    onKeyPress={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            e.preventDefault();
-                                                            const value = e.target.value.trim();
-                                                            if (value && !variationTypes[typeIndex].values.includes(value)) {
-                                                                const newTypes = [...variationTypes];
-                                                                newTypes[typeIndex].values.push(value);
-                                                                setVariationTypes(newTypes);
-                                                                e.target.value = '';
-                                                            }
-                                                        }
-                                                    }}
-                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="flex gap-2">
-                                                <input
-                                                    ref={(el) => variationInputRefs.current[`input-${typeIndex}`] = el}
-                                                    type="text"
-                                                    placeholder={`Add ${varType.type === 'OTHER' ? (varType.customType || 'variation') : varType.type.toLowerCase()} value`}
-                                                    onKeyPress={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            e.preventDefault();
-                                                            const value = e.target.value.trim();
-                                                            if (value && !variationTypes[typeIndex].values.includes(value)) {
-                                                                const newTypes = [...variationTypes];
-                                                                newTypes[typeIndex].values.push(value);
-                                                                setVariationTypes(newTypes);
-                                                                e.target.value = '';
-                                                            }
-                                                        }
-                                                    }}
-                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const input = variationInputRefs.current[`input-${typeIndex}`];
-                                                        if (input?.value) {
-                                                            const value = input.value.trim();
-                                                            if (value && !variationTypes[typeIndex].values.includes(value)) {
-                                                                const newTypes = [...variationTypes];
-                                                                newTypes[typeIndex].values.push(value);
-                                                                setVariationTypes(newTypes);
-                                                                input.value = '';
-                                                            }
-                                                        }
-                                                    }}
-                                                    className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition"
-                                                >
-                                                    <Plus size={18} />
-                                                </button>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
+                                ))}
 
-                                    {varType.values.length > 0 && (
-                                        <div className="space-y-2">
-                                            <p className="text-sm font-medium text-gray-700">
-                                                {varType.values.length} value{varType.values.length > 1 ? 's' : ''}:
-                                            </p>
-                                            <div className="flex flex-wrap gap-2">
-                                                {varType.values.map((value, valueIndex) => (
-                                                    <div key={valueIndex} className="flex items-center gap-2 px-3 py-1.5 bg-orange-100 text-orange-700 rounded text-sm">
-                                                        <span>{value}</span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const newTypes = [...variationTypes];
-                                                                newTypes[typeIndex].values = newTypes[typeIndex].values.filter((_, i) => i !== valueIndex);
-                                                                setVariationTypes(newTypes);
-                                                            }}
-                                                            className="hover:bg-orange-200 rounded p-0.5 transition"
-                                                        >
-                                                            <X size={14} />
-                                                        </button>
-                                                    </div>
-                                                ))}
+                                <button
+                                    type="button"
+                                    onClick={() => setVariationTypes([...variationTypes, { type: 'SIZE', values: [], customType: '' }])}
+                                    className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded text-gray-600 hover:border-orange-500 hover:text-orange-600 transition flex items-center justify-center gap-2"
+                                >
+                                    <Plus size={18} />
+                                    {variationTypes.length === 0 ? 'Add Variation Type' : 'Add Another Variation Type'}
+                                </button>
+
+                                {/* ── Variation Combinations (responsive card grid, no horizontal scroll) ── */}
+                                {variationCombinations.length > 0 && (
+                                    <div className="mt-6 border border-slate-200 rounded-xl overflow-hidden">
+                                        <div className="bg-white border-b border-slate-200 px-5 py-3.5 flex items-center justify-between gap-4 flex-wrap">
+                                            <h4 className="text-slate-900 font-semibold text-sm flex items-center gap-2 whitespace-nowrap">
+                                                <Package size={18} />
+                                                Variation Combinations ({filteredCombos.length}{filteredCombos.length !== variationCombinations.length ? ` of ${variationCombinations.length}` : ''})
+                                            </h4>
+                                            <div className="relative w-full sm:w-64">
+                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search SKU, UPC, or variation..."
+                                                    value={comboSearchTerm}
+                                                    onChange={(e) => setComboSearchTerm(e.target.value)}
+                                                    className="w-full pl-8 pr-3 h-9 text-sm bg-white border border-slate-300 rounded-md text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
+                                                />
                                             </div>
                                         </div>
-                                    )}
-                                </div>
-                            ))}
 
-                            <button
-                                type="button"
-                                onClick={() => setVariationTypes([...variationTypes, { type: 'SIZE', values: [], customType: '' }])}
-                                className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded text-gray-600 hover:border-orange-500 hover:text-orange-600 transition flex items-center justify-center gap-2"
-                            >
-                                <Plus size={18} />
-                                {variationTypes.length === 0 ? 'Add Variation Type' : 'Add Another Variation Type'}
-                            </button>
+                                        <div className="p-5 bg-slate-50">
+                                            {filteredCombos.length === 0 ? (
+                                                <div className="text-center py-10 text-sm text-slate-500">
+                                                    No variations match "{comboSearchTerm}"
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-[repeat(auto-fill,minmax(420px,1fr))] gap-4 items-start">
+                                                    {filteredCombos.map(({ combo, comboIndex }) => (
+                                                        <div key={comboIndex} className="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col">
+                                                            {/* Card header: image + attributes */}
+                                                            <div
+                                                                onClick={() => toggleCombo(comboIndex)}
+                                                                className={`p-4 flex items-start gap-3 cursor-pointer hover:bg-slate-50 transition ${expandedCombos[comboIndex] ? 'border-b border-slate-100' : ''}`}
+                                                            >
+                                                                <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
+                                                                    {!combo.imageUrl ? (
+                                                                        <div className="relative flex-shrink-0">
+                                                                            <input
+                                                                                type="file"
+                                                                                accept="image/*"
+                                                                                onChange={async (e) => {
+                                                                                    const file = e.target.files[0];
+                                                                                    if (file) {
+                                                                                        const imageUrl = await handleImageUpload(file, true, comboIndex);
+                                                                                        if (imageUrl) updateVariationCombination(comboIndex, 'imageUrl', imageUrl);
+                                                                                    }
+                                                                                    e.target.value = '';
+                                                                                }}
+                                                                                className="hidden"
+                                                                                id={`variation-image-${comboIndex}`}
+                                                                                disabled={uploadingVariationImage[comboIndex]}
+                                                                            />
+                                                                            <label
+                                                                                htmlFor={`variation-image-${comboIndex}`}
+                                                                                className={`flex items-center justify-center w-16 h-16 border-2 border-dashed rounded cursor-pointer transition overflow-hidden ${uploadingVariationImage[comboIndex] ? 'border-orange-400 bg-orange-50' : 'border-slate-300 hover:border-orange-500 bg-slate-50'}`}
+                                                                            >
+                                                                                {uploadingVariationImage[comboIndex]
+                                                                                    ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-600"></div>
+                                                                                    : <Package size={16} className="text-slate-400" />}
+                                                                            </label>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="relative group flex-shrink-0">
+                                                                            <div className="w-16 h-16 overflow-hidden rounded border border-slate-200">
+                                                                                <img
+                                                                                    src={getFileUrl(combo.imageUrl)}
+                                                                                    alt="Variation"
+                                                                                    className="w-full h-full object-cover"
+                                                                                    onError={(e) => {
+                                                                                        e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2VlZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbWFnZTwvdGV4dD48L3N2Zz4=';
+                                                                                    }}
+                                                                                />
+                                                                            </div>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => updateVariationCombination(comboIndex, 'imageUrl', '')}
+                                                                                className="absolute -top-1.5 -right-1.5 p-0.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition opacity-0 group-hover:opacity-100 shadow-md"
+                                                                            >
+                                                                                <X size={10} />
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
 
-                            {/* ── Variation Combinations (responsive card grid, no horizontal scroll) ── */}
-                            {variationCombinations.length > 0 && (
-                                <div className="mt-6 border border-slate-200 rounded-xl overflow-hidden">
-                                    <div className="bg-gradient-to-r from-orange-600 to-orange-700 px-5 py-3.5 flex items-center justify-between gap-4 flex-wrap">
-                                        <h4 className="text-white font-semibold flex items-center gap-2 whitespace-nowrap">
-                                            <Package size={18} />
-                                            Variation Combinations ({filteredCombos.length}{filteredCombos.length !== variationCombinations.length ? ` of ${variationCombinations.length}` : ''})
-                                        </h4>
-                                        <div className="relative w-full sm:w-64">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-orange-200" size={14} />
-                                            <input
-                                                type="text"
-                                                placeholder="Search SKU, UPC, or variation..."
-                                                value={comboSearchTerm}
-                                                onChange={(e) => setComboSearchTerm(e.target.value)}
-                                                className="w-full pl-8 pr-3 py-1.5 text-sm bg-white/10 border border-white/20 rounded text-white placeholder:text-orange-200 focus:bg-white focus:text-slate-900 focus:placeholder:text-slate-400 focus:ring-4 focus:ring-white/20 focus:border-white transition"
-                                            />
-                                        </div>
-                                    </div>
 
-                                    <div className="p-5 bg-slate-50">
-                                        {filteredCombos.length === 0 ? (
-                                            <div className="text-center py-10 text-sm text-slate-500">
-                                                No variations match "{comboSearchTerm}"
-                                            </div>
-                                        ) : (
-                                            <div className="grid grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-4">
-                                                {filteredCombos.map(({ combo, comboIndex }) => (
-                                                    <div key={comboIndex} className="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col">
-                                                        {/* Card header: image + attributes */}
-                                                        <div className="p-4 flex items-start gap-3 border-b border-slate-100">
-                                                            {!combo.imageUrl ? (
-                                                                <div className="relative flex-shrink-0">
-                                                                    <input
-                                                                        type="file"
-                                                                        accept="image/*"
-                                                                        onChange={async (e) => {
-                                                                            const file = e.target.files[0];
-                                                                            if (file) {
-                                                                                const imageUrl = await handleImageUpload(file, true, comboIndex);
-                                                                                if (imageUrl) updateVariationCombination(comboIndex, 'imageUrl', imageUrl);
-                                                                            }
-                                                                            e.target.value = '';
-                                                                        }}
-                                                                        className="hidden"
-                                                                        id={`variation-image-${comboIndex}`}
-                                                                        disabled={uploadingVariationImage[comboIndex]}
-                                                                    />
-                                                                    <label
-                                                                        htmlFor={`variation-image-${comboIndex}`}
-                                                                        className={`flex items-center justify-center w-16 h-16 border-2 border-dashed rounded cursor-pointer transition overflow-hidden ${uploadingVariationImage[comboIndex] ? 'border-orange-400 bg-orange-50' : 'border-slate-300 hover:border-orange-500 bg-slate-50'}`}
-                                                                    >
-                                                                        {uploadingVariationImage[comboIndex]
-                                                                            ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-600"></div>
-                                                                            : <Package size={16} className="text-slate-400" />}
-                                                                    </label>
                                                                 </div>
-                                                            ) : (
-                                                                <div className="relative group flex-shrink-0">
-                                                                    <div className="w-16 h-16 overflow-hidden rounded border border-slate-200">
-                                                                        <img
-                                                                            src={getFileUrl(combo.imageUrl)}
-                                                                            alt="Variation"
-                                                                            className="w-full h-full object-cover"
-                                                                            onError={(e) => {
-                                                                                e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2VlZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbWFnZTwvdGV4dD48L3N2Zz4=';
-                                                                            }}
-                                                                        />
-                                                                    </div>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => updateVariationCombination(comboIndex, 'imageUrl', '')}
-                                                                        className="absolute -top-1.5 -right-1.5 p-0.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition opacity-0 group-hover:opacity-100 shadow-md"
-                                                                    >
-                                                                        <X size={10} />
-                                                                    </button>
-                                                                </div>
-                                                            )}
 
-                                                            <div className="flex flex-wrap gap-1 min-w-0">
-                                                                {Object.entries(combo.attributes).map(([type, value]) => (
-                                                                    <span key={type} className="px-2 py-1 bg-orange-50 text-orange-700 rounded text-xs font-medium whitespace-nowrap">
-                                                                        {type}: {value}
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Fields */}
-                                                        <div className="p-4 grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-3 border-b border-slate-100">
-                                                            <div>
-                                                                <label className="block text-xs font-medium text-slate-500 mb-1">SKU</label>
-                                                                <input
-                                                                    type="text"
-                                                                    value={combo.sku}
-                                                                    onChange={(e) => updateVariationCombination(comboIndex, 'sku', e.target.value)}
-                                                                    placeholder="Enter SKU"
-                                                                    required
-                                                                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
-                                                                />
-                                                            </div>
-
-                                                            <div>
-                                                                <label className="block text-xs font-medium text-slate-500 mb-1">UPC</label>
-                                                                <input
-                                                                    type="text"
-                                                                    value={combo.upc}
-                                                                    onChange={(e) => updateVariationCombination(comboIndex, 'upc', e.target.value)}
-                                                                    placeholder="Enter UPC"
-                                                                    required
-                                                                    maxLength={13}
-                                                                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
-                                                                />
-                                                            </div>
-
-                                                            <div>
-                                                                <label className="block text-xs font-medium text-slate-500 mb-1">Weight (kg)</label>
-                                                                <input
-                                                                    type="number"
-                                                                    value={combo.weight || ''}
-                                                                    onChange={(e) => updateVariationCombination(comboIndex, 'weight', e.target.value)}
-                                                                    placeholder="0.00"
-                                                                    step="0.01"
-                                                                    min="0"
-                                                                    required
-                                                                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
-                                                                />
-                                                            </div>
-
-                                                            <div>
-                                                                <label className="block text-xs font-medium text-slate-500 mb-1">Unit Cost (₱)</label>
-                                                                <input
-                                                                    type="text"
-                                                                    value={combo.unitCost ? `₱${parseFloat(combo.unitCost).toFixed(2)}` : ''}
-                                                                    disabled
-                                                                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded bg-slate-100 text-slate-900 cursor-not-allowed"
-                                                                    placeholder="Set via PO"
-                                                                />
-                                                            </div>
-
-                                                            <div className="col-span-full">
-                                                                <label className="block text-xs font-medium text-slate-500 mb-1">Dimensions L×W×H (cm)</label>
-                                                                <div className="grid grid-cols-3 gap-2">
-                                                                    {['length', 'width', 'height'].map((dim) => (
-                                                                        <input
-                                                                            key={dim}
-                                                                            type="number"
-                                                                            value={combo[dim] || ''}
-                                                                            onChange={(e) => updateVariationCombination(comboIndex, dim, e.target.value)}
-                                                                            placeholder={dim.charAt(0).toUpperCase()}
-                                                                            step="0.01"
-                                                                            required
-                                                                            className="w-full px-2 py-2 text-sm border border-slate-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
-                                                                        />
+                                                                <div className="flex flex-wrap gap-1 min-w-0 flex-1">
+                                                                    {Object.entries(combo.attributes).map(([type, value]) => (
+                                                                        <span key={type} className="px-2 py-1 bg-orange-50 text-orange-700 rounded text-xs font-medium whitespace-nowrap">
+                                                                            {type}: {value}
+                                                                        </span>
                                                                     ))}
                                                                 </div>
-                                                            </div>
-                                                        </div>
 
-                                                        {/* Company Prices */}
-                                                        <div className="p-4 flex-1 flex flex-col gap-3">
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                                <span className="text-xs font-medium text-slate-500">Apply to all:</span>
-                                                                <span className="text-sm text-slate-400">₱</span>
-                                                                <input
-                                                                    type="number"
-                                                                    placeholder="0.00"
-                                                                    step="0.01"
-                                                                    min="0"
-                                                                    id={`apply-all-price-${comboIndex}`}
-                                                                    onWheel={(e) => e.target.blur()}
-                                                                    className="no-spinner w-20 px-2 py-1 text-sm border border-orange-200 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 bg-orange-50"
+                                                                <ChevronDown
+                                                                    size={18}
+                                                                    className={`text-slate-400 flex-shrink-0 mt-1 transition-transform ${expandedCombos[comboIndex] ? 'rotate-180' : ''}`}
                                                                 />
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        const input = document.getElementById(`apply-all-price-${comboIndex}`);
-                                                                        if (input?.value) applyPriceToAllCompanies(comboIndex, input.value);
-                                                                    }}
-                                                                    className="flex items-center gap-1 px-2.5 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700 transition font-medium"
-                                                                >
-                                                                    <Copy size={12} />
-                                                                    Apply
-                                                                </button>
                                                             </div>
 
-                                                            <div
-                                                                className="relative"
-                                                                ref={el => companyDropdownRefs.current[comboIndex] = el}
-                                                            >
-                                                                <div className="relative">
-                                                                    <input
-                                                                        type="text"
-                                                                        placeholder="Add a company..."
-                                                                        value={companySearchTerm[comboIndex] || ''}
-                                                                        onChange={(e) => handleCompanySearchChange(comboIndex, e.target.value)}
-                                                                        onFocus={() => toggleCompanyDropdown(comboIndex, true)}
-                                                                        className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 pr-8"
-                                                                    />
-                                                                    {companyDropdownOpen[comboIndex] && (
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => toggleCompanyDropdown(comboIndex, false)}
-                                                                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                                                                        >
-                                                                            <X size={14} />
-                                                                        </button>
-                                                                    )}
-                                                                </div>
+                                                            {expandedCombos[comboIndex] && (
+                                                                <>
+                                                                    {/* Fields */}
+                                                                    <div className="p-4 grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-3 border-b border-slate-100">
+                                                                        <div>
+                                                                            <label className="block text-xs font-medium text-slate-500 mb-1">SKU</label>
+                                                                            <input
+                                                                                type="text"
+                                                                                value={combo.sku}
+                                                                                onChange={(e) => updateVariationCombination(comboIndex, 'sku', e.target.value)}
+                                                                                placeholder="Enter SKU"
+                                                                                required
+                                                                                className="w-full h-9 px-3 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                                                            />
+                                                                        </div>
 
-                                                                {companyDropdownOpen[comboIndex] && (
-                                                                    <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded shadow-lg">
-                                                                        <div className="max-h-48 overflow-y-auto">
-                                                                            {companies.filter(c =>
-                                                                                !(selectedPriceCompanyIds[comboIndex] || []).includes(c.id) &&
-                                                                                c.companyName.toLowerCase().includes((companySearchTerm[comboIndex] || '').toLowerCase())
-                                                                            ).length > 0 ? (
-                                                                                companies
-                                                                                    .filter(c =>
-                                                                                        !(selectedPriceCompanyIds[comboIndex] || []).includes(c.id) &&
-                                                                                        c.companyName.toLowerCase().includes((companySearchTerm[comboIndex] || '').toLowerCase())
-                                                                                    )
-                                                                                    .map(company => (
-                                                                                        <div
-                                                                                            key={company.id}
-                                                                                            onClick={() => {
-                                                                                                togglePriceCompany(comboIndex, company.id);
-                                                                                                handleCompanySearchChange(comboIndex, '');
-                                                                                                toggleCompanyDropdown(comboIndex, false);
-                                                                                            }}
-                                                                                            className="px-3 py-2.5 hover:bg-orange-50 cursor-pointer transition border-b border-slate-100 last:border-b-0"
-                                                                                        >
-                                                                                            <p className="text-sm font-medium text-slate-800">{company.companyName}</p>
-                                                                                        </div>
-                                                                                    ))
-                                                                            ) : (
-                                                                                <div className="px-3 py-4 text-sm text-slate-500 text-center">No companies found</div>
-                                                                            )}
+                                                                        <div>
+                                                                            <label className="block text-xs font-medium text-slate-500 mb-1">UPC</label>
+                                                                            <input
+                                                                                type="text"
+                                                                                value={combo.upc}
+                                                                                onChange={(e) => updateVariationCombination(comboIndex, 'upc', e.target.value)}
+                                                                                placeholder="Enter UPC"
+                                                                                required
+                                                                                maxLength={13}
+                                                                                className="w-full h-9 px-3 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                                                            />
+                                                                        </div>
+
+                                                                        <div>
+                                                                            <label className="block text-xs font-medium text-slate-500 mb-1">Weight (kg)</label>
+                                                                            <input
+                                                                                type="number"
+                                                                                value={combo.weight || ''}
+                                                                                onChange={(e) => updateVariationCombination(comboIndex, 'weight', e.target.value)}
+                                                                                placeholder="0.00"
+                                                                                step="0.01"
+                                                                                min="0"
+                                                                                required
+                                                                                className="w-full h-9 px-3 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                                                            />
+                                                                        </div>
+
+                                                                        <div>
+                                                                            <label className="block text-xs font-medium text-slate-500 mb-1">Unit Cost (₱)</label>
+                                                                            <input
+                                                                                type="text"
+                                                                                value={combo.unitCost ? `₱${parseFloat(combo.unitCost).toFixed(2)}` : ''}
+                                                                                disabled
+                                                                                className="w-full h-9 px-3 text-sm border border-slate-200 rounded-md bg-slate-100 text-slate-900 cursor-not-allowed"
+                                                                                placeholder="Set via PO"
+                                                                            />
+                                                                        </div>
+
+                                                                        <div className="col-span-full">
+                                                                            <label className="block text-xs font-medium text-slate-500 mb-1">Dimensions L×W×H (cm)</label>
+                                                                            <div className="grid grid-cols-3 gap-2">
+                                                                                {['length', 'width', 'height'].map((dim) => (
+                                                                                    <input
+                                                                                        key={dim}
+                                                                                        type="number"
+                                                                                        value={combo[dim] || ''}
+                                                                                        onChange={(e) => updateVariationCombination(comboIndex, dim, e.target.value)}
+                                                                                        placeholder={dim.charAt(0).toUpperCase()}
+                                                                                        step="0.01"
+                                                                                        required
+                                                                                        className="w-full h-9 px-2 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                                                                    />
+                                                                                ))}
+                                                                            </div>
                                                                         </div>
                                                                     </div>
-                                                                )}
-                                                            </div>
 
-                                                            {(selectedPriceCompanyIds[comboIndex] || []).length > 0 && (
-                                                                <div className="space-y-2">
-                                                                    {(selectedPriceCompanyIds[comboIndex] || []).map(companyId => {
-                                                                        const company = companies.find(c => c.id === companyId);
-                                                                        if (!company) return null;
-                                                                        return (
-                                                                            <div key={companyId} className="border border-slate-200 rounded p-2.5 bg-slate-50">
-                                                                                <div className="flex items-center justify-between mb-1.5">
-                                                                                    <span className="text-sm font-medium text-slate-900 truncate" title={company.companyName}>
-                                                                                        {company.companyName}
-                                                                                    </span>
+                                                                    {/* Company Prices */}
+                                                                    <div className="p-4 flex-1 flex flex-col gap-3">
+                                                                        <div className="flex flex-wrap items-center gap-2">
+                                                                            <span className="text-xs font-medium text-slate-500">Apply to all:</span>
+                                                                            <span className="text-sm text-slate-400">₱</span>
+                                                                            <input
+                                                                                type="number"
+                                                                                placeholder="0.00"
+                                                                                step="0.01"
+                                                                                min="0"
+                                                                                id={`apply-all-price-${comboIndex}`}
+                                                                                onWheel={(e) => e.target.blur()}
+                                                                                className="no-spinner w-20 h-8 px-2 text-sm border border-orange-200 rounded-md bg-orange-50 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                                                            />
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    const input = document.getElementById(`apply-all-price-${comboIndex}`);
+                                                                                    if (input?.value) applyPriceToAllCompanies(comboIndex, input.value);
+                                                                                }}
+                                                                                className="flex items-center gap-1 px-2.5 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700 transition font-medium"
+                                                                            >
+                                                                                <Copy size={12} />
+                                                                                Apply
+                                                                            </button>
+                                                                        </div>
+
+                                                                        <div
+                                                                            className="relative"
+                                                                            ref={el => companyDropdownRefs.current[comboIndex] = el}
+                                                                        >
+                                                                            <div className="relative">
+                                                                                <input
+                                                                                    type="text"
+                                                                                    placeholder="Add a company..."
+                                                                                    value={companySearchTerm[comboIndex] || ''}
+                                                                                    onChange={(e) => handleCompanySearchChange(comboIndex, e.target.value)}
+                                                                                    onFocus={() => toggleCompanyDropdown(comboIndex, true)}
+                                                                                    className="w-full h-9 pl-3 pr-8 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                                                                />
+                                                                                {companyDropdownOpen[comboIndex] && (
                                                                                     <button
                                                                                         type="button"
-                                                                                        onClick={() => togglePriceCompany(comboIndex, companyId)}
-                                                                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded flex-shrink-0"
-                                                                                        title="Remove company"
+                                                                                        onClick={() => toggleCompanyDropdown(comboIndex, false)}
+                                                                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                                                                                     >
                                                                                         <X size={14} />
                                                                                     </button>
-                                                                                </div>
-                                                                                <div className="grid grid-cols-[repeat(auto-fit,minmax(90px,1fr))] gap-2">
-                                                                                    <div className="flex items-center gap-1">
-                                                                                        <span className="text-sm text-slate-400">₱</span>
-                                                                                        <input
-                                                                                            type="number"
-                                                                                            step="0.01"
-                                                                                            min="0"
-                                                                                            value={combo.companyPrices?.[companyId] ?? ''}
-                                                                                            onChange={(e) => updateVariationCompanyPrice(comboIndex, companyId, e.target.value)}
-                                                                                            onWheel={(e) => e.target.blur()}
-                                                                                            placeholder="0.00"
-                                                                                            className="no-spinner w-full px-2 py-1.5 text-sm border border-slate-300 rounded bg-white focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
-                                                                                        />
-                                                                                    </div>
-                                                                                    <input
-                                                                                        type="text"
-                                                                                        value={combo.companySkus?.[companyId] ?? ''}
-                                                                                        onChange={(e) => updateVariationCompanySku(comboIndex, companyId, e.target.value)}
-                                                                                        placeholder="SKU"
-                                                                                        className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded bg-white focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500"
-                                                                                    />
-                                                                                </div>
+                                                                                )}
                                                                             </div>
-                                                                        );
-                                                                    })}
-                                                                </div>
+
+                                                                            {companyDropdownOpen[comboIndex] && (
+                                                                                <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded shadow-lg">
+                                                                                    <div className="max-h-48 overflow-y-auto">
+                                                                                        {companies.filter(c =>
+                                                                                            !(selectedPriceCompanyIds[comboIndex] || []).includes(c.id) &&
+                                                                                            c.companyName.toLowerCase().includes((companySearchTerm[comboIndex] || '').toLowerCase())
+                                                                                        ).length > 0 ? (
+                                                                                            companies
+                                                                                                .filter(c =>
+                                                                                                    !(selectedPriceCompanyIds[comboIndex] || []).includes(c.id) &&
+                                                                                                    c.companyName.toLowerCase().includes((companySearchTerm[comboIndex] || '').toLowerCase())
+                                                                                                )
+                                                                                                .map(company => (
+                                                                                                    <div
+                                                                                                        key={company.id}
+                                                                                                        onClick={() => {
+                                                                                                            togglePriceCompany(comboIndex, company.id);
+                                                                                                            handleCompanySearchChange(comboIndex, '');
+                                                                                                            toggleCompanyDropdown(comboIndex, false);
+                                                                                                        }}
+                                                                                                        className="px-3 py-2.5 hover:bg-orange-50 cursor-pointer transition border-b border-slate-100 last:border-b-0"
+                                                                                                    >
+                                                                                                        <p className="text-sm font-medium text-slate-800">{company.companyName}</p>
+                                                                                                    </div>
+                                                                                                ))
+                                                                                        ) : (
+                                                                                            <div className="px-3 py-4 text-sm text-slate-500 text-center">No companies found</div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {(selectedPriceCompanyIds[comboIndex] || []).length > 0 && (
+                                                                            <div className="space-y-2">
+                                                                                {(selectedPriceCompanyIds[comboIndex] || []).map(companyId => {
+                                                                                    const company = companies.find(c => c.id === companyId);
+                                                                                    if (!company) return null;
+                                                                                    return (
+                                                                                        <div key={companyId} className="border border-slate-200 rounded p-2.5 bg-slate-50">
+                                                                                            <div className="flex items-center justify-between mb-1.5">
+                                                                                                <span className="text-sm font-medium text-slate-900 truncate" title={company.companyName}>
+                                                                                                    {company.companyName}
+                                                                                                </span>
+                                                                                                <button
+                                                                                                    type="button"
+                                                                                                    onClick={() => togglePriceCompany(comboIndex, companyId)}
+                                                                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded flex-shrink-0"
+                                                                                                    title="Remove company"
+                                                                                                >
+                                                                                                    <X size={14} />
+                                                                                                </button>
+                                                                                            </div>
+                                                                                            <div className="grid grid-cols-[repeat(auto-fit,minmax(90px,1fr))] gap-2">
+                                                                                                <div className="flex items-center gap-1">
+                                                                                                    <span className="text-sm text-slate-400">₱</span>
+                                                                                                    <input
+                                                                                                        type="number"
+                                                                                                        step="0.01"
+                                                                                                        min="0"
+                                                                                                        value={combo.companyPrices?.[companyId] ?? ''}
+                                                                                                        onChange={(e) => updateVariationCompanyPrice(comboIndex, companyId, e.target.value)}
+                                                                                                        onWheel={(e) => e.target.blur()}
+                                                                                                        placeholder="0.00"
+                                                                                                        className="no-spinner w-full h-9 px-2 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                                                                                    />
+                                                                                                </div>
+                                                                                                <input
+                                                                                                    type="text"
+                                                                                                    value={combo.companySkus?.[companyId] ?? ''}
+                                                                                                    onChange={(e) => updateVariationCompanySku(comboIndex, companyId, e.target.value)}
+                                                                                                    placeholder="SKU"
+                                                                                                    className="w-full h-9 px-2 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                                                                                                />
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    );
+                                                                                })}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </>
                                                             )}
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="bg-slate-50 px-5 py-3.5 border-t border-slate-200">
+                                            <div className="flex items-center justify-between">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (window.confirm('Clear all variation data?')) {
+                                                            setVariationCombinations(variationCombinations.map(combo => ({
+                                                                ...combo,
+                                                                sku: '',
+                                                                upc: '',
+                                                                weight: '',
+                                                                length: '',
+                                                                width: '',
+                                                                height: '',
+                                                                companyPrices: {},
+                                                                companySkus: {}
+                                                            })));
+                                                            setSelectedPriceCompanyIds({});
+                                                        }
+                                                    }}
+                                                    className="text-sm text-red-600 hover:text-red-700 font-medium"
+                                                >
+                                                    Clear All Data
+                                                </button>
                                             </div>
-                                        )}
-                                    </div>
-                                    <div className="bg-slate-50 px-5 py-3.5 border-t border-slate-200">
-                                        <div className="flex items-center justify-between">
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    if (window.confirm('Clear all variation data?')) {
-                                                        setVariationCombinations(variationCombinations.map(combo => ({
-                                                            ...combo,
-                                                            sku: '',
-                                                            upc: '',
-                                                            weight: '',
-                                                            length: '',
-                                                            width: '',
-                                                            height: '',
-                                                            companyPrices: {},
-                                                            companySkus: {}
-                                                        })));
-                                                        setSelectedPriceCompanyIds({});
-                                                    }
-                                                }}
-                                                className="text-sm text-red-600 hover:text-red-700 font-medium"
-                                            >
-                                                Clear All Data
-                                            </button>
                                         </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
-                    </div>
 
-                    {/* ── Submit Buttons ── */}
-                    <div className="flex gap-3 pt-4 border-t border-gray-200">
+                    </div>
+                    {/* ── Sticky footer ── */}
+                    <div className="shrink-0 bg-white border-t border-slate-200 px-8 py-3 flex items-center justify-end gap-3">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-white transition"
+                            className="h-10 px-5 text-sm font-medium border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50 transition"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            className="flex-1 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition"
+                            className="h-10 px-6 text-sm font-semibold bg-orange-600 text-white rounded-md hover:bg-orange-700 transition"
                         >
-                            {editingProduct ? 'Update Product' : 'Create Product'}
+                            {editingProduct ? 'Save changes' : 'Save product'}
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 
