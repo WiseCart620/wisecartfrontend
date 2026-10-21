@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Trash2, Edit2, CheckCircle, ChevronRight, Plus } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Trash2, Edit2, CheckCircle, ChevronRight, ChevronDown, Check, Search, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { useAuth, can } from '../../context/AuthContext';
@@ -37,6 +37,72 @@ const STATUS_BADGE = {
 const fmtShort = (d) =>
     d ? new Date(d + 'T00:00:00').toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 
+const KIND_LABEL = { EARNING: 'Earning', DEDUCTION: 'Deduction', ALLOWANCE: 'Allowance' };
+
+const TypeFilterSelect = ({ value, options, onChange, allLabel = 'All types', showAll = true, placeholder, listMaxH = 'max-h-64' }) => {
+    const [open, setOpen] = useState(false);
+    const [q, setQ] = useState('');
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener('mousedown', h);
+        return () => document.removeEventListener('mousedown', h);
+    }, []);
+    useEffect(() => { if (!open) setQ(''); }, [open]);
+
+    const selected = options.find(o => o.value === value);
+    const needle = q.trim().toLowerCase();
+    const list = options.filter(o => !needle || o.label.toLowerCase().includes(needle));
+    const pick = (v) => { onChange(v); setOpen(false); };
+
+    return (
+        <div className="relative" ref={ref}>
+            <button type="button" onClick={() => setOpen(o => !o)}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-white border border-gray-300 rounded text-sm text-left focus:ring-2 focus:ring-orange-500 outline-none">
+                <span className={`truncate ${selected ? 'text-gray-900' : 'text-gray-500'}`}>
+                    {selected ? selected.label : (showAll ? allLabel : (placeholder || 'Select type...'))}
+                </span>
+                <ChevronDown size={16} className={`text-gray-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+            </button>
+
+            {open && (
+                <div className="absolute z-50 mt-1 w-full min-w-[260px] bg-white border border-gray-200 rounded-lg shadow-lg">
+                    <div className="p-2 border-b border-gray-100">
+                        <div className="flex items-center gap-2 px-2 py-1.5 border border-gray-200 rounded focus-within:ring-2 focus-within:ring-orange-500">
+                            <Search size={14} className="text-gray-400 shrink-0" />
+                            <input autoFocus value={q} onChange={(e) => setQ(e.target.value)}
+                                placeholder="Search type..."
+                                className="w-full text-sm outline-none bg-transparent" />
+                        </div>
+                    </div>
+                    <div className={`${listMaxH} overflow-y-auto py-1`}>
+                        {showAll && (
+                            <button type="button" onClick={() => pick('')}
+                                className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left hover:bg-orange-50 ${!value ? 'text-orange-600 font-medium bg-orange-50' : 'text-gray-800'}`}>
+                                <span>{allLabel}</span>
+                                {!value && <Check size={14} />}
+                            </button>
+                        )}
+                        {list.length === 0 ? (
+                            <div className="px-3 py-3 text-xs text-gray-400 italic">No matching type</div>
+                        ) : list.map(o => (
+                            <button type="button" key={o.value} onClick={() => pick(o.value)}
+                                className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm text-left hover:bg-orange-50 ${value === o.value ? 'text-orange-600 font-medium bg-orange-50' : 'text-gray-800'}`}>
+                                <span className="truncate">{o.label}</span>
+                                <span className="flex items-center gap-2 shrink-0">
+                                    <span className="text-[10px] text-gray-400">{KIND_LABEL[o.kind] || ''}</span>
+                                    {value === o.value && <Check size={14} />}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const now = new Date();
 const EMPTY_FORM = (date) => ({
     employeeId: '', workDate: date, entryType: 'REGULAR_OT', value: '', unit: 'HOURS', remarks: '',
@@ -63,6 +129,8 @@ const OvertimeEntries = ({ canEdit }) => {
     const [filterType, setFilterType] = useState('');
     const [showEarnings, setShowEarnings] = useState(true);
     const [showDeductions, setShowDeductions] = useState(true);
+    const [showAllowances, setShowAllowances] = useState(true);
+    const [allowanceTypes, setAllowanceTypes] = useState([]);
     const [editing, setEditing] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const [expandedSub, setExpandedSub] = useState(() => new Set());
@@ -90,6 +158,9 @@ const OvertimeEntries = ({ canEdit }) => {
                         p.unit || 'HOURS',
                         (p.category === 'DEDUCTION' || DEDUCTION_CODES.has(p.code)) ? 'DEDUCTION' : 'EARNING',
                     ]));
+                setAllowanceTypes((r.data || [])
+                    .filter(p => p.category === 'ALLOWANCE')
+                    .map(p => [p.code || String(p.payTypeId), p.payTypeName, p.unit || 'AMOUNT', 'ALLOWANCE']));
             }
         }).catch(() => { });
     }, []);
@@ -207,16 +278,20 @@ const OvertimeEntries = ({ canEdit }) => {
     const q = empSearch.trim().toLowerCase();
     const rowName = (r) => (dir[r.employeeId]?.name || r.employeeName || '').toLowerCase();
 
-    const kindOf = (code) => (metaOf(code) || [])[3] || 'EARNING';
-    const kindAllowed = (kind) => (kind === 'DEDUCTION' ? showDeductions : showEarnings);
+    const FILTER_TYPES = [...TYPES, ...allowanceTypes];
+    const kindOf = (code) => (FILTER_TYPES.find(t => t[0] === code) || [])[3] || 'EARNING';
+    const kindAllowed = (kind) => (kind === 'DEDUCTION' ? showDeductions
+        : kind === 'ALLOWANCE' ? showAllowances : showEarnings);
 
-    const typeOptions = TYPES
+    const typeOptions = FILTER_TYPES
         .filter(t => kindAllowed(t[3] || 'EARNING'))
-        .map(([k, l]) => ({ value: k, label: l }));
+        .map(([k, l, , kind]) => ({ value: k, label: l, kind }));
 
     const toggleKind = (kind) => {
-        const next = kind === 'DEDUCTION' ? !showDeductions : !showEarnings;
-        if (kind === 'DEDUCTION') setShowDeductions(next); else setShowEarnings(next);
+        const next = !kindAllowed(kind);
+        if (kind === 'DEDUCTION') setShowDeductions(next);
+        else if (kind === 'ALLOWANCE') setShowAllowances(next);
+        else setShowEarnings(next);
         // clear the selected type if its category just got hidden
         if (!next && filterType && kindOf(filterType) === kind) setFilterType('');
     };
@@ -239,7 +314,7 @@ const OvertimeEntries = ({ canEdit }) => {
     }, [filteredRows]);
 
     const { pageItems, paginationProps } =
-        usePagination(groups, `${month}|${year}|${cutoff}|${empSearch}|${empSelected}|${filterType}|${showEarnings}|${showDeductions}`);
+        usePagination(groups, `${month}|${year}|${cutoff}|${empSearch}|${empSelected}|${filterType}|${showEarnings}|${showDeductions}|${showAllowances}`);
 
     const toggle = (id) => setExpanded(prev => {
         const next = new Set(prev);
@@ -300,7 +375,7 @@ const OvertimeEntries = ({ canEdit }) => {
                             search={empSearch} selected={empSelected}
                             onSearch={setEmpSearch} onSelect={setEmpSelected} />
                     </div>
-                    <div className="min-w-[220px]">
+                    <div className="min-w-[300px]">
                         <div className="flex items-center justify-between mb-1">
                             <label className="block text-xs font-medium text-gray-700">Type</label>
                             <div className="flex items-center gap-3">
@@ -314,10 +389,14 @@ const OvertimeEntries = ({ canEdit }) => {
                                         checked={showDeductions} onChange={() => toggleKind('DEDUCTION')} />
                                     Deductions
                                 </label>
+                                <label className="flex items-center gap-1 text-xs text-gray-700 cursor-pointer select-none">
+                                    <input type="checkbox" className="accent-orange-600"
+                                        checked={showAllowances} onChange={() => toggleKind('ALLOWANCE')} />
+                                    Allowances
+                                </label>
                             </div>
                         </div>
-                        <SearchableSelect allLabel="All types" typeable={false}
-                            searchPlaceholder="Search type..."
+                        <TypeFilterSelect allLabel="All types"
                             value={filterType} options={typeOptions} onChange={setFilterType} />
                     </div>
                     <div className="text-xs text-gray-500 pb-2">{fmtShort(from)} to {fmtShort(to)}</div>
@@ -345,9 +424,9 @@ const OvertimeEntries = ({ canEdit }) => {
                                 onChange={(e) => setForm(p => ({ ...p, workDate: e.target.value }))} />
                         </Field>
                         <Field label="Type" required>
-                            <SearchableSelect typeable={false} searchPlaceholder="Search type..."
+                            <TypeFilterSelect showAll={false} listMaxH="max-h-48"
                                 value={form.entryType}
-                                options={TYPES.map(([k, l]) => ({ value: k, label: l }))}
+                                options={TYPES.map(([k, l, , kind]) => ({ value: k, label: l, kind }))}
                                 onChange={(v) => v && onTypeChange(v)} />
                         </Field>
                         {unitMode !== 'DAYS' && unitMode !== 'AMOUNT' && (
