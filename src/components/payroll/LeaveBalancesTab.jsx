@@ -286,7 +286,7 @@ const LeaveBalancesTab = ({ employees, leaveTypes, canEdit, canDelete }) => {
                       <td className="px-4 py-3 font-bold">{totals.remaining}</td>
                       <td className="px-4 py-3 font-mono text-gray-700">{tenureOf(hireOf[g.employeeId])}</td>
                       <td className="px-4 py-3 text-gray-700">
-                        {unpaidUsed[g.employeeId] ? `${unpaidUsed[g.employeeId]} day(s) used (unlimited)` : '—'}
+                        {unpaidUsed[g.employeeId] ? `${unpaidUsed[g.employeeId]} day(s)` : '—'}
                       </td>
                       <td />
                     </tr>
