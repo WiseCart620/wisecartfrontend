@@ -183,13 +183,22 @@ const PayslipDrilldown = ({ payslipId, onClose }) => {
     { label: 'Withholding Tax', amount: buckets.tax || 0 },
   ];
 
+  const leaveRows = Array.isArray(slip.leaveBalances)
+    ? slip.leaveBalances.map(b => ({
+      label: b.leaveTypeName,
+      amount: String(Number(b.balance || 0)),
+    }))
+    : [
+      { label: 'Vacation Leave', amount: slip.vacationLeaveBalance != null ? slip.vacationLeaveBalance : '0' },
+      { label: 'Service Incentive Leave', amount: slip.sickLeaveBalance != null ? slip.sickLeaveBalance : '0' },
+    ];
+
   const advances = [
     { label: 'Cash Advance', amount: amt(slip.cashAdvanceAmount) },
     { label: 'Payments Made', amount: amt(slip.cashAdvancePaid) },
     { label: 'Balance', amount: amt(slip.cashAdvanceBalance) },
     { header: 'LEAVE BALANCE' },
-    { label: 'Vacation Leave', amount: slip.vacationLeaveBalance != null ? slip.vacationLeaveBalance : '0' },
-    { label: 'Service Incentive Leave', amount: slip.sickLeaveBalance != null ? slip.sickLeaveBalance : '0' },
+    ...leaveRows,
   ];
 
   const rowCount = Math.max(earnings.length, deductions.length, advances.length, MIN_ROWS);
