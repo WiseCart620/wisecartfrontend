@@ -14,6 +14,7 @@ const SCHEDULE_LABEL = { SPLIT: 'Split (15th & 30th)', FIRST_CUTOFF: '15th only'
 const EMPTY = {
   employeeId: '', amount: '', purpose: '', advanceType: 'ONE_TIME',
   dateReleased: today(), startTerm: '', endTerm: '', deductionSchedule: 'SPLIT',
+  specialOnly: false, overrides: [],
 };
 const OPEN_END = '2099-12-31';
 const OPEN_START = '2000-01-01';
@@ -32,13 +33,6 @@ const STATUS_BADGE = {
   CANCELLED: 'bg-gray-100 text-gray-600 ring-1 ring-gray-200',
 };
 const STATUS_LABEL = { PENDING: 'Pending', ACTIVE: 'Active', PAID: 'Paid', CANCELLED: 'Cancelled' };
-const monthDiff = (a, b) => {
-  const x = new Date(a + 'T00:00:00');
-  const y = new Date(b + 'T00:00:00');
-  return (y.getFullYear() - x.getFullYear()) * 12 + (y.getMonth() - x.getMonth());
-};
-// inclusive number of monthly deductions between start and end
-const monthsBetween = (start, end) => (start && end && end >= start ? monthDiff(start, end) + 1 : 0);
 
 const Detail = ({ label, children }) => (
   <div>
@@ -93,6 +87,23 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
   const update = (patch) => setForm(p => ({ ...p, ...patch }));
   const set = (k) => (e) => update({ [k]: e.target.value });
   const recurring = form.advanceType === 'RECURRING';
+  const special = !!form.specialOnly;
+  const showSpecial = special || recurring;
+  const specialTotal = form.overrides.reduce((s, o) => s + Number(o.amount || 0), 0);
+
+  const addLine = () => update({ overrides: [...form.overrides, { date: '', amount: '' }] });
+  const setLine = (idx, patch) =>
+    update({ overrides: form.overrides.map((o, i) => (i === idx ? { ...o, ...patch } : o)) });
+  const removeLine = (idx) => update({ overrides: form.overrides.filter((_, i) => i !== idx) });
+
+  const toggleSpecial = (checked) => {
+    // open balance has a fixed total, so it is filed as one-time
+    update({
+      specialOnly: checked,
+      advanceType: checked ? 'ONE_TIME' : form.advanceType,
+      overrides: checked && form.overrides.length === 0 ? [{ date: '', amount: '' }] : form.overrides,
+    });
+  };
 
   const openAdd = () => { setEditing(null); setForm(EMPTY); setFile(null); setShowForm(true); };
 
@@ -108,21 +119,41 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
       startTerm: i.advanceType === 'RECURRING' && !isOpenStart(i.startTerm) ? i.startTerm : '',
       endTerm: i.advanceType === 'RECURRING' && !isOpen(i.endTerm) ? i.endTerm : '',
       deductionSchedule: i.deductionSchedule || 'SPLIT',
+      specialOnly: !!i.specialOnly,
+      overrides: (i.overrides || []).map(o => ({ date: o.date, amount: String(o.amount ?? '') })),
     });
     setShowForm(true);
   };
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!form.employeeId || !form.amount || !form.purpose.trim()) {
-      toast.error('Employee, amount and purpose are required');
+    if (!form.employeeId || !form.purpose.trim()) {
+      toast.error('Employee and purpose are required');
       return;
     }
+    if (!special && !form.amount) { toast.error('Amount is required'); return; }
     if (!recurring && !form.dateReleased) { toast.error('Date released is required'); return; }
     if (recurring && form.startTerm && form.endTerm && form.endTerm < form.startTerm) {
       toast.error('End date cannot be before start date');
       return;
     }
+
+    const lines = showSpecial ? form.overrides.filter(o => o.date || o.amount !== '') : [];
+    if (lines.some(o => !o.date || o.amount === '' || Number(o.amount) < 0)) {
+      toast.error('Each special deduction needs a date and an amount');
+      return;
+    }
+    if (special) {
+      if (lines.length === 0 || specialTotal <= 0) {
+        toast.error('Add at least one special deduction');
+        return;
+      }
+      if (lines.some(o => o.date < form.dateReleased)) {
+        toast.error('A special deduction cannot be before the date released');
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       let docPath = null;
@@ -134,12 +165,14 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
         if (!up.success) { toast.error('Document upload failed'); return; }
         docPath = up.data?.fileUrl || null;
       }
-      const amount = Number(form.amount);
+      const amount = special ? specialTotal : Number(form.amount);
       const start = recurring ? (form.startTerm || OPEN_START) : form.dateReleased;
       const months = 1;
       const body = {
         employeeId: Number(form.employeeId),
-        advanceType: form.advanceType,
+        advanceType: special ? 'ONE_TIME' : form.advanceType,
+        specialOnly: special,
+        overrides: lines.map(o => ({ date: o.date, amount: Number(o.amount) })),
         purpose: form.purpose.trim(),
         advanceAmount: amount,
         amortization: amount,
@@ -229,9 +262,15 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
     ['Outstanding balance', money(sum('remainingBalance'))],
   ];
 
-  const periodOf = (i) => i.advanceType === 'RECURRING'
-    ? `${i.startTerm} → ${isOpen(i.endTerm) ? 'Open' : i.endTerm}`
-    : `Released ${i.dateReleased || i.startTerm || '—'}`;
+  const amountNote = (i) => {
+    const n = (i.overrides || []).length;
+    if (i.specialOnly) return `open balance · ${n} special deduction${n === 1 ? '' : 's'}`;
+    const base = i.advanceType === 'RECURRING' ? 'per month' : 'within 1 month';
+    const per = i.advanceType !== 'RECURRING' || i.deductionSchedule === 'SPLIT'
+      ? `${money(Number(i.amount || 0) / 2)} per cutoff`
+      : `${money(i.amount)} on ${SCHEDULE_LABEL[i.deductionSchedule]}`;
+    return `${base} · ${per}${n ? ` · ${n} special` : ''}`;
+  };
 
   return (
     <div>
@@ -319,12 +358,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                   <td className="px-4 py-3 text-gray-700 max-w-[180px] truncate" title={i.purpose}>{i.purpose || '—'}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="font-medium text-gray-900">{money(i.amount)}</div>
-                    <div className="text-xs text-gray-500">
-                      {i.advanceType === 'RECURRING' ? 'per month' : 'within 1 month'} ·{' '}
-                      {i.advanceType !== 'RECURRING' || i.deductionSchedule === 'SPLIT'
-                        ? `${money(Number(i.amount || 0) / 2)} per cutoff`
-                        : `${money(i.amount)} on ${SCHEDULE_LABEL[i.deductionSchedule]}`}
-                    </div>
+                    <div className="text-xs text-gray-500">{amountNote(i)}</div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">
                     {i.advanceType === 'RECURRING' ? (
@@ -403,15 +437,26 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                     typeable={false}
                     value={form.advanceType}
                     options={Object.entries(TYPE_LABEL).map(([value, label]) => ({ value, label }))}
-                    onChange={(v) => update({ advanceType: v || 'ONE_TIME' })}
+                    onChange={(v) => update({ advanceType: v || 'ONE_TIME', specialOnly: false })}
                   />
                 </Field>
-                <Field label={recurring ? 'Monthly Deduction Amount' : 'Amount'} required>
-                  <MoneyInput className={inputCls} value={form.amount} onChange={set('amount')} />
+                <Field label={recurring ? 'Monthly Deduction Amount' : 'Amount'} required={!special}>
+                  {special ? (
+                    <input className={inputCls} readOnly value={money(specialTotal)} />
+                  ) : (
+                    <MoneyInput className={inputCls} value={form.amount} onChange={set('amount')} />
+                  )}
+                  <label className="flex items-center gap-2 mt-2 text-sm text-gray-700">
+                    <input type="checkbox" checked={special}
+                      onChange={(e) => toggleSpecial(e.target.checked)} />
+                    Open balance (amount = total of the special deductions)
+                  </label>
                   <p className="text-xs text-gray-500 mt-1">
-                    {recurring
-                      ? 'Deducted every month based on the schedule below.'
-                      : 'Deducted within 1 month, split across both cutoffs.'}
+                    {special
+                      ? 'Deducted only on the special deduction dates below. Filed as a one-time advance.'
+                      : recurring
+                        ? 'Deducted every month based on the schedule below.'
+                        : 'Deducted within 1 month, split across both cutoffs.'}
                   </p>
                 </Field>
                 {!recurring && (
@@ -449,6 +494,41 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
               </div>
             )}
 
+            {/* Section 3: Special deductions */}
+            {showSpecial && (
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider pb-2 mb-2 border-b border-gray-200">
+                  Special Deductions
+                </h3>
+                <p className="text-xs text-gray-500 mb-3">
+                  {special
+                    ? 'Pick the cutoff date and amount for each deduction. One per cutoff.'
+                    : 'On these cutoffs, this amount is deducted instead of the monthly amount. One per cutoff.'}
+                </p>
+                <div className="space-y-2">
+                  {form.overrides.map((o, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input type="date" className={inputCls} value={o.date}
+                        onChange={(e) => setLine(idx, { date: e.target.value })} />
+                      <MoneyInput className={inputCls} value={o.amount} placeholder="Amount"
+                        onChange={(e) => setLine(idx, { amount: e.target.value })} />
+                      <button type="button" onClick={() => removeLine(idx)} title="Remove"
+                        className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between mt-3">
+                  <button type="button" onClick={addLine}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-100">
+                    <Plus size={14} /> Add special deduction
+                  </button>
+                  {special && (
+                    <span className="text-sm text-gray-700">Total: <b>{money(specialTotal)}</b></span>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Last fields: Purpose, then Document at the very bottom */}
             <div className="space-y-4">
               <Field label="Purpose" required>
@@ -482,7 +562,8 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
               <div className="grid grid-cols-1 sm:grid-cols-3 sm:divide-x divide-gray-200 border-y border-gray-200 py-4">
                 <div className="sm:pr-6"><div className="text-sm text-gray-500">Amount</div><div className="text-2xl font-semibold mt-1">{money(v.amount)}</div></div>
                 <div className="sm:px-6"><div className="text-sm text-gray-500">Total Paid</div><div className="text-2xl font-semibold mt-1">{money(v.totalPaid)}</div></div>
-                <div className="sm:pl-6"><div className="text-sm text-gray-500">Balance</div><div className="text-2xl font-semibold mt-1">{v.advanceType === 'RECURRING' ? '—' : money(v.remainingBalance)}</div></div>              </div>
+                <div className="sm:pl-6"><div className="text-sm text-gray-500">Balance</div><div className="text-2xl font-semibold mt-1">{v.advanceType === 'RECURRING' ? '—' : money(v.remainingBalance)}</div></div>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 bg-white rounded-xl p-5 border border-gray-100">
                 <Detail label="Purpose">{v.purpose}</Detail>
                 <Detail label="Status">{v.status}</Detail>
@@ -494,7 +575,9 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                 ) : (
                   <Detail label="Date Released">{fmtDate(v.dateReleased || v.startTerm)}</Detail>
                 )}
-                <Detail label="Deduction">{money(v.amortization)}</Detail>
+                <Detail label="Deduction">
+                  {v.specialOnly ? 'Special deductions only (open balance)' : money(v.amortization)}
+                </Detail>
                 {v.advanceType === 'RECURRING' && (
                   <Detail label="Deduction Schedule">{SCHEDULE_LABEL[v.deductionSchedule]}</Detail>
                 )}
@@ -505,6 +588,31 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                     : v.docReference}
                 </Detail>
               </div>
+
+              {(v.overrides || []).length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-2">Special Deductions</h3>
+                  <div className="border border-gray-200 rounded-xl overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-white border-b border-gray-200">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-200">
+                        {v.overrides.map((o, idx) => (
+                          <tr key={idx}>
+                            <td className="px-4 py-2">{fmtDate(o.date)}</td>
+                            <td className="px-4 py-2 text-right">{money(o.amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-2 flex items-center gap-2"><Wallet size={14} /> Payment History</h3>
                 <div className="border border-gray-200 rounded-xl overflow-hidden">
