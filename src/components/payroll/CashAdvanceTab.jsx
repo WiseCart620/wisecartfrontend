@@ -91,17 +91,15 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
   const showSpecial = special || recurring;
   const specialTotal = form.overrides.reduce((s, o) => s + Number(o.amount || 0), 0);
 
-  const addLine = () => update({ overrides: [...form.overrides, { date: '', amount: '' }] });
+  const addLine = () => update({ overrides: [...form.overrides, { date: '', amount: '', remarks: '' }] });
   const setLine = (idx, patch) =>
     update({ overrides: form.overrides.map((o, i) => (i === idx ? { ...o, ...patch } : o)) });
   const removeLine = (idx) => update({ overrides: form.overrides.filter((_, i) => i !== idx) });
 
   const toggleSpecial = (checked) => {
-    // open balance has a fixed total, so it is filed as one-time
     update({
       specialOnly: checked,
-      advanceType: checked ? 'ONE_TIME' : form.advanceType,
-      overrides: checked && form.overrides.length === 0 ? [{ date: '', amount: '' }] : form.overrides,
+      overrides: checked && form.overrides.length === 0 ? [{ date: '', amount: '', remarks: '' }] : form.overrides,
     });
   };
 
@@ -120,7 +118,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
       endTerm: i.advanceType === 'RECURRING' && !isOpen(i.endTerm) ? i.endTerm : '',
       deductionSchedule: i.deductionSchedule || 'SPLIT',
       specialOnly: !!i.specialOnly,
-      overrides: (i.overrides || []).map(o => ({ date: o.date, amount: String(o.amount ?? '') })),
+      overrides: (i.overrides || []).map(o => ({ date: o.date, amount: String(o.amount ?? ''), remarks: o.remarks || '' })),
     });
     setShowForm(true);
   };
@@ -148,7 +146,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
         toast.error('Add at least one special deduction');
         return;
       }
-      if (lines.some(o => o.date < form.dateReleased)) {
+      if (!recurring && lines.some(o => o.date < form.dateReleased)) {
         toast.error('A special deduction cannot be before the date released');
         return;
       }
@@ -170,9 +168,9 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
       const months = 1;
       const body = {
         employeeId: Number(form.employeeId),
-        advanceType: special ? 'ONE_TIME' : form.advanceType,
+        advanceType: form.advanceType,
         specialOnly: special,
-        overrides: lines.map(o => ({ date: o.date, amount: Number(o.amount) })),
+        overrides: lines.map(o => ({ date: o.date, amount: Number(o.amount), remarks: (o.remarks || '').trim() || null })),
         purpose: form.purpose.trim(),
         advanceAmount: amount,
         amortization: amount,
@@ -180,7 +178,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
         dateReleased: recurring ? null : form.dateReleased,
         startTerm: start,
         endTerm: recurring ? (form.endTerm || OPEN_END) : form.dateReleased,
-        deductionSchedule: recurring ? form.deductionSchedule : 'SPLIT',
+        deductionSchedule: recurring && !special ? form.deductionSchedule : 'SPLIT',
         docReferrence: docPath ?? (editing ? editing.docReference || null : null),
       };
       const res = editing
@@ -326,7 +324,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full tbl-card">
         <div className="overflow-auto w-full tbl-scroll">
-         <table className="w-full min-w-0 [&_th]:!px-3 [&_td]:!px-3">
+          <table className="w-full min-w-0 [&_th]:!px-3 [&_td]:!px-3">
             <thead className="bg-white">
               <tr>
                 {['Employee', 'Type', 'Purpose', 'Amount', 'Period', 'Paid', 'Balance', 'Status'].map(h => (
@@ -437,7 +435,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                     typeable={false}
                     value={form.advanceType}
                     options={Object.entries(TYPE_LABEL).map(([value, label]) => ({ value, label }))}
-                    onChange={(v) => update({ advanceType: v || 'ONE_TIME', specialOnly: false })}
+                    onChange={(v) => update({ advanceType: v || 'ONE_TIME' })}
                   />
                 </Field>
                 <Field label={recurring ? 'Monthly Deduction Amount' : 'Amount'} required={!special}>
@@ -453,7 +451,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                   </label>
                   <p className="text-xs text-gray-500 mt-1">
                     {special
-                      ? 'Deducted only on the special deduction dates below. Filed as a one-time advance.'
+                      ? 'Deducted only on the special deduction dates below.'
                       : recurring
                         ? 'Deducted every month based on the schedule below.'
                         : 'Deducted within 1 month, split across both cutoffs.'}
@@ -507,11 +505,16 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                 </p>
                 <div className="space-y-2">
                   {form.overrides.map((o, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <input type="date" className={inputCls} value={o.date}
+                    <div key={idx} className="flex flex-wrap items-center gap-2">
+                      <input type="date" className={`${inputCls} !w-auto flex-1 min-w-[150px]`} value={o.date}
                         onChange={(e) => setLine(idx, { date: e.target.value })} />
-                      <MoneyInput className={inputCls} value={o.amount} placeholder="Amount"
-                        onChange={(e) => setLine(idx, { amount: e.target.value })} />
+                      <div className="flex-1 min-w-[130px]">
+                        <MoneyInput className={inputCls} value={o.amount} placeholder="Amount"
+                          onChange={(e) => setLine(idx, { amount: e.target.value })} />
+                      </div>
+                      <input type="text" maxLength={200} className={`${inputCls} !w-auto flex-[2] min-w-[200px]`}
+                        placeholder="Remarks (optional)" value={o.remarks || ''}
+                        onChange={(e) => setLine(idx, { remarks: e.target.value })} />
                       <button type="button" onClick={() => removeLine(idx)} title="Remove"
                         className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
                     </div>
@@ -598,6 +601,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                         <tr>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Remarks</th>
                         </tr>
                       </thead>
                       <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-200">
@@ -605,6 +609,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                           <tr key={idx}>
                             <td className="px-4 py-2">{fmtDate(o.date)}</td>
                             <td className="px-4 py-2 text-right">{money(o.amount)}</td>
+                            <td className="px-4 py-2 text-gray-600">{o.remarks || '—'}</td>
                           </tr>
                         ))}
                       </tbody>
