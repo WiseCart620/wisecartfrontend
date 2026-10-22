@@ -449,7 +449,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                   <label className="flex items-center gap-2 mt-2 text-sm text-gray-700">
                     <input type="checkbox" checked={special}
                       onChange={(e) => toggleSpecial(e.target.checked)} />
-                    Open balance (amount = total of the special deductions)
+                    Open balance
                   </label>
                   <p className="text-xs text-gray-500 mt-1">
                     {special
