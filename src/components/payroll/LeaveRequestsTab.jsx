@@ -41,7 +41,7 @@ const periodOf = (dateStr) => {
 
 const countsDays = (t) => t.status !== 'REJECTED' && t.status !== 'CANCELLED';
 
-const EMPTY = { employeeId: '', dateFrom: today(), dateTo: today(), reason: '', dateFiled: today() };
+const EMPTY = { employeeId: '', dateFrom: today(), dateTo: today(), reason: '', dateFiled: today(), halfDay: false };
 
 const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete }) => {
   const [items, setItems] = useState([]);
@@ -151,7 +151,11 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
   }, [granted, leaveTypes, form.employeeId]);
 
   const dayList = useMemo(() => weekdayList(form.dateFrom, form.dateTo), [form.dateFrom, form.dateTo]);
-  const totalDays = dayList.length;
+  // half day is only possible when From = To and it is a weekday
+  const singleDay = !!form.dateFrom && form.dateFrom === form.dateTo && dayList.length === 1;
+  const halfDay = form.halfDay && singleDay;
+  const totalDays = halfDay ? 0.5 : dayList.length;
+  const step = halfDay ? 0.5 : 1;
   const monthsSpan = new Set(dayList).size || 1;
 
   const orderedSel = leaveOptions.filter(o => selIds.includes(o.id)).map(o => o.id);
@@ -163,7 +167,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
     return Math.min(byMonth, o.balance);
   };
 
-  // default split: hand the days out one by one, skipping a leave that is full
+  // default split: hand the days out one step at a time, skipping a leave that is full
   useEffect(() => {
     const out = {};
     orderedSel.forEach(id => { out[id] = 0; });
@@ -173,19 +177,19 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
       progressed = false;
       for (const id of orderedSel) {
         const o = leaveOptions.find(x => x.id === id);
-        if (left > 0 && out[id] < capOf(o)) { out[id] += 1; left -= 1; progressed = true; }
+        if (left > 0 && out[id] + step <= capOf(o)) { out[id] += step; left -= step; progressed = true; }
       }
     }
     setAlloc(out);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selKey, totalDays]);
+  }, [selKey, totalDays, halfDay]);
 
   const toggleLeave = (id) =>
     setSelIds(p => (p.includes(id) ? p.filter(x => x !== id) : [...p, id]));
 
   // typing a number: the other ticked leaves shrink so the total never passes the date range
   const setDays = (id, v) => {
-    const d = Math.min(totalDays, Math.max(0, Math.floor(Number(v) || 0)));
+    const d = Math.min(totalDays, Math.max(0, Math.round((Number(v) || 0) / step) * step));
     setAlloc(prev => {
       const next = { ...prev, [id]: d };
       let left = totalDays - d;
@@ -227,6 +231,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
         dateTo: form.dateTo,
         reason: form.reason,
         dateFiled: form.dateFiled,
+        halfDay,
       });
       toast.success('Leave request filed');
       setShow(false);
@@ -491,7 +496,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
                             : 'Unpaid'}
                         </span>
                         {on && (
-                          <input type="number" min="0" step="1"
+                          <input type="number" min="0" step={step}
                             className={`ml-auto w-20 px-2 py-1 border rounded text-sm ${err ? 'border-red-500' : 'border-gray-300'}`}
                             value={alloc[o.id] ?? 0}
                             onChange={(e) => setDays(o.id, e.target.value)} />
@@ -509,6 +514,13 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
             <p className={`col-span-2 -mt-2 text-xs ${selIds.length > 0 && assigned !== totalDays ? 'text-red-600' : 'text-gray-500'}`}>
               Date range: {totalDays} day(s) (Mon to Fri){selIds.length > 0 ? ` · assigned ${assigned} of ${totalDays}` : ''}
             </p>
+            {singleDay && (
+              <label className="col-span-2 flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" checked={form.halfDay}
+                  onChange={(e) => setForm(p => ({ ...p, halfDay: e.target.checked }))} />
+                Half day (0.5)
+              </label>
+            )}
             <Field label="Reason" className="col-span-2">
               <textarea className={inputCls} rows={2} value={form.reason} onChange={set('reason')} />
             </Field>
