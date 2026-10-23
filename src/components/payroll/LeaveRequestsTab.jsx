@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Check, X as XIcon, Ban, Trash2, ChevronRight } from 'lucide-react';
+import { Plus, Check, X as XIcon, Ban, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { inputCls, today, Field, Modal } from './Shared';
@@ -9,10 +9,38 @@ import Pagination from '../common/Pagination';
 import usePagination from './usePagination';
 
 const STATUS = {
-  PENDING: 'bg-yellow-100 text-yellow-800',
-  APPROVED: 'bg-green-100 text-green-800',
-  REJECTED: 'bg-red-100 text-red-800',
-  CANCELLED: 'bg-gray-100 text-gray-600',
+  PENDING: { label: 'Pending', pill: 'bg-amber-50 text-amber-700 ring-amber-200', dot: 'bg-amber-500' },
+  APPROVED: { label: 'Approved', pill: 'bg-green-50 text-green-700 ring-green-200', dot: 'bg-green-500' },
+  REJECTED: { label: 'Rejected', pill: 'bg-red-50 text-red-700 ring-red-200', dot: 'bg-red-500' },
+  CANCELLED: { label: 'Cancelled', pill: 'bg-gray-100 text-gray-600 ring-gray-200', dot: 'bg-gray-400' },
+};
+
+const STATUS_TABS = [
+  { key: '', label: 'All' },
+  ...Object.entries(STATUS).map(([key, v]) => ({ key, label: v.label })),
+];
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// "2026-03-16" -> { y: 2026, m: 'Mar', d: 16 } (no timezone shifts)
+const parts = (s) => {
+  const [y, m, d] = String(s || '').split('-').map(Number);
+  return y ? { y, m: MONTHS[m - 1], d } : null;
+};
+
+const fmtDate = (s) => {
+  const p = parts(s);
+  return p ? `${p.m} ${p.d}, ${p.y}` : '—';
+};
+
+const fmtRange = (from, to) => {
+  const a = parts(from);
+  const b = parts(to);
+  if (!a) return '—';
+  if (!b || from === to) return `${a.m} ${a.d}, ${a.y}`;
+  if (a.y === b.y && a.m === b.m) return `${a.m} ${a.d} – ${b.d}, ${a.y}`;
+  if (a.y === b.y) return `${a.m} ${a.d} – ${b.m} ${b.d}, ${a.y}`;
+  return `${a.m} ${a.d}, ${a.y} – ${b.m} ${b.d}, ${b.y}`;
 };
 
 const weekdayList = (from, to) => {
@@ -25,23 +53,18 @@ const weekdayList = (from, to) => {
   return out;
 };
 
-
-const MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
-  'September', 'October', 'November', 'December'];
-
-const periodOf = (dateStr) => {
-  const [y, m, d] = String(dateStr).split('-').map(Number);
-  const first = d <= 15;
-  const last = new Date(y, m, 0).getDate();
-  return {
-    key: `${y}-${String(m).padStart(2, '0')}-${first ? 'A' : 'B'}`,
-    label: first ? `${MONTHS_FULL[m - 1]} 1 – 15, ${y}` : `${MONTHS_FULL[m - 1]} 16 – ${last}, ${y}`,
-  };
-};
-
-const countsDays = (t) => t.status !== 'REJECTED' && t.status !== 'CANCELLED';
-
 const EMPTY = { employeeId: '', dateFrom: today(), dateTo: today(), reason: '', dateFiled: today(), halfDay: false };
+
+const StatusPill = ({ status }) => {
+  const s = STATUS[status];
+  if (!s) return <span className="text-xs text-gray-500">{status}</span>;
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ring-1 ring-inset ${s.pill}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+      {s.label}
+    </span>
+  );
+};
 
 const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete }) => {
   const [items, setItems] = useState([]);
@@ -55,22 +78,13 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
   const [granted, setGranted] = useState([]);
   const [selIds, setSelIds] = useState([]);
   const [alloc, setAlloc] = useState({});
-  const [expanded, setExpanded] = useState(() => new Set());
-  const [expandedSub, setExpandedSub] = useState(() => new Set());
-  const toggleIn = (setter) => (key) => setter(prev => {
-    const next = new Set(prev);
-    next.has(key) ? next.delete(key) : next.add(key);
-    return next;
-  });
-  const toggle = toggleIn(setExpanded);
-  const toggleSub = toggleIn(setExpandedSub);
 
-  useEffect(() => { load(); }, [statusFilter]);
+  useEffect(() => { load(); }, []);
 
   const load = async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/leave-transactions${statusFilter ? `?status=${statusFilter}` : ''}`);
+      const res = await api.get('/leave-transactions');
       setItems(res.success ? res.data || [] : []);
     } catch (e) {
       toast.error('Failed to load leave requests');
@@ -79,7 +93,8 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
     }
   };
 
-  const filtered = useMemo(() => {
+  // everything except the status tab, so the tab counts stay meaningful
+  const base = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter(t => {
       if (q && !(t.employeeName || '').toLowerCase().includes(q)) return false;
@@ -89,36 +104,25 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
     });
   }, [items, search, fFrom, fTo]);
 
-  const groups = useMemo(() => {
-    const map = new Map();
-    filtered.forEach(t => {
-      if (!map.has(t.employeeId)) map.set(t.employeeId, { id: t.employeeId, name: t.employeeName, rows: [] });
-      map.get(t.employeeId).rows.push(t);
-    });
-    return Array.from(map.values())
-      .map(g => {
-        const subs = new Map();
-        g.rows.forEach(t => {
-          const p = periodOf(t.dateFrom);
-          const key = `${p.key}|${t.leaveTypeName}`;
-          if (!subs.has(key)) subs.set(key, { key, leaveTypeName: t.leaveTypeName, period: p.label, rows: [], days: 0 });
-          const s = subs.get(key);
-          s.rows.push(t);
-          if (countsDays(t)) s.days += Number(t.daysUsed) || 0;
-        });
-        const subList = Array.from(subs.values()).sort((a, b) => a.key.localeCompare(b.key));
-        subList.forEach(s => s.rows.sort((a, b) => String(a.dateFrom).localeCompare(String(b.dateFrom))));
-        return {
-          ...g,
-          subs: subList,
-          days: subList.reduce((n, s) => n + s.days, 0),
-          pending: g.rows.filter(r => r.status === 'PENDING').length,
-        };
-      })
-      .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  }, [filtered]);
+  const counts = useMemo(() => {
+    const c = { '': base.length, PENDING: 0, APPROVED: 0, REJECTED: 0, CANCELLED: 0 };
+    base.forEach(t => { if (c[t.status] !== undefined) c[t.status] += 1; });
+    return c;
+  }, [base]);
 
-  const { pageItems, paginationProps, totalItems } = usePagination(groups, `${search}|${statusFilter}|${fFrom}|${fTo}`);
+  const rows = useMemo(() => {
+    const list = statusFilter ? base.filter(t => t.status === statusFilter) : base;
+    return [...list].sort((a, b) =>
+      String(b.dateFrom).localeCompare(String(a.dateFrom)) || (b.id > a.id ? 1 : -1));
+  }, [base, statusFilter]);
+
+  const totalDays = useMemo(
+    () => rows.reduce((n, t) => (t.status === 'REJECTED' || t.status === 'CANCELLED' ? n : n + (Number(t.daysUsed) || 0)), 0),
+    [rows]
+  );
+
+  const { pageItems, paginationProps, totalItems } =
+    usePagination(rows, `${search}|${statusFilter}|${fFrom}|${fTo}`);
 
   const set = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
   const photoOf = Object.fromEntries((employees || []).map(e => [e.employeeId, e.photoUrl]));
@@ -154,7 +158,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
   // half day is only possible when From = To and it is a weekday
   const singleDay = !!form.dateFrom && form.dateFrom === form.dateTo && dayList.length === 1;
   const halfDay = form.halfDay && singleDay;
-  const totalDays = halfDay ? 0.5 : dayList.length;
+  const formTotalDays = halfDay ? 0.5 : dayList.length;
   const step = halfDay ? 0.5 : 1;
   const monthsSpan = new Set(dayList).size || 1;
 
@@ -171,7 +175,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
   useEffect(() => {
     const out = {};
     orderedSel.forEach(id => { out[id] = 0; });
-    let left = totalDays;
+    let left = formTotalDays;
     let progressed = true;
     while (left > 0 && progressed) {
       progressed = false;
@@ -182,17 +186,17 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
     }
     setAlloc(out);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selKey, totalDays, halfDay]);
+  }, [selKey, formTotalDays, halfDay]);
 
   const toggleLeave = (id) =>
     setSelIds(p => (p.includes(id) ? p.filter(x => x !== id) : [...p, id]));
 
   // typing a number: the other ticked leaves shrink so the total never passes the date range
   const setDays = (id, v) => {
-    const d = Math.min(totalDays, Math.max(0, Math.round((Number(v) || 0) / step) * step));
+    const d = Math.min(formTotalDays, Math.max(0, Math.round((Number(v) || 0) / step) * step));
     setAlloc(prev => {
       const next = { ...prev, [id]: d };
-      let left = totalDays - d;
+      let left = formTotalDays - d;
       orderedSel.filter(x => x !== id).forEach(x => {
         const keep = Math.min(prev[x] || 0, left);
         next[x] = keep;
@@ -214,7 +218,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
 
   const assigned = orderedSel.reduce((s, id) => s + (alloc[id] || 0), 0);
   const anyError = leaveOptions.filter(o => selIds.includes(o.id)).some(o => errOf(o));
-  const canSubmit = orderedSel.length > 0 && !anyError && assigned === totalDays && totalDays > 0;
+  const canSubmit = orderedSel.length > 0 && !anyError && assigned === formTotalDays && formTotalDays > 0;
 
   const submit = async (e) => {
     e.preventDefault();
@@ -267,6 +271,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
 
   return (
     <div>
+      {/* Filters */}
       <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-white pb-4">
         <div className="bg-white border border-gray-200 shadow-sm rounded-xl p-4 flex flex-col md:flex-row md:flex-wrap gap-4 md:items-end">
           <Field label="Employee" className="flex-1">
@@ -278,16 +283,6 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
               onChange={(v) => setSearch(v || '')}
             />
           </Field>
-          <Field label="Status">
-            <SearchableSelect
-              allLabel="All statuses"
-              typeable={false}
-              value={statusFilter}
-              options={Object.keys(STATUS).map(s => ({ value: s, label: s }))}
-              onChange={(v) => setStatusFilter(v)}
-            />
-          </Field>
-
           <Field label="From">
             <input type="date" className={inputCls} value={fFrom} max={fTo || undefined}
               onChange={(e) => setFFrom(e.target.value)} />
@@ -302,8 +297,6 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
               Clear dates
             </button>
           )}
-
-
           {canCreate && (
             <button onClick={openForm}
               className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm whitespace-nowrap">
@@ -313,149 +306,92 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
         </div>
       </div>
 
-      <div className="flex justify-between items-center mb-3">
-        <div className="text-sm text-gray-600">
-          {filtered.length} request{filtered.length === 1 ? '' : 's'} · {groups.length} employee{groups.length === 1 ? '' : 's'}
+      {/* Table card with status tabs */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden w-full tbl-card">
+        <div className="flex items-center justify-between gap-4 px-4 border-b border-gray-200 overflow-x-auto">
+          <div className="flex gap-6" role="tablist" aria-label="Filter by status">
+            {STATUS_TABS.map(t => {
+              const active = statusFilter === t.key;
+              return (
+                <button key={t.key || 'all'} role="tab" aria-selected={active}
+                  onClick={() => setStatusFilter(t.key)}
+                  className={`flex items-center gap-2 py-3 -mb-px text-sm border-b-2 whitespace-nowrap transition-colors
+                    ${active
+                      ? 'border-orange-600 text-gray-900 font-medium'
+                      : 'border-transparent text-gray-500 hover:text-gray-800'}`}>
+                  {t.label}
+                  <span className={`px-1.5 min-w-[20px] text-center text-xs rounded-full
+                    ${active ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'}`}>
+                    {counts[t.key] ?? 0}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="hidden md:block text-xs text-gray-500 whitespace-nowrap">
+            {totalDays} day{totalDays === 1 ? '' : 's'} counted in this view
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => setExpanded(new Set(pageItems.map(g => g.id)))}
-            className="px-3 py-2 text-xs border border-gray-300 rounded hover:bg-gray-100">Expand all</button>
-          <button onClick={() => { setExpanded(new Set()); setExpandedSub(new Set()); }}
-            className="px-3 py-2 text-xs border border-gray-300 rounded hover:bg-gray-100">Collapse all</button>
-        </div>
-      </div>
 
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full tbl-card">
         <div className="overflow-auto w-full tbl-scroll">
-          <table className="w-full min-w-[760px]">
-            <thead className="bg-white">
-              <tr>
-                <th className="w-10 px-3" />
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Requests</th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Total Days</th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Pending</th>
+          <table className="w-full min-w-[900px] text-sm">
+            <thead className="bg-gray-50">
+              <tr className="text-left text-xs font-medium text-gray-500">
+                <th className="px-4 py-3">Employee</th>
+                <th className="px-4 py-3">Leave type</th>
+                <th className="px-4 py-3">Dates</th>
+                <th className="px-4 py-3 text-right">Days</th>
+                <th className="px-4 py-3">Reason</th>
+                <th className="px-4 py-3">Filed</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-200">
+            <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr><td colSpan="5" className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
-              ) : groups.length === 0 ? (
-                <tr><td colSpan="5" className="px-4 py-8 text-center text-gray-500">No leave requests</td></tr>
-              ) : pageItems.map(g => {
-                const isOpen = expanded.has(g.id);
-                return (
-                  <React.Fragment key={g.id}>
-                    <tr onClick={() => toggle(g.id)}
-                      className={`cursor-pointer text-sm ${isOpen ? '[&>td]:bg-orange-50' : 'hover:[&>td]:bg-gray-50'}`}>
-                      <td className="px-3 py-3.5 text-center">
-                        <ChevronRight size={16} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
-                      </td>
-                      <td className="px-4 py-3.5 font-medium text-gray-900">
-                        <div className="flex items-center gap-3">
-                          <EmployeeAvatar name={g.name} photoUrl={photoOf[g.id]} />
-                          {g.name}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3.5 text-center">{g.rows.length}</td>
-                      <td className="px-4 py-3.5 text-center font-medium">{g.days}</td>
-                      <td className="px-4 py-3.5 text-center">
-                        {g.pending > 0
-                          ? <span className="px-2 py-1 text-xs font-medium rounded-full bg-amber-50 text-amber-700 ring-1 ring-amber-200">{g.pending}</span>
-                          : 0}
-                      </td>
-                    </tr>
-
-                    {isOpen && (
-                      <tr>
-                        <td />
-                        <td colSpan="4" className="px-4 py-3">
-                          <div className="space-y-2">
-                            {g.subs.map(s => {
-                              const subKey = `${g.id}|${s.key}`;
-                              const subOpen = expandedSub.has(subKey);
-                              const subPending = s.rows.filter(r => r.status === 'PENDING').length;
-                              const allApproved = s.rows.every(r => r.status === 'APPROVED');
-                              return (
-                                <div key={s.key} className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-                                  <div role="button" tabIndex={0}
-                                    onClick={() => toggleSub(subKey)}
-                                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleSub(subKey)}
-                                    className={`flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 cursor-pointer text-sm hover:bg-gray-50 ${subOpen ? 'bg-orange-50/60' : ''}`}>
-                                    <ChevronRight size={16}
-                                      className={`text-gray-400 transition-transform ${subOpen ? 'rotate-90' : ''}`} />
-                                    <span className="font-medium text-gray-900 min-w-[150px]">{s.leaveTypeName}</span>
-                                    <span className="text-gray-600 flex-1 min-w-[160px]">{s.period}</span>
-                                    <span className="text-xs text-gray-500">
-                                      {s.rows.length} request{s.rows.length === 1 ? '' : 's'}
-                                    </span>
-                                    <span className="font-semibold text-gray-900 min-w-[80px] text-right">
-                                      {s.days} day{s.days === 1 ? '' : 's'}
-                                    </span>
-                                    {subPending > 0 ? (
-                                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-amber-50 text-amber-700 ring-1 ring-amber-200">
-                                        {subPending} pending
-                                      </span>
-                                    ) : allApproved ? (
-                                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-50 text-green-700 ring-1 ring-green-200">
-                                        Approved
-                                      </span>
-                                    ) : null}
-                                  </div>
-
-                                  {subOpen && (
-                                    <div className="overflow-x-auto border-t border-gray-200">
-                                      <table className="w-full min-w-[560px] text-sm">
-                                        <thead className="border-b">
-                                          <tr>
-                                            {['From', 'To', 'Days', 'Reason', 'Status'].map(h => (
-                                              <th key={h} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">{h}</th>
-                                            ))}
-                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-100">
-                                          {s.rows.map(t => (
-                                            <tr key={t.id}>
-                                              <td className="px-4 py-2 whitespace-nowrap">{t.dateFrom}</td>
-                                              <td className="px-4 py-2 whitespace-nowrap">{t.dateTo}</td>
-                                              <td className="px-4 py-2 font-medium">{t.daysUsed}</td>
-                                              <td className="px-4 py-2 text-gray-600 max-w-[200px] truncate" title={t.reason || ''}>{t.reason || '—'}</td>
-                                              <td className="px-4 py-2">
-                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${STATUS[t.status] || ''}`}>{t.status}</span>
-                                              </td>
-                                              <td className="px-4 py-2 text-right">
-                                                <div className="flex justify-end gap-1">
-                                                  {canEdit && t.status === 'PENDING' && (
-                                                    <>
-                                                      <button onClick={() => act(t.id, 'approve')} title="Approve" className="p-2 text-green-600 hover:bg-green-50 rounded"><Check size={17} /></button>
-                                                      <button onClick={() => act(t.id, 'reject', 'Reject this request?')} title="Reject" className="p-2 text-orange-600 hover:bg-orange-50 rounded"><XIcon size={17} /></button>
-                                                    </>
-                                                  )}
-                                                  {canEdit && (t.status === 'PENDING' || t.status === 'APPROVED') && (
-                                                    <button onClick={() => act(t.id, 'cancel', 'Cancel this request?')} title="Cancel" className="p-2 text-gray-600 hover:bg-gray-100 rounded"><Ban size={17} /></button>
-                                                  )}
-                                                  {canDelete && t.status !== 'APPROVED' && (
-                                                    <button onClick={() => remove(t)} title="Delete" className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={17} /></button>
-                                                  )}
-                                                </div>
-                                              </td>
-                                            </tr>
-                                          ))}
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
+                <tr><td colSpan="8" className="px-4 py-10 text-center text-gray-500">Loading...</td></tr>
+              ) : rows.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="px-4 py-12 text-center text-gray-500">
+                    No leave requests match these filters.
+                  </td>
+                </tr>
+              ) : pageItems.map(t => (
+                <tr key={t.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <EmployeeAvatar name={t.employeeName} photoUrl={photoOf[t.employeeId]} />
+                      <span className="font-medium text-gray-900">{t.employeeName}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{t.leaveTypeName}</td>
+                  <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{fmtRange(t.dateFrom, t.dateTo)}</td>
+                  <td className="px-4 py-3 text-right font-medium text-gray-900 tabular-nums">{t.daysUsed}</td>
+                  <td className="px-4 py-3 text-gray-600 max-w-[220px] truncate" title={t.reason || ''}>{t.reason || '—'}</td>
+                  <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{fmtDate(t.dateFiled)}</td>
+                  <td className="px-4 py-3"><StatusPill status={t.status} /></td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-1">
+                      {canEdit && t.status === 'PENDING' && (
+                        <>
+                          <button onClick={() => act(t.id, 'approve')} title="Approve" aria-label="Approve"
+                            className="p-2 text-green-600 hover:bg-green-50 rounded"><Check size={17} /></button>
+                          <button onClick={() => act(t.id, 'reject', 'Reject this request?')} title="Reject" aria-label="Reject"
+                            className="p-2 text-orange-600 hover:bg-orange-50 rounded"><XIcon size={17} /></button>
+                        </>
+                      )}
+                      {canEdit && (t.status === 'PENDING' || t.status === 'APPROVED') && (
+                        <button onClick={() => act(t.id, 'cancel', 'Cancel this request?')} title="Cancel" aria-label="Cancel"
+                          className="p-2 text-gray-600 hover:bg-gray-100 rounded"><Ban size={17} /></button>
+                      )}
+                      {canDelete && t.status !== 'APPROVED' && (
+                        <button onClick={() => remove(t)} title="Delete" aria-label="Delete"
+                          className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={17} /></button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -511,8 +447,8 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
 
             <Field label="From" required><input type="date" className={inputCls} value={form.dateFrom} onChange={set('dateFrom')} /></Field>
             <Field label="To" required><input type="date" className={inputCls} value={form.dateTo} onChange={set('dateTo')} /></Field>
-            <p className={`col-span-2 -mt-2 text-xs ${selIds.length > 0 && assigned !== totalDays ? 'text-red-600' : 'text-gray-500'}`}>
-              Date range: {totalDays} day(s) (Mon to Fri){selIds.length > 0 ? ` · assigned ${assigned} of ${totalDays}` : ''}
+            <p className={`col-span-2 -mt-2 text-xs ${selIds.length > 0 && assigned !== formTotalDays ? 'text-red-600' : 'text-gray-500'}`}>
+              Date range: {formTotalDays} day(s) (Mon to Fri){selIds.length > 0 ? ` · assigned ${assigned} of ${formTotalDays}` : ''}
             </p>
             {singleDay && (
               <label className="col-span-2 flex items-center gap-2 text-sm text-gray-700">
