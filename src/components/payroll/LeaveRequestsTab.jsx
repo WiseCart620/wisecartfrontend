@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Check, X as XIcon, Ban, Trash2 } from 'lucide-react';
+import { Plus, Check, X as XIcon, Ban, Trash2, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { inputCls, today, Field, Modal } from './Shared';
@@ -53,6 +53,8 @@ const weekdayList = (from, to) => {
   return out;
 };
 
+const countsDays = (t) => t.status !== 'REJECTED' && t.status !== 'CANCELLED';
+
 const EMPTY = { employeeId: '', dateFrom: today(), dateTo: today(), reason: '', dateFiled: today(), halfDay: false };
 
 const StatusPill = ({ status }) => {
@@ -78,6 +80,8 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
   const [granted, setGranted] = useState([]);
   const [selIds, setSelIds] = useState([]);
   const [alloc, setAlloc] = useState({});
+  const [expanded, setExpanded] = useState(() => new Set());
+  const [tabByEmp, setTabByEmp] = useState({}); // employeeId -> selected leave type ('' = all)
 
   useEffect(() => { load(); }, []);
 
@@ -110,19 +114,41 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
     return c;
   }, [base]);
 
-  const rows = useMemo(() => {
+  // one group per employee; each group knows which leave types it has
+  const groups = useMemo(() => {
     const list = statusFilter ? base.filter(t => t.status === statusFilter) : base;
-    return [...list].sort((a, b) =>
-      String(b.dateFrom).localeCompare(String(a.dateFrom)) || (b.id > a.id ? 1 : -1));
+    const map = new Map();
+    list.forEach(t => {
+      if (!map.has(t.employeeId)) map.set(t.employeeId, { id: t.employeeId, name: t.employeeName, rows: [] });
+      map.get(t.employeeId).rows.push(t);
+    });
+    return Array.from(map.values())
+      .map(g => {
+        g.rows.sort((x, y) => String(y.dateFrom).localeCompare(String(x.dateFrom)));
+        const types = new Map();
+        g.rows.forEach(t => {
+          const k = t.leaveTypeName || 'Other';
+          if (!types.has(k)) types.set(k, { name: k, count: 0 });
+          types.get(k).count += 1;
+        });
+        return {
+          ...g,
+          types: Array.from(types.values()).sort((x, y) => x.name.localeCompare(y.name)),
+          days: g.rows.reduce((n, t) => (countsDays(t) ? n + (Number(t.daysUsed) || 0) : n), 0),
+          pending: g.rows.filter(t => t.status === 'PENDING').length,
+        };
+      })
+      .sort((x, y) => (x.name || '').localeCompare(y.name || ''));
   }, [base, statusFilter]);
 
-  const totalDays = useMemo(
-    () => rows.reduce((n, t) => (t.status === 'REJECTED' || t.status === 'CANCELLED' ? n : n + (Number(t.daysUsed) || 0)), 0),
-    [rows]
-  );
-
   const { pageItems, paginationProps, totalItems } =
-    usePagination(rows, `${search}|${statusFilter}|${fFrom}|${fTo}`);
+    usePagination(groups, `${search}|${statusFilter}|${fFrom}|${fTo}`);
+
+  const toggle = (id) => setExpanded(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
 
   const set = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
   const photoOf = Object.fromEntries((employees || []).map(e => [e.employeeId, e.photoUrl]));
@@ -306,7 +332,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
         </div>
       </div>
 
-      {/* Table card with status tabs */}
+      {/* Employee list with status tabs */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden w-full tbl-card">
         <div className="flex items-center justify-between gap-4 px-4 border-b border-gray-200 overflow-x-auto">
           <div className="flex gap-6" role="tablist" aria-label="Filter by status">
@@ -328,70 +354,143 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
               );
             })}
           </div>
-          <div className="hidden md:block text-xs text-gray-500 whitespace-nowrap">
-            {totalDays} day{totalDays === 1 ? '' : 's'} counted in this view
+          <div className="flex gap-2 py-2">
+            <button onClick={() => setExpanded(new Set(pageItems.map(g => g.id)))}
+              className="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-100 whitespace-nowrap">Expand all</button>
+            <button onClick={() => setExpanded(new Set())}
+              className="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-100 whitespace-nowrap">Collapse all</button>
           </div>
         </div>
 
         <div className="overflow-auto w-full tbl-scroll">
-          <table className="w-full min-w-[900px] text-sm">
+          <table className="w-full min-w-[640px] text-sm">
             <thead className="bg-gray-50">
-              <tr className="text-left text-xs font-medium text-gray-500">
-                <th className="px-4 py-3">Employee</th>
-                <th className="px-4 py-3">Leave type</th>
-                <th className="px-4 py-3">Dates</th>
-                <th className="px-4 py-3 text-right">Days</th>
-                <th className="px-4 py-3">Reason</th>
-                <th className="px-4 py-3">Filed</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+              <tr className="text-xs font-medium text-gray-500">
+                <th className="w-10 px-3" />
+                <th className="px-4 py-3 text-left">Employee</th>
+                <th className="px-4 py-3 text-center">Requests</th>
+                <th className="px-4 py-3 text-center">Total days</th>
+                <th className="px-4 py-3 text-center">Pending</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr><td colSpan="8" className="px-4 py-10 text-center text-gray-500">Loading...</td></tr>
-              ) : rows.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="px-4 py-12 text-center text-gray-500">
-                    No leave requests match these filters.
-                  </td>
-                </tr>
-              ) : pageItems.map(t => (
-                <tr key={t.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <EmployeeAvatar name={t.employeeName} photoUrl={photoOf[t.employeeId]} />
-                      <span className="font-medium text-gray-900">{t.employeeName}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{t.leaveTypeName}</td>
-                  <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{fmtRange(t.dateFrom, t.dateTo)}</td>
-                  <td className="px-4 py-3 text-right font-medium text-gray-900 tabular-nums">{t.daysUsed}</td>
-                  <td className="px-4 py-3 text-gray-600 max-w-[220px] truncate" title={t.reason || ''}>{t.reason || '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{fmtDate(t.dateFiled)}</td>
-                  <td className="px-4 py-3"><StatusPill status={t.status} /></td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-1">
-                      {canEdit && t.status === 'PENDING' && (
-                        <>
-                          <button onClick={() => act(t.id, 'approve')} title="Approve" aria-label="Approve"
-                            className="p-2 text-green-600 hover:bg-green-50 rounded"><Check size={17} /></button>
-                          <button onClick={() => act(t.id, 'reject', 'Reject this request?')} title="Reject" aria-label="Reject"
-                            className="p-2 text-orange-600 hover:bg-orange-50 rounded"><XIcon size={17} /></button>
-                        </>
-                      )}
-                      {canEdit && (t.status === 'PENDING' || t.status === 'APPROVED') && (
-                        <button onClick={() => act(t.id, 'cancel', 'Cancel this request?')} title="Cancel" aria-label="Cancel"
-                          className="p-2 text-gray-600 hover:bg-gray-100 rounded"><Ban size={17} /></button>
-                      )}
-                      {canDelete && t.status !== 'APPROVED' && (
-                        <button onClick={() => remove(t)} title="Delete" aria-label="Delete"
-                          className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={17} /></button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                <tr><td colSpan="5" className="px-4 py-10 text-center text-gray-500">Loading...</td></tr>
+              ) : groups.length === 0 ? (
+                <tr><td colSpan="5" className="px-4 py-12 text-center text-gray-500">No leave requests match these filters.</td></tr>
+              ) : pageItems.map(g => {
+                const isOpen = expanded.has(g.id);
+                const sel = g.types.some(x => x.name === tabByEmp[g.id]) ? tabByEmp[g.id] : '';
+                const shown = sel ? g.rows.filter(t => (t.leaveTypeName || 'Other') === sel) : g.rows;
+                const shownDays = shown.reduce((n, t) => (countsDays(t) ? n + (Number(t.daysUsed) || 0) : n), 0);
+                const tabs = [{ name: '', label: 'All', count: g.rows.length },
+                  ...g.types.map(x => ({ name: x.name, label: x.name, count: x.count }))];
+                return (
+                  <React.Fragment key={g.id}>
+                    <tr onClick={() => toggle(g.id)} aria-expanded={isOpen}
+                      className={`cursor-pointer ${isOpen ? 'bg-orange-50' : 'hover:bg-gray-50'}`}>
+                      <td className="px-3 py-3.5 text-center">
+                        <ChevronRight size={16} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <EmployeeAvatar name={g.name} photoUrl={photoOf[g.id]} />
+                          <span className="font-medium text-gray-900">{g.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5 text-center text-gray-700">{g.rows.length}</td>
+                      <td className="px-4 py-3.5 text-center font-medium text-gray-900">{g.days}</td>
+                      <td className="px-4 py-3.5 text-center">
+                        {g.pending > 0
+                          ? <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200">{g.pending}</span>
+                          : <span className="text-gray-400">0</span>}
+                      </td>
+                    </tr>
+
+                    {isOpen && (
+                      <tr>
+                        <td colSpan="5" className="p-0 bg-gray-50">
+                          <div className="px-4 sm:px-6 py-4 border-l-2 border-orange-500">
+                            <div className="flex gap-5 border-b border-gray-200 overflow-x-auto" role="tablist"
+                              aria-label={`Leave types for ${g.name}`}>
+                              {tabs.map(t => {
+                                const active = sel === t.name;
+                                return (
+                                  <button key={t.name || 'all'} role="tab" aria-selected={active}
+                                    onClick={() => setTabByEmp(p => ({ ...p, [g.id]: t.name }))}
+                                    className={`flex items-center gap-2 py-2 -mb-px text-sm border-b-2 whitespace-nowrap transition-colors
+                                      ${active
+                                        ? 'border-orange-600 text-gray-900 font-medium'
+                                        : 'border-transparent text-gray-500 hover:text-gray-800'}`}>
+                                    {t.label}
+                                    <span className={`px-1.5 min-w-[20px] text-center text-xs rounded-full
+                                      ${active ? 'bg-orange-100 text-orange-700' : 'bg-gray-200 text-gray-600'}`}>
+                                      {t.count}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            <div className="mt-3 bg-white border border-gray-200 rounded-lg overflow-hidden">
+                              <div className="overflow-x-auto">
+                                <table className="w-full min-w-[640px] text-sm">
+                                  <thead className="bg-gray-50 border-b border-gray-200">
+                                    <tr className="text-left text-xs font-medium text-gray-500">
+                                      {!sel && <th className="px-4 py-2.5">Leave type</th>}
+                                      <th className="px-4 py-2.5">Dates</th>
+                                      <th className="px-4 py-2.5 text-right">Days</th>
+                                      <th className="px-4 py-2.5">Reason</th>
+                                      <th className="px-4 py-2.5">Filed</th>
+                                      <th className="px-4 py-2.5">Status</th>
+                                      <th className="px-4 py-2.5 text-right">Actions</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-100">
+                                    {shown.map(t => (
+                                      <tr key={t.id} className="hover:bg-gray-50">
+                                        {!sel && <td className="px-4 py-2.5 text-gray-700 whitespace-nowrap">{t.leaveTypeName}</td>}
+                                        <td className="px-4 py-2.5 text-gray-700 whitespace-nowrap">{fmtRange(t.dateFrom, t.dateTo)}</td>
+                                        <td className="px-4 py-2.5 text-right font-medium text-gray-900 tabular-nums">{t.daysUsed}</td>
+                                        <td className="px-4 py-2.5 text-gray-600 max-w-[220px] truncate" title={t.reason || ''}>{t.reason || '—'}</td>
+                                        <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">{fmtDate(t.dateFiled)}</td>
+                                        <td className="px-4 py-2.5"><StatusPill status={t.status} /></td>
+                                        <td className="px-4 py-2.5">
+                                          <div className="flex justify-end gap-1">
+                                            {canEdit && t.status === 'PENDING' && (
+                                              <>
+                                                <button onClick={() => act(t.id, 'approve')} title="Approve" aria-label="Approve"
+                                                  className="p-2 text-green-600 hover:bg-green-50 rounded"><Check size={17} /></button>
+                                                <button onClick={() => act(t.id, 'reject', 'Reject this request?')} title="Reject" aria-label="Reject"
+                                                  className="p-2 text-orange-600 hover:bg-orange-50 rounded"><XIcon size={17} /></button>
+                                              </>
+                                            )}
+                                            {canEdit && (t.status === 'PENDING' || t.status === 'APPROVED') && (
+                                              <button onClick={() => act(t.id, 'cancel', 'Cancel this request?')} title="Cancel" aria-label="Cancel"
+                                                className="p-2 text-gray-600 hover:bg-gray-100 rounded"><Ban size={17} /></button>
+                                            )}
+                                            {canDelete && t.status !== 'APPROVED' && (
+                                              <button onClick={() => remove(t)} title="Delete" aria-label="Delete"
+                                                className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={17} /></button>
+                                            )}
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                              <div className="px-4 py-2 text-xs text-gray-500 bg-gray-50 border-t border-gray-200">
+                                {shown.length} request{shown.length === 1 ? '' : 's'} · {shownDays} day{shownDays === 1 ? '' : 's'}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
