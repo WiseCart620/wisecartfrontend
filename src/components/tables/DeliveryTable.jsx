@@ -16,6 +16,7 @@ const DeliveryTable = ({
   totalItems = 0,
   isLoading = false,
   productFilters = [],
+  statusFilter = '',
   grandTotals = { totalPrepared: 0, totalDelivered: 0 },
   canEdit = true,
   canDelete = true,
@@ -25,6 +26,13 @@ const DeliveryTable = ({
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const indexOfFirstItem = (currentPage - 1) * itemsPerPage + 1;
   const indexOfLastItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+  const totalPrepared = grandTotals?.totalPrepared || 0;
+  const totalDelivered = grandTotals?.totalDelivered || 0;
+  // Variance only makes sense when every row is DELIVERED; otherwise undelivered
+  // rows (PENDING/PREPARING/IN_TRANSIT) have no delivered qty and would inflate it.
+  const variance = totalPrepared - totalDelivered;
+  const showVariance = statusFilter === 'DELIVERED' && variance !== 0;
 
   const getStatusColor = (status) => {
     const colors = {
@@ -335,17 +343,48 @@ const DeliveryTable = ({
                   <span className="text-xs font-bold text-orange-700 uppercase tracking-wide">
                     Grand Total
                   </span>
+                  <div className="text-[10px] text-gray-500 leading-tight">
+                    All pages, excl. cancelled
+                  </div>
                 </td>
-                <td colSpan={4} className="px-2 py-2 text-right text-xs text-gray-500">
-                  All pages, excl. cancelled · Delivered:{' '}
-                  <span className="font-bold text-green-700">
-                    {(grandTotals?.totalDelivered || 0).toLocaleString('en-US')}
-                  </span>
+
+                {/* Warehouse → SKU columns: breakdown of the totals */}
+                <td colSpan={5} className="px-2 py-2 text-right">
+                  <div className="flex items-center justify-end gap-3 flex-wrap text-xs text-gray-600">
+                    <span>
+                      Prepared:{' '}
+                      <span className="font-bold text-orange-800">
+                        {totalPrepared.toLocaleString('en-US')}
+                      </span>
+                    </span>
+                    <span className="text-gray-300">|</span>
+                    <span>
+                      Delivered:{' '}
+                      <span className="font-bold text-green-700">
+                        {totalDelivered.toLocaleString('en-US')}
+                      </span>
+                    </span>
+                    {showVariance && (
+                      <>
+                        <span className="text-gray-300">|</span>
+                        <span
+                          title="Prepared minus delivered, from deliveries where the delivered qty differs from the prepared qty"
+                          className="font-semibold text-amber-700"
+                        >
+                          {variance > 0
+                            ? `Short: ${variance.toLocaleString('en-US')}`
+                            : `Over: ${Math.abs(variance).toLocaleString('en-US')}`}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </td>
-                <td className="px-2 py-2" />
+
+                {/* Qty column: prepared total, to line up with the per-row Qty (prepared) */}
                 <td className="px-2 py-2 text-right">
+                  <div className="text-[10px] uppercase tracking-wide text-gray-500 leading-tight">Prepared</div>
                   <span className="text-sm font-bold text-orange-800">
-                    {(grandTotals?.totalPrepared || 0).toLocaleString('en-US')}
+                    {totalPrepared.toLocaleString('en-US')}
                   </span>
                 </td>
                 <td colSpan={2} />
