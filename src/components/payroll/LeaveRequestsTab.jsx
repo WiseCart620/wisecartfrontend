@@ -364,7 +364,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
 
         <div className="overflow-auto w-full tbl-scroll">
           <table className="w-full min-w-[640px] text-sm">
-            <thead className="bg-gray-50">
+            <thead className="[&>tr>th]:sticky [&>tr>th]:top-0 [&>tr>th]:z-20 [&>tr>th]:h-10 [&>tr>th]:bg-gray-50 [&>tr>th]:shadow-[inset_0_-1px_0_0_#e5e7eb]">
               <tr className="text-xs font-medium text-gray-500">
                 <th className="w-10 px-3" />
                 <th className="px-4 py-3 text-left">Employee</th>
@@ -373,12 +373,11 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
                 <th className="px-4 py-3 text-center">Pending</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
-              {loading ? (
-                <tr><td colSpan="5" className="px-4 py-10 text-center text-gray-500">Loading...</td></tr>
-              ) : groups.length === 0 ? (
-                <tr><td colSpan="5" className="px-4 py-12 text-center text-gray-500">No leave requests match these filters.</td></tr>
-              ) : pageItems.map(g => {
+            {loading ? (
+              <tbody><tr><td colSpan="5" className="px-4 py-10 text-center text-gray-500">Loading...</td></tr></tbody>
+            ) : groups.length === 0 ? (
+              <tbody><tr><td colSpan="5" className="px-4 py-12 text-center text-gray-500">No leave requests match these filters.</td></tr></tbody>
+            ) : pageItems.map(g => {
                 const isOpen = expanded.has(g.id);
                 const sel = g.types.some(x => x.name === tabByEmp[g.id]) ? tabByEmp[g.id] : '';
                 const shown = sel ? g.rows.filter(t => (t.leaveTypeName || 'Other') === sel) : g.rows;
@@ -386,9 +385,9 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
                 const tabs = [{ name: '', label: 'All', count: g.rows.length },
                   ...g.types.map(x => ({ name: x.name, label: x.name, count: x.count }))];
                 return (
-                  <React.Fragment key={g.id}>
+                  <tbody key={g.id}>
                     <tr onClick={() => toggle(g.id)} aria-expanded={isOpen}
-                      className={`cursor-pointer ${isOpen ? 'bg-orange-50' : 'hover:bg-gray-50'}`}>
+                      className={`cursor-pointer [&>td]:sticky [&>td]:top-10 [&>td]:z-10 [&>td]:shadow-[inset_0_-1px_0_0_#e5e7eb] ${isOpen ? '[&>td]:bg-orange-50' : '[&>td]:bg-white hover:[&>td]:bg-gray-50'}`}>
                       <td className="px-3 py-3.5 text-center">
                         <ChevronRight size={16} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
                       </td>
@@ -409,7 +408,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
 
                     {isOpen && (
                       <tr>
-                        <td colSpan="5" className="p-0 bg-gray-50">
+                        <td colSpan="5" className="p-0 bg-gray-50 border-b border-gray-200">
                           <div className="px-4 sm:px-6 py-4 border-l-2 border-orange-500">
                             <div className="flex gap-5 border-b border-gray-200 overflow-x-auto" role="tablist"
                               aria-label={`Leave types for ${g.name}`}>
@@ -488,10 +487,9 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
                         </td>
                       </tr>
                     )}
-                  </React.Fragment>
+                  </tbody>
                 );
               })}
-            </tbody>
           </table>
         </div>
         {!loading && totalItems > 0 && <Pagination {...paginationProps} />}
