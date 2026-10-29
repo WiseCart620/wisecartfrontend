@@ -90,13 +90,13 @@ const ColumnTogglePanel = ({ visible, cols, onChange, onClose }) => {
       <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
         <button
           onClick={() => ALL_TOGGLE_KEYS.forEach((k) => !cols[k] && onChange(k))}
-          className="flex-1 text-xs py-1 rounded border border-gray-200 text-black hover:bg-white"
+          className="flex-1 text-xs py-1 rounded border border-gray-200 text-black hover:bg-gray-50"
         >
           Show all
         </button>
         <button
           onClick={() => ALL_TOGGLE_KEYS.forEach((k) => cols[k] && onChange(k))}
-          className="flex-1 text-xs py-1 rounded border border-gray-200 text-black hover:bg-white"
+          className="flex-1 text-xs py-1 rounded border border-gray-200 text-black hover:bg-gray-50"
         >
           Hide all
         </button>
@@ -202,7 +202,7 @@ const WarehouseStockTable = ({
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded border transition
               ${showColPanel || anyMovVisible
                 ? 'bg-gray-100 border-gray-400 text-black'
-                : 'bg-white border-gray-300 text-black hover:bg-white'
+                : 'bg-white border-gray-300 text-black hover:bg-gray-50'
               }`}
           >
             <SlidersHorizontal size={13} />
@@ -225,7 +225,7 @@ const WarehouseStockTable = ({
 
       <div className="border-t border-gray-100 overflow-auto max-h-[65vh] table-fit">
         <table className="w-full text-sm text-black" style={{ fontSize: '11px', tableLayout: 'fixed' }}>
-          <thead className="bg-white sticky top-0 z-10">
+          <thead className="bg-white sticky top-0 z-10 shadow-[0_1px_0_#d1d5db]">
             <tr>
               <th className="px-2 py-2 th-left col-name"><HeaderIcon Icon={Building} label="Warehouse" align="left" /></th>
               <th className="px-2 py-2 th-left col-prod"><HeaderIcon Icon={Package} label="Product" align="left" /></th>
@@ -279,7 +279,7 @@ const WarehouseStockTable = ({
                 const mv = getMovements(stock);
                 const isThisLoading = loadingId === stock.id;
                 return (
-                  <tr key={stock.id} className="hover:bg-white transition-colors text-black">
+                  <tr key={stock.id} className="hover:bg-gray-50 transition-colors text-black">
                     {/* Warehouse */}
                     <td className="px-2 py-2">
                       <div className="txt-block">
@@ -381,7 +381,7 @@ const WarehouseStockTable = ({
                           onClick={() => handleView(stock)}
                           disabled={isThisLoading}
                           title="View Transactions"
-                          className={`p-1.5 rounded transition text-black ${isThisLoading ? 'cursor-wait opacity-50' : 'hover:bg-gray-100'}`}
+                          className={`p-1.5 rounded transition text-gray-500 ${isThisLoading ? 'cursor-wait opacity-50' : 'hover:text-orange-600 hover:bg-orange-50'}`}
                         >
                           {isThisLoading ? <Loader2 size={14} className="animate-spin" /> : <Eye size={14} />}
                         </button>
@@ -389,7 +389,7 @@ const WarehouseStockTable = ({
                           <button
                             onClick={() => { setAdjustmentStock(stock); setShowAdjustmentModal(true); }}
                             title="Manual Adjustment"
-                            className="p-1.5 rounded text-black hover:bg-gray-100 transition"
+                            className="p-1.5 rounded text-gray-500 hover:text-orange-600 hover:bg-orange-50 transition"
                           >
                             <SlidersHorizontal size={14} />
                           </button>

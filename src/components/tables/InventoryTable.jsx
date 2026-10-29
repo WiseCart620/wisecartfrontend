@@ -1,7 +1,15 @@
 // src/components/tables/InventoryTable.jsx
 import React from 'react';
-import { Package, Check, Edit2, Trash2, Eye, Warehouse, Store } from 'lucide-react';
-import { getStatusColor, getTypeColor } from '../../constants/inventoryTypes';
+import { Package, Edit2, Trash2, Eye, Warehouse, Store } from 'lucide-react';
+
+const capitalize = (t) =>
+  t ? t.replace(/_/g, ' ').toLowerCase().replace(/^\w/, c => c.toUpperCase()) : '';
+
+const statusDot = {
+  CONFIRMED: 'bg-green-500',
+  PENDING: 'bg-amber-400',
+  CANCELLED: 'bg-red-500',
+};
 
 const InventoryTable = ({
   inventories,
@@ -61,20 +69,20 @@ const InventoryTable = ({
 
 
   return (
-    <div className="bg-white rounded-xl shadow-sm overflow-hidden table-panel">
+    <div className="bg-white overflow-hidden table-panel">
       <div className="overflow-x-auto table-fit">
         <table className="w-full min-w-[800px]">
-          <thead className="bg-white border-b border-gray-200">
+          <thead className="bg-white border-b border-gray-300">
             <tr>
-              <th className="px-3 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase">No.</th>
-              <th className="px-3 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase">Type</th>
-              <th className="px-3 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase">From → To</th>
-              <th className="px-3 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase">Date</th>
-              <th className="px-3 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase">Items</th>
-              <th className="px-3 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase">Qty</th>
-              <th className="px-3 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-3 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase">Timestamp</th>
-              <th className="px-3 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase">Actions</th>
+              <th className="px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">No.</th>
+              <th className="px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Type</th>
+              <th className="px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">From → To</th>
+              <th className="px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Date</th>
+              <th className="px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Items</th>
+              <th className="px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Qty</th>
+              <th className="px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+              <th className="px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Timestamp</th>
+              <th className="px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -131,14 +139,12 @@ const InventoryTable = ({
                 const tsDate = toManilaDate(ts);
 
                 return (
-                  <tr key={inventory.id} className="hover:bg-white transition">
+                  <tr key={inventory.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-3 py-2.5 whitespace-nowrap text-xs text-gray-500 font-medium">
                       {indexOfFirstItem + visibleInventories.indexOf(inventory) + 1}
                     </td>
-                    <td className="px-3 py-2.5 whitespace-nowrap">
-                      <span className={`px-2 py-1 inline-flex text-[11px] leading-5 font-semibold rounded-full ${getTypeColor(inventory.inventoryType)}`}>
-                        {inventory.inventoryType?.replace('_', ' ') || 'UNKNOWN'}
-                      </span>
+                    <td className="px-3 py-2.5 whitespace-nowrap text-xs text-gray-700">
+                      {capitalize(inventory.inventoryType) || 'Unknown'}
                     </td>
                     <td className="px-3 py-2.5 whitespace-nowrap text-xs text-gray-900">
                       <div className="flex items-center gap-1 flex-wrap">
@@ -187,22 +193,18 @@ const InventoryTable = ({
                       </div>
                     </td>
                     <td className="px-3 py-2.5 whitespace-nowrap">
-                      <span className="text-xs font-bold text-gray-700">
+                      <span className="text-xs text-gray-700">
                         {getRowItems(inventory).reduce((s, item) => s + (item.quantity || 0), 0).toLocaleString()}
                       </span>
                     </td>
                     <td className="px-3 py-2.5 whitespace-nowrap">
                       <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-1">
-                          <span className={`px-2 py-0.5 inline-flex text-[11px] leading-5 font-semibold rounded-full ${getStatusColor(inventory.status)}`}>
-                            {inventory.status || 'PENDING'}
-                          </span>
-                          {inventory.status === 'CONFIRMED' && (
-                            <Check size={16} className="text-green-600" />
-                          )}
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-1.5 h-1.5 rounded-full ${statusDot[inventory.status] || 'bg-gray-400'}`} />
+                          <span className="text-xs text-gray-700">{capitalize(inventory.status || 'PENDING')}</span>
                         </div>
                         {inventory.status === 'CONFIRMED' && inventory.confirmedBy && (
-                          <span className="text-xs text-gray-500">by {inventory.confirmedBy}</span>
+                          <span className="text-xs text-gray-400">by {inventory.confirmedBy}</span>
                         )}
                       </div>
                     </td>
@@ -236,20 +238,15 @@ const InventoryTable = ({
                               <button
                                 onClick={() => onView(inventory)}
                                 disabled={disableAll}
-                                className="flex items-center gap-1 px-2 py-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="View"
+                                className="px-2 py-1.5 text-[13px] font-medium text-orange-600 hover:text-orange-700 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
                               >
-                                {isViewLoading ? (
-                                  <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
-                                ) : (
-                                  <Eye size={18} />
-                                )}
+                                {isViewLoading ? 'Opening…' : 'View'}
                               </button>
                               {canEdit && (
                                 <button
                                   onClick={() => onEdit(inventory)}
                                   disabled={disableAll}
-                                  className={`flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition ${disableAll ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                  className={`flex items-center gap-2 px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded transition ${disableAll ? 'opacity-50 cursor-not-allowed' : ''}`}
                                   title={inventory.status === 'CONFIRMED' ? 'Edit (will check if modifiable)' : 'Edit'}
                                 >
                                   {isEditLoading ? (
@@ -263,7 +260,7 @@ const InventoryTable = ({
                                 <button
                                   onClick={() => onDelete(inventory.id)}
                                   disabled={disableAll}
-                                  className={`flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition ${disableAll ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                  className={`flex items-center gap-2 px-3 py-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition ${disableAll ? 'opacity-50 cursor-not-allowed' : ''}`}
                                   title={inventory.status === 'CONFIRMED' ? 'Delete (will check if modifiable)' : 'Delete'}
                                 >
                                   {isDeleteLoading ? (
@@ -285,7 +282,7 @@ const InventoryTable = ({
           </tbody>
           {!isLoading && (
             <tfoot>
-              <tr className="bg-gray-100 border-t-2 border-gray-300">
+              <tr className="bg-white border-t border-gray-300">
                 <td colSpan={4} className="px-3 py-2">
                   <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">
                     Page Totals ({visibleInventories.length} record{visibleInventories.length !== 1 ? 's' : ''})
@@ -298,7 +295,7 @@ const InventoryTable = ({
                   </div>
                 </td>
                 <td className="px-3 py-2 whitespace-nowrap">
-                  <span className="px-2 py-1 bg-gray-100 border border-gray-200 rounded text-xs font-bold text-gray-700">
+                  <span className="text-xs font-bold text-gray-800">
                     {grandTotalQty.toLocaleString()}
                   </span>
                 </td>

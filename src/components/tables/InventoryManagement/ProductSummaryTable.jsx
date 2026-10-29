@@ -45,14 +45,14 @@ const ProductSummaryTable = ({
   };
 
   const Badge = ({ value, prefix = '' }) => (
-    <span className="text-[13px] font-semibold text-black whitespace-nowrap">
+    <span className="text-[13px] text-black whitespace-nowrap">
       {prefix}
       {(value || 0).toLocaleString('en-US')}
     </span>
   );
 
   return (
-    <div className="bg-white rounded-xl shadow overflow-hidden mb-6 inv-table-panel">
+    <div className="bg-white overflow-hidden mb-6 inv-table-panel">
       <div className="px-4 py-2 border-b border-gray-200 bg-white">
         <h2 className="text-base font-semibold text-black flex items-center gap-2">
           <BarChart3 size={18} />
@@ -79,7 +79,7 @@ const ProductSummaryTable = ({
             <col className="w-[6.4%]" />
             <col className="w-[5%]" />
           </colgroup>
-          <thead className="bg-white">
+          <thead className="bg-white border-b border-gray-300">
             <tr>
               <th className="px-2 py-2 th-left"><HeaderIcon Icon={Package} label="Product" align="left" /></th>
               <th className="px-2 py-2 th-left"><HeaderIcon Icon={Barcode} label="SKU/UPC" align="left" /></th>
@@ -140,7 +140,7 @@ const ProductSummaryTable = ({
                 const isThisLoading = loadingId === uniqueKey;
 
                 return (
-                  <tr key={uniqueKey} className="hover:bg-white">
+                  <tr key={uniqueKey} className="hover:bg-gray-50">
                     <td className="px-2 py-2 align-top">
                       <div
                         className="font-normal text-black text-[13px] truncate leading-tight"
@@ -207,7 +207,7 @@ const ProductSummaryTable = ({
                         className={`inline-flex items-center gap-1 px-1.5 py-1 text-[12px] font-medium rounded transition whitespace-nowrap
                           ${isThisLoading
                             ? 'text-black opacity-50 cursor-wait'
-                            : 'text-black hover:bg-gray-100'
+                            : 'text-gray-500 hover:text-orange-600 hover:bg-orange-50'
                           }`}
                       >
                         {isThisLoading ? (

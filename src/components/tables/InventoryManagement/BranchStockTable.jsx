@@ -38,7 +38,7 @@ const BranchStockTable = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow overflow-hidden inv-table-panel">
+    <div className="bg-white overflow-hidden inv-table-panel">
       <div className="px-4 py-2 border-b border-gray-200 bg-white flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-base text-black flex items-center gap-2">
           <Store size={20} />
@@ -53,7 +53,7 @@ const BranchStockTable = ({
 
       <div className="overflow-auto max-h-[65vh] table-fit">
         <table className="w-full" style={{ tableLayout: 'fixed' }}>
-          <thead className="bg-white sticky top-0 z-10">
+          <thead className="bg-white sticky top-0 z-10 shadow-[0_1px_0_#d1d5db]">
             <tr>
               <th className="px-4 py-3 th-left col-name"><HeaderIcon Icon={Store} label="Branch" align="left" /></th>
               <th className="px-4 py-3 th-left col-prod"><HeaderIcon Icon={Package} label="Product" align="left" /></th>
@@ -98,7 +98,7 @@ const BranchStockTable = ({
               currentBranchStocks.map((stock) => {
                 const isThisLoading = loadingId === stock.id;
                 return (
-                  <tr key={stock.id} className="hover:bg-white">
+                  <tr key={stock.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <div className="txt-block">
                         <div className="font-normal text-black truncate" title={stock.branchName}>
@@ -183,7 +183,7 @@ const BranchStockTable = ({
                         className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition
                           ${isThisLoading
                             ? 'text-black opacity-50 cursor-wait'
-                            : 'text-black hover:bg-gray-100'
+                            : 'text-gray-500 hover:text-orange-600 hover:bg-orange-50'
                           }`}
                       >
                         {isThisLoading ? (
