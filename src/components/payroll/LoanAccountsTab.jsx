@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Wallet, Ban, Paperclip, Eye, Edit2, ChevronDown, ChevronRight, Trash2, RotateCcw } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { Plus, Wallet, Ban, Paperclip, Eye, Edit2, ChevronDown, ChevronRight, Trash2, RotateCcw, MoreVertical } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { inputCls, money, today, Field, Modal, STATUS_STYLE, MoneyInput } from './Shared';
@@ -71,6 +72,56 @@ const STATUS_BADGE = {
   CANCELLED: 'bg-gray-100 text-gray-600 ring-1 ring-gray-200',
 };
 const STATUS_LABEL = { ACTIVE: 'Active', PAID: 'Paid', CANCELLED: 'Cancelled' };
+
+const RowMenu = ({ items }) => {
+  const [pos, setPos] = useState(null);
+  const visible = items.filter(Boolean);
+
+  useEffect(() => {
+    if (!pos) return;
+    const close = () => setPos(null);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    return () => {
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+    };
+  }, [pos]);
+
+  if (!visible.length) return null;
+
+  const open = (e) => {
+    e.stopPropagation();
+    const r = e.currentTarget.getBoundingClientRect();
+    setPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+  };
+
+  return (
+    <>
+      <button onClick={open} aria-label="More actions"
+        className="p-2 text-gray-500 hover:bg-gray-100 rounded-md"><MoreVertical size={17} /></button>
+      {pos && createPortal(
+        <>
+          <div className="fixed inset-0 z-[60]" onClick={() => setPos(null)} />
+          <div className="fixed z-[70] w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1"
+            style={{ top: pos.top, right: pos.right }}>
+            {visible.map(it => {
+              const Icon = it.icon;
+              return (
+                <button key={it.label} onClick={() => { setPos(null); it.onClick(); }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left
+                    ${it.danger ? 'text-red-600 hover:bg-red-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                  <Icon size={15} /> {it.label}
+                </button>
+              );
+            })}
+          </div>
+        </>,
+        document.body
+      )}
+    </>
+  );
+};
 
 const Detail = ({ label, children }) => (
   <div>
@@ -433,17 +484,17 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
         const act = filtered.filter(r => r.status === 'ACTIVE');
         const sum = (k) => act.reduce((s, r) => s + Number(r[k] || 0), 0);
         const stats = [
-          ['Active loans', act.length],
-          ['Employees with loans', new Set(act.map(r => r.employeeId)).size],
-          ['Total loan amount', money(sum('amount'))],
-          ['Outstanding balance', money(sum('remainingBalance'))],
+          ['Active loans', act.length, 'border-t-orange-500'],
+          ['Employees with loans', new Set(act.map(r => r.employeeId)).size, 'border-t-blue-500'],
+          ['Total loan amount', money(sum('amount')), 'border-t-green-500'],
+          ['Outstanding balance', money(sum('remainingBalance')), 'border-t-purple-500'],
         ];
         return (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            {stats.map(([label, val]) => (
-              <div key={label} className="bg-white rounded-xl shadow-sm px-5 py-4">
-                <div className="text-xs text-gray-500">{label}</div>
-                <div className="text-xl font-semibold text-gray-900 mt-1">{val}</div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+            {stats.map(([label, val, accent]) => (
+              <div key={label} className={`bg-white rounded-xl border border-gray-200 border-t-4 ${accent} px-5 py-4`}>
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</div>
+                <div className="text-2xl font-semibold text-gray-900 mt-1.5 tabular-nums">{val}</div>
               </div>
             ))}
           </div>
@@ -460,7 +511,7 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
       <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full tbl-card">
         <div className="overflow-auto w-full tbl-scroll">
           <table className="w-full min-w-[1000px]">
-            <thead className="bg-white">
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 {[groupBy === 'agency' ? 'Agency' : 'Employee', 'Loan', 'Amount', 'Term', 'Paid', 'Balance', 'Status'].map(h => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
@@ -473,7 +524,7 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
                 <tr><td colSpan="11" className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
               ) : filtered.length === 0 ? (
                 <tr><td colSpan="11" className="px-4 py-8 text-center text-gray-500">
-                  {hasFilters ? 'No loans match the filters' : 'No records'}
+                  {hasFilters ? 'No loans match the filters' : 'No loans yet. Click Add Loan to create the first one.'}
                 </td></tr>
               ) : pageItems.map(g => {
                 const isOpen = expanded.has(g.employeeId);
@@ -553,31 +604,32 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
                               <div className="text-gray-400">to {fmtShort(i.endTerm)}</div>
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap">{money(i.totalPaid)}</td>
-                            <td className="px-4 py-3 whitespace-nowrap font-medium">{money(i.remainingBalance)}</td>
+                            <td className="px-4 py-3 whitespace-nowrap font-medium">
+                              <div className="tabular-nums">{money(i.remainingBalance)}</div>
+                              <div className="mt-1 h-1.5 w-24 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-green-500 rounded-full"
+                                  style={{ width: `${Number(i.amount) > 0 ? Math.min(100, Math.round((Number(i.totalPaid || 0) / Number(i.amount)) * 100)) : 0}%` }} />
+                              </div>
+                            </td>
                             <td className="px-4 py-3 whitespace-nowrap">
                               <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${STATUS_BADGE[i.status] || 'bg-gray-100 text-gray-700'}`}>
                                 {STATUS_LABEL[i.status] || i.status}
                               </span>
                             </td>
                             <td className="px-4 py-3 text-right whitespace-nowrap">
-                              <div className="flex justify-end gap-1">
-                                {i.docReference && i.docReference.startsWith('contracts/') && (
-                                  <button onClick={() => viewDoc(i.docReference)} title="View document" className="p-2 text-gray-600 hover:bg-gray-100 rounded"><Paperclip size={17} /></button>
-                                )}
-                                <button onClick={() => openView(i)} title="View details" className="p-2 text-gray-700 hover:bg-gray-100 rounded"><Eye size={17} /></button>
-                                {canEdit && i.status === 'ACTIVE' && (
-                                  <button onClick={() => openEdit(i)} title="Edit loan" className="p-2 text-orange-600 hover:bg-orange-50 rounded"><Edit2 size={17} /></button>
-                                )}
-                                <button onClick={() => openPayments(i)} title="Payment history" className="p-2 text-purple-600 hover:bg-purple-50 rounded"><Wallet size={17} /></button>
-                                {canEdit && i.status === 'ACTIVE' && (
-                                  <button onClick={() => cancel(i)} title="Cancel" className="p-2 text-red-600 hover:bg-red-50 rounded"><Ban size={17} /></button>
-                                )}
-                                {canEdit && i.status === 'CANCELLED' && (
-                                  <>
-                                    <button onClick={() => reactivate(i)} title="Enable again" className="p-2 text-green-600 hover:bg-green-50 rounded"><RotateCcw size={17} /></button>
-                                    <button onClick={() => remove(i)} title="Delete" className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={17} /></button>
-                                  </>
-                                )}
+                              <div className="flex justify-end items-center gap-1">
+                                <button onClick={() => openView(i)}
+                                  className="px-3 py-1.5 text-xs font-medium text-orange-700 border border-orange-200 rounded-md hover:bg-orange-50">
+                                  View
+                                </button>
+                                <RowMenu items={[
+                                  i.docReference && i.docReference.startsWith('contracts/') && { label: 'View document', icon: Paperclip, onClick: () => viewDoc(i.docReference) },
+                                  canEdit && i.status === 'ACTIVE' && { label: 'Edit loan', icon: Edit2, onClick: () => openEdit(i) },
+                                  { label: 'Payment history', icon: Wallet, onClick: () => openPayments(i) },
+                                  canEdit && i.status === 'ACTIVE' && { label: 'Cancel loan', icon: Ban, danger: true, onClick: () => cancel(i) },
+                                  canEdit && i.status === 'CANCELLED' && { label: 'Enable again', icon: RotateCcw, onClick: () => reactivate(i) },
+                                  canEdit && i.status === 'CANCELLED' && { label: 'Delete', icon: Trash2, danger: true, onClick: () => remove(i) },
+                                ]} />
                               </div>
                             </td>
                           </tr>
@@ -739,6 +791,28 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
                 <p className="text-xs text-gray-500 mt-1">PDF, Word or image. Also saved under the employee's Documents.</p>
               </Field>
             </FormSection>
+
+            {(() => {
+              const total = Number(form.amount || 0) + Number(form.interest || 0);
+              const per = form.deductionSchedule === 'SPLIT'
+                ? Number(form.cutoffAmount || 0) : Number(form.amortization || 0);
+              const cells = [
+                ['Total payable', money(total)],
+                [form.deductionSchedule === 'SPLIT' ? 'Per cutoff' : 'Per deduction', money(per)],
+                ['Number of deductions', form.durationMonths || '—'],
+                ['Last deduction', fmtShort(form.endTerm)],
+              ];
+              return (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-gray-200 border border-gray-200 rounded-xl overflow-hidden">
+                  {cells.map(([l, v]) => (
+                    <div key={l} className="bg-gray-50 px-4 py-3">
+                      <div className="text-xs text-gray-500">{l}</div>
+                      <div className="text-sm font-semibold text-gray-900 mt-0.5 tabular-nums">{v}</div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
 
             {/* Footer */}
             <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
