@@ -73,6 +73,14 @@ const STATUS_BADGE = {
 };
 const STATUS_LABEL = { ACTIVE: 'Active', PAID: 'Paid', CANCELLED: 'Cancelled' };
 
+const STATUS_DOT = { ACTIVE: 'bg-green-500', PAID: 'bg-gray-400', CANCELLED: 'bg-gray-300' };
+const StatusDot = ({ status, label }) => (
+  <span className="inline-flex items-center gap-2 text-xs font-medium text-gray-700">
+    <span className={`w-2 h-2 rounded-full ${STATUS_DOT[status] || 'bg-gray-300'}`} />
+    {label || STATUS_LABEL[status] || status}
+  </span>
+);
+
 const RowMenu = ({ items }) => {
   const [pos, setPos] = useState(null);
   const visible = items.filter(Boolean);
@@ -484,17 +492,17 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
         const act = filtered.filter(r => r.status === 'ACTIVE');
         const sum = (k) => act.reduce((s, r) => s + Number(r[k] || 0), 0);
         const stats = [
-          ['Active loans', act.length, 'border-t-orange-500'],
-          ['Employees with loans', new Set(act.map(r => r.employeeId)).size, 'border-t-blue-500'],
-          ['Total loan amount', money(sum('amount')), 'border-t-green-500'],
-          ['Outstanding balance', money(sum('remainingBalance')), 'border-t-purple-500'],
+          ['Active loans', act.length],
+          ['Employees with loans', new Set(act.map(r => r.employeeId)).size],
+          ['Total loan amount', money(sum('amount'))],
+          ['Outstanding balance', money(sum('remainingBalance'))],
         ];
         return (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-            {stats.map(([label, val, accent]) => (
-              <div key={label} className={`bg-white rounded-xl border border-gray-200 border-t-4 ${accent} px-5 py-4`}>
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</div>
-                <div className="text-2xl font-semibold text-gray-900 mt-1.5 tabular-nums">{val}</div>
+          <div className="grid grid-cols-2 md:grid-cols-4 bg-white border border-gray-200 rounded-lg divide-x divide-gray-200 mb-5">
+            {stats.map(([label, val]) => (
+              <div key={label} className="px-5 py-4">
+                <div className="text-xs text-gray-500">{label}</div>
+                <div className="text-xl font-semibold text-gray-900 mt-1 tabular-nums">{val}</div>
               </div>
             ))}
           </div>
@@ -508,118 +516,115 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
           className="px-3 py-2 text-xs border border-gray-300 rounded hover:bg-gray-100">Collapse all</button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full tbl-card">
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden w-full tbl-card">
         <div className="overflow-auto w-full tbl-scroll">
-          <table className="w-full min-w-[1000px]">
-            <thead className="bg-gray-50 border-b border-gray-200">
+          <table className="w-full min-w-[960px] text-sm">
+            <thead className="[&>tr>th]:sticky [&>tr>th]:top-0 [&>tr>th]:z-20 [&>tr>th]:h-10 [&>tr>th]:bg-gray-50 [&>tr>th]:shadow-[inset_0_-1px_0_0_#e5e7eb]">
               <tr>
-                {[groupBy === 'agency' ? 'Agency' : 'Employee', 'Loan', 'Amount', 'Term', 'Paid', 'Balance', 'Status'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                {[groupBy === 'agency' ? 'Agency / Loan' : 'Employee / Loan', 'Amount', 'Term', 'Paid', 'Balance', 'Status'].map(h => (
+                  <th key={h} className="px-4 text-left text-xs font-medium text-gray-500 whitespace-nowrap">{h}</th>
                 ))}
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-4 text-right text-xs font-medium text-gray-500">Actions</th>
               </tr>
             </thead>
-            <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-200">
-              {loading ? (
-                <tr><td colSpan="11" className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
-              ) : filtered.length === 0 ? (
-                <tr><td colSpan="11" className="px-4 py-8 text-center text-gray-500">
-                  {hasFilters ? 'No loans match the filters' : 'No loans yet. Click Add Loan to create the first one.'}
-                </td></tr>
-              ) : pageItems.map(g => {
-                const isOpen = expanded.has(g.employeeId);
-                const activeRows = g.rows.filter(r => r.status === 'ACTIVE');
-                const cancelledN = g.rows.filter(r => r.status === 'CANCELLED').length;
-                const monthly = activeRows.reduce((s, r) => s + Number(r.amortization || 0), 0);
-                const initials = (g.employeeName || '?').split(' ').filter(Boolean).slice(0, 2)
-                  .map(w => w[0]).join('').toUpperCase();
-                const tot = g.rows.filter(r => r.status !== 'CANCELLED').reduce((a, r) => ({
-                  amount: a.amount + Number(r.amount || 0),
-                  paid: a.paid + Number(r.totalPaid || 0),
-                  bal: a.bal + Number(r.remainingBalance || 0),
-                }), { amount: 0, paid: 0, bal: 0 });
-                return (
-                  <React.Fragment key={g.employeeId}>
-                    <tr
-                      className={`cursor-pointer text-sm transition-colors border-l-4 [&>td]:sticky [&>td]:top-[39px] [&>td]:z-[5] ${isOpen ? '[&>td]:bg-orange-50 border-orange-600' : '[&>td]:bg-white hover:[&>td]:bg-white border-transparent'}`}
-                      onClick={() => toggle(g.employeeId)}>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          {isOpen ? <ChevronDown size={16} className="text-gray-500" /> : <ChevronRight size={16} className="text-gray-500" />}
-                          {groupBy === 'employee' && photoOf[g.employeeId] ? (
-                            <SecureImage
-                              path={photoOf[g.employeeId]}
-                              alt={g.employeeName}
-                              className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                              fallback={<div className="w-8 h-8 rounded-full bg-orange-100 text-orange-700 text-xs font-semibold flex items-center justify-center flex-shrink-0">{initials}</div>}
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-700 text-xs font-semibold flex items-center justify-center flex-shrink-0">{initials}</div>
-                          )}
-                          <span className="font-semibold text-gray-900">{g.employeeName}</span>
+
+            {loading ? (
+              <tbody><tr><td colSpan="7" className="px-4 py-10 text-center text-gray-500">Loading...</td></tr></tbody>
+            ) : filtered.length === 0 ? (
+              <tbody><tr><td colSpan="7" className="px-4 py-12 text-center text-gray-500">
+                {hasFilters ? 'No loans match the filters' : 'No loans yet. Click Add Loan to create the first one.'}
+              </td></tr></tbody>
+            ) : pageItems.map(g => {
+              const isOpen = expanded.has(g.employeeId);
+              const activeRows = g.rows.filter(r => r.status === 'ACTIVE');
+              const cancelledN = g.rows.filter(r => r.status === 'CANCELLED').length;
+              const monthly = activeRows.reduce((s, r) => s + Number(r.amortization || 0), 0);
+              const initials = (g.employeeName || '?').split(' ').filter(Boolean).slice(0, 2)
+                .map(w => w[0]).join('').toUpperCase();
+              const tot = g.rows.filter(r => r.status !== 'CANCELLED').reduce((a, r) => ({
+                amount: a.amount + Number(r.amount || 0),
+                paid: a.paid + Number(r.totalPaid || 0),
+                bal: a.bal + Number(r.remainingBalance || 0),
+              }), { amount: 0, paid: 0, bal: 0 });
+              const avatarFallback = (
+                <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold flex items-center justify-center flex-shrink-0">{initials}</div>
+              );
+              return (
+                <tbody key={g.employeeId}>
+                  <tr onClick={() => toggle(g.employeeId)} aria-expanded={isOpen}
+                    className={`cursor-pointer [&>td]:sticky [&>td]:top-10 [&>td]:z-10 [&>td]:shadow-[inset_0_-1px_0_0_#e5e7eb] ${isOpen ? '[&>td]:bg-gray-50' : '[&>td]:bg-white hover:[&>td]:bg-gray-50'}`}>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <ChevronRight size={16} className={`text-gray-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-90' : ''}`} />
+                        {groupBy === 'employee' && photoOf[g.employeeId] ? (
+                          <SecureImage path={photoOf[g.employeeId]} alt={g.employeeName}
+                            className="w-8 h-8 rounded-full object-cover flex-shrink-0" fallback={avatarFallback} />
+                        ) : avatarFallback}
+                        <div className="min-w-0">
+                          <div className="font-semibold text-gray-900 truncate">{g.employeeName}</div>
+                          <div className="text-xs text-gray-500">
+                            {activeRows.length} active loan{activeRows.length === 1 ? '' : 's'}
+                            {cancelledN > 0 ? ` · ${cancelledN} cancelled` : ''}
+                          </div>
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="text-sm text-gray-800">{activeRows.length} active loan{activeRows.length === 1 ? '' : 's'}</div>
-                        {cancelledN > 0 && <div className="text-xs text-gray-400">{cancelledN} cancelled</div>}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="font-medium text-gray-900">{money(tot.amount)}</div>
-                        {monthly > 0 && <div className="text-xs text-gray-500">{money(monthly)} per month</div>}
-                      </td>
-                      <td />
-                      <td className="px-4 py-3 whitespace-nowrap text-gray-700">{money(tot.paid)}</td>
-                      <td className="px-4 py-3 whitespace-nowrap font-bold text-gray-900">{money(tot.bal)}</td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${activeRows.length ? STATUS_BADGE.ACTIVE : STATUS_BADGE.CANCELLED}`}>
-                          {activeRows.length ? 'Active' : 'No active loans'}
-                        </span>
-                      </td>
-                      <td />
-                    </tr>
-                    {isOpen && subGroups(g.rows).map(sg => (
-                      <React.Fragment key={sg.name}>
-                        {groupBy === 'employee' && (
-                          <tr className="bg-orange-50 text-xs font-semibold text-gray-700">
-                            <td colSpan="11" className="px-4 py-2 pl-10">
-                              {sg.name} · {sg.rows.length} loan{sg.rows.length === 1 ? '' : 's'} · Balance {money(sg.rows.filter(r => r.status !== 'CANCELLED').reduce((s, r) => s + Number(r.remainingBalance || 0), 0))}
-                            </td>
-                          </tr>
-                        )}
-                        {sg.rows.map(i => (
-                          <tr key={i.id} className="hover:bg-white text-sm">
-                            <td className="px-4 py-3 pl-12 text-gray-700 whitespace-nowrap">{groupBy === 'agency' ? i.employeeName : ''}</td>
-                            <td className="px-4 py-3">
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="font-semibold text-gray-900 tabular-nums">{money(tot.amount)}</div>
+                      {monthly > 0 && <div className="text-xs text-gray-500 tabular-nums">{money(monthly)} per month</div>}
+                    </td>
+                    <td className="px-4 py-3" />
+                    <td className="px-4 py-3 whitespace-nowrap text-gray-700 tabular-nums">{money(tot.paid)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap font-semibold text-gray-900 tabular-nums">{money(tot.bal)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <StatusDot status={activeRows.length ? 'ACTIVE' : 'CANCELLED'}
+                        label={activeRows.length ? 'Active' : 'No active loans'} />
+                    </td>
+                    <td className="px-4 py-3" />
+                  </tr>
+
+                  {isOpen && subGroups(g.rows).map(sg => (
+                    <React.Fragment key={sg.name}>
+                      {groupBy === 'employee' && (
+                        <tr>
+                          <td colSpan="7" className="pl-[88px] pr-4 py-2 bg-gray-50 border-b border-gray-200 text-[11px] font-medium uppercase tracking-wide text-gray-500">
+                            {sg.name} · {sg.rows.length} loan{sg.rows.length === 1 ? '' : 's'} · Balance {money(sg.rows.filter(r => r.status !== 'CANCELLED').reduce((s, r) => s + Number(r.remainingBalance || 0), 0))}
+                          </td>
+                        </tr>
+                      )}
+                      {sg.rows.map(i => {
+                        const pct = Number(i.amount) > 0
+                          ? Math.min(100, Math.round((Number(i.totalPaid || 0) / Number(i.amount)) * 100)) : 0;
+                        const sub = [groupBy === 'agency' ? i.employeeName : null, i.applicationNo ? `Ref ${i.applicationNo}` : null]
+                          .filter(Boolean).join(' · ');
+                        return (
+                          <tr key={i.id} className="bg-white hover:bg-gray-50 border-b border-gray-100">
+                            <td className="pl-[88px] pr-4 py-3">
                               <div className="font-medium text-gray-900 whitespace-nowrap">{i.loanType || 'Loan'}</div>
-                              <div className="text-xs text-gray-500">{i.agencyName || 'Company loan'}{i.applicationNo ? ` · Ref ${i.applicationNo}` : ''}</div>
+                              {sub && <div className="text-xs text-gray-500">{sub}</div>}
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap">
-                              <div className="font-medium text-gray-900">{money(i.amount)}</div>
-                              <div className="text-xs text-gray-500">
+                              <div className="font-medium text-gray-900 tabular-nums">{money(i.amount)}</div>
+                              <div className="text-xs text-gray-500 tabular-nums">
                                 {money(i.amortization)} per month · {SCHEDULE_SHORT[i.deductionSchedule] || i.deductionSchedule || '—'}
                               </div>
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-700">
                               <div>{fmtShort(i.startTerm)}</div>
-                              <div className="text-gray-400">to {fmtShort(i.endTerm)}</div>
+                              <div className="text-gray-500">to {fmtShort(i.endTerm)}</div>
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap">{money(i.totalPaid)}</td>
-                            <td className="px-4 py-3 whitespace-nowrap font-medium">
-                              <div className="tabular-nums">{money(i.remainingBalance)}</div>
-                              <div className="mt-1 h-1.5 w-24 bg-gray-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-green-500 rounded-full"
-                                  style={{ width: `${Number(i.amount) > 0 ? Math.min(100, Math.round((Number(i.totalPaid || 0) / Number(i.amount)) * 100)) : 0}%` }} />
+                            <td className="px-4 py-3 whitespace-nowrap text-gray-700 tabular-nums">{money(i.totalPaid)}</td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="font-medium text-gray-900 tabular-nums">{money(i.remainingBalance)}</div>
+                              <div className="mt-1 h-1 w-24 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-gray-700 rounded-full" style={{ width: `${pct}%` }} />
                               </div>
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap">
-                              <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${STATUS_BADGE[i.status] || 'bg-gray-100 text-gray-700'}`}>
-                                {STATUS_LABEL[i.status] || i.status}
-                              </span>
-                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap"><StatusDot status={i.status} /></td>
                             <td className="px-4 py-3 text-right whitespace-nowrap">
                               <div className="flex justify-end items-center gap-1">
                                 <button onClick={() => openView(i)}
-                                  className="px-3 py-1.5 text-xs font-medium text-orange-700 border border-orange-200 rounded-md hover:bg-orange-50">
+                                  className="px-3 py-1.5 text-xs font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100">
                                   View
                                 </button>
                                 <RowMenu items={[
@@ -633,13 +638,13 @@ const LoanAccountsTab = ({ employees, agencies, canCreate, canEdit }) => {
                               </div>
                             </td>
                           </tr>
-                        ))}
-                      </React.Fragment>
-                    ))}
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
+                        );
+                      })}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              );
+            })}
           </table>
         </div>
         {!loading && totalItems > 0 && <Pagination {...paginationProps} />}
