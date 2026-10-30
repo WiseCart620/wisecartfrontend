@@ -443,6 +443,11 @@ const OvertimeEntries = ({ canEdit }) => {
                                 className={inputCls} value={form.value}
                                 onChange={(e) => setForm(p => ({ ...p, value: e.target.value }))} />
                         </Field>
+                        <Field label="Remarks" className="md:col-span-2">
+                            <textarea className={inputCls} rows={2} value={form.remarks}
+                                onChange={(e) => setForm(p => ({ ...p, remarks: e.target.value }))}
+                                placeholder="Optional note" />
+                        </Field>
                         <div className="md:col-span-2 flex justify-end gap-2 pt-3 border-t border-gray-200">
                             <button type="button" onClick={reset}
                                 className="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-white">Cancel</button>
