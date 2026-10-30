@@ -119,9 +119,12 @@ const Sidebar = ({ isOpen, toggle }) => {
     ? dataEntryItems
     : dataEntryItems.filter(i => hasPermission(user, dataEntryFeatureByPath[i.to]));
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  /* ── state ── */
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [query, setQuery] = useState('');
-  const [closedSections, setClosedSections] = useState({}); // empty = every section open by default
+  const [closedSections, setClosedSections] = useState({
+    general: true, sales: true, deliveries: true, payroll: true, data: true, admin: true,
+  });
   const toggleSection = (key) => setClosedSections(prev => ({ ...prev, [key]: !prev[key] }));
   const [tip, setTip] = useState(null);
 
