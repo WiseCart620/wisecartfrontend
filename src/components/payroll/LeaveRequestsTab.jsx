@@ -185,7 +185,7 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
   const singleDay = !!form.dateFrom && form.dateFrom === form.dateTo && dayList.length === 1;
   const halfDay = form.halfDay && singleDay;
   const formTotalDays = halfDay ? 0.5 : dayList.length;
-  const step = halfDay ? 0.5 : 1;
+  const step = 0.5;
   const monthsSpan = new Set(dayList).size || 1;
 
   const orderedSel = leaveOptions.filter(o => selIds.includes(o.id)).map(o => o.id);
@@ -197,17 +197,19 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
     return Math.min(byMonth, o.balance);
   };
 
-  // default split: hand the days out one step at a time, skipping a leave that is full
+  // default split: whole days first, then leftover halves, skipping a leave that is full
   useEffect(() => {
     const out = {};
     orderedSel.forEach(id => { out[id] = 0; });
     let left = formTotalDays;
-    let progressed = true;
-    while (left > 0 && progressed) {
-      progressed = false;
-      for (const id of orderedSel) {
-        const o = leaveOptions.find(x => x.id === id);
-        if (left > 0 && out[id] + step <= capOf(o)) { out[id] += step; left -= step; progressed = true; }
+    for (const unit of (halfDay ? [0.5] : [1, 0.5])) {
+      let progressed = true;
+      while (left >= unit && progressed) {
+        progressed = false;
+        for (const id of orderedSel) {
+          const o = leaveOptions.find(x => x.id === id);
+          if (left >= unit && out[id] + unit <= capOf(o)) { out[id] += unit; left -= unit; progressed = true; }
+        }
       }
     }
     setAlloc(out);
@@ -378,118 +380,118 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
             ) : groups.length === 0 ? (
               <tbody><tr><td colSpan="5" className="px-4 py-12 text-center text-gray-500">No leave requests match these filters.</td></tr></tbody>
             ) : pageItems.map(g => {
-                const isOpen = expanded.has(g.id);
-                const sel = g.types.some(x => x.name === tabByEmp[g.id]) ? tabByEmp[g.id] : '';
-                const shown = sel ? g.rows.filter(t => (t.leaveTypeName || 'Other') === sel) : g.rows;
-                const shownDays = shown.reduce((n, t) => (countsDays(t) ? n + (Number(t.daysUsed) || 0) : n), 0);
-                const tabs = [{ name: '', label: 'All', count: g.rows.length },
-                  ...g.types.map(x => ({ name: x.name, label: x.name, count: x.count }))];
-                return (
-                  <tbody key={g.id}>
-                    <tr onClick={() => toggle(g.id)} aria-expanded={isOpen}
-                      className={`cursor-pointer [&>td]:sticky [&>td]:top-10 [&>td]:z-10 [&>td]:shadow-[inset_0_-1px_0_0_#e5e7eb] ${isOpen ? '[&>td]:bg-orange-50' : '[&>td]:bg-white hover:[&>td]:bg-gray-50'}`}>
-                      <td className="px-3 py-3.5 text-center">
-                        <ChevronRight size={16} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-3">
-                          <EmployeeAvatar name={g.name} photoUrl={photoOf[g.id]} />
-                          <span className="font-medium text-gray-900">{g.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3.5 text-center text-gray-700">{g.rows.length}</td>
-                      <td className="px-4 py-3.5 text-center font-medium text-gray-900">{g.days}</td>
-                      <td className="px-4 py-3.5 text-center">
-                        {g.pending > 0
-                          ? <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200">{g.pending}</span>
-                          : <span className="text-gray-400">0</span>}
-                      </td>
-                    </tr>
+              const isOpen = expanded.has(g.id);
+              const sel = g.types.some(x => x.name === tabByEmp[g.id]) ? tabByEmp[g.id] : '';
+              const shown = sel ? g.rows.filter(t => (t.leaveTypeName || 'Other') === sel) : g.rows;
+              const shownDays = shown.reduce((n, t) => (countsDays(t) ? n + (Number(t.daysUsed) || 0) : n), 0);
+              const tabs = [{ name: '', label: 'All', count: g.rows.length },
+              ...g.types.map(x => ({ name: x.name, label: x.name, count: x.count }))];
+              return (
+                <tbody key={g.id}>
+                  <tr onClick={() => toggle(g.id)} aria-expanded={isOpen}
+                    className={`cursor-pointer [&>td]:sticky [&>td]:top-10 [&>td]:z-10 [&>td]:shadow-[inset_0_-1px_0_0_#e5e7eb] ${isOpen ? '[&>td]:bg-orange-50' : '[&>td]:bg-white hover:[&>td]:bg-gray-50'}`}>
+                    <td className="px-3 py-3.5 text-center">
+                      <ChevronRight size={16} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <EmployeeAvatar name={g.name} photoUrl={photoOf[g.id]} />
+                        <span className="font-medium text-gray-900">{g.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5 text-center text-gray-700">{g.rows.length}</td>
+                    <td className="px-4 py-3.5 text-center font-medium text-gray-900">{g.days}</td>
+                    <td className="px-4 py-3.5 text-center">
+                      {g.pending > 0
+                        ? <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200">{g.pending}</span>
+                        : <span className="text-gray-400">0</span>}
+                    </td>
+                  </tr>
 
-                    {isOpen && (
-                      <tr>
-                        <td colSpan="5" className="p-0 bg-gray-50 border-b border-gray-200">
-                          <div className="px-4 sm:px-6 py-4 border-l-2 border-orange-500">
-                            <div className="flex gap-5 border-b border-gray-200 overflow-x-auto" role="tablist"
-                              aria-label={`Leave types for ${g.name}`}>
-                              {tabs.map(t => {
-                                const active = sel === t.name;
-                                return (
-                                  <button key={t.name || 'all'} role="tab" aria-selected={active}
-                                    onClick={() => setTabByEmp(p => ({ ...p, [g.id]: t.name }))}
-                                    className={`flex items-center gap-2 py-2 -mb-px text-sm border-b-2 whitespace-nowrap transition-colors
+                  {isOpen && (
+                    <tr>
+                      <td colSpan="5" className="p-0 bg-gray-50 border-b border-gray-200">
+                        <div className="px-4 sm:px-6 py-4 border-l-2 border-orange-500">
+                          <div className="flex gap-5 border-b border-gray-200 overflow-x-auto" role="tablist"
+                            aria-label={`Leave types for ${g.name}`}>
+                            {tabs.map(t => {
+                              const active = sel === t.name;
+                              return (
+                                <button key={t.name || 'all'} role="tab" aria-selected={active}
+                                  onClick={() => setTabByEmp(p => ({ ...p, [g.id]: t.name }))}
+                                  className={`flex items-center gap-2 py-2 -mb-px text-sm border-b-2 whitespace-nowrap transition-colors
                                       ${active
-                                        ? 'border-orange-600 text-gray-900 font-medium'
-                                        : 'border-transparent text-gray-500 hover:text-gray-800'}`}>
-                                    {t.label}
-                                    <span className={`px-1.5 min-w-[20px] text-center text-xs rounded-full
+                                      ? 'border-orange-600 text-gray-900 font-medium'
+                                      : 'border-transparent text-gray-500 hover:text-gray-800'}`}>
+                                  {t.label}
+                                  <span className={`px-1.5 min-w-[20px] text-center text-xs rounded-full
                                       ${active ? 'bg-orange-100 text-orange-700' : 'bg-gray-200 text-gray-600'}`}>
-                                      {t.count}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
+                                    {t.count}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
 
-                            <div className="mt-3 bg-white border border-gray-200 rounded-lg overflow-hidden">
-                              <div className="overflow-x-auto">
-                                <table className="w-full min-w-[640px] text-sm">
-                                  <thead className="bg-gray-50 border-b border-gray-200">
-                                    <tr className="text-left text-xs font-medium text-gray-500">
-                                      {!sel && <th className="px-4 py-2.5">Leave type</th>}
-                                      <th className="px-4 py-2.5">Dates</th>
-                                      <th className="px-4 py-2.5 text-right">Days</th>
-                                      <th className="px-4 py-2.5">Reason</th>
-                                      <th className="px-4 py-2.5">Filed</th>
-                                      <th className="px-4 py-2.5">Status</th>
-                                      <th className="px-4 py-2.5 text-right">Actions</th>
+                          <div className="mt-3 bg-white border border-gray-200 rounded-lg overflow-hidden">
+                            <div className="overflow-x-auto">
+                              <table className="w-full min-w-[640px] text-sm">
+                                <thead className="bg-gray-50 border-b border-gray-200">
+                                  <tr className="text-left text-xs font-medium text-gray-500">
+                                    {!sel && <th className="px-4 py-2.5">Leave type</th>}
+                                    <th className="px-4 py-2.5">Dates</th>
+                                    <th className="px-4 py-2.5 text-right">Days</th>
+                                    <th className="px-4 py-2.5">Reason</th>
+                                    <th className="px-4 py-2.5">Filed</th>
+                                    <th className="px-4 py-2.5">Status</th>
+                                    <th className="px-4 py-2.5 text-right">Actions</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                  {shown.map(t => (
+                                    <tr key={t.id} className="hover:bg-gray-50">
+                                      {!sel && <td className="px-4 py-2.5 text-gray-700 whitespace-nowrap">{t.leaveTypeName}</td>}
+                                      <td className="px-4 py-2.5 text-gray-700 whitespace-nowrap">{fmtRange(t.dateFrom, t.dateTo)}</td>
+                                      <td className="px-4 py-2.5 text-right font-medium text-gray-900 tabular-nums">{t.daysUsed}</td>
+                                      <td className="px-4 py-2.5 text-gray-600 max-w-[220px] truncate" title={t.reason || ''}>{t.reason || '—'}</td>
+                                      <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">{fmtDate(t.dateFiled)}</td>
+                                      <td className="px-4 py-2.5"><StatusPill status={t.status} /></td>
+                                      <td className="px-4 py-2.5">
+                                        <div className="flex justify-end gap-1">
+                                          {canEdit && t.status === 'PENDING' && (
+                                            <>
+                                              <button onClick={() => act(t.id, 'approve')} title="Approve" aria-label="Approve"
+                                                className="p-2 text-green-600 hover:bg-green-50 rounded"><Check size={17} /></button>
+                                              <button onClick={() => act(t.id, 'reject', 'Reject this request?')} title="Reject" aria-label="Reject"
+                                                className="p-2 text-orange-600 hover:bg-orange-50 rounded"><XIcon size={17} /></button>
+                                            </>
+                                          )}
+                                          {canEdit && (t.status === 'PENDING' || t.status === 'APPROVED') && (
+                                            <button onClick={() => act(t.id, 'cancel', 'Cancel this request?')} title="Cancel" aria-label="Cancel"
+                                              className="p-2 text-gray-600 hover:bg-gray-100 rounded"><Ban size={17} /></button>
+                                          )}
+                                          {canDelete && t.status !== 'APPROVED' && (
+                                            <button onClick={() => remove(t)} title="Delete" aria-label="Delete"
+                                              className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={17} /></button>
+                                          )}
+                                        </div>
+                                      </td>
                                     </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-gray-100">
-                                    {shown.map(t => (
-                                      <tr key={t.id} className="hover:bg-gray-50">
-                                        {!sel && <td className="px-4 py-2.5 text-gray-700 whitespace-nowrap">{t.leaveTypeName}</td>}
-                                        <td className="px-4 py-2.5 text-gray-700 whitespace-nowrap">{fmtRange(t.dateFrom, t.dateTo)}</td>
-                                        <td className="px-4 py-2.5 text-right font-medium text-gray-900 tabular-nums">{t.daysUsed}</td>
-                                        <td className="px-4 py-2.5 text-gray-600 max-w-[220px] truncate" title={t.reason || ''}>{t.reason || '—'}</td>
-                                        <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">{fmtDate(t.dateFiled)}</td>
-                                        <td className="px-4 py-2.5"><StatusPill status={t.status} /></td>
-                                        <td className="px-4 py-2.5">
-                                          <div className="flex justify-end gap-1">
-                                            {canEdit && t.status === 'PENDING' && (
-                                              <>
-                                                <button onClick={() => act(t.id, 'approve')} title="Approve" aria-label="Approve"
-                                                  className="p-2 text-green-600 hover:bg-green-50 rounded"><Check size={17} /></button>
-                                                <button onClick={() => act(t.id, 'reject', 'Reject this request?')} title="Reject" aria-label="Reject"
-                                                  className="p-2 text-orange-600 hover:bg-orange-50 rounded"><XIcon size={17} /></button>
-                                              </>
-                                            )}
-                                            {canEdit && (t.status === 'PENDING' || t.status === 'APPROVED') && (
-                                              <button onClick={() => act(t.id, 'cancel', 'Cancel this request?')} title="Cancel" aria-label="Cancel"
-                                                className="p-2 text-gray-600 hover:bg-gray-100 rounded"><Ban size={17} /></button>
-                                            )}
-                                            {canDelete && t.status !== 'APPROVED' && (
-                                              <button onClick={() => remove(t)} title="Delete" aria-label="Delete"
-                                                className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={17} /></button>
-                                            )}
-                                          </div>
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                              <div className="px-4 py-2 text-xs text-gray-500 bg-gray-50 border-t border-gray-200">
-                                {shown.length} request{shown.length === 1 ? '' : 's'} · {shownDays} day{shownDays === 1 ? '' : 's'}
-                              </div>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                            <div className="px-4 py-2 text-xs text-gray-500 bg-gray-50 border-t border-gray-200">
+                              {shown.length} request{shown.length === 1 ? '' : 's'} · {shownDays} day{shownDays === 1 ? '' : 's'}
                             </div>
                           </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                );
-              })}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              );
+            })}
           </table>
         </div>
         {!loading && totalItems > 0 && <Pagination {...paginationProps} />}
