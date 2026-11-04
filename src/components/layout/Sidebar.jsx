@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Package, Truck, Warehouse, ShoppingCart, Users, LayoutGrid,
@@ -7,7 +7,7 @@ import {
   Briefcase, Coins, Landmark, CalendarDays, Percent, Wallet, Gift,
   LogOut, Shield, Search
 } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth, hasPermission, can } from '../../context/AuthContext';
 
 // File lives in /public, so it is served from the site root. Spaces and brackets are URL-encoded.
@@ -82,6 +82,27 @@ const NavItem = ({ item, collapsed, onNavigate, onTip }) => {
   );
 };
 
+const sectionPaths = {
+  general: allMainMenuItems,
+  sales: salesSubItems,
+  deliveries: deliveriesSubItems,
+  payroll: payrollSubItems,
+  data: dataEntryItems,
+  admin: [{ to: '/users' }],
+};
+
+// Which section owns the current URL (longest matching path wins)
+const getActiveSection = (pathname) => {
+  let best = null, bestLen = -1;
+  for (const [key, items] of Object.entries(sectionPaths)) {
+    for (const i of items) {
+      const match = pathname === i.to || pathname.startsWith(i.to + '/');
+      if (match && i.to.length > bestLen) { best = key; bestLen = i.to.length; }
+    }
+  }
+  return best;
+};
+
 const Sidebar = ({ isOpen, toggle }) => {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
@@ -119,12 +140,34 @@ const Sidebar = ({ isOpen, toggle }) => {
     ? dataEntryItems
     : dataEntryItems.filter(i => hasPermission(user, dataEntryFeatureByPath[i.to]));
 
-  /* ── state ── */
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [query, setQuery] = useState('');
-  const [closedSections, setClosedSections] = useState({
-    sales: true, deliveries: true, payroll: true, data: true, admin: true,
+  const { pathname } = useLocation();
+  const activeKey = getActiveSection(pathname);
+
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => sessionStorage.getItem('sidebarCollapsed') === '1'
+  );
+
+  const [closedSections, setClosedSections] = useState(() => {
+    let saved = {};
+    try { saved = JSON.parse(sessionStorage.getItem('sidebarClosed') || '{}'); } catch { }
+    const base = { sales: true, deliveries: true, payroll: true, data: true, admin: true, ...saved };
+    if (activeKey) base[activeKey] = false; // always open the section you're in
+    return base;
   });
+
+  // Persist state so a remount doesn't reset it
+  useEffect(() => {
+    sessionStorage.setItem('sidebarClosed', JSON.stringify(closedSections));
+  }, [closedSections]);
+  useEffect(() => {
+    sessionStorage.setItem('sidebarCollapsed', sidebarCollapsed ? '1' : '0');
+  }, [sidebarCollapsed]);
+
+  // Open the active section when the route changes (e.g. via a link elsewhere)
+  useEffect(() => {
+    if (activeKey) setClosedSections(prev => (prev[activeKey] ? { ...prev, [activeKey]: false } : prev));
+  }, [activeKey]);
+  const [query, setQuery] = useState('');
   const toggleSection = (key) => setClosedSections(prev => ({ ...prev, [key]: !prev[key] }));
   const [tip, setTip] = useState(null);
 
