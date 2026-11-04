@@ -119,23 +119,27 @@ const ProofImage = ({ filePath, fileName }) => {
 const fmtDate = (d) =>
     d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
 
+// EWT counts toward settlement only when the invoice itself carries no EWT.
+const settledOf = (profile, p) =>
+    Number(p.amount || 0) + (Number(profile.withholdingTax) > 0 ? 0 : Number(p.ewtAmount || 0));
+
+const getTotalSettled = (profile) =>
+    (profile.payments || []).reduce((s, p) => s + settledOf(profile, p), 0);
+
 const getBalance = (profile) => {
-    const totalPaid = (profile.payments || []).reduce((s, p) => s + Number(p.amount || 0), 0);
-    const bal = Number(profile.totalAmountDue || 0) - totalPaid;
-    return bal > 0 ? Math.round(bal * 100) / 100 : 0;
+    const bal = Number(profile.totalAmountDue || 0) - getTotalSettled(profile);
+    return bal > 0.004 ? Math.round(bal * 100) / 100 : 0;
 };
 
-// Positive number = how much has been paid beyond the total amount due, 0 if not overpaid.
 const getOverpaidAmount = (profile) => {
-    const totalPaid = (profile.payments || []).reduce((s, p) => s + Number(p.amount || 0), 0);
-    const over = totalPaid - Number(profile.totalAmountDue || 0);
+    const over = getTotalSettled(profile) - Number(profile.totalAmountDue || 0);
     return over > 0.004 ? Math.round(over * 100) / 100 : 0;
 };
 
 const BalanceTooltip = ({ profile, onClick }) => {
     const [hovered, setHovered] = useState(false);
     const [pos, setPos] = useState({ x: 0, y: 0 });
-    const paid = (profile.payments || []).reduce((s, p) => s + Number(p.amount), 0);
+    const paid = getTotalSettled(profile);
     const bal = getBalance(profile);
     const overpaid = getOverpaidAmount(profile);
     const isPaid = bal <= 0;
@@ -360,7 +364,7 @@ const PaymentEntry = ({ p, idx, onDelete, onEdit, isAdmin }) => {
 };
 
 const DetailModal = ({ profile, onClose, onAddPayment, onEditPayment, onDeletePayment, isAdmin }) => {
-    const totalPaid = (profile.payments || []).reduce((s, p) => s + Number(p.amount), 0);
+    const totalPaid = getTotalSettled(profile);
     const bal = getBalance(profile);
     const overpaid = getOverpaidAmount(profile);
     const isPaid = bal <= 0;
@@ -469,7 +473,7 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
     const [saving, setSaving] = useState(false);
     const fileRef = useRef();
     const otherPayments = (profile.payments || []).filter(p => !isEditing || p.id !== editingPayment.id);
-    const totalPaid = otherPayments.reduce((s, p) => s + Number(p.amount), 0);
+    const totalPaid = otherPayments.reduce((s, p) => s + settledOf(profile, p), 0);
     const rawBalance = Number(profile.totalAmountDue) - totalPaid;
     const balance = Math.max(0, rawBalance);
     const autoEwt = amount
@@ -478,7 +482,8 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
     const ewt = applyEwt ? (ewtOverride !== '' ? Number(ewtOverride) : autoEwt) : 0;
     const totalCharges = charges.reduce((s, c) => s + (Number(c.amount) || 0), 0);
     const netAmount = Math.max(0, Math.round((Number(amount || 0) - ewt - totalCharges) * 100) / 100);
-    const overpayAmount = Number(amount) > 0 ? Math.round((netAmount - rawBalance) * 100) / 100 : 0;
+    const newSettled = netAmount + (Number(profile.withholdingTax) > 0 ? 0 : ewt);
+    const overpayAmount = Number(amount) > 0 ? Math.round((newSettled - rawBalance) * 100) / 100 : 0;
     const willOverpay = overpayAmount > 0.004;
 
     const addCharge = () => setCharges(prev => [...prev, { label: '', amount: '' }]);
@@ -735,6 +740,308 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
     );
 };
 
+const num = (v) => Number(String(v ?? '').replace(/,/g, '')) || 0;
+const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+const emptyLine = () => ({ invoiceNo: '', gross: '', ewt: '', priors: [] });
+const fieldCls = 'h-11 w-full px-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500';
+
+const DvPaymentModal = ({ profiles, onClose, onSaved }) => {
+    const [dvNumber, setDvNumber] = useState('');
+    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [customer, setCustomer] = useState('');
+    const [dvAmount, setDvAmount] = useState('');
+    const [lines, setLines] = useState([emptyLine()]);
+    const [deductions, setDeductions] = useState([]);
+    const [proofFile, setProofFile] = useState(null);
+    const [saving, setSaving] = useState(false);
+    const fileRef = useRef();
+
+    const companyNames = useMemo(
+        () => Array.from(new Set(profiles.map(p => p.companyName).filter(Boolean))).sort(),
+        [profiles]
+    );
+    const pool = useMemo(
+        () => profiles.filter(p => p.invoiceNumber && (!customer || p.companyName === customer)),
+        [profiles, customer]
+    );
+    const findProfile = (no) =>
+        no ? profiles.find(p => (p.invoiceNumber || '').trim().toLowerCase() === no.trim().toLowerCase()) : null;
+
+    const rows = lines.map((l) => {
+        const profile = findProfile(l.invoiceNo);
+        const gross = r2(num(l.gross));
+        const ewt = r2(num(l.ewt));
+        const priorTotal = r2(l.priors.reduce((s, p) => s + Math.max(0, num(p.amount)), 0));
+        const net = r2(gross - ewt - priorTotal);
+        return { ...l, profile, gross, ewt, priorTotal, net };
+    });
+    const invoiceIds = rows.filter(r => r.profile).map(r => r.profile.id);
+    const hasDuplicate = new Set(invoiceIds).size !== invoiceIds.length;
+    const sumNet = r2(rows.reduce((s, r) => s + r.net, 0));
+    const sumDeductions = r2(deductions.reduce((s, d) => s + Math.max(0, num(d.amount)), 0));
+    const computed = r2(sumNet - sumDeductions);
+    const diff = r2(computed - num(dvAmount));
+    const matched = num(dvAmount) > 0 && Math.abs(diff) < 0.005;
+    const allValid = rows.length > 0 && rows.every(r => r.profile && r.gross > 0 && r.net >= 0) && !hasDuplicate;
+    const canSave = !!dvNumber.trim() && !!date && matched && allValid && !saving;
+
+    // Deductions go on the invoice that still has the biggest open balance
+    const deductionInvoiceId = rows
+        .filter(r => r.profile)
+        .sort((a, b) => getBalance(b.profile) - getBalance(a.profile))[0]?.profile.id || null;
+
+    const setLine = (i, patch) => setLines(prev => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
+    const addPrior = (i) => setLine(i, { priors: [...lines[i].priors, { label: '', amount: '' }] });
+    const setPrior = (i, j, patch) =>
+        setLine(i, { priors: lines[i].priors.map((p, k) => (k === j ? { ...p, ...patch } : p)) });
+    const removePrior = (i, j) => setLine(i, { priors: lines[i].priors.filter((_, k) => k !== j) });
+    const setDeduction = (i, patch) =>
+        setDeductions(prev => prev.map((d, idx) => (idx === i ? { ...d, ...patch } : d)));
+
+    const priorFound = (profile, amount) =>
+        !!profile && (profile.payments || []).some(pp =>
+            Math.abs(Number(pp.amount) - amount) < 0.01 || Math.abs(settledOf(profile, pp) - amount) < 0.01);
+
+    const handleSave = async () => {
+        if (proofFile) {
+            const ok = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'].includes(proofFile.type);
+            if (!ok) return toast.error('Only PNG, JPG, JPEG, or PDF files are allowed');
+            if (proofFile.size > 5 * 1024 * 1024) return toast.error('File size must be less than 5MB');
+        }
+        const payload = {
+            dvNumber: dvNumber.trim(),
+            paymentDate: date,
+            dvAmount: r2(num(dvAmount)),
+            deductionInvoiceId,
+            deductions: deductions
+                .filter(d => num(d.amount) > 0)
+                .map(d => ({ label: `${d.ref || ''} ${d.label || ''}`.trim() || 'Deduction', amount: r2(num(d.amount)) })),
+            lines: rows.map(r => ({
+                invoiceProfileId: r.profile.id,
+                grossAmount: r.gross,
+                ewtAmount: r.ewt,
+                priorPayments: r.priors
+                    .filter(p => num(p.amount) > 0)
+                    .map(p => ({ label: (p.label || '').trim() || 'Prior payment', amount: r2(num(p.amount)) })),
+            })),
+        };
+        const fd = new FormData();
+        fd.append('data', JSON.stringify(payload));
+        if (proofFile) fd.append('proofFile', proofFile);
+
+        setSaving(true);
+        try {
+            const res = await api.upload('/invoice-profiles/payments/batch', fd);
+            if (res.success) {
+                toast.success(`DV ${payload.dvNumber} recorded on ${rows.length} invoice${rows.length > 1 ? 's' : ''}`);
+                onSaved(res.data?.data || res.data);
+                onClose();
+            } else {
+                toast.error(res.error || res.message || 'Failed to save DV payment');
+            }
+        } catch {
+            toast.error('Failed to save DV payment');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const labelCls = 'block text-xs font-semibold text-gray-600 mb-1';
+    const sectionCls = 'text-xs font-semibold tracking-wide text-gray-600 uppercase';
+    const addBtnCls = 'h-9 px-3 border border-orange-700 text-orange-800 bg-orange-50 rounded-lg text-xs font-semibold hover:bg-orange-100';
+    const gridCls = 'grid grid-cols-[1.5fr_1fr_0.9fr_1.9fr_1fr] gap-3';
+
+    return (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[92vh] overflow-y-auto shadow-2xl">
+                <div className="px-7 py-5 border-b border-gray-200 flex justify-between items-start">
+                    <div>
+                        <div className="text-lg font-semibold text-gray-900">Record DV payment</div>
+                        <div className="text-sm text-gray-600 mt-0.5">One voucher, many invoices. Type only what the paper shows.</div>
+                    </div>
+                    <button onClick={onClose} aria-label="Close" className="w-11 h-11 flex items-center justify-center text-gray-600 hover:text-black text-2xl">&times;</button>
+                </div>
+
+                <div className="px-7 py-5 space-y-5">
+                    {/* Header fields */}
+                    <div className="grid grid-cols-[1.2fr_1fr_1fr_1.2fr] gap-3">
+                        <div>
+                            <label className={labelCls}>DV number *</label>
+                            <input value={dvNumber} onChange={(e) => setDvNumber(e.target.value)} placeholder="3700001146" className={`${fieldCls} font-mono`} />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Payment date *</label>
+                            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={fieldCls} />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Customer (filters invoices)</label>
+                            <select value={customer} onChange={(e) => setCustomer(e.target.value)} className={fieldCls}>
+                                <option value="">All customers</option>
+                                {companyNames.map(n => <option key={n} value={n}>{n}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className={labelCls}>DV amount (Total Amount, net) *</label>
+                            <input
+                                value={dvAmount}
+                                onChange={(e) => setDvAmount(e.target.value)}
+                                inputMode="decimal"
+                                placeholder="0.00"
+                                className="h-11 w-full px-3 border-2 border-[#2CA01C] rounded-lg text-base font-bold text-right focus:outline-none"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Invoice lines */}
+                    <div>
+                        <div className="flex justify-between items-center mb-2">
+                            <div className={sectionCls}>Invoice lines (positive lines on the DV)</div>
+                            <button type="button" onClick={() => setLines(prev => [...prev, emptyLine()])} className={addBtnCls}>+ Add invoice line</button>
+                        </div>
+                        <datalist id="dv-invoice-list">
+                            {pool.map(p => <option key={p.id} value={p.invoiceNumber}>{p.soldTo}</option>)}
+                        </datalist>
+                        <div className="border border-gray-200 rounded-xl overflow-hidden">
+                            <div className={`${gridCls} px-4 py-2.5 bg-gray-50 border-b border-gray-200 text-[11px] font-semibold tracking-wide text-gray-600 uppercase`}>
+                                <div>Invoice</div>
+                                <div className="text-right">Gross (DV)</div>
+                                <div className="text-right">EWT (DV)</div>
+                                <div>Already recorded (DV negative lines)</div>
+                                <div className="text-right">Net cash</div>
+                            </div>
+
+                            {rows.map((r, i) => (
+                                <div key={i} className={`${gridCls} px-4 py-3 items-start ${i < rows.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                                    <div>
+                                        <div className="flex items-center gap-1">
+                                            <input
+                                                list="dv-invoice-list"
+                                                value={r.invoiceNo}
+                                                onChange={(e) => setLine(i, { invoiceNo: e.target.value })}
+                                                placeholder="Invoice #"
+                                                className="h-10 w-full px-2.5 border border-gray-300 rounded-lg text-sm font-semibold"
+                                            />
+                                            {rows.length > 1 && (
+                                                <button type="button" aria-label="Remove line" onClick={() => setLines(prev => prev.filter((_, k) => k !== i))} className="w-8 h-10 text-gray-500 hover:text-red-600 text-lg">&times;</button>
+                                            )}
+                                        </div>
+                                        <div className="text-[11px] mt-1 text-gray-600">
+                                            {r.invoiceNo && !r.profile
+                                                ? <span className="text-red-700 font-medium">Invoice not found</span>
+                                                : r.profile
+                                                    ? `${r.profile.soldTo} · open ₱${fmt(getBalance(r.profile))}`
+                                                    : 'Pick an invoice number'}
+                                        </div>
+                                    </div>
+                                    <input
+                                        value={lines[i].gross}
+                                        onChange={(e) => setLine(i, { gross: e.target.value })}
+                                        inputMode="decimal"
+                                        placeholder="0.00"
+                                        className="h-10 w-full px-2.5 border border-gray-300 rounded-lg text-sm text-right tabular-nums"
+                                    />
+                                    <input
+                                        value={lines[i].ewt}
+                                        onChange={(e) => setLine(i, { ewt: e.target.value })}
+                                        inputMode="decimal"
+                                        placeholder="0.00"
+                                        className="h-10 w-full px-2.5 border border-gray-300 rounded-lg text-sm text-right tabular-nums"
+                                    />
+                                    <div className="space-y-1.5">
+                                        {r.priors.length === 0 && <div className="text-xs text-gray-600 pt-2.5">None</div>}
+                                        {r.priors.map((p, j) => {
+                                            const found = priorFound(r.profile, num(p.amount));
+                                            return (
+                                                <div key={j} className={`rounded-lg border px-2 py-1.5 ${found ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
+                                                    <div className="flex items-center gap-1">
+                                                        <input
+                                                            value={p.label}
+                                                            onChange={(e) => setPrior(i, j, { label: e.target.value })}
+                                                            placeholder="021425BDO ONLINE"
+                                                            className="h-8 flex-1 min-w-0 px-2 border border-gray-300 rounded text-xs"
+                                                        />
+                                                        <input
+                                                            value={p.amount}
+                                                            onChange={(e) => setPrior(i, j, { amount: e.target.value })}
+                                                            inputMode="decimal"
+                                                            placeholder="0.00"
+                                                            className="h-8 w-24 px-2 border border-gray-300 rounded text-xs text-right"
+                                                        />
+                                                        <button type="button" aria-label="Remove prior payment" onClick={() => removePrior(i, j)} className="w-6 h-8 text-gray-500 hover:text-red-600">&times;</button>
+                                                    </div>
+                                                    <div className={`text-[11px] mt-0.5 ${found ? 'text-emerald-800' : 'text-amber-800'}`}>
+                                                        {found ? "Found in this invoice's payment history" : "Not found on this invoice's history. Check the amount."}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                        <button type="button" onClick={() => addPrior(i)} className="text-xs font-semibold text-orange-800 hover:underline">+ Prior payment</button>
+                                    </div>
+                                    <div className="text-right text-sm font-bold tabular-nums pt-2.5">{fmt(r.net)}</div>
+                                </div>
+                            ))}
+                        </div>
+                        {hasDuplicate && <div className="text-xs text-red-700 font-medium mt-1.5">The same invoice is listed twice. Combine them into one line.</div>}
+                    </div>
+
+                    {/* Deductions */}
+                    <div>
+                        <div className="flex justify-between items-center mb-2">
+                            <div className={sectionCls}>Deductions (entered once for the whole DV)</div>
+                            <button type="button" onClick={() => setDeductions(prev => [...prev, { ref: '', label: '', amount: '' }])} className={addBtnCls}>+ Add deduction</button>
+                        </div>
+                        <div className="border border-gray-200 rounded-xl px-4 py-3 space-y-2">
+                            {deductions.length === 0 && <div className="text-xs text-gray-600">No deductions (freight, bank fees...)</div>}
+                            {deductions.map((d, i) => (
+                                <div key={i} className="grid grid-cols-[1fr_1.4fr_1fr_44px] gap-3 items-center">
+                                    <input value={d.ref} onChange={(e) => setDeduction(i, { ref: e.target.value })} placeholder="1800000077" className="h-10 px-2.5 border border-gray-300 rounded-lg text-sm font-mono" />
+                                    <input value={d.label} onChange={(e) => setDeduction(i, { label: e.target.value })} placeholder="FREIGHT CHARGES" className="h-10 px-2.5 border border-gray-300 rounded-lg text-sm" />
+                                    <input value={d.amount} onChange={(e) => setDeduction(i, { amount: e.target.value })} inputMode="decimal" placeholder="0.00" className="h-10 px-2.5 border border-gray-300 rounded-lg text-sm text-right tabular-nums" />
+                                    <button type="button" aria-label="Remove deduction" onClick={() => setDeductions(prev => prev.filter((_, k) => k !== i))} className="w-11 h-11 text-gray-500 hover:text-red-600 text-xl">&times;</button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Check + proof */}
+                    <div className="grid grid-cols-[1.1fr_1fr] gap-5">
+                        <div className={`rounded-xl border p-4 space-y-2 ${matched ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'}`}>
+                            <div className={sectionCls}>Check against the DV</div>
+                            <div className="flex justify-between text-sm"><span>Net cash of {rows.length} invoice line{rows.length > 1 ? 's' : ''}</span><span className="tabular-nums">{fmt(sumNet)}</span></div>
+                            <div className="flex justify-between text-sm"><span>Less: deductions</span><span className="tabular-nums">− {fmt(sumDeductions)}</span></div>
+                            <div className="flex justify-between text-sm font-bold border-t border-gray-300 pt-2"><span>Computed DV amount</span><span className="tabular-nums">{fmt(computed)}</span></div>
+                            <div className="flex justify-between text-sm"><span>DV amount typed above</span><span className="tabular-nums">{fmt(num(dvAmount))}</span></div>
+                            <div className={`rounded-lg px-3 py-2 text-sm font-bold text-white ${matched ? 'bg-green-800' : 'bg-amber-800'}`}>
+                                {matched ? 'Matched. Difference ₱0.00. Ready to save.' : `Difference ₱${fmt(Math.abs(diff))}. Not ready to save.`}
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <div className="text-xs font-semibold text-gray-600">Proof of payment, attached to every payment (optional)</div>
+                            <button type="button" onClick={() => fileRef.current?.click()} className="h-11 w-full border border-dashed border-gray-400 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+                                {proofFile ? `✓ ${proofFile.name}` : 'Upload DV image or PDF'}
+                            </button>
+                            <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => setProofFile(e.target.files[0] || null)} />
+                            <div className="text-xs text-gray-600 leading-relaxed">
+                                Each invoice gets its own payment with reference <b className="font-mono">{dvNumber || 'DV number'}</b>. If any line fails, nothing is saved.
+                                {deductionInvoiceId && deductions.length > 0 && (
+                                    <> Deductions are booked on invoice <b>{profiles.find(p => p.id === deductionInvoiceId)?.invoiceNumber}</b> (largest open balance).</>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="px-7 py-4 border-t border-gray-200 flex justify-end gap-2.5">
+                    <button onClick={onClose} className="h-11 px-5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+                    <button onClick={handleSave} disabled={!canSave} className="h-11 px-5 bg-[#1e7a12] text-white rounded-lg text-sm font-semibold hover:bg-[#186510] disabled:opacity-40">
+                        {saving ? 'Saving...' : `Save DV payment (${rows.length} invoice${rows.length > 1 ? 's' : ''})`}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const MultiSelectDropdown = ({ label, options, selected, onChange }) => {
     const [open, setOpen] = useState(false);
     const ref = useRef();
@@ -814,6 +1121,7 @@ const InvoicingProfile = ({ onBack }) => {
     const [editingDateId, setEditingDateId] = useState(null);
     const [editingDateValue, setEditingDateValue] = useState('');
     const [receiptProfile, setReceiptProfile] = useState(null);
+    const [showDvModal, setShowDvModal] = useState(false);
     const [expandedRows, setExpandedRows] = useState({});
     const [cosData, setCosData] = useState({});
     const [sortOrder, setSortOrder] = useState('asc');
@@ -895,7 +1203,7 @@ const InvoicingProfile = ({ onBack }) => {
     }, [profiles]);
 
     const getStatusCode = (p) => {
-        const totalPaid = (p.payments || []).reduce((s, pay) => s + Number(pay.amount), 0);
+        const totalPaid = getTotalSettled(p);
         const bal = getBalance(p);
         if (bal <= 0) return 'PAID';
         if (totalPaid > 0) return 'PARTIAL'; // has some payment but still owes = "Have Balance"
@@ -961,7 +1269,7 @@ const InvoicingProfile = ({ onBack }) => {
     };
 
     const getStatus = (profile) => {
-        const paid = (profile.payments || []).reduce((s, p) => s + Number(p.amount), 0);
+        const paid = getTotalSettled(profile);
         const balance = getBalance(profile);
         if (balance <= 0) return { label: 'Fully Paid', cls: 'bg-green-100 text-green-800' };
         if (paid > 0) return { label: 'Partially Paid', cls: 'bg-yellow-100 text-yellow-800' };
@@ -996,7 +1304,7 @@ const InvoicingProfile = ({ onBack }) => {
 
     const totals = React.useMemo(() => {
         return filtered.reduce((acc, p) => {
-            const paid = (p.payments || []).reduce((s, pay) => s + Number(pay.amount), 0);
+            const paid = getTotalSettled(p);
             const bal = getBalance(p);
             const cd = cosData[p.id];
             const cos = cd && cd !== null
@@ -1055,12 +1363,22 @@ const InvoicingProfile = ({ onBack }) => {
                         Hover open balance to preview · Click to view full detail
                     </p>
                 </div>
-                <button
-                    onClick={load}
-                    className="px-3 py-2 border border-gray-300 rounded text-sm text-gray-700 hover:bg-white transition"
-                >
-                    ↻ Refresh
-                </button>
+                <div className="flex items-center gap-2">
+                    {isAdmin && (
+                        <button
+                            onClick={() => setShowDvModal(true)}
+                            className="px-3 py-2 bg-[#2CA01C] text-white rounded text-sm font-medium hover:bg-[#268d19] transition"
+                        >
+                            Record DV payment
+                        </button>
+                    )}
+                    <button
+                        onClick={load}
+                        className="px-3 py-2 border border-gray-300 rounded text-sm text-gray-700 hover:bg-white transition"
+                    >
+                        ↻ Refresh
+                    </button>
+                </div>
             </div>
 
             <div className="bg-white rounded border border-gray-200 p-3 mb-3 flex flex-wrap gap-3 items-center">
@@ -1197,7 +1515,7 @@ const InvoicingProfile = ({ onBack }) => {
                                 </tr>
                             ) : (
                                 filtered.map((p) => {
-                                    const totalPaid = (p.payments || []).reduce((s, pay) => s + Number(pay.amount), 0);
+                                    const totalPaid = getTotalSettled(p);
                                     const overdueDays = calcOverdueDays(p.invoiceDate || p.createdAt, p.companyTerms);
                                     const termsDays = parseTermsDays(p.companyTerms);
                                     const isPaid = getBalance(p) <= 0;
@@ -1585,6 +1903,21 @@ const InvoicingProfile = ({ onBack }) => {
                     }}
                 />
             )}
+        
+            {showDvModal && (
+                <DvPaymentModal
+                    profiles={profiles}
+                    onClose={() => setShowDvModal(false)}
+                    onSaved={(updatedList) => {
+                        const list = Array.isArray(updatedList) ? updatedList : [updatedList];
+                        setProfiles(prev => prev.map(p => list.find(u => u.id === p.id) || p));
+                    }}
+                />
+            )}
+
+
+
+
             {paymentProfile && (
                 <PaymentModal
                     profile={paymentProfile}
