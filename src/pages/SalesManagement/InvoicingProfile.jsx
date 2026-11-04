@@ -951,36 +951,6 @@ const DvPaymentModal = ({ profiles, onClose, onSaved }) => {
                                         placeholder="0.00"
                                         className="h-10 w-full px-2.5 border border-gray-300 rounded-lg text-sm text-right tabular-nums"
                                     />
-                                    <div className="space-y-1.5">
-                                        {r.priors.length === 0 && <div className="text-xs text-gray-600 pt-2.5">None</div>}
-                                        {r.priors.map((p, j) => {
-                                            const found = priorFound(r.profile, num(p.amount));
-                                            return (
-                                                <div key={j} className={`rounded-lg border px-2 py-1.5 ${found ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
-                                                    <div className="flex items-center gap-1">
-                                                        <input
-                                                            value={p.label}
-                                                            onChange={(e) => setPrior(i, j, { label: e.target.value })}
-                                                            placeholder="021425BDO ONLINE"
-                                                            className="h-8 flex-1 min-w-0 px-2 border border-gray-300 rounded text-xs"
-                                                        />
-                                                        <input
-                                                            value={p.amount}
-                                                            onChange={(e) => setPrior(i, j, { amount: e.target.value })}
-                                                            inputMode="decimal"
-                                                            placeholder="0.00"
-                                                            className="h-8 w-24 px-2 border border-gray-300 rounded text-xs text-right"
-                                                        />
-                                                        <button type="button" aria-label="Remove prior payment" onClick={() => removePrior(i, j)} className="w-6 h-8 text-gray-500 hover:text-red-600">&times;</button>
-                                                    </div>
-                                                    <div className={`text-[11px] mt-0.5 ${found ? 'text-emerald-800' : 'text-amber-800'}`}>
-                                                        {found ? "Found in this invoice's payment history" : "Not found on this invoice's history. Check the amount."}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                        <button type="button" onClick={() => addPrior(i)} className="text-xs font-semibold text-orange-800 hover:underline">+ Prior payment</button>
-                                    </div>
                                     <div className="text-right text-sm font-bold tabular-nums pt-2.5">{fmt(r.net)}</div>
                                 </div>
                             ))}
