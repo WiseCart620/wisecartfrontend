@@ -165,7 +165,7 @@
   }
 
   #invoice-report .flex.justify-between.items-center.mb-2 {
-    margin-top: 28px !important;
+    margin-top: 0px !important;
   }
 
   #invoice-report .mt-6 {
@@ -661,6 +661,32 @@
   }
 
   #invoice-report .total-due-block {
-    margin-top: -30px !important;
+    margin-top: -14px !important;
+  }
+
+  /* Bring Less: Discount closer to Amount: Net of VAT */
+  #invoice-report .sales-summary-block>div:first-child>div:last-child,
+  #invoice-report .sales-summary-block>div:last-child>input:last-child {
+    margin-top: -4px !important;
+  }
+
+  #invoice-report .sold-to-block {
+    position: relative !important;
+    top: 18px !important;
+    left: 20px !important;
+  }
+
+  #invoice-report .sold-to-box {
+    margin-bottom: 8px !important;
+  }
+
+  #invoice-report .totals-block {
+    position: relative !important;
+    top: 155px !important;
+  }
+
+  #invoice-report .permit-footer {
+    position: relative !important;
+    top: 160px !important;
   }
 }
