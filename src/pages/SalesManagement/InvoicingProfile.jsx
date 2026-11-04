@@ -742,7 +742,7 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
 
 const num = (v) => Number(String(v ?? '').replace(/,/g, '')) || 0;
 const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
-const emptyLine = () => ({ invoiceNo: '', gross: '', ewt: '', priors: [] });
+const emptyLine = () => ({ invoiceNo: '', gross: '', ewt: '' });
 const fieldCls = 'h-11 w-full px-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500';
 
 const DvPaymentModal = ({ profiles, onClose, onSaved }) => {
@@ -771,10 +771,10 @@ const DvPaymentModal = ({ profiles, onClose, onSaved }) => {
         const profile = findProfile(l.invoiceNo);
         const gross = r2(num(l.gross));
         const ewt = r2(num(l.ewt));
-        const priorTotal = r2(l.priors.reduce((s, p) => s + Math.max(0, num(p.amount)), 0));
-        const net = r2(gross - ewt - priorTotal);
-        return { ...l, profile, gross, ewt, priorTotal, net };
+        const net = r2(gross - ewt);
+        return { ...l, profile, gross, ewt, net };
     });
+
     const invoiceIds = rows.filter(r => r.profile).map(r => r.profile.id);
     const hasDuplicate = new Set(invoiceIds).size !== invoiceIds.length;
     const sumNet = r2(rows.reduce((s, r) => s + r.net, 0));
@@ -785,22 +785,27 @@ const DvPaymentModal = ({ profiles, onClose, onSaved }) => {
     const allValid = rows.length > 0 && rows.every(r => r.profile && r.gross > 0 && r.net >= 0) && !hasDuplicate;
     const canSave = !!dvNumber.trim() && !!date && matched && allValid && !saving;
 
-    // Deductions go on the invoice that still has the biggest open balance
-    const deductionInvoiceId = rows
-        .filter(r => r.profile)
-        .sort((a, b) => getBalance(b.profile) - getBalance(a.profile))[0]?.profile.id || null;
+    const totalGross = r2(rows.reduce((s, r) => s + r.gross, 0));
+    const validDeds = deductions.filter(d => num(d.amount) > 0);
+    const splitPreview = rows.map((r, i) => {
+        let total = 0;
+        validDeds.forEach(d => {
+            const amt = num(d.amount);
+            if (i === rows.length - 1) {
+                let allocated = 0;
+                for (let k = 0; k < rows.length - 1; k++)
+                    allocated += r2(amt * rows[k].gross / (totalGross || 1));
+                total += r2(amt - allocated);
+            } else {
+                total += r2(amt * r.gross / (totalGross || 1));
+            }
+        });
+        return r2(total);
+    });
 
     const setLine = (i, patch) => setLines(prev => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
-    const addPrior = (i) => setLine(i, { priors: [...lines[i].priors, { label: '', amount: '' }] });
-    const setPrior = (i, j, patch) =>
-        setLine(i, { priors: lines[i].priors.map((p, k) => (k === j ? { ...p, ...patch } : p)) });
-    const removePrior = (i, j) => setLine(i, { priors: lines[i].priors.filter((_, k) => k !== j) });
     const setDeduction = (i, patch) =>
         setDeductions(prev => prev.map((d, idx) => (idx === i ? { ...d, ...patch } : d)));
-
-    const priorFound = (profile, amount) =>
-        !!profile && (profile.payments || []).some(pp =>
-            Math.abs(Number(pp.amount) - amount) < 0.01 || Math.abs(settledOf(profile, pp) - amount) < 0.01);
 
     const handleSave = async () => {
         if (proofFile) {
@@ -808,11 +813,12 @@ const DvPaymentModal = ({ profiles, onClose, onSaved }) => {
             if (!ok) return toast.error('Only PNG, JPG, JPEG, or PDF files are allowed');
             if (proofFile.size > 5 * 1024 * 1024) return toast.error('File size must be less than 5MB');
         }
+
+
         const payload = {
             dvNumber: dvNumber.trim(),
             paymentDate: date,
             dvAmount: r2(num(dvAmount)),
-            deductionInvoiceId,
             deductions: deductions
                 .filter(d => num(d.amount) > 0)
                 .map(d => ({ label: `${d.ref || ''} ${d.label || ''}`.trim() || 'Deduction', amount: r2(num(d.amount)) })),
@@ -820,11 +826,10 @@ const DvPaymentModal = ({ profiles, onClose, onSaved }) => {
                 invoiceProfileId: r.profile.id,
                 grossAmount: r.gross,
                 ewtAmount: r.ewt,
-                priorPayments: r.priors
-                    .filter(p => num(p.amount) > 0)
-                    .map(p => ({ label: (p.label || '').trim() || 'Prior payment', amount: r2(num(p.amount)) })),
             })),
         };
+
+
         const fd = new FormData();
         fd.append('data', JSON.stringify(payload));
         if (proofFile) fd.append('proofFile', proofFile);
@@ -849,7 +854,7 @@ const DvPaymentModal = ({ profiles, onClose, onSaved }) => {
     const labelCls = 'block text-xs font-semibold text-gray-600 mb-1';
     const sectionCls = 'text-xs font-semibold tracking-wide text-gray-600 uppercase';
     const addBtnCls = 'h-9 px-3 border border-orange-700 text-orange-800 bg-orange-50 rounded-lg text-xs font-semibold hover:bg-orange-100';
-    const gridCls = 'grid grid-cols-[1.5fr_1fr_0.9fr_1.9fr_1fr] gap-3';
+    const gridCls = 'grid grid-cols-[1.5fr_1fr_0.9fr_1fr] gap-3';
 
     return (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
@@ -906,7 +911,6 @@ const DvPaymentModal = ({ profiles, onClose, onSaved }) => {
                                 <div>Invoice</div>
                                 <div className="text-right">Gross (DV)</div>
                                 <div className="text-right">EWT (DV)</div>
-                                <div>Already recorded (DV negative lines)</div>
                                 <div className="text-right">Net cash</div>
                             </div>
 
@@ -1023,8 +1027,12 @@ const DvPaymentModal = ({ profiles, onClose, onSaved }) => {
                             <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => setProofFile(e.target.files[0] || null)} />
                             <div className="text-xs text-gray-600 leading-relaxed">
                                 Each invoice gets its own payment with reference <b className="font-mono">{dvNumber || 'DV number'}</b>. If any line fails, nothing is saved.
-                                {deductionInvoiceId && deductions.length > 0 && (
-                                    <> Deductions are booked on invoice <b>{profiles.find(p => p.id === deductionInvoiceId)?.invoiceNumber}</b> (largest open balance).</>
+                                {validDeds.length > 0 && (
+                                    <> Deductions are split across the invoices by gross amount:
+                                        {rows.map((r, i) => r.profile && (
+                                            <span key={i}> {r.profile.invoiceNumber}: ₱{fmt(splitPreview[i])};</span>
+                                        ))}
+                                    </>
                                 )}
                             </div>
                         </div>
@@ -1903,7 +1911,7 @@ const InvoicingProfile = ({ onBack }) => {
                     }}
                 />
             )}
-        
+
             {showDvModal && (
                 <DvPaymentModal
                     profiles={profiles}
