@@ -144,7 +144,7 @@ const InvoiceReportModal = ({
 
           <div className="border border-gray-900 px-3 py-2 mb-1.5 sold-to-box" style={{ minHeight: '98px', overflow: 'visible' }}>
             <div className="grid grid-cols-[1.7fr_1fr] gap-x-6 sold-to-block">
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 sold-to-rows">
                 <div className="flex items-center">
                   <span className="font-bold text-gray-900 w-40 shrink-0 text-sm">SOLD TO:</span>
                   <span className="flex-1 text-black-900 print-visible text-[15px]">{invoiceReport.soldTo || 'N/A'}</span>
@@ -158,7 +158,7 @@ const InvoiceReportModal = ({
                   <span className="flex-1 text-black-900 print-visible break-words leading-snug text-[15px]">{invoiceReport.businessAddress || 'N/A'}</span>
                 </div>
               </div>
-              <div className="flex items-start">
+              <div className="flex items-start sold-to-tin">
                 <span className="font-bold text-gray-900 w-12 shrink-0 text-sm">TIN:</span>
                 <span className="flex-1 text-black-900 print-visible text-[15px]">{invoiceReport.tin || invoiceReport.branchTin || 'N/A'}</span>
               </div>

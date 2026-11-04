@@ -7,7 +7,7 @@ import {
   Briefcase, Coins, Landmark, CalendarDays, Percent, Wallet, Gift,
   LogOut, Shield, Search
 } from 'lucide-react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useAuth, hasPermission, can } from '../../context/AuthContext';
 
 // File lives in /public, so it is served from the site root. Spaces and brackets are URL-encoded.
@@ -67,11 +67,11 @@ const NavItem = ({ item, collapsed, onNavigate, onTip }) => {
         `flex items-center gap-3 rounded-lg text-sm transition-colors
         ${collapsed ? 'justify-center w-10 h-10 mx-auto' : 'px-3 py-2'}
         ${isActive
-          ? 'bg-orange-50 text-orange-600 font-semibold'
-          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium'}`
+          ? 'bg-orange-50 text-orange-600 font-normal'
+          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-normal'}`
       }
     >
-      <Icon size={20} strokeWidth={1.75} className="flex-shrink-0" />
+      <Icon size={20} strokeWidth={1.5} className="flex-shrink-0" />
       {!collapsed && <span className="truncate flex-1">{item.label}</span>}
       {!collapsed && item.badge && (
         <span className={`px-1.5 py-0.5 rounded text-[11px] font-semibold ${badgeTones[item.badge.tone] || badgeTones.orange}`}>
@@ -82,26 +82,8 @@ const NavItem = ({ item, collapsed, onNavigate, onTip }) => {
   );
 };
 
-const sectionPaths = {
-  general: allMainMenuItems,
-  sales: salesSubItems,
-  deliveries: deliveriesSubItems,
-  payroll: payrollSubItems,
-  data: dataEntryItems,
-  admin: [{ to: '/users' }],
-};
 
-// Which section owns the current URL (longest matching path wins)
-const getActiveSection = (pathname) => {
-  let best = null, bestLen = -1;
-  for (const [key, items] of Object.entries(sectionPaths)) {
-    for (const i of items) {
-      const match = pathname === i.to || pathname.startsWith(i.to + '/');
-      if (match && i.to.length > bestLen) { best = key; bestLen = i.to.length; }
-    }
-  }
-  return best;
-};
+
 
 const Sidebar = ({ isOpen, toggle }) => {
   const { user } = useAuth();
@@ -140,33 +122,34 @@ const Sidebar = ({ isOpen, toggle }) => {
     ? dataEntryItems
     : dataEntryItems.filter(i => hasPermission(user, dataEntryFeatureByPath[i.to]));
 
-  const { pathname } = useLocation();
-  const activeKey = getActiveSection(pathname);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => sessionStorage.getItem('sidebarCollapsed') === '1'
   );
 
   const [closedSections, setClosedSections] = useState(() => {
-    let saved = {};
-    try { saved = JSON.parse(sessionStorage.getItem('sidebarClosed') || '{}'); } catch { }
-    const base = { sales: true, deliveries: true, payroll: true, data: true, admin: true, ...saved };
-    if (activeKey) base[activeKey] = false; // always open the section you're in
-    return base;
+    const defaults = {
+      general: true, sales: true, deliveries: true,
+      payroll: true, data: true, admin: true,
+    };
+    try {
+      const saved = JSON.parse(sessionStorage.getItem('sidebarClosed2') || '{}');
+      return { ...defaults, ...saved };
+    } catch {
+      return defaults;
+    }
   });
 
-  // Persist state so a remount doesn't reset it
   useEffect(() => {
-    sessionStorage.setItem('sidebarClosed', JSON.stringify(closedSections));
+    sessionStorage.setItem('sidebarClosed2', JSON.stringify(closedSections));
   }, [closedSections]);
+
+
   useEffect(() => {
     sessionStorage.setItem('sidebarCollapsed', sidebarCollapsed ? '1' : '0');
   }, [sidebarCollapsed]);
 
-  // Open the active section when the route changes (e.g. via a link elsewhere)
-  useEffect(() => {
-    if (activeKey) setClosedSections(prev => (prev[activeKey] ? { ...prev, [activeKey]: false } : prev));
-  }, [activeKey]);
+
   const [query, setQuery] = useState('');
   const toggleSection = (key) => setClosedSections(prev => ({ ...prev, [key]: !prev[key] }));
   const [tip, setTip] = useState(null);
@@ -294,7 +277,7 @@ const Sidebar = ({ isOpen, toggle }) => {
               className="w-10 h-10 mx-auto flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50"
               aria-label="Search menu"
             >
-              <Search size={18} strokeWidth={1.75} />
+              <Search size={18} strokeWidth={1.5} />
             </button>
           ) : (
             <div className="relative">
@@ -315,13 +298,13 @@ const Sidebar = ({ isOpen, toggle }) => {
           {sections.map((section, idx) => (
             <div key={section.key} className={sidebarCollapsed ? 'mb-2' : 'mb-1'}>
               {sidebarCollapsed ? (
-                <p className={`text-center text-[10px] font-semibold tracking-wide text-gray-400 uppercase pb-1 ${idx > 0 ? 'mt-2 pt-2 border-t border-gray-100 mx-3' : 'pt-1'}`}>
+                <p className={`text-center text-[10px] font-bold tracking-wide text-gray-400 uppercase pb-1 ${idx > 0 ? 'mt-2 pt-2 border-t border-gray-100 mx-3' : 'pt-1'}`}>
                   {section.short}
                 </p>
               ) : (
                 <button
                   onClick={() => toggleSection(section.key)}
-                  className="group w-full flex items-center justify-between px-3 pt-4 pb-1.5 text-[11px] font-semibold tracking-wider text-gray-400 hover:text-gray-600 uppercase transition-colors"
+                  className="group w-full flex items-center justify-between px-3 pt-4 pb-1.5 text-[11px] font-bold tracking-wider text-gray-400 hover:text-gray-600 uppercase transition-colors"
                   aria-expanded={!closedSections[section.key]}
                 >
                   <span>{section.label}</span>
@@ -371,7 +354,7 @@ const Sidebar = ({ isOpen, toggle }) => {
             {!sidebarCollapsed && (
               <>
                 <div className="min-w-0 flex-1 text-left">
-                  <p className="text-sm font-medium text-gray-900 truncate leading-tight">{displayName}</p>
+                  <p className="text-sm font-normal text-gray-900 truncate leading-tight">{displayName}</p>
                   <p className="text-xs text-gray-500 truncate leading-tight">{role}</p>
                 </div>
                 <span className="w-6 h-6 rounded-full border border-orange-300 text-orange-600 flex items-center justify-center flex-shrink-0">

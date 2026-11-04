@@ -562,7 +562,7 @@
     margin-top: -6px !important;
   }
 
-  y #invoice-report .grid.grid-cols-6.border-1.border-gray-900 .col-span-2 .border-l-0.border-1.border-t-0.border-gray-900 {
+  #invoice-report .grid.grid-cols-6.border-1.border-gray-900 .col-span-2 .border-l-0.border-1.border-t-0.border-gray-900 {
     padding-left: 0px !important;
     margin-left: -30px !important;
   }
@@ -688,5 +688,190 @@
   #invoice-report .permit-footer {
     position: relative !important;
     top: 160px !important;
+  }
+
+  /* SOLD TO / REGISTERED NAME / BUSINESS ADDRESS: rows close together */
+  #invoice-report .sold-to-rows {
+    gap: 0 !important;
+  }
+
+  #invoice-report .sold-to-rows>div {
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.1 !important;
+  }
+
+  /* Remove the empty space below the SOLD TO box */
+  #invoice-report .sold-to-box {
+    min-height: 0 !important;
+    height: auto !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* TIN further to the right */
+  #invoice-report .sold-to-tin {
+    position: relative !important;
+    left: 60px !important;
+  }
+
+  /* Totals block: tighter rows (labels and values share the same row height so they stay aligned) */
+  #invoice-report .totals-block .mb-1 {
+    margin-bottom: 2px !important;
+    line-height: 16px !important;
+  }
+
+  #invoice-report .totals-block input[readonly] {
+    height: 16px !important;
+    line-height: 16px !important;
+    margin-bottom: 2px !important;
+  }
+
+  /* 1. Add: VAT / Less: Withholding Tax / Total Amount Due: a little more space between rows */
+  #invoice-report .total-due-block .font-medium.text-\[11px\] div,
+  #invoice-report .total-due-block>div:first-child>div {
+    margin-bottom: 14px !important;
+  }
+
+  #invoice-report .total-due-block .px-4.py-2.flex.flex-col.justify-start,
+  #invoice-report .total-due-block>div:last-child {
+    gap: 14px !important;
+  }
+
+  /* 2. Move "Received the amount of" + Add VAT / Withholding / Total Due block lower */
+  #invoice-report .total-due-block {
+    margin-top: 14px !important;
+  }
+
+  #invoice-report .col-span-4.border-r-1.border-gray-900 {
+    margin-top: 14px !important;
+  }
+
+  /* 3. Items table header (ITEM DESCRIPTION / QTY / UNIT COST / AMOUNT) a little lower */
+  #invoice-report table thead th,
+  #invoice-report table thead th:first-child {
+    top: 6px !important;
+  }
+
+  /* 1. Add: VAT / Less: Withholding Tax / Total Amount Due: a little more space between rows */
+  #invoice-report .total-due-block .font-medium.text-\[11px\] div,
+  #invoice-report .total-due-block>div:first-child>div {
+    margin-bottom: 14px !important;
+  }
+
+  #invoice-report .total-due-block .px-4.py-2.flex.flex-col.justify-start,
+  #invoice-report .total-due-block>div:last-child {
+    gap: 14px !important;
+  }
+
+  /* 2. Move "Received the amount of" + Add VAT / Withholding / Total Due block lower */
+  #invoice-report .total-due-block {
+    margin-top: 14px !important;
+  }
+
+  #invoice-report .col-span-4.border-r-1.border-gray-900 {
+    margin-top: 14px !important;
+  }
+
+  /* 3. Items table header (ITEM DESCRIPTION / QTY / UNIT COST / AMOUNT) a little lower */
+  #invoice-report table thead th,
+  #invoice-report table thead th:first-child {
+    top: 6px !important;
+  }
+
+  /* 1. Add: VAT / Less: Withholding Tax / Total Amount Due: move up */
+  #invoice-report .total-due-block {
+    margin-top: -10px !important;
+  }
+
+  /* 2. Total Sales / VAT/PT / SC/PWD / TOTAL SALES (VAT Inclusive) block: move down */
+  #invoice-report .totals-block>.grid.grid-cols-6:first-child {
+    position: relative !important;
+    top: 20px !important;
+  }
+
+  /* 3. Item table (header + rows): more space below the SOLD TO box */
+  #invoice-report table {
+    position: relative !important;
+    top: 20px !important;
+  }
+
+  /* Pull the whole bottom area up so Total Amount Due fits on the page */
+  #invoice-report .totals-block {
+    top: 115px !important;
+  }
+
+  #invoice-report .permit-footer {
+    top: 120px !important;
+  }
+
+  /* Slightly tighter rows in Add: VAT / Withholding / Total Due */
+  #invoice-report .total-due-block .font-medium.text-\[11px\] div,
+  #invoice-report .total-due-block>div:first-child>div {
+    margin-bottom: 10px !important;
+  }
+
+  #invoice-report .total-due-block .px-4.py-2.flex.flex-col.justify-start,
+  #invoice-report .total-due-block>div:last-child {
+    gap: 10px !important;
+  }
+
+  /* Reduce the gap between "Less: Discount" and "Add: VAT" */
+  #invoice-report .total-due-block {
+    margin-top: -30px !important;
+  }
+
+  /* Shrink the invoice a little so the lower blocks have room */
+  #invoice-report {
+    transform: scale(0.86) !important;
+    width: 116.28% !important;
+  }
+
+  /* Move the whole bottom area (tax boxes, Received the amount of, Add VAT... Total Due) lower */
+  #invoice-report .totals-block {
+    top: 200px !important;
+  }
+
+  #invoice-report .permit-footer {
+    top: 205px !important;
+  }
+
+  /* Keep the right-hand Add: VAT group close under Less: Discount */
+  #invoice-report .total-due-block {
+    margin-top: -30px !important;
+  }
+
+  /* Move ONLY the bottom area lower; footer, table and SOLD TO stay put */
+  #invoice-report .totals-block {
+    top: 200px !important;
+  }
+
+  #invoice-report .permit-footer {
+    top: 140px !important;
+  }
+
+  /* Move the items table (header + rows) a little lower */
+  #invoice-report table {
+    position: relative !important;
+    top: 45px !important;
+  }
+
+  /* Move ONLY Add: VAT / Less: Withholding Tax / Total Amount Due a little lower */
+  #invoice-report .total-due-block {
+    margin-top: -15px !important;
+  }
+
+  /* Tiny extra space between rows in the tax boxes (labels and amounts get the same value so they stay aligned) */
+  #invoice-report .totals-block .grid.grid-cols-6:first-child .mb-1 {
+    margin-bottom: 5px !important;
+  }
+
+  #invoice-report .totals-block .grid.grid-cols-6:first-child input[readonly] {
+    margin-bottom: 5px !important;
+  }
+
+  /* Move ONLY the two tax boxes (Total Sales... and TOTAL SALES VAT Inclusive...) a little lower */
+  #invoice-report .totals-block>.grid.grid-cols-6:first-child {
+    top: 32px !important;
   }
 }
