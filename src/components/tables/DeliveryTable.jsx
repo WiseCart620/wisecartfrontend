@@ -106,8 +106,8 @@ const DeliveryTable = ({
           {/* ── HEAD ── */}
           <thead className="bg-white border-b-2 border-gray-200">
             <tr>
-              <th className="px-2 py-2.5 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wider sticky left-0 bg-white z-20 border-r border-gray-200">No.</th>
-              <th className="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider sticky left-[50px] bg-white z-20 border-r border-gray-200">DR #</th>
+              <th className="px-2 py-2.5 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wider sticky left-0 bg-white z-40 border-r border-gray-200">No.</th>
+              <th className="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider sticky left-[50px] bg-white z-40 border-r border-gray-200">DR #</th>
               <th className="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">Warehouse</th>
               <th className="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">Branch</th>
               <th className="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">Prepared</th>
