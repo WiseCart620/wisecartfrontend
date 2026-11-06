@@ -298,13 +298,13 @@ const Sidebar = ({ isOpen, toggle }) => {
           {sections.map((section, idx) => (
             <div key={section.key} className={sidebarCollapsed ? 'mb-2' : 'mb-1'}>
               {sidebarCollapsed ? (
-                <p className={`text-center text-[10px] font-bold tracking-wide text-gray-400 uppercase pb-1 ${idx > 0 ? 'mt-2 pt-2 border-t border-gray-100 mx-3' : 'pt-1'}`}>
+                <p className={`text-center text-[10px] font-normal tracking-wide text-gray-400 uppercase pb-1 ${idx > 0 ? 'mt-2 pt-2 border-t border-gray-100 mx-3' : 'pt-1'}`}>
                   {section.short}
                 </p>
               ) : (
                 <button
                   onClick={() => toggleSection(section.key)}
-                  className="group w-full flex items-center justify-between px-3 pt-4 pb-1.5 text-[11px] font-bold tracking-wider text-gray-400 hover:text-gray-600 uppercase transition-colors"
+                  className="group w-full flex items-center justify-between px-3 pt-4 pb-1.5 text-[11px] font-normal tracking-wider text-gray-400 hover:text-gray-600 uppercase transition-colors"
                   aria-expanded={!closedSections[section.key]}
                 >
                   <span>{section.label}</span>
