@@ -656,7 +656,7 @@ const InventoryManagement = () => {
 
         <div className="mb-3 flex flex-wrap items-end justify-between gap-x-6 border-b border-gray-200">
           <div className="pb-2">
-            <h1 className="text-3xl font-bold text-gray-900 leading-tight">Inventory Management</h1>
+            <h1 className="text-3xl font-bold text-gray-900 leading-tight">Inventory Records</h1>
             <p className="text-xs text-gray-600">Track stock movements across warehouses and branches</p>
           </div>
           <div>
