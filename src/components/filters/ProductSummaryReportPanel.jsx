@@ -13,7 +13,8 @@ const ProductSummaryReportPanel = ({
     onGenerate,
     generating,
     showVariationFilter,
-    setShowVariationFilter
+    setShowVariationFilter,
+    extra
 }) => {
 
 
@@ -28,43 +29,43 @@ const ProductSummaryReportPanel = ({
     const branchOptions = availableBranches.map(b => ({ id: b.id, name: b.branchName, code: b.branchCode }));
 
     const hasCompanyFilter = selectedCompanyIds.length > 0 || (filters.branchIds || []).length > 0;
-
     const canGenerate = filters.warehouseId || hasCompanyFilter;
+    const dropdownFix = '[&>div>button]:!h-7 [&>div>button]:!min-h-0 [&>div>button]:!py-0 [&>div>button]:!text-xs';
 
     return (
-        <div className="py-2 mb-2">
-            <div className="flex flex-wrap items-end gap-2">
+        <div className="py-1 mb-1">
+            <div className="flex flex-nowrap items-end gap-1.5">
                 {canSeeFilter(user, 'warehouse_inventory', 'date') && (
                     <>
-                        <div className="w-[150px]">
-                            <label className="block text-xs text-gray-500 mb-0.5">Date From</label>
+                        <div className="w-[120px] flex-shrink-0">
+                            <label className="block text-[10px] text-gray-500 leading-tight">Date From</label>
                             <input
                                 type="date"
                                 value={filters.dateFrom}
                                 onChange={(e) => updateFilter('dateFrom', e.target.value)}
-                                className="w-full h-8 px-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
+                                className="w-full h-7 px-1.5 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
                             />
                         </div>
-                        <div className="w-[150px]">
-                            <label className="block text-xs text-gray-500 mb-0.5">Date To</label>
+                        <div className="w-[120px] flex-shrink-0">
+                            <label className="block text-[10px] text-gray-500 leading-tight">Date To</label>
                             <input
                                 type="date"
                                 value={filters.dateTo}
                                 onChange={(e) => updateFilter('dateTo', e.target.value)}
-                                className="w-full h-8 px-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
+                                className="w-full h-7 px-1.5 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
                             />
                         </div>
                     </>
                 )}
 
                 {canSeeFilter(user, 'warehouse_inventory', 'warehouse') && (
-                    <div className="w-[180px]">
-                        <label className="block text-xs text-gray-500 mb-0.5">Warehouse</label>
+                    <div className="w-[140px] flex-shrink-0">
+                        <label className="block text-[10px] text-gray-500 leading-tight">Warehouse</label>
                         <select
                             value={filters.warehouseId}
                             onChange={(e) => updateFilter('warehouseId', e.target.value)}
                             disabled={hasCompanyFilter}
-                            className={`w-full h-8 px-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 ${hasCompanyFilter ? 'bg-gray-100 cursor-not-allowed text-gray-400' : 'bg-white'}`}
+                            className={`w-full h-7 px-1.5 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 ${hasCompanyFilter ? 'bg-gray-100 cursor-not-allowed text-gray-400' : 'bg-white'}`}
                         >
                             <option value="">All Warehouses</option>
                             {warehouses.map(w => (
@@ -75,8 +76,8 @@ const ProductSummaryReportPanel = ({
                 )}
 
                 {canSeeFilter(user, 'warehouse_inventory', 'company') && (
-                    <div className="w-[170px]">
-                        <label className="block text-xs text-gray-500 mb-0.5">Company</label>
+                    <div className={`w-[150px] flex-shrink-0 ${dropdownFix}`}>
+                        <label className="block text-[10px] text-gray-500 leading-tight">Company</label>
                         <MultiSelectDropdown
                             options={companyOptions}
                             selectedIds={selectedCompanyIds}
@@ -91,8 +92,8 @@ const ProductSummaryReportPanel = ({
                     </div>
                 )}
                 {canSeeFilter(user, 'warehouse_inventory', 'branch') && (
-                    <div className="w-[170px]">
-                        <label className="block text-xs text-gray-500 mb-0.5">Branch</label>
+                    <div className={`w-[150px] flex-shrink-0 ${dropdownFix}`}>
+                        <label className="block text-[10px] text-gray-500 leading-tight">Branch</label>
                         <MultiSelectDropdown
                             options={branchOptions}
                             selectedIds={filters.branchIds || []}
@@ -122,11 +123,13 @@ const ProductSummaryReportPanel = ({
                     </div>
                 )}
 
-                <div className="ml-auto">
+                {extra}
+
+                <div className="ml-auto flex-shrink-0">
                     <button
                         onClick={onGenerate}
                         disabled={!canGenerate || generating}
-                        className="h-8 px-4 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                        className="h-7 px-3 text-xs bg-orange-600 text-white rounded hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                     >
                         {generating ? 'Generating...' : 'Generate Report'}
                     </button>

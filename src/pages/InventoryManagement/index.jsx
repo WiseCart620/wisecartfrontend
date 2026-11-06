@@ -651,13 +651,12 @@ const InventoryManagement = () => {
 
   return (
     <>
-      <div className="p-2 sm:p-3 lg:p-4 max-w-full mx-auto">
+      <div className="p-2 lg:p-3 max-w-full mx-auto">
         <Toaster position="top-right" />
 
-        <div className="mb-3 flex flex-wrap items-end justify-between gap-x-6 border-b border-gray-200">
-          <div className="pb-2">
-            <h1 className="text-3xl font-bold text-gray-900 leading-tight">Inventory Records</h1>
-            <p className="text-xs text-gray-600">Track stock movements across warehouses and branches</p>
+        <div className="mb-2 flex flex-nowrap items-end justify-between gap-x-4 border-b border-gray-200">
+          <div className="pb-1">
+            <h1 className="text-lg font-semibold text-gray-900 leading-tight">Inventory Records</h1>
           </div>
           <div>
             <nav className="-mb-px flex space-x-2">
@@ -668,7 +667,7 @@ const InventoryManagement = () => {
                     key={key}
                     onClick={() => setActiveTab(key)}
                     aria-label={label}
-                    className={`group flex items-center py-2 px-3 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${active
+                    className={`group flex items-center py-1.5 px-2.5 border-b-2 font-medium text-xs whitespace-nowrap transition-colors ${active
                       ? 'border-orange-500 text-orange-600'
                       : 'border-transparent text-gray-500 hover:text-orange-600 hover:border-orange-400 hover:bg-orange-50'
                       }`}
@@ -690,7 +689,7 @@ const InventoryManagement = () => {
         </div>
 
         {activeTab === 'products' && (
-          <div className="mb-8">
+          <div className="mb-2">
             <ProductSummaryReportPanel
               user={user}
               products={products}
@@ -703,20 +702,19 @@ const InventoryManagement = () => {
               generating={reportLoading || branchReportLoading}
               showVariationFilter={showVariationFilter}
               setShowVariationFilter={setShowVariationFilter}
+              extra={
+                <div className="w-[260px] flex-shrink-0 [&>div>button]:!h-7 [&>div>button]:!min-h-0 [&>div>button]:!py-0 [&>div>button]:!px-2 [&>div>button]:!text-xs [&>div>button>span]:!truncate [&>div>button>span]:!whitespace-nowrap">
+                  <label className="block text-[10px] text-gray-500 leading-tight">Product / UPC / SKU</label>
+                  <ProductMultiSelectDropdown
+                    options={productFilterOptions}
+                    selectedIds={selectedProductKeys}
+                    onChange={(ids) => productReportFilters.updateFilter('productKeys', ids)}
+                    placeholder="Search product, UPC, SKU..."
+                    disabled={productSummaries.length === 0}
+                  />
+                </div>
+              }
             />
-
-            <div className="mb-4">
-              <div className="text-xs font-semibold text-gray-700 mb-1">Filter by Product / UPC / SKU</div>
-              <div className="w-[380px] max-w-full">
-                <ProductMultiSelectDropdown
-                  options={productFilterOptions}
-                  selectedIds={selectedProductKeys}
-                  onChange={(ids) => productReportFilters.updateFilter('productKeys', ids)}
-                  placeholder="Search by product name, UPC, or SKU..."
-                  disabled={productSummaries.length === 0}
-                />
-              </div>
-            </div>
 
             {(() => {
               const { companyIds, branchIds, warehouseId, dateFrom, dateTo } = productReportFilters.filters;
@@ -748,7 +746,7 @@ const InventoryManagement = () => {
         )}
 
         {activeTab === 'warehouse-stocks' && (
-          <div className="mb-8">
+          <div className="mb-2">
 
             <WarehouseFilterPanel
               user={user}
@@ -781,9 +779,8 @@ const InventoryManagement = () => {
             />
           </div>
         )}
-
         {activeTab === 'branch-stocks' && (
-          <div className="mb-8">
+          <div className="mb-2">
             <BranchFilterPanel
               user={user}
               showBranchFilter={showBranchFilter}
