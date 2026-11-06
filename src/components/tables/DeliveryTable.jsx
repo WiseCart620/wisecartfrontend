@@ -157,17 +157,18 @@ const DeliveryTable = ({
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full table-panel flex flex-col flex-1 min-h-0">
       <div className="overflow-auto w-full table-fit flex-1 min-h-0">
-        <table className="table-fixed min-w-[860px] w-full">
+        <table className="table-fixed min-w-[680px] w-full">
           <colgroup>
-            <col className="w-[50px]" />
-            <col className="w-[100px]" />
-            <col className="w-[160px]" />
-            <col className="w-[200px]" />
-            <col className="w-[110px]" />
-            <col className="w-[110px]" />
-            <col className="w-[70px]" />
-            <col className="w-[70px]" />
-            <col className="w-[120px]" /><col className="w-[130px]" />
+            <col className="w-10" />
+            <col className="w-[8%]" />
+            <col className="w-[13%]" />
+            <col className="w-[18%]" />
+            <col className="w-[9%]" />
+            <col className="w-[9%]" />
+            <col className="w-[6%]" />
+            <col className="w-[8%]" />
+            <col className="w-[10%]" />
+            <col className="w-[11%]" />
           </colgroup>
 
           {/* ── HEAD ── */}
