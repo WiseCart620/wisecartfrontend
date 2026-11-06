@@ -1365,7 +1365,7 @@ const InvoicingProfile = ({ onBack }) => {
                 </div>
             </div>
 
-            <div className="bg-white rounded border border-gray-200 p-2 mb-2 flex flex-nowrap gap-2 items-center flex-shrink-0">
+            <div className="bg-white p-0 mb-2 flex flex-nowrap gap-2 items-center flex-shrink-0">
                 {canSeeFilter(user, 'sales', 'search') && (
                     <input
                         placeholder="Search Invoice #..."
@@ -1434,20 +1434,7 @@ const InvoicingProfile = ({ onBack }) => {
                 <div className="h-full overflow-auto">
                     <table className="w-full min-w-[1100px]" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
                         <thead className="bg-white">
-                            <tr className="bg-white">
-                                <th colSpan={4} className="px-4 py-2 text-[11px] font-medium text-black uppercase tracking-wide text-left">
-                                    Totals ({filtered.length} invoice{filtered.length !== 1 ? 's' : ''})
-                                </th>
-                                <th className="px-4 py-2 text-xs font-medium text-black text-right whitespace-nowrap">₱{fmt(totals.vatableSales)}</th>
-                                <th className="px-4 py-2 text-xs font-medium text-black text-right whitespace-nowrap">₱{fmt(totals.vat)}</th>
-                                <th className="px-4 py-2 text-xs font-medium text-black text-right whitespace-nowrap">₱{fmt(totals.withholdingTax)}</th>
-                                <th className="px-4 py-2 text-xs font-medium text-black text-right whitespace-nowrap">₱{fmt(totals.totalAmountDue)}</th>
-                                <th colSpan={2}></th>
-                                <th className="px-4 py-2 text-xs font-medium text-black text-right whitespace-nowrap">₱{fmt(totals.paid)}</th>
-                                <th className="px-4 py-2 text-xs font-medium text-black text-right whitespace-nowrap">₱{fmt(totals.balance)}</th>
-                                <th className="px-4 py-2 text-xs font-medium text-black text-right whitespace-nowrap">₱{fmt(totals.cos)}</th>
-                                <th></th>
-                            </tr>
+
                             <tr>
                                 {[
                                     { key: 'inv', lines: ['Invoice', '#'], align: 'left' },
@@ -1720,6 +1707,24 @@ const InvoicingProfile = ({ onBack }) => {
                                 })
                             )}
                         </tbody>
+                        {!loading && filtered.length > 0 && (
+                            <tfoot className="[&_td]:sticky [&_td]:bottom-0 [&_td]:z-10 [&_td]:bg-white [&_td]:shadow-[0_-2px_0_#e5e7eb]">
+                                <tr>
+                                    <td colSpan={4} className="px-4 py-2 text-[11px] font-semibold text-black uppercase tracking-wide text-left">
+                                        Totals ({filtered.length} invoice{filtered.length !== 1 ? 's' : ''})
+                                    </td>
+                                    <td className="px-4 py-2 text-xs font-semibold text-black text-right whitespace-nowrap">₱{fmt(totals.vatableSales)}</td>
+                                    <td className="px-4 py-2 text-xs font-semibold text-black text-right whitespace-nowrap">₱{fmt(totals.vat)}</td>
+                                    <td className="px-4 py-2 text-xs font-semibold text-black text-right whitespace-nowrap">₱{fmt(totals.withholdingTax)}</td>
+                                    <td className="px-4 py-2 text-xs font-semibold text-black text-right whitespace-nowrap">₱{fmt(totals.totalAmountDue)}</td>
+                                    <td colSpan={2}></td>
+                                    <td className="px-4 py-2 text-xs font-semibold text-black text-right whitespace-nowrap">₱{fmt(totals.paid)}</td>
+                                    <td className="px-4 py-2 text-xs font-semibold text-black text-right whitespace-nowrap">₱{fmt(totals.balance)}</td>
+                                    <td className="px-4 py-2 text-xs font-semibold text-black text-right whitespace-nowrap">₱{fmt(totals.cos)}</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        )}
                     </table>
                 </div>
             </div>
