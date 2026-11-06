@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { extractArray } from '../utils/salesUtils';
 import { invalidateSalesCache, clearSseRefreshTimer, setSseRefreshTimer } from '../utils/salesCache';
 
-const buildSalesParams = (filterData, statusFilter, searchTerm, page = 0, size = 10) => {
+const buildSalesParams = (filterData, statusFilter, searchTerm, page = 0, size = 50) => {
   const startDateObj = filterData.startDate ? new Date(filterData.startDate) : null;
   const endDateObj = filterData.endDate ? new Date(filterData.endDate) : null;
 

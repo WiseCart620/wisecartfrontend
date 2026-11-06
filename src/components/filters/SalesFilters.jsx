@@ -69,21 +69,22 @@ const SalesFilters = ({
   const invoicedQty = allFilteredSales.invoicedQty || 0;
 
   const fmt = (n) => n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const dropdownFix = '[&>div>button]:!h-8 [&>div>button]:!min-h-0 [&>div>button]:!py-0 [&>div>button]:!text-sm [&>div>button>span]:!truncate [&>div>button>span]:!whitespace-nowrap';
 
   return (
-    <div className="py-3 mb-4">
-      <div className="flex flex-col gap-3">
+    <div className="py-1 mb-1 flex-shrink-0">
+      <div className="flex flex-col gap-1.5">
 
         {/* Top row: action buttons + search */}
-        <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+        <div className="flex flex-row gap-2 items-center justify-between">
           <div className="flex flex-wrap gap-2">
             {canCreate && (
-              <button onClick={onNewSale} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm text-sm font-medium">
+              <button onClick={onNewSale} className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 text-white rounded hover:bg-orange-700 transition-all duration-150 text-xs font-medium whitespace-nowrap">
                 <Plus size={16} /> New Sale
               </button>
             )}
             {canInvoice && (
-              <button onClick={onOpenInvoice} className="flex items-center gap-2 px-4 py-2 bg-white border border-orange-300 text-orange-700 rounded hover:bg-orange-50 hover:shadow-sm transition-all duration-150 text-sm font-medium">
+              <button onClick={onOpenInvoice} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-orange-300 text-orange-700 rounded hover:bg-orange-50 transition-all duration-150 text-xs font-medium whitespace-nowrap">
                 <FileText size={16} /> Generate Invoice / COS
               </button>
             )}
@@ -96,15 +97,15 @@ const SalesFilters = ({
                 placeholder="Search branch/company..."
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                className="pl-9 pr-3 py-2 border border-gray-300 rounded w-full text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                className="pl-8 pr-2 h-8 border border-gray-300 rounded w-full text-xs focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               />
             </div>
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-200">
+        <div className="flex flex-nowrap items-center gap-1.5">
           {canSeeFilter(user, 'sales', 'company') && (
-            <div className="min-w-[140px] max-w-[260px] flex-shrink-0">
+            <div className={`min-w-[140px] max-w-[200px] flex-shrink-0 ${dropdownFix}`}>
               <MultiSelectDropdown
                 options={companyOptions}
                 selectedIds={filterData.companyIds || []}
@@ -143,7 +144,7 @@ const SalesFilters = ({
             <select
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-              className="h-9 px-2.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500 w-36 flex-shrink-0"
+              className="h-8 px-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500 w-32 flex-shrink-0"
             >
               <option value="ALL">All Status</option>
               <option value="PENDING">Pending</option>
@@ -153,7 +154,7 @@ const SalesFilters = ({
           )}
 
           {canSeeFilter(user, 'sales', 'date') && (
-            <div className="h-9 flex items-center gap-1 border border-gray-300 rounded px-2 flex-shrink-0">
+            <div className="h-8 flex items-center gap-1 border border-gray-300 rounded px-2 flex-shrink-0">
               <span className="text-[11px] text-gray-400 whitespace-nowrap pl-0.5">Date</span>
               <input
                 type="date"
@@ -189,7 +190,7 @@ const SalesFilters = ({
               value={saleNoTerm || ''}
               onChange={(e) => { setSaleNoTerm(e.target.value); setCurrentPage(1); }}
               placeholder="Sale No. (e.g. 3258, 7753)"
-              className="h-9 px-2.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500 w-52 flex-shrink-0"
+              className="h-8 px-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500 w-44 flex-shrink-0"
             />
           )}
 
@@ -206,10 +207,10 @@ const SalesFilters = ({
 
 
         {canSummary && (
-          <div className="pt-2 border-t border-gray-100">
+          <div className="pt-0.5">
             <button
               onClick={() => setShowSummary(prev => !prev)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-white hover:shadow-sm text-xs transition-all duration-150"
+              className="flex items-center gap-1.5 px-3 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-white hover:shadow-sm text-xs transition-all duration-150"
             >
               <FileText size={13} /> View Summary
               <ChevronDown size={14} className={`transition-transform duration-200 ${showSummary ? 'rotate-180' : ''}`} />

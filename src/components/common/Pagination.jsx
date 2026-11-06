@@ -53,8 +53,7 @@ const Pagination = ({
   const pageNumbers = getPageNumbers();
 
   return (
-    <div className="px-6 py-4 border-t border-gray-200 bg-white flex items-center justify-between">
-      {/* Showing X to Y — with editable page number */}
+    <div className="px-4 py-2 border-t border-gray-200 bg-white flex items-center justify-between">
       <div className="text-sm text-gray-700 flex items-center gap-1">
         Showing{' '}
         <input
@@ -76,11 +75,10 @@ const Pagination = ({
         <button
           onClick={onPrevPage}
           disabled={currentPage === 1}
-          className={`p-2 rounded border ${
-            currentPage === 1
+          className={`p-2 rounded border ${currentPage === 1
               ? 'text-gray-400 cursor-not-allowed border-gray-200'
               : 'text-gray-700 hover:bg-white border-gray-300'
-          }`}
+            }`}
         >
           <ChevronLeft size={16} />
         </button>
@@ -96,11 +94,10 @@ const Pagination = ({
                 )}
                 <button
                   onClick={() => onPageChange(number)}
-                  className={`min-w-[40px] px-3 py-2 text-sm rounded border ${
-                    currentPage === number
+                  className={`min-w-[40px] px-3 py-2 text-sm rounded border ${currentPage === number
                       ? 'bg-orange-600 text-white border-orange-600'
                       : 'text-gray-700 hover:bg-white border-gray-300'
-                  }`}
+                    }`}
                 >
                   {number}
                 </button>
@@ -112,11 +109,10 @@ const Pagination = ({
         <button
           onClick={onNextPage}
           disabled={currentPage === totalPages}
-          className={`p-2 rounded border ${
-            currentPage === totalPages
+          className={`p-2 rounded border ${currentPage === totalPages
               ? 'text-gray-400 cursor-not-allowed border-gray-200'
               : 'text-gray-700 hover:bg-white border-gray-300'
-          }`}
+            }`}
         >
           <ChevronRight size={16} />
         </button>

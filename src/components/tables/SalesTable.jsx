@@ -4,6 +4,8 @@ import Pagination from '../../components/common/Pagination';
 import { formatCurrency } from '../../utils/salesUtils';
 import { months } from '../../constants/salesConstants';
 
+const PAGE_SIZE = 50;
+
 const SalesTable = ({
   sales, loading,
   currentPage, totalPages, totalElements,
@@ -32,8 +34,8 @@ const SalesTable = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm overflow-hidden table-panel">
-      <div className="overflow-x-auto table-fit">
+    <div className="bg-white overflow-hidden table-panel flex-1 min-h-0 flex flex-col">
+      <div className="overflow-auto flex-1 min-h-0 table-fit">
         <table className="w-full min-w-[680px] sales-print-table table-fixed">
           <colgroup>
             <col className="w-10" />
@@ -47,7 +49,7 @@ const SalesTable = ({
             <col className="w-[9%]" />
             <col className="w-[10%]" />
           </colgroup>
-          <thead className="bg-white border-b border-gray-200">
+          <thead className="bg-white sticky top-0 z-10 shadow-[0_1px_0_#d1d5db]">
             <tr>
               <th className="px-3 py-3 text-center text-[11px] font-medium text-gray-500 uppercase tracking-wider">#</th>
               <th className="px-3 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Sale No.</th>
@@ -85,7 +87,7 @@ const SalesTable = ({
               currentSales.map((sale, idx) => (
                 <tr key={sale.id} className="hover:bg-white transition">
                   <td className="px-3 py-3 whitespace-nowrap text-center text-xs text-gray-400 font-medium">
-                    {((currentPage - 1) * 10) + idx + 1}
+                    {((currentPage - 1) * PAGE_SIZE) + idx + 1}
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap text-xs font-medium text-gray-900">{sale.id}</td>
                   <td className="px-3 py-3">
@@ -160,8 +162,8 @@ const SalesTable = ({
           onPageChange={onPageChange}
           onNextPage={() => onPageChange(currentPage + 1)}
           onPrevPage={() => onPageChange(currentPage - 1)}
-          showingStart={((currentPage - 1) * 10) + 1}
-          showingEnd={Math.min(currentPage * 10, totalElements)}
+          showingStart={((currentPage - 1) * PAGE_SIZE) + 1}
+          showingEnd={Math.min(currentPage * PAGE_SIZE, totalElements)}
           totalItems={totalElements}
         />
       )}

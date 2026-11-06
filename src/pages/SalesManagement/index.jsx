@@ -356,12 +356,11 @@ const SalesManagement = () => {
   if (showSalesReport) return <SalesReport onBack={() => navigate('/sales')} filterData={filterData} companies={companies} branches={branches} allProductOptions={allProductOptions} />;
 
   return (
-    <div className="min-h-screen bg-white p-2 sm:p-3 lg:p-4">
+    <div className="h-[100dvh] flex flex-col overflow-hidden bg-white p-2 lg:p-3">
       <LoadingOverlay show={actionLoading && !!loadingMessage} message={loadingMessage} />
-      <div className="max-w-full mx-auto">
-        <div className="mb-4">
-          <h1 className="text-3xl font-bold text-gray-900 mb-1">Sales Management</h1>
-          <p className="text-sm text-gray-600">Manage sales orders, generate invoices, and track revenue</p>
+      <div className="max-w-full w-full mx-auto flex-1 min-h-0 flex flex-col">
+        <div className="mb-1 flex-shrink-0">
+          <h1 className="text-lg font-semibold text-gray-900 leading-tight">Sales Management</h1>
         </div>
 
         <SalesFilters
