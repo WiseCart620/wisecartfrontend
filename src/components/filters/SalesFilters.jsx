@@ -130,7 +130,7 @@ const SalesFilters = ({
                       onClick={() => { setSummaryPos(null); onOpenStatusModal(status); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50"
                     >
-                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
+                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot}`} />
                       <span className="text-xs text-gray-800 w-16">{label}</span>
                       <span className="text-xs text-gray-900 font-medium flex-1 text-right">₱{fmt(amt)}</span>
                       <span className="text-[11px] text-gray-500 w-20 text-right">{count} · Qty {qty.toLocaleString()}</span>

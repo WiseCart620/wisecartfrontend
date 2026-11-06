@@ -338,7 +338,7 @@ const DeliveryTable = ({
 
                     <td className="px-2 py-2.5">
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-800 whitespace-nowrap capitalize">
-                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${STATUS_DOT[delivery.status] || 'bg-gray-400'}`} />
+                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${STATUS_DOT[delivery.status] || 'bg-gray-400'}`} />
                         {String(delivery.customStatus || delivery.status).replace(/_/g, ' ').toLowerCase()}
                       </span>
                     </td>
@@ -438,6 +438,7 @@ const DeliveryTable = ({
 };
 
 export default DeliveryTable;
+
 
 
 

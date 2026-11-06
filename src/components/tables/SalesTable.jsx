@@ -108,7 +108,7 @@ const SalesTable = ({
                   <td className="pl-6 pr-3 py-3 whitespace-nowrap text-xs font-semibold text-gray-900">{formatCurrency(getRowTotals(sale).amount)}</td>
                   <td className="px-3 py-3 whitespace-nowrap">
                     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-800 capitalize">
-                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${STATUS_DOT[sale.status] || 'bg-gray-400'}`} />
+                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${STATUS_DOT[sale.status] || 'bg-gray-400'}`} />
                       {String(sale.status).toLowerCase()}
                     </span>
                   </td>
