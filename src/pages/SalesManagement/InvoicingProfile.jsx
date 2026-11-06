@@ -1325,34 +1325,31 @@ const InvoicingProfile = ({ onBack }) => {
     };
 
     return (
-        <div className="min-h-screen bg-white p-3 lg:p-5" style={{ fontFamily: "'Avenir Next', 'Avenir', 'Segoe UI', Helvetica, Arial, sans-serif" }}>
+        <div className="min-h-screen bg-white p-2 lg:p-3" style={{ fontFamily: "'Avenir Next', 'Avenir', 'Segoe UI', Helvetica, Arial, sans-serif" }}>
             {/* Header */}
-            <div className="flex items-center justify-between mb-4 flex-wrap gap-3 pb-4 border-b border-gray-200">
+            <div className="flex items-center justify-between mb-2 flex-nowrap gap-2 pb-2 border-b border-gray-200">
                 <div>
                     <button
                         onClick={onBack}
-                        className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-1 transition"
+                        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition"
                     >
-                        <ArrowLeft size={15} />
+                        <ArrowLeft size={13} />
                         Back to Sales
                     </button>
-                    <h1 className="text-xl font-medium text-black">Sales Journal</h1>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                        Hover open balance to preview · Click to view full detail
-                    </p>
+                    <h1 className="text-lg font-medium text-black leading-tight">Sales Journal</h1>
                 </div>
                 <div className="flex items-center gap-2">
                     {isAdmin && (
                         <button
                             onClick={() => setShowDvModal(true)}
-                            className="px-3 py-2 bg-[#2CA01C] text-white rounded text-sm font-medium hover:bg-[#268d19] transition"
+                            className="px-3 py-1.5 bg-[#2CA01C] text-white rounded text-xs font-medium hover:bg-[#268d19] transition whitespace-nowrap"
                         >
                             Record DV payment
                         </button>
                     )}
                     <button
                         onClick={load}
-                        className="px-3 py-2 border border-gray-300 rounded text-sm text-gray-700 hover:bg-white transition"
+                        className="px-3 py-1.5 border border-gray-300 rounded text-xs text-gray-700 hover:bg-white transition whitespace-nowrap"
                     >
                         ↻ Refresh
                     </button>
