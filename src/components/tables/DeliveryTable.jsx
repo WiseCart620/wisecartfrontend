@@ -87,8 +87,8 @@ const DeliveryTable = ({
 
 
   return (
-    <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full table-panel">
-      <div className="overflow-x-auto w-full table-fit">
+    <div className="bg-white rounded-xl shadow-sm overflow-hidden w-full table-panel flex flex-col flex-1 min-h-0">
+      <div className="overflow-auto w-full table-fit flex-1 min-h-0">
         <table className="table-fixed min-w-[860px] w-full">
           <colgroup>
             <col className="w-[50px]" />
@@ -395,7 +395,7 @@ const DeliveryTable = ({
       </div>
 
       {!isLoading && totalItems > 0 && (
-        <div className="border-t border-gray-200">
+        <div className="border-t border-gray-200 flex-shrink-0">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}

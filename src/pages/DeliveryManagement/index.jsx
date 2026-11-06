@@ -62,7 +62,7 @@ const DeliveryManagement = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(50);
   const [sortMode, setSortMode] = useState('receipt_desc');
   const [cancelModal, setCancelModal] = useState({ show: false, delivery: null, remarks: '' });
 
@@ -355,20 +355,17 @@ const DeliveryManagement = () => {
         subMessage="Please wait, we're syncing a large volume of delivery data to ensure real-time accuracy."
       />
 
-      <div className="p-2 sm:p-3 lg:p-4 max-w-full mx-auto overflow-x-hidden">
-        <div className="mb-3 flex items-center justify-between">
-          <div>
-            <h1 className="text-lg lg:text-2xl font-bold text-gray-900">Delivery Management</h1>
-            <p className="text-xs sm:text-sm text-gray-600">Track and manage product deliveries to branches</p>
-          </div>
+      <div className="h-[100dvh] flex flex-col overflow-hidden p-2 lg:p-3 max-w-full w-full mx-auto">
+        <div className="mb-1 flex-shrink-0">
+          <h1 className="text-lg font-semibold text-gray-900 leading-tight">Delivery Management</h1>
         </div>
 
-        <div className="flex flex-wrap justify-between items-center gap-2 mb-3">
+        <div className="flex flex-wrap justify-between items-center gap-2 mb-1.5 flex-shrink-0">
           <div className="flex items-center gap-2 flex-wrap">
             {canCreate && (
               <button
                 onClick={() => handleOpenModal('create')}
-                className="flex items-center gap-2 px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-150 shadow-sm font-medium text-sm"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 text-white rounded hover:bg-orange-700 transition-all duration-150 text-xs font-medium whitespace-nowrap"
               >
                 <Plus size={16} />
                 <span>New Delivery</span>
