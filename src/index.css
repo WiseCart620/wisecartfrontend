@@ -212,8 +212,8 @@ code {
 
 .inv-table-panel thead th.th-num,
 .inv-table-panel tbody td.td-num {
-  width: 90px;
-  min-width: 90px;
+  width: auto;
+  min-width: 0;
 }
 
 .inv-table-panel thead th {
@@ -237,28 +237,28 @@ code {
 }
 
 .inv-table-panel th.col-name {
-  width: 220px;
-  min-width: 220px;
+  width: 13%;
+  min-width: 0;
 }
 
 .inv-table-panel th.col-prod {
-  width: 260px;
-  min-width: 260px;
+  width: 16%;
+  min-width: 0;
 }
 
 .inv-table-panel th.col-sku {
-  width: 200px;
-  min-width: 200px;
+  width: 14%;
+  min-width: 0;
 }
 
 .inv-table-panel th.col-date {
-  width: 130px;
-  min-width: 130px;
+  width: 8%;
+  min-width: 0;
 }
 
 .inv-table-panel th.col-act {
-  width: 110px;
-  min-width: 110px;
+  width: 6%;
+  min-width: 0;
 }
 
 /* text-column header icons sit at the left, over the start of the text */
@@ -345,3 +345,4 @@ input[type="checkbox"]:focus-visible,
   width: 1rem !important;
   padding: 0 !important;
 }
+
