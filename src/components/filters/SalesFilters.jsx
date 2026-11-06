@@ -100,67 +100,6 @@ const SalesFilters = ({
                 <FileText size={16} /> Generate Invoice / COS
               </button>
             )}
-            {canSummary && (
-          <div>
-            <button
-              onClick={(e) => {
-                const r = e.currentTarget.getBoundingClientRect();
-                setSummaryPos(summaryPos ? null : { top: r.bottom + 6, left: r.left });
-              }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-gray-300 bg-white text-gray-700 hover:shadow-sm text-xs font-medium whitespace-nowrap transition-all duration-150"
-            >
-              <FileText size={13} /> View Summary
-              <ChevronDown size={14} className={`transition-transform duration-200 ${showSummary ? 'rotate-180' : ''}`} />
-            </button>
-
-            {summaryPos && (
-              <>
-                <div className="fixed inset-0 z-[60]" onClick={() => setSummaryPos(null)} />
-                <div
-                  className="fixed z-[70] w-80 bg-white border border-gray-200 rounded-lg shadow-lg py-1"
-                  style={{ top: summaryPos.top, left: summaryPos.left }}
-                >
-                  {[
-                    { status: 'PENDING', label: 'Pending', amt: pendingAmt, count: allFilteredSales.pendingCount ?? 0, qty: pendingQty, dot: 'bg-yellow-500' },
-                    { status: 'CONFIRMED', label: 'Confirmed', amt: confirmedAmt, count: allFilteredSales.confirmedCount ?? 0, qty: confirmedQty, dot: 'bg-orange-500' },
-                    { status: 'INVOICED', label: 'Invoiced', amt: invoicedAmt, count: allFilteredSales.invoicedCount ?? 0, qty: invoicedQty, dot: 'bg-green-500' },
-                  ].map(({ status, label, amt, count, qty, dot }) => (
-                    <button
-                      key={status}
-                      onClick={() => { setSummaryPos(null); onOpenStatusModal(status); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50"
-                    >
-                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot}`} />
-                      <span className="text-xs text-gray-800 w-16">{label}</span>
-                      <span className="text-xs text-gray-900 font-medium flex-1 text-right">₱{fmt(amt)}</span>
-                      <span className="text-[11px] text-gray-500 w-20 text-right">{count} · Qty {qty.toLocaleString()}</span>
-                    </button>
-                  ))}
-
-                  <div className="border-t border-gray-100 my-1" />
-
-                  <div className="flex items-center justify-between px-3 py-1.5">
-                    <span className="text-xs text-gray-600">Total Qty</span>
-                    <span className="text-xs text-gray-900 font-medium">{(pendingQty + confirmedQty + invoicedQty).toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center justify-between px-3 py-1.5">
-                    <span className="text-xs text-gray-600">Grand Total</span>
-                    <span className="text-sm text-gray-900 font-semibold">₱{fmt(grandTotal)}</span>
-                  </div>
-
-                  <div className="border-t border-gray-100 my-1" />
-
-                  <button
-                    onClick={() => { setSummaryPos(null); onOpenSummary(); }}
-                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
-                  >
-                    Open Summary <ChevronDown size={12} className="-rotate-90" />
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
           </div>
         </div>
 
@@ -254,6 +193,68 @@ const SalesFilters = ({
               className="h-8 px-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-orange-500 w-44 flex-shrink-0"
             />
           )}
+
+                      {canSummary && (
+          <div>
+            <button
+              onClick={(e) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                setSummaryPos(summaryPos ? null : { top: r.bottom + 6, left: r.left });
+              }}
+              className="h-8 flex items-center gap-1 px-2 text-sm text-gray-700 hover:text-gray-900 font-medium whitespace-nowrap bg-transparent border-0 outline-none focus:outline-none"
+            >
+              <FileText size={13} /> View Summary
+              <ChevronDown size={14} className={`transition-transform duration-200 ${showSummary ? 'rotate-180' : ''}`} />
+            </button>
+
+            {summaryPos && (
+              <>
+                <div className="fixed inset-0 z-[60]" onClick={() => setSummaryPos(null)} />
+                <div
+                  className="fixed z-[70] w-80 bg-white border border-gray-200 rounded-lg shadow-lg py-1"
+                  style={{ top: summaryPos.top, left: summaryPos.left }}
+                >
+                  {[
+                    { status: 'PENDING', label: 'Pending', amt: pendingAmt, count: allFilteredSales.pendingCount ?? 0, qty: pendingQty, dot: 'bg-yellow-500' },
+                    { status: 'CONFIRMED', label: 'Confirmed', amt: confirmedAmt, count: allFilteredSales.confirmedCount ?? 0, qty: confirmedQty, dot: 'bg-orange-500' },
+                    { status: 'INVOICED', label: 'Invoiced', amt: invoicedAmt, count: allFilteredSales.invoicedCount ?? 0, qty: invoicedQty, dot: 'bg-green-500' },
+                  ].map(({ status, label, amt, count, qty, dot }) => (
+                    <button
+                      key={status}
+                      onClick={() => { setSummaryPos(null); onOpenStatusModal(status); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50"
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot}`} />
+                      <span className="text-xs text-gray-800 w-16">{label}</span>
+                      <span className="text-xs text-gray-900 font-medium flex-1 text-right">₱{fmt(amt)}</span>
+                      <span className="text-[11px] text-gray-500 w-20 text-right">{count} · Qty {qty.toLocaleString()}</span>
+                    </button>
+                  ))}
+
+                  <div className="border-t border-gray-100 my-1" />
+
+                  <div className="flex items-center justify-between px-3 py-1.5">
+                    <span className="text-xs text-gray-600">Total Qty</span>
+                    <span className="text-xs text-gray-900 font-medium">{(pendingQty + confirmedQty + invoicedQty).toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between px-3 py-1.5">
+                    <span className="text-xs text-gray-600">Grand Total</span>
+                    <span className="text-sm text-gray-900 font-semibold">₱{fmt(grandTotal)}</span>
+                  </div>
+
+                  <div className="border-t border-gray-100 my-1" />
+
+                  <button
+                    onClick={() => { setSummaryPos(null); onOpenSummary(); }}
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                  >
+                    Open Summary <ChevronDown size={12} className="-rotate-90" />
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
           {hasActiveFilters && (
             <button onClick={onResetFilter} className="text-sm text-orange-600 hover:text-orange-800 font-medium ml-auto whitespace-nowrap">
