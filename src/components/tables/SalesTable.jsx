@@ -1,10 +1,17 @@
 import React from 'react';
-import { Eye, Edit2, Trash2, Check, Loader2 } from 'lucide-react';
+import { Edit2, Trash2, Check } from 'lucide-react';
+import RowActions from '../../components/common/RowActions';
 import Pagination from '../../components/common/Pagination';
 import { formatCurrency } from '../../utils/salesUtils';
 import { months } from '../../constants/salesConstants';
 
 const PAGE_SIZE = 50;
+
+const STATUS_DOT = {
+  PENDING: 'bg-yellow-500',
+  CONFIRMED: 'bg-orange-500',
+  INVOICED: 'bg-green-500',
+};
 
 const SalesTable = ({
   sales, loading,
@@ -100,53 +107,21 @@ const SalesTable = ({
                   <td className="pl-3 pr-10 py-3 whitespace-nowrap text-xs text-gray-700 text-right">{getRowTotals(sale).qty.toLocaleString()}</td>
                   <td className="pl-6 pr-3 py-3 whitespace-nowrap text-xs font-semibold text-gray-900">{formatCurrency(getRowTotals(sale).amount)}</td>
                   <td className="px-3 py-3 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-[11px] leading-5 font-semibold rounded-full ${sale.status === 'INVOICED' ? 'bg-green-100 text-green-800' :
-                      sale.status === 'CONFIRMED' ? 'bg-orange-100 text-orange-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                      {sale.status}
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-800 capitalize">
+                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${STATUS_DOT[sale.status] || 'bg-gray-400'}`} />
+                      {String(sale.status).toLowerCase()}
                     </span>
                   </td>
-                  <td className="px-2 py-3 whitespace-nowrap text-sm font-medium no-print">
-                    <div className="flex items-center gap-0.5 flex-nowrap">
-                      <button onClick={() => onView(sale)} disabled={loadingAction?.id === sale.id} className="inline-flex items-center justify-center w-7 h-7 rounded text-orange-600 hover:bg-orange-50 transition disabled:opacity-60" title="View">
-                        {loadingAction?.id === sale.id && loadingAction?.type === 'view' ? <Loader2 size={15} className="animate-spin" /> : <Eye size={15} />}
-                      </button>
-
-                      {sale.status === 'PENDING' && canCreate && (
-                        <>
-                          {canEdit && (
-                            <button onClick={() => onEdit(sale)} disabled={loadingAction?.id === sale.id} className="inline-flex items-center justify-center w-7 h-7 rounded text-orange-600 hover:bg-orange-50 transition disabled:opacity-60" title="Edit">
-                              {loadingAction?.id === sale.id && loadingAction?.type === 'edit' ? <Loader2 size={15} className="animate-spin" /> : <Edit2 size={15} />}
-                            </button>
-                          )}
-                          <button onClick={() => onUpdateStatus(sale.id, 'CONFIRMED')} className="inline-flex items-center justify-center w-7 h-7 rounded text-green-600 hover:bg-green-50 transition" title="Confirm Sale">
-                            <Check size={15} />
-                          </button>
-                          {canDelete && (
-                            <button onClick={() => onDelete(sale.id)} className="inline-flex items-center justify-center w-7 h-7 rounded text-red-600 hover:bg-red-50 transition" title="Delete">
-                              <Trash2 size={15} />
-                            </button>
-                          )}
-                        </>
-                      )}
-
-                      {sale.status === 'CONFIRMED' && canCreate && (
-                        <>
-                          {canDelete && (
-                            <button onClick={() => onDelete(sale.id)} className="inline-flex items-center justify-center w-7 h-7 rounded text-red-600 hover:bg-red-50 transition" title="Delete">
-                              <Trash2 size={15} />
-                            </button>
-                          )}
-                        </>
-                      )}
-                      {sale.status === 'INVOICED' && canDelete && (
-                        <button onClick={() => onDelete(sale.id)} className="inline-flex items-center justify-center w-7 h-7 rounded text-red-600 hover:bg-red-50 transition" title="Delete">
-                          <Trash2 size={15} />
-                        </button>
-                      )}
-
-                    </div>
+                  <td className="px-2 py-2 whitespace-nowrap no-print">
+                    <RowActions
+                      loading={loadingAction?.id === sale.id}
+                      onView={() => onView(sale)}
+                      items={[
+                        sale.status === 'PENDING' && canCreate && canEdit && { label: 'Edit sale', icon: Edit2, onClick: () => onEdit(sale) },
+                        sale.status === 'PENDING' && canCreate && { label: 'Confirm sale', icon: Check, onClick: () => onUpdateStatus(sale.id, 'CONFIRMED') },
+                        (((sale.status === 'PENDING' || sale.status === 'CONFIRMED') && canCreate) || sale.status === 'INVOICED') && canDelete && { label: 'Delete sale', icon: Trash2, danger: true, onClick: () => onDelete(sale.id) },
+                      ].filter(Boolean)}
+                    />
                   </td>
                 </tr>
               ))
