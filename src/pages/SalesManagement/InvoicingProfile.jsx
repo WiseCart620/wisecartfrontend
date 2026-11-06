@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { ArrowLeft, X, Trash2, Eye, ChevronDown, ChevronUp, FileText, Pencil } from 'lucide-react';
 import '../../styles/invoice-print.css';
 import { useAuth, can, canSeeFilter } from '../../context/AuthContext';
-import Pagination from '../common/Pagination';
+import Pagination from '../../components/common/Pagination';
 
 
 const fmt = (n) =>
@@ -1471,7 +1471,7 @@ const InvoicingProfile = ({ onBack }) => {
                                         <th
                                             key={key}
                                             onClick={isInv ? () => setSortOrder(prev => prev === 'asc' ? 'desc' : prev === 'desc' ? 'none' : 'asc') : undefined}
-                                            className={`sticky top-0 z-10 bg-white shadow-[0_1px_0_#d1d5db] px-3 py-2text-[11px] font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap align-bottom ${alignCls} ${isInv ? 'cursor-pointer select-none hover:text-gray-700' : ''}`}
+                                            className={`sticky top-0 z-10 bg-white shadow-[0_1px_0_#d1d5db] px-3 py-2 text-[11px] font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap align-bottom ${alignCls} ${isInv ? 'cursor-pointer select-none hover:text-gray-700' : ''}`}
                                         >
                                             <div className="leading-tight h-[28px] flex flex-col justify-end">
                                                 <span className="block h-[14px]">{lines[0] || '\u00A0'}</span>
@@ -1484,7 +1484,7 @@ const InvoicingProfile = ({ onBack }) => {
                                 })}
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-gray-200">
                             {loading ? (
                                 <tr>
                                     <td colSpan={14} className="px-4 py-10 text-center text-gray-400 text-sm">
