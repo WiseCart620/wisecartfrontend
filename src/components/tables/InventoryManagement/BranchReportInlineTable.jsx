@@ -53,13 +53,13 @@ const BranchReportInlineTable = ({ rows = [], loading, hasDateFilter = false }) 
   const cols = baseCols;
 
   return (
-    <div className="bg-white rounded-xl shadow overflow-hidden mb-6 inv-table-panel">
+    <div className="bg-white overflow-hidden inv-table-panel flex-1 min-h-0 flex flex-col">
       <div className="px-6 py-4 border-b border-gray-200 bg-white">
         <h2 className="text-lg font-semibold text-gray-900">Company Product Summary</h2>
       </div>
-      <div className="overflow-x-auto table-fit">
+      <div className="overflow-auto flex-1 min-h-0 table-fit">
         <table className="w-full">
-          <thead className="bg-white">
+          <thead className="bg-white sticky top-0 z-10 shadow-[0_1px_0_#d1d5db]">
             <tr>
               <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
               <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU/UPC</th>

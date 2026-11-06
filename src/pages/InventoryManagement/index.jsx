@@ -47,7 +47,7 @@ const InventoryManagement = () => {
   const [debouncedStockSearchTerm, setDebouncedStockSearchTerm] = useState('');
   const [warehouseStockPage, setWarehouseStockPage] = useState(1);
   const [branchStockPage, setBranchStockPage] = useState(1);
-  const STOCK_PAGE_SIZE = 20;
+  const STOCK_PAGE_SIZE = 50;
   const [activeTab, setActiveTab] = useState('products');
   const [showVariationFilter, setShowVariationFilter] = useState('ALL');
   const [showWarehouseFilter, setShowWarehouseFilter] = useState(true);
@@ -247,7 +247,7 @@ const InventoryManagement = () => {
     enabled: activeTab === 'branch-stocks',
   });
 
-  const productPagination = usePaginationControl(10);
+  const productPagination = usePaginationControl(50);
   const stockPagination = usePaginationControl(10);
 
   const selectedProductKeys = productReportFilters.filters.productKeys || [];
@@ -284,7 +284,7 @@ const InventoryManagement = () => {
     variationFilter: showVariationFilter,
     productKeys: selectedProductKeys,
     currentPage: productPagination.currentPage,
-    pageSize: 10,
+    pageSize: 50,
   });
 
   useEffect(() => {
@@ -651,10 +651,10 @@ const InventoryManagement = () => {
 
   return (
     <>
-      <div className="p-2 lg:p-3 max-w-full mx-auto">
+      <div className="h-[100dvh] flex flex-col overflow-hidden p-2 lg:p-3 max-w-full mx-auto">
         <Toaster position="top-right" />
 
-        <div className="mb-2 flex flex-nowrap items-end justify-between gap-x-4 border-b border-gray-200">
+        <div className="mb-2 flex flex-nowrap items-end justify-between gap-x-4 border-b border-gray-200 flex-shrink-0">
           <div className="pb-1">
             <h1 className="text-lg font-semibold text-gray-900 leading-tight">Inventory Records</h1>
           </div>
@@ -689,7 +689,7 @@ const InventoryManagement = () => {
         </div>
 
         {activeTab === 'products' && (
-          <div className="mb-2">
+          <div className="flex-1 min-h-0 flex flex-col">
             <ProductSummaryReportPanel
               user={user}
               products={products}
@@ -746,7 +746,7 @@ const InventoryManagement = () => {
         )}
 
         {activeTab === 'warehouse-stocks' && (
-          <div className="mb-2">
+          <div className="flex-1 min-h-0 flex flex-col">
 
             <WarehouseFilterPanel
               user={user}
@@ -780,7 +780,7 @@ const InventoryManagement = () => {
           </div>
         )}
         {activeTab === 'branch-stocks' && (
-          <div className="mb-2">
+          <div className="flex-1 min-h-0 flex flex-col">
             <BranchFilterPanel
               user={user}
               showBranchFilter={showBranchFilter}
@@ -811,7 +811,7 @@ const InventoryManagement = () => {
         )}
 
         {activeTab === 'stock-rebuild' && (
-          <div className="mb-8 border border-gray-100 rounded-3xl bg-white shadow-[0_2px_16px_rgba(15,23,42,0.04)] p-7">
+          <div className="flex-1 min-h-0 overflow-auto border border-gray-100 rounded-3xl bg-white shadow-[0_2px_16px_rgba(15,23,42,0.04)] p-7">
             {!stockToolsUnlocked ? (
               <PasswordGate onUnlock={handleUnlockStockTools} bare />
             ) : (

@@ -52,7 +52,7 @@ const ProductSummaryTable = ({
   );
 
   return (
-    <div className="bg-white overflow-hidden mb-6 inv-table-panel">
+    <div className="bg-white overflow-hidden inv-table-panel flex-1 min-h-0 flex flex-col">
       <div className="px-4 py-2 border-b border-gray-200 bg-white">
         <h2 className="text-base font-semibold text-black flex items-center gap-2">
           <BarChart3 size={18} />
@@ -60,9 +60,7 @@ const ProductSummaryTable = ({
         </h2>
       </div>
 
-      {/* overflow-x-auto stays as a safety net for very narrow screens,
-          but table-fixed + trimmed widths below keep it inside a laptop viewport */}
-      <div className="overflow-x-auto table-fit">
+      <div className="overflow-auto flex-1 min-h-0 table-fit">
         <table className="w-full table-fixed text-[13px]">
           <colgroup>
             <col className="w-[18%]" />
@@ -79,7 +77,7 @@ const ProductSummaryTable = ({
             <col className="w-[6.4%]" />
             <col className="w-[5%]" />
           </colgroup>
-          <thead className="bg-white border-b border-gray-300">
+          <thead className="bg-white sticky top-0 z-10 shadow-[0_1px_0_#d1d5db]">
             <tr>
               <th className="px-2 py-2 th-left"><HeaderIcon Icon={Package} label="Product" align="left" /></th>
               <th className="px-2 py-2 th-left"><HeaderIcon Icon={Barcode} label="SKU/UPC" align="left" /></th>

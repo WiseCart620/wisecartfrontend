@@ -173,7 +173,7 @@ const WarehouseStockTable = ({
     7 + activeCols.length + (visibleCols.sku ? 1 : 0) + (visibleCols.lastUpdated ? 1 : 0);
 
   return (
-    <div className="bg-white rounded-xl shadow overflow-hidden inv-table-panel">
+    <div className="bg-white overflow-hidden inv-table-panel flex-1 min-h-0 flex flex-col">
       {/* Header */}
       <div className="px-4 py-2 border-b border-gray-200 bg-white flex items-center justify-between">
         <h2 className="text-base text-gray-900 flex items-center gap-2">
@@ -223,7 +223,7 @@ const WarehouseStockTable = ({
         </div>
       </div>
 
-      <div className="border-t border-gray-100 overflow-auto max-h-[65vh] table-fit">
+      <div className="border-t border-gray-100 overflow-auto flex-1 min-h-0 table-fit">
         <table className="w-full text-sm text-black" style={{ fontSize: '11px', tableLayout: 'fixed' }}>
           <thead className="bg-white sticky top-0 z-10 shadow-[0_1px_0_#d1d5db]">
             <tr>
