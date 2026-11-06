@@ -39,18 +39,6 @@ const BranchStockTable = ({
 
   return (
     <div className="bg-white overflow-hidden inv-table-panel flex-1 min-h-0 flex flex-col">
-      <div className="px-4 py-2 border-b border-gray-200 bg-white flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-base text-black flex items-center gap-2">
-          <Store size={20} />
-          Consigned Stock Levels
-        </h2>
-        {!isLoading && totalElements > 0 && (
-          <span className="text-xs text-black">
-            Grand Total ({totalElements.toLocaleString('en-US')} rows)
-          </span>
-        )}
-      </div>
-
       <div className="overflow-auto flex-1 min-h-0 table-fit">
         <table className="w-full" style={{ tableLayout: 'fixed' }}>
           <thead className="bg-white sticky top-0 z-10 shadow-[0_1px_0_#d1d5db]">

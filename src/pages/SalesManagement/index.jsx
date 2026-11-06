@@ -356,7 +356,7 @@ const SalesManagement = () => {
   if (showSalesReport) return <SalesReport onBack={() => navigate('/sales')} filterData={filterData} companies={companies} branches={branches} allProductOptions={allProductOptions} />;
 
   return (
-    <div className="h-[100dvh] flex flex-col overflow-hidden bg-white p-2 lg:p-3">
+    <div className="h-full flex flex-col overflow-hidden bg-white p-2 lg:p-3">
       <LoadingOverlay show={actionLoading && !!loadingMessage} message={loadingMessage} />
       <div className="max-w-full w-full mx-auto flex-1 min-h-0 flex flex-col">
         <div className="mb-1 flex-shrink-0">

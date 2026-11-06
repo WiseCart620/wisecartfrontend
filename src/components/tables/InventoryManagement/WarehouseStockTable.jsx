@@ -180,17 +180,8 @@ const WarehouseStockTable = ({
   return (
     <div className="bg-white overflow-hidden inv-table-panel flex-1 min-h-0 flex flex-col">
       {/* Header */}
-      <div className="px-4 py-2 border-b border-gray-200 bg-white flex items-center justify-between">
-        <h2 className="text-base text-gray-900 flex items-center gap-2">
-          <Building size={20} />
-          Warehouse Stock Levels
-          {movLoading && (
-            <span className="ml-2 text-xs text-gray-400 font-normal flex items-center gap-1">
-              <span className="w-3 h-3 border-2 border-orange-300 border-t-orange-600 rounded-full animate-spin inline-block" />
-              Loading movements…
-            </span>
-          )}
-        </h2>
+      <div className="px-4 py-2 border-b border-gray-200 bg-white flex items-center justify-between empty:hidden">
+        
         {(() => { const actions = (<div className="relative flex items-center gap-2">
           {isAdmin && (
             <button

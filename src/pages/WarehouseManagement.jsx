@@ -207,7 +207,7 @@ const WarehouseManagement = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-full min-h-[60vh]">
         <LoadingOverlay show={true} message="Loading warehouses..." />
       </div>
     );

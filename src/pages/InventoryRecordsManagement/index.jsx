@@ -1037,7 +1037,7 @@ const InventoryRecordsManagement = () => {
       <DeleteErrorModal message={deleteErrorMessage} onClose={() => setDeleteErrorMessage(null)} />
       <Toast toasts={toasts} removeToast={removeToast} />
 
-      <div className="min-h-screen bg-white p-2 sm:p-3 lg:p-4">
+      <div className="min-h-full bg-white p-2 sm:p-3 lg:p-4">
         <div className="max-w-full mx-auto">
           <div className="mb-4">
             <h1 className="text-3xl font-bold text-gray-900 mb-1">Inventory Records Management</h1>

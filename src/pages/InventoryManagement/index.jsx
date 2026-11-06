@@ -651,7 +651,7 @@ const InventoryManagement = () => {
 
   return (
     <>
-      <div className="h-[100dvh] flex flex-col overflow-hidden p-2 lg:p-3 max-w-full mx-auto">
+      <div className="h-full flex flex-col overflow-hidden p-2 lg:p-3 max-w-full mx-auto">
         <Toaster position="top-right" />
 
         <div className="mb-2 flex flex-nowrap items-end justify-between gap-x-4 border-b border-gray-200 flex-shrink-0">

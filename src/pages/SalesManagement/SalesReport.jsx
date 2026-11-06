@@ -689,7 +689,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
 
     // Report view
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-full bg-white">
             {/* Top bar */}
             <div className="bg-white border-b border-gray-200 px-5 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
                 <div className="flex items-center gap-4">

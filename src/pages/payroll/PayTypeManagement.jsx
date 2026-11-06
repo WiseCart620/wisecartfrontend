@@ -164,7 +164,7 @@ const PayTypeManagement = () => {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-screen"><LoadingOverlay show={true} message="Loading pay types..." /></div>;
+    return <div className="flex items-center justify-center h-full min-h-[60vh]"><LoadingOverlay show={true} message="Loading pay types..." /></div>;
   }
 
   return (

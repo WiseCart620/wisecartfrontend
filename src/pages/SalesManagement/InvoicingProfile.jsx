@@ -1334,7 +1334,7 @@ const InvoicingProfile = ({ onBack }) => {
     };
 
     return (
-        <div className="h-[100dvh] flex flex-col overflow-hidden bg-white p-2 lg:p-3" style={{ fontFamily: "'Avenir Next', 'Avenir', 'Segoe UI', Helvetica, Arial, sans-serif" }}>
+        <div className="h-full flex flex-col overflow-hidden bg-white p-2 lg:p-3" style={{ fontFamily: "'Avenir Next', 'Avenir', 'Segoe UI', Helvetica, Arial, sans-serif" }}>
             {/* Header */}
             <div className="flex items-center justify-between mb-2 flex-nowrap gap-2 flex-shrink-0">
                 <div>

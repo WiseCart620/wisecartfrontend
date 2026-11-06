@@ -434,7 +434,7 @@ const UploadPaymentManagement = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen">
+            <div className="flex items-center justify-center h-full min-h-[60vh]">
                 <Loader2 className="animate-spin" size={40} />
             </div>
         );

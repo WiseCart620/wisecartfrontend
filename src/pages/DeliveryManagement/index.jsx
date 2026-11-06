@@ -355,7 +355,7 @@ const DeliveryManagement = () => {
         subMessage="Please wait, we're syncing a large volume of delivery data to ensure real-time accuracy."
       />
 
-      <div className="h-[100dvh] flex flex-col overflow-hidden p-2 lg:p-3 max-w-full w-full mx-auto">
+      <div className="h-full flex flex-col overflow-hidden p-2 lg:p-3 max-w-full w-full mx-auto">
         <div className="mb-1 flex-shrink-0">
           <h1 className="text-lg font-semibold text-gray-900 leading-tight">Delivery Management</h1>
         </div>

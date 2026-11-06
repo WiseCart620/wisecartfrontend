@@ -541,7 +541,7 @@ const Dashboard = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-x-hidden">
+      <div className="min-h-full bg-gradient-to-br from-gray-50 to-gray-100 overflow-x-hidden">
         <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-6">
           <div className="space-y-4 sm:space-y-6">
             {/* Header Section */}
