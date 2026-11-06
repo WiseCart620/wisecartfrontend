@@ -1037,11 +1037,11 @@ const MultiSelectDropdown = ({ label, options, selected, onChange }) => {
     };
 
     return (
-        <div className="relative" ref={ref}>
+        <div className="relative flex-1 min-w-[110px] max-w-[200px]" ref={ref}>
             <button
                 type="button"
                 onClick={() => setOpen((o) => !o)}
-                className="px-3 py-2 border border-gray-300 rounded text-sm bg-white hover:bg-white transition flex items-center gap-2 min-w-[220px] justify-between"
+                className="px-2 py-1.5 border border-gray-300 rounded text-xs bg-white hover:bg-white transition flex items-center gap-2 w-full min-w-0 justify-between"
             >
                 <span className="truncate text-gray-700">
                     {selected.length === 0 ? label : `${label} (${selected.length})`}
@@ -1359,13 +1359,13 @@ const InvoicingProfile = ({ onBack }) => {
                 </div>
             </div>
 
-            <div className="bg-white rounded border border-gray-200 p-3 mb-3 flex flex-wrap gap-3 items-center">
+            <div className="bg-white rounded border border-gray-200 p-2 mb-3 flex flex-nowrap gap-2 items-center">
                 {canSeeFilter(user, 'sales', 'search') && (
                     <input
                         placeholder="Search Invoice #..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded text-sm w-48 focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                        className="px-2 py-1.5 border border-gray-300 rounded text-xs flex-1 min-w-[100px] max-w-[190px] focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
                     />
                 )}
                 {canSeeFilter(user, 'sales', 'company') && (
@@ -1388,27 +1388,27 @@ const InvoicingProfile = ({ onBack }) => {
                         onChange={setStatusFilter}
                     />
                 )}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 flex-shrink-0">
                     <label className="text-xs text-gray-500 font-medium">Date:</label>
                     <input
                         type="date"
                         value={dateFrom}
                         onChange={(e) => setDateFrom(e.target.value)}
-                        className="px-2 py-2 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                        className="px-1.5 py-1.5 w-[125px] border border-gray-300 rounded text-xs focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
                     />
                     <span className="text-xs text-gray-400">to</span>
                     <input
                         type="date"
                         value={dateTo}
                         onChange={(e) => setDateTo(e.target.value)}
-                        className="px-2 py-2 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                        className="px-1.5 py-1.5 w-[125px] border border-gray-300 rounded text-xs focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
                     />
                 </div>
                 {(companyFilter.length > 0 || statusFilter.length > 0 || search || dateFrom || dateTo) && (
                     <button
                         type="button"
                         onClick={() => { setCompanyFilter([]); setStatusFilter([]); setSearch(''); setDateFrom(''); setDateTo(''); }}
-                        className="text-xs text-gray-500 hover:text-red-600 underline"
+                        className="text-xs text-gray-500 hover:text-red-600 underline whitespace-nowrap flex-shrink-0"
                     >
                         Clear filters
                     </button>
@@ -1416,7 +1416,7 @@ const InvoicingProfile = ({ onBack }) => {
                 <select
                     value={sortOrder}
                     onChange={(e) => setSortOrder(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded text-sm text-gray-700 focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                    className="px-2 py-1.5 border border-gray-300 rounded text-xs text-gray-700 flex-shrink-0 focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
                 >
                     <option value="asc">Invoice # ↑ Ascending</option>
                     <option value="desc">Invoice # ↓ Descending</option>
@@ -1444,36 +1444,38 @@ const InvoicingProfile = ({ onBack }) => {
                             </tr>
                             <tr>
                                 {[
-                                    { label: 'Invoice #', align: 'left', sortable: true },
-                                    { label: 'Invoice Date', align: 'left' },
-                                    { label: 'Period', align: 'left' },
-                                    { label: 'Customer', align: 'left' },
-                                    { label: 'vatableSalesHeader', align: 'right' },
-                                    { label: 'VAT/PT', align: 'right' },
-                                    { label: 'Less: EWT', align: 'right' },
-                                    { label: 'Due', align: 'right' },
-                                    { label: 'Terms', align: 'center' },
-                                    { label: 'Days Overdue', align: 'center' },
-                                    { label: 'Amount Paid', align: 'right' },
-                                    { label: 'Balance', align: 'right' },
-                                    { label: 'Cost of Sales', align: 'right' },
-                                    { label: 'Actions', align: 'center' },
-                                ].map(({ label, align }) => (
-                                    <th
-                                        key={label}
-                                        onClick={label === 'Invoice #' ? () => setSortOrder(prev => prev === 'asc' ? 'desc' : prev === 'desc' ? 'none' : 'asc') : undefined}
-                                        className={`sticky top-0 z-10 bg-white px-4 py-3 text-[11px] font-medium text-gray-500 uppercase tracking-wide text-${align} ${label === 'Invoice #' ? 'cursor-pointer select-none hover:text-gray-700' : ''}`}
-                                    >
-                                        {label === 'vatableSalesHeader' ? (
-                                            <span className="flex flex-col items-end leading-tight">
-                                                <span>Vatable Sales /</span>
-                                                <span>Gross Sales (PT)</span>
-                                            </span>
-                                        ) : label === 'Invoice #' ? (
-                                            <>{label} {sortOrder === 'asc' ? '↑' : sortOrder === 'desc' ? '↓' : ''}</>
-                                        ) : label}
-                                    </th>
-                                ))}
+                                    { key: 'inv', lines: ['Invoice', '#'], align: 'left' },
+                                    { key: 'date', lines: ['Invoice', 'Date'], align: 'left' },
+                                    { key: 'period', lines: ['', 'Period'], align: 'left' },
+                                    { key: 'cust', lines: ['', 'Customer'], align: 'left' },
+                                    { key: 'vat-sales', lines: ['Vatable Sales /', 'Gross Sales (PT)'], align: 'right' },
+                                    { key: 'vat', lines: ['', 'VAT/PT'], align: 'right' },
+                                    { key: 'ewt', lines: ['Less:', 'EWT'], align: 'right' },
+                                    { key: 'due', lines: ['', 'Due'], align: 'right' },
+                                    { key: 'terms', lines: ['', 'Terms'], align: 'center' },
+                                    { key: 'overdue', lines: ['Days', 'Overdue'], align: 'center' },
+                                    { key: 'paid', lines: ['Amount', 'Paid'], align: 'right' },
+                                    { key: 'bal', lines: ['', 'Balance'], align: 'right' },
+                                    { key: 'cos', lines: ['Cost of', 'Sales'], align: 'right' },
+                                    { key: 'act', lines: ['', 'Actions'], align: 'center' },
+                                ].map(({ key, lines, align }) => {
+                                    const isInv = key === 'inv';
+                                    const alignCls = align === 'left' ? 'text-left' : align === 'right' ? 'text-right' : 'text-center';
+                                    return (
+                                        <th
+                                            key={key}
+                                            onClick={isInv ? () => setSortOrder(prev => prev === 'asc' ? 'desc' : prev === 'desc' ? 'none' : 'asc') : undefined}
+                                            className={`sticky top-0 z-10 bg-white px-3 py-2 text-[11px] font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap align-bottom ${alignCls} ${isInv ? 'cursor-pointer select-none hover:text-gray-700' : ''}`}
+                                        >
+                                            <div className="leading-tight h-[28px] flex flex-col justify-end">
+                                                <span className="block h-[14px]">{lines[0] || '\u00A0'}</span>
+                                                <span className="block h-[14px]">
+                                                    {lines[1]}{isInv ? (sortOrder === 'asc' ? ' ↑' : sortOrder === 'desc' ? ' ↓' : '') : ''}
+                                                </span>
+                                            </div>
+                                        </th>
+                                    );
+                                })}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
