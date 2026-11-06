@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { ArrowLeft, X, Trash2, Eye, ChevronDown, ChevronUp, FileText, Pencil } from 'lucide-react';
 import '../../styles/invoice-print.css';
 import { useAuth, can, canSeeFilter } from '../../context/AuthContext';
+import Pagination from '../common/Pagination';
 
 
 const fmt = (n) =>
@@ -1103,6 +1104,8 @@ const InvoicingProfile = ({ onBack }) => {
     const [expandedRows, setExpandedRows] = useState({});
     const [cosData, setCosData] = useState({});
     const [sortOrder, setSortOrder] = useState('asc');
+    const [page, setPage] = useState(1);
+    const PAGE_SIZE = 50;
 
     const saveDate = async (profileId) => {
         if (!editingDateValue) {
@@ -1172,6 +1175,7 @@ const InvoicingProfile = ({ onBack }) => {
     };
 
     useEffect(() => { load(); }, [load]);
+    useEffect(() => { setPage(1); }, [search, statusFilter, companyFilter, dateFrom, dateTo, sortOrder]);
     useEffect(() => { loadAllCosData(); }, []);
 
     const companyOptions = useMemo(() => {
@@ -1227,6 +1231,11 @@ const InvoicingProfile = ({ onBack }) => {
             return sortOrder === 'asc' ? numA - numB : numB - numA;
         });
     }
+
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const safePage = Math.min(page, totalPages);
+    const startIdx = (safePage - 1) * PAGE_SIZE;
+    const paged = filtered.slice(startIdx, startIdx + PAGE_SIZE);
 
     const parseTermsDays = (terms) => {
         if (!terms) return null;
@@ -1462,7 +1471,7 @@ const InvoicingProfile = ({ onBack }) => {
                                         <th
                                             key={key}
                                             onClick={isInv ? () => setSortOrder(prev => prev === 'asc' ? 'desc' : prev === 'desc' ? 'none' : 'asc') : undefined}
-                                            className={`sticky top-0 z-10 bg-white px-3 py-2 text-[11px] font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap align-bottom ${alignCls} ${isInv ? 'cursor-pointer select-none hover:text-gray-700' : ''}`}
+                                            className={`sticky top-0 z-10 bg-white shadow-[0_1px_0_#d1d5db] px-3 py-2text-[11px] font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap align-bottom ${alignCls} ${isInv ? 'cursor-pointer select-none hover:text-gray-700' : ''}`}
                                         >
                                             <div className="leading-tight h-[28px] flex flex-col justify-end">
                                                 <span className="block h-[14px]">{lines[0] || '\u00A0'}</span>
@@ -1491,7 +1500,7 @@ const InvoicingProfile = ({ onBack }) => {
                                     </td>
                                 </tr>
                             ) : (
-                                filtered.map((p) => {
+                                paged.map((p) => {
                                     const totalPaid = getTotalSettled(p);
                                     const overdueDays = calcOverdueDays(p.invoiceDate || p.createdAt, p.companyTerms);
                                     const termsDays = parseTermsDays(p.companyTerms);
@@ -1715,6 +1724,21 @@ const InvoicingProfile = ({ onBack }) => {
                 </div>
             </div>
 
+            {!loading && filtered.length > 0 && (
+                <div className="flex-shrink-0">
+                    <Pagination
+                        currentPage={safePage}
+                        totalPages={totalPages}
+                        onPageChange={setPage}
+                        onNextPage={() => setPage(p => Math.min(p + 1, totalPages))}
+                        onPrevPage={() => setPage(p => Math.max(p - 1, 1))}
+                        showingStart={startIdx + 1}
+                        showingEnd={Math.min(startIdx + PAGE_SIZE, filtered.length)}
+                        totalItems={filtered.length}
+                    />
+                </div>
+            )}
+
             {/* Modals */}
             {receiptProfile && (
                 <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-6">
@@ -1777,7 +1801,7 @@ const InvoicingProfile = ({ onBack }) => {
                                             <th className="text-right px-4 py-1 font-bold text-black text-sm leading-tight" style={{ width: '15%' }}>AMOUNT</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody className="divide-y divide-gray-200">
                                         {(receiptProfile.items || []).map((item, i) => (
                                             <tr key={i} className="align-top">
                                                 <td className="py-1 px-4 text-sm text-black leading-tight">{item.productName}{item.companySku && <span> [{item.companySku}]</span>}{item.variationDisplay && item.variationDisplay !== 'Adjustment' && <span> {item.variationDisplay}{item.upc ? ` - ${item.upc}` : ''}</span>}{item.variationDisplay === 'Adjustment' && <span className="ml-2 text-sm text-black italic">(Adjustment)</span>}</td>
