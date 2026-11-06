@@ -109,11 +109,13 @@ const WarehouseFilterPanel = ({
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
-            className="text-sm text-orange-600 hover:text-orange-800 font-medium ml-auto whitespace-nowrap flex-shrink-0"
+            className="text-sm text-orange-600 hover:text-orange-800 font-medium whitespace-nowrap flex-shrink-0"
           >
             Clear filters
           </button>
         )}
+
+        <div id="warehouse-filter-actions" className="ml-auto flex items-center flex-shrink-0" />
       </div>
 
 

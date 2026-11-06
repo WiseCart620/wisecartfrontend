@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Building, CheckCircle, Truck, Eye, Package, Barcode, Boxes, PackageCheck, CalendarClock, MousePointerClick,
   ArrowDownCircle, ArrowUpCircle, ArrowLeftRight,
@@ -131,6 +132,10 @@ const WarehouseStockTable = ({
   const [adjustmentStock, setAdjustmentStock] = useState(null);
   const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
   const [showAudit, setShowAudit] = useState(false);
+  const [actionsSlot, setActionsSlot] = useState(null);
+  useEffect(() => {
+    setActionsSlot(document.getElementById('warehouse-filter-actions'));
+  }, []);
 
   const [visibleCols, setVisibleCols] = useState({
     sku: true,
@@ -186,12 +191,12 @@ const WarehouseStockTable = ({
             </span>
           )}
         </h2>
-        <div className="relative flex items-center gap-2">
+        {(() => { const actions = (<div className="relative flex items-center gap-2">
           {isAdmin && (
             <button
               onClick={() => setShowAudit(true)}
               title="Check the Delivered counter against deliveries"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded border bg-white border-gray-300 text-black hover:bg-gray-100"
+              className="flex items-center gap-1.5 px-3 h-8 text-xs font-medium rounded border bg-white border-gray-300 text-black hover:bg-gray-100"
             >
               <PackageCheck size={13} />
               Audit Delivered
@@ -199,7 +204,7 @@ const WarehouseStockTable = ({
           )}
           <button
             onClick={() => setShowColPanel((v) => !v)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded border transition
+            className={`flex items-center gap-1.5 px-3 h-8 text-xs font-medium rounded border transition
               ${showColPanel || anyMovVisible
                 ? 'bg-gray-100 border-gray-400 text-black'
                 : 'bg-white border-gray-300 text-black hover:bg-gray-50'
@@ -220,7 +225,7 @@ const WarehouseStockTable = ({
             onChange={toggleCol}
             onClose={() => setShowColPanel(false)}
           />
-        </div>
+        </div>); return actionsSlot ? createPortal(actions, actionsSlot) : actions; })()}
       </div>
 
       <div className="border-t border-gray-100 overflow-auto flex-1 min-h-0 table-fit">
