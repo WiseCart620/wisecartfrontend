@@ -1448,7 +1448,7 @@ const InvoicingProfile = ({ onBack }) => {
                                     { key: 'date', lines: ['Invoice', 'Date'], align: 'left' },
                                     { key: 'period', lines: ['', 'Period'], align: 'left' },
                                     { key: 'cust', lines: ['', 'Customer'], align: 'left' },
-                                    { key: 'vat-sales', lines: ['Vatable Sales /', 'Gross Sales (PT)'], align: 'right' },
+                                    { key: 'vat-sales', lines: ['', 'Gross Sales (PT)'], align: 'right' },
                                     { key: 'vat', lines: ['', 'VAT/PT'], align: 'right' },
                                     { key: 'ewt', lines: ['Less:', 'EWT'], align: 'right' },
                                     { key: 'due', lines: ['', 'Due'], align: 'right' },
