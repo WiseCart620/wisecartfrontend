@@ -41,8 +41,8 @@ const WarehouseFilterPanel = ({
     (canDate && (filters.startDate || filters.endDate));
 
   return (
-    <div className="bg-white rounded border border-gray-200 px-3 py-1.5 mb-2">
-      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5">
+    <div className="bg-white p-0 py-1 mb-1 flex-shrink-0">
+      <div className="flex flex-nowrap items-center gap-1.5">
         {canWarehouse && (
           <div className="w-52 h-8">
             <SearchableWarehouseDropdown
@@ -95,7 +95,7 @@ const WarehouseFilterPanel = ({
         )}
 
         {canProduct && (
-          <div className="w-[300px] max-w-full flex-shrink-0">
+          <div className="w-[300px] max-w-full flex-shrink-0 [&>div>button]:!h-8 [&>div>button]:!min-h-0 [&>div>button]:!py-0 [&>div>button]:!px-2 [&>div>button]:!text-sm [&>div>button>span]:!truncate [&>div>button>span]:!whitespace-nowrap">
             <ProductMultiSelectDropdown
               options={productOptions}
               selectedIds={selectedKeys}
@@ -109,7 +109,7 @@ const WarehouseFilterPanel = ({
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
-            className="col-span-2 sm:col-span-1 text-sm text-orange-600 hover:text-orange-800 font-medium sm:ml-auto whitespace-nowrap text-right sm:text-left"
+            className="text-sm text-orange-600 hover:text-orange-800 font-medium ml-auto whitespace-nowrap flex-shrink-0"
           >
             Clear filters
           </button>
