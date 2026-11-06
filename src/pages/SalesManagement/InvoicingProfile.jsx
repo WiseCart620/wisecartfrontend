@@ -1325,9 +1325,9 @@ const InvoicingProfile = ({ onBack }) => {
     };
 
     return (
-        <div className="min-h-screen bg-white p-2 lg:p-3" style={{ fontFamily: "'Avenir Next', 'Avenir', 'Segoe UI', Helvetica, Arial, sans-serif" }}>
+        <div className="h-[100dvh] flex flex-col overflow-hidden bg-white p-2 lg:p-3" style={{ fontFamily: "'Avenir Next', 'Avenir', 'Segoe UI', Helvetica, Arial, sans-serif" }}>
             {/* Header */}
-            <div className="flex items-center justify-between mb-2 flex-nowrap gap-2 pb-2 border-b border-gray-200">
+            <div className="flex items-center justify-between mb-2 flex-nowrap gap-2 pb-2 border-b border-gray-200 flex-shrink-0">
                 <div>
                     <button
                         onClick={onBack}
@@ -1356,7 +1356,7 @@ const InvoicingProfile = ({ onBack }) => {
                 </div>
             </div>
 
-            <div className="bg-white rounded border border-gray-200 p-2 mb-3 flex flex-nowrap gap-2 items-center">
+            <div className="bg-white rounded border border-gray-200 p-2 mb-2 flex flex-nowrap gap-2 items-center flex-shrink-0">
                 {canSeeFilter(user, 'sales', 'search') && (
                     <input
                         placeholder="Search Invoice #..."
@@ -1421,11 +1421,11 @@ const InvoicingProfile = ({ onBack }) => {
                 </select>
             </div>
 
-            <div className="bg-white rounded border border-gray-200 overflow-hidden">
-                <div className="overflow-auto" style={{ maxHeight: '70vh' }}>
+            <div className="flex-1 min-h-0 bg-white overflow-hidden">
+                <div className="h-full overflow-auto">
                     <table className="w-full min-w-[1100px]" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
-                        <thead className="bg-white border-b-2 border-gray-200">
-                            <tr className="bg-white border-b-2 border-gray-200">
+                        <thead className="bg-white">
+                            <tr className="bg-white">
                                 <th colSpan={4} className="px-4 py-2 text-[11px] font-medium text-black uppercase tracking-wide text-left">
                                     Totals ({filtered.length} invoice{filtered.length !== 1 ? 's' : ''})
                                 </th>
@@ -1475,7 +1475,7 @@ const InvoicingProfile = ({ onBack }) => {
                                 })}
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody>
                             {loading ? (
                                 <tr>
                                     <td colSpan={14} className="px-4 py-10 text-center text-gray-400 text-sm">
