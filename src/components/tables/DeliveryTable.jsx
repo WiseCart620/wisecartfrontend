@@ -167,8 +167,7 @@ const DeliveryTable = ({
             <col className="w-[110px]" />
             <col className="w-[70px]" />
             <col className="w-[70px]" />
-            <col className="w-[100px]" />
-            <col className="w-[130px]" />
+            <col className="w-[120px]" /><col className="w-[130px]" />
           </colgroup>
 
           {/* ── HEAD ── */}
@@ -328,9 +327,8 @@ const DeliveryTable = ({
                     </td>
 
                     {/* Qty */}
-                    <td className="px-2 py-2.5 text-right">
-                      {rowTotals.qty > 0 ? (
-                        <span className="text-sm font-bold text-orange-700">
+                    <td className="pl-2 pr-6 py-2.5 text-right">{rowTotals.qty > 0 ? (
+                        <span className="text-sm font-semibold text-gray-900">
                           {rowTotals.qty.toLocaleString('en-US')}
                         </span>
                       ) : (
@@ -368,7 +366,7 @@ const DeliveryTable = ({
             <tfoot>
               <tr className="bg-orange-50 border-t-2 border-orange-300">
                 <td colSpan={2} className="px-2 py-2 sticky left-0 bg-orange-50 z-10 border-r border-orange-200">
-                  <span className="text-xs font-bold text-orange-700 uppercase tracking-wide">
+                  <span className="text-xs font-bold text-gray-900 uppercase tracking-wide">
                     Grand Total
                   </span>
                   <div className="text-[10px] text-gray-500 leading-tight">
@@ -381,7 +379,7 @@ const DeliveryTable = ({
                   <div className="flex items-center justify-end gap-3 flex-wrap text-xs text-gray-600">
                     <span>
                       Prepared:{' '}
-                      <span className="font-bold text-orange-800">
+                      <span className="font-semibold text-gray-900">
                         {totalPrepared.toLocaleString('en-US')}
                       </span>
                     </span>
@@ -411,7 +409,7 @@ const DeliveryTable = ({
                 {/* Qty column: prepared total, to line up with the per-row Qty (prepared) */}
                 <td className="px-2 py-2 text-right">
                   <div className="text-[10px] uppercase tracking-wide text-gray-500 leading-tight">Prepared</div>
-                  <span className="text-sm font-bold text-orange-800">
+                  <span className="text-sm font-semibold text-gray-900">
                     {totalPrepared.toLocaleString('en-US')}
                   </span>
                 </td>
@@ -441,3 +439,6 @@ const DeliveryTable = ({
 };
 
 export default DeliveryTable;
+
+
+
