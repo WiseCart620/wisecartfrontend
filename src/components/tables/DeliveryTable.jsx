@@ -1,7 +1,75 @@
-// src/components/tables/DeliveryTable.jsx
-import React from 'react';
-import { Eye, Edit2, Trash2, Printer, Package, Truck, XCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { MoreVertical, Edit2, Trash2, Printer, Package, Truck, XCircle } from 'lucide-react';
 import Pagination from '../common/Pagination';
+const STATUS_DOT = {
+  PENDING: 'bg-gray-400',
+  PREPARING: 'bg-yellow-500',
+  IN_TRANSIT: 'bg-purple-500',
+  DELIVERED: 'bg-green-500',
+  CANCELLED: 'bg-red-500',
+  RETURNED: 'bg-orange-500',
+};
+
+const RowActions = ({ onView, items }) => {
+  const [menu, setMenu] = useState(null);
+
+  useEffect(() => {
+    if (!menu) return;
+    const close = () => setMenu(null);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    return () => {
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+    };
+  }, [menu]);
+
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        onClick={onView}
+        className="px-2.5 h-7 text-xs font-medium text-gray-800 bg-white border border-gray-300 rounded hover:bg-gray-50"
+      >
+        View
+      </button>
+
+      {items.length > 0 && (
+        <>
+          <button
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              setMenu(menu ? null : { top: r.bottom + 4, right: window.innerWidth - r.right });
+            }}
+            className="w-7 h-7 inline-flex items-center justify-center rounded text-gray-500 hover:bg-gray-100"
+          >
+            <MoreVertical size={16} />
+          </button>
+
+          {menu && (
+            <>
+              <div className="fixed inset-0 z-[60]" onClick={() => setMenu(null)} />
+              <div
+                className="fixed z-[70] w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1"
+                style={{ top: menu.top, right: menu.right }}
+              >
+                {items.map((it) => (
+                  <button
+                    key={it.label}
+                    onClick={() => { setMenu(null); it.onClick(); }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-gray-50 ${it.danger ? 'text-red-600' : 'text-gray-700'}`}
+                  >
+                    <it.icon size={15} />
+                    {it.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
 
 const DeliveryTable = ({
   deliveries = [],
@@ -270,64 +338,24 @@ const DeliveryTable = ({
                       )}
                     </td>
 
-                    {/* Status */}
-                    <td className="px-1 py-2.5">
-                      <span className={`px-1.5 py-0.5 inline-flex text-[11px] font-bold rounded-full ${getStatusColor(delivery.status)}`}>
-                        {delivery.customStatus || delivery.status}
+                    <td className="px-2 py-2.5">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-800 whitespace-nowrap capitalize">
+                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${STATUS_DOT[delivery.status] || 'bg-gray-400'}`} />
+                        {String(delivery.customStatus || delivery.status).replace(/_/g, ' ').toLowerCase()}
                       </span>
                     </td>
 
                     {/* Actions */}
-                    <td className="pl-0 pr-1 py-2.5">
-                      <div className="flex items-center gap-0">
-                        <button
-                          onClick={() => onView(delivery)}
-                          title="View details"
-                          className="inline-flex items-center justify-center w-7 h-7 rounded text-orange-600 hover:bg-orange-100 transition-colors"
-                        >
-                          <Eye size={15} />
-                        </button>
-
-                        {rowCanEdit && (
-                          <button
-                            onClick={() => onEdit(delivery)}
-                            title="Edit delivery"
-                            className="inline-flex items-center justify-center w-7 h-7 rounded text-orange-600 hover:bg-orange-100 transition-colors"
-                          >
-                            <Edit2 size={15} />
-                          </button>
-                        )}
-
-                        {rowCanDelete && (
-                          <button
-                            onClick={() => onDelete(delivery.id)}
-                            title="Delete delivery"
-                            className="inline-flex items-center justify-center w-7 h-7 rounded text-red-600 hover:bg-red-100 transition-colors"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        )}
-
-                        {isDelivered && canCancel && (
-                          <button
-                            onClick={() => onCancel(delivery)}
-                            title="Cancel delivery"
-                            className="inline-flex items-center justify-center w-7 h-7 rounded text-orange-600 hover:bg-orange-100 transition-colors"
-                          >
-                            <XCircle size={15} />
-                          </button>
-                        )}
-
-                        {canPrint && (
-                          <button
-                            onClick={() => onPrint(delivery)}
-                            title="Print receipt"
-                            className="inline-flex items-center justify-center w-7 h-7 rounded text-green-600 hover:bg-green-100 transition-colors"
-                          >
-                            <Printer size={15} />
-                          </button>
-                        )}
-                      </div>
+                    <td className="px-2 py-1.5">
+                      <RowActions
+                        onView={() => onView(delivery)}
+                        items={[
+                          rowCanEdit && { label: 'Edit delivery', icon: Edit2, onClick: () => onEdit(delivery) },
+                          canPrint && { label: 'Print receipt', icon: Printer, onClick: () => onPrint(delivery) },
+                          isDelivered && canCancel && { label: 'Cancel delivery', icon: XCircle, danger: true, onClick: () => onCancel(delivery) },
+                          rowCanDelete && { label: 'Delete delivery', icon: Trash2, danger: true, onClick: () => onDelete(delivery.id) },
+                        ].filter(Boolean)}
+                      />
                     </td>
                   </tr>
                 );
