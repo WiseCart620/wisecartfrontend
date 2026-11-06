@@ -1336,7 +1336,7 @@ const InvoicingProfile = ({ onBack }) => {
     return (
         <div className="h-[100dvh] flex flex-col overflow-hidden bg-white p-2 lg:p-3" style={{ fontFamily: "'Avenir Next', 'Avenir', 'Segoe UI', Helvetica, Arial, sans-serif" }}>
             {/* Header */}
-            <div className="flex items-center justify-between mb-2 flex-nowrap gap-2 pb-2 border-b border-gray-200 flex-shrink-0">
+            <div className="flex items-center justify-between mb-2 flex-nowrap gap-2 flex-shrink-0">
                 <div>
                     <button
                         onClick={onBack}
@@ -1484,7 +1484,7 @@ const InvoicingProfile = ({ onBack }) => {
                                 })}
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200">
+                        <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-200">
                             {loading ? (
                                 <tr>
                                     <td colSpan={14} className="px-4 py-10 text-center text-gray-400 text-sm">
