@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, FileText, ChevronDown } from 'lucide-react';
+import { Plus, FileText, ChevronDown } from 'lucide-react';
 import MultiSelectDropdown from '../../components/common/MultiSelectDropdown';
 import ProductMultiSelectDropdown from '../../components/common/ProductMultiSelectDropdown';
 import { canSeeFilter } from '../../context/AuthContext';
@@ -89,18 +89,6 @@ const SalesFilters = ({
               </button>
             )}
           </div>
-          {canSeeFilter(user, 'sales', 'search') && (
-            <div className="relative w-full sm:w-56 lg:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <input
-                type="text"
-                placeholder="Search branch/company..."
-                value={searchTerm}
-                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                className="pl-8 pr-2 h-8 border border-gray-300 rounded w-full text-xs focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-              />
-            </div>
-          )}
         </div>
 
         <div className="flex flex-nowrap items-center gap-1.5">
