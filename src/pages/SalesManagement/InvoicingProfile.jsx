@@ -1437,35 +1437,30 @@ const InvoicingProfile = ({ onBack }) => {
 
                             <tr>
                                 {[
-                                    { key: 'inv', lines: ['Invoice', '#'], align: 'left' },
-                                    { key: 'date', lines: ['Invoice', 'Date'], align: 'left' },
-                                    { key: 'period', lines: ['', 'Period'], align: 'left' },
-                                    { key: 'cust', lines: ['', 'Customer'], align: 'left' },
-                                    { key: 'vat-sales', lines: ['', 'Gross Sales (PT)'], align: 'right' },
-                                    { key: 'vat', lines: ['', 'VAT/PT'], align: 'right' },
-                                    { key: 'ewt', lines: ['Less:', 'EWT'], align: 'right' },
-                                    { key: 'due', lines: ['', 'Due'], align: 'right' },
-                                    { key: 'terms', lines: ['', 'Terms'], align: 'center' },
-                                    { key: 'overdue', lines: ['Days', 'Overdue'], align: 'center' },
-                                    { key: 'paid', lines: ['Amount', 'Paid'], align: 'right' },
-                                    { key: 'bal', lines: ['', 'Balance'], align: 'right' },
-                                    { key: 'cos', lines: ['Cost of', 'Sales'], align: 'right' },
-                                    { key: 'act', lines: ['', 'Actions'], align: 'center' },
-                                ].map(({ key, lines, align }) => {
+                                    { key: 'inv', label: 'Invoice #', align: 'left' },
+                                    { key: 'date', label: 'Invoice Date', align: 'left' },
+                                    { key: 'period', label: 'Period', align: 'left' },
+                                    { key: 'cust', label: 'Customer', align: 'left' },
+                                    { key: 'vat-sales', label: 'Gross Sales (PT)', align: 'right' },
+                                    { key: 'vat', label: 'VAT/PT', align: 'right' },
+                                    { key: 'ewt', label: 'Less: EWT', align: 'right' },
+                                    { key: 'due', label: 'Due', align: 'right' },
+                                    { key: 'terms', label: 'Terms', align: 'center' },
+                                    { key: 'overdue', label: 'Days Overdue', align: 'center' },
+                                    { key: 'paid', label: 'Amount Paid', align: 'right' },
+                                    { key: 'bal', label: 'Balance', align: 'right' },
+                                    { key: 'cos', label: 'Cost of Sales', align: 'right' },
+                                    { key: 'act', label: 'Actions', align: 'center' },
+                                ].map(({ key, label, align }, idx, arr) => {
                                     const isInv = key === 'inv';
                                     const alignCls = align === 'left' ? 'text-left' : align === 'right' ? 'text-right' : 'text-center';
                                     return (
                                         <th
                                             key={key}
                                             onClick={isInv ? () => setSortOrder(prev => prev === 'asc' ? 'desc' : prev === 'desc' ? 'none' : 'asc') : undefined}
-                                            className={`sticky top-0 z-10 bg-white shadow-[0_1px_0_#d1d5db] px-3 py-2 text-[11px] font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap align-bottom ${alignCls} ${isInv ? 'cursor-pointer select-none hover:text-gray-700' : ''}`}
+                                            className={`sticky top-0 z-10 bg-gray-50 shadow-[0_1px_0_#e5e7eb] px-3 py-3 text-[11px] font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap align-middle ${idx === 0 ? 'rounded-tl-xl' : ''} ${idx === arr.length - 1 ? 'rounded-tr-xl' : ''} ${alignCls} ${isInv ? 'cursor-pointer select-none hover:text-gray-700' : ''}`}
                                         >
-                                            <div className="leading-tight h-[28px] flex flex-col justify-end">
-                                                <span className="block h-[14px]">{lines[0] || '\u00A0'}</span>
-                                                <span className="block h-[14px]">
-                                                    {lines[1]}{isInv ? (sortOrder === 'asc' ? ' ↑' : sortOrder === 'desc' ? ' ↓' : '') : ''}
-                                                </span>
-                                            </div>
+                                            {label}{isInv ? (sortOrder === 'asc' ? ' ↑' : sortOrder === 'desc' ? ' ↓' : '') : ''}
                                         </th>
                                     );
                                 })}
