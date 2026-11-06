@@ -1347,22 +1347,6 @@ const InvoicingProfile = ({ onBack }) => {
                     </button>
                     <h1 className="text-lg font-medium text-black leading-tight">Sales Journal</h1>
                 </div>
-                <div className="flex items-center gap-2">
-                    {isAdmin && (
-                        <button
-                            onClick={() => setShowDvModal(true)}
-                            className="px-3 py-1.5 bg-[#2CA01C] text-white rounded text-xs font-medium hover:bg-[#268d19] transition whitespace-nowrap"
-                        >
-                            Record DV payment
-                        </button>
-                    )}
-                    <button
-                        onClick={load}
-                        className="px-3 py-1.5 border border-gray-300 rounded text-xs text-gray-700 hover:bg-white transition whitespace-nowrap"
-                    >
-                        ↻ Refresh
-                    </button>
-                </div>
             </div>
 
             <div className="bg-white p-0 mb-2 flex flex-nowrap gap-2 items-center flex-shrink-0">
@@ -1428,8 +1412,24 @@ const InvoicingProfile = ({ onBack }) => {
                     <option value="desc">Invoice # ↓ Descending</option>
                     <option value="none">Sort: Default (unsorted)</option>
                 </select>
-            </div>
 
+                <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+                    {isAdmin && (
+                        <button
+                            onClick={() => setShowDvModal(true)}
+                            className="px-3 py-1.5 bg-[#2CA01C] text-white rounded text-xs font-medium hover:bg-[#268d19] transition whitespace-nowrap"
+                        >
+                            Record DV payment
+                        </button>
+                    )}
+                    <button
+                        onClick={load}
+                        className="px-3 py-1.5 border border-gray-300 rounded text-xs text-gray-700 hover:bg-white transition whitespace-nowrap"
+                    >
+                        ↻ Refresh
+                    </button>
+                </div>
+            </div>
             <div className="flex-1 min-h-0 bg-white overflow-hidden">
                 <div className="h-full overflow-auto">
                     <table className="w-full min-w-[1100px]" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
