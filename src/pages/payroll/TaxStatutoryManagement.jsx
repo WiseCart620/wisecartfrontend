@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { ui } from '../../utils/uiAccess';
+import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { useAuth, can } from '../../context/AuthContext';
 import TaxBracketsTab from '../../components/payroll/TaxBracketsTab';
@@ -21,15 +22,19 @@ const TaxStatutoryManagement = () => {
   const canDelete = can(user, 'employees', 'delete');
 
   const [tab, setTab] = useState('statutory');
+  const tx = (k) => ui(user, 'tax_tabs', k);
+  useEffect(() => {
+    if (!tx('tab_' + tab)) { const f = TABS.find(t => tx('tab_' + t.key)); if (f) setTab(f.key); }
+  }, [user, tab]);
 
   return (
     <PageShell title="Tax & Statutory"
       subtitle="Withholding tax brackets and SSS / PhilHealth / Pag-IBIG contributions"
-      tabs={TABS} tab={tab} onTab={setTab}>
+      tabs={TABS.filter(t => tx('tab_' + t.key))} tab={tab} onTab={setTab}>
       <Toaster position="top-right" />
-      {tab === 'tax' && <TaxBracketsTab canCreate={canCreate} canEdit={canEdit} canDelete={canDelete} />}
-      {tab === 'statutory' && <StatutoryContributionsTab canDelete={canDelete} />}
-      {tab === 'brackets' && <StatutoryBracketsTab canCreate={canCreate} canEdit={canEdit} canDelete={canDelete} />}
+      {tab === 'tax' && <TaxBracketsTab canCreate={canCreate && tx('tax_create')} canEdit={canEdit && tx('tax_edit')} canDelete={canDelete && tx('tax_delete')} />}
+      {tab === 'statutory' && <StatutoryContributionsTab canDelete={canDelete && tx('stat_delete')} />}
+      {tab === 'brackets' && <StatutoryBracketsTab canCreate={canCreate && tx('br_create')} canEdit={canEdit && tx('br_edit')} canDelete={canDelete && tx('br_delete')} />}
     </PageShell>
   );
 };

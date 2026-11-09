@@ -6,6 +6,8 @@ import { api } from '../services/api';
 import { LoadingOverlay } from '../components/common/LoadingOverlay';
 import Pagination from '../components/common/Pagination';
 import { useIsSuperAdmin } from '../context/AuthContext';
+import PageAccessMatrix, { MATRIX_GROUPS } from '../components/payroll/PageAccessMatrix';
+import ModuleAccess from '../components/payroll/ModuleAccess';
 
 const ACTION_LABELS = {
   view: 'View', create: 'Create', edit: 'Edit', delete: 'Delete',
@@ -16,6 +18,17 @@ const ACTION_LABELS = {
   statutory: 'Edit Statutory Shares',
   ca_approve: 'Approve Cash Advances',
   recalc: 'Recalculate Leave',
+  tab_runs: 'Tab: Payroll Runs', tab_ot: 'Tab: Pay Entries', tab_rb: 'Tab: Reimbursements', tab_db: 'Tab: Disbursement', tab_an: 'Tab: Annual Monitoring',
+  run_new: 'Button: New Run', ot_edit: 'Pay Entries: Add / Edit / Delete', rb_edit: 'Reimbursement: Add / Cancel / Delete', db_manage: 'Disbursement: Generate Batch',
+  tab_loans: 'Tab: Loans', tab_cashAdvance: 'Tab: Cash Advance', tab_hmo: 'Tab: HMO', tab_agencies: 'Tab: Agencies',
+  loan_create: 'Loans: Add', loan_edit: 'Loans: Edit / Cancel / Delete', ca_create: 'Cash Advance: Add', ca_edit: 'Cash Advance: Edit / Cancel / Delete',
+  hmo_create: 'HMO: Add', hmo_edit: 'HMO: Edit', hmo_delete: 'HMO: Delete', ag_create: 'Agency: Add', ag_edit: 'Agency: Edit', ag_delete: 'Agency: Delete',
+  tab_requests: 'Tab: Requests', tab_balances: 'Tab: Balances', tab_types: 'Tab: Leave Types',
+  req_create: 'Requests: File Leave', req_edit: 'Requests: Approve / Reject / Cancel', req_delete: 'Requests: Delete',
+  bal_edit: 'Balances: Grant / Prepare / Recalculate', bal_delete: 'Balances: Delete', type_create: 'Leave Type: Add', type_edit: 'Leave Type: Edit', type_delete: 'Leave Type: Delete',
+  tab_statutory: 'Tab: Statutory Contributions', tab_tax: 'Tab: Tax Brackets', tab_brackets: 'Tab: Statutory Brackets', stat_delete: 'Statutory: Delete Saved Row',
+  tax_create: 'Tax: Add Bracket', tax_edit: 'Tax: Edit Bracket', tax_delete: 'Tax: Delete Bracket', br_create: 'Brackets: Add', br_edit: 'Brackets: Edit', br_delete: 'Brackets: Delete',
+  emp_add: 'Button: Add Employee', emp_edit: 'Button: Edit Employee', emp_deactivate: 'Button: Activate / Deactivate', emp_docs: 'Button: Documents', emp_view: 'Button: View Profile', emp_sensitive: 'Button: Show Sensitive Info',
 };
 
 const FILTERS = {
@@ -75,6 +88,11 @@ const FEATURES = [
   { key: 'supplier', label: 'Supplier', description: 'Supplier records and contacts', actions: ['view', 'create', 'edit', 'delete'] },
   { key: 'employees', label: 'Employees', description: 'Manage employee records and payroll data. Approve Cash Advances: only these users can approve new cash advances. Recalculate Leave: only these users can recalculate leave balances.', actions: ['view', 'create', 'edit', 'delete', 'manage', 'ca_approve', 'recalc'] },
   { key: 'payroll', label: 'Payroll Runs', description: 'View: see runs. Create: create runs, OT/undertime. Submit. Edit: change payslip items (GM). Approve/Reject. Download docs. Mark Paid. Statutory: edit SSS/PHIC/HDMF employee and employer shares.', actions: ['view', 'create', 'submit', 'edit', 'approve', 'download', 'pay', 'formula', 'statutory', 'delete'] },
+  { key: 'payroll_tabs', label: 'Payroll Page: Tabs & Buttons', description: 'Pick the tabs this user sees and the buttons that work. If nothing is ticked here, the user keeps everything their Payroll Runs access allows.', actions: ['tab_runs', 'tab_ot', 'tab_rb', 'tab_db', 'tab_an', 'run_new', 'ot_edit', 'rb_edit', 'db_manage'] },
+  { key: 'loans_tabs', label: 'Loans & Deductions: Tabs & Buttons', description: 'Pick the tabs and buttons for Loans, Cash Advance, HMO and Agencies. Nothing ticked = everything their Employees access allows.', actions: ['tab_loans', 'tab_cashAdvance', 'tab_hmo', 'tab_agencies', 'loan_create', 'loan_edit', 'ca_create', 'ca_edit', 'hmo_create', 'hmo_edit', 'hmo_delete', 'ag_create', 'ag_edit', 'ag_delete'] },
+  { key: 'leave_tabs', label: 'Leave Management: Tabs & Buttons', description: 'Pick the tabs and buttons for Requests, Balances and Leave Types. Nothing ticked = everything their Employees access allows.', actions: ['tab_requests', 'tab_balances', 'tab_types', 'req_create', 'req_edit', 'req_delete', 'bal_edit', 'bal_delete', 'type_create', 'type_edit', 'type_delete'] },
+  { key: 'tax_tabs', label: 'Tax & Statutory: Tabs & Buttons', description: 'Pick the tabs and buttons for Statutory Contributions, Tax Brackets and Statutory Brackets. Nothing ticked = everything their Employees access allows.', actions: ['tab_statutory', 'tab_tax', 'tab_brackets', 'stat_delete', 'tax_create', 'tax_edit', 'tax_delete', 'br_create', 'br_edit', 'br_delete'] },
+  { key: 'employees_ui', label: 'Employees Page: Buttons', description: 'Pick the buttons on the Employees list. Nothing ticked = everything their Employees access allows.', actions: ['emp_add', 'emp_edit', 'emp_deactivate', 'emp_docs', 'emp_view', 'emp_sensitive'] },
 ];
 
 const ROLE_PRESETS = {
@@ -765,8 +783,10 @@ const UserManagement = () => {
                       </span>
                     </div>
 
+                    <ModuleAccess features={FEATURES.filter(f => !MATRIX_GROUPS.includes(f.key))} filters={FILTERS} labels={ACTION_LABELS} permissions={formData.permissions} onChange={(perms) => setFormData(prev => ({ ...prev, permissions: perms }))} />
+
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                      {FEATURES.map(f => {
+                      {FEATURES.filter(() => false).map(f => {
                         const keys = f.actions.map(a => `${f.key}:${a}`);
                         const checkedCount = keys.filter(k => formData.permissions.includes(k)).length;
                         const allChecked = checkedCount === keys.length;
@@ -887,6 +907,10 @@ const UserManagement = () => {
                       })}
                     </div>
                   </section>
+                )}
+
+                {isSuperAdmin && formData.role !== 'SUPER_ADMIN' && (
+                  <PageAccessMatrix permissions={formData.permissions} onChange={(perms) => setFormData(prev => ({ ...prev, permissions: perms }))} />
                 )}
 
                 {formData.role === 'SUPER_ADMIN' && (

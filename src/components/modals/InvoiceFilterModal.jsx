@@ -75,14 +75,21 @@ const InvoiceFilterModal = ({
     return 0;
   });
 
+  const getCompanySku = (p) => {
+    if (!p.companySkus) return '';
+    if (selectedCompanyId) return p.companySkus[selectedCompanyId] || '';
+    return Object.values(p.companySkus).filter(Boolean).join(' ');
+  };
+
   const filteredProducts = allProductOptions.filter(p => {
     if (!productSearch) return true;
-    const searchLower = productSearch.toLowerCase();
+    const searchLower = productSearch.toLowerCase().trim();
     return (
       (p.name || '').toLowerCase().includes(searchLower) ||
       (p.subLabel || '').toLowerCase().includes(searchLower) ||
       (p.upc || '').toLowerCase().includes(searchLower) ||
-      (p.sku || '').toLowerCase().includes(searchLower)
+      (p.sku || '').toLowerCase().includes(searchLower) ||
+      getCompanySku(p).toLowerCase().includes(searchLower)
     );
   });
 
@@ -234,7 +241,7 @@ const InvoiceFilterModal = ({
                 <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search products..."
+                  placeholder="Search name, UPC, SKU or company SKU..."
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
                   className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
@@ -262,6 +269,9 @@ const InvoiceFilterModal = ({
                       <span className="text-gray-700">{p.name}</span>
                       {p.subLabel && p.subLabel !== 'No variations' && (
                         <span className="text-xs text-gray-500">Variation: {p.subLabel}</span>
+                      )}
+                      {getCompanySku(p) && (
+                        <span className="text-xs text-gray-500">Company SKU: {getCompanySku(p)}</span>
                       )}
                       {p.upc && (
                         <span className="text-xs text-gray-400">UPC: {p.upc}</span>

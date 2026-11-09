@@ -1,3 +1,4 @@
+import { ui } from '../../utils/uiAccess';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Edit2, Search, X, User, UserCheck, UserX, FileText, Eye, EyeOff } from 'lucide-react';
 import EmployeeDocumentsModal, { SecureImage } from './EmployeeDocumentsModal';
@@ -126,8 +127,8 @@ const Section = ({ title, children }) => (
 
 const EmployeeManagement = () => {
     const { user } = useAuth();
-    const canCreate = can(user, 'employees', 'create');
-    const canEdit = can(user, 'employees', 'edit');
+    const canCreate = can(user, 'employees', 'create') && ui(user, 'employees_ui', 'emp_add');
+    const canEdit = can(user, 'employees', 'edit') && ui(user, 'employees_ui', 'emp_edit');
     const canDelete = can(user, 'employees', 'delete');
 
     const [employees, setEmployees] = useState([]);
@@ -524,13 +525,13 @@ const EmployeeManagement = () => {
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <button
-                                                onClick={() => { setShowSensitive(false); setViewEmp(emp); }}
+                                                onClick={() => { setShowSensitive(false); setViewEmp(emp); }} style={ui(user, 'employees_ui', 'emp_view') ? undefined : { display: 'none' }}
                                                 title="View details"
                                                 className="p-2 text-gray-700 hover:bg-gray-100 rounded"
                                             >
                                                 <Eye size={18} />
                                             </button>
-                                            <button onClick={() => setDocsEmployee(emp)} title="Documents" className="p-2 text-teal-600 hover:bg-teal-50 rounded">
+                                            <button onClick={() => setDocsEmployee(emp)} style={ui(user, 'employees_ui', 'emp_docs') ? undefined : { display: 'none' }} title="Documents" className="p-2 text-teal-600 hover:bg-teal-50 rounded">
                                                 <FileText size={18} />
                                             </button>
                                             {canEdit && (
@@ -539,7 +540,7 @@ const EmployeeManagement = () => {
                                                         <Edit2 size={18} />
                                                     </button>
                                                     <button
-                                                        onClick={() => toggleStatus(emp)}
+                                                        onClick={() => toggleStatus(emp)} style={ui(user, 'employees_ui', 'emp_deactivate') ? undefined : { display: 'none' }}
                                                         title={emp.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
                                                         className={`p-2 rounded ${emp.status === 'ACTIVE' ? 'text-orange-600 hover:bg-orange-50' : 'text-green-600 hover:bg-green-50'}`}
                                                     >
@@ -917,7 +918,7 @@ const EmployeeManagement = () => {
                                     <span className="text-xs text-gray-500">Government IDs and bank details are masked by default.</span>
                                     <button
                                         type="button"
-                                        onClick={() => setShowSensitive((s) => !s)}
+                                        onClick={() => setShowSensitive((s) => !s)} style={ui(user, 'employees_ui', 'emp_sensitive') ? undefined : { display: 'none' }}
                                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-orange-600 border border-orange-200 rounded hover:bg-orange-50"
                                     >
                                         {showSensitive ? <EyeOff size={14} /> : <Eye size={14} />}
