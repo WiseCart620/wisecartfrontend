@@ -3,7 +3,7 @@ import { Plus, Edit2, Trash2, X, Lock } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { api } from '../../services/api';
 import { LoadingOverlay } from '../../components/common/LoadingOverlay';
-import { useAuth, can, canUi, uiAllowed, isSelfOnly } from '../../context/AuthContext';
+import { useAuth, can, uiAllowed } from '../../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 import OvertimeRatesCard from '../../components/payroll/OvertimeRatesCard';
 import { MoneyInput } from '../../components/payroll/Shared';

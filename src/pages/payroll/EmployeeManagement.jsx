@@ -6,7 +6,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { api } from '../../services/api';
 import { LoadingOverlay } from '../../components/common/LoadingOverlay';
 import Pagination from '../../components/common/Pagination';
-import { useAuth, can, canUi, uiAllowed, isSelfOnly } from '../../context/AuthContext';
+import { useAuth, can, uiAllowed } from '../../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { MoneyInput } from '../../components/payroll/Shared';
 import PageShell from '../../components/payroll/PageShell';

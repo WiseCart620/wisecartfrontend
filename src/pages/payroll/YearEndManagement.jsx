@@ -1,7 +1,7 @@
 import React from 'react';
 import { Toaster } from 'react-hot-toast';
 import { Navigate } from 'react-router-dom';
-import { useAuth, can, isSelfOnly, uiAllowed } from '../../context/AuthContext';
+import { useAuth, can, uiAllowed } from '../../context/AuthContext';
 import ThirteenthMonthTab from '../../components/payroll/ThirteenthMonthTab';
 import PageShell from '../../components/payroll/PageShell';
 

@@ -4,7 +4,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
-import { useAuth, can, canUi, uiAllowed, isSelfOnly } from '../../context/AuthContext';
+import { useAuth, can, canUi, uiAllowed } from '../../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { inputCls, money, Field, Modal, MoneyInput } from '../../components/payroll/Shared';
 import PayrollRunDetail from '../../components/payroll/PayrollRunDetail';
