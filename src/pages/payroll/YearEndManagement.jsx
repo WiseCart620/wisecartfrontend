@@ -1,10 +1,11 @@
 import React from 'react';
 import { Toaster } from 'react-hot-toast';
-import { useAuth, can } from '../../context/AuthContext';
+import { Navigate } from 'react-router-dom';
+import { useAuth, can, isSelfOnly, uiAllowed } from '../../context/AuthContext';
 import ThirteenthMonthTab from '../../components/payroll/ThirteenthMonthTab';
 import PageShell from '../../components/payroll/PageShell';
 
-const YearEndManagement = () => {
+const YearEndManagementInner = () => {
   const { user } = useAuth();
   const canManage = can(user, 'employees', 'manage');
 
@@ -14,6 +15,12 @@ const YearEndManagement = () => {
       <ThirteenthMonthTab canManage={canManage} />
     </PageShell>
   );
+};
+
+const YearEndManagement = () => {
+  const { user } = useAuth();
+  if (!uiAllowed(user, 'pages_ui', 'page_yearend')) return <Navigate to="/welcome" replace />;
+  return <YearEndManagementInner />;
 };
 
 export default YearEndManagement;

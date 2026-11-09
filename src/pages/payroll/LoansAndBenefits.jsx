@@ -1,8 +1,8 @@
-import { ui } from '../../utils/uiAccess';
 import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
+import { Navigate } from 'react-router-dom';
 import { api } from '../../services/api';
-import { useAuth, can } from '../../context/AuthContext';
+import { useAuth, can, canUi, uiAllowed } from '../../context/AuthContext';
 import LoanAccountsTab from '../../components/payroll/LoanAccountsTab';
 import HmoTab from '../../components/payroll/HmoTab';
 import AgenciesTab from '../../components/payroll/AgenciesTab';
@@ -15,18 +15,17 @@ const TABS = [
   { key: 'hmo', label: 'HMO' },
   { key: 'agencies', label: 'Agencies' },
 ];
+const TAB_KEYS = { loans: 'tab_loans', cashAdvance: 'tab_cashAdvance', hmo: 'tab_hmo', agencies: 'tab_agencies' };
 
-const LoansAndBenefits = () => {
+const LoansAndBenefitsInner = () => {
   const { user } = useAuth();
+  const ui = (k) => canUi(user, 'loans_tabs', k);
   const canCreate = can(user, 'employees', 'create');
   const canEdit = can(user, 'employees', 'edit');
   const canDelete = can(user, 'employees', 'delete');
 
-  const [tab, setTab] = useState('loans');
-  const ln = (k) => ui(user, 'loans_tabs', k);
-  useEffect(() => {
-    if (!ln('tab_' + tab)) { const f = TABS.find(t => ln('tab_' + t.key)); if (f) setTab(f.key); }
-  }, [user, tab]);
+  const visibleTabs = TABS.filter((t) => uiAllowed(user, 'loans_tabs', TAB_KEYS[t.key]));
+  const [tab, setTab] = useState(visibleTabs[0]?.key || 'loans');
   const [employees, setEmployees] = useState([]);
   const [agencies, setAgencies] = useState([]);
 
@@ -50,14 +49,20 @@ const LoansAndBenefits = () => {
   return (
     <PageShell title="Loans & Other Deductions"
       subtitle="Employee loans, cash advances, HMO and government agencies"
-      tabs={TABS.filter(t => ln('tab_' + t.key))} tab={tab} onTab={setTab}>
+      tabs={visibleTabs} tab={tab} onTab={setTab}>
       <Toaster position="top-right" />
-      {tab === 'loans' && <LoanAccountsTab employees={employees} agencies={agencies} canCreate={canCreate && ln('loan_create')} canEdit={canEdit && ln('loan_edit')} />}
-      {tab === 'cashAdvance' && <CashAdvanceTab employees={employees} canCreate={canCreate && ln('ca_create')} canEdit={canEdit && ln('ca_edit')} />}
-      {tab === 'hmo' && <HmoTab employees={employees} canCreate={canCreate && ln('hmo_create')} canEdit={canEdit && ln('hmo_edit')} canDelete={canDelete && ln('hmo_delete')} />}
-      {tab === 'agencies' && <AgenciesTab agencies={agencies} canCreate={canCreate && ln('ag_create')} canEdit={canEdit && ln('ag_edit')} canDelete={canDelete && ln('ag_delete')} onChanged={loadAgencies} />}
+      {tab === 'loans' && <LoanAccountsTab employees={employees} agencies={agencies} canCreate={canCreate && ui('loan_create')} canEdit={canEdit && ui('loan_edit')} />}
+      {tab === 'cashAdvance' && <CashAdvanceTab employees={employees} canCreate={canCreate && ui('ca_create')} canEdit={canEdit && ui('ca_edit')} />}
+      {tab === 'hmo' && <HmoTab employees={employees} canCreate={canCreate && ui('hmo_create')} canEdit={canEdit && ui('hmo_edit')} canDelete={canDelete && ui('hmo_delete')} />}
+      {tab === 'agencies' && <AgenciesTab agencies={agencies} canCreate={canCreate && ui('ag_create')} canEdit={canEdit && ui('ag_edit')} canDelete={canDelete && ui('ag_delete')} onChanged={loadAgencies} />}
     </PageShell>
   );
+};
+
+const LoansAndBenefits = () => {
+  const { user } = useAuth();
+  if (!uiAllowed(user, 'pages_ui', 'page_loans')) return <Navigate to="/welcome" replace />;
+  return <LoansAndBenefitsInner />;
 };
 
 export default LoansAndBenefits;

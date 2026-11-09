@@ -1,3 +1,5 @@
+import { useAuth } from '../../../context/AuthContext';
+import { ui } from '../../../utils/uiAccess';
 // src/components/modals/ProcurementModals/RPQModal.jsx
 import React, { useState, useEffect } from 'react';
 import {
@@ -13,6 +15,7 @@ import {
 import { getFileUrl, getFileDownloadUrl } from '../../../utils/fileUtils';
 
 const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
+  const { user } = useAuth();
     const [submitting, setSubmitting] = useState(false);
     const [rpqFormData, setRpqFormData] = useState({
         supplierId: '',
@@ -265,7 +268,7 @@ const RPQModal = ({ editingRpq, onClose, onSuccess }) => {
                     <h2 className="text-xl font-bold text-gray-900">Edit Product Quotation Request</h2>
                     <div className="flex items-center gap-2">
                         <button
-                            type="button"
+                            type="button" style={ui(user, 'procurement_ui', 'rpq_print') ? undefined : { display: 'none' }}
                             onClick={() => {
                                 const printWindow = window.open('', '', 'width=800,height=900');
                                 const content = document.getElementById('rpq-print-content').innerHTML;

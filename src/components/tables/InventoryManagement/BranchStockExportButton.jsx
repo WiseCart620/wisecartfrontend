@@ -1,3 +1,5 @@
+import { useAuth } from '../../../context/AuthContext';
+import { ui } from '../../../utils/uiAccess';
 import React, { useState } from 'react';
 import { FileSpreadsheet, Printer, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -34,6 +36,7 @@ const buildRows = (data) => data.map(s => {
 const sumCol = (rows, key) => rows.reduce((a, r) => a + (Number(r[key]) || 0), 0);
 
 const BranchStockExportButton = ({ fetchData }) => {
+  const { user } = useAuth();
   const [exportingCsv, setExportingCsv] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
 
@@ -174,7 +177,7 @@ const BranchStockExportButton = ({ fetchData }) => {
   return (
     <div className="flex items-center gap-1.5">
       <button
-        onClick={handleExportCSV}
+        onClick={handleExportCSV} style={ui(user, 'inventory_ui', 'cs_csv') ? undefined : { display: 'none' }}
         disabled={exportingCsv || exportingPdf}
         className="flex items-center gap-1.5 h-8 px-3 bg-white text-gray-700 border border-gray-300 rounded hover:bg-white hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm whitespace-nowrap"
       >
@@ -182,7 +185,7 @@ const BranchStockExportButton = ({ fetchData }) => {
         <span>{exportingCsv ? 'Preparing...' : 'Export CSV'}</span>
       </button>
       <button
-        onClick={handleExportPDF}
+        onClick={handleExportPDF} style={ui(user, 'inventory_ui', 'cs_print') ? undefined : { display: 'none' }}
         disabled={exportingCsv || exportingPdf}
         className="flex items-center gap-1.5 h-8 px-3 bg-white text-gray-700 border border-gray-300 rounded hover:bg-white hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm whitespace-nowrap"
       >

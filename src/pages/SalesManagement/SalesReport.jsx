@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import MultiSelectDropdown from '../../components/common/MultiSelectDropdown';
 import VariationSearchableDropdown from '../../components/common/VariationSearchableDropdown';
 import { useAuth, canSeeFilter } from '../../context/AuthContext';
+import { ui } from '../../utils/uiAccess';
 
 const formatCurrency = (amount) => {
     if (amount === null || amount === undefined) return '0.00';
@@ -709,11 +710,11 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                 <div className="flex gap-2">
                     {salesReportData && (
                         <>
-                            <button onClick={exportReportToExcel} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700">
+                            <button onClick={exportReportToExcel} style={ui(user, 'sales_ui', 'rp_export') ? undefined : { display: 'none' }} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700">
                                 <FileText size={16} /> Export CSV
                             </button>
                             <div className="relative">
-                                <button onClick={() => setShowPrintMenu(p => !p)} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded text-sm font-medium hover:bg-orange-700">
+                                <button onClick={() => setShowPrintMenu(p => !p)} style={ui(user, 'sales_ui', 'rp_print') ? undefined : { display: 'none' }} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded text-sm font-medium hover:bg-orange-700">
                                     <Printer size={16} /> Print
                                 </button>
                                 {showPrintMenu && (
@@ -815,7 +816,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                                 </div>
                             </>
                         )}
-                        <button onClick={() => generateSalesReport(reportCompanyIds, reportBranchIds, reportProductFilters)} disabled={salesReportLoading}
+                        <button onClick={() => generateSalesReport(reportCompanyIds, reportBranchIds, reportProductFilters)} style={ui(user, 'sales_ui', 'rp_generate') ? undefined : { display: 'none' }} disabled={salesReportLoading}
                             className="px-5 py-2 bg-orange-600 text-white rounded text-sm font-medium hover:bg-orange-700 disabled:opacity-50 transition">
                             {salesReportLoading ? 'Generating...' : 'Generate Report'}
                         </button>

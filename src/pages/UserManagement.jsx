@@ -7,7 +7,10 @@ import { LoadingOverlay } from '../components/common/LoadingOverlay';
 import Pagination from '../components/common/Pagination';
 import { useIsSuperAdmin } from '../context/AuthContext';
 import PageAccessMatrix, { MATRIX_GROUPS } from '../components/payroll/PageAccessMatrix';
-import ModuleAccess from '../components/payroll/ModuleAccess';
+import FeatureAccessMatrix from '../components/payroll/FeatureAccessMatrix';
+import PagePermissionMatrix from '../components/payroll/PagePermissionMatrix';
+
+import SearchableSelect from '../components/payroll/SearchableSelect';
 
 const ACTION_LABELS = {
   view: 'View', create: 'Create', edit: 'Edit', delete: 'Delete',
@@ -79,7 +82,7 @@ const FEATURES = [
   { key: 'alerts', label: 'Alerts', description: 'Low-stock and system alerts', actions: ['view', 'edit', 'delete'] },
   { key: 'sales', label: 'Sales', description: 'Create and manage sales orders, invoices, and reports', actions: ['view', 'create', 'edit', 'delete', 'invoice', 'report', 'summary'] },
   { key: 'deliveries', label: 'Deliveries', description: 'Track and manage delivery transactions', actions: ['view', 'create', 'edit', 'delete', 'cancel', 'print', 'transmittal'] },
-  { key: 'warehouse_inventory', label: 'Warehouse Inventory', description: 'Warehouse stock levels and confirmations', actions: ['view', 'create', 'edit', 'delete', 'confirm'] },
+  { key: 'warehouse_inventory', label: 'Warehouse Inventory', description: 'Warehouse stock levels and pending recalculation', actions: ['view', 'edit'] },
   { key: 'inventory', label: 'Inventory Record', description: 'Stock movement records across all locations', actions: ['view', 'create', 'edit', 'delete', 'confirm'] },
   { key: 'procurement', label: 'Procurement', description: 'Inventory requests, RPQ, purchase orders, and payments', actions: ['view', 'create', 'edit', 'delete', 'confirm', 'payment'] },
   { key: 'warehouse', label: 'Warehouse', description: 'Warehouse locations and configuration', actions: ['view', 'create', 'edit', 'delete'] },
@@ -130,6 +133,26 @@ const UserManagement = () => {
   });
 
   const [isCustomRole, setIsCustomRole] = useState(false);
+
+
+
+  const [employees, setEmployees] = useState([]);
+
+  useEffect(() => {
+
+    api.get('/employees').then(r => { if (r.success) setEmployees(r.data || []); }).catch(() => { });
+
+  }, []);
+
+  const takenIds = new Set(users.filter(u => u.employeeId && u.id !== editingUser?.id).map(u => String(u.employeeId)));
+
+  const employeeOptions = employees
+
+    .filter(e => !takenIds.has(String(e.employeeId)))
+
+    .map(e => ({ value: String(e.employeeId), label: e.fullName }));
+
+  const employeeNameOf = (id) => employees.find(e => e.employeeId === id)?.fullName;
 
   const togglePermission = (permKey) => {
     setFormData(prev => {
@@ -228,10 +251,22 @@ const UserManagement = () => {
       }
 
       if (editingUser) {
+        payload.employeeId = formData.employeeId ? Number(formData.employeeId) : 0; // 0 = unlink
+
         await api.put(`/users/${editingUser.id}`, payload);
         toast.success('User updated successfully');
       } else {
         await api.post('/auth/register', payload);
+
+        if (formData.employeeId) {
+
+          const list = await api.get('/users');
+
+          const created = (list.data || []).find(u => u.username === formData.username);
+
+          if (created) await api.put(`/users/${created.id}`, { employeeId: Number(formData.employeeId) });
+
+        }
         toast.success('User created successfully');
       }
 
@@ -295,7 +330,8 @@ const UserManagement = () => {
       password: '',
       role,
       enabled: user.enabled,
-      permissions: user.permissions || []
+      permissions: user.permissions || [],
+      employeeId: user.employeeId ? String(user.employeeId) : ''
     });
     setIsCustomRole(!PRESET_ROLES.includes(role));
     setShowModal(true);
@@ -498,6 +534,12 @@ const UserManagement = () => {
                         <div>
                           <div className="font-medium text-gray-900">{user.fullName}</div>
                           <div className="text-sm text-gray-500">{user.username}</div>
+
+                          {user.employeeId && (
+
+                            <div className="text-xs text-orange-600">Employee: {employeeNameOf(user.employeeId) || `#${user.employeeId}`}</div>
+
+                          )}
                         </div>
                       </div>
                     </td>
@@ -677,6 +719,82 @@ const UserManagement = () => {
                   </div>
                 </section>
 
+                {/* Section: Linked Employee */}
+
+                <section>
+
+                  <div className="flex items-center gap-2 mb-4">
+
+                    <div className="w-1 h-4 bg-orange-600 rounded-full" />
+
+                    <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Linked Employee</h3>
+
+                  </div>
+
+                  <div className="bg-white rounded-xl p-5 border border-gray-100 space-y-3">
+
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">This account belongs to employee</label>
+
+                    <SearchableSelect
+
+                      allLabel="Not linked to an employee"
+
+                      placeholder="Search employee name..."
+
+                      searchPlaceholder="Search employee..."
+
+                      value={formData.employeeId || ''}
+
+                      options={employeeOptions}
+
+                      onChange={(v) => {
+
+                        const emp = employees.find(e => String(e.employeeId) === String(v));
+
+                        setFormData(prev => ({
+
+                          ...prev,
+
+                          employeeId: v || '',
+
+                          fullName: prev.fullName || emp?.fullName || '',
+
+                          email: prev.email || emp?.email || '',
+
+                        }));
+
+                      }}
+
+                    />
+
+                    {formData.employeeId && formData.role !== 'SUPER_ADMIN' && (
+
+                      <label className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
+
+                        <input type="checkbox" className="accent-orange-600 w-4 h-4 mt-0.5"
+
+                          checked={formData.permissions.includes('self:only')}
+
+                          onChange={() => togglePermission('self:only')} />
+
+                        <span>
+
+                          <b>Own records only.</b> This user can see and file only their own payslips, leave, loans and
+
+                          other records. Enforced by the server.
+
+                        </span>
+
+                      </label>
+
+                    )}
+
+                  </div>
+
+                </section>
+
+
+
                 {/* Section: Role & Status */}
                 <section>
                   <div className="flex items-center gap-2 mb-4">
@@ -737,8 +855,8 @@ const UserManagement = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">Account Status</label>
-                      <label
-                        htmlFor="enabled"
+                      <div
+                        onClick={() => setFormData(prev => ({ ...prev, enabled: !prev.enabled }))}
                         className="flex items-center justify-between gap-3 px-4 py-2.5 bg-white border border-gray-300 rounded cursor-pointer hover:border-gray-400 transition h-[42px]"
                       >
                         <span className="text-sm text-gray-700">
@@ -748,24 +866,13 @@ const UserManagement = () => {
                           type="button"
                           role="switch"
                           aria-checked={formData.enabled}
-                          onClick={() => setFormData(prev => ({ ...prev, enabled: !prev.enabled }))}
-                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0 ${formData.enabled ? 'bg-orange-600' : 'bg-gray-300'
-                            }`}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0 ${formData.enabled ? 'bg-orange-600' : 'bg-gray-300'}`}
                         >
                           <span
-                            className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${formData.enabled ? 'translate-x-5' : 'translate-x-1'
-                              }`}
+                            className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${formData.enabled ? 'translate-x-5' : 'translate-x-1'}`}
                           />
                         </button>
-                        <input
-                          type="checkbox"
-                          id="enabled"
-                          name="enabled"
-                          checked={formData.enabled}
-                          onChange={handleInputChange}
-                          className="hidden"
-                        />
-                      </label>
+                      </div>
                     </div>
                   </div>
                 </section>
@@ -783,7 +890,7 @@ const UserManagement = () => {
                       </span>
                     </div>
 
-                    <ModuleAccess features={FEATURES.filter(f => !MATRIX_GROUPS.includes(f.key))} filters={FILTERS} labels={ACTION_LABELS} permissions={formData.permissions} onChange={(perms) => setFormData(prev => ({ ...prev, permissions: perms }))} />
+                    <FeatureAccessMatrix features={FEATURES.filter(f => !MATRIX_GROUPS.includes(f.key) && !['employees', 'payroll'].includes(f.key))} filters={FILTERS} labels={ACTION_LABELS} permissions={formData.permissions} onChange={(perms) => setFormData(prev => ({ ...prev, permissions: perms }))} />
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                       {FEATURES.filter(() => false).map(f => {
@@ -910,7 +1017,7 @@ const UserManagement = () => {
                 )}
 
                 {isSuperAdmin && formData.role !== 'SUPER_ADMIN' && (
-                  <PageAccessMatrix permissions={formData.permissions} onChange={(perms) => setFormData(prev => ({ ...prev, permissions: perms }))} />
+                  <PagePermissionMatrix permissions={formData.permissions} onChange={(perms) => setFormData(prev => ({ ...prev, permissions: perms }))} />
                 )}
 
                 {formData.role === 'SUPER_ADMIN' && (

@@ -1,3 +1,5 @@
+import { useAuth } from '../../context/AuthContext';
+import { ui } from '../../utils/uiAccess';
 import React, { useState, useMemo, useCallback, memo, useEffect, useRef } from 'react';
 import { Bell, X, Download, CheckCheck, Trash2, RefreshCw, AlertCircle, AlertTriangle, Info, CheckCircle, Database, Loader2, Filter, XCircle, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { api } from '../../services/api';
@@ -7,6 +9,7 @@ const PAGE_SIZE = 20;
 
 // ── Memoized individual alert row ─────────────────────────────────────────────
 const AlertRow = memo(({ alertItem, index, isThisResolving, bulkLoading, onResolve }) => {
+  const { user } = useAuth();
   let alertConfig = {
     icon: AlertCircle,
     iconColor: 'text-orange-600',
@@ -135,7 +138,7 @@ const AlertRow = memo(({ alertItem, index, isThisResolving, bulkLoading, onResol
                 )}
               </div>
               <button
-                onClick={() => onResolve(alertItem)}
+                onClick={() => onResolve(alertItem)} style={ui(user, 'alerts_ui', 'al_resolve') ? undefined : { display: 'none' }}
                 disabled={isThisResolving || bulkLoading}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
               >
@@ -165,6 +168,7 @@ const AlertManagement = ({
   products = [],
   branches = [],
 }) => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('active');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSeverity, setFilterSeverity] = useState('all');
@@ -433,7 +437,7 @@ const AlertManagement = ({
 
             <div className="flex items-center gap-2">
               <button
-                onClick={handleDownloadAndClear}
+                onClick={handleDownloadAndClear} style={ui(user, 'alerts_ui', 'al_download') ? undefined : { display: 'none' }}
                 disabled={bulkLoading}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded hover:bg-white hover:border-gray-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-[11px] font-medium"
               >
@@ -441,7 +445,7 @@ const AlertManagement = ({
               </button>
               {activeTab === 'active' && alertsTotalElements > 0 && (
                 <button
-                  onClick={handleResolveAll}
+                  onClick={handleResolveAll} style={ui(user, 'alerts_ui', 'al_resolve_all') ? undefined : { display: 'none' }}
                   disabled={bulkLoading}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-[11px] font-medium shadow-sm"
                 >
@@ -718,7 +722,7 @@ const AlertManagement = ({
                 <RefreshCw size={11} /> Refresh
               </button>
               <button
-                onClick={handleDeleteAllResolved}
+                onClick={handleDeleteAllResolved} style={ui(user, 'alerts_ui', 'al_clear_resolved') ? undefined : { display: 'none' }}
                 disabled={bulkLoading}
                 className="flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-600 border border-orange-100 rounded hover:bg-orange-100 transition-colors text-[10px] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >

@@ -4,7 +4,8 @@ import { Plus, Trash2 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
-import { useAuth, can } from '../../context/AuthContext';
+import { useAuth, can, canUi, uiAllowed, isSelfOnly } from '../../context/AuthContext';
+import { Navigate } from 'react-router-dom';
 import { inputCls, money, Field, Modal, MoneyInput } from '../../components/payroll/Shared';
 import PayrollRunDetail from '../../components/payroll/PayrollRunDetail';
 import OvertimeEntries from '../../components/payroll/OvertimeEntries';
@@ -48,7 +49,7 @@ const fmtD = (d) => d
 const EMPTY = { option: '', month: '', year: '', periodStart: '', periodEnd: '', payDate: '', daysOfWork: '' };
 const STATUS_LABEL = { DRAFT: 'On-Going', SUBMITTED: 'On-Going (For Approval)', APPROVED: 'Approved', REJECTED: 'Rejected', PAID: 'Paid' };
 
-const PayrollRunManagement = () => {
+const PayrollRunManagementInner = () => {
   const { user } = useAuth();
   const canCreate = can(user, 'payroll', 'create') && ui(user, 'payroll_tabs', 'run_new');
   const canDeleteRun = can(user, 'payroll', 'delete');
@@ -62,7 +63,7 @@ const PayrollRunManagement = () => {
   const [form, setForm] = useState(EMPTY);
   const [creating, setCreating] = useState(false);
   const [selectedRunId, setSelectedRunId] = useState(null);
-  const [tab, setTab] = useState('runs');
+  const firstTab = ['runs', 'ot', 'rb', 'db', 'an'].find((k) => uiAllowed(user, 'payroll_tabs', { runs: 'tab_runs', ot: 'tab_ot', rb: 'tab_rb', db: 'tab_db', an: 'tab_an' }[k])) || 'runs'; const [tab, setTab] = useState(firstTab);
   useEffect(() => {
     const first = ['runs', 'ot', 'rb', 'db', 'an'].find(k => ui(user, 'payroll_tabs', 'tab_' + k));
     if (first && !ui(user, 'payroll_tabs', 'tab_' + tab)) setTab(first);
@@ -287,7 +288,7 @@ const PayrollRunManagement = () => {
             <span className="text-xs text-gray-500">
               Showing {filteredRuns.length} of {runs.length} run{runs.length === 1 ? '' : 's'}
             </span>
-            {canCreate && (
+            {canCreate && canUi(user, 'payroll_tabs', 'run_new') && (
               <button onClick={() => setShow(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded text-sm font-medium shadow-sm hover:bg-orange-700 transition-colors">
                 <Plus size={18} /> New Run
@@ -408,6 +409,12 @@ const PayrollRunManagement = () => {
       )}
     </div>
   );
+};
+
+const PayrollRunManagement = () => {
+  const { user } = useAuth();
+  if (!uiAllowed(user, 'pages_ui', 'page_payroll')) return <Navigate to="/welcome" replace />;
+  return <PayrollRunManagementInner />;
 };
 
 export default PayrollRunManagement;

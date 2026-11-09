@@ -1,9 +1,12 @@
+import { useAuth } from '../../../context/AuthContext';
+import { ui } from '../../../utils/uiAccess';
 import React, { useState, useEffect, useCallback } from 'react';
 import { AlertTriangle, Trash2, Search, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../../services/api';
 
 const TransactionCleanupPanel = ({ onCleaned, bare = false }) => {
+  const { user } = useAuth();
     const [scanning, setScanning] = useState(false);
     const [fixing, setFixing] = useState(false);
     const [purging, setPurging] = useState(false);
@@ -113,7 +116,7 @@ const TransactionCleanupPanel = ({ onCleaned, bare = false }) => {
                         <p className="text-xs text-gray-500">Scans active SALE transactions for sales with more than one active row per product.</p>
                     </div>
                     <button
-                        onClick={handleScan}
+                        onClick={handleScan} style={ui(user, 'inventory_ui', 'sr_scan') ? undefined : { display: 'none' }}
                         disabled={scanning}
                         className="flex items-center gap-2 px-3 py-1.5 text-sm border border-gray-300 rounded text-gray-700 hover:bg-white disabled:opacity-50"
                     >
@@ -155,7 +158,7 @@ const TransactionCleanupPanel = ({ onCleaned, bare = false }) => {
                                     </table>
                                 </div>
                                 <button
-                                    onClick={handleFix}
+                                    onClick={handleFix} style={ui(user, 'inventory_ui', 'sr_fix') ? undefined : { display: 'none' }}
                                     disabled={fixing}
                                     className="mt-3 flex items-center gap-2 px-3 py-1.5 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-50"
                                 >
@@ -192,7 +195,7 @@ const TransactionCleanupPanel = ({ onCleaned, bare = false }) => {
                         </p>
                     </div>
                     <button
-                        onClick={handlePurge}
+                        onClick={handlePurge} style={ui(user, 'inventory_ui', 'sr_purge') ? undefined : { display: 'none' }}
                         disabled={purging || !deletedCount}
                         className="flex items-center gap-2 px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:bg-gray-300"
                     >

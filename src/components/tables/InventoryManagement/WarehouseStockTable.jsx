@@ -1,3 +1,5 @@
+import { useAuth } from '../../../context/AuthContext';
+import { ui } from '../../../utils/uiAccess';
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -127,6 +129,7 @@ const WarehouseStockTable = ({
   grandTotals,
   totalElements = 0,
 }) => {
+  const { user } = useAuth();
   const [loadingId, setLoadingId] = useState(null);
   const totals = grandTotals || { quantity: 0, delivered: 0, pendingDelivery: 0, available: 0 };
   const [adjustmentStock, setAdjustmentStock] = useState(null);
@@ -185,7 +188,7 @@ const WarehouseStockTable = ({
         {(() => { const actions = (<div className="relative flex items-center gap-2">
           {isAdmin && (
             <button
-              onClick={() => setShowAudit(true)}
+              onClick={() => setShowAudit(true)} style={ui(user, 'inventory_ui', 'ws_audit') ? undefined : { display: 'none' }}
               title="Check the Delivered counter against deliveries"
               className="flex items-center gap-1.5 px-3 h-8 text-xs font-medium rounded border bg-white border-gray-300 text-black hover:bg-gray-100"
             >
@@ -194,7 +197,7 @@ const WarehouseStockTable = ({
             </button>
           )}
           <button
-            onClick={() => setShowColPanel((v) => !v)}
+            onClick={() => setShowColPanel((v) => !v)} style={ui(user, 'inventory_ui', 'ws_movements') ? undefined : { display: 'none' }}
             className={`flex items-center gap-1.5 px-3 h-8 text-xs font-medium rounded border transition
               ${showColPanel || anyMovVisible
                 ? 'bg-gray-100 border-gray-400 text-black'
@@ -374,7 +377,7 @@ const WarehouseStockTable = ({
                     <td className="px-2 py-2 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <button
-                          onClick={() => handleView(stock)}
+                          onClick={() => handleView(stock)} style={ui(user, 'inventory_ui', 'ws_view') ? undefined : { display: 'none' }}
                           disabled={isThisLoading}
                           title="View Transactions"
                           className={`p-1.5 rounded transition text-gray-500 ${isThisLoading ? 'cursor-wait opacity-50' : 'hover:text-orange-600 hover:bg-orange-50'}`}
@@ -383,7 +386,7 @@ const WarehouseStockTable = ({
                         </button>
                         {isAdmin && (
                           <button
-                            onClick={() => { setAdjustmentStock(stock); setShowAdjustmentModal(true); }}
+                            onClick={() => { setAdjustmentStock(stock); setShowAdjustmentModal(true); }} style={ui(user, 'inventory_ui', 'ws_adjust') ? undefined : { display: 'none' }}
                             title="Manual Adjustment"
                             className="p-1.5 rounded text-gray-500 hover:text-orange-600 hover:bg-orange-50 transition"
                           >

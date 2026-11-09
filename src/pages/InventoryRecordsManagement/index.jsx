@@ -12,6 +12,7 @@ import { getCurrentUser, isAdmin } from '../../utils/authUtils';
 import { api } from '../../services/api';
 import ProductMultiSelectDropdown from '../../components/common/ProductMultiSelectDropdown';
 import { useAuth, can, canSeeFilter } from '../../context/AuthContext';
+import { ui } from '../../utils/uiAccess';
 import { useReferenceData } from '../../context/ReferenceDataContext';
 
 
@@ -414,10 +415,10 @@ const Toast = ({ toasts, removeToast }) => (
 // ─── Main Component ────────────────────────────────────────────────────────
 const InventoryRecordsManagement = () => {
   const { user } = useAuth();
-  const canCreate = can(user, 'inventory', 'create');
-  const canEdit = can(user, 'inventory', 'edit');
-  const canDelete = can(user, 'inventory', 'delete');
-  const canConfirm = can(user, 'inventory', 'confirm');
+  const canCreate = can(user, 'inventory', 'create') && ui(user, 'whinv_ui', 'whi_new');
+  const canEdit = can(user, 'inventory', 'edit') && ui(user, 'whinv_ui', 'whi_edit');
+  const canDelete = can(user, 'inventory', 'delete') && ui(user, 'whinv_ui', 'whi_delete');
+  const canConfirm = can(user, 'inventory', 'confirm') && ui(user, 'whinv_ui', 'whi_confirm');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [typeFilter, setTypeFilter] = useState('ALL');

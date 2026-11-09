@@ -1,3 +1,4 @@
+import { useAuth, can } from '../context/AuthContext';
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Search, X, Warehouse, MapPin, Building, Star, User, Phone } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
@@ -7,6 +8,10 @@ import Pagination from '../components/common/Pagination';
 
 
 const WarehouseManagement = () => {
+  const { user } = useAuth();
+  const canCreate = can(user, 'warehouse', 'create');
+  const canEdit = can(user, 'warehouse', 'edit');
+  const canDelete = can(user, 'warehouse', 'delete');
   const [warehouses, setWarehouses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -234,7 +239,8 @@ const WarehouseManagement = () => {
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
           />
         </div>
-        <button
+        {canCreate && (
+<button
           onClick={() => {
             resetForm();
             setShowModal(true);
@@ -244,6 +250,7 @@ const WarehouseManagement = () => {
           <Plus size={20} />
           Add Warehouse
         </button>
+)}
       </div>
 
       {/* Warehouses Grid */}
@@ -302,20 +309,24 @@ const WarehouseManagement = () => {
               </div>
 
               <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
-                <button
+                {canEdit && (
+<button
                   onClick={() => handleEdit(warehouse)}
                   className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-orange-600 hover:bg-orange-50 rounded transition text-sm font-medium"
                 >
                   <Edit2 size={16} />
                   Edit
                 </button>
-                <button
+)}
+                {canDelete && (
+<button
                   onClick={() => handleDelete(warehouse.id)}
                   className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded transition text-sm font-medium"
                 >
                   <Trash2 size={16} />
                   Delete
                 </button>
+)}
               </div>
             </div>
           ))

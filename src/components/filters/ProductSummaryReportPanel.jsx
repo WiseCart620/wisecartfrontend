@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import MultiSelectDropdown from '../common/MultiSelectDropdown';
-import { canSeeFilter } from '../../context/AuthContext';
+import { canSeeFilter, canSeeFilterAny } from '../../context/AuthContext';
+import { ui } from '../../utils/uiAccess';
 
 const ProductSummaryReportPanel = ({
     user,
@@ -35,7 +36,7 @@ const ProductSummaryReportPanel = ({
     return (
         <div className="py-1 mb-1">
             <div className="flex flex-nowrap items-end gap-1.5">
-                {canSeeFilter(user, 'warehouse_inventory', 'date') && (
+                {canSeeFilterAny(user, 'warehouse_inventory', 'date') && (
                     <>
                         <div className="w-[120px] flex-shrink-0">
                             <label className="block text-[10px] text-gray-500 leading-tight">Date From</label>
@@ -58,7 +59,7 @@ const ProductSummaryReportPanel = ({
                     </>
                 )}
 
-                {canSeeFilter(user, 'warehouse_inventory', 'warehouse') && (
+                {canSeeFilterAny(user, 'warehouse_inventory', 'warehouse') && (
                     <div className="w-[140px] flex-shrink-0">
                         <label className="block text-[10px] text-gray-500 leading-tight">Warehouse</label>
                         <select
@@ -75,7 +76,7 @@ const ProductSummaryReportPanel = ({
                     </div>
                 )}
 
-                {canSeeFilter(user, 'warehouse_inventory', 'company') && (
+                {canSeeFilterAny(user, 'warehouse_inventory', 'company') && (
                     <div className={`w-[150px] flex-shrink-0 ${dropdownFix}`}>
                         <label className="block text-[10px] text-gray-500 leading-tight">Company</label>
                         <MultiSelectDropdown
@@ -91,7 +92,7 @@ const ProductSummaryReportPanel = ({
                         />
                     </div>
                 )}
-                {canSeeFilter(user, 'warehouse_inventory', 'branch') && (
+                {canSeeFilterAny(user, 'warehouse_inventory', 'branch') && (
                     <div className={`w-[150px] flex-shrink-0 ${dropdownFix}`}>
                         <label className="block text-[10px] text-gray-500 leading-tight">Branch</label>
                         <MultiSelectDropdown
@@ -127,7 +128,7 @@ const ProductSummaryReportPanel = ({
 
                 <div className="ml-auto flex-shrink-0">
                     <button
-                        onClick={onGenerate}
+                        onClick={onGenerate} style={ui(user, 'inventory_ui', 'ps_generate') ? undefined : { display: 'none' }}
                         disabled={!canGenerate || generating}
                         className="h-7 px-3 text-xs bg-orange-600 text-white rounded hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                     >

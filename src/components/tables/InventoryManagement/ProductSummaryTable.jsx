@@ -1,3 +1,5 @@
+import { useAuth } from '../../../context/AuthContext';
+import { ui } from '../../../utils/uiAccess';
 import React, { useState } from 'react';
 import { BarChart3, CheckCircle, ShoppingCart, Truck, Clock, Eye, Loader2, Undo2, ArrowDownCircle, ArrowDownToLine, ArrowUpFromLine, RotateCcw, AlertTriangle, Package, Barcode, MousePointerClick } from 'lucide-react';
 import HeaderIcon from '../../common/HeaderIcon';
@@ -17,6 +19,7 @@ const ProductSummaryTable = ({
   setProductCurrentPage,
   isLoading
 }) => {
+  const { user } = useAuth();
   const [loadingId, setLoadingId] = useState(null);
 
   const handleView = async (product, displaySku, displayUpc, isVariation) => {
@@ -196,7 +199,7 @@ const ProductSummaryTable = ({
                     </td>
                     <td className="px-2 py-2 text-center">
                       <button
-                        onClick={() => handleView(product, displaySku, displayUpc, isVariation)}
+                        onClick={() => handleView(product, displaySku, displayUpc, isVariation)} style={ui(user, 'inventory_ui', 'ps_view') ? undefined : { display: 'none' }}
                         disabled={isThisLoading}
                         title="View History"
                         className={`inline-flex items-center gap-1 px-1.5 py-1 text-[12px] font-medium rounded transition whitespace-nowrap

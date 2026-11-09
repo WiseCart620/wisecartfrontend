@@ -7,6 +7,7 @@ import VariationSearchableDropdown from '../../components/common/VariationSearch
 import { transmittalApi, toTransmittalRequest } from '../../services/transmittalApi';
 import { api } from '../../services/api';
 import { useAuth, canSeeFilter } from '../../context/AuthContext';
+import { ui } from '../../utils/uiAccess';
 
 const SORT_OPTIONS = [
     { value: 'control_desc', label: 'Control # — Highest first', icon: Hash },
@@ -777,7 +778,7 @@ const TransmittalManagement = () => {
                     {/* Left: action buttons */}
                     <div className="flex items-center gap-3 flex-wrap">
                         <button
-                            onClick={handleCreate}
+                            onClick={handleCreate} style={ui(user, 'deliveries_ui', 'tr_new') ? undefined : { display: 'none' }}
                             className="flex items-center gap-2 px-6 py-3 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors shadow-sm font-medium"
                         >
                             <Plus size={18} />
@@ -967,21 +968,21 @@ const TransmittalManagement = () => {
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center justify-center gap-2">
                                                     <button
-                                                        onClick={() => handleEdit(t)}
+                                                        onClick={() => handleEdit(t)} style={ui(user, 'deliveries_ui', 'tr_open') ? undefined : { display: 'none' }}
                                                         className="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition"
                                                         title="Edit"
                                                     >
                                                         <Eye size={16} />
                                                     </button>
                                                     <button
-                                                        onClick={() => handlePrint(t)}
+                                                        onClick={() => handlePrint(t)} style={ui(user, 'deliveries_ui', 'tr_print') ? undefined : { display: 'none' }}
                                                         className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition"
                                                         title="Print"
                                                     >
                                                         <Printer size={16} />
                                                     </button>
                                                     <button
-                                                        onClick={() => handleDelete(t.id)}
+                                                        onClick={() => handleDelete(t.id)} style={ui(user, 'deliveries_ui', 'tr_delete') ? undefined : { display: 'none' }}
                                                         className="p-1.5 text-red-500 hover:bg-red-50 rounded transition"
                                                         title="Delete"
                                                     >

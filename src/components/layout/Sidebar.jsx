@@ -8,7 +8,7 @@ import {
   LogOut, Shield, Search
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-import { useAuth, hasPermission, can } from '../../context/AuthContext';
+import { useAuth, hasPermission, can, isSelfOnly, uiAllowed } from '../../context/AuthContext';
 
 // File lives in /public, so it is served from the site root. Spaces and brackets are URL-encoded.
 const LOGO_SRC = '/WISECART%20Logo%20(8).png';
@@ -20,6 +20,7 @@ const allMainMenuItems = [
   { to: '/procurement', label: 'Procurement', icon: ClipboardList },
 ];
 
+const PAGE_IDS = { '/employees': 'employees', '/pay-types': 'paytypes', '/loans-benefits': 'loans', '/leave': 'leave', '/tax-statutory': 'tax', '/payroll-runs': 'payroll', '/year-end': 'yearend' };
 const payrollSubItems = [
   { to: '/employees', label: 'Employees', icon: Briefcase },
   { to: '/pay-types', label: 'Pay Types', icon: Coins },
@@ -88,6 +89,7 @@ const NavItem = ({ item, collapsed, onNavigate, onTip }) => {
 const Sidebar = ({ isOpen, toggle }) => {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const selfOnly = isSelfOnly(user);
 
   /* ── permissions (unchanged logic) ── */
   const mainMenuItems = isSuperAdmin
@@ -99,10 +101,10 @@ const Sidebar = ({ isOpen, toggle }) => {
       '/procurement': 'procurement',
     }[i.to]));
 
-  const showPayroll = isSuperAdmin || hasPermission(user, 'employees');
+  const showPayroll = isSuperAdmin || (hasPermission(user, 'employees') && payrollSubItems.some((i) => uiAllowed(user, 'pages_ui', 'page_' + PAGE_IDS[i.to])));
   const visiblePayrollSubItems = isSuperAdmin
     ? payrollSubItems
-    : payrollSubItems.filter(() => hasPermission(user, 'employees'));
+    : payrollSubItems.filter((i) => hasPermission(user, 'employees') && uiAllowed(user, 'pages_ui', 'page_' + PAGE_IDS[i.to]));
 
   const showDataEntry = isSuperAdmin ||
     ['warehouse', 'branches', 'products', 'supplier'].some(f => hasPermission(user, f));
@@ -295,6 +297,21 @@ const Sidebar = ({ isOpen, toggle }) => {
 
         {/* Nav */}
         <nav className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-2 sidebar-scroll ${sidebarCollapsed ? 'px-0' : 'px-3'}`}>
+          {selfOnly && (
+            <NavLink
+              to="/my-payslips"
+              title={sidebarCollapsed ? 'My Payslips' : undefined}
+              onClick={() => window.innerWidth < 1024 && toggle()}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 rounded transition-colors text-sm
+                ${isActive ? 'bg-orange-600 text-white font-[600]' : 'hover:bg-orange-50 hover:text-gray-900 hover:font-[600] font-[480] text-gray-600'}
+                ${sidebarCollapsed ? 'justify-center' : ''}`
+              }
+            >
+              <Wallet size={20} className="flex-shrink-0" />
+              {!sidebarCollapsed && <span className="truncate">My Payslips</span>}
+            </NavLink>
+          )}
           {sections.map((section, idx) => (
             <div key={section.key} className={sidebarCollapsed ? 'mb-2' : 'mb-1'}>
               {sidebarCollapsed ? (

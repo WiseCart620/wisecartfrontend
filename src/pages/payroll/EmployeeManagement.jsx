@@ -6,10 +6,12 @@ import toast, { Toaster } from 'react-hot-toast';
 import { api } from '../../services/api';
 import { LoadingOverlay } from '../../components/common/LoadingOverlay';
 import Pagination from '../../components/common/Pagination';
-import { useAuth, can } from '../../context/AuthContext';
+import { useAuth, can, canUi, uiAllowed, isSelfOnly } from '../../context/AuthContext';
+import { Navigate } from 'react-router-dom';
 import { MoneyInput } from '../../components/payroll/Shared';
 import PageShell from '../../components/payroll/PageShell';
 import SearchableSelect from '../../components/payroll/SearchableSelect';
+
 
 const EMPTY_FORM = {
     employeeNumber: '', firstName: '', middleName: '', lastName: '', gender: '', dateOfBirth: '',
@@ -125,7 +127,7 @@ const Section = ({ title, children }) => (
     </section>
 );
 
-const EmployeeManagement = () => {
+const EmployeeManagementInner = () => {
     const { user } = useAuth();
     const canCreate = can(user, 'employees', 'create') && ui(user, 'employees_ui', 'emp_add');
     const canEdit = can(user, 'employees', 'edit') && ui(user, 'employees_ui', 'emp_edit');
@@ -818,7 +820,7 @@ const EmployeeManagement = () => {
                 const allowanceName = allowanceTypes.find((p) => String(p.payTypeId) === String(v.allowancePayTypeId))?.payTypeName;
                 const others = parseOthers(v.otherDetails);
                 const active = v.status === 'ACTIVE';
-                const sens = (val) => (showSensitive ? val || '—' : mask(val));
+                const sens = (val) => (showSensitive && ui(user, 'employees_ui', 'emp_sensitive') ? val || '—' : mask(val));
 
                 return (
                     <div
@@ -915,7 +917,7 @@ const EmployeeManagement = () => {
                                 </ViewSection>
 
                                 <div className="flex items-center justify-between -mb-3">
-                                    <span className="text-xs text-gray-500">Government IDs and bank details are masked by default.</span>
+                                    <span className="text-xs text-gray-500"> </span>
                                     <button
                                         type="button"
                                         onClick={() => setShowSensitive((s) => !s)} style={ui(user, 'employees_ui', 'emp_sensitive') ? undefined : { display: 'none' }}
@@ -1053,4 +1055,12 @@ const EmployeeManagement = () => {
     );
 };
 
+const EmployeeManagement = () => {
+  const { user } = useAuth();
+  if (!uiAllowed(user, 'pages_ui', 'page_employees')) return <Navigate to="/welcome" replace />;
+  return <EmployeeManagementInner />;
+};
+
 export default EmployeeManagement;
+
+

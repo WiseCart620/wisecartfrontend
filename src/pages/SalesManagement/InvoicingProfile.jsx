@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { ArrowLeft, X, Trash2, Eye, ChevronDown, ChevronUp, FileText, Pencil } from 'lucide-react';
 import '../../styles/invoice-print.css';
 import { useAuth, can, canSeeFilter } from '../../context/AuthContext';
+import { ui } from '../../utils/uiAccess';
 import Pagination from '../../components/common/Pagination';
 
 
@@ -1416,7 +1417,7 @@ const InvoicingProfile = ({ onBack }) => {
                 <div className="ml-auto flex items-center gap-2 flex-shrink-0">
                     {isAdmin && (
                         <button
-                            onClick={() => setShowDvModal(true)}
+                            onClick={() => setShowDvModal(true)} style={ui(user, 'sales_ui', 'jr_dv_payment') ? undefined : { display: 'none' }}
                             className="px-3 py-1.5 bg-[#2CA01C] text-white rounded text-xs font-medium hover:bg-[#268d19] transition whitespace-nowrap"
                         >
                             Record DV payment
@@ -1601,11 +1602,11 @@ const InvoicingProfile = ({ onBack }) => {
                                                 <td className="px-4 py-3 text-center">
                                                     <div className="flex items-center justify-center gap-1">
                                                         {isAdmin && (
-                                                            <button onClick={() => { setEditingPayment(null); setPaymentProfile(p); }} title="Record payment" className="w-8 h-8 rounded flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200 transition">
+                                                            <button onClick={() => { setEditingPayment(null); setPaymentProfile(p); }} style={ui(user, 'sales_ui', 'jr_record_payment') ? undefined : { display: 'none' }} title="Record payment" className="w-8 h-8 rounded flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200 transition">
                                                                 <img src="/money.png" alt="Record payment" className="w-4 h-4" style={{ filter: 'grayscale(1) brightness(0)' }} />
                                                             </button>
                                                         )}
-                                                        <button onClick={() => handleDelete(p.id)} title="Delete" className="w-8 h-8 rounded flex items-center justify-center bg-gray-100 text-black hover:bg-gray-200 hover:text-red-600 transition">
+                                                        <button onClick={() => handleDelete(p.id)} style={ui(user, 'sales_ui', 'jr_delete_invoice') ? undefined : { display: 'none' }} title="Delete" className="w-8 h-8 rounded flex items-center justify-center bg-gray-100 text-black hover:bg-gray-200 hover:text-red-600 transition">
                                                             <Trash2 size={15} />
                                                         </button>
                                                     </div>
@@ -1746,7 +1747,7 @@ const InvoicingProfile = ({ onBack }) => {
                         <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl z-10 print:hidden">
                             <h2 className="text-xl font-bold text-gray-900">Invoice Report</h2>
                             <div className="flex gap-3">
-                                <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition text-sm font-medium">🖨️ Print</button>
+                                <button onClick={() => window.print()} style={ui(user, 'sales_ui', 'jr_print_receipt') ? undefined : { display: 'none' }} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition text-sm font-medium">🖨️ Print</button>
                                 <button onClick={() => setReceiptProfile(null)} className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded transition"><X size={24} /></button>
                             </div>
                         </div>

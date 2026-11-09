@@ -1,7 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useAuth } from '../../../context/AuthContext';
+import { ui } from '../../../utils/uiAccess';
 import { FileText, Package, ShoppingCart, BarChart2 } from 'lucide-react';
 
 const ProcurementTabs = ({ tabs, activeTab, onTabChange }) => {
+    const { user } = useAuth();
+    const visibleTabs = tabs.filter((t) => ui(user, 'procurement_ui', `tab_${t.id}`));
+    useEffect(() => {
+        if (visibleTabs.length && !visibleTabs.some((t) => t.id === activeTab)) onTabChange(visibleTabs[0].id);
+    }, [activeTab, visibleTabs.length]);
     const getIcon = (iconName) => {
         if (iconName === ShoppingCart) {
             return <ShoppingCart size={20} />;
@@ -22,7 +29,7 @@ const ProcurementTabs = ({ tabs, activeTab, onTabChange }) => {
     return (
         <div className="border-b border-gray-200 tabs-fit">
             <nav className="flex gap-4 flex-nowrap">
-                {tabs.map((tab) => (
+                {visibleTabs.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => onTabChange(tab.id)}

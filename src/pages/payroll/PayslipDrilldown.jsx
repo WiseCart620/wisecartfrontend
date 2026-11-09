@@ -75,11 +75,12 @@ const DEDUCTION_LINES = [
 
 const MIN_ROWS = 8;
 
-const PayslipDrilldown = ({ payslipId, onClose }) => {
-  const [slip, setSlip] = useState(null);
-  const [loading, setLoading] = useState(true);
+const PayslipDrilldown = ({ payslipId, slip: preloaded, onClose }) => {
+  const [slip, setSlip] = useState(preloaded || null);
+  const [loading, setLoading] = useState(!preloaded);
 
   useEffect(() => {
+    if (preloaded) return;
     (async () => {
       setLoading(true);
       try {

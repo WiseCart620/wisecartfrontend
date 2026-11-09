@@ -1,3 +1,5 @@
+import { useAuth } from '../../../context/AuthContext';
+import { ui } from '../../../utils/uiAccess';
 import React from 'react';
 import { ChevronDown, ChevronRight, Eye, Edit2, Trash2, Loader2 } from 'lucide-react';
 
@@ -12,6 +14,7 @@ const RPQTableRow = ({
     buttonLoading,
     formatNumber
 }) => {
+  const { user } = useAuth();
     return (
         <tr key={req.id} className="hover:bg-white">
             <td className="px-6 py-4 font-medium text-gray-900">{req.controlNumber}</td>
@@ -73,7 +76,7 @@ const RPQTableRow = ({
             <td className="px-6 py-4 text-right">
                 <div className="flex items-center justify-end gap-2">
                     <button
-                        onClick={() => setViewingRpq(req)}
+                        onClick={() => setViewingRpq(req)} style={ui(user, 'procurement_ui', 'rpq_view') ? undefined : { display: 'none' }}
                         className="p-2 text-gray-600 hover:bg-gray-100 rounded"
                     >
                         <Eye size={18} />
@@ -82,14 +85,14 @@ const RPQTableRow = ({
                         onClick={() => {
                             setEditingRpq(req);
                             setShowRpqModal(true);
-                        }}
+                        }} style={ui(user, 'procurement_ui', 'rpq_edit') ? undefined : { display: 'none' }}
                         disabled={req.status === 'CONFIRMED'}
                         className="p-2 text-orange-600 hover:bg-orange-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Edit2 size={18} />
                     </button>
                     <button
-                        onClick={() => handleDeleteRpq(req.id)}
+                        onClick={() => handleDeleteRpq(req.id)} style={ui(user, 'procurement_ui', 'rpq_delete') ? undefined : { display: 'none' }}
                         disabled={req.status === 'CONFIRMED' || buttonLoading[`delete-rpq-${req.id}`]}
                         className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                     >

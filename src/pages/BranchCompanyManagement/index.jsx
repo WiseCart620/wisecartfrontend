@@ -10,13 +10,14 @@ import { LoadingOverlay } from '../../components/common/LoadingOverlay';
 import { api } from '../../services/api';
 import { useBranchesCompanies } from '../../hooks/useBranchCompany';
 import { useAuth, can } from '../../context/AuthContext';
+import { ui } from '../../utils/uiAccess';
 
 const BranchCompanyManagement = () => {
   const { user } = useAuth();
   const canCreate = can(user, 'branches', 'create');
   const canEdit = can(user, 'branches', 'edit');
   const canDelete = can(user, 'branches', 'delete');
-  const [activeTab, setActiveTab] = useState('branches');
+  const [activeTab, setActiveTab] = useState(ui(user, 'branches_ui', 'tab_branches') ? 'branches' : 'companies');
   const [showModal, setShowModal] = useState(false);
   const [showBranchViewModal, setShowBranchViewModal] = useState(false);
   const [showCompanyViewModal, setShowCompanyViewModal] = useState(false);
@@ -144,7 +145,7 @@ const BranchCompanyManagement = () => {
       <div className="mb-6 border-b border-gray-200">
         <nav className="flex gap-8">
           <button
-            onClick={() => setActiveTab('branches')}
+            onClick={() => setActiveTab('branches')} style={ui(user, 'branches_ui', 'tab_branches') ? undefined : { display: 'none' }}
             className={`pb-4 px-1 border-b-2 font-medium text-sm transition ${activeTab === 'branches'
               ? 'border-orange-600 text-orange-600'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -153,7 +154,7 @@ const BranchCompanyManagement = () => {
             Branches ({branches.length})
           </button>
           <button
-            onClick={() => setActiveTab('companies')}
+            onClick={() => setActiveTab('companies')} style={ui(user, 'branches_ui', 'tab_companies') ? undefined : { display: 'none' }}
             className={`pb-4 px-1 border-b-2 font-medium text-sm transition ${activeTab === 'companies'
               ? 'border-orange-600 text-orange-600'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'

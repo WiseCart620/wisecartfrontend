@@ -1,3 +1,5 @@
+import { useAuth } from '../../context/AuthContext';
+import { ui } from '../../utils/uiAccess';
 import React, { useState, useEffect } from 'react';
 import {
     Eye, Edit2, Search, X, Upload, Download,
@@ -52,6 +54,7 @@ const handleCalculatorInput = (currentValue, newInput, isBackspace, decimals = 2
 };
 
 const UploadPaymentManagement = () => {
+  const { user } = useAuth();
     const [purchaseOrders, setPurchaseOrders] = useState([]);
     const [paymentOrders, setPaymentOrders] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -499,7 +502,7 @@ const UploadPaymentManagement = () => {
                                                             <span className="font-medium text-gray-900">{po.controlNumber}</span>
                                                             {po.items && po.items.length > 0 && (
                                                                 <button
-                                                                    onClick={() => setViewingProducts(po)}
+                                                                    onClick={() => setViewingProducts(po)} style={ui(user, 'procurement_ui', 'po_products') ? undefined : { display: 'none' }}
                                                                     className="p-1 text-orange-600 hover:bg-orange-50 rounded transition-colors"
                                                                     title="View Products"
                                                                 >
@@ -542,21 +545,21 @@ const UploadPaymentManagement = () => {
                                                     <td className="px-6 py-4 text-right">
                                                         <div className="flex items-center justify-end gap-2">
                                                             <button
-                                                                onClick={() => handleViewPayments(po)}
+                                                                onClick={() => handleViewPayments(po)} style={ui(user, 'procurement_ui', 'po_payments') ? undefined : { display: 'none' }}
                                                                 className="p-2 text-orange-600 hover:bg-orange-50 rounded"
                                                                 title="View Payments"
                                                             >
                                                                 <FileText size={18} />
                                                             </button>
                                                             <button
-                                                                onClick={() => { setShippingPO(po); setShowShippingModal(true); }}
+                                                                onClick={() => { setShippingPO(po); setShowShippingModal(true); }} style={ui(user, 'procurement_ui', 'po_shipping') ? undefined : { display: 'none' }}
                                                                 className="p-2 text-orange-600 hover:bg-orange-50 rounded"
                                                                 title="Shipping Cost"
                                                             >
                                                                 <Ship size={18} />
                                                             </button>
                                                             <button
-                                                                onClick={() => handlePayNow(po)}
+                                                                onClick={() => handlePayNow(po)} style={ui(user, 'procurement_ui', 'po_pay') ? undefined : { display: 'none' }}
                                                                 disabled={isLoadingOverlay || po.paymentStatus === 'FULL_PAID'}
                                                                 className="p-2 text-orange-600 hover:bg-orange-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                                                                 title={po.paymentStatus === 'FULL_PAID' ? 'Order is fully paid' : 'Product Cost'}
@@ -568,7 +571,7 @@ const UploadPaymentManagement = () => {
                                                                 )}
                                                             </button>
                                                             <button
-                                                                onClick={() => { setOthersPO(po); setShowOthersModal(true); }}
+                                                                onClick={() => { setOthersPO(po); setShowOthersModal(true); }} style={ui(user, 'procurement_ui', 'po_other') ? undefined : { display: 'none' }}
                                                                 className="p-2 text-orange-600 hover:bg-orange-50 rounded"
                                                                 title="Other Charges"
                                                             >
@@ -698,6 +701,7 @@ const UploadPaymentManagement = () => {
 
 
 const ViewingModal = ({ po, onClose, onSubmit, getPaymentStatusBadge, getFileUrl, getFileDownloadUrl, getPlaceholderImage }) => {
+  const { user } = useAuth();
     const hasAllPrices = po.items && po.items.length > 0 &&
         po.items.every(item => item.unitPrice && item.unitPrice > 0 && item.totalAmount && item.totalAmount > 0);
 
@@ -848,7 +852,7 @@ const ViewingModal = ({ po, onClose, onSubmit, getPaymentStatusBadge, getFileUrl
 
                     <div className="flex gap-3 pt-4 border-t">
                         <button
-                            onClick={() => onSubmit(po)}
+                            onClick={() => onSubmit(po)} style={ui(user, 'procurement_ui', 'po_submit') ? undefined : { display: 'none' }}
                             disabled={po.paymentStatus !== 'PAYMENT_PENDING' || !hasAllPrices}
                             className="flex-1 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             title={!hasAllPrices ? 'Set all item prices first' : ''}
@@ -2038,6 +2042,7 @@ const PaymentModal = ({ po, formData, setFormData, onClose, onSubmit, actionLoad
 
 
 const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, getFileDownloadUrl, onPaymentUpdated }) => {
+  const { user } = useAuth();
     const [shippingData, setShippingData] = useState(null);
     const [othersData, setOthersData] = useState(null);
     const [editingPaymentId, setEditingPaymentId] = useState(null);
@@ -2310,7 +2315,7 @@ const ViewPaymentsModal = ({ data, onClose, getPaymentStatusBadge, getFileUrl, g
                                                     </div>
                                                 ) : (
                                                     <button
-                                                        onClick={() => startEdit(payment)}
+                                                        onClick={() => startEdit(payment)} style={ui(user, 'procurement_ui', 'po_edit_payment') ? undefined : { display: 'none' }}
                                                         className="flex items-center gap-1 px-3 py-1 border border-gray-300 text-gray-600 text-xs rounded hover:bg-white"
                                                     >
                                                         <Edit2 size={12} /> Edit

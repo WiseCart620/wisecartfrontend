@@ -1,6 +1,6 @@
 import React from 'react';
 import SearchableWarehouseDropdown from '../common/SearchableWarehouseDropdown';
-import { canSeeFilter } from '../../context/AuthContext';
+import { canSeeFilter, canSeeFilterAny } from '../../context/AuthContext';
 
 import { useEffect } from 'react';
 import ProductMultiSelectDropdown from '../common/ProductMultiSelectDropdown';
@@ -15,10 +15,10 @@ const WarehouseFilterPanel = ({
   clearFilters
 }) => {
   const selectedKeys = filters.productKeys || [];
-  const canProduct = canSeeFilter(user, 'warehouse_inventory', 'product');
-  const canWarehouse = canSeeFilter(user, 'warehouse_inventory', 'warehouse');
-  const canQuantity = canSeeFilter(user, 'warehouse_inventory', 'quantity');
-  const canDate = canSeeFilter(user, 'warehouse_inventory', 'date');
+  const canProduct = canSeeFilterAny(user, 'warehouse_inventory', 'product');
+  const canWarehouse = canSeeFilterAny(user, 'warehouse_inventory', 'warehouse');
+  const canQuantity = canSeeFilterAny(user, 'warehouse_inventory', 'quantity');
+  const canDate = canSeeFilterAny(user, 'warehouse_inventory', 'date');
 
   useEffect(() => {
     if (!canWarehouse && filters.warehouse) updateFilter('warehouse', '');

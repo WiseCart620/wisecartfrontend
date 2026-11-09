@@ -5,6 +5,7 @@ import toast, { Toaster } from 'react-hot-toast';
 
 // Hooks
 import { useAuth, canSeeFilter } from '../../context/AuthContext';
+import { ui } from '../../utils/uiAccess';
 import useInventory from '../../hooks/data/useInventory';
 import { useTransactionHandlers } from '../../hooks/useTransactionHandlers';
 import { useFilters } from '../../hooks/ui/useFilters';
@@ -49,6 +50,11 @@ const InventoryManagement = () => {
   const [branchStockPage, setBranchStockPage] = useState(1);
   const STOCK_PAGE_SIZE = 50;
   const [activeTab, setActiveTab] = useState('products');
+  const TAB_KEYS = { 'products': 'tab_products', 'warehouse-stocks': 'tab_warehouse', 'branch-stocks': 'tab_branch', 'stock-rebuild': 'tab_rebuild' };
+  const visibleTabs = TABS.filter((t) => ui(user, 'inventory_ui', TAB_KEYS[t.key]));
+  useEffect(() => {
+    if (visibleTabs.length && !visibleTabs.some((t) => t.key === activeTab)) setActiveTab(visibleTabs[0].key);
+  }, [activeTab, visibleTabs.length]);
   const [showVariationFilter, setShowVariationFilter] = useState('ALL');
   const [showWarehouseFilter, setShowWarehouseFilter] = useState(true);
   const [showBranchFilter, setShowBranchFilter] = useState(true);
@@ -660,7 +666,7 @@ const InventoryManagement = () => {
           </div>
           <div>
             <nav className="-mb-px flex space-x-2">
-              {TABS.map(({ key, label, Icon }) => {
+              {visibleTabs.map(({ key, label, Icon }) => {
                 const active = activeTab === key;
                 return (
                   <button
@@ -818,7 +824,7 @@ const InventoryManagement = () => {
               <>
                 <div className="flex justify-end mb-4">
                   <button
-                    onClick={handleRelockStockTools}
+                    onClick={handleRelockStockTools} style={ui(user, 'inventory_ui', 'sr_lock') ? undefined : { display: 'none' }}
                     className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 border border-slate-200 rounded hover:bg-slate-50 transition"
                   >
                     <Lock size={12} /> Lock

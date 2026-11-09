@@ -1,3 +1,5 @@
+import { useAuth } from '../../../context/AuthContext';
+import { ui } from '../../../utils/uiAccess';
 import React, { useState } from 'react';
 import { RotateCcw, Store, CheckCircle, ShoppingCart, Truck, Clock, Eye, Loader2, Package, Barcode, Boxes, PackageCheck, CalendarClock, MousePointerClick } from 'lucide-react';
 import Pagination from '../../common/Pagination';
@@ -19,6 +21,7 @@ const BranchStockTable = ({
   grandTotals,
   totalElements = 0,
 }) => {
+  const { user } = useAuth();
   const [loadingId, setLoadingId] = useState(null);
 
   const totals = grandTotals || {
@@ -165,7 +168,7 @@ const BranchStockTable = ({
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button
-                        onClick={() => handleView(stock)}
+                        onClick={() => handleView(stock)} style={ui(user, 'inventory_ui', 'cs_view') ? undefined : { display: 'none' }}
                         disabled={isThisLoading}
                         title="View Transactions"
                         className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition

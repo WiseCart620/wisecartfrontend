@@ -1,3 +1,5 @@
+import { useAuth } from '../../../context/AuthContext';
+import { ui } from '../../../utils/uiAccess';
 import React, { useState } from 'react';
 import {
     X, Upload, FileText, Eye, Download, Loader2, Check
@@ -8,6 +10,7 @@ import { formatCurrency, formatNumberWithCommas, formatNumber } from '../../../u
 import { getFileUrl, getFileDownloadUrl } from '../../../utils/fileUtils';
 
 const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
+  const { user } = useAuth();
     const [uploadingFiles, setUploadingFiles] = useState({
         rpq: false,
         commercialInvoice: false,
@@ -491,7 +494,7 @@ const RPQViewModal = ({ rpq, onClose, onRefresh, onConfirmSuccess }) => {
                                             </div>
                                         )}
                                         <button
-                                            onClick={handleConfirmProduct}
+                                            onClick={handleConfirmProduct} style={ui(user, 'procurement_ui', 'rpq_confirm') ? undefined : { display: 'none' }}
                                             disabled={!isComplete || buttonLoading}
                                             className={`w-full px-4 py-3 rounded flex items-center justify-center gap-2 font-medium transition-colors ${isComplete
                                                 ? 'bg-green-600 text-white hover:bg-green-700'

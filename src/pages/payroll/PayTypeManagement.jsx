@@ -3,7 +3,8 @@ import { Plus, Edit2, Trash2, X, Lock } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { api } from '../../services/api';
 import { LoadingOverlay } from '../../components/common/LoadingOverlay';
-import { useAuth, can } from '../../context/AuthContext';
+import { useAuth, can, canUi, uiAllowed, isSelfOnly } from '../../context/AuthContext';
+import { Navigate } from 'react-router-dom';
 import OvertimeRatesCard from '../../components/payroll/OvertimeRatesCard';
 import { MoneyInput } from '../../components/payroll/Shared';
 import Pagination from '../../components/common/Pagination';
@@ -33,7 +34,7 @@ const RATE_FIELDS = {
   NIGHT_DIFF: [['nightDiff', 'Extra per night hour (0.10 = +10%)']],
 };
 
-const PayTypeManagement = () => {
+const PayTypeManagementInner = () => {
   const { user } = useAuth();
   const canCreate = can(user, 'employees', 'create');
   const canEdit = can(user, 'employees', 'edit');
@@ -323,6 +324,12 @@ const PayTypeManagement = () => {
       )}
     </PageShell>
   );
+};
+
+const PayTypeManagement = () => {
+  const { user } = useAuth();
+  if (!uiAllowed(user, 'pages_ui', 'page_paytypes')) return <Navigate to="/welcome" replace />;
+  return <PayTypeManagementInner />;
 };
 
 export default PayTypeManagement;

@@ -1,3 +1,5 @@
+import { useAuth } from '../../../context/AuthContext';
+import { ui } from '../../../utils/uiAccess';
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, Eye, Edit2, Trash2, Loader2 } from 'lucide-react';
 
@@ -12,6 +14,7 @@ const IRRTableRow = ({
     formatNumber,
     onProceedToRpq
 }) => {
+  const { user } = useAuth();
     const [isExpanded, setIsExpanded] = useState(false);
 
     return (
@@ -72,7 +75,7 @@ const IRRTableRow = ({
             <td className="px-6 py-4 text-right">
                 <div className="flex items-center justify-end gap-2">
                     <button
-                        onClick={() => setViewingIrr(req)}
+                        onClick={() => setViewingIrr(req)} style={ui(user, 'procurement_ui', 'irr_view') ? undefined : { display: 'none' }}
                         className="p-2 text-gray-600 hover:bg-gray-100 rounded"
                     >
                         <Eye size={18} />
@@ -81,7 +84,7 @@ const IRRTableRow = ({
                         onClick={() => {
                             setEditingIrr(req);
                             setShowIrrModal(true);
-                        }}
+                        }} style={ui(user, 'procurement_ui', 'irr_edit') ? undefined : { display: 'none' }}
                         disabled={req.status === 'PROCEEDED_TO_RPQ' || buttonLoading[`edit-${req.id}`]}
                         className="p-2 text-orange-600 hover:bg-orange-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -92,7 +95,7 @@ const IRRTableRow = ({
                         )}
                     </button>
                     <button
-                        onClick={() => handleDeleteIrr(req.id)}
+                        onClick={() => handleDeleteIrr(req.id)} style={ui(user, 'procurement_ui', 'irr_delete') ? undefined : { display: 'none' }}
                         disabled={req.status === 'PROCEEDED_TO_RPQ' || buttonLoading[`delete-irr-${req.id}`]}
                         className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                     >

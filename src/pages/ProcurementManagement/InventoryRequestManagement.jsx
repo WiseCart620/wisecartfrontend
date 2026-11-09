@@ -1,3 +1,5 @@
+import { useAuth } from '../../context/AuthContext';
+import { ui } from '../../utils/uiAccess';
 import React, { useState, useEffect } from 'react';
 import { Plus, Search } from 'lucide-react';
 import { api } from '../../services/api';
@@ -10,6 +12,7 @@ import Pagination from '../../components/common/Pagination';
 
 
 const InventoryRequestManagement = ({ irrRequests: initialRequests, onRefresh, onProceedToRpq }) => {
+  const { user } = useAuth();
     const [irrRequests, setIrrRequests] = useState(initialRequests || []);
     const [actionLoading, setActionLoading] = useState(false);
     const [searchIrr, setSearchIrr] = useState('');
@@ -101,7 +104,7 @@ const InventoryRequestManagement = ({ irrRequests: initialRequests, onRefresh, o
                     onClick={() => {
                         setEditingIrr(null);
                         setShowIrrModal(true);
-                    }}
+                    }} style={ui(user, 'procurement_ui', 'irr_new') ? undefined : { display: 'none' }}
                     className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
                 >
                     <Plus size={20} />

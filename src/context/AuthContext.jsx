@@ -57,6 +57,13 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     validateToken();
+    const tk = localStorage.getItem('authToken');
+    if (tk) {
+      fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/me`, { headers: { Authorization: `Bearer ${tk}` } })
+        .then(r => (r.ok ? r.json() : null))
+        .then(u => { if (u && u.username) { localStorage.setItem('user', JSON.stringify(u)); setUser(u); } })
+        .catch(() => { });
+    }
     setLoading(false);
   }, []);
 
@@ -209,6 +216,18 @@ export const canSeeFilter = (user, feature, filterKey) => {
 };
 
 // Page-level check (sidebar/routes)
+// Filter visibility for panels shared by Warehouse Inventory and Inventory Record.
+// Users with feature:view use the feature's own filter ticks. Otherwise fall back to the
+// Inventory Record ticks. Filters with no Inventory Record equivalent show with inventory:view.
+export const canSeeFilterAny = (user, feature, filterKey) => {
+  if (!user) return false;
+  if (user.role === 'SUPER_ADMIN') return true;
+  const perms = Array.isArray(user.permissions) ? user.permissions : [];
+  if (perms.includes(`${feature}:view`)) return canSeeFilter(user, feature, filterKey);
+  if (!perms.includes('inventory:view')) return false;
+  if (['company', 'quantity'].includes(filterKey)) return true;
+  return canSeeFilter(user, 'inventory', filterKey);
+};
 export const hasPermission = (user, feature) => can(user, feature, 'view');
 
 // Route wrapper gated by a specific feature:action permission (finer-grained than PermissionRoute)
@@ -276,3 +295,23 @@ export const useIsSuperAdmin = () => {
   const { user } = useAuth();
   return user?.role === 'SUPER_ADMIN';
 };
+
+export const isSelfOnly = (user) =>
+  !!user && user.role !== 'SUPER_ADMIN' && !!user.employeeId &&
+  Array.isArray(user.permissions) && user.permissions.includes('self:only');
+
+// ---- UI visibility helpers (same rule as backend UiAccess) ----
+
+// nothing ticked in the group = allowed, otherwise the exact key must be ticked
+export const uiAllowed = (user, group, key) => {
+  if (!user) return false;
+  if (user.role === 'SUPER_ADMIN') return true;
+  const perms = Array.isArray(user.permissions) ? user.permissions : [];
+  const any = perms.some((p) => p.startsWith(group + ':'));
+  return !any || perms.includes(group + ':' + key);
+};
+
+// action buttons: also off for "Own records only" accounts (view-only)
+export const canUi = (user, group, key) => uiAllowed(user, group, key);
+
+export const useIsSelfOnly = () => isSelfOnly(useAuth().user);

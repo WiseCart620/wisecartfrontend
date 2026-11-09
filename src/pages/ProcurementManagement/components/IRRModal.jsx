@@ -1,3 +1,5 @@
+import { useAuth } from '../../../context/AuthContext';
+import { ui } from '../../../utils/uiAccess';
 import React, { useState, useEffect } from 'react';
 import {
     X, Plus, Package, Eye, Check, ArrowRight, Loader2, Trash2
@@ -6,6 +8,7 @@ import { api } from '../../../services/api';
 import toast from 'react-hot-toast';
 
 const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
+  const { user } = useAuth();
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
     const currentUserName = currentUser.fullName || currentUser.name || currentUser.username || 'Unknown User';
 
@@ -717,7 +720,7 @@ const IRRModal = ({ editingIrr, suppliers, onClose, onSuccess }) => {
                         {editingIrr && editingIrr.status !== 'PROCEEDED_TO_RPQ' && (
                             <button
                                 type="button"
-                                onClick={handleProceedToRpq}
+                                onClick={handleProceedToRpq} style={ui(user, 'procurement_ui', 'irr_proceed') ? undefined : { display: 'none' }}
                                 disabled={submitting || buttonLoading['proceed-rpq']}
                                 className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center justify-center gap-2 disabled:opacity-50"
                             >

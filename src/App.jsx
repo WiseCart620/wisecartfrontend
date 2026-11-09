@@ -28,7 +28,8 @@ import { ReferenceDataProvider } from './context/ReferenceDataContext';
 import { startActivityTracking, stopActivityTracking } from './services/api';
 import { useEffect } from 'react';
 import { useAuth, hasPermission } from './context/AuthContext';
-
+
+import MyPayslips from './pages/MyPayslips';
 // Sends the user to the first page shown in their sidebar (same order as Sidebar.jsx).
 const HomeRedirect = () => {
   const { user } = useAuth();
@@ -294,6 +295,7 @@ function App() {
                 </ProtectedRoute>
               } />
 
+              <Route path="/my-payslips" element={<ProtectedRoute><Layout><MyPayslips /></Layout></ProtectedRoute>} />
               <Route path="/payroll-runs" element={
                 <ProtectedRoute>
                   <PermissionRoute feature="employees">

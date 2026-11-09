@@ -1,3 +1,5 @@
+import { useAuth } from '../../../context/AuthContext';
+import { ui } from '../../../utils/uiAccess';
 import React, { useState, useMemo } from 'react';
 import {
     RefreshCw, AlertTriangle, Building, Store, Layers,
@@ -465,6 +467,7 @@ const PRODUCT_DETAIL_ENABLED = false;
 const PRODUCT_DETAIL_ENDPOINT = (id) => `/admin/products/${id}`;
 
 const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRebuilt, onExpiredPassword, accessPassword = '', bare = false }) => {
+  const { user } = useAuth();
     const [scope] = useState('BOTH');
     const [warehouseIds, setWarehouseIds] = useState([]);
     const [branchIds, setBranchIds] = useState([]);
@@ -975,7 +978,7 @@ const StockRebuildPanel = ({ products = [], warehouses = [], branches = [], onRe
 
                                     <div className="mt-4 pt-4 border-t border-slate-100">
                                         <button
-                                            onClick={() => setConfirmOpen(true)}
+                                            onClick={() => setConfirmOpen(true)} style={ui(user, 'inventory_ui', 'sr_rebuild') ? undefined : { display: 'none' }}
                                             disabled={!canRun || running}
                                             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-[#185FA5] text-white rounded hover:bg-[#0C447C] disabled:opacity-40 disabled:cursor-not-allowed transition"
                                         >

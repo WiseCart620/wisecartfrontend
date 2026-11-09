@@ -1,3 +1,4 @@
+import { useAuth, can } from '../context/AuthContext';
 import React, { useState, useEffect } from 'react';
 import {
     Plus, Edit2, Trash2, Search, X, Building2, MapPin, User, Phone, Mail, CreditCard, DollarSign, Package
@@ -8,6 +9,10 @@ import LoadingOverlay from '../components/common/LoadingOverlay';
 import Pagination from '../components/common/Pagination';
 
 const SupplierManagement = () => {
+  const { user } = useAuth();
+  const canCreate = can(user, 'supplier', 'create');
+  const canEdit = can(user, 'supplier', 'edit');
+  const canDelete = can(user, 'supplier', 'delete');
     const [suppliers, setSuppliers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
@@ -236,7 +241,8 @@ const SupplierManagement = () => {
                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
                     />
                 </div>
-                <button
+                {canCreate && (
+<button
                     onClick={() => {
                         resetForm();
                         setShowModal(true);
@@ -247,6 +253,7 @@ const SupplierManagement = () => {
                     <Plus size={20} />
                     Add Supplier
                 </button>
+)}
             </div>
 
             {/* Suppliers Table */}
@@ -299,20 +306,24 @@ const SupplierManagement = () => {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <button
+                                                {canEdit && (
+<button
                                                     onClick={() => handleEdit(supplier)}
                                                     disabled={actionLoading}
                                                     className="p-2 text-orange-600 hover:bg-orange-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
                                                     <Edit2 size={18} />
                                                 </button>
-                                                <button
+)}
+                                                {canDelete && (
+<button
                                                     onClick={() => handleDelete(supplier.id)}
                                                     disabled={actionLoading}
                                                     className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
                                                     <Trash2 size={18} />
                                                 </button>
+)}
                                             </div>
                                         </td>
                                     </tr>
