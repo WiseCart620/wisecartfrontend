@@ -69,7 +69,7 @@ const NavItem = ({ item, collapsed, onNavigate, onTip }) => {
         ${collapsed ? 'justify-center w-10 h-10 mx-auto' : 'px-3 py-2'}
         ${isActive
           ? 'bg-orange-50 text-orange-600 font-normal'
-          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-normal'}`
+          : 'text-black hover:bg-gray-50 hover:text-black font-normal'}`
       }
     >
       <Icon size={20} strokeWidth={1.5} className="flex-shrink-0" />
