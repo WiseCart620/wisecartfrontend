@@ -1,0 +1,12 @@
+{
+  "name": "WiseCart Field DTR",
+  "short_name": "Field DTR",
+  "start_url": "/field",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ea580c",
+  "icons": [
+    { "src": "/WISECART%20Logo%20(8).png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

@@ -5,7 +5,7 @@ import {
   UserPlus, PackageSearch, PackageOpen, ChevronRight, ChevronLeft, ChevronDown,
   Factory, ClipboardList, X, BookOpen, BarChart3, FileText,
   Briefcase, Coins, Landmark, CalendarDays, Percent, Wallet, Gift,
-  LogOut, Shield, Search
+  LogOut, Shield, Search, Clock
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth, hasPermission, can, isSelfOnly, uiAllowed } from '../../context/AuthContext';
@@ -20,13 +20,14 @@ const allMainMenuItems = [
   { to: '/procurement', label: 'Procurement', icon: ClipboardList },
 ];
 
-const PAGE_IDS = { '/employees': 'employees', '/pay-types': 'paytypes', '/loans-benefits': 'loans', '/leave': 'leave', '/tax-statutory': 'tax', '/payroll-runs': 'payroll', '/year-end': 'yearend' };
+const PAGE_IDS = { '/employees': 'employees', '/pay-types': 'paytypes', '/loans-benefits': 'loans', '/leave': 'leave', '/tax-statutory': 'tax', '/payroll-runs': 'payroll', '/year-end': 'yearend', '/dtr': 'dtr' };
 const payrollSubItems = [
   { to: '/employees', label: 'Employees', icon: Briefcase },
   { to: '/pay-types', label: 'Pay Types', icon: Coins },
   { to: '/loans-benefits', label: 'Loans & Other Deductions', icon: Landmark },
   { to: '/leave', label: 'Leave', icon: CalendarDays },
   { to: '/tax-statutory', label: 'Tax & Statutory', icon: Percent },
+  { to: '/dtr', label: 'DTR', icon: Clock },
   { to: '/payroll-runs', label: 'Payroll Runs', icon: Wallet },
   { to: '/year-end', label: 'Year-End', icon: Gift },
 ];

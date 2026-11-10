@@ -1,0 +1,741 @@
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Car, Camera, Coffee, LogOut, Wifi, WifiOff, RefreshCw, RotateCw, X, AlertTriangle, ChevronRight, ChevronLeft, History } from 'lucide-react';
+import toast, { Toaster } from 'react-hot-toast';
+import { quietRequest } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+
+const PH = 'Asia/Manila';
+const phDate = () => new Date().toLocaleDateString('en-CA', { timeZone: PH });
+const phHour = () => Number(new Date().toLocaleString('en-US', { timeZone: PH, hour12: false, hour: 'numeric' })) % 24;
+const t12 = (iso) => (iso ? new Date(iso).toLocaleTimeString('en-PH', { timeZone: PH, hour: 'numeric', minute: '2-digit' }) : '');
+const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+const fmtDur = (m) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`);
+// minutes between a time out and the next time in (skipped when the lunch break falls in between)
+const travelMins = (g, list, i) => {
+    const v = list[i], n = list[i + 1];
+    if (!v || !n || !v.timeOut) return null;
+    const a = +new Date(v.timeOut), b = +new Date(n.timeIn);
+    if (g.lunchStart) { const l = +new Date(g.lunchStart); if (l >= a && l <= b) return null; }
+    const m = Math.round((b - a) / 60000);
+    return m > 0 ? m : null;
+};
+const EMPTY = { place: '', purpose: '', validatedBy: '' };
+const LABEL = { in: 'Time in', out: 'Time out', lunch: 'Lunch break' };
+const shiftDate = (d, n) => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+const dayLabel = (d) => {
+    const label = new Date(d + 'T00:00:00+08:00').toLocaleDateString('en-PH', { timeZone: PH, weekday: 'short', month: 'short', day: 'numeric' });
+    if (d === phDate()) return `Today, ${label}`;
+    if (d === shiftDate(phDate(), -1)) return `Yesterday, ${label}`;
+    return label;
+};
+const withTz = (s) => (s ? s + '+08:00' : null);
+const cutoffOf = (d) => (Number(d.slice(8, 10)) <= 15 ? 'A' : 'B');
+const monthLabel = (mk) => new Date(mk + '-01T00:00:00+08:00').toLocaleDateString('en-PH', { timeZone: PH, month: 'long', year: 'numeric' });
+const cutoffLabel = (key) => {
+    const [y, m, h] = key.split('-');
+    const mon = new Date(`${y}-${m}-01T00:00:00+08:00`).toLocaleDateString('en-PH', { timeZone: PH, month: 'short' });
+    return h === 'A' ? `${mon} 1 - 15` : `${mon} 16 - ${new Date(Number(y), Number(m), 0).getDate()}`;
+};
+
+// ---------------------------------------------------------------- error handling
+const UNLINKED = /not linked to an employee/i;
+const TRANSIENT = [408, 429, 502, 503, 504];
+const transient = (r) => !!r.network || TRANSIENT.includes(r.status);
+const dead = (i) => !!i.rejected || (i.tries || 0) >= 5;
+const explain = (r) => {
+    if (r.network) return 'No internet connection.';
+    if (r.status === 401) return 'Your session expired. Please log in again.';
+    if (r.status === 413) return 'The photo is too large. Retake it and try again.';
+    if (r.status >= 500) return 'The server had a problem. Try again in a moment.';
+    return r.error || 'Something went wrong. Try again.';
+};
+const camError = (e) => {
+    const n = e && e.name;
+    if (n === 'NotAllowedError') return 'Camera permission is off. Allow Camera for this app in your phone settings, then try again.';
+    if (n === 'NotFoundError') return 'No camera was found on this phone.';
+    if (n === 'NotReadableError') return 'The camera is being used by another app. Close it and try again.';
+    return 'The camera could not start. Try again, or close and reopen the app.';
+};
+const getPos = () => new Promise((res, rej) => {
+    if (!navigator.geolocation) return rej(new Error('Location is not supported on this phone.'));
+    navigator.geolocation.getCurrentPosition(
+        p => res({ latitude: p.coords.latitude, longitude: p.coords.longitude, accuracy: p.coords.accuracy }),
+        (e) => rej(new Error(e.code === 1
+            ? 'Location permission is off. Allow Location for this app in your phone settings.'
+            : e.code === 3 ? 'Finding your location took too long. Move to an open area and try again.'
+                : 'Turn on your phone location (GPS) and try again.')),
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+});
+
+// ---------------------------------------------------------------- offline queue (IndexedDB)
+const openDb = () => new Promise((res, rej) => {
+    const r = indexedDB.open('wisecart-field', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('queue', { keyPath: 'id', autoIncrement: true });
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+});
+const tx = async (mode, fn) => {
+    const db = await openDb();
+    return new Promise((res, rej) => {
+        const t = db.transaction('queue', mode);
+        const req = fn(t.objectStore('queue'));
+        t.oncomplete = () => res(req && req.result);
+        t.onerror = () => rej(t.error);
+    });
+};
+const qAdd = (i) => tx('readwrite', s => s.add(i));
+const qAll = () => tx('readonly', s => s.getAll());
+const qPut = (i) => tx('readwrite', s => s.put(i));
+const qDel = (id) => tx('readwrite', s => s.delete(id));
+
+// ---------------------------------------------------------------- local copy of today (per account)
+const loadDay = (uid) => {
+    try {
+        const d = JSON.parse(localStorage.getItem(`fieldDay:${uid}`) || 'null');
+        if (d && d.date === phDate()) return d;
+    } catch { /* ignore */ }
+    return { date: phDate(), visits: [], lunchStart: null };
+};
+const saveDay = (uid, d) => localStorage.setItem(`fieldDay:${uid}`, JSON.stringify(d));
+const loadHistory = (uid) => { try { return JSON.parse(localStorage.getItem(`fieldHistory:${uid}`) || '[]'); } catch { return []; } };
+const saveHistory = (uid, h) => localStorage.setItem(`fieldHistory:${uid}`, JSON.stringify(h));
+
+const sendItem = (item) => {
+    if (item.type === 'lunch') return quietRequest('/dtr/my/lunch', { method: 'POST', json: { capturedAt: item.capturedAt } });
+    const fd = new FormData();
+    if (item.type === 'in') {
+        ['clientId', 'capturedAt', 'latitude', 'longitude', 'accuracy', 'place', 'purpose', 'validatedBy']
+            .forEach(k => item[k] != null && fd.append(k, item[k]));
+        fd.append('photo', item.photo, 'photo.jpg');
+        return quietRequest('/dtr/my/time-in', { method: 'POST', formData: fd });
+    }
+    fd.append('capturedAt', item.capturedAt);
+    if (item.latitude != null) { fd.append('latitude', item.latitude); fd.append('longitude', item.longitude); }
+    fd.append('signature', item.signature, 'signature.png');
+    return quietRequest(`/dtr/my/visits/${item.clientId}/time-out`, { method: 'POST', formData: fd });
+};
+
+// ---------------------------------------------------------------- small UI pieces
+const Spinner = ({ size = 20 }) => (
+    <span style={{ width: size, height: size }} className="inline-block shrink-0 border-2 border-current border-t-transparent rounded-full animate-spin" />
+);
+
+const Btn = ({ loading, variant = 'primary', className = '', disabled, children, ...rest }) => {
+    const look = {
+        primary: 'bg-orange-600 text-white active:bg-orange-700 shadow-sm',
+        soft: 'bg-orange-50 text-orange-800 active:bg-orange-100',
+        ghost: 'bg-white text-stone-700 border border-stone-300 active:bg-stone-100',
+    }[variant];
+    return (
+        <button type="button" {...rest} disabled={disabled || loading}
+            className={`rounded-xl py-3.5 px-4 font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-60 ${look} ${className}`}>
+            {loading && <Spinner />}{children}
+        </button>
+    );
+};
+
+const Overlay = ({ text }) => (
+    <div className="fixed inset-0 z-[60] bg-stone-900/60 flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl px-6 py-5 flex items-center gap-3 text-stone-800 shadow-xl">
+            <span className="text-orange-600"><Spinner size={24} /></span>
+            <span className="font-medium">{text}</span>
+        </div>
+    </div>
+);
+
+const ErrorBox = ({ text }) => (
+    <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 flex gap-2 items-start">
+        <AlertTriangle size={18} className="mt-0.5 shrink-0" /><div>{text}</div>
+    </div>
+);
+
+const inputCls = 'w-full px-4 py-3 rounded-xl border border-stone-300 bg-white text-base text-stone-900 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none';
+
+// ---------------------------------------------------------------- camera
+const CameraView = ({ onDone, onCancel }) => {
+    const vref = useRef(null);
+    const sref = useRef(null);
+    const [facing, setFacing] = useState('user');
+    const [ready, setReady] = useState(false);
+    const [stage, setStage] = useState('');
+    const [err, setErr] = useState('');
+    const [hint, setHint] = useState('');
+    const [attempt, setAttempt] = useState(0);
+
+    useEffect(() => {
+        let gone = false;
+        setReady(false); setErr('');
+        (async () => {
+            try {
+                if (sref.current) sref.current.getTracks().forEach(t => t.stop());
+                const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1280 } }, audio: false });
+                if (gone) { s.getTracks().forEach(t => t.stop()); return; }
+                sref.current = s;
+                vref.current.srcObject = s;
+                await vref.current.play().catch(() => { });
+                if (!gone) setReady(true);
+            } catch (e) { if (!gone) setErr(camError(e)); }
+        })();
+        return () => { gone = true; if (sref.current) sref.current.getTracks().forEach(t => t.stop()); };
+    }, [facing, attempt]);
+
+    const snap = async () => {
+        if (stage || !ready) return;
+        setHint('');
+        try {
+            setStage('Getting your location...');
+            const pos = await getPos();
+            setStage('Capturing photo...');
+            const v = vref.current;
+            if (!v || !v.videoWidth) throw new Error('The camera is not ready yet. Wait a moment and try again.');
+            const c = document.createElement('canvas');
+            c.width = v.videoWidth; c.height = v.videoHeight;
+            const g = c.getContext('2d');
+            g.drawImage(v, 0, 0);
+            const stamp = `${new Date().toLocaleString('en-PH', { timeZone: PH })}  ${pos.latitude.toFixed(6)}, ${pos.longitude.toFixed(6)}`;
+            g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(0, c.height - 48, c.width, 48);
+            g.fillStyle = '#fff'; g.font = '24px sans-serif'; g.fillText(stamp, 12, c.height - 16);
+            const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.8));
+            if (!blob) throw new Error('The photo could not be saved. Try again.');
+            onDone({ blob, ...pos, capturedAt: new Date().toISOString() });
+        } catch (e) { setStage(''); setHint(e.message || 'The photo could not be captured. Try again.'); }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 bg-black flex flex-col">
+            <div className="flex-1 relative overflow-hidden">
+                <video ref={vref} playsInline muted className="w-full h-full object-cover" />
+                {!ready && !err && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white">
+                        <Spinner size={28} /><span>Starting camera...</span>
+                    </div>
+                )}
+                {err && (
+                    <div className="absolute inset-0 bg-stone-900 flex flex-col items-center justify-center gap-4 p-8 text-center text-white">
+                        <AlertTriangle size={32} className="text-orange-400" />
+                        <p>{err}</p>
+                        <Btn onClick={() => setAttempt(a => a + 1)}>Try again</Btn>
+                    </div>
+                )}
+                <div className="absolute top-0 inset-x-0 flex justify-between p-4" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
+                    <button type="button" onClick={onCancel} disabled={!!stage} aria-label="Close" className="p-2.5 bg-black/50 text-white rounded-full"><X size={22} /></button>
+                    <button type="button" onClick={() => setFacing(f => (f === 'user' ? 'environment' : 'user'))} disabled={!!stage} aria-label="Switch camera" className="p-2.5 bg-black/50 text-white rounded-full"><RotateCw size={22} /></button>
+                </div>
+                {stage && <Overlay text={stage} />}
+            </div>
+            <div className="bg-black px-6 pt-4 text-center" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+                <p className={`text-sm mb-3 ${hint ? 'text-orange-300' : 'text-stone-400'}`}>{hint || 'The date, time, and location are added to the photo.'}</p>
+                <button type="button" onClick={snap} disabled={!ready || !!stage || !!err} aria-label="Take photo"
+                    className="w-20 h-20 rounded-full border-4 border-white inline-flex items-center justify-center disabled:opacity-50">
+                    <span className="w-14 h-14 rounded-full bg-orange-500" />
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// ---------------------------------------------------------------- signature pad
+const SignaturePad = ({ onChange }) => {
+    const ref = useRef(null);
+    const drawing = useRef(false);
+    const dirty = useRef(false);
+    const pos = (e) => {
+        const r = ref.current.getBoundingClientRect();
+        return [(e.clientX - r.left) * ref.current.width / r.width, (e.clientY - r.top) * ref.current.height / r.height];
+    };
+    const down = (e) => {
+        drawing.current = true;
+        const g = ref.current.getContext('2d');
+        g.lineWidth = 3; g.lineCap = 'round'; g.strokeStyle = '#1c1917';
+        g.beginPath(); g.moveTo(...pos(e));
+        ref.current.setPointerCapture(e.pointerId);
+    };
+    const move = (e) => {
+        if (!drawing.current) return;
+        const g = ref.current.getContext('2d');
+        g.lineTo(...pos(e)); g.stroke(); dirty.current = true;
+    };
+    const up = () => {
+        if (!drawing.current) return;
+        drawing.current = false;
+        if (dirty.current) ref.current.toBlob(b => onChange(b), 'image/png');
+    };
+    const clear = () => {
+        const c = ref.current;
+        c.getContext('2d').clearRect(0, 0, c.width, c.height);
+        dirty.current = false; onChange(null);
+    };
+    return (
+        <div>
+            <canvas ref={ref} width={700} height={280} style={{ touchAction: 'none' }}
+                className="w-full bg-white border-2 border-dashed border-orange-300 rounded-2xl"
+                onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerLeave={up} />
+            <button type="button" onClick={clear} className="mt-2 text-sm font-medium text-orange-700">Clear signature</button>
+        </div>
+    );
+};
+
+// ---------------------------------------------------------------- app
+const FieldApp = () => {
+    const { user, logout } = useAuth();
+    const uid = String(user?.id ?? user?.username ?? user?.email ?? 'me');
+    const name = user?.fullName || user?.username || 'Field worker';
+    const initials = name.split(/\s+/).slice(0, 2).map(s => s[0]).join('').toUpperCase();
+
+    const [screen, setScreen] = useState('home');   // home | camera | form | out
+    const [day, setDay] = useState(() => loadDay(uid));
+    const [active, setActive] = useState(0);
+    const [failed, setFailed] = useState([]);
+    const [online, setOnline] = useState(navigator.onLine);
+    const [tick, setTick] = useState(Date.now());
+    const [draft, setDraft] = useState(null);
+    const [form, setForm] = useState(EMPTY);
+    const [sig, setSig] = useState(null);
+    const [busy, setBusy] = useState(null);          // { k, t }
+    const [formError, setFormError] = useState('');
+    const [notice, setNotice] = useState(null);      // { type: 'unlinked' | 'expired' }
+    const [askLogout, setAskLogout] = useState(false);
+    const [lunchMin, setLunchMin] = useState(60);
+    const [history, setHistory] = useState(() => loadHistory(uid));
+    const [openDates, setOpenDates] = useState(() => new Set([phDate(), phDate().slice(0, 7), `${phDate().slice(0, 7)}-${cutoffOf(phDate())}`]));
+    const flushing = useRef(false);
+
+    const mine = useCallback(async () => (await qAll()).filter(i => !i.uid || i.uid === uid), [uid]);
+    const updateDay = useCallback((fn) => setDay(prev => { const n = fn(prev); saveDay(uid, n); return n; }), [uid]);
+    const open = day.visits.find(v => !v.timeOut);
+
+    const refreshQueue = useCallback(async () => {
+        const items = await mine();
+        setActive(items.filter(i => !dead(i)).length);
+        setFailed(items.filter(dead));
+    }, [mine]);
+
+    const pullHistory = useCallback(async () => {
+        const r = await quietRequest(`/dtr/my/days?from=${shiftDate(phDate(), -120)}&to=${phDate()}`);
+        if (r.success && Array.isArray(r.data)) {
+            const list = r.data
+                .filter(d => d.date !== phDate() && d.visits && d.visits.length > 0)
+                .sort((a, b) => b.date.localeCompare(a.date))
+                .map(d => ({
+                    date: d.date,
+                    lunchStart: withTz(d.lunchStart),
+                    visits: d.visits.map(v => ({ clientId: v.clientId || String(v.id), place: v.place, purpose: v.purpose, validatedBy: v.validatedBy, timeIn: withTz(v.timeIn), timeOut: withTz(v.timeOut) })),
+                }));
+            setHistory(list);
+            saveHistory(uid, list);
+        }
+    }, [uid]);
+
+    const pullServer = useCallback(async () => {
+        const r = await quietRequest('/dtr/my/today');
+        if (r.success) {
+            setNotice(n => (n && n.type === 'unlinked' ? null : n));
+            const d = r.data.day;
+            if (r.data.lunchMinutes) setLunchMin(r.data.lunchMinutes);
+            pullHistory();
+            updateDay(() => ({
+                date: phDate(),
+                lunchStart: d.lunchStart || null,
+                visits: d.visits.map(v => ({ clientId: v.clientId, place: v.place, purpose: v.purpose, validatedBy: v.validatedBy, timeIn: v.timeIn + '+08:00', timeOut: v.timeOut ? v.timeOut + '+08:00' : null })),
+            }));
+        } else if (UNLINKED.test(r.error || '')) setNotice({ type: 'unlinked' });
+        else if (r.status === 401) setNotice({ type: 'expired' });
+    }, [updateDay, pullHistory]);
+
+    const flush = useCallback(async (manual) => {
+        if (flushing.current || !navigator.onLine) return;
+        flushing.current = true;
+        if (manual === true) setBusy({ k: 'sync' });
+        try {
+            for (const item of await mine()) {
+                if (dead(item)) continue;
+                const r = await sendItem(item);
+                if (r.success) { await qDel(item.id); continue; }
+                if (UNLINKED.test(r.error || '')) { setNotice({ type: 'unlinked' }); break; }
+                if (r.status === 401) { setNotice({ type: 'expired' }); break; }
+                if (transient(r)) break;
+                await qPut({ ...item, rejected: true, error: explain(r) });
+            }
+        } finally {
+            flushing.current = false;
+            if (manual === true) setBusy(null);
+            await refreshQueue();
+            if (!(await mine()).some(i => !dead(i))) pullServer();
+        }
+    }, [mine, refreshQueue, pullServer]);
+
+    useEffect(() => {
+        refreshQueue(); flush();
+        const on = () => { setOnline(true); flush(); };
+        const off = () => setOnline(false);
+        window.addEventListener('online', on); window.addEventListener('offline', off);
+        const i = setInterval(() => { setTick(Date.now()); flush(); }, 30000);
+        if ('serviceWorker' in navigator && !window.Capacitor?.isNativePlatform?.()) {
+            navigator.serviceWorker.register('/field-sw.js').catch(() => { });
+        }
+        return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); clearInterval(i); };
+    }, [flush, refreshQueue]);
+
+    useEffect(() => { if (day.date !== phDate()) setDay(loadDay(uid)); }, [tick, uid]); // new day
+
+    const photoUrl = useMemo(() => (draft ? URL.createObjectURL(draft.blob) : null), [draft]);
+    useEffect(() => () => { if (photoUrl) URL.revokeObjectURL(photoUrl); }, [photoUrl]);
+
+    // Send now when online. Queue only when offline or the connection fails. Never queue a rejection.
+    const submit = async (item, applyLocal) => {
+        const waiting = (await mine()).filter(i => !dead(i));
+        if (navigator.onLine && waiting.length === 0) {
+            const r = await sendItem(item);
+            if (r.success) { applyLocal(); pullServer(); return { ok: true }; }
+            if (UNLINKED.test(r.error || '')) { setNotice({ type: 'unlinked' }); return { ok: false, error: explain(r) }; }
+            if (r.status === 401) {
+                await qAdd({ ...item, uid }); await refreshQueue(); applyLocal(); setNotice({ type: 'expired' });
+                return { ok: true, queued: true };
+            }
+            if (!transient(r)) return { ok: false, error: explain(r) };
+        }
+        await qAdd({ ...item, uid }); await refreshQueue(); applyLocal(); flush();
+        return { ok: true, queued: true };
+    };
+
+    // ---- time in
+    const onCaptured = (c) => { setDraft(c); setFormError(''); setScreen('form'); };
+    const submitIn = async (e) => {
+        e.preventDefault();
+        if (busy) return;
+        const f = { place: form.place.trim(), purpose: form.purpose.trim(), validatedBy: form.validatedBy.trim() };
+        if (!f.place || !f.purpose || !f.validatedBy) { setFormError('Fill in the place, the purpose, and who validated your visit.'); return; }
+        setFormError(''); setBusy({ k: 'in', t: 'Saving your time in...' });
+        const clientId = uuid();
+        const res = await submit(
+            { type: 'in', clientId, capturedAt: draft.capturedAt, latitude: draft.latitude, longitude: draft.longitude, accuracy: draft.accuracy, ...f, photo: draft.blob },
+            () => updateDay(d => ({ ...d, visits: [...d.visits, { clientId, ...f, timeIn: draft.capturedAt, timeOut: null }] })));
+        setBusy(null);
+        if (!res.ok) { setFormError(res.error); return; }
+        const places = Array.from(new Set([f.place, ...JSON.parse(localStorage.getItem('fieldPlaces') || '[]')])).slice(0, 30);
+        localStorage.setItem('fieldPlaces', JSON.stringify(places));
+        setDraft(null); setForm(EMPTY); setScreen('home');
+        toast.success(res.queued ? 'Saved on this phone. It uploads when you are online.' : 'You are timed in.');
+    };
+
+    // ---- lunch
+    const startLunch = async () => {
+        if (busy) return;
+        setBusy({ k: 'lunch' });
+        const at = new Date().toISOString();
+        const res = await submit({ type: 'lunch', capturedAt: at }, () => updateDay(d => ({ ...d, lunchStart: at })));
+        setBusy(null);
+        if (res.ok) toast.success('Lunch break started.'); else toast.error(res.error, { duration: 6000 });
+    };
+
+    // ---- time out
+    const submitOut = async () => {
+        if (busy) return;
+        if (!sig) { setFormError('Ask the person in charge to sign first.'); return; }
+        const visit = open;
+        setFormError(''); setBusy({ k: 'out', t: 'Getting your location...' });
+        const at = new Date().toISOString();
+        let pos = {};
+        try { pos = await getPos(); } catch { /* location is optional on time out */ }
+        setBusy({ k: 'out', t: 'Saving your time out...' });
+        const res = await submit(
+            { type: 'out', clientId: visit.clientId, capturedAt: at, latitude: pos.latitude, longitude: pos.longitude, signature: sig },
+            () => updateDay(d => ({ ...d, visits: d.visits.map(v => (v.clientId === visit.clientId ? { ...v, timeOut: at } : v)) })));
+        setBusy(null);
+        if (!res.ok) { setFormError(res.error); return; }
+        setSig(null); setScreen('home');
+        toast.success(res.queued ? 'Saved on this phone. It uploads when you are online.' : 'You are timed out.');
+    };
+
+    // ---- queue actions, log out, re-check account
+    const discard = async (id) => { await qDel(id); refreshQueue(); };
+    const retry = async (item) => { await qPut({ ...item, rejected: false, tries: 0, error: '' }); await refreshQueue(); flush(true); };
+    const recheck = async () => { setBusy({ k: 'check' }); await pullServer(); setBusy(null); };
+    const doLogout = async () => {
+        setBusy({ k: 'logout' });
+        try { if (typeof logout === 'function') await logout(); } catch { /* ignore */ }
+        ['authToken', 'refreshToken', 'user', 'lastActivity'].forEach(k => localStorage.removeItem(k));
+        window.location.replace('/login');
+    };
+
+    // ---- derived values
+    const lunchStarted = !!day.lunchStart;
+    const lunchEndVisit = lunchStarted ? day.visits.find(v => new Date(v.timeIn) >= new Date(day.lunchStart)) : null;
+    const lunchLeft = lunchMin - (lunchStarted ? Math.floor((tick - new Date(day.lunchStart)) / 60000) : 0);
+    const onLunch = lunchStarted && !lunchEndVisit;
+    const showLunch = !open && !lunchStarted && phHour() >= 12;
+    const mins = (v) => Math.max(0, Math.round(((v.timeOut ? +new Date(v.timeOut) : tick) - +new Date(v.timeIn)) / 60000));
+    const totalMins = day.visits.reduce((s, v) => s + mins(v), 0);
+    const todayGroup = { date: phDate(), visits: day.visits, lunchStart: day.lunchStart, isToday: true };
+    const groups = history.filter(h => h.date !== phDate());
+    const flip = (k) => setOpenDates(prev => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n; });
+    const dayMins = (g) => g.visits.reduce((s, v) => s + ((!v.timeOut && !g.isToday) ? 0 : mins(v)), 0);
+    const months = [];
+    groups.forEach(g => {
+        const mk = g.date.slice(0, 7);
+        const ck = `${mk}-${cutoffOf(g.date)}`;
+        let m = months.find(x => x.key === mk);
+        if (!m) { m = { key: mk, cutoffs: [] }; months.push(m); }
+        let c = m.cutoffs.find(x => x.key === ck);
+        if (!c) { c = { key: ck, days: [] }; m.cutoffs.push(c); }
+        c.days.push(g);
+    });
+    const visited = (days) => days.filter(g => g.visits.length > 0).length;
+    const dayWord = (n) => `${n} ${n === 1 ? 'day' : 'days'}`;
+    const renderDay = (g) => {
+        const isOpen = g.isToday || openDates.has(g.date);
+        return (
+            <div key={g.date}>
+                <button type="button" aria-expanded={isOpen} onClick={() => !g.isToday && flip(g.date)}
+                    className="w-full px-4 py-3 flex items-center gap-3 text-left active:bg-stone-50">
+                    {!g.isToday && <ChevronRight size={16} className={`text-stone-400 shrink-0 transition-transform ${isOpen ? 'rotate-90' : ''}`} />}
+                    <span className="flex-1 min-w-0">
+                        <span className="block font-medium text-stone-900">{dayLabel(g.date)}</span>
+                        <span className="block text-xs text-stone-500">{g.visits.length === 0 ? 'No visits yet' : `${g.visits.length} ${g.visits.length === 1 ? 'visit' : 'visits'}`}</span>
+                    </span>
+                    {g.visits.length > 0 && <span className="text-sm text-stone-500">{fmtDur(dayMins(g))} on site</span>}
+                </button>
+                {isOpen && (
+                    <div className="bg-stone-50 border-t border-stone-100">
+                        {g.visits.length === 0 ? <p className="p-4 text-sm text-stone-500">No visits yet. Tap Time in when you arrive.</p> : (
+                            <ul className="divide-y divide-stone-100">
+                                {[...g.visits].sort((a, b) => String(a.timeIn).localeCompare(String(b.timeIn))).map((v, idx, arr) => (
+                                    <li key={v.clientId} className="px-4 py-3">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="font-medium text-stone-900">{v.place}</span>
+                                            {!v.timeOut && g.isToday && <span className="text-xs font-semibold text-orange-700 bg-orange-50 rounded-full px-2 py-0.5">Ongoing</span>}
+                                            {!v.timeOut && !g.isToday && <span className="text-xs font-semibold text-red-700 bg-red-50 rounded-full px-2 py-0.5">No time out</span>}
+                                        </div>
+                                        {v.purpose && <div className="text-sm text-stone-600">{v.purpose}</div>}
+                                        <div className="text-sm text-stone-500">{t12(v.timeIn)} to {v.timeOut ? t12(v.timeOut) : (g.isToday ? 'now' : 'missing')}</div>
+                                        <div className="text-xs text-stone-400">Validated by {v.validatedBy}</div>
+                                        {(() => { const tm = travelMins(g, arr, idx); return tm ? <div className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-sky-700 bg-sky-50 rounded-full px-2 py-1"><Car size={12} /> {fmtDur(tm)} travel to next store</div> : null; })()}
+                                    </li>
+                                ))}
+                                {g.lunchStart && <li className="px-4 py-3 text-sm text-stone-600 flex items-center gap-2"><Coffee size={15} /> Lunch from {t12(g.lunchStart)}</li>}
+                            </ul>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    if (notice) {
+        const unlinked = notice.type === 'unlinked';
+        return (
+            <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-8 text-center">
+                <Toaster position="top-center" />
+                <div className="w-14 h-14 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center mb-5"><AlertTriangle size={28} /></div>
+                <h1 className="text-xl font-bold text-stone-900">{unlinked ? 'Your account is not set up for field work' : 'Your session expired'}</h1>
+                <p className="text-stone-600 mt-2">{unlinked
+                    ? 'Your login is not linked to an employee record yet. Ask your administrator to link it, then check again.'
+                    : 'Log in again to continue. Entries saved on this phone upload after you log in.'}</p>
+                <div className="w-full mt-8 space-y-3">
+                    {unlinked && <Btn className="w-full" loading={busy?.k === 'check'} onClick={recheck}>Check again</Btn>}
+                    <Btn className="w-full" variant={unlinked ? 'ghost' : 'primary'} loading={busy?.k === 'logout'} onClick={doLogout}>{unlinked ? 'Log out' : 'Log in again'}</Btn>
+                    {unlinked && active + failed.length > 0 && (
+                        <button type="button" className="text-sm text-stone-500 underline pt-2"
+                            onClick={async () => {
+                                if (!window.confirm('Discard the entries saved on this phone that have not uploaded?')) return;
+                                for (const i of await mine()) await qDel(i.id);
+                                refreshQueue();
+                            }}>Discard {active + failed.length} unsent {active + failed.length === 1 ? 'entry' : 'entries'}</button>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    if (screen === 'camera') return <CameraView onDone={onCaptured} onCancel={() => setScreen('home')} />;
+
+    return (
+        <div className={`bg-stone-50 ${screen === 'home' ? 'h-screen flex flex-col overflow-hidden' : 'min-h-screen pb-10'}`}>
+            <Toaster position="top-center" />
+            {busy && (busy.k === 'in' || busy.k === 'out') && <Overlay text={busy.t} />}
+
+            <header className="bg-white border-b border-stone-200 sticky top-0 z-20 shrink-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+                <div className="px-4 py-3 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-700 font-bold flex items-center justify-center">{initials}</div>
+                    <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-stone-900 truncate">{name}</div>
+                        <div className="text-xs text-stone-500">{new Date().toLocaleDateString('en-PH', { timeZone: PH, weekday: 'long', month: 'long', day: 'numeric' })}</div>
+                    </div>
+                    <span className={`flex items-center gap-1 text-xs font-medium ${online ? 'text-emerald-700' : 'text-orange-700'}`}>
+                        {online ? <Wifi size={15} /> : <WifiOff size={15} />}{online ? 'Online' : 'Offline'}
+                    </span>
+                    <button type="button" onClick={() => setAskLogout(true)} aria-label="Log out" className="p-2 rounded-lg text-stone-500 active:bg-stone-100"><LogOut size={20} /></button>
+                </div>
+                {(!online || active > 0) && (
+                    <div className="px-4 py-2 bg-orange-50 border-t border-orange-100 text-xs text-orange-900 flex items-center justify-between gap-2">
+                        <span>{!online
+                            ? (active > 0 ? `No internet. ${active} waiting to upload.` : 'No internet. Entries are saved on this phone.')
+                            : `${active} ${active === 1 ? 'entry is' : 'entries are'} waiting to upload.`}</span>
+                        {online && active > 0 && (
+                            <button type="button" onClick={() => flush(true)} disabled={busy?.k === 'sync'} className="font-semibold flex items-center gap-1">
+                                {busy?.k === 'sync' ? <Spinner size={12} /> : <RefreshCw size={12} />} Upload now
+                            </button>
+                        )}
+                    </div>
+                )}
+            </header>
+
+            {screen === 'home' && (
+                <div className="flex-1 min-h-0 flex flex-col">
+                    <div className="shrink-0 px-4 pt-4 pb-3 space-y-3 bg-stone-50 border-b border-stone-200">
+                        {open ? (
+                        <div className="bg-white rounded-2xl border border-orange-200 p-5">
+                            <div className="text-sm font-medium text-orange-700">You are at</div>
+                            <div className="text-2xl font-bold text-stone-900 mt-0.5">{open.place}</div>
+                            <div className="text-stone-600 mt-1">{open.purpose}</div>
+                            <div className="text-sm text-stone-500 mt-3">Timed in at {t12(open.timeIn)}. On site for {fmtDur(mins(open))}.</div>
+                            <Btn className="mt-5 w-full py-4" onClick={() => { setFormError(''); setScreen('out'); }}><LogOut size={20} /> Time out</Btn>
+                        </div>
+                    ) : onLunch ? (
+                        <div className="rounded-2xl p-5 bg-orange-50 border border-orange-200">
+                            <div className="font-semibold text-stone-900 flex items-center gap-2"><Coffee size={18} /> Lunch break since {t12(day.lunchStart)}</div>
+                            <div className={`text-sm mt-1 ${lunchLeft < 0 ? 'text-orange-900 font-semibold' : 'text-stone-600'}`}>
+                                {lunchLeft >= 0 ? `${lunchLeft} min left. Time in again before it ends.` : `${-lunchLeft} min over. This counts as late.`}
+                            </div>
+                            <Btn className="mt-4 w-full py-4" onClick={() => setScreen('camera')}><Camera size={20} /> Time in</Btn>
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-2xl border border-stone-200 p-6 text-center">
+                            <div className="text-lg font-bold text-stone-900">Ready for your next visit</div>
+                            <p className="text-sm text-stone-500 mt-1">Take a photo at the store. Your location is added automatically.</p>
+                            <Btn className="mt-5 w-full py-4 text-lg" onClick={() => setScreen('camera')}><Camera size={22} /> Time in</Btn>
+                        </div>
+                    )}
+                        {showLunch && <Btn variant="soft" className="w-full" loading={busy?.k === 'lunch'} onClick={startLunch}><Coffee size={20} /> Start lunch break</Btn>}
+                        <Btn variant="ghost" className="w-full" onClick={() => setScreen('history')}><History size={18} /> View history</Btn>
+                    </div>
+                    <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-4 pb-10 space-y-4">
+                        {failed.length > 0 && (
+                        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 space-y-2">
+                            <div className="font-semibold flex items-center gap-2"><AlertTriangle size={16} /> The server did not accept {failed.length === 1 ? 'an entry' : 'some entries'}</div>
+                            {failed.map(f => (
+                                <div key={f.id} className="flex items-start justify-between gap-3">
+                                    <span>{LABEL[f.type]}: {f.error || 'Rejected by the server.'}</span>
+                                    <span className="shrink-0 space-x-3">
+                                        <button type="button" className="font-semibold underline" onClick={() => retry(f)}>Retry</button>
+                                        <button type="button" className="underline" onClick={() => discard(f.id)}>Discard</button>
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+<div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">{renderDay(todayGroup)}</div>
+                    </div>
+                </div>
+            )}
+
+            {screen === 'form' && draft && (
+                <form onSubmit={submitIn} className="p-4 space-y-4">
+                    <img src={photoUrl} alt="Your time-in photo" className="w-full rounded-2xl" />
+                    {draft.accuracy > 100 && <p className="text-sm text-orange-800 bg-orange-50 rounded-xl p-3">Your GPS is only accurate to about {Math.round(draft.accuracy)} m. Retake the photo in an open area for a better location.</p>}
+                    <datalist id="places">{JSON.parse(localStorage.getItem('fieldPlaces') || '[]').map(p => <option key={p} value={p} />)}</datalist>
+                    <label className="block">
+                        <span className="block text-sm font-medium text-stone-700 mb-1">Store or place</span>
+                        <input className={inputCls} list="places" value={form.place} onChange={(e) => setForm(f => ({ ...f, place: e.target.value }))} />
+                    </label>
+                    <label className="block">
+                        <span className="block text-sm font-medium text-stone-700 mb-1">Purpose of visit</span>
+                        <input className={inputCls} value={form.purpose} onChange={(e) => setForm(f => ({ ...f, purpose: e.target.value }))} />
+                    </label>
+                    <label className="block">
+                        <span className="block text-sm font-medium text-stone-700 mb-1">Validated by (person in charge)</span>
+                        <input className={inputCls} value={form.validatedBy} onChange={(e) => setForm(f => ({ ...f, validatedBy: e.target.value }))} />
+                    </label>
+                    {formError && <ErrorBox text={formError} />}
+                    <div className="grid grid-cols-2 gap-3">
+                        <Btn variant="ghost" disabled={!!busy} onClick={() => { setDraft(null); setScreen('camera'); }}>Retake</Btn>
+                        <Btn type="submit" loading={busy?.k === 'in'}>Save time in</Btn>
+                    </div>
+                </form>
+            )}
+
+            {screen === 'out' && open && (
+                <div className="p-4 space-y-4">
+                    <div className="bg-white rounded-2xl border border-stone-200 p-4">
+                        <div className="font-semibold text-stone-900">{open.place}</div>
+                        <div className="text-sm text-stone-500">Timed in at {t12(open.timeIn)}. Validated by {open.validatedBy}.</div>
+                    </div>
+                    <p className="text-sm text-stone-600">Ask {open.validatedBy} to sign below, then tap Time out.</p>
+                    <SignaturePad onChange={setSig} />
+                    {formError && <ErrorBox text={formError} />}
+                    <div className="grid grid-cols-2 gap-3">
+                        <Btn variant="ghost" disabled={!!busy} onClick={() => setScreen('home')}>Back</Btn>
+                        <Btn onClick={submitOut} loading={busy?.k === 'out'} disabled={!sig}>Time out</Btn>
+                    </div>
+                </div>
+            )}
+
+{screen === 'history' && (
+    <div className="p-4 space-y-3">
+        <button type="button" onClick={() => setScreen('home')} className="flex items-center gap-1 text-sm font-medium text-orange-700">
+            <ChevronLeft size={18} /> Back
+        </button>
+        <h1 className="text-xl font-bold text-stone-900">History</h1>
+        {months.length === 0 && <p className="text-sm text-stone-500">No past visits yet.</p>}
+                        <div className="space-y-3">
+                            {months.map(m => {
+                                const mOpen = openDates.has(m.key);
+                                const mDays = m.cutoffs.flatMap(c => c.days);
+                                return (
+                                    <div key={m.key} className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
+                                        <button type="button" aria-expanded={mOpen} onClick={() => flip(m.key)}
+                                            className="w-full px-4 py-3.5 flex items-center gap-3 text-left active:bg-stone-50">
+                                            <ChevronRight size={18} className={`text-stone-400 shrink-0 transition-transform ${mOpen ? 'rotate-90' : ''}`} />
+                                            <span className="flex-1 min-w-0">
+                                                <span className="block font-semibold text-stone-900">{monthLabel(m.key)}</span>
+                                                <span className="block text-xs text-stone-500">{dayWord(visited(mDays))} recorded</span>
+                                            </span>
+                                            <span className="text-sm text-stone-500">{fmtDur(mDays.reduce((s, g) => s + dayMins(g), 0))} on site</span>
+                                        </button>
+                                        {mOpen && (
+                                            <div className="border-t border-stone-200 bg-stone-50 p-3 space-y-3">
+                                                {m.cutoffs.map(c => {
+                                                    const cOpen = openDates.has(c.key);
+                                                    return (
+                                                        <div key={c.key} className="bg-white rounded-xl border border-stone-200 overflow-hidden">
+                                                            <button type="button" aria-expanded={cOpen} onClick={() => flip(c.key)}
+                                                                className="w-full px-4 py-3 flex items-center gap-3 text-left active:bg-stone-50">
+                                                                <ChevronRight size={16} className={`text-stone-400 shrink-0 transition-transform ${cOpen ? 'rotate-90' : ''}`} />
+                                                                <span className="flex-1 min-w-0">
+                                                                    <span className="block font-semibold text-stone-900">{cutoffLabel(c.key)}</span>
+                                                                    <span className="block text-xs text-stone-500">{dayWord(visited(c.days))} recorded</span>
+                                                                </span>
+                                                                <span className="text-sm text-stone-500">{fmtDur(c.days.reduce((s, g) => s + dayMins(g), 0))} on site</span>
+                                                            </button>
+                                                            {cOpen && <div className="border-t border-stone-200 divide-y divide-stone-100">{c.days.map(renderDay)}</div>}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+    </div>
+)}
+
+            {askLogout && (
+                <div className="fixed inset-0 z-40 bg-stone-900/50 flex items-end" onClick={() => !busy && setAskLogout(false)}>
+                    <div className="bg-white w-full rounded-t-3xl p-6" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }} onClick={(e) => e.stopPropagation()}>
+                        <h2 className="text-lg font-bold text-stone-900">Log out?</h2>
+                        <p className="text-sm text-stone-600 mt-1">{active > 0
+                            ? `${active} ${active === 1 ? 'entry has' : 'entries have'} not uploaded yet. They stay on this phone and upload after you log in again.`
+                            : 'You will need to log in again to record your time.'}</p>
+                        <div className="grid grid-cols-2 gap-3 mt-5">
+                            <Btn variant="ghost" disabled={busy?.k === 'logout'} onClick={() => setAskLogout(false)}>Cancel</Btn>
+                            <Btn loading={busy?.k === 'logout'} onClick={doLogout}>Log out</Btn>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default FieldApp;

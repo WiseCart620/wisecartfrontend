@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">WiseCart Field</string>
+    <string name="title_activity_main">WiseCart Field</string>
+    <string name="package_name">com.wisecart.field</string>
+    <string name="custom_url_scheme">com.wisecart.field</string>
+</resources>

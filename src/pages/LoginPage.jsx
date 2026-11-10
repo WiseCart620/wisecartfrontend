@@ -78,7 +78,7 @@ const LoginPage = () => {
       toast.success(`Welcome back, ${userData.fullName || userData.username}!`);
 
       const selfOnly = userData.role !== 'SUPER_ADMIN' && userData.employeeId && (userData.permissions || []).includes('self:only');
-      navigate(selfOnly ? '/my-payslips' : '/', { replace: true });
+      navigate(import.meta.env.VITE_FIELD_ONLY === 'true' ? '/field' : (selfOnly ? '/my-payslips' : '/'), { replace: true });
 
     } catch (err) {
       console.error('Login error:', err);

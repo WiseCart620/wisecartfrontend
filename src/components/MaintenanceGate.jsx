@@ -1,9 +1,18 @@
 import { useEffect, useState } from 'react';
 
-const HEALTH_URL = 'https://backend.wisecart.ph/actuator/health';
+const API = import.meta.env.VITE_API_BASE_URL || 'https://backend.wisecart.ph/api';
+const HEALTH_URL = API.replace(/\/api\/?$/, '') + '/actuator/health';
 const POLL_MS = 30000;
 
+const FIELD_ONLY = import.meta.env.VITE_FIELD_ONLY === 'true';
+
+// The field app must open offline, so it skips the maintenance check.
 export default function MaintenanceGate({ children }) {
+  if (FIELD_ONLY) return children;
+  return <MaintenanceGateInner>{children}</MaintenanceGateInner>;
+}
+
+function MaintenanceGateInner({ children }) {
   const [state, setState] = useState('checking'); // 'checking' | 'up' | 'down'
 
   useEffect(() => {

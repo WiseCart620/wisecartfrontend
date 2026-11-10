@@ -28,13 +28,17 @@ import { ReferenceDataProvider } from './context/ReferenceDataContext';
 import { startActivityTracking, stopActivityTracking } from './services/api';
 import { useEffect } from 'react';
 import { useAuth, hasPermission } from './context/AuthContext';
-
+import DtrManagement from './pages/payroll/DtrManagement';
+import FieldApp from './pages/field/FieldApp';
+
+
 import MyPayslips from './pages/MyPayslips';
 // Sends the user to the first page shown in their sidebar (same order as Sidebar.jsx).
 const HomeRedirect = () => {
   const { user } = useAuth();
 
   if (!user) return <Navigate to="/login" replace />;
+  if (import.meta.env.VITE_FIELD_ONLY === 'true') return <Navigate to="/field" replace />;
 
   const isSuperAdmin = user.role === 'SUPER_ADMIN';
   const allowed = (feature) => isSuperAdmin || hasPermission(user, feature);
@@ -306,6 +310,25 @@ function App() {
                 </ProtectedRoute>
               } />
 
+
+              <Route path="/dtr" element={
+                <ProtectedRoute>
+                  <PermissionRoute feature="employees">
+                    <Layout>
+                      <DtrManagement />
+                    </Layout>
+                  </PermissionRoute>
+                </ProtectedRoute>
+              } />
+
+              {/* Field app: no sidebar layout */}
+              <Route path="/field" element={
+                <ProtectedRoute>
+                  <FieldApp />
+                </ProtectedRoute>
+              } />
+
+
               <Route path="/year-end" element={
                 <ProtectedRoute>
                   <PermissionRoute feature="employees">
@@ -320,7 +343,7 @@ function App() {
               <Route path="/" element={<HomeRedirect />} />
 
               {/* 404 Page */}
-              <Route path="*" element={<NotFound />} />
+              <Route path="*" element={import.meta.env.VITE_FIELD_ONLY === 'true' ? <Navigate to="/field" replace /> : <NotFound />} />
             </Routes>
           </ReferenceDataProvider>
         </AuthLoading>

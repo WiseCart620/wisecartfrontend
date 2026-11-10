@@ -464,3 +464,39 @@ export const api = {
 
 export { API_BASE_URL };
 export default api;
+
+// ---- Quiet requests for the field app: no toasts, no redirects, clear result object ----
+export const quietRequest = async (path, { method = 'GET', json, formData } = {}) => {
+    let token = localStorage.getItem('authToken');
+    if (!token) return { success: false, status: 401, error: 'Please log in again.' };
+    if (isTokenExpired(token)) {
+        token = await refreshAccessToken();
+        if (!token) return { success: false, status: 401, error: 'Your session expired. Please log in again.' };
+    }
+    const attempt = async (tk) => {
+        const headers = { Authorization: `Bearer ${tk}` };
+        let body;
+        if (formData) body = formData;
+        else if (json !== undefined) { headers['Content-Type'] = 'application/json'; body = JSON.stringify(json); }
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 45000);
+        try { return await fetch(`${API_BASE_URL}${path}`, { method, headers, body, signal: ctrl.signal }); }
+        finally { clearTimeout(timer); }
+    };
+    try {
+        let res = await attempt(token);
+        if (res.status === 401) {
+            const fresh = await refreshAccessToken();
+            if (!fresh) return { success: false, status: 401, error: 'Your session expired. Please log in again.' };
+            res = await attempt(fresh);
+        }
+        const text = await res.text();
+        let data = null;
+        try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+        if (res.ok) return { success: true, status: res.status, data };
+        const msg = (data && typeof data === 'object' && (data.message || data.error)) || (typeof data === 'string' && data) || res.statusText || '';
+        return { success: false, status: res.status, error: String(msg).slice(0, 300) };
+    } catch {
+        return { success: false, status: 0, network: true, error: 'No connection' };
+    }
+};
