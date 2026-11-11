@@ -245,6 +245,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
                     <td className="px-3 py-2 whitespace-nowrap">{t12(r.v.timeIn)}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{r.v.timeOut ? t12(r.v.timeOut) : <span className="text-amber-600">—</span>}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{r.v.timeOut ? hm(dur(r.v.timeIn, capOut(r.v))) : ''}</td>
+                    <td className="px-2 py-2 whitespace-nowrap">{r.v.timeOut ? hm(inShift(r.v)) : ''}</td>
                     <td className="px-3 py-2 truncate">{r.v.validatedBy || '—'}</td>
                     <td className="px-3 py-2"><DtrImage path={r.v.signaturePath} className="h-10 w-24 object-contain bg-white border border-gray-200 rounded cursor-zoom-in" onClick={setBig} /></td>
                     <td className="px-3 py-2"><DtrImage path={r.v.photoPath} className="h-10 w-10 object-cover rounded cursor-zoom-in" onClick={setBig} /></td>
