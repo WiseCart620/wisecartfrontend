@@ -90,13 +90,6 @@ const halfDayText = (d) => {
   if (d.halfDay === 'PAID') return `Half day - Paid leave${name}`;
   return d.halfDayAuto ? 'Half day - Unpaid (automatic)' : `Half day - Unpaid leave${name}`;
 };
-const absentText = (d) => {
-  const name = d.absentLeave ? ` (${d.absentLeave})` : '';
-  if (d.absent === 'PAID') return `On leave - Paid${name}`;
-  if (d.absent === 'UNPAID') return `On leave - Unpaid${name}`;
-  if (d.absent === 'PENDING') return `Absent - leave${name} pending approval`;
-  return 'Absent - no leave filed (automatic unpaid)';
-};
 const Caret = ({ open, size = 16 }) => (
   <ChevronRight size={size} className={`text-gray-400 shrink-0 transition-transform ${open ? 'rotate-90' : ''}`} />
 );
@@ -171,7 +164,6 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
           <Chip label="Overtime" value={hm(d.overtimeMinutes)} tone={d.overtimeMinutes ? 'green' : 'gray'} />
           {travelOf(d).total > 0 && <Chip label="Travel" value={hm(travelOf(d).total)} />}
           {d.halfDay && <span className={`px-2 py-1 rounded text-xs font-medium ${d.halfDay === 'PAID' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{halfDayText(d)}</span>}
-          {d.absent && <span className={`px-2 py-1 rounded text-xs font-medium ${d.absent === 'PAID' ? 'bg-green-50 text-green-700' : d.absent === 'PENDING' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'}`}>{absentText(d)}</span>}
           {d.incomplete && <span className="px-2 py-1 rounded text-xs bg-amber-50 text-amber-700">Missing time-out</span>}
           {d.posted && <span className="px-2 py-1 rounded text-xs bg-purple-50 text-purple-700">Posted</span>}
           <div className="ml-auto flex items-center gap-2">
@@ -192,7 +184,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
             {canEdit && <button onClick={(e) => { e.stopPropagation(); onEdit(d.date); }} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Edit day</button>}
           </div>
         </div>
-        {isOpen && !d.absent && (
+        {isOpen && (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-sm">
               <thead>
@@ -492,7 +484,6 @@ const DtrInner = () => {
                               <div className="text-xs font-normal text-gray-500">
                                 {r.daysRecorded} day(s) recorded
                                 {r.incompleteDays > 0 && <span className="text-amber-600"> · {r.incompleteDays} missing time-out</span>}
-                                {r.noLeaveDays > 0 && <span className="text-red-600"> · {r.noLeaveDays} absent, no leave filed</span>}
                               </div>
                             </div>
                           </div>
