@@ -33,6 +33,15 @@ const t12 = (ldt) => {
 };
 // office (biometric) punches after 6:00 PM are counted only until 6:00 PM
 const capOut = (v) => (v.source === 'BIO' && v.timeOut && v.timeOut.slice(11, 16) > '18:00' ? v.timeOut.slice(0, 11) + '18:00:00' : v.timeOut);
+// time inside the shift window: office 9:00-18:00, field 10:00-19:00
+const inShift = (v) => {
+  if (!v.timeIn || !v.timeOut) return null;
+  const [s, e] = v.source === 'BIO' ? ['09:00', '18:00'] : ['10:00', '19:00'];
+  const day = v.timeIn.slice(0, 11);
+  const a = v.timeIn.slice(11, 16) < s ? day + s + ':00' : v.timeIn;
+  const b = v.timeOut.slice(11, 16) > e ? day + e + ':00' : v.timeOut;
+  return dur(a, b);
+};
 const hhmm = (ldt) => (ldt ? ldt.slice(11, 16) : '');
 const dur = (a, b) => (a && b ? Math.max(0, Math.round((new Date(b) - new Date(a)) / 60000)) : null);
 const fmtDay = (d) => new Date(d + 'T00:00:00').toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
@@ -199,7 +208,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
         </div>
         {isOpen && (
           <div className="border-t border-gray-200 bg-white px-4 pb-3 overflow-x-auto">
-            <table className="w-full min-w-[900px] table-fixed text-sm">
+            <table className="w-full min-w-[1000px] table-fixed text-sm">
               <colgroup>
                 <col style={{ width: '20%' }} /><col style={{ width: '17%' }} />
                 <col style={{ width: '9%' }} /><col style={{ width: '9%' }} /><col style={{ width: '8%' }} />
@@ -209,7 +218,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
               <thead>
                 <tr className="text-left text-xs text-gray-500 uppercase">
                   <th className="px-3 py-2">Store / Place</th><th className="px-3 py-2">Purpose</th>
-                  <th className="px-3 py-2">In</th><th className="px-3 py-2">Out</th><th className="px-3 py-2">Time</th>
+                  <th className="px-3 py-2">In</th><th className="px-3 py-2">Out</th><th className="px-3 py-2">Time</th><th className="px-3 py-2">Shift Time</th>
                   <th className="px-3 py-2">Personnel</th><th className="px-3 py-2">Signature</th>
                   <th className="px-3 py-2">Photo</th><th className="px-3 py-2">Location</th>
                 </tr>
@@ -220,14 +229,14 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
                     <td className="px-3 py-2 font-medium text-sky-800" colSpan={2}>Travel to {r.s.toPlace || 'next store'}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{t12(r.s.from)}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{t12(r.s.to)}</td>
-                    <td className="px-3 py-2 font-medium text-sky-800" colSpan={5}>{hm(r.s.mins)}</td>
+                    <td className="px-3 py-2 font-medium text-sky-800" colSpan={6}>{hm(r.s.mins)}</td>
                   </tr>
                 ) : r.kind === 'lunch' ? (
                   <tr key={'l' + i} className="bg-amber-50/50">
                     <td className="px-3 py-2 font-medium text-amber-800" colSpan={2}>Lunch Break</td>
                     <td className="px-3 py-2 whitespace-nowrap">{t12(d.lunchStart)}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{t12(d.lunchEnd)}</td>
-                    <td className="px-3 py-2" colSpan={5}>{d.lunchEnd ? hm(dur(d.lunchStart, d.lunchEnd)) : ''}</td>
+                    <td className="px-3 py-2" colSpan={6}>{d.lunchEnd ? hm(dur(d.lunchStart, d.lunchEnd)) : ''}</td>
                   </tr>
                 ) : (
                   <tr key={r.v.id}>
