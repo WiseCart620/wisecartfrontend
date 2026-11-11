@@ -397,7 +397,8 @@ const DtrInner = () => {
   useEffect(() => { load(); }, [load]);
 
   const shown = rows.filter(r => (!onlyField || r.fieldWorker)
-    && (!name || r.employeeName.toLowerCase().includes(name.toLowerCase())));
+    && (!name || r.employeeName.toLowerCase().includes(name.toLowerCase())))
+    .sort((p, q) => Number(!!q.fieldWorker) - Number(!!p.fieldWorker));
 
   const toggleField = async (r) => {
     try { await api.patch(`/dtr/field-worker/${r.employeeId}?value=${!r.fieldWorker}`); load(); }
