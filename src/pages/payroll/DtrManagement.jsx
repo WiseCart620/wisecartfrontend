@@ -111,6 +111,9 @@ const Totals = ({ list }) => (
   </div>
 );
 
+// paid leave counts as a full 8-hour day of work
+const workedOf = (d) => (d.absent === 'PAID' ? 480 : d.workedMinutes);
+
 const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }) => {
   const [days, setDays] = useState(null);
   const [big, setBig] = useState(null);
@@ -167,7 +170,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
               {d.posted && <span className="px-2 py-0.5 rounded text-xs bg-purple-50 text-purple-700">Posted</span>}
             </div>
           </div>
-          <div><Chip label="Worked" value={hm(d.workedMinutes)} /></div>
+          <div><Chip label="Worked" value={hm(workedOf(d))} /></div>
           <div><Chip label="Late" value={hm(d.lateMinutes)} tone={d.lateMinutes ? 'red' : 'gray'} /></div>
           <div><Chip label="Undertime" value={hm(d.undertimeMinutes)} tone={d.undertimeMinutes ? 'red' : 'gray'} /></div>
           <div><Chip label="Overtime" value={hm(d.overtimeMinutes)} tone={d.overtimeMinutes ? 'green' : 'gray'} /></div>
@@ -263,7 +266,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
                 <div className="font-bold text-gray-900">Total</div>
                 <div className="text-xs text-gray-500">{dayWord(days.length)} recorded</div>
               </div>
-              <div><Chip label="Worked" value={hm(sumOf(days, 'workedMinutes'))} /></div>
+              <div><Chip label="Worked" value={hm(days.reduce((s, d) => s + workedOf(d), 0))} /></div>
               <div><Chip label="Late" value={hm(sumOf(days, 'lateMinutes'))} tone={sumOf(days, 'lateMinutes') ? 'red' : 'gray'} /></div>
               <div><Chip label="Undertime" value={hm(sumOf(days, 'undertimeMinutes'))} tone={sumOf(days, 'undertimeMinutes') ? 'red' : 'gray'} /></div>
               <div><Chip label="Overtime" value={hm(sumOf(days, 'overtimeMinutes'))} tone={sumOf(days, 'overtimeMinutes') ? 'green' : 'gray'} /></div>
