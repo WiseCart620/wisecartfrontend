@@ -9,6 +9,7 @@ import { inputCls, Field, Modal } from '../../components/payroll/Shared';
 import PageShell from '../../components/payroll/PageShell';
 import SearchableSelect from '../../components/payroll/SearchableSelect';
 import EmployeeAvatar from '../../components/payroll/EmployeeAvatar';
+import BiometricImport from '../../components/payroll/BiometricImport';
 
 const now = new Date();
 const pad = (n) => String(n).padStart(2, '0');
@@ -89,6 +90,13 @@ const halfDayText = (d) => {
   if (d.halfDay === 'PAID') return `Half day - Paid leave${name}`;
   return d.halfDayAuto ? 'Half day - Unpaid (automatic)' : `Half day - Unpaid leave${name}`;
 };
+const absentText = (d) => {
+  const name = d.absentLeave ? ` (${d.absentLeave})` : '';
+  if (d.absent === 'PAID') return `On leave - Paid${name}`;
+  if (d.absent === 'UNPAID') return `On leave - Unpaid${name}`;
+  if (d.absent === 'PENDING') return `Absent - leave${name} pending approval`;
+  return 'Absent - no leave filed (automatic unpaid)';
+};
 const Caret = ({ open, size = 16 }) => (
   <ChevronRight size={size} className={`text-gray-400 shrink-0 transition-transform ${open ? 'rotate-90' : ''}`} />
 );
@@ -132,40 +140,39 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
     } catch (e) { toast.error(e.message || 'Failed'); }
   };
 
-  const months = [];
-  (days || []).forEach(d => {
-    const mk = d.date.slice(0, 7);
-    const ck = cutoffKeyOf(d.date);
-    let m = months.find(x => x.key === mk);
-    if (!m) { m = { key: mk, cutoffs: [] }; months.push(m); }
-    let c = m.cutoffs.find(x => x.key === ck);
-    if (!c) { c = { key: ck, days: [] }; m.cutoffs.push(c); }
-    c.days.push(d);
-  });
+  const gridCls = 'grid grid-cols-[24px_minmax(240px,1fr)_repeat(5,92px)_280px] items-center gap-2 [&>div>span]:block [&>div>span]:text-center [&>div>span]:whitespace-nowrap';
 
   const renderDay = (d) => {
     const k = `d:${d.date}`;
-    const isOpen = openKeys.has(k);
+    const canOpen = !d.absent && d.visits.length > 0;
+    const isOpen = canOpen && openKeys.has(k);
+    const trav = travelOf(d).total;
     const rows = d.visits.map(v => ({ kind: 'visit', at: v.timeIn, v }));
     if (d.lunchStart) rows.push({ kind: 'lunch', at: d.lunchStart });
     travelOf(d).segments.forEach(s => rows.push({ kind: 'travel', at: s.from, s }));
     rows.sort((a, b) => String(a.at).localeCompare(String(b.at)));
     return (
-      <div key={d.date} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
-        <div role="button" tabIndex={0} onClick={() => flip(k)}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(k); } }}
-          className={`flex flex-wrap items-center gap-2 px-4 py-3 bg-gray-50 cursor-pointer select-none hover:bg-gray-100 ${isOpen ? 'border-b border-gray-200' : ''}`}>
-          <Caret open={isOpen} />
-          <span className="font-semibold text-gray-900 mr-2">{fmtDay(d.date)}</span>
-          <Chip label="Worked" value={hm(d.workedMinutes)} />
-          <Chip label="Late" value={hm(d.lateMinutes)} tone={d.lateMinutes ? 'red' : 'gray'} />
-          <Chip label="Undertime" value={hm(d.undertimeMinutes)} tone={d.undertimeMinutes ? 'red' : 'gray'} />
-          <Chip label="Overtime" value={hm(d.overtimeMinutes)} tone={d.overtimeMinutes ? 'green' : 'gray'} />
-          {travelOf(d).total > 0 && <Chip label="Travel" value={hm(travelOf(d).total)} />}
-          {d.halfDay && <span className={`px-2 py-1 rounded text-xs font-medium ${d.halfDay === 'PAID' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{halfDayText(d)}</span>}
-          {d.incomplete && <span className="px-2 py-1 rounded text-xs bg-amber-50 text-amber-700">Missing time-out</span>}
-          {d.posted && <span className="px-2 py-1 rounded text-xs bg-purple-50 text-purple-700">Posted</span>}
-          <div className="ml-auto flex items-center gap-2">
+      <div key={d.date} className="border-b border-gray-200 last:border-b-0 bg-white">
+        <div role={canOpen ? 'button' : undefined} tabIndex={canOpen ? 0 : undefined}
+          onClick={canOpen ? () => flip(k) : undefined}
+          onKeyDown={canOpen ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(k); } } : undefined}
+          className={`${gridCls} px-4 py-3 select-none ${canOpen ? 'cursor-pointer hover:bg-gray-50' : ''} ${isOpen ? 'bg-gray-50' : ''}`}>
+          <div>{canOpen && <Caret open={isOpen} />}</div>
+          <div>
+            <div className="font-semibold text-gray-900">{fmtDay(d.date)}</div>
+            <div className="flex flex-wrap gap-1 mt-1 empty:hidden">
+              {d.halfDay && <span className={`px-2 py-0.5 rounded text-xs font-medium ${d.halfDay === 'PAID' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{halfDayText(d)}</span>}
+              {d.absent && <span className={`px-2 py-0.5 rounded text-xs font-medium ${d.absent === 'PAID' ? 'bg-green-50 text-green-700' : d.absent === 'PENDING' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'}`}>{absentText(d)}</span>}
+              {d.incomplete && <span className="px-2 py-0.5 rounded text-xs bg-amber-50 text-amber-700">Missing time-out</span>}
+              {d.posted && <span className="px-2 py-0.5 rounded text-xs bg-purple-50 text-purple-700">Posted</span>}
+            </div>
+          </div>
+          <div><Chip label="Worked" value={hm(d.workedMinutes)} /></div>
+          <div><Chip label="Late" value={hm(d.lateMinutes)} tone={d.lateMinutes ? 'red' : 'gray'} /></div>
+          <div><Chip label="Undertime" value={hm(d.undertimeMinutes)} tone={d.undertimeMinutes ? 'red' : 'gray'} /></div>
+          <div><Chip label="Overtime" value={hm(d.overtimeMinutes)} tone={d.overtimeMinutes ? 'green' : 'gray'} /></div>
+          <div><Chip label="Travel" value={hm(trav)} /></div>
+          <div className="flex items-center justify-end gap-2 flex-nowrap whitespace-nowrap">
             {d.sheetPath && (
               <button className="text-xs text-orange-600 hover:underline inline-flex items-center gap-1"
                 onClick={async (e) => {
@@ -184,42 +191,48 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
           </div>
         </div>
         {isOpen && (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] text-sm">
+          <div className="border-t border-gray-200 bg-white px-4 pb-3 overflow-x-auto">
+            <table className="w-full min-w-[900px] table-fixed text-sm">
+              <colgroup>
+                <col style={{ width: '20%' }} /><col style={{ width: '17%' }} />
+                <col style={{ width: '9%' }} /><col style={{ width: '9%' }} /><col style={{ width: '8%' }} />
+                <col style={{ width: '12%' }} /><col style={{ width: '11%' }} />
+                <col style={{ width: '7%' }} /><col style={{ width: '7%' }} />
+              </colgroup>
               <thead>
                 <tr className="text-left text-xs text-gray-500 uppercase">
-                  <th className="px-4 py-2">Store / Place</th><th className="px-4 py-2">Purpose</th>
-                  <th className="px-4 py-2">In</th><th className="px-4 py-2">Out</th><th className="px-4 py-2">Time</th>
-                  <th className="px-4 py-2">Personnel</th><th className="px-4 py-2">Signature</th>
-                  <th className="px-4 py-2">Photo</th><th className="px-4 py-2">Location</th>
+                  <th className="px-3 py-2">Store / Place</th><th className="px-3 py-2">Purpose</th>
+                  <th className="px-3 py-2">In</th><th className="px-3 py-2">Out</th><th className="px-3 py-2">Time</th>
+                  <th className="px-3 py-2">Personnel</th><th className="px-3 py-2">Signature</th>
+                  <th className="px-3 py-2">Photo</th><th className="px-3 py-2">Location</th>
                 </tr>
               </thead>
               <tbody className="[&>tr>td]:border-t [&>tr>td]:border-gray-100">
                 {rows.map((r, i) => r.kind === 'travel' ? (
                   <tr key={'t' + i} className="bg-sky-50/60">
-                    <td className="px-4 py-2 font-medium text-sky-800" colSpan={2}>Travel to {r.s.toPlace || 'next store'}</td>
-                    <td className="px-4 py-2">{t12(r.s.from)}</td>
-                    <td className="px-4 py-2">{t12(r.s.to)}</td>
-                    <td className="px-4 py-2 font-medium text-sky-800" colSpan={5}>{hm(r.s.mins)}</td>
+                    <td className="px-3 py-2 font-medium text-sky-800" colSpan={2}>Travel to {r.s.toPlace || 'next store'}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{t12(r.s.from)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{t12(r.s.to)}</td>
+                    <td className="px-3 py-2 font-medium text-sky-800" colSpan={5}>{hm(r.s.mins)}</td>
                   </tr>
                 ) : r.kind === 'lunch' ? (
                   <tr key={'l' + i} className="bg-amber-50/50">
-                    <td className="px-4 py-2 font-medium text-amber-800" colSpan={2}>Lunch Break</td>
-                    <td className="px-4 py-2">{t12(d.lunchStart)}</td>
-                    <td className="px-4 py-2">{t12(d.lunchEnd)}</td>
-                    <td className="px-4 py-2" colSpan={5}>{d.lunchEnd ? hm(dur(d.lunchStart, d.lunchEnd)) : ''}</td>
+                    <td className="px-3 py-2 font-medium text-amber-800" colSpan={2}>Lunch Break</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{t12(d.lunchStart)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{t12(d.lunchEnd)}</td>
+                    <td className="px-3 py-2" colSpan={5}>{d.lunchEnd ? hm(dur(d.lunchStart, d.lunchEnd)) : ''}</td>
                   </tr>
                 ) : (
                   <tr key={r.v.id}>
-                    <td className="px-4 py-2 font-medium text-gray-900">{r.v.place || '—'}</td>
-                    <td className="px-4 py-2 text-gray-600 max-w-[200px] truncate" title={r.v.purpose}>{r.v.purpose || '—'}</td>
-                    <td className="px-4 py-2 whitespace-nowrap">{t12(r.v.timeIn)}</td>
-                    <td className="px-4 py-2 whitespace-nowrap">{r.v.timeOut ? t12(r.v.timeOut) : <span className="text-amber-600">—</span>}</td>
-                    <td className="px-4 py-2 whitespace-nowrap">{r.v.timeOut ? hm(dur(r.v.timeIn, r.v.timeOut)) : ''}</td>
-                    <td className="px-4 py-2">{r.v.validatedBy || '—'}</td>
-                    <td className="px-4 py-2"><DtrImage path={r.v.signaturePath} className="h-10 w-24 object-contain bg-white border border-gray-200 rounded cursor-zoom-in" onClick={setBig} /></td>
-                    <td className="px-4 py-2"><DtrImage path={r.v.photoPath} className="h-10 w-10 object-cover rounded cursor-zoom-in" onClick={setBig} /></td>
-                    <td className="px-4 py-2">
+                    <td className="px-3 py-2 font-medium text-gray-900 truncate" title={r.v.place}>{r.v.place || '—'}</td>
+                    <td className="px-3 py-2 text-gray-600 truncate" title={r.v.purpose}>{r.v.purpose || '—'}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{t12(r.v.timeIn)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{r.v.timeOut ? t12(r.v.timeOut) : <span className="text-amber-600">—</span>}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{r.v.timeOut ? hm(dur(r.v.timeIn, r.v.timeOut)) : ''}</td>
+                    <td className="px-3 py-2 truncate">{r.v.validatedBy || '—'}</td>
+                    <td className="px-3 py-2"><DtrImage path={r.v.signaturePath} className="h-10 w-24 object-contain bg-white border border-gray-200 rounded cursor-zoom-in" onClick={setBig} /></td>
+                    <td className="px-3 py-2"><DtrImage path={r.v.photoPath} className="h-10 w-10 object-cover rounded cursor-zoom-in" onClick={setBig} /></td>
+                    <td className="px-3 py-2">
                       {r.v.latitude != null ? (
                         <a className="inline-flex items-center gap-1 text-orange-600 hover:underline" target="_blank" rel="noreferrer"
                           href={`https://www.google.com/maps?q=${r.v.latitude},${r.v.longitude}`}>
@@ -238,49 +251,27 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
   };
 
   return (
-    <Modal title={`DTR · ${emp.employeeName}`} subtitle={`${from} to ${to}`} onClose={onClose} maxW="max-w-6xl">
+    <Modal title={`DTR · ${emp.employeeName}`} subtitle={`${from} to ${to}`} onClose={onClose} maxW="max-w-7xl">
       {!days ? <p className="text-gray-500">Loading...</p> : days.length === 0 ? (
         <p className="text-gray-500 text-center py-8">No records in this period</p>
       ) : (
-        <div className="space-y-4">
-          {months.map(m => {
-            const mk = `m:${m.key}`;
-            const mOpen = openKeys.has(mk);
-            const mDays = m.cutoffs.flatMap(c => c.days);
-            return (
-              <div key={m.key} className="border border-gray-200 rounded-2xl overflow-hidden">
-                <div role="button" tabIndex={0} onClick={() => flip(mk)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(mk); } }}
-                  className="flex flex-wrap items-center gap-3 px-4 py-3.5 bg-white cursor-pointer select-none hover:bg-gray-50">
-                  <Caret open={mOpen} size={18} />
-                  <span className="font-bold text-gray-900">{monthLabel(m.key)}</span>
-                  <span className="text-xs text-gray-500">{dayWord(mDays.length)} recorded</span>
-                  <div className="ml-auto"><Totals list={mDays} /></div>
-                </div>
-                {mOpen && (
-                  <div className="border-t border-gray-200 bg-gray-50 p-3 space-y-3">
-                    {m.cutoffs.map(c => {
-                      const ck = `c:${c.key}`;
-                      const cOpen = openKeys.has(ck);
-                      return (
-                        <div key={c.key} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
-                          <div role="button" tabIndex={0} onClick={() => flip(ck)}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(ck); } }}
-                            className="flex flex-wrap items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-gray-50">
-                            <Caret open={cOpen} />
-                            <span className="font-semibold text-gray-900">{cutoffLabel(c.key)}</span>
-                            <span className="text-xs text-gray-500">{dayWord(c.days.length)} recorded</span>
-                            <div className="ml-auto"><Totals list={c.days} /></div>
-                          </div>
-                          {cOpen && <div className="border-t border-gray-200 bg-gray-50 p-3 space-y-3">{c.days.map(renderDay)}</div>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+        <div className="overflow-x-auto">
+          <div className="min-w-[1100px] border border-gray-200 rounded-xl overflow-hidden">
+            <div className={`${gridCls} px-4 py-3 bg-gray-50 border-b-2 border-gray-200`}>
+              <div />
+              <div>
+                <div className="font-bold text-gray-900">Total</div>
+                <div className="text-xs text-gray-500">{dayWord(days.length)} recorded</div>
               </div>
-            );
-          })}
+              <div><Chip label="Worked" value={hm(sumOf(days, 'workedMinutes'))} /></div>
+              <div><Chip label="Late" value={hm(sumOf(days, 'lateMinutes'))} tone={sumOf(days, 'lateMinutes') ? 'red' : 'gray'} /></div>
+              <div><Chip label="Undertime" value={hm(sumOf(days, 'undertimeMinutes'))} tone={sumOf(days, 'undertimeMinutes') ? 'red' : 'gray'} /></div>
+              <div><Chip label="Overtime" value={hm(sumOf(days, 'overtimeMinutes'))} tone={sumOf(days, 'overtimeMinutes') ? 'green' : 'gray'} /></div>
+              <div><Chip label="Travel" value={hm(days.reduce((s, d) => s + travelOf(d).total, 0))} /></div>
+              <div />
+            </div>
+            {days.map(renderDay)}
+          </div>
         </div>
       )}
       {big && (
@@ -392,6 +383,7 @@ const DtrInner = () => {
   const [loading, setLoading] = useState(true);
   const [viewEmp, setViewEmp] = useState(null);
   const [editor, setEditor] = useState(null);
+  const [showBio, setShowBio] = useState(false);
 
   const { from, to } = rangeFor(month, year, cutoff);
 
@@ -439,6 +431,7 @@ const DtrInner = () => {
           <div className="flex-1 min-w-[200px]"><label className="block text-xs font-medium text-gray-700 mb-1">Employee</label>
             <SearchableSelect allLabel="All employees" allowCustom placeholder="All employees" searchPlaceholder="Search employee..."
               value={name} options={rows.map(r => ({ value: r.employeeName, label: r.employeeName }))} onChange={(v) => setName(v || '')} /></div>
+          {canEdit && (<button onClick={() => setShowBio(true)} className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded text-sm font-medium hover:bg-gray-100"><Upload size={16} /> Import Biometrics</button>)}
           <label className="flex items-center gap-2 text-sm text-gray-700 pb-2 cursor-pointer">
             <input type="checkbox" className="accent-orange-600" checked={onlyField} onChange={(e) => setOnlyField(e.target.checked)} /> Field workers only
           </label>
@@ -481,6 +474,7 @@ const DtrInner = () => {
                               <div className="text-xs font-normal text-gray-500">
                                 {r.daysRecorded} day(s) recorded
                                 {r.incompleteDays > 0 && <span className="text-amber-600"> · {r.incompleteDays} missing time-out</span>}
+                                {r.noLeaveDays > 0 && <span className="text-red-600"> · {r.noLeaveDays} absent, no leave filed</span>}
                               </div>
                             </div>
                           </div>
@@ -512,6 +506,7 @@ const DtrInner = () => {
         Basic = scheduled hours (weekdays up to today). Total Manhour = Basic − Late − Undertime + Overtime − Unpaid Leave. DTR Hours = hours really worked in the app records (first Time in to last Time out, minus lunch). Blue rows are field workers.
       </p>
 
+      {showBio && <BiometricImport onClose={() => setShowBio(false)} onDone={() => { setShowBio(false); load(); }} />}
       {viewEmp && <DtrView emp={viewEmp} from={from} to={to} canEdit={canEdit} canPost={canPost} onChanged={load}
         onEdit={(d) => setEditor({ emp: viewEmp, date: d })} onClose={() => setViewEmp(null)} />}
       {editor && <DayEditor emp={editor.emp} date={editor.date} onClose={() => setEditor(null)}

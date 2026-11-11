@@ -146,7 +146,7 @@ const DeliveryTable = ({
       const itemVariationId = item.variation?.id ?? item.variationId ?? null;
       return productFilters.some(pf =>
         Number(pf.productId) === Number(itemProductId) &&
-        (pf.variationId == null ? null : Number(pf.variationId)) === (itemVariationId == null ? null : Number(itemVariationId))
+        (pf.variationId == null || Number(pf.variationId) === Number(itemVariationId))
       );
     });
     const qty = matchingItems.reduce((sum, it) => sum + (it.preparedQty || it.quantity || 0), 0);

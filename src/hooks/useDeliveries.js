@@ -23,8 +23,7 @@ const buildDeliveryParams = (filterData, page = 0, size = 10) => {
   }
   if (filterData?.productFilters?.length > 0) {
     filterData.productFilters.forEach(pf => {
-      if (pf.productId) params.append('productIds', pf.productId);
-      if (pf.variationId) params.append('variationIds', pf.variationId);
+      params.append('productKeys', `${pf.productId}:${pf.variationId ?? ''}`);
     });
   }
   if (filterData?.startDate) params.append('startDate', filterData.startDate);
