@@ -90,7 +90,7 @@ const halfDayText = (d) => {
   if (d.halfDay === 'PAID') return `Half day - Paid leave${name}`;
   return d.halfDayAuto ? 'Half day - Unpaid (automatic)' : `Half day - Unpaid leave${name}`;
 };
-const absentText = (d) => {
+const absentText = (d) => { if (d.absent === 'HOLIDAY') return `Holiday - Paid${d.absentLeave ? ` (${d.absentLeave})` : ''}`;
   const name = d.absentLeave ? ` (${d.absentLeave})` : '';
   if (d.absent === 'PAID') return `On leave - Paid${name}`;
   if (d.absent === 'UNPAID') return `On leave - Unpaid${name}`;
@@ -112,7 +112,7 @@ const Totals = ({ list }) => (
 );
 
 // paid leave counts as a full 8-hour day of work
-const workedOf = (d) => (d.absent === 'PAID' ? 480 : d.halfDay === 'PAID' ? d.workedMinutes + 240 : d.workedMinutes);
+const workedOf = (d) => ((d.absent === 'PAID' || d.absent === 'HOLIDAY') ? 480 : d.halfDay === 'PAID' ? d.workedMinutes + 240 : d.workedMinutes);
 
 const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }) => {
   const [days, setDays] = useState(null);
@@ -165,7 +165,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
             <div className="font-semibold text-gray-900">{fmtDay(d.date)}</div>
             <div className="flex flex-wrap gap-1 mt-1 empty:hidden">
               {d.halfDay && <span className={`px-2 py-0.5 rounded text-xs font-medium ${d.halfDay === 'PAID' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{halfDayText(d)}</span>}
-              {d.absent && <span className={`px-2 py-0.5 rounded text-xs font-medium ${d.absent === 'PAID' ? 'bg-green-50 text-green-700' : d.absent === 'PENDING' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'}`}>{absentText(d)}</span>}
+              {d.absent && <span className={`px-2 py-0.5 rounded text-xs font-medium ${(d.absent === 'PAID' || d.absent === 'HOLIDAY') ? 'bg-green-50 text-green-700' : d.absent === 'PENDING' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'}`}>{absentText(d)}</span>}
               {d.incomplete && <span className="px-2 py-0.5 rounded text-xs bg-amber-50 text-amber-700">Missing time-out</span>}
               {d.posted && <span className="px-2 py-0.5 rounded text-xs bg-purple-50 text-purple-700">Posted</span>}
             </div>
@@ -190,6 +190,8 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
                 onClick={(e) => { e.stopPropagation(); postDay(d); }}
                 className="px-3 py-1 text-xs border border-orange-300 text-orange-700 rounded hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed">Post to Pay Entries</button>
             )}
+            {canEdit && d.absent === 'AUTO' && <button onClick={(e) => { e.stopPropagation(); markHoliday(d); }} className="px-3 py-1 text-xs border border-green-300 text-green-700 rounded hover:bg-green-50">Mark as holiday</button>}
+            {canEdit && d.absent === 'HOLIDAY' && <button onClick={(e) => { e.stopPropagation(); unmarkHoliday(d); }} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Unmark holiday</button>}
             {canEdit && <button onClick={(e) => { e.stopPropagation(); onEdit(d.date); }} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Edit day</button>}
           </div>
         </div>
