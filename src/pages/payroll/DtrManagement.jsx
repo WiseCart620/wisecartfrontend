@@ -31,6 +31,8 @@ const t12 = (ldt) => {
   const [h, m] = ldt.slice(11, 16).split(':').map(Number);
   return `${h % 12 || 12}:${pad(m)} ${h >= 12 ? 'PM' : 'AM'}`;
 };
+// office (biometric) punches after 6:00 PM are counted only until 6:00 PM
+const capOut = (v) => (v.source === 'BIO' && v.timeOut && v.timeOut.slice(11, 16) > '18:00' ? v.timeOut.slice(0, 11) + '18:00:00' : v.timeOut);
 const hhmm = (ldt) => (ldt ? ldt.slice(11, 16) : '');
 const dur = (a, b) => (a && b ? Math.max(0, Math.round((new Date(b) - new Date(a)) / 60000)) : null);
 const fmtDay = (d) => new Date(d + 'T00:00:00').toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
@@ -233,7 +235,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
                     <td className="px-3 py-2 text-gray-600 truncate" title={r.v.purpose}>{r.v.purpose || '—'}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{t12(r.v.timeIn)}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{r.v.timeOut ? t12(r.v.timeOut) : <span className="text-amber-600">—</span>}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{r.v.timeOut ? hm(dur(r.v.timeIn, r.v.timeOut)) : ''}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{r.v.timeOut ? hm(dur(r.v.timeIn, capOut(r.v))) : ''}</td>
                     <td className="px-3 py-2 truncate">{r.v.validatedBy || '—'}</td>
                     <td className="px-3 py-2"><DtrImage path={r.v.signaturePath} className="h-10 w-24 object-contain bg-white border border-gray-200 rounded cursor-zoom-in" onClick={setBig} /></td>
                     <td className="px-3 py-2"><DtrImage path={r.v.photoPath} className="h-10 w-10 object-cover rounded cursor-zoom-in" onClick={setBig} /></td>
