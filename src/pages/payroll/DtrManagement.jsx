@@ -154,7 +154,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
     } catch (e) { toast.error(e.message || 'Failed'); }
   };
 
-  const gridCls = 'grid grid-cols-[24px_minmax(240px,1fr)_repeat(5,92px)_280px] items-center gap-2 [&>div>span]:block [&>div>span]:text-center [&>div>span]:whitespace-nowrap';
+  const gridCls = 'grid grid-cols-[20px_minmax(0,1fr)_repeat(5,84px)_330px] items-center gap-2 [&>div>span]:block [&>div>span]:text-center [&>div>span]:whitespace-nowrap';
 
   const renderDay = (d) => {
     const k = `d:${d.date}`;
@@ -207,13 +207,13 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
           </div>
         </div>
         {isOpen && (
-          <div className="border-t border-gray-200 bg-white px-4 pb-3 overflow-x-auto">
-            <table className="w-full min-w-[1000px] table-fixed text-sm">
+          <div className="border-t border-gray-200 bg-white px-4 pb-3">
+            <table className="w-full table-fixed text-sm">
               <colgroup>
-                <col style={{ width: '20%' }} /><col style={{ width: '17%' }} />
-                <col style={{ width: '9%' }} /><col style={{ width: '9%' }} /><col style={{ width: '8%' }} />
-                <col style={{ width: '12%' }} /><col style={{ width: '11%' }} />
-                <col style={{ width: '7%' }} /><col style={{ width: '7%' }} />
+                <col style={{ width: '18%' }} /><col style={{ width: '14%' }} />
+                <col style={{ width: '8%' }} /><col style={{ width: '8%' }} /><col style={{ width: '7%' }} />
+                <col style={{ width: '9%' }} /><col style={{ width: '11%' }} />
+                <col style={{ width: '10%' }} /><col style={{ width: '7%' }} /><col style={{ width: '8%' }} />
               </colgroup>
               <thead>
                 <tr className="text-left text-xs text-gray-500 uppercase">
@@ -272,8 +272,8 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
       {!days ? <p className="text-gray-500">Loading...</p> : days.length === 0 ? (
         <p className="text-gray-500 text-center py-8">No records in this period</p>
       ) : (
-        <div className="overflow-x-auto">
-          <div className="min-w-[1100px] border border-gray-200 rounded-xl overflow-hidden">
+        <div>
+          <div className="border border-gray-200 rounded-xl overflow-hidden">
             <div className={`${gridCls} px-4 py-3 bg-gray-50 border-b-2 border-gray-200`}>
               <div />
               <div>

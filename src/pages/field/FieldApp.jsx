@@ -463,7 +463,7 @@ const FieldApp = () => {
     const lunchEndVisit = lunchStarted ? day.visits.find(v => new Date(v.timeIn) >= new Date(day.lunchStart)) : null;
     const lunchLeft = lunchMin - (lunchStarted ? Math.floor((tick - new Date(day.lunchStart)) / 60000) : 0);
     const onLunch = lunchStarted && !lunchEndVisit;
-    const showLunch = !open && !lunchStarted && phHour() >= 12;
+    const showLunch = !open && !lunchStarted && phHour() < 13;
     const mins = (v) => Math.max(0, Math.round(((v.timeOut ? +new Date(v.timeOut) : tick) - +new Date(v.timeIn)) / 60000));
     const totalMins = day.visits.reduce((s, v) => s + mins(v), 0);
     const todayGroup = { date: phDate(), visits: day.visits, lunchStart: day.lunchStart, isToday: true };
