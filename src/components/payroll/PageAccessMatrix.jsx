@@ -8,7 +8,7 @@ const PAGES = [
       { label: 'Pay Entries', tab: 'tab_ot', actions: [['ot_edit', 'Add / Edit / Delete']] },
       { label: 'Reimbursements', tab: 'tab_rb', actions: [['rb_edit', 'Add / Cancel / Delete']] },
       { label: 'Disbursement', tab: 'tab_db', actions: [['db_manage', 'Generate batch']] },
-      { label: 'Annual Monitoring', tab: 'tab_an', actions: [] },
+      { label: 'BIR Reports (1601-C, 1604-C, QB)', tab: 'tab_an', actions: [] },
     ],
   },
   {

@@ -1,0 +1,413 @@
+// Builds the three BIR / QuickBooks workbooks with the same layout, headers, formulas and styles
+// as the company templates, filled with payroll data from the system.
+// ExcelJS is passed in (loaded lazily by the page) so this file has no hard dependency.
+
+const NUM = '_-* #,##0.00_-;\\-* #,##0.00_-;_-* "-"??_-;_-@_-';
+const NUM2 = '_(* #,##0.00_);_(* \\(#,##0.00\\);_(* "-"??_);_(@_)';
+const thin = { style: 'thin' };
+const medium = { style: 'medium' };
+const THIN_BOX = { top: thin, left: thin, bottom: thin, right: thin };
+const MED_BOX = { top: medium, left: medium, bottom: medium, right: medium };
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
+  'September', 'October', 'November', 'December'];
+const MONTH_SHEETS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY.', 'JUNE', 'JULY', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+const n = (v) => Number(v || 0);
+const r2 = (v) => Math.round(n(v) * 100) / 100;
+const col = (i) => { let s = ''; let x = i; while (x > 0) { const m = (x - 1) % 26; s = String.fromCharCode(65 + m) + s; x = Math.floor((x - 1) / 26); } return s; };
+const up = (s) => String(s || '').trim().toUpperCase();
+const cap = (s) => String(s || '').trim().toLowerCase().replace(/(^|[\s.'-])([a-z])/g, (m, a, b) => a + b.toUpperCase());
+
+// "JONATHAN L. ELANO"
+const shortName = (r) => {
+  const mid = String(r.middleName || '').trim();
+  const initial = mid ? ` ${mid[0].toUpperCase()}.` : '';
+  return `${up(r.firstName)}${initial} ${up(r.lastName)}`.replace(/\s+/g, ' ').trim();
+};
+// "ELANO, JONATHAN LUMBRES"
+const lastFirst = (r) => `${up(r.lastName)}, ${up(r.firstName)}${r.middleName ? ' ' + up(r.middleName) : ''}`.trim();
+// "Elano, Jonathan"
+const qbName = (r) => `${cap(r.lastName)}, ${cap(r.firstName)}`;
+
+const styleCell = (c, o = {}) => {
+  c.font = { name: o.font || 'Arial', size: o.size || 8, bold: !!o.bold, color: o.color ? { argb: o.color } : undefined };
+  if (o.fill) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: o.fill } };
+  if (o.border) c.border = o.border;
+  if (o.align || o.wrap || o.valign) c.alignment = { horizontal: o.align, vertical: o.valign, wrapText: !!o.wrap };
+  if (o.fmt) c.numFmt = o.fmt;
+};
+
+// ====================================================================== 1601-C
+const HEAD_1601 = ['Basic Pay (Regular Rate, either Monthly or MWE)', 'Overtime Pay', 'Holiday Pay',
+  'Night Shift Differential', 'Hazard Pay', 'Absences and Undertime', 'Miscalculation Adjustments', 'Incentives',
+  '13th Month Pay (Item 17)', 'De Minimis (Item 18)', 'Total Compensation (Item 14)', 'SSS -EE ', 'PHIC -EE', 'HDMF -EE',
+  'Statutory Minimum Wage (Item 15)', 'Holiday, Overtime, Night Shift, Hazard (MWE) (Item 16)',
+  'Total Mandatory Contributions (Item 19)', 'Non-Taxable Compensation (Item 21)', 'Taxable Compensation (Item 22)',
+  'Taxable Compensation but not Subject to Wtax (Item 23)', 'Net Taxable Compensation (Item 24)', 'Withholding Tax', 'NET PAY'];
+const WIDTH_1601 = { A: 2.6, B: 4.3, C: 23.1, D: 14.9, E: 8.4, F: 16.3, G: 11.6, H: 11.9, I: 12.4, J: 12.6, K: 13.1, L: 13.3, M: 11.5, N: 13.9, O: 13.3, P: 14.6, Q: 12.1, R: 12, S: 10.9, T: 12.9, U: 15.4, V: 15, W: 13.3, X: 12.4, Y: 15.4, Z: 13.9, AA: 13.1, AB: 11.6 };
+
+const taxFormula = (r, last) => `IF(Z${r}=0,0,((Z${r}-VLOOKUP(Z${r},TAX!$B$4:$E$${last},1))*VLOOKUP(Z${r},TAX!$B$4:$E$${last},3))+VLOOKUP(Z${r},TAX!$B$4:$E$${last},4))`;
+
+const fill1601 = (ws, monthIdx, rows, tax) => {
+  Object.entries(WIDTH_1601).forEach(([k, w]) => { ws.getColumn(k).width = w; });
+  ws.mergeCells('B2:B3'); ws.mergeCells('C2:C3'); ws.mergeCells('D2:D3'); ws.mergeCells('E2:E3'); ws.mergeCells('F2:AB2');
+  ws.getCell('C2').value = "Employee's Name";
+  ws.getCell('D2').value = "Taxpayer's Identification Number";
+  ws.getCell('E2').value = 'MWE or NOT';
+  ws.getCell('F2').value = MONTHS[monthIdx].toUpperCase();
+  HEAD_1601.forEach((h, i) => { ws.getCell(3, 6 + i).value = h; });
+  ws.getRow(3).height = 45;
+  for (let c = 2; c <= 28; c++) {
+    [2, 3].forEach((r) => styleCell(ws.getCell(r, c), { bold: true, align: 'center', valign: 'middle', wrap: true, border: THIN_BOX, fmt: NUM }));
+  }
+  styleCell(ws.getCell('F2'), { bold: true, align: 'center', valign: 'middle', wrap: true, border: THIN_BOX, fill: 'FFF4B084' });
+
+  const last = Math.max(53, 3 + rows.length);
+  for (let r = 4; r <= last; r++) {
+    const d = rows[r - 4];
+    ws.getCell(r, 2).value = r === 4 ? 1 : { formula: `B${r - 1}+1` };
+    if (d) {
+      ws.getCell(r, 3).value = shortName(d);
+      ws.getCell(r, 4).value = d.tin || null;
+      ws.getCell(r, 5).value = d.mwe ? 'MWE' : 'NOT';
+      const put = (c, v) => { if (n(v)) ws.getCell(r, c).value = r2(v); };
+      put(6, d.basic); put(7, d.overtime); put(8, d.holiday); put(9, d.night); put(10, d.hazard);
+      put(11, -n(d.absUnder)); put(13, d.incentives); put(14, d.thirteenth); put(15, d.deMinimis);
+      put(17, d.sss); put(18, d.phic); put(19, d.hdmf);
+    }
+    ws.getCell(r, 16).value = { formula: `SUM(F${r}:O${r})` };
+    ws.getCell(r, 20).value = { formula: `IF(E${r}="MWE",F${r},0)` };
+    ws.getCell(r, 21).value = { formula: `IF(E${r}="MWE",SUM(G${r}:M${r}),0)` };
+    ws.getCell(r, 22).value = { formula: `IF(E${r}="NOT",SUM(Q${r}:S${r}),0)` };
+    ws.getCell(r, 23).value = { formula: `T${r}+U${r}+V${r}+N${r}+O${r}` };
+    ws.getCell(r, 24).value = { formula: `P${r}-W${r}` };
+    ws.getCell(r, 25).value = { formula: `IF(E${r}="NOT",IF(X${r}<TAX!$G$4,X${r},0),0)` };
+    ws.getCell(r, 26).value = { formula: `IF(Y${r}=0,X${r},0)` };
+    ws.getCell(r, 27).value = (d ? r2(d.wht) : { formula: taxFormula(r, tax.last) });
+    ws.getCell(r, 28).value = { formula: `P${r}-Q${r}-R${r}-S${r}-AA${r}` };
+    for (let c = 2; c <= 28; c++) {
+      styleCell(ws.getCell(r, c), { fmt: NUM, align: c === 3 ? 'left' : 'center', border: c <= 5 ? THIN_BOX : { right: thin } });
+    }
+    ws.getCell(r, 4).numFmt = '@';
+  }
+  const t = last + 1;
+  ws.getCell(t, 2).value = 'TOTAL';
+  for (let c = 6; c <= 28; c++) ws.getCell(t, c).value = { formula: `SUM(${col(c)}4:${col(c)}${last})` };
+  for (let c = 2; c <= 28; c++) styleCell(ws.getCell(t, c), { bold: true, fill: 'FFA9D08E', border: THIN_BOX, fmt: NUM });
+  ws.views = [{ state: 'frozen', xSplit: 5, ySplit: 3 }];
+  return t;
+};
+
+// The withholding tax table comes from the BIR settings (database). Nothing is fixed here.
+const taxSheet = (wb, rows) => {
+  const tax = wb.addWorksheet('TAX');
+  ['Lower Bracket', 'Upper Bracket', 'Tax on Excess', 'Prescribed Minimum Tax'].forEach((h, i) => {
+    const c = tax.getCell(3, 2 + i); c.value = h; styleCell(c, { bold: true });
+  });
+  rows.forEach((t, i) => {
+    const r = 4 + i;
+    const next = rows[i + 1];
+    tax.getCell(r, 2).value = n(t.lower);
+    if (next) tax.getCell(r, 3).value = r2(n(next.lower) - 0.01);
+    tax.getCell(r, 4).value = n(t.rate);
+    tax.getCell(r, 5).value = n(t.fixed);
+    [2, 3, 5].forEach((c) => { tax.getCell(r, c).numFmt = NUM; });
+    tax.getCell(r, 4).numFmt = '0.00';
+  });
+  const firstTaxed = rows.findIndex((t) => n(t.rate) > 0);
+  tax.getCell('G3').value = 'Not subject to withholding below';
+  styleCell(tax.getCell('G3'), { bold: true });
+  tax.getCell('G4').value = firstTaxed >= 0 ? { formula: `B${4 + firstTaxed}` } : 0;
+  tax.getCell('G4').numFmt = NUM;
+  [9.1, 14.1, 13.3, 12.1, 22, 9.1, 30].forEach((w, i) => { tax.getColumn(i + 1).width = w; });
+};
+export const build1601c = (ExcelJS, data) => {
+  const wb = new ExcelJS.Workbook();
+  const taxRows = ((data.settings || {}).taxTable) || [];
+  if (!taxRows.length) throw new Error('Set the withholding tax table in BIR settings first');
+  const taxInfo = { last: 3 + taxRows.length };
+  const totals = [];
+  for (let m = 0; m < 12; m++) {
+    const ws = wb.addWorksheet(MONTH_SHEETS[m]);
+    const rows = ((data.months || [])[m] || {}).rows || [];
+    totals.push(fill1601(ws, m, rows, taxInfo));
+  }
+  // Adjustments: monthly withholding tax comes straight from each month sheet
+  const adj = wb.addWorksheet('Adjustments');
+  ['Months', 'Withholding Tax', 'Date Paid', 'Payment Reference Number', 'Overpaid from previous month', 'Paid Amount', 'Overpaid', 'Adjustments']
+    .forEach((h, i) => { const c = adj.getCell(1, i + 1); c.value = h; styleCell(c, { bold: true }); });
+  for (let m = 0; m < 12; m++) {
+    const r = m + 2;
+    adj.getCell(r, 1).value = MONTHS[m];
+    adj.getCell(r, 2).value = { formula: `'${MONTH_SHEETS[m]}'!AA${totals[m]}` };
+    if (m > 0) adj.getCell(r, 5).value = { formula: `G${r - 1}` };
+    adj.getCell(r, 7).value = { formula: `SUM(E${r}:F${r})-B${r}` };
+    adj.getCell(r, 3).numFmt = 'm/d/yyyy';
+    [2, 5, 6, 7].forEach((c) => { adj.getCell(r, c).numFmt = NUM; });
+  }
+  adj.getCell(14, 1).value = 'TOTAL';
+  adj.getCell(14, 2).value = { formula: 'SUM(B2:B13)' };
+  adj.getCell(14, 6).value = { formula: 'SUM(F2:F13)' };
+  adj.getCell(14, 2).numFmt = NUM; adj.getCell(14, 6).numFmt = NUM;
+  [11.7, 15, 11.7, 11.9, 13.7, 13, 13.1, 13.6].forEach((w, i) => { adj.getColumn(i + 1).width = w; });
+  adj.getCell('A16').value = 'Fill in Date Paid, Payment Reference Number and Paid Amount after each remittance. Withholding Tax is taken from the monthly sheets.';
+  adj.getCell('A16').font = { name: 'Arial', size: 8, italic: true };
+
+  taxSheet(wb, taxRows);
+  return wb;
+};
+
+// ====================================================================== 1604-C
+const HEAD_1604 = ['No.', 'Employee Name', 'TIN', 'Basic Salary (Total in a year)', '13th Month', 'De Minimis Benefits',
+  'SSS,HDMF,PHIC Contribution', 'Taxable Compensation', 'Withholding Tax', 'Region', 'Current Employment Status',
+  'Employment Period', 'Date of Birth', 'Address'];
+const mmmdd = (iso) => {
+  const d = new Date(`${iso}T00:00:00`);
+  return `${d.toLocaleDateString('en-US', { month: 'short' })} ${String(d.getDate()).padStart(2, '0')}, ${d.getFullYear()}`;
+};
+
+export const build1604c = (ExcelJS, data) => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet(`1604C-${data.year}`);
+  HEAD_1604.forEach((h, i) => {
+    const c = ws.getCell(1, i + 1); c.value = h;
+    styleCell(c, { font: 'Aptos Narrow', size: 11, bold: true, align: 'center', valign: 'middle', wrap: true, fmt: i === 3 ? NUM : undefined });
+  });
+  ws.getRow(1).height = 48;
+  [6.3, 39.7, 18.6, 16.7, 18.6, 16, 16, 16, 15.4, 18.6, 21.1, 27.3, 18.6, 69.7].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+  (data.rows || []).forEach((d, i) => {
+    const r = i + 2;
+    const v = [i + 1, lastFirst(d), d.tin || null, r2(d.basic), r2(d.thirteenth), r2(d.deMinimis),
+      r2(n(d.sss) + n(d.phic) + n(d.hdmf)), null, r2(d.wht), d.region || null, d.employmentStatus || null,
+      d.periodStart && d.periodEnd ? `${mmmdd(d.periodStart)} - ${mmmdd(d.periodEnd)}` : null,
+      d.dateOfBirth ? new Date(`${d.dateOfBirth}T00:00:00`) : null, d.address || null];
+    v.forEach((x, c) => { if (x !== null && x !== undefined) ws.getCell(r, c + 1).value = x; });
+    ws.getCell(r, 8).value = d.mwe ? 0 : { formula: `MAX(0,D${r}-G${r})` };
+    for (let c = 1; c <= 14; c++) {
+      styleCell(ws.getCell(r, c), { font: 'Cambria', size: 11, align: c === 2 || c === 14 ? 'left' : 'center', fmt: c >= 4 && c <= 9 ? NUM : c === 13 ? 'd-mmm-yy' : undefined });
+    }
+  });
+  ws.views = [{ state: 'frozen', xSplit: 2, ySplit: 1 }];
+  return wb;
+};
+
+// ====================================================================== Salary monitoring for QB
+const monthPart = (iso) => MONTHS[Number(iso.slice(5, 7)) - 1];
+const sheetNameOf = (run, used) => {
+  const a = run.periodStart; const b = run.periodEnd;
+  const d1 = Number(a.slice(8)); const d2 = Number(b.slice(8));
+  let name = monthPart(a) === monthPart(b)
+    ? `${monthPart(a)} ${d1} to ${d2}, ${b.slice(0, 4)}`
+    : `${monthPart(a).slice(0, 3)} ${d1} to ${monthPart(b).slice(0, 3)} ${d2}, ${b.slice(0, 4)}`;
+  name = name.slice(0, 31);
+  let k = 2; const base = name;
+  while (used.has(name.toLowerCase())) { name = `${base.slice(0, 27)} (${k++})`; }
+  used.add(name.toLowerCase());
+  return name;
+};
+
+const QB_YELLOW = 'FFFFFF00';
+
+const buildRunSheet = (wb, run, used) => {
+  const ws = wb.addWorksheet(sheetNameOf(run, used));
+  const rows = run.rows || [];
+  const sum = (k) => rows.reduce((s, x) => s + n(x[k]), 0);
+  const has13 = sum('thirteenth') > 0;
+  const hasOver = sum('leaveOverdraw') > 0;
+  const hasOther = sum('otherDed') + sum('mp2') > 0;
+  const earn = [
+    { h: 'Gross Salary', f: (x) => x.basic, k: 'basic' },
+    { h: 'De Minimis', f: (x) => x.deMinimis, k: 'deMinimis' },
+    { h: 'Refunds / Reimb./Other Admin Expense', f: (x) => x.reimb, k: 'reimb' },
+    { h: 'Overtime/Holiday', f: (x) => n(x.overtime) + n(x.holiday) + n(x.night) + n(x.hazard) + n(x.incentives), k: 'ot' },
+    ...(has13 ? [{ h: '13th month Pay', f: (x) => x.thirteenth, k: 'thirteenth' }] : []),
+  ];
+  const ded = [
+    { h: 'Undeertime/Lates/Absent', f: (x) => x.absUnder, k: 'absUnder' },
+    { h: 'SSS EE', f: (x) => x.sss, k: 'sss' },
+    { h: 'PhilHealth EE', f: (x) => x.phic, k: 'phic' },
+    { h: 'Pag-IBIG EE', f: (x) => x.hdmf, k: 'hdmf' },
+    { h: 'SSS Sal Loan', f: (x) => x.sssSal, k: 'sssSal' },
+    { h: 'SSS Cal Loan', f: (x) => x.sssCal, k: 'sssCal' },
+    { h: 'HDMF Cal Loan', f: (x) => x.hdmfCal, k: 'hdmfCal' },
+    { h: 'HDMF MPL', f: (x) => x.hdmfMpl, k: 'hdmfMpl' },
+    { h: 'Cash Advance', f: (x) => x.cashAdvance, k: 'cashAdvance' },
+    ...(hasOver ? [{ h: 'Leave Overdraw Recovery', f: (x) => x.leaveOverdraw, k: 'leaveOverdraw' }] : []),
+    { h: 'HMO EE', f: (x) => x.hmo, k: 'hmo' },
+    ...(hasOther ? [{ h: 'Other Deductions (incl. HDMF MP2)', f: (x) => n(x.otherDed) + n(x.mp2), k: 'otherDed' }] : []),
+    { h: 'Withholding Tax Payable', f: (x) => x.wht, k: 'wht' },
+  ];
+  const all = [{ h: 'Employee Name', k: 'name' }, ...earn, ...ded, { h: 'NET PAY', k: 'net' }];
+  const cEarn1 = 2; const cEarn2 = 1 + earn.length;
+  const cDed1 = cEarn2 + 1; const cDed2 = cEarn2 + ded.length; const cNet = cDed2 + 1;
+  const letter = {}; all.forEach((c, i) => { letter[c.k] = col(i + 1); });
+
+  all.forEach((c, i) => {
+    const cell = ws.getCell(1, i + 1); cell.value = c.h;
+    styleCell(cell, { size: 9, bold: true, align: 'center', valign: 'middle', wrap: true, border: MED_BOX });
+  });
+  rows.forEach((x, i) => {
+    const r = i + 2;
+    ws.getCell(r, 1).value = qbName(x);
+    earn.forEach((c, j) => { const v = r2(c.f(x)); if (v) ws.getCell(r, 2 + j).value = v; });
+    ded.forEach((c, j) => { const v = r2(c.f(x)); if (v) ws.getCell(r, cDed1 + j).value = v; });
+    ws.getCell(r, cNet).value = { formula: `SUM(${col(cEarn1)}${r}:${col(cEarn2)}${r})-SUM(${col(cDed1)}${r}:${col(cDed2)}${r})` };
+    for (let c = 1; c <= cNet; c++) {
+      styleCell(ws.getCell(r, c), { size: 9, fill: QB_YELLOW, border: MED_BOX, align: 'left', wrap: true, fmt: c > 1 ? NUM2 : undefined });
+    }
+  });
+  const last = rows.length + 1;
+  const t = last + 1;
+  ws.getCell(t, 1).value = 'TOTALS';
+  for (let c = 2; c <= cNet; c++) ws.getCell(t, c).value = { formula: `SUM(${col(c)}2:${col(c)}${Math.max(last, 2)})` };
+  for (let c = 1; c <= cNet; c++) styleCell(ws.getCell(t, c), { size: 9, bold: true, border: MED_BOX, align: 'left', fmt: c > 1 ? NUM2 : undefined });
+
+  // Debit / Credit summary for QuickBooks
+  const T = (k) => `${letter[k]}${t}`;
+  const hdr = t + 3;
+  ws.getCell(hdr, 4).value = 'Debit'; ws.getCell(hdr, 5).value = 'Credit';
+  [3, 4, 5].forEach((c) => styleCell(ws.getCell(hdr, c), { font: 'Calibri', size: 11, bold: true, align: 'center', border: THIN_BOX }));
+  const lines = [
+    ['Basic', 'D', `${T('basic')}+${T('ot')}-${T('absUnder')}`],
+    ['De Minimis', 'D', T('deMinimis')],
+    ['Refunds', 'D', T('reimb')],
+    ...(has13 ? [['13th Month', 'D', T('thirteenth')]] : []),
+    ['SSS', 'C', T('sss')],
+    ['PHIC', 'C', T('phic')],
+    ['HDMF', 'C', T('hdmf')],
+    ['HMO', 'C', T('hmo')],
+    ['SSS Loan', 'C', `${T('sssSal')}+${T('sssCal')}`],
+    ['HDMF Loan', 'C', `${T('hdmfCal')}+${T('hdmfMpl')}`],
+    ...(hasOther ? [['Other Deductions', 'C', T('otherDed')]] : []),
+    ['Withholding Tax', 'C', T('wht')],
+    ['Advances to Employee', 'C', T('cashAdvance')],
+    ...(hasOver ? [['Leave Overdraw Recovery', 'C', T('leaveOverdraw')]] : []),
+    ['Net Pay To Release to Employee', 'C', T('net')],
+  ];
+  lines.forEach(([label, side, f], i) => {
+    const r = hdr + 1 + i;
+    ws.getCell(r, 2).value = i + 1;
+    ws.getCell(r, 3).value = label;
+    ws.getCell(r, side === 'D' ? 4 : 5).value = { formula: f };
+    [2, 3, 4, 5].forEach((c) => styleCell(ws.getCell(r, c), { font: 'Calibri', size: 11, border: THIN_BOX, fmt: c >= 4 ? NUM2 : undefined }));
+  });
+  const tr = hdr + 1 + lines.length;
+  ws.getCell(tr, 3).value = 'Total (Debit must equal Credit)';
+  ws.getCell(tr, 4).value = { formula: `SUM(D${hdr + 1}:D${tr - 1})` };
+  ws.getCell(tr, 5).value = { formula: `SUM(E${hdr + 1}:E${tr - 1})` };
+  [3, 4, 5].forEach((c) => styleCell(ws.getCell(tr, c), { font: 'Calibri', size: 11, bold: true, border: THIN_BOX, fmt: c >= 4 ? NUM2 : undefined }));
+
+  // Breakdown of cash advances of this run (add other advances by hand)
+  const advCol = 8;
+  ws.getCell(hdr, advCol).value = 'Breakdown of Advances to Employees for QB Recording';
+  ws.mergeCells(hdr, advCol, hdr, advCol + 3);
+  for (let c = advCol; c <= advCol + 3; c++) styleCell(ws.getCell(hdr, c), { font: 'Calibri', size: 11, bold: true, fill: 'FF00B050', align: 'center', border: THIN_BOX });
+  let ar = hdr + 1;
+  rows.filter((x) => n(x.cashAdvance) > 0).forEach((x) => {
+    ws.getCell(ar, advCol).value = 'Cash Advance';
+    ws.getCell(ar, advCol + 1).value = r2(x.cashAdvance);
+    ws.getCell(ar, advCol + 2).value = qbName(x);
+    for (let c = advCol; c <= advCol + 2; c++) styleCell(ws.getCell(ar, c), { font: 'Calibri', size: 11, fill: 'FFA8D08D', border: THIN_BOX, fmt: c === advCol + 1 ? NUM : undefined });
+    ar += 1;
+  });
+  const widths = [20, 15.6, 18.6, 15, 15.7]; all.forEach((_, i) => { ws.getColumn(i + 1).width = widths[i] || 13.5; });
+  ws.getColumn(advCol).width = Math.max(ws.getColumn(advCol).width || 0, 24);
+  ws.getRow(1).height = 38;
+  return ws;
+};
+
+const dataSheet = (wb, name, head, widths) => {
+  const ws = wb.addWorksheet(name);
+  head.forEach((h, i) => { const c = ws.getCell(1, i + 1); c.value = h; styleCell(c, { bold: true, size: 10 }); });
+  widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+  return ws;
+};
+const fmtRow = (ws, r, cols) => { cols.forEach((c) => { ws.getCell(r, c).numFmt = NUM2; ws.getCell(r, c).font = { name: 'Arial', size: 10 }; }); ws.getCell(r, 1).font = { name: 'Arial', size: 10 }; };
+const totalRow = (ws, cols) => {
+  ws.getCell(14, 1).value = 'TOTAL:'; ws.getCell(14, 1).font = { name: 'Arial', size: 10, bold: true };
+  cols.forEach((c) => { const cell = ws.getCell(14, c); cell.value = { formula: `SUM(${col(c)}2:${col(c)}13)` }; cell.numFmt = NUM2; cell.font = { name: 'Arial', size: 10, bold: true }; });
+};
+
+export const buildSalaryMonitoring = (ExcelJS, data) => {
+  const wb = new ExcelJS.Workbook();
+
+  // Non-employee contributions come from BIR settings. No sheet when none were entered.
+  const nonEmp = ((data.settings || {}).nonEmployees) || [];
+  if (nonEmp.length) {
+    const inv = dataSheet(wb, 'Non-Employee Contributions', ['Name', 'SSS ', 'PhilHealth ', 'Pag-IBIG ', 'HMO '], [28, 16, 22.6, 16.7, 12]);
+    nonEmp.forEach((p, i) => {
+      const r = i + 2;
+      inv.getCell(r, 1).value = p.name;
+      [p.sss, p.phic, p.hdmf, p.hmo].forEach((v, c) => { if (n(v)) inv.getCell(r, c + 2).value = r2(v); });
+      fmtRow(inv, r, [2, 3, 4, 5]);
+    });
+    const tr = nonEmp.length + 2;
+    inv.getCell(tr, 1).value = 'TOTAL:';
+    inv.getCell(tr, 1).font = { name: 'Arial', size: 10, bold: true };
+    ['B', 'C', 'D', 'E'].forEach((L) => {
+      const c = inv.getCell(`${L}${tr}`);
+      c.value = { formula: `SUM(${L}2:${L}${tr - 1})` };
+      c.numFmt = NUM2;
+      c.font = { name: 'Arial', size: 10, bold: true };
+    });
+  }
+  const mon = data.monthly || [];
+  const z = (v) => (n(v) ? r2(v) : null);
+
+  // 3. HDMF
+  const hd = dataSheet(wb, 'HDMF Payment', ['Month', 'Regular Savings (P1)', 'MP2 Savings', 'Multi-Purpose Loan (MPL)', 'Calamity Loan', 'Monthly Total', 'Remarks'], [27, 22.6, 22.4, 29.1, 13.6, 16.4, 14.3]);
+  MONTHS.forEach((m, i) => {
+    const r = i + 2; const x = mon[i] || {};
+    hd.getCell(r, 1).value = m;
+    [z(n(x.hdmfEe) + n(x.hdmfEr)), z(x.mp2), z(x.hdmfMpl), z(x.hdmfCal)].forEach((v, c) => { if (v !== null) hd.getCell(r, c + 2).value = v; });
+    hd.getCell(r, 6).value = { formula: `SUM(B${r}:E${r})` };
+    fmtRow(hd, r, [2, 3, 4, 5, 6]);
+  });
+  totalRow(hd, [2, 3, 4, 5, 6]);
+
+  // 4. PHIC
+  const ph = dataSheet(wb, 'PHIC Payment', ['Month', 'Employee Share', 'Employer Share', 'Contribution', 'Monthly Total', 'Remarks'], [27, 22.6, 22.4, 20, 16.4, 14.3]);
+  MONTHS.forEach((m, i) => {
+    const r = i + 2; const x = mon[i] || {};
+    ph.getCell(r, 1).value = m;
+    if (z(x.phicEe) !== null) ph.getCell(r, 2).value = z(x.phicEe);
+    if (z(x.phicEr) !== null) ph.getCell(r, 3).value = z(x.phicEr);
+    ph.getCell(r, 4).value = { formula: `SUM(B${r}:C${r})` };
+    ph.getCell(r, 5).value = { formula: `SUM(D${r})` };
+    fmtRow(ph, r, [2, 3, 4, 5]);
+  });
+  totalRow(ph, [2, 3, 4, 5]);
+
+  // 5. SSS
+  const ss = dataSheet(wb, 'SSS Payment', ['Month', 'Contribution', 'Employee Compensation(EC)', 'Salary Loan/Calamity Loan', 'Monthly Total', 'Remarks'], [27, 30.9, 25.6, 25.6, 16.4, 14.3]);
+  MONTHS.forEach((m, i) => {
+    const r = i + 2; const x = mon[i] || {};
+    ss.getCell(r, 1).value = m;
+    if (z(n(x.sssEe) + n(x.sssEr)) !== null) ss.getCell(r, 2).value = z(n(x.sssEe) + n(x.sssEr));
+    if (z(x.ec) !== null) ss.getCell(r, 3).value = z(x.ec);
+    if (z(n(x.sssSal) + n(x.sssCal)) !== null) ss.getCell(r, 4).value = z(n(x.sssSal) + n(x.sssCal));
+    ss.getCell(r, 5).value = { formula: `SUM(B${r}:D${r})` };
+    fmtRow(ss, r, [2, 3, 4, 5]);
+  });
+  totalRow(ss, [2, 3, 4, 5]);
+  ss.getCell('A16').value = 'Employee Compensation (EC) comes from the SSS EC rule in BIR settings. It stays empty when no rule is saved.';
+  ss.getCell('A16').font = { name: 'Arial', size: 9, italic: true };
+
+  // 6. One sheet per payroll run (cutoff)
+  const used = new Set(wb.worksheets.map((w) => w.name.toLowerCase()));
+  (data.runs || []).forEach((run) => buildRunSheet(wb, run, used));
+  return wb;
+};
+
+export const saveWorkbook = async (wb, filename) => {
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+};

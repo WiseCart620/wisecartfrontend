@@ -11,7 +11,6 @@ import PayrollRunDetail from '../../components/payroll/PayrollRunDetail';
 import OvertimeEntries from '../../components/payroll/OvertimeEntries';
 import ReimbursementTab from '../../components/payroll/ReimbursementTab';
 import DisbursementTab from '../../components/payroll/DisbursementTab';
-import AnnualMonitoringTab from '../../components/payroll/AnnualMonitoringTab';
 import { runOptionsFor, computePeriod, computePeriodFor } from '../../utils/payrollPeriods';
 import SearchableSelect from '../../components/payroll/SearchableSelect';
 import Pagination from '../../components/common/Pagination';
@@ -63,9 +62,9 @@ const PayrollRunManagementInner = () => {
   const [form, setForm] = useState(EMPTY);
   const [creating, setCreating] = useState(false);
   const [selectedRunId, setSelectedRunId] = useState(null);
-  const firstTab = ['runs', 'ot', 'rb', 'db', 'an'].find((k) => uiAllowed(user, 'payroll_tabs', { runs: 'tab_runs', ot: 'tab_ot', rb: 'tab_rb', db: 'tab_db', an: 'tab_an' }[k])) || 'runs'; const [tab, setTab] = useState(firstTab);
+  const firstTab = ['runs', 'ot', 'rb', 'db'].find((k) => uiAllowed(user, 'payroll_tabs', { runs: 'tab_runs', ot: 'tab_ot', rb: 'tab_rb', db: 'tab_db' }[k])) || 'runs'; const [tab, setTab] = useState(firstTab);
   useEffect(() => {
-    const first = ['runs', 'ot', 'rb', 'db', 'an'].find(k => ui(user, 'payroll_tabs', 'tab_' + k));
+    const first = ['runs', 'ot', 'rb', 'db'].find(k => ui(user, 'payroll_tabs', 'tab_' + k));
     if (first && !ui(user, 'payroll_tabs', 'tab_' + tab)) setTab(first);
   }, [user, tab]);
   const [filters, setFilters] = useState({ status: '', month: '', year: '' });
@@ -97,7 +96,7 @@ const PayrollRunManagementInner = () => {
 
   const tabBar = (
     <div className="flex gap-6 border-b border-gray-200 mt-3 overflow-x-auto overflow-y-hidden">
-      {[['runs', 'Payroll Runs'], ['ot', 'Pay Entries'], ['rb', 'Reimbursements'], ['db', 'Disbursement'], ['an', 'Annual Monitoring']].filter(([k]) => ui(user, 'payroll_tabs', 'tab_' + k)).map(([k, l]) => (
+      {[['runs', 'Payroll Runs'], ['ot', 'Pay Entries'], ['rb', 'Reimbursements'], ['db', 'Disbursement']].filter(([k]) => ui(user, 'payroll_tabs', 'tab_' + k)).map(([k, l]) => (
         <button key={k} onClick={() => setTab(k)}
           className={`pb-3 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${tab === k ? 'border-orange-600 text-orange-700' : 'border-transparent text-gray-500 hover:text-gray-800'}`}>{l}</button>
       ))}
@@ -212,7 +211,7 @@ const PayrollRunManagementInner = () => {
       setCreating(false);
     }
   };
-  if ((tab === 'ot' || tab === 'rb' || tab === 'db' || tab === 'an') && !selectedRunId) {
+  if ((tab === 'ot' || tab === 'rb' || tab === 'db') && !selectedRunId) {
     return (
       <div className="p-6 pt-0 max-w-7xl mx-auto" style={pageStyle}>
         <Toaster position="top-right" />
@@ -221,7 +220,7 @@ const PayrollRunManagementInner = () => {
           {tab === 'ot' && <OvertimeEntries canEdit={can(user, 'payroll', 'create') && ui(user, 'payroll_tabs', 'ot_edit')} />}
           {tab === 'rb' && <ReimbursementTab employees={employees} canEdit={can(user, 'payroll', 'create') && ui(user, 'payroll_tabs', 'rb_edit')} />}
           {tab === 'db' && <DisbursementTab approvedRuns={approvedRuns} canManage={canManage && ui(user, 'payroll_tabs', 'db_manage')} />}
-          {tab === 'an' && <AnnualMonitoringTab />}
+          
         </div>
       </div>
     );

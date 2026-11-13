@@ -10,6 +10,7 @@ import LeaveManagement from './pages/payroll/LeaveManagement';
 import TaxStatutoryManagement from './pages/payroll/TaxStatutoryManagement.jsx';
 import YearEndManagement from './pages/payroll/YearEndManagement.jsx';
 import PayrollRunManagement from './pages/payroll/PayrollRunManagement.jsx';
+import BirReports from './pages/payroll/BirReports.jsx';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import SalesManagement from './pages/SalesManagement/index.jsx';
@@ -300,6 +301,36 @@ function App() {
               } />
 
               <Route path="/my-payslips" element={<ProtectedRoute><Layout><MyPayslips /></Layout></ProtectedRoute>} />
+              <Route path="/bir/1601c" element={
+                <ProtectedRoute>
+                  <PermissionRoute feature="employees">
+                    <Layout>
+                      <BirReports kind="1601c" />
+                    </Layout>
+                  </PermissionRoute>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/bir/1604c" element={
+                <ProtectedRoute>
+                  <PermissionRoute feature="employees">
+                    <Layout>
+                      <BirReports kind="1604c" />
+                    </Layout>
+                  </PermissionRoute>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/bir/salary-monitoring" element={
+                <ProtectedRoute>
+                  <PermissionRoute feature="employees">
+                    <Layout>
+                      <BirReports kind="qb" />
+                    </Layout>
+                  </PermissionRoute>
+                </ProtectedRoute>
+              } />
+
               <Route path="/payroll-runs" element={
                 <ProtectedRoute>
                   <PermissionRoute feature="employees">

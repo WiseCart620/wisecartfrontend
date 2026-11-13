@@ -93,7 +93,7 @@ const PAGES = [
         { label: 'Pay Entries', key: k('payroll_tabs', 'tab_ot'), actions: [A('Add / edit / delete entries', k('payroll_tabs', 'ot_edit'))] },
         { label: 'Reimbursements', key: k('payroll_tabs', 'tab_rb'), actions: [A('Add / cancel / delete', k('payroll_tabs', 'rb_edit'))] },
         { label: 'Disbursement', key: k('payroll_tabs', 'tab_db'), actions: [A('Generate batch', k('payroll_tabs', 'db_manage'))] },
-        { label: 'Annual Monitoring', key: k('payroll_tabs', 'tab_an'), actions: [] },
+        { label: 'BIR Reports (1601-C, 1604-C, QB)', key: k('payroll_tabs', 'tab_an'), actions: [] },
       ], other: [
         A('Submit run', k('payroll', 'submit')), A('Approve / reject', k('payroll', 'approve')),
         A('Mark paid', k('payroll', 'pay')), A('Download documents', k('payroll', 'download')),

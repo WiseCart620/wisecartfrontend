@@ -5,7 +5,7 @@ import {
   UserPlus, PackageSearch, PackageOpen, ChevronRight, ChevronLeft, ChevronDown,
   Factory, ClipboardList, X, BookOpen, BarChart3, FileText,
   Briefcase, Coins, Landmark, CalendarDays, Percent, Wallet, Gift,
-  LogOut, Shield, Search, Clock
+  LogOut, Shield, Search, Clock, FileSpreadsheet
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth, hasPermission, can, isSelfOnly, uiAllowed } from '../../context/AuthContext';
@@ -20,7 +20,7 @@ const allMainMenuItems = [
   { to: '/procurement', label: 'Procurement', icon: ClipboardList },
 ];
 
-const PAGE_IDS = { '/employees': 'employees', '/pay-types': 'paytypes', '/loans-benefits': 'loans', '/leave': 'leave', '/tax-statutory': 'tax', '/payroll-runs': 'payroll', '/year-end': 'yearend', '/dtr': 'dtr' };
+const PAGE_IDS = { '/employees': 'employees', '/pay-types': 'paytypes', '/loans-benefits': 'loans', '/leave': 'leave', '/tax-statutory': 'tax', '/payroll-runs': 'payroll', '/year-end': 'yearend', '/dtr': 'dtr', '/bir/1601c': 'payroll', '/bir/1604c': 'payroll', '/bir/salary-monitoring': 'payroll' };
 const payrollSubItems = [
   { to: '/employees', label: 'Employees', icon: Briefcase },
   { to: '/pay-types', label: 'Pay Types', icon: Coins },
@@ -30,6 +30,9 @@ const payrollSubItems = [
   { to: '/dtr', label: 'DTR', icon: Clock },
   { to: '/payroll-runs', label: 'Payroll Runs', icon: Wallet },
   { to: '/year-end', label: 'Year-End', icon: Gift },
+  { to: '/bir/1601c', label: 'BIR 1601-C', icon: FileSpreadsheet, bir: true },
+  { to: '/bir/1604c', label: 'BIR 1604-C / 2316', icon: FileSpreadsheet, bir: true },
+  { to: '/bir/salary-monitoring', label: 'Salary Monitoring (QB)', icon: FileSpreadsheet, bir: true },
 ];
 
 const dataEntryItems = [
@@ -102,10 +105,10 @@ const Sidebar = ({ isOpen, toggle }) => {
       '/procurement': 'procurement',
     }[i.to]));
 
-  const showPayroll = isSuperAdmin || (hasPermission(user, 'employees') && payrollSubItems.some((i) => uiAllowed(user, 'pages_ui', 'page_' + PAGE_IDS[i.to])));
+  const showPayroll = isSuperAdmin || (hasPermission(user, 'employees') && payrollSubItems.some((i) => (uiAllowed(user, 'pages_ui', 'page_' + PAGE_IDS[i.to]) && (!i.bir || uiAllowed(user, 'payroll_tabs', 'tab_an')))));
   const visiblePayrollSubItems = isSuperAdmin
     ? payrollSubItems
-    : payrollSubItems.filter((i) => hasPermission(user, 'employees') && uiAllowed(user, 'pages_ui', 'page_' + PAGE_IDS[i.to]));
+    : payrollSubItems.filter((i) => hasPermission(user, 'employees') && (uiAllowed(user, 'pages_ui', 'page_' + PAGE_IDS[i.to]) && (!i.bir || uiAllowed(user, 'payroll_tabs', 'tab_an'))));
 
   const showDataEntry = isSuperAdmin ||
     ['warehouse', 'branches', 'products', 'supplier'].some(f => hasPermission(user, f));
@@ -133,7 +136,7 @@ const Sidebar = ({ isOpen, toggle }) => {
   const [closedSections, setClosedSections] = useState(() => {
     const defaults = {
       general: true, sales: true, deliveries: true,
-      payroll: true, data: true, admin: true,
+      payroll: true, bir: true, data: true, admin: true,
     };
     try {
       const saved = JSON.parse(sessionStorage.getItem('sidebarClosed2') || '{}');
@@ -194,11 +197,11 @@ const Sidebar = ({ isOpen, toggle }) => {
     { key: 'general', label: 'General', short: 'Gen', items: mainMenuItems },
     { key: 'sales', label: 'Sales', short: 'Sal', items: showSales ? visibleSalesSubItems : [] },
     { key: 'deliveries', label: 'Deliveries', short: 'Del', items: showDeliveries ? visibleDeliveriesSubItems : [] },
-    { key: 'payroll', label: 'Payroll', short: 'Pay', items: showPayroll ? visiblePayrollSubItems : [] },
+    { key: 'payroll', label: 'Payroll', short: 'Pay', items: showPayroll ? [...visiblePayrollSubItems.filter(i => !i.bir), ...(visiblePayrollSubItems.some(i => i.bir) ? [{ label: 'BIR Reports', icon: FileSpreadsheet, groupKey: 'bir', children: visiblePayrollSubItems.filter(i => i.bir) }] : [])] : [] },
     { key: 'data', label: 'Data Entry', short: 'Data', items: showDataEntry ? visibleDataEntryItems : [] },
     { key: 'admin', label: 'Admin', short: 'Adm', items: isSuperAdmin ? [{ to: '/users', label: 'User Management', icon: UserPlus }] : [] },
   ]
-    .map(s => ({ ...s, items: q ? s.items.filter(i => i.label.toLowerCase().includes(q)) : s.items }))
+    .map(s => ({ ...s, items: q ? s.items.filter(i => i.children ? (i.label.toLowerCase().includes(q) || i.children.some(c => c.label.toLowerCase().includes(q))) : i.label.toLowerCase().includes(q)) : s.items }))
     .filter(s => s.items.length > 0);
 
   return (
@@ -333,14 +336,38 @@ const Sidebar = ({ isOpen, toggle }) => {
                 </button>
               )}
               <div className={`space-y-0.5 ${!sidebarCollapsed && !q && closedSections[section.key] ? 'hidden' : ''}`}>
-                {section.items.map(item => (
-                  <NavItem
-                    key={item.to}
-                    item={item}
-                    collapsed={sidebarCollapsed}
-                    onNavigate={onNavigate}
-                    onTip={setTip}
-                  />
+                {section.items.map(item => item.children ? (
+                  <div key={item.groupKey}>
+                    {sidebarCollapsed ? (
+                      item.children.map(c => (
+                        <NavItem key={c.to} item={c} collapsed={true} onNavigate={onNavigate} onTip={setTip} />
+                      ))
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => toggleSection(item.groupKey)}
+                          aria-expanded={!closedSections[item.groupKey]}
+                          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-black hover:bg-gray-50"
+                        >
+                          <item.icon size={20} strokeWidth={1.5} className="flex-shrink-0" />
+                          <span className="truncate flex-1 text-left">{item.label}</span>
+                          <ChevronDown
+                            size={14}
+                            className={`transition-transform duration-200 ${!q && closedSections[item.groupKey] ? '-rotate-90' : ''}`}
+                          />
+                        </button>
+                        <div className={`ml-5 pl-2 border-l border-gray-200 space-y-0.5 ${!q && closedSections[item.groupKey] ? 'hidden' : ''}`}>
+                          {item.children
+                            .filter(c => !q || c.label.toLowerCase().includes(q) || item.label.toLowerCase().includes(q))
+                            .map(c => (
+                              <NavItem key={c.to} item={c} collapsed={false} onNavigate={onNavigate} onTip={setTip} />
+                            ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <NavItem key={item.to} item={item} collapsed={sidebarCollapsed} onNavigate={onNavigate} onTip={setTip} />
                 ))}
               </div>
             </div>
