@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Trash2, Edit2, CheckCircle, ChevronRight, ChevronDown, Check, Search, Plus } from 'lucide-react';
+import { Trash2, Edit2, CheckCircle, ChevronRight, ChevronDown, Check, Search, Plus, Paperclip } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { useAuth, can } from '../../context/AuthContext';
@@ -133,6 +133,7 @@ const OvertimeEntries = ({ canEdit }) => {
     const [allowanceTypes, setAllowanceTypes] = useState([]);
     const [editing, setEditing] = useState(null);
     const [showForm, setShowForm] = useState(false);
+    const [file, setFile] = useState(null);
     const [expandedSub, setExpandedSub] = useState(() => new Set());
     const toggleSub = (key) => setExpandedSub(prev => {
         const next = new Set(prev);
@@ -205,7 +206,7 @@ const OvertimeEntries = ({ canEdit }) => {
         return form.unit === 'MINUTES' ? n / 60 : n;
     };
 
-    const reset = () => { setEditing(null); setForm({ ...EMPTY_FORM(from) }); setShowForm(false); };
+    const reset = () => { setEditing(null); setForm({ ...EMPTY_FORM(from) }); setShowForm(false); setFile(null); };
     const openAdd = () => { setEditing(null); setForm({ ...EMPTY_FORM(from) }); setShowForm(true); };
 
     const save = async (e) => {
@@ -222,8 +223,15 @@ const OvertimeEntries = ({ canEdit }) => {
             remarks: form.remarks,
         };
         try {
+            let entryId = editing ? editing.id : null;
             if (editing) await api.put(`/payroll/overtime/${editing.id}`, body);
-            else await api.post('/payroll/overtime', body);
+            else { const cr = await api.post('/payroll/overtime', body); entryId = cr.data?.id; }
+            if (file && entryId) {
+                const fd = new FormData();
+                fd.append('file', file);
+                try { await api.upload(`/payroll/overtime/${entryId}/attachment`, fd); }
+                catch (ue) { toast.error('Entry saved, but the file could not be uploaded'); }
+            }
             toast.success(editing ? 'Entry updated' : 'Entry added (awaiting approval)');
             reset();
             load();
@@ -242,6 +250,14 @@ const OvertimeEntries = ({ canEdit }) => {
             remarks: r.remarks || '',
         });
         setShowForm(true);
+    };
+
+    const openAttachment = async (r) => {
+        const res = await api.download(`/payroll/overtime/${r.id}/attachment`);
+        if (!res || !res.success) { toast.error('Could not open the attachment'); return; }
+        const url = URL.createObjectURL(res.data);
+        window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
     };
 
     const del = async (r) => {
@@ -443,8 +459,15 @@ const OvertimeEntries = ({ canEdit }) => {
                                 className={inputCls} value={form.value}
                                 onChange={(e) => setForm(p => ({ ...p, value: e.target.value }))} />
                         </Field>
+                        <Field label="Attachment (photo / PDF, optional)" className="md:col-span-2">
+                            <input type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" className={inputCls}
+                                onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                            {editing?.attachmentPath && !file && (
+                                <p className="text-xs text-gray-500 mt-1">An attachment is already saved. Choosing a file replaces it.</p>
+                            )}
+                        </Field>
                         <Field label="Remarks" className="md:col-span-2">
-                            <textarea className={inputCls} rows={2} value={form.remarks}
+                            <textarea className={inputCls} rows={6} maxLength={20000} value={form.remarks}
                                 onChange={(e) => setForm(p => ({ ...p, remarks: e.target.value }))}
                                 placeholder="Optional note" />
                         </Field>
@@ -587,7 +610,17 @@ const OvertimeEntries = ({ canEdit }) => {
                                                                                         <tr key={r.id}>
                                                                                             <td className="px-4 py-2 whitespace-nowrap">{fmtShort(r.workDate)}</td>
                                                                                             <td className="px-4 py-2 whitespace-nowrap font-medium">{formatStored(r.entryType, r.hours)}</td>
-                                                                                            <td className="px-4 py-2 text-gray-600 max-w-[220px] truncate" title={r.remarks}>{r.remarks || '—'}</td>
+                                                                                            <td className="px-4 py-2 text-gray-600 max-w-[280px] whitespace-pre-wrap break-words">
+                                                                                                {r.remarks || '—'}
+                                                                                                {r.attachmentPath && (
+                                                                                                    <div>
+                                                                                                        <button type="button" onClick={() => openAttachment(r)}
+                                                                                                            className="text-xs text-orange-600 hover:underline inline-flex items-center gap-1">
+                                                                                                            <Paperclip size={12} /> Attachment
+                                                                                                        </button>
+                                                                                                    </div>
+                                                                                                )}
+                                                                                            </td>
                                                                                             <td className="px-4 py-2 whitespace-nowrap">
                                                                                                 <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${STATUS_BADGE[r.status] || STATUS_BADGE.APPROVED}`}>
                                                                                                     {r.status === 'PENDING' ? 'Pending' : 'Approved'}

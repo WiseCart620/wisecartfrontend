@@ -39,7 +39,7 @@ const HomeRedirect = () => {
   const { user } = useAuth();
 
   if (!user) return <Navigate to="/login" replace />;
-  if (import.meta.env.VITE_FIELD_ONLY === 'true') return <Navigate to="/field" replace />;
+  if (import.meta.env.VITE_FIELD_ONLY === 'true' || window.Capacitor?.isNativePlatform?.()) return <Navigate to="/field" replace />;
 
   const isSuperAdmin = user.role === 'SUPER_ADMIN';
   const allowed = (feature) => isSuperAdmin || hasPermission(user, feature);
@@ -374,7 +374,7 @@ function App() {
               <Route path="/" element={<HomeRedirect />} />
 
               {/* 404 Page */}
-              <Route path="*" element={import.meta.env.VITE_FIELD_ONLY === 'true' ? <Navigate to="/field" replace /> : <NotFound />} />
+              <Route path="*" element={(import.meta.env.VITE_FIELD_ONLY === 'true' || window.Capacitor?.isNativePlatform?.()) ? <Navigate to="/field" replace /> : <NotFound />} />
             </Routes>
           </ReferenceDataProvider>
         </AuthLoading>

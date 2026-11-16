@@ -79,7 +79,8 @@ const LoginPage = () => {
 
       const selfOnly = userData.role !== 'SUPER_ADMIN' && userData.employeeId && (userData.permissions || []).includes('self:only');
 
-      navigate(import.meta.env.VITE_FIELD_ONLY === 'true' ? '/field' : (selfOnly ? '/my-payslips' : '/'), { replace: true });
+      const inApk = import.meta.env.VITE_FIELD_ONLY === 'true' || !!window.Capacitor?.isNativePlatform?.();
+      navigate(inApk ? '/field' : (selfOnly ? '/my-payslips' : '/'), { replace: true });
 
     } catch (err) {
       console.error('Login error:', err);
