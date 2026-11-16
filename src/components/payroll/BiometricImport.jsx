@@ -70,6 +70,7 @@ const List = ({ title, items, tone }) => !items || items.length === 0 ? null : (
 const BiometricImport = ({ onClose, onDone }) => {
   const [records, setRecords] = useState([]);
   const [fileName, setFileName] = useState('');
+  const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
   const [range, setRange] = useState({ from: null, to: null });
@@ -82,7 +83,7 @@ const BiometricImport = ({ onClose, onDone }) => {
       const parsed = parseWorkbook(wb);
       if (!parsed.records.length) toast.error('No attendance records found in this file');
       setRecords(parsed.records); setRange({ from: parsed.from, to: parsed.to });
-      setFileName(f.name); setResult(null);
+      setFile(f); setFileName(f.name); setResult(null);
     } catch { toast.error('Could not read the file'); }
   };
 
@@ -91,6 +92,15 @@ const BiometricImport = ({ onClose, onDone }) => {
     try {
       const r = await api.post('/dtr/import-biometric', { records, from: range.from, to: range.to });
       setResult(r.data);
+      if (file) {   // keep the original report: shown as proof in each office worker's DTR view
+        const dates = records.map(x => x.date).sort();
+        const fd = new FormData();
+        fd.append('from', range.from || dates[0]);
+        fd.append('to', range.to || dates[dates.length - 1]);
+        fd.append('file', file);
+        try { await api.upload('/dtr/biometric-file', fd); }
+        catch { toast.error('Imported, but the report file could not be attached'); }
+      }
       toast.success(r.data?.message || 'Imported');
     } catch (err) { toast.error(err.message || 'Import failed'); } finally { setBusy(false); }
   };

@@ -129,6 +129,8 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
   const [days, setDays] = useState(null);
   const [big, setBig] = useState(null);
   const [openKeys, setOpenKeys] = useState(() => new Set());
+  // office = biometric worker: no personnel, signature, photo or location
+  const office = !!emp.office || (days || []).some(d => d.absent || d.visits.some(v => v.source === 'BIO'));
 
   useEffect(() => {
     api.get(`/dtr/days?employeeId=${emp.employeeId}&from=${from}&to=${to}`)
@@ -216,8 +218,14 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
                 onClick={async (e) => {
                   e.stopPropagation();
                   const r = await api.download(`/dtr/file?path=${encodeURIComponent(d.sheetPath)}`);
-                  if (r.success) window.open(URL.createObjectURL(r.data), '_blank');
-                }}><ExternalLink size={12} /> Written DTR</button>
+                  if (!r.success) return;
+                  const url = URL.createObjectURL(r.data);
+                  if (/\.xlsx?$/i.test(d.sheetPath)) {
+                    const a = document.createElement('a');
+                    a.href = url; a.download = d.sheetPath.split('/').pop(); a.click();
+                    setTimeout(() => URL.revokeObjectURL(url), 10000);
+                  } else window.open(url, '_blank');
+                }}><ExternalLink size={12} /> {office ? 'Biometrics proof' : 'Written DTR'}</button>
             )}
             {canPost && d.visits.length > 0 && !d.posted && (
               <button disabled={d.date > phToday || d.incomplete}
@@ -234,17 +242,23 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
           <div className="border-t border-gray-200 bg-white px-4 pb-3">
             <table className="w-full table-fixed text-sm">
               <colgroup>
+                {office ? (<>
+                  <col style={{ width: '28%' }} /><col style={{ width: '24%' }} />
+                  <col style={{ width: '12%' }} /><col style={{ width: '12%' }} />
+                  <col style={{ width: '12%' }} /><col style={{ width: '12%' }} />
+                </>) : (<>
                 <col style={{ width: '18%' }} /><col style={{ width: '14%' }} />
                 <col style={{ width: '8%' }} /><col style={{ width: '8%' }} /><col style={{ width: '7%' }} />
                 <col style={{ width: '9%' }} /><col style={{ width: '11%' }} />
                 <col style={{ width: '10%' }} /><col style={{ width: '7%' }} /><col style={{ width: '8%' }} />
+              </>)}
               </colgroup>
               <thead>
                 <tr className="text-left text-xs text-gray-500 uppercase">
                   <th className="px-3 py-2">Store / Place</th><th className="px-3 py-2">Purpose</th>
                   <th className="px-3 py-2">In</th><th className="px-3 py-2">Out</th><th className="px-3 py-2">Time</th><th className="px-3 py-2">Shift Time</th>
-                  <th className="px-3 py-2">Personnel</th><th className="px-3 py-2">Signature</th>
-                  <th className="px-3 py-2">Photo</th><th className="px-3 py-2">Location</th>
+                  {!office && (<><th className="px-3 py-2">Personnel</th><th className="px-3 py-2">Signature</th>
+                  <th className="px-3 py-2">Photo</th><th className="px-3 py-2">Location</th></>)}
                 </tr>
               </thead>
               <tbody className="[&>tr>td]:border-t [&>tr>td]:border-gray-100">
@@ -253,14 +267,14 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
                     <td className="px-3 py-2 font-medium text-sky-800" colSpan={2}>Travel to {r.s.toPlace || 'next store'}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{t12(r.s.from)}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{t12(r.s.to)}</td>
-                    <td className="px-3 py-2 font-medium text-sky-800" colSpan={6}>{hm(r.s.mins)}</td>
+                    <td className="px-3 py-2 font-medium text-sky-800" colSpan={office ? 2 : 6}>{hm(r.s.mins)}</td>
                   </tr>
                 ) : r.kind === 'lunch' ? (
                   <tr key={'l' + i} className="bg-amber-50/50">
                     <td className="px-3 py-2 font-medium text-amber-800" colSpan={2}>Lunch Break</td>
                     <td className="px-3 py-2 whitespace-nowrap">{t12(d.lunchStart)}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{t12(d.lunchEnd)}</td>
-                    <td className="px-3 py-2" colSpan={6}>{d.lunchEnd ? hm(dur(d.lunchStart, d.lunchEnd)) : ''}</td>
+                    <td className="px-3 py-2" colSpan={office ? 2 : 6}>{d.lunchEnd ? hm(dur(d.lunchStart, d.lunchEnd)) : ''}</td>
                   </tr>
                 ) : (
                   <tr key={r.v.id}>
@@ -270,7 +284,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
                     <td className="px-3 py-2 whitespace-nowrap">{r.v.timeOut ? t12(r.v.timeOut) : <span className="text-amber-600">—</span>}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{r.v.timeOut ? hm(dur(r.v.timeIn, capOut(r.v))) : ''}</td>
                     <td className="px-2 py-2 whitespace-nowrap">{r.v.timeOut ? hm(inShift(r.v)) : ''}</td>
-                    <td className="px-3 py-2 truncate">{r.v.validatedBy || '—'}</td>
+                    {!office && (<><td className="px-3 py-2 truncate">{r.v.validatedBy || '—'}</td>
                     <td className="px-3 py-2"><DtrImage path={r.v.signaturePath} className="h-10 w-24 object-contain bg-white border border-gray-200 rounded cursor-zoom-in" onClick={setBig} /></td>
                     <td className="px-3 py-2"><DtrImage path={r.v.photoPath} className="h-10 w-10 object-cover rounded cursor-zoom-in" onClick={setBig} /></td>
                     <td className="px-3 py-2">
@@ -281,6 +295,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
                         </a>
                       ) : <span className="text-gray-300">{r.v.source === 'MANUAL' ? 'Manual' : '—'}</span>}
                     </td>
+                  </>)}
                   </tr>
                 ))}
               </tbody>
@@ -332,11 +347,14 @@ const DayEditor = ({ emp, date: initialDate, onClose, onSaved }) => {
   const [rows, setRows] = useState([{ ...EMPTY_ROW }]);
   const [file, setFile] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [bioDay, setBioDay] = useState(false);
+  const office = !!emp.office || bioDay;   // office (biometric) worker: only time in / time out
 
   useEffect(() => {
     if (!date) return;
     api.get(`/dtr/days?employeeId=${emp.employeeId}&from=${date}&to=${date}`).then(r => {
       const d = r.success ? (r.data || [])[0] : null;
+      setBioDay(!!d && (!!d.absent || d.visits.some(v => v.source === 'BIO')));
       setLunch(d && d.lunchStart ? hhmm(d.lunchStart) : '');
       setRows(d && d.visits.length ? d.visits.map(v => ({
         id: v.id, timeIn: hhmm(v.timeIn), timeOut: hhmm(v.timeOut),
@@ -369,27 +387,28 @@ const DayEditor = ({ emp, date: initialDate, onClose, onSaved }) => {
   };
 
   return (
-    <Modal title={`Upload / Edit DTR · ${emp.employeeName}`} subtitle="Use this for the handwritten DTR of stores with no signal" onClose={onClose} maxW="max-w-4xl">
+    <Modal title={`${office ? 'Edit DTR' : 'Upload / Edit DTR'} · ${emp.employeeName}`} subtitle={office ? 'Office worker: edit the time in and time out, and attach the biometrics as proof' : 'Use this for the handwritten DTR of stores with no signal'} onClose={onClose} maxW="max-w-4xl">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <Field label="Date" required>
           <input type="date" className={inputCls} value={date} onChange={(e) => setDate(e.target.value)} />
         </Field>
-        <Field label="Lunch break started (optional)">
+        {!office && (<><Field label="Lunch break started (optional)">
           <input type="time" className={inputCls} value={lunch} onChange={(e) => setLunch(e.target.value)} />
         </Field>
-        <Field label="Scan / photo of written DTR">
+        </>)}
+        <Field label={office ? 'Proof of biometrics (photo / PDF)' : 'Scan / photo of written DTR'}>
           <input type="file" accept=".jpg,.jpeg,.png,.pdf" className={inputCls} onChange={(e) => setFile(e.target.files?.[0] || null)} />
         </Field>
       </div>
 
       <div className="space-y-2">
         {rows.map((r, i) => (
-          <div key={i} className="grid grid-cols-2 md:grid-cols-[110px_110px_1fr_1fr_1fr_auto] gap-2 items-center">
+          <div key={i} className={`grid grid-cols-2 gap-2 items-center ${office ? 'md:grid-cols-[110px_110px_max-content]' : 'md:grid-cols-[110px_110px_1fr_1fr_1fr_auto]'}`}>
             <input type="time" className={inputCls} value={r.timeIn} onChange={(e) => setRow(i, 'timeIn', e.target.value)} title="Time in" />
             <input type="time" className={inputCls} value={r.timeOut} onChange={(e) => setRow(i, 'timeOut', e.target.value)} title="Time out" />
-            <input className={inputCls} placeholder="Store / place" value={r.place} onChange={(e) => setRow(i, 'place', e.target.value)} />
+            {!office && (<><input className={inputCls} placeholder="Store / place" value={r.place} onChange={(e) => setRow(i, 'place', e.target.value)} />
             <input className={inputCls} placeholder="Purpose" value={r.purpose} onChange={(e) => setRow(i, 'purpose', e.target.value)} />
-            <input className={inputCls} placeholder="Validated by" value={r.validatedBy} onChange={(e) => setRow(i, 'validatedBy', e.target.value)} />
+            <input className={inputCls} placeholder="Validated by" value={r.validatedBy} onChange={(e) => setRow(i, 'validatedBy', e.target.value)} /></>)}
             <button type="button" onClick={() => setRows(p => p.filter((_, x) => x !== i))} className="p-2 text-red-600 hover:bg-red-50 rounded"><X size={16} /></button>
           </div>
         ))}
