@@ -154,6 +154,30 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
     } catch (e) { toast.error(e.message || 'Failed'); }
   };
 
+  const reload = async () => {
+    const r = await api.get(`/dtr/days?employeeId=${emp.employeeId}&from=${from}&to=${to}`);
+    if (r.success) setDays((r.data || []).slice().sort((p, q) => q.date.localeCompare(p.date)));
+    if (onChanged) onChanged();
+  };
+  const markHoliday = async (d) => {
+    const name = window.prompt(`Holiday name for ${fmtDay(d.date)}?`, '');
+    if (name == null) return;
+    if (!name.trim()) { toast.error('Enter the holiday name'); return; }
+    try {
+      await api.post(`/dtr/holiday?date=${d.date}&name=${encodeURIComponent(name.trim())}`);
+      toast.success('Holiday saved');
+      await reload();
+    } catch (e) { toast.error(e.message || 'Failed'); }
+  };
+  const unmarkHoliday = async (d) => {
+    if (!window.confirm(`Remove the holiday on ${fmtDay(d.date)}?`)) return;
+    try {
+      await api.delete(`/dtr/holiday?date=${d.date}`);
+      toast.success('Holiday removed');
+      await reload();
+    } catch (e) { toast.error(e.message || 'Failed'); }
+  };
+
   const gridCls = 'grid grid-cols-[20px_minmax(0,1fr)_repeat(5,84px)_330px] items-center gap-2 [&>div>span]:block [&>div>span]:text-center [&>div>span]:whitespace-nowrap';
 
   const renderDay = (d) => {

@@ -5,7 +5,7 @@ import { api } from '../../services/api';
 import { Modal } from './Shared';
 
 const pad = (n) => String(n).padStart(2, '0');
-const RANGE = /Attendance date:\s*(\d{4})-(\d{2})-(\d{2})/;
+const DATE_RE = /(\d{4})-(\d{2})-(\d{2})/g;
 const toTime = (v) => {
   if (v == null || v === '') return null;
   if (typeof v === 'number' && v > 0 && v < 1) { const m = Math.round(v * 1440); return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`; }
@@ -16,20 +16,29 @@ const toTime = (v) => {
 // Each sheet holds up to 3 employee blocks side by side (15 columns apart).
 const parseWorkbook = (wb) => {
   const out = [];
+  let rangeFrom = null, rangeTo = null;
   wb.SheetNames.forEach((sn) => {
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: '', raw: true });
     const head = rows[3] || [];
     const cols = [];
     head.forEach((c, i) => { if (String(c).trim() === 'Dept.') cols.push(i); });
     if (!cols.length) return;
-    let start = null;
+    let start = null, end = null;
     for (let r = 0; r < 5 && !start; r++) {
       (rows[r] || []).forEach((c) => {
-        const m = String(c).match(RANGE);
-        if (m && !start) start = { y: +m[1], m: +m[2], d: +m[3] };
+        if (start) return;
+        const s = String(c);
+        if (!/Attendance date/i.test(s)) return;
+        const ds = [...s.matchAll(DATE_RE)];
+        if (!ds.length) return;
+        start = { y: +ds[0][1], m: +ds[0][2], d: +ds[0][3] };
+        if (ds[1]) end = `${ds[1][1]}-${ds[1][2]}-${ds[1][3]}`;
       });
     }
     if (!start) return;
+    const startIso = `${start.y}-${pad(start.m)}-${pad(start.d)}`;
+    if (!rangeFrom || startIso < rangeFrom) rangeFrom = startIso;
+    if (end && (!rangeTo || end > rangeTo)) rangeTo = end;
     cols.forEach((c) => {
       const name = String(head[c + 9] || '').trim();
       const userId = String((rows[4] || [])[c + 9] || '').trim();
@@ -48,7 +57,7 @@ const parseWorkbook = (wb) => {
       }
     });
   });
-  return out;
+  return { records: out, from: rangeFrom, to: rangeTo };
 };
 
 const List = ({ title, items, tone }) => !items || items.length === 0 ? null : (
@@ -63,22 +72,24 @@ const BiometricImport = ({ onClose, onDone }) => {
   const [fileName, setFileName] = useState('');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
+  const [range, setRange] = useState({ from: null, to: null });
 
   const pick = async (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
     try {
       const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
-      const recs = parseWorkbook(wb);
-      if (!recs.length) toast.error('No attendance records found in this file');
-      setRecords(recs); setFileName(f.name); setResult(null);
+      const parsed = parseWorkbook(wb);
+      if (!parsed.records.length) toast.error('No attendance records found in this file');
+      setRecords(parsed.records); setRange({ from: parsed.from, to: parsed.to });
+      setFileName(f.name); setResult(null);
     } catch { toast.error('Could not read the file'); }
   };
 
   const send = async () => {
     setBusy(true);
     try {
-      const r = await api.post('/dtr/import-biometric', { records });
+      const r = await api.post('/dtr/import-biometric', { records, from: range.from, to: range.to });
       setResult(r.data);
       toast.success(r.data?.message || 'Imported');
     } catch (err) { toast.error(err.message || 'Import failed'); } finally { setBusy(false); }
