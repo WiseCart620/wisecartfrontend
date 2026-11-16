@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 const PH = 'Asia/Manila';
 const phDate = () => new Date().toLocaleDateString('en-CA', { timeZone: PH });
 const phHour = () => Number(new Date().toLocaleString('en-US', { timeZone: PH, hour12: false, hour: 'numeric' })) % 24;
+const phMinutes = () => { const [h, m] = new Date().toLocaleTimeString('en-GB', { timeZone: PH, hour12: false, hour: '2-digit', minute: '2-digit' }).split(':').map(Number); return (h % 24) * 60 + m; };
 const t12 = (iso) => (iso ? new Date(iso).toLocaleTimeString('en-PH', { timeZone: PH, hour: 'numeric', minute: '2-digit' }) : '');
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
 const fmtDur = (m) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`);
@@ -463,7 +464,7 @@ const FieldApp = () => {
     const lunchEndVisit = lunchStarted ? day.visits.find(v => new Date(v.timeIn) >= new Date(day.lunchStart)) : null;
     const lunchLeft = lunchMin - (lunchStarted ? Math.floor((tick - new Date(day.lunchStart)) / 60000) : 0);
     const onLunch = lunchStarted && !lunchEndVisit;
-    const showLunch = !open && !lunchStarted && phHour() < 13;
+    const showLunch = !lunchStarted && phMinutes() >= 10 * 60 && phMinutes() < 19 * 60;
     const mins = (v) => Math.max(0, Math.round(((v.timeOut ? +new Date(v.timeOut) : tick) - +new Date(v.timeIn)) / 60000));
     const totalMins = day.visits.reduce((s, v) => s + mins(v), 0);
     const todayGroup = { date: phDate(), visits: day.visits, lunchStart: day.lunchStart, isToday: true };
