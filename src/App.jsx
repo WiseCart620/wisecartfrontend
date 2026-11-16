@@ -11,6 +11,7 @@ import TaxStatutoryManagement from './pages/payroll/TaxStatutoryManagement.jsx';
 import YearEndManagement from './pages/payroll/YearEndManagement.jsx';
 import PayrollRunManagement from './pages/payroll/PayrollRunManagement.jsx';
 import BirReports from './pages/payroll/BirReports.jsx';
+import BirWithholding from './pages/payroll/BirWithholding.jsx';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import SalesManagement from './pages/SalesManagement/index.jsx';
@@ -331,6 +332,15 @@ function App() {
                 </ProtectedRoute>
               } />
 
+              <Route path="/bir/withholding-expanded" element={
+                <ProtectedRoute>
+                  <PermissionRoute feature="employees">
+                    <Layout>
+                      <BirWithholding />
+                    </Layout>
+                  </PermissionRoute>
+                </ProtectedRoute>
+              } />
               <Route path="/payroll-runs" element={
                 <ProtectedRoute>
                   <PermissionRoute feature="employees">
