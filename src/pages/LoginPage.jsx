@@ -79,18 +79,6 @@ const LoginPage = () => {
 
       const selfOnly = userData.role !== 'SUPER_ADMIN' && userData.employeeId && (userData.permissions || []).includes('self:only');
 
-      // accounts marked as field workers (MapPin in DTR) open the field app
-      if (import.meta.env.VITE_FIELD_ONLY !== 'true' && userData.employeeId && userData.role !== 'SUPER_ADMIN') {
-        try {
-          const fr = await fetch(`${import.meta.env.VITE_API_BASE_URL}/dtr/my/is-field`, {
-            headers: { 'Authorization': `Bearer ${data.accessToken}` }
-          });
-          if (fr.ok && (await fr.json()).fieldWorker) {
-            navigate('/field', { replace: true });
-            return;
-          }
-        } catch { /* fall through to the normal page */ }
-      }
       navigate(import.meta.env.VITE_FIELD_ONLY === 'true' ? '/field' : (selfOnly ? '/my-payslips' : '/'), { replace: true });
 
     } catch (err) {
