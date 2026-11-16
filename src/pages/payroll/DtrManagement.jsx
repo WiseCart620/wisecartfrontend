@@ -130,7 +130,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
   const [big, setBig] = useState(null);
   const [openKeys, setOpenKeys] = useState(() => new Set());
   // office = biometric worker: no personnel, signature, photo or location
-  const office = !!emp.office || (days || []).some(d => d.absent || d.visits.some(v => v.source === 'BIO'));
+  const office = !!emp.office || (days || []).some(d => (d.absent && d.absent !== 'HOLIDAY') || d.visits.some(v => v.source === 'BIO'));
 
   useEffect(() => {
     api.get(`/dtr/days?employeeId=${emp.employeeId}&from=${from}&to=${to}`)
@@ -348,13 +348,16 @@ const DayEditor = ({ emp, date: initialDate, onClose, onSaved }) => {
   const [file, setFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [bioDay, setBioDay] = useState(false);
+  const [holiday, setHoliday] = useState(null);   // name of the holiday on the chosen date, if any
+  const [holName, setHolName] = useState('');
   const office = !!emp.office || bioDay;   // office (biometric) worker: only time in / time out
 
   useEffect(() => {
     if (!date) return;
     api.get(`/dtr/days?employeeId=${emp.employeeId}&from=${date}&to=${date}`).then(r => {
       const d = r.success ? (r.data || [])[0] : null;
-      setBioDay(!!d && (!!d.absent || d.visits.some(v => v.source === 'BIO')));
+      setBioDay(!!d && ((!!d.absent && d.absent !== 'HOLIDAY') || d.visits.some(v => v.source === 'BIO')));
+      setHoliday(d && d.absent === 'HOLIDAY' ? (d.absentLeave || 'Holiday') : null);
       setLunch(d && d.lunchStart ? hhmm(d.lunchStart) : '');
       setRows(d && d.visits.length ? d.visits.map(v => ({
         id: v.id, timeIn: hhmm(v.timeIn), timeOut: hhmm(v.timeOut),
@@ -364,6 +367,24 @@ const DayEditor = ({ emp, date: initialDate, onClose, onSaved }) => {
   }, [date, emp.employeeId]);
 
   const setRow = (i, k, v) => setRows(p => p.map((r, x) => (x === i ? { ...r, [k]: v } : r)));
+
+  const saveHoliday = async () => {
+    if (!date) { toast.error('Pick a date'); return; }
+    if (!holName.trim()) { toast.error('Enter the holiday name'); return; }
+    try {
+      await api.post(`/dtr/holiday?date=${date}&name=${encodeURIComponent(holName.trim())}`);
+      toast.success('Holiday saved');
+      onSaved();
+    } catch (e) { toast.error(e.message || 'Failed'); }
+  };
+  const removeHoliday = async () => {
+    if (!window.confirm(`Remove the holiday on ${date}?`)) return;
+    try {
+      await api.delete(`/dtr/holiday?date=${date}`);
+      toast.success('Holiday removed');
+      onSaved();
+    } catch (e) { toast.error(e.message || 'Failed'); }
+  };
 
   const save = async () => {
     if (!date) { toast.error('Pick a date'); return; }
@@ -415,6 +436,25 @@ const DayEditor = ({ emp, date: initialDate, onClose, onSaved }) => {
       </div>
       <button type="button" onClick={() => setRows(p => [...p, { ...EMPTY_ROW }])}
         className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-orange-600"><Plus size={14} /> Add visit</button>
+
+      <div className="mt-4 p-3 border border-green-200 bg-green-50/50 rounded">
+        <div className="text-sm font-medium text-gray-800 mb-2">Holiday</div>
+        {holiday ? (
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm text-green-700">This date is a holiday: {holiday}</span>
+            <button type="button" onClick={removeHoliday}
+              className="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-white whitespace-nowrap">Remove holiday</button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <input className={inputCls} placeholder="Holiday name (e.g. Bonifacio Day)" value={holName}
+              onChange={(e) => setHolName(e.target.value)} />
+            <button type="button" onClick={saveHoliday}
+              className="px-3 py-1.5 text-xs border border-green-300 text-green-700 rounded hover:bg-green-50 whitespace-nowrap">Mark as holiday</button>
+          </div>
+        )}
+        <p className="text-xs text-gray-500 mt-2">A holiday applies to all employees on the chosen date.</p>
+      </div>
 
       <div className="flex justify-end gap-2 pt-4 mt-4 border-t">
         <button onClick={onClose} className="px-4 py-2 border border-gray-300 rounded text-sm">Cancel</button>
