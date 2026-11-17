@@ -72,6 +72,32 @@ const payBlock = (ws, r, rem) => {
   });
 };
 
+const payList = (ws, r, pays) => {
+  const list = pays || [];
+  ws.getCell(`A${r}`).value = 'Payment details';
+  ws.getCell(`A${r}`).font = { bold: true };
+  head(ws, r + 1, ['Payment Ref. #', 'Date of remittance', 'Bank', '', 'Amount paid']);
+  ws.mergeCells(`C${r + 1}:D${r + 1}`);
+  list.forEach((p, i) => {
+    const x = r + 2 + i;
+    ws.getCell(`A${x}`).value = p.paymentRef || '';
+    const dt = toDate(p.dateRemitted);
+    ws.getCell(`B${x}`).value = dt;
+    if (dt) ws.getCell(`B${x}`).numFmt = 'mm/dd/yyyy';
+    ws.getCell(`C${x}`).value = p.bank || '';
+    ws.mergeCells(`C${x}:D${x}`);
+    ws.getCell(`E${x}`).value = p.amount ?? null;
+    ws.getCell(`E${x}`).numFmt = FMT;
+    boxRow(ws, x, ['A', 'B', 'C', 'D', 'E']);
+  });
+  const t = r + 2 + list.length;
+  ws.getCell(`A${t}`).value = 'Total paid';
+  ws.getCell(`A${t}`).font = { bold: true };
+  const paid = list.reduce((a, p) => a + r2(p.amount), 0);
+  ws.getCell(`E${t}`).value = list.length ? { formula: `SUM(E${r + 2}:E${t - 1})`, result: paid } : 0;
+  ws.getCell(`E${t}`).numFmt = FMT;
+  ws.getCell(`E${t}`).font = { bold: true };
+};
 const cols5 = [{ width: 38 }, { width: 22 }, { width: 10 }, { width: 10 }, { width: 28 }];
 
 // ---------------- 0619-E ----------------
@@ -83,8 +109,8 @@ const build0619 = (ExcelJS, d, year) => {
   title(ws, 2, `PERIOD COVERED - ${MONTHS[d.month - 1].toUpperCase()} ${year}`, false);
   head(ws, 3, ['Description', 'Tax Base Amount', 'ATC', 'Tax Rate', 'Tax Withheld for the Month']);
   const end = lineRows(ws, 4, d.lines);
-  totalCells(ws, end, 'Total Amount of Remittance(item no.14)', 4, end - 1, d.totalBase, d.totalTax);
-  payBlock(ws, end + 2, d.remittance);
+  totalCells(ws, end, 'Total Amount of Remittance', 4, end - 1, d.totalBase, d.totalTax);
+  payList(ws, end + 2, d.payments || (d.remittance ? [d.remittance] : []));
   return wb;
 };
 
@@ -98,23 +124,7 @@ const build1601 = (ExcelJS, d, year) => {
   title(ws, 2, `PERIOD COVERED - Q${d.quarter} ${year} (${MONTHS[m1 - 1].toUpperCase()} - ${MONTHS[m1 + 1].toUpperCase()})`, false);
   head(ws, 3, ['Description', 'Tax Base for the Quarter', 'ATC', 'Tax Rate', 'Tax Withheld for the Quarter']);
   const end = lineRows(ws, 4, d.lines);
-  totalCells(ws, end, 'Total Amount Still Due', 4, end - 1, d.totalBase, d.totalDue);
-  ws.getCell(`A${end + 1}`).value = 'Less:';
-  const pays = d.payments || [];
-  pays.forEach((p, i) => {
-    const r = end + 2 + i;
-    ws.getCell(`B${r}`).value = `Payments - ${MONTHS[p.month - 1]}`;
-    ws.getCell(`E${r}`).value = r2(p.amount);
-    ws.getCell(`E${r}`).numFmt = FMT;
-  });
-  const sr = end + 2 + pays.length + 1;
-  ws.getCell(`A${sr}`).value = 'Tax Still Due for the Quarter (over-remittance)';
-  ws.getCell(`A${sr}`).font = { bold: true };
-  const f = `E${end}` + pays.map((_, i) => `-E${end + 2 + i}`).join('');
-  ws.getCell(`E${sr}`).value = { formula: f, result: r2(d.stillDue) };
-  ws.getCell(`E${sr}`).numFmt = FMT;
-  ws.getCell(`E${sr}`).font = { bold: true };
-  payBlock(ws, sr + 2, d.remittance);
+  totalCells(ws, end, 'TOTAL', 4, end - 1, d.totalBase, d.totalDue);
   return wb;
 };
 
@@ -124,29 +134,38 @@ const build1604 = (ExcelJS, d, year) => {
   const wb = new ExcelJS.Workbook();
 
   const s = wb.addWorksheet(`SUMMARY_${year}`);
-  s.columns = [{ width: 12 }, { width: 22 }, { width: 18 }, { width: 22 }, { width: 22 }, { width: 22 }];
+  s.columns = [{ width: 14 }, { width: 22 }, { width: 18 }, { width: 22 }, { width: 22 }, { width: 22 }];
   title(s, 1, '1604-E');
-  head(s, 2, ['QUARTER', 'DATE OF REMITTANCE', 'BANK', 'Payment Ref. #', 'TAXES WITHHELD', 'AMOUNT PAID']);
-  (d.quarters || []).forEach((q, i) => {
-    const r = 3 + i;
-    s.getCell(`A${r}`).value = QL[q.quarter - 1] || `Q${q.quarter}`;
-    const dt = toDate(q.remittance?.dateRemitted);
-    s.getCell(`B${r}`).value = dt;
-    if (dt) s.getCell(`B${r}`).numFmt = 'mm/dd/yyyy';
-    s.getCell(`C${r}`).value = q.remittance?.bank || '';
-    s.getCell(`D${r}`).value = q.remittance?.paymentRef || '';
-    s.getCell(`E${r}`).value = r2(q.taxesWithheld);
-    s.getCell(`F${r}`).value = q.remittance?.amount ?? null;
-    ['E', 'F'].forEach((c) => { s.getCell(`${c}${r}`).numFmt = FMT; });
-    boxRow(s, r, ['A', 'B', 'C', 'D', 'E', 'F']);
+  head(s, 2, ['MONTH', 'DATE OF REMITTANCE', 'BANK', 'Payment Ref. #', 'TAXES WITHHELD', 'AMOUNT PAID']);
+  let rr = 3;
+  const firstRow = rr;
+  let sumTaxes = 0;
+  let sumPaid = 0;
+  (d.months || []).forEach((q) => {
+    const list = q.payments && q.payments.length ? q.payments : [null];
+    sumTaxes += r2(q.taxesWithheld);
+    list.forEach((p, j) => {
+      s.getCell(`A${rr}`).value = j === 0 ? MONTHS[q.month - 1].toUpperCase() : '';
+      const dt = toDate(p?.dateRemitted);
+      s.getCell(`B${rr}`).value = dt;
+      if (dt) s.getCell(`B${rr}`).numFmt = 'mm/dd/yyyy';
+      s.getCell(`C${rr}`).value = p?.bank || '';
+      s.getCell(`D${rr}`).value = p?.paymentRef || '';
+      s.getCell(`E${rr}`).value = j === 0 ? r2(q.taxesWithheld) : null;
+      s.getCell(`F${rr}`).value = p?.amount ?? null;
+      sumPaid += r2(p?.amount);
+      ['E', 'F'].forEach((c) => { s.getCell(`${c}${rr}`).numFmt = FMT; });
+      boxRow(s, rr, ['A', 'B', 'C', 'D', 'E', 'F']);
+      rr += 1;
+    });
   });
-  s.getCell('A7').value = 'TOTAL';
-  s.getCell('E7').value = { formula: 'SUM(E3:E6)', result: r2(d.totalWithheld) };
-  s.getCell('F7').value = { formula: 'SUM(F3:F6)', result: (d.quarters || []).reduce((a, q) => a + r2(q.remittance?.amount), 0) };
-  ['A', 'E', 'F'].forEach((c) => { s.getCell(`${c}7`).font = { bold: true }; });
-  ['E', 'F'].forEach((c) => { s.getCell(`${c}7`).numFmt = FMT; });
-  boxRow(s, 7, ['A', 'B', 'C', 'D', 'E', 'F']);
-
+  const lastRow = rr - 1;
+  s.getCell(`A${rr}`).value = 'TOTAL';
+  s.getCell(`E${rr}`).value = { formula: `SUM(E${firstRow}:E${lastRow})`, result: sumTaxes };
+  s.getCell(`F${rr}`).value = { formula: `SUM(F${firstRow}:F${lastRow})`, result: sumPaid };
+  ['A', 'E', 'F'].forEach((c) => { s.getCell(`${c}${rr}`).font = { bold: true }; });
+  ['E', 'F'].forEach((c) => { s.getCell(`${c}${rr}`).numFmt = FMT; });
+  boxRow(s, rr, ['A', 'B', 'C', 'D', 'E', 'F']);
   const a = wb.addWorksheet(`ALPHALIST_${year}`);
   a.columns = [{ width: 22 }, { width: 42 }, { width: 10 }, { width: 26 }, { width: 26 }];
   title(a, 1, 'ALPHALIST_1604E');

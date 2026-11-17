@@ -62,7 +62,7 @@ const LineTable = ({ lines, totalBase, totalTax, baseLabel, taxLabel, showTin })
   </div>
 );
 
-const RemitBox = ({ year, form, period, remit, canEdit, onSaved, label }) => {
+const RemitBox = ({ year, form, period, remit, canEdit, onSaved, label, coverMonth }) => {
   const [f, setF] = useState({ dateRemitted: '', bank: 'UNIONBANK', paymentRef: '', amount: '' });
   useEffect(() => {
     setF({ dateRemitted: remit?.dateRemitted || '', bank: remit?.bank || 'UNIONBANK', paymentRef: remit?.paymentRef || '', amount: remit?.amount ?? '' });
@@ -77,6 +77,7 @@ const RemitBox = ({ year, form, period, remit, canEdit, onSaved, label }) => {
   return (
     <div className="p-4 border-t border-gray-200 flex flex-wrap items-end gap-3">
       <span className="text-sm font-medium text-gray-700 w-full">{label}</span>
+      {coverMonth && <div className="w-full text-xs text-gray-600">Payment for: <b>{MONTHS[coverMonth - 1]} {year}</b>{coverMonth % 3 === 0 ? ' (filed with the 1601-EQ)' : ''}</div>}
       <div><label className="block text-xs text-gray-600 mb-1">Date of remittance</label><input type="date" className={`${inputCls} !w-40`} value={f.dateRemitted} disabled={!canEdit} onChange={set('dateRemitted')} /></div>
       <div><label className="block text-xs text-gray-600 mb-1">Bank</label><input className={`${inputCls} !w-40`} value={f.bank} disabled={!canEdit} onChange={set('bank')} /></div>
       <div><label className="block text-xs text-gray-600 mb-1">Payment Ref. #</label><input className={`${inputCls} !w-40`} value={f.paymentRef} disabled={!canEdit} onChange={set('paymentRef')} /></div>
@@ -86,6 +87,97 @@ const RemitBox = ({ year, form, period, remit, canEdit, onSaved, label }) => {
   );
 };
 
+const openProof = async (id) => {
+  try {
+    const d = pick(await api.get(`${BASE}/payments/${id}/proof`));
+    const bin = atob(d.base64); const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    window.open(URL.createObjectURL(new Blob([bytes], { type: d.type || 'application/octet-stream' })), '_blank');
+  } catch (e) { toast.error(e.message || 'Failed to open the file'); }
+};
+
+const PayModal = ({ p, year, month, onClose, onDone }) => {
+  const [f, setF] = useState({ dateRemitted: p?.dateRemitted || '', bank: p?.bank || 'UNIONBANK', paymentRef: p?.paymentRef || '', amount: p?.amount ?? '' });
+  const [file, setFile] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const set = (k) => (e) => setF((x) => ({ ...x, [k]: e.target.value }));
+  const lbl = 'block text-xs text-gray-600 mb-1';
+  const save = async () => {
+    if (busy) return;
+    if (f.amount === '') { toast.error('Enter the amount paid'); return; }
+    setBusy(true);
+    try {
+      const body = { year, month, dateRemitted: f.dateRemitted || null, bank: f.bank, paymentRef: f.paymentRef, amount: Number(f.amount) };
+      const r = p ? await api.put(`${BASE}/payments/${p.id}`, body) : await api.post(`${BASE}/payments`, body);
+      const id = p ? p.id : pick(r)?.id;
+      if (file && id) await api.post(`${BASE}/payments/${id}/proof`, { fileName: file.name, fileType: file.type, fileBase64: await toB64(file) });
+      toast.success('Saved');
+      onDone();
+    } catch (e) { toast.error(e.message || 'Failed to save'); setBusy(false); }
+  };
+  return (
+    <EwtModal title={`${p ? 'Edit' : 'Add'} payment - 0619-E ${MONTHS[month - 1]} ${year}`} onClose={onClose} onSave={save} saveLabel={busy ? 'Saving...' : (p ? 'Save' : 'Add payment')}>
+      <div><label className={lbl}>Date of remittance</label><input type="date" className={`${inputCls} !w-full`} value={f.dateRemitted} onChange={set('dateRemitted')} /></div>
+      <div><label className={lbl}>Bank</label><input className={`${inputCls} !w-full`} value={f.bank} onChange={set('bank')} /></div>
+      <div><label className={lbl}>Payment Ref. #</label><input className={`${inputCls} !w-full`} value={f.paymentRef} onChange={set('paymentRef')} /></div>
+      <div><label className={lbl}>Amount paid</label><input type="number" step="0.01" className={`${inputCls} !w-full`} value={f.amount} onChange={set('amount')} /></div>
+      <div className="sm:col-span-2">
+        <label className={lbl}>Payment proof (image / PDF)</label>
+        {p?.proofName && <div className="text-xs text-gray-600 mb-1">Current file: <button type="button" className="text-blue-600 hover:underline" onClick={() => openProof(p.id)}>{p.proofName}</button> (choose a new file to replace it)</div>}
+        <input type="file" accept="image/*,application/pdf" className="text-xs"
+          onChange={(e) => { const fl = e.target.files && e.target.files[0] ? e.target.files[0] : null; if (fl && fl.size > 10 * 1024 * 1024) { toast.error('File is over 10 MB'); e.target.value = ''; return; } setFile(fl); }} />
+      </div>
+    </EwtModal>
+  );
+};
+
+const PaymentsBox = ({ year, month, canEdit, onChanged }) => {
+  const [list, setList] = useState(null);
+  const [modal, setModal] = useState(null);
+  const load = useCallback(() => { api.get(`${BASE}/payments?year=${year}&month=${month}`).then((r) => setList(pick(r) || [])).catch(() => toast.error('Failed to load payments')); }, [year, month]);
+  useEffect(() => { setModal(null); load(); }, [load]);
+  const done = () => { setModal(null); load(); if (onChanged) onChanged(); };
+  const del = async (p) => {
+    if (!window.confirm('Delete this payment?')) return;
+    try { await api.delete(`${BASE}/payments/${p.id}`); toast.success('Deleted'); done(); }
+    catch (e) { toast.error(e.message || 'Failed to delete'); }
+  };
+  const total = (list || []).reduce((s, x) => s + n(x.amount), 0);
+  return (
+    <div className="p-4 border-t border-gray-200">
+      <div className="flex flex-wrap items-center gap-3 mb-2">
+        <span className="text-sm font-medium text-gray-700">Payments of 0619-E for {MONTHS[month - 1]} {year}{month % 3 === 0 ? ' (filed with the 1601-EQ)' : ''}</span>
+        {canEdit && <button className={`${btnP} ml-auto`} onClick={() => setModal({ p: null })}>+ Add payment</button>}
+      </div>
+      <div className="overflow-auto">
+        <table className="border-collapse min-w-[640px] w-full">
+          <thead><tr>{['Date of remittance', 'Bank', 'Payment Ref. #', 'Amount paid', 'Proof', ''].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
+          <tbody>
+            {list === null
+              ? <tr><td colSpan="6" className="px-4 py-6 text-center text-gray-500 text-sm">Loading...</td></tr>
+              : list.length === 0
+                ? <tr><td colSpan="6" className="px-4 py-6 text-center text-gray-500 text-sm">No payment saved for this month yet</td></tr>
+                : list.map((p) => (
+                  <tr key={p.id}>
+                    <td className={`${td} text-center`}>{fmtDate(p.dateRemitted)}</td>
+                    <td className={td}>{p.bank}</td>
+                    <td className={td}>{p.paymentRef}</td>
+                    <td className={tdN}>{acc(p.amount)}</td>
+                    <td className={`${td} text-center`}>{p.proofName ? <button className="text-xs text-blue-600 hover:underline" onClick={() => openProof(p.id)}>View</button> : <span className="text-gray-400">-</span>}</td>
+                    <td className={`${td} text-center`}>{canEdit && <>
+                      <button className="text-xs text-blue-600 hover:underline mr-3" onClick={() => setModal({ p })}>Edit</button>
+                      <button className="text-xs text-red-600 hover:underline" onClick={() => del(p)}>Delete</button>
+                    </>}</td>
+                  </tr>
+                ))}
+            {list && list.length > 0 && <tr><td className={`${td} font-bold bg-green-100`} colSpan={3}>TOTAL PAID</td><td className={tdT}>{acc(total)}</td><td className={`${td} bg-green-100`} colSpan={2} /></tr>}
+          </tbody>
+        </table>
+      </div>
+      {modal && <PayModal key={modal.p ? modal.p.id : 'new'} p={modal.p} year={year} month={month} onClose={() => setModal(null)} onDone={done} />}
+    </div>
+  );
+};
 const Report0619 = ({ year, canEdit }) => {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [d, setD] = useState(null);
@@ -97,12 +189,12 @@ const Report0619 = ({ year, canEdit }) => {
         <label className="text-xs font-medium text-gray-700">Month</label>
         <select className={`${inputCls} !w-auto`} value={month} onChange={(e) => setMonth(Number(e.target.value))}>{MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}</select>
         <span className="text-xs text-gray-500">Monthly withholding tax - expanded (0619-E). Months 3, 6, 9, 12 are filed on the 1601-EQ.</span>
-        {d && <button className={`${btnP} ml-auto`} onClick={() => dl('0619', d, year)}>Download Excel</button>}
+        {d && <button className={`${btnP} ml-auto`} onClick={async () => { let pays = []; try { pays = pick(await api.get(`${BASE}/payments?year=${year}&month=${month}`)) || []; } catch (e) { /* ignore */ } dl('0619', { ...d, payments: pays }, year); }}>Download Excel</button>}
       </div>
       {d && <>
         <LineTable lines={d.lines} totalBase={d.totalBase} totalTax={d.totalTax} baseLabel="Tax Base Amount" taxLabel="Tax Withheld for the Month" />
-        <p className="px-4 py-2 text-sm font-semibold">Total Amount of Remittance (item no. 14): {acc(d.totalTax)}</p>
-        <RemitBox year={year} form="0619E" period={month} remit={d.remittance} canEdit={canEdit} onSaved={load} label={`Payment of 0619-E for ${MONTHS[month - 1]}`} />
+        <p className="px-4 py-2 text-sm font-semibold">Total Amount of Remittance: {acc(d.totalTax)}</p>
+        <PaymentsBox year={year} month={month} canEdit={canEdit} onChanged={load} />
       </>}
     </div>
   );
@@ -123,13 +215,6 @@ const Report1601 = ({ year, canEdit }) => {
       </div>
       {d && <>
         <LineTable lines={d.lines} totalBase={d.totalBase} totalTax={d.totalDue} baseLabel="Tax Base for the Quarter" taxLabel="Tax Withheld for the Quarter" />
-        <div className="p-4 text-sm space-y-1 max-w-md">
-          <div className="flex justify-between"><span>Total Amount Still Due</span><b className="tabular-nums">{acc(d.totalDue)}</b></div>
-          <div className="text-gray-500">Less:</div>
-          {(d.payments || []).map((p) => <div key={p.month} className="flex justify-between pl-4"><span>Payments - {MONTHS[p.month - 1]}</span><span className="tabular-nums">{acc(p.amount)}</span></div>)}
-          <div className="flex justify-between border-t pt-1"><span>Tax Still Due for the Quarter (over-remittance)</span><b className="tabular-nums">{acc(d.stillDue)}</b></div>
-        </div>
-        <RemitBox year={year} form="1601EQ" period={q} remit={d.remittance} canEdit={canEdit} onSaved={load} label={`Payment of 1601-EQ for Q${q}`} />
       </>}
     </div>
   );
@@ -137,34 +222,77 @@ const Report1601 = ({ year, canEdit }) => {
 
 const Report1604 = ({ year }) => {
   const [d, setD] = useState(null);
-  const load = useCallback(() => { api.get(`${BASE}/1604e?year=${year}`).then((r) => setD(pick(r))).catch(() => toast.error('Failed to load')); }, [year]);
+  const [mo, setMo] = useState(null);
+  const [pays, setPays] = useState(null);
+  const [open, setOpen] = useState({});
+  const load = useCallback(() => {
+    api.get(`${BASE}/1604e?year=${year}`).then((r) => setD(pick(r))).catch(() => toast.error('Failed to load'));
+    api.get(`${BASE}/1604e/months?year=${year}`).then((r) => setMo(pick(r) || [])).catch(() => toast.error('Failed to load'));
+    api.get(`${BASE}/payments/year?year=${year}`).then((r) => setPays(pick(r) || [])).catch(() => toast.error('Failed to load'));
+  }, [year]);
   useEffect(() => { load(); }, [load]);
-  if (!d) return <p className="p-6 text-gray-500">Loading...</p>;
+  if (!d || !mo || !pays) return <p className="p-6 text-gray-500">Loading...</p>;
+  const QN = ['1st Quarter', '2nd Quarter', '3rd Quarter', '4th Quarter'];
+  const byMonth = (m) => mo.find((x) => x.month === m);
+  const paysOf = (m) => pays.filter((x) => x.month === m);
+  const totalWithheld = mo.reduce((s, x) => s + n(x.taxesWithheld), 0);
+  const totalPaid = pays.reduce((s, x) => s + n(x.amount), 0);
+  const allOpen = [0, 1, 2, 3].every((i) => open[i]);
+  const exportData = { ...d, months: mo.map((x) => ({ ...x, payments: paysOf(x.month) })) };
   return (
     <div>
-      <div className="px-4 pt-3 flex justify-end"><button className={btnP} onClick={() => dl('1604', d, year)}>Download Excel (summary + alphalist)</button></div>
+      <div className="px-4 pt-3 flex justify-between items-center">
+        <button className={btn} onClick={() => setOpen(allOpen ? {} : { 0: true, 1: true, 2: true, 3: true })}>{allOpen ? 'Collapse all' : 'Expand all'}</button>
+        <button className={btnP} onClick={() => dl('1604', exportData, year)}>Download Excel (summary + alphalist)</button>
+      </div>
       <div className="p-4 overflow-auto">
-        <table className="border-collapse min-w-[640px]">
-          <thead><tr>{['QUARTER', 'DATE OF REMITTANCE', 'BANK', 'Payment Ref. #', 'TAXES WITHHELD', 'AMOUNT PAID'].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
+        <table className="border-collapse min-w-[760px]">
+          <thead><tr>{['QUARTER / MONTH', 'DATE OF REMITTANCE', 'BANK', 'Payment Ref. #', 'TAXES WITHHELD', 'AMOUNT PAID', 'PROOF'].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
           <tbody>
-            {(d.quarters || []).map((r) => (
-              <tr key={r.quarter}>
-                <td className={`${td} text-center`}>Q{r.quarter}</td><td className={`${td} text-center`}>{fmtDate(r.remittance?.dateRemitted)}</td>
-                <td className={td}>{r.remittance?.bank || ''}</td><td className={td}>{r.remittance?.paymentRef || ''}</td>
-                <td className={tdN}>{acc(r.taxesWithheld)}</td><td className={tdN}>{acc(r.remittance?.amount)}</td>
-              </tr>
-            ))}
-            <tr><td className={`${td} font-bold bg-green-100`} colSpan={4}>TOTAL</td><td className={tdT}>{acc(d.totalWithheld)}</td><td className={tdT} /></tr>
+            {[0, 1, 2, 3].map((qi) => {
+              const ms = [qi * 3 + 1, qi * 3 + 2, qi * 3 + 3];
+              const tw = ms.reduce((s, m) => s + n(byMonth(m)?.taxesWithheld), 0);
+              const tp = ms.reduce((s, m) => s + paysOf(m).reduce((a, x) => a + n(x.amount), 0), 0);
+              const isOpen = !!open[qi];
+              return (
+                <React.Fragment key={qi}>
+                  <tr className="bg-gray-50 cursor-pointer hover:bg-gray-100" onClick={() => setOpen((p) => ({ ...p, [qi]: !p[qi] }))}>
+                    <td className={`${td} font-semibold`} colSpan={4}>
+                      <span className="inline-block w-4">{isOpen ? '\u25BE' : '\u25B8'}</span>
+                      {QN[qi]} <span className="font-normal text-gray-500">({MONTHS[ms[0] - 1].slice(0, 3)} - {MONTHS[ms[2] - 1].slice(0, 3)})</span>
+                    </td>
+                    <td className={`${tdN} font-semibold`}>{acc(tw)}</td>
+                    <td className={`${tdN} font-semibold`}>{acc(tp)}</td>
+                    <td className={td} />
+                  </tr>
+                  {isOpen && ms.map((m) => {
+                    const ps = paysOf(m);
+                    const rows = ps.length ? ps : [null];
+                    return rows.map((p, j) => (
+                      <tr key={`${m}-${j}`}>
+                        <td className={`${td} pl-9`}>{j === 0 ? MONTHS[m - 1] : ''}</td>
+                        <td className={`${td} text-center`}>{fmtDate(p?.dateRemitted)}</td>
+                        <td className={td}>{p?.bank || ''}</td>
+                        <td className={td}>{p?.paymentRef || ''}</td>
+                        <td className={tdN}>{j === 0 ? acc(byMonth(m)?.taxesWithheld) : ''}</td>
+                        <td className={tdN}>{p ? acc(p.amount) : acc(0)}</td>
+                        <td className={`${td} text-center`}>{p?.proofName ? <button className="text-xs text-blue-600 hover:underline" onClick={() => openProof(p.id)}>View</button> : ''}</td>
+                      </tr>
+                    ));
+                  })}
+                </React.Fragment>
+              );
+            })}
+            <tr><td className={`${td} font-bold bg-green-100`} colSpan={4}>TOTAL</td><td className={tdT}>{acc(totalWithheld)}</td><td className={tdT}>{acc(totalPaid)}</td><td className={`${td} bg-green-100`} /></tr>
           </tbody>
         </table>
-        <p className="text-xs text-gray-500 mt-2">Date, bank and reference come from the payment saved on the 1601-EQ tab of each quarter.</p>
+        <p className="text-xs text-gray-500 mt-2">Click a quarter to see its months. Payments come from the 0619-E tab of each month (a month can have several payments).</p>
       </div>
       <h3 className="px-4 text-sm font-semibold">ALPHALIST (1604-E)</h3>
       <div className="p-4"><LineTable showTin lines={d.alphalist} totalBase={d.totalBase} totalTax={d.totalTax} baseLabel="Annual Income Payment" taxLabel="Annual Tax Withheld" /></div>
     </div>
   );
 };
-
 const blankPayee = { companyId: '', tin: '', registeredName: '', description: '', atc: 'WC160', rate: '2', sortOrder: '0' };
 const EwtModal = ({ title, onClose, onSave, saveLabel, children }) => {
   useEffect(() => {
