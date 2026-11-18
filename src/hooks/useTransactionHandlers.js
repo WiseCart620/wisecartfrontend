@@ -362,6 +362,7 @@ export const useTransactionHandlers = () => {
         filterStartDate: stock.filterStartDate || '',
         filterEndDate: stock.filterEndDate || '',
         filterType: stock.filterType || 'ALL',
+        filterTypes: stock.filterTypes || [],
         variationName: stock.variationName,
         variationSku: stock.variationSku,
         isVariation: hasVariation,

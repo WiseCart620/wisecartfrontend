@@ -22,7 +22,7 @@ const BranchStockTable = ({
   totalElements = 0,
   dateFrom = '',
   dateTo = '',
-  typeFilter = '',
+  typeFilter = [],
 }) => {
   const { user } = useAuth();
   const [loadingId, setLoadingId] = useState(null);
@@ -41,7 +41,7 @@ const BranchStockTable = ({
         ...stock,
         filterStartDate: dateFrom || '',
         filterEndDate: dateTo || '',
-        filterType: typeFilter || 'ALL',
+        filterTypes: Array.isArray(typeFilter) ? typeFilter : (typeFilter ? [typeFilter] : []),
       }, 'branch');
     } finally {
       setLoadingId(null);
@@ -142,7 +142,7 @@ const BranchStockTable = ({
                       </div>
                     </td>
                     <td className="px-3 py-3 text-center text-sm font-semibold text-black td-num">
-                      {(stock.quantity || 0).toLocaleString('en-US')}
+                      {(stock.quantity || 0).toLocaleString('en-US')}{stock.openingQuantity != null && (<div className="text-[10px] font-normal text-gray-500">Open: {Number(stock.openingQuantity).toLocaleString('en-US')}</div>)}
                     </td>
                     <td className="px-3 py-3 text-center text-sm text-black td-num">
                       {(stock.deliveredQuantity || 0).toLocaleString('en-US')}

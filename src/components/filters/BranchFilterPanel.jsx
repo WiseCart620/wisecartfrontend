@@ -1,4 +1,3 @@
-import TxTypeMultiSelect from './TxTypeMultiSelect';
 import React, { useEffect, useMemo } from 'react';
 import MultiSelectDropdown from '../common/MultiSelectDropdown';
 import ProductMultiSelectDropdown from '../common/ProductMultiSelectDropdown';
@@ -83,7 +82,7 @@ const BranchFilterPanel = ({
   if (!showBranchFilter) return null;
 
   const hasActiveFilters = (filters.companyIds?.length > 0) || (filters.branchIds?.length > 0) ||
-    (filters.productKeys?.length > 0) || filters.minQty || filters.maxQty || filters.startDate || filters.endDate || (filters.txType && filters.txType.length > 0);
+    (filters.productKeys?.length > 0) || filters.minQty || filters.maxQty || filters.startDate || filters.endDate;
 
   return (
     <div className="py-1.5 mb-2">
@@ -165,8 +164,6 @@ const BranchFilterPanel = ({
           </div>
         )}
 
-        {/* Type filter */}
-        <TxTypeMultiSelect value={filters.txType} onChange={(v) => updateFilter('txType', v)} />
 
         {hasActiveFilters && (
           <button

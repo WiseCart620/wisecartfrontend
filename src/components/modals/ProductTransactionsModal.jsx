@@ -20,7 +20,8 @@ const ProductTransactionsModal = ({
     branchStocks = []
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterType, setFilterType] = useState('ALL');
+    const [filterTypes, setFilterTypes] = useState([]);
+    const onlySale = filterTypes.length === 1 && filterTypes[0] === 'SALE';
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [showSaleTimeline, setShowSaleTimeline] = useState(false);
@@ -34,17 +35,20 @@ const ProductTransactionsModal = ({
     const [pageSize, setPageSize] = useState(20); // Changed to 20
     const [expandedCategory, setExpandedCategory] = useState(null);
     const [showTotalsSummary, setShowTotalsSummary] = useState(false);
+    const [showTypeMenu, setShowTypeMenu] = useState(false);
 
+    const initTypesKey = JSON.stringify(product?.filterTypes || []);
     React.useEffect(() => {
         if (!isOpen) return;
-        const t = product?.filterType || 'ALL';
+        const types = Array.isArray(product?.filterTypes) ? product.filterTypes : [];
         setStartDate(product?.filterStartDate || '');
         setEndDate(product?.filterEndDate || '');
-        setFilterType(t);
-        setShowDeletedFilter(t !== 'ALL' ? 'ACTIVE' : 'ALL');
-        setShowTotalsSummary(t !== 'ALL');
+        setFilterTypes(types);
+        setSearchTerm('');
+        setShowDeletedFilter(types.length > 0 ? 'ACTIVE' : 'ALL');
+        setShowTotalsSummary(types.length > 0);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, product?.filterStartDate, product?.filterEndDate, product?.filterType]);
+    }, [isOpen, product?.filterStartDate, product?.filterEndDate, initTypesKey, product?.branchId, product?.productId, product?.variationId]);
 
     const getTransactionDates = (transaction) => {
         const userEnteredDate = transaction.transactionDate
@@ -270,7 +274,7 @@ const ProductTransactionsModal = ({
                 transaction.remarks?.toLowerCase().includes(searchLower) ||
                 type?.toLowerCase().includes(searchLower);
 
-            const matchesType = filterType === 'ALL' || (() => {
+            const matchesOneType = (filterType) => filterType === 'ALL' || (() => {
                 if (type === 'TRANSFER') {
                     if (filterType === 'TRANSFER_IN') return transaction.transactionType === 'TRANSFER_IN';
                     if (filterType === 'TRANSFER_OUT') return transaction.transactionType === 'TRANSFER_OUT';
@@ -280,6 +284,7 @@ const ProductTransactionsModal = ({
             })();
 
             const isDeleted = transaction.isDeleted === true || transaction.action === 'DELETED';
+            const matchesType = filterTypes.length === 0 || filterTypes.some(matchesOneType);
             const matchesDeletedFilter = showDeletedFilter === 'ALL' ||
                 (showDeletedFilter === 'ACTIVE' && !isDeleted) ||
                 (showDeletedFilter === 'DELETED' && isDeleted);
@@ -305,7 +310,7 @@ const ProductTransactionsModal = ({
             const { userEnteredDate: dateB } = getTransactionDates(b);
             return (dateB || 0) - (dateA || 0);
         });
-    }, [groupedTransactionsRef, searchTerm, filterType, showDeletedFilter, startDate, endDate, product]);
+    }, [groupedTransactionsRef, searchTerm, filterTypes, showDeletedFilter, startDate, endDate, product]);
 
 
 
@@ -469,7 +474,7 @@ const ProductTransactionsModal = ({
 
     React.useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, filterType, showDeletedFilter, startDate, endDate]);
+    }, [searchTerm, filterTypes, showDeletedFilter, startDate, endDate]);
 
     if (!isOpen) return null;
 
@@ -670,26 +675,6 @@ const ProductTransactionsModal = ({
                                 />
                             </div>
                             <select
-                                value={filterType}
-                                onChange={(e) => {
-                                    setFilterType(e.target.value);
-                                    if (e.target.value !== 'ALL') {
-                                        setShowDeletedFilter('ACTIVE');
-                                        setShowTotalsSummary(true);
-                                    }
-                                }}
-                                className="px-3 py-2 border rounded text-sm focus:ring-2 focus:ring-orange-500"
-                            >
-                                <option value="ALL">All Types</option>
-                                <option value="STOCK_IN">Stock In</option>
-                                <option value="TRANSFER_IN">Transfer In</option>
-                                <option value="TRANSFER_OUT">Transfer Out</option>
-                                <option value="RETURN">Return</option>
-                                <option value="DAMAGE">Damage</option>
-                                <option value="DELIVERY">Delivery</option>
-                                <option value="SALE">Sale</option>
-                            </select>
-                            <select
                                 value={showDeletedFilter}
                                 onChange={(e) => setShowDeletedFilter(e.target.value)}
                                 className="px-3 py-2 border rounded text-sm focus:ring-2 focus:ring-orange-500 bg-white"
@@ -698,7 +683,37 @@ const ProductTransactionsModal = ({
                                 <option value="ACTIVE">Active Only</option>
                                 <option value="DELETED">Deleted Only</option>
                             </select>
-                            <input
+                            
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowTypeMenu(v => !v)}
+                                    className="w-full px-3 py-2 border rounded text-sm bg-white text-left flex items-center justify-between gap-2 focus:ring-2 focus:ring-orange-500"
+                                >
+                                    <span className="truncate">
+                                        {filterTypes.length === 0 ? 'All Types' : filterTypes.map(t => t.replace('_', ' ')).join(', ')}
+                                    </span>
+                                    <ChevronDown size={14} className="text-gray-400 shrink-0" />
+                                </button>
+                                {showTypeMenu && (
+                                    <div className="absolute z-20 mt-1 w-full min-w-[180px] bg-white border rounded shadow-lg p-2 space-y-1">
+                                        {['SALE', 'DELIVERY', 'RETURN', 'STOCK_IN', 'TRANSFER', 'TRANSFER_IN', 'TRANSFER_OUT', 'DAMAGE'].map(t => (
+                                            <label key={t} className="flex items-center gap-2 text-sm cursor-pointer px-1 py-0.5 rounded hover:bg-gray-50">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={filterTypes.includes(t)}
+                                                    onChange={() => setFilterTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
+                                                />
+                                                {t.replace('_', ' ')}
+                                            </label>
+                                        ))}
+                                        <div className="flex justify-between pt-1 border-t">
+                                            <button type="button" onClick={() => setFilterTypes([])} className="text-xs text-gray-500 hover:text-gray-800">All Types</button>
+                                            <button type="button" onClick={() => setShowTypeMenu(false)} className="text-xs text-orange-600 font-medium">Done</button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>                            <input
                                 type="date"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
@@ -713,10 +728,10 @@ const ProductTransactionsModal = ({
                                 placeholder="End Date"
                             />
                         </div>
-                        {(searchTerm || filterType !== 'ALL' || showDeletedFilter !== 'ALL' || startDate || endDate) && (
+                        {(searchTerm || filterTypes.length > 0 || showDeletedFilter !== 'ALL' || startDate || endDate) && (
                             <div className="flex items-center justify-between">
                                 <button
-                                    onClick={() => { setSearchTerm(''); setFilterType('ALL'); setShowDeletedFilter('ALL'); setStartDate(''); setEndDate(''); }}
+                                    onClick={() => { setSearchTerm(''); setFilterTypes([]); setShowDeletedFilter('ALL'); setStartDate(''); setEndDate(''); }}
                                     className="text-sm text-orange-600 hover:text-orange-800 font-medium"
                                 >
                                     Clear All Filters
@@ -804,7 +819,7 @@ const ProductTransactionsModal = ({
                                     </>
                                 ) : (
                                     <>
-                                        <div className={`flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded ${filterType === 'SALE' ? 'hidden' : ''}`}>
+                                        <div className={`flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded ${onlySale ? 'hidden' : ''}`}>
                                             <ArrowDownCircle size={15} className="text-green-600" />
                                             <span className="text-xs font-medium text-green-700 uppercase tracking-wide">Total In</span>
                                             <span className="text-sm font-bold text-green-800">{totals.totalIn.toLocaleString()}</span>
@@ -816,10 +831,10 @@ const ProductTransactionsModal = ({
                                         </div>
                                         <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded">
                                             <ArrowUpCircle size={15} className="text-red-600" />
-                                            <span className="text-xs font-medium text-red-700 uppercase tracking-wide">{filterType === 'SALE' ? 'Total Sales' : 'Total Out'}</span>
+                                            <span className="text-xs font-medium text-red-700 uppercase tracking-wide">{onlySale ? 'Total Sales' : 'Total Out'}</span>
                                             <span className="text-sm font-bold text-red-800">{totals.totalOut.toLocaleString()}</span>
                                         </div>
-                                        <div className={`flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-200 rounded ${filterType === 'SALE' ? 'hidden' : ''}`}>
+                                        <div className={`flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-200 rounded ${onlySale ? 'hidden' : ''}`}>
                                             <span className="text-xs font-medium text-orange-700 uppercase tracking-wide">Net</span>
                                             <span className={`text-sm font-bold ${totals.totalIn - totals.totalOut >= 0 ? 'text-orange-800' : 'text-red-800'}`}>
                                                 {totals.totalIn - totals.totalOut >= 0 ? '+' : ''}{(totals.totalIn - totals.totalOut).toLocaleString()}

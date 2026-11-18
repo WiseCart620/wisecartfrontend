@@ -224,7 +224,6 @@ const InventoryManagement = () => {
   });
 
   const branchStockFilterParams = {
-    txType: (branchFilters.filters.txType || []).length ? branchFilters.filters.txType : undefined,
     companyIds: branchFilters.filters.companyIds,
     branchIds: branchFilters.filters.branchIds,
     productKeys: branchFilters.filters.productKeys || [],
@@ -252,7 +251,6 @@ const InventoryManagement = () => {
     branchIds: branchFilters.filters.branchIds,
     productKeys: branchFilters.filters.productKeys || [],
     searchTerm: activeTab === 'branch-stocks' ? debouncedStockSearchTerm : '',
-    txType: (branchFilters.filters.txType || []).length ? branchFilters.filters.txType : undefined,
     minQty: branchFilters.filters.minQty || undefined,
     maxQty: branchFilters.filters.maxQty || undefined,
     startDate: validDate(branchFilters.filters.startDate),
@@ -823,7 +821,7 @@ const InventoryManagement = () => {
               totalElements={branchStockTotalElements}
               dateFrom={validDate(branchFilters.filters.startDate) || ''}
               dateTo={validDate(branchFilters.filters.endDate) || ''}
-              typeFilter={(branchFilters.filters.txType || []).length === 1 ? branchFilters.filters.txType[0] : ''}
+              typeFilter={[]}
             />
           </div>
         )}
