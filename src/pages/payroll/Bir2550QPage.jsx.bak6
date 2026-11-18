@@ -1,0 +1,825 @@
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Download, Lock, Plus, Trash2, Pencil, Save, Unlock, X } from 'lucide-react';
+import useBir2550Q from '../../hooks/data/useBir2550Q';
+import useBirTabs from '../../hooks/ui/useBirTabs';
+
+const peso = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
+const money = (v) => (v === null || v === undefined ? '' : peso.format(Number(v)));
+const today = () => new Date().toISOString().slice(0, 10);
+const n = (v) => Number(v || 0);
+
+const SALE_CLASSES = {
+  VATABLE_PRIVATE: 'Vatable (private)',
+  VATABLE_GOVERNMENT: 'Vatable (government)',
+  ZERO_RATED: 'Zero-rated',
+  EXEMPT: 'Exempt',
+};
+const PURCHASE_CATEGORIES = {
+  DOMESTIC_GOODS: 'Domestic goods',
+  DOMESTIC_SERVICES: 'Domestic services',
+  CAPITAL_GOODS: 'Capital goods',
+  IMPORTATION: 'Importation',
+  SERVICES_NONRESIDENT: 'Services by non-resident',
+  OTHER: 'Other',
+  NO_INPUT_TAX: 'No input tax',
+  EXEMPT_IMPORTATION: 'VAT-exempt importation',
+};
+const SECTION_TITLES = {
+  OUTPUT: 'Sales and output tax',
+  INPUT: 'Input tax',
+  PURCHASES: 'Current purchases',
+  DEDUCTIONS: 'Deductions from input tax',
+  NET: 'Net result',
+  CREDITS: 'Tax credits and payments',
+  PENALTIES: 'Penalties',
+};
+
+const s = {
+  card: { background: 'var(--card-bg, #fff)', border: '1px solid #e5e7eb', borderRadius: 8, padding: 16, marginBottom: 16 },
+  th: { textAlign: 'left', padding: '6px 4px', borderBottom: '1px solid #e5e7eb', fontSize: 'clamp(9px, 1.1vw, 12px)', color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  td: { padding: '6px 4px', borderBottom: '1px solid #f3f4f6', fontSize: 'clamp(10px, 1.2vw, 13px)', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  fixed: { width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' },
+  plainSelect: { width: '100%', border: 'none', background: 'transparent', padding: 0, margin: 0, font: 'inherit', color: 'inherit', cursor: 'pointer', textOverflow: 'ellipsis', appearance: 'none', WebkitAppearance: 'none', outline: 'none' },
+  num: { textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' },
+  input: { border: '1px solid #d1d5db', borderRadius: 6, padding: '6px 8px', fontSize: 13, width: '100%', boxSizing: 'border-box' },
+  btn: { display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid #d1d5db', background: '#fff', borderRadius: 6, padding: '6px 12px', fontSize: 13, cursor: 'pointer' },
+  primary: { background: '#ea580c', color: '#fff', borderColor: '#ea580c' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 },
+  label: { display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 4 },
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(17,24,39,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 },
+  dialog: { background: '#fff', borderRadius: 10, width: '100%', maxWidth: 760, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' },
+  dialogHead: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid #e5e7eb' },
+  dialogBody: { padding: 16, overflowY: 'auto' },
+  dialogFoot: { display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '12px 16px', borderTop: '1px solid #e5e7eb' },
+  toolbar: { display: 'flex', gap: 12, alignItems: 'end', flexWrap: 'wrap' },
+};
+
+const Field = ({ label, children }) => (
+  <label>
+    <span style={s.label}>{label}</span>
+    {children}
+  </label>
+);
+
+const Btn = ({ primary, style, ...p }) => (
+  <button
+    type="button"
+    {...p}
+    className={`bir-btn${primary ? ' bir-primary' : ''}`}
+    style={{ ...s.btn, ...(primary ? s.primary : {}), ...style, opacity: p.disabled ? 0.5 : 1 }}
+  />
+);
+
+const Text = ({ value, onChange, ...p }) => (
+  <input style={s.input} value={value ?? ''} onChange={(e) => onChange(e.target.value)} {...p} />
+);
+const Num = ({ value, onChange, ...p }) => (
+  <input
+    style={{ ...s.input, textAlign: 'right' }}
+    type="number"
+    step="0.01"
+    value={value ?? ''}
+    onChange={(e) => onChange(e.target.value === '' ? null : e.target.value)}
+    {...p}
+  />
+);
+const Pick = ({ value, onChange, options, ...p }) => (
+  <select style={s.input} value={value ?? ''} onChange={(e) => onChange(e.target.value)} {...p}>
+    {Object.entries(options).map(([k, v]) => (
+      <option key={k} value={k}>{v}</option>
+    ))}
+  </select>
+);
+
+// ------------------------------------------------------------------ Modal
+
+const Modal = ({ title, onClose, footer, children }) => {
+  useEffect(() => {
+    const h = (e) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
+
+  return (
+    <div style={s.overlay} onMouseDown={onClose}>
+      <div style={s.dialog} role="dialog" aria-modal="true" aria-label={title} onMouseDown={(e) => e.stopPropagation()}>
+        <div style={s.dialogHead}>
+          <h3 style={{ margin: 0, fontSize: 15 }}>{title}</h3>
+          <Btn onClick={onClose} aria-label="Close" style={{ padding: '4px 6px' }}><X size={14} /></Btn>
+        </div>
+        <div style={s.dialogBody}>{children}</div>
+        <div style={s.dialogFoot}>{footer}</div>
+      </div>
+    </div>
+  );
+};
+
+// ------------------------------------------------------------------ Filters
+
+const useFilters = (initial) => {
+  const [f, setF] = useState(initial);
+  const set = (k) => (v) => setF((x) => ({ ...x, [k]: v }));
+  const reset = () => setF(initial);
+  const active = JSON.stringify(f) !== JSON.stringify(initial);
+  return { f, set, reset, active };
+};
+
+const inRange = (date, from, to) => {
+  if (!date) return !from && !to;
+  if (from && date < from) return false;
+  if (to && date > to) return false;
+  return true;
+};
+const includesText = (q, ...fields) => {
+  if (!q) return true;
+  const needle = q.trim().toLowerCase();
+  return fields.some((x) => String(x ?? '').toLowerCase().includes(needle));
+};
+
+// ------------------------------------------------------------------ Summary
+
+const SummaryTab = ({ data }) => {
+  const sections = useMemo(() => {
+    const out = [];
+    (data.lines || []).forEach((l) => {
+      let g = out.find((x) => x.name === l.section);
+      if (!g) out.push((g = { name: l.section, lines: [] }));
+      g.lines.push(l);
+    });
+    return out;
+  }, [data.lines]);
+
+  return (
+    <>
+      {(data.warnings || []).length > 0 && (
+        <div style={{ ...s.card, background: '#f9fafb', border: '1px solid #d1d5db' }}>
+          {data.warnings.map((w, i) => <div key={i} style={{ fontSize: 13 }}>â€¢ {w}</div>)}
+        </div>
+      )}
+      {sections.map((g) => (
+        <div key={g.name} style={s.card}>
+          <h3 style={{ margin: '0 0 8px', fontSize: 14 }}>{SECTION_TITLES[g.name] || g.name}</h3>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr><th style={s.th}>Item</th><th style={{ ...s.th, ...s.num }}>Amount (base)</th><th style={{ ...s.th, ...s.num }}>Tax</th></tr>
+            </thead>
+            <tbody>
+              {g.lines.map((l) => (
+                <tr key={l.key} style={l.total ? { fontWeight: 600, background: '#f9fafb' } : undefined}>
+                  <td style={s.td}>{l.label}</td>
+                  <td style={{ ...s.td, ...s.num }}>{money(l.base)}</td>
+                  <td style={{ ...s.td, ...s.num }}>{money(l.tax)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </>
+  );
+};
+
+// ------------------------------------------------------------------ Sales
+
+const emptySale = () => ({ saleDate: today(), invoiceNumber: '', customerName: '', customerTin: '', customerAddress: '', classification: 'ZERO_RATED', salesAmount: '', outputVat: null, remarks: '' });
+const saleFilters = { q: '', cls: 'ALL', source: 'ALL', from: '', to: '', sort: 'customer', showExcluded: true };
+const custKey = (r) => `${(r.customerTin || '').trim()}|${(r.customerName || '').trim().toLowerCase()}`;
+const invoiceAmount = (r) => n(r.salesAmount) + n(r.outputVat);
+
+const SalesTab = ({ data, bir }) => {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(emptySale());
+  const { f, set: setFilter, reset, active } = useFilters(saleFilters);
+  const locked = data.locked;
+  const set = (k) => (v) => setForm((x) => ({ ...x, [k]: v }));
+  const close = useCallback(() => setOpen(false), []);
+
+  const openModal = () => { setForm(emptySale()); setOpen(true); };
+  const submit = async () => {
+    if (!form.saleDate || !form.salesAmount) return;
+    const ok = await bir.saveManualSale(form);
+    if (ok) setOpen(false);
+  };
+
+  const rows = useMemo(() => {
+    const list = (data.sales || []).filter((r) =>
+      inRange(r.date, f.from, f.to) &&
+      (f.cls === 'ALL' || r.classification === f.cls) &&
+      (f.source === 'ALL' || r.source === f.source) &&
+      (f.showExcluded || !r.excluded) &&
+      includesText(f.q, r.invoiceNumber, r.customerName, r.customerTin, r.customerAddress));
+    list.sort((a, b) => {
+      if (f.sort === 'customer') {
+        const c = (a.customerName || '').localeCompare(b.customerName || '');
+        if (c !== 0) return c;
+      }
+      return String(a.date || '').localeCompare(String(b.date || ''));
+    });
+    const totals = {};
+    list.forEach((r) => { if (!r.excluded) totals[custKey(r)] = (totals[custKey(r)] || 0) + invoiceAmount(r); });
+    const seen = new Set();
+    return list.map((r) => {
+      const k = custKey(r);
+      const first = !seen.has(k);
+      seen.add(k);
+      return { ...r, _customerTotal: first ? totals[k] || 0 : null };
+    });
+  }, [data.sales, f]);
+
+  const sums = useMemo(() => rows.filter((r) => !r.excluded).reduce(
+    (a, r) => ({ sales: a.sales + n(r.salesAmount), vat: a.vat + n(r.outputVat), inv: a.inv + invoiceAmount(r) }),
+    { sales: 0, vat: 0, inv: 0 }), [rows]);
+
+  const override = (r, patch) =>
+    bir.saveOverride({
+      invoiceProfileId: r.refId,
+      classification: (patch.classification ?? r.classification) === 'VATABLE_PRIVATE' ? null : (patch.classification ?? r.classification),
+      excluded: patch.excluded ?? r.excluded,
+      remarks: r.remarks,
+    });
+
+  const heads = ['Date', 'Invoice #', 'Sold to', 'Address', 'TIN', 'Source', 'Classification', 'Sales amount', 'Output VAT', 'Invoice amount', 'Total invoice amount', 'Exclude', ''];
+  const numHeads = ['Sales amount', 'Output VAT', 'Invoice amount', 'Total invoice amount'];
+  const widths = ['7%', '6%', '11%', '11%', '9%', '5%', '9%', '8%', '7%', '8%', '9%', '7%', '3%'];
+
+  return (
+    <>
+      <div style={{ ...s.card, ...s.toolbar }}>
+        <div style={{ flex: '1 1 220px' }}>
+          <Field label="Search"><Text placeholder="Invoice #, customer, TIN, address" value={f.q} onChange={setFilter('q')} /></Field>
+        </div>
+        <Field label="Classification">
+          <Pick options={{ ALL: 'All', ...SALE_CLASSES }} value={f.cls} onChange={setFilter('cls')} />
+        </Field>
+        <Field label="Source">
+          <Pick options={{ ALL: 'All', INVOICE: 'Journal', MANUAL: 'Manual' }} value={f.source} onChange={setFilter('source')} />
+        </Field>
+        <Field label="From"><Text type="date" value={f.from} onChange={setFilter('from')} /></Field>
+        <Field label="To"><Text type="date" value={f.to} onChange={setFilter('to')} /></Field>
+        <Field label="Sort by">
+          <Pick options={{ customer: 'Customer, then date', date: 'Date' }} value={f.sort} onChange={setFilter('sort')} />
+        </Field>
+        <label style={{ fontSize: 13, paddingBottom: 8 }}>
+          <input type="checkbox" checked={f.showExcluded} onChange={(e) => setFilter('showExcluded')(e.target.checked)} /> Show excluded
+        </label>
+        {active && <Btn onClick={reset}><X size={14} /> Clear filters</Btn>}
+        <div style={{ marginLeft: 'auto' }}>
+          <Btn primary disabled={locked} onClick={openModal}><Plus size={14} /> Add sale</Btn>
+        </div>
+      </div>
+
+      <div className="bir-wrap" style={s.card}>
+        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
+          Showing {rows.length} of {(data.sales || []).length} sales
+        </div>
+        <table className="bir-table">
+          <colgroup>{widths.map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
+          <thead>
+            <tr>
+              {heads.map((h, i) => <th key={i} title={h} style={{ ...s.th, ...(numHeads.includes(h) ? s.num : {}) }}>{h}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && (
+              <tr><td style={s.td} colSpan={heads.length}>No sales match.</td></tr>
+            )}
+            {rows.map((r) => (
+              <tr key={`${r.source}-${r.refId}`} style={r.excluded ? { opacity: 0.5 } : undefined}>
+                <td style={s.td} title={r.date}>{r.date}</td>
+                <td style={s.td} title={r.invoiceNumber}>{r.invoiceNumber}</td>
+                <td style={s.td} title={r.customerName}><div className="clamp3">{r.customerName}</div></td>
+                <td style={s.td} title={r.customerAddress}><div className="clamp3">{r.customerAddress}</div></td>
+                <td style={s.td} title={r.customerTin}>{r.customerTin}</td>
+                <td style={s.td}>{r.source === 'INVOICE' ? 'Journal' : 'Manual'}</td>
+                <td style={s.td} title={SALE_CLASSES[r.classification]}>
+                  {r.source === 'INVOICE' ? (
+                    <select style={s.plainSelect} disabled={locked} value={r.classification} onChange={(e) => override(r, { classification: e.target.value })}>
+                      {Object.entries(SALE_CLASSES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    </select>
+                  ) : SALE_CLASSES[r.classification]}
+                </td>
+                <td style={{ ...s.td, ...s.num }} title={money(r.salesAmount)}>{money(r.salesAmount)}</td>
+                <td style={{ ...s.td, ...s.num }} title={money(r.outputVat)}>{money(r.outputVat)}</td>
+                <td style={{ ...s.td, ...s.num }} title={money(invoiceAmount(r))}>{money(invoiceAmount(r))}</td>
+                <td style={{ ...s.td, ...s.num, fontWeight: 600 }} title={r._customerTotal === null ? '' : money(r._customerTotal)}>{r._customerTotal === null ? '' : money(r._customerTotal)}</td>
+                <td style={s.td}>
+                  {r.source === 'INVOICE' && (
+                    <input type="checkbox" disabled={locked} checked={r.excluded} onChange={(e) => override(r, { excluded: e.target.checked })} />
+                  )}
+                </td>
+                <td style={s.td}>
+                  {r.source === 'MANUAL' && (
+                    <Btn style={{ padding: '2px 4px' }} disabled={locked} onClick={() => window.confirm('Delete this sale?') && bir.deleteManualSale(r.refId)}>
+                      <Trash2 size={12} />
+                    </Btn>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          {rows.length > 0 && (
+            <tfoot>
+              <tr style={{ fontWeight: 600, background: '#f9fafb' }}>
+                <td style={s.td} colSpan={7}>Total (excluded rows left out)</td>
+                <td style={{ ...s.td, ...s.num }} title={money(sums.sales)}>{money(sums.sales)}</td>
+                <td style={{ ...s.td, ...s.num }} title={money(sums.vat)}>{money(sums.vat)}</td>
+                <td style={{ ...s.td, ...s.num }} title={money(sums.inv)}>{money(sums.inv)}</td>
+                <td style={s.td} colSpan={3} />
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </div>
+
+      {open && (
+        <Modal
+          title="Add a sale"
+          onClose={close}
+          footer={
+            <>
+              <Btn onClick={close}>Cancel</Btn>
+              <Btn primary disabled={locked || bir.saving || !form.saleDate || !form.salesAmount} onClick={submit}>
+                <Plus size={14} /> Add sale
+              </Btn>
+            </>
+          }
+        >
+          <p style={{ margin: '0 0 12px', fontSize: 12, color: '#6b7280' }}>
+            For zero-rated, exempt or government sales and one-offs that are not in the invoice journals. Output VAT is computed at 12% when left blank and the sale is vatable.
+          </p>
+          <div style={s.grid}>
+            <Field label="Date"><Text type="date" value={form.saleDate} onChange={set('saleDate')} /></Field>
+            <Field label="Invoice #"><Text value={form.invoiceNumber} onChange={set('invoiceNumber')} /></Field>
+            <Field label="Sold to"><Text value={form.customerName} onChange={set('customerName')} /></Field>
+            <Field label="TIN"><Text value={form.customerTin} onChange={set('customerTin')} /></Field>
+            <Field label="Address"><Text value={form.customerAddress} onChange={set('customerAddress')} /></Field>
+            <Field label="Classification"><Pick options={SALE_CLASSES} value={form.classification} onChange={set('classification')} /></Field>
+            <Field label="Sales amount (VAT-exclusive)"><Num value={form.salesAmount} onChange={set('salesAmount')} /></Field>
+            <Field label="Output VAT (optional)"><Num value={form.outputVat} onChange={set('outputVat')} /></Field>
+          </div>
+        </Modal>
+      )}
+    </>
+  );
+};
+
+// ------------------------------------------------------------------ Purchases
+
+const emptyPurchase = () => ({ transactionDate: today(), invoiceNumber: '', supplierName: '', supplierTin: '', supplierAddress: '', category: 'DOMESTIC_GOODS', otherSpecify: '', netAmount: '', inputVat: null, claimable: true, remarks: '' });
+const purchaseFilters = { q: '', cat: 'ALL', claimed: 'ALL', from: '', to: '' };
+const paidAmount = (p) => n(p.netAmount) + n(p.inputVat);
+
+const PurchasesTab = ({ data, bir }) => {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(emptyPurchase());
+  const { f, set: setFilter, reset, active } = useFilters(purchaseFilters);
+  const locked = data.locked;
+  const set = (k) => (v) => setForm((x) => ({ ...x, [k]: v }));
+  const close = useCallback(() => setOpen(false), []);
+
+  const openNew = () => { setForm(emptyPurchase()); setOpen(true); };
+  const openEdit = (p) => { setForm({ ...p }); setOpen(true); };
+  const needsSpecify = form.category === 'OTHER' && !(form.otherSpecify || '').trim();
+  const submit = async () => {
+    if (!form.transactionDate || form.netAmount === '' || form.netAmount === null || needsSpecify) return;
+    const ok = await bir.savePurchase({
+      ...form,
+      otherSpecify: form.category === 'OTHER' ? form.otherSpecify.trim() : null,
+    });
+    if (ok) setOpen(false);
+  };
+
+  const rows = useMemo(() => (data.purchases || []).filter((p) =>
+    inRange(p.transactionDate, f.from, f.to) &&
+    (f.cat === 'ALL' || p.category === f.cat) &&
+    (f.claimed === 'ALL' || (f.claimed === 'YES' ? p.claimable : !p.claimable)) &&
+    includesText(f.q, p.invoiceNumber, p.supplierName, p.supplierTin, p.supplierAddress, p.otherSpecify)),
+    [data.purchases, f]);
+
+  const sums = useMemo(() => rows.reduce(
+    (a, p) => ({ net: a.net + n(p.netAmount), vat: a.vat + n(p.inputVat), paid: a.paid + paidAmount(p) }),
+    { net: 0, vat: 0, paid: 0 }), [rows]);
+
+  const heads = ['Date', 'Invoice #', 'Purchased from', 'Address', 'TIN', 'Classification', 'Net amount', 'Input VAT', 'Amount paid', 'Claimed', ''];
+  const numHeads = ['Net amount', 'Input VAT', 'Amount paid'];
+  const widths = ['7%', '7%', '11%', '15%', '9%', '11%', '9%', '8%', '9%', '5%', '9%'];
+  const classLabel = (p) => (p.category === 'OTHER' && p.otherSpecify ? `Other: ${p.otherSpecify}` : PURCHASE_CATEGORIES[p.category]);
+
+  return (
+    <>
+      <div style={{ ...s.card, ...s.toolbar }}>
+        <div style={{ flex: '1 1 220px' }}>
+          <Field label="Search"><Text placeholder="Invoice #, supplier, TIN, address" value={f.q} onChange={setFilter('q')} /></Field>
+        </div>
+        <Field label="Classification">
+          <Pick options={{ ALL: 'All', ...PURCHASE_CATEGORIES }} value={f.cat} onChange={setFilter('cat')} />
+        </Field>
+        <Field label="Claimed">
+          <Pick options={{ ALL: 'All', YES: 'Claimed', NO: 'Not claimed' }} value={f.claimed} onChange={setFilter('claimed')} />
+        </Field>
+        <Field label="From"><Text type="date" value={f.from} onChange={setFilter('from')} /></Field>
+        <Field label="To"><Text type="date" value={f.to} onChange={setFilter('to')} /></Field>
+        {active && <Btn onClick={reset}><X size={14} /> Clear filters</Btn>}
+        <div style={{ marginLeft: 'auto' }}>
+          <Btn primary disabled={locked} onClick={openNew}><Plus size={14} /> Add purchase</Btn>
+        </div>
+      </div>
+
+      <div className="bir-wrap" style={s.card}>
+        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
+          Showing {rows.length} of {(data.purchases || []).length} purchases
+        </div>
+        <table className="bir-table">
+          <colgroup>{widths.map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
+          <thead>
+            <tr>{heads.map((h, i) => <th key={i} title={h} style={{ ...s.th, ...(numHeads.includes(h) ? s.num : {}) }}>{h}</th>)}</tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && (
+              <tr><td style={s.td} colSpan={heads.length}>No purchases match.</td></tr>
+            )}
+            {rows.map((p) => (
+              <tr key={p.id} style={!p.claimable ? { opacity: 0.55 } : undefined}>
+                <td style={s.td} title={p.transactionDate}>{p.transactionDate}</td>
+                <td style={s.td} title={p.invoiceNumber}>{p.invoiceNumber}</td>
+                <td style={s.td} title={p.supplierName}><div className="clamp3">{p.supplierName}</div></td>
+                <td style={s.td} title={p.supplierAddress}><div className="clamp3">{p.supplierAddress}</div></td>
+                <td style={s.td} title={p.supplierTin}>{p.supplierTin}</td>
+                <td style={s.td} title={classLabel(p)}>{classLabel(p)}</td>
+                <td style={{ ...s.td, ...s.num }} title={money(p.netAmount)}>{money(p.netAmount)}</td>
+                <td style={{ ...s.td, ...s.num }} title={money(p.inputVat)}>{money(p.inputVat)}</td>
+                <td style={{ ...s.td, ...s.num }} title={money(paidAmount(p))}>{money(paidAmount(p))}</td>
+                <td style={s.td}>{p.claimable ? 'Yes' : 'No'}</td>
+                <td style={s.td}>
+                  <Btn style={{ padding: '2px 4px' }} disabled={locked} onClick={() => openEdit(p)}><Pencil size={12} /></Btn>{' '}
+                  <Btn style={{ padding: '2px 4px' }} disabled={locked} onClick={() => window.confirm('Delete this purchase?') && bir.deletePurchase(p.id)}><Trash2 size={12} /></Btn>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          {rows.length > 0 && (
+            <tfoot>
+              <tr style={{ fontWeight: 600, background: '#f9fafb' }}>
+                <td style={s.td} colSpan={6}>Total</td>
+                <td style={{ ...s.td, ...s.num }} title={money(sums.net)}>{money(sums.net)}</td>
+                <td style={{ ...s.td, ...s.num }} title={money(sums.vat)}>{money(sums.vat)}</td>
+                <td style={{ ...s.td, ...s.num }} title={money(sums.paid)}>{money(sums.paid)}</td>
+                <td style={s.td} colSpan={2} />
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </div>
+
+      {open && (
+        <Modal
+          title={form.id ? 'Edit purchase' : 'Add a purchase'}
+          onClose={close}
+          footer={
+            <>
+              <Btn onClick={close}>Cancel</Btn>
+              <Btn primary disabled={locked || bir.saving || !form.transactionDate || form.netAmount === '' || form.netAmount === null || needsSpecify} onClick={submit}>
+                <Save size={14} /> {form.id ? 'Update' : 'Add purchase'}
+              </Btn>
+            </>
+          }
+        >
+          <p style={{ margin: '0 0 12px', fontSize: 12, color: '#6b7280' }}>
+            Input VAT is computed at 12% of the net amount when left blank. Capital goods above â‚±1,000,000 net have their input VAT deferred automatically.
+          </p>
+          <div style={s.grid}>
+            <Field label="Date"><Text type="date" value={form.transactionDate} onChange={set('transactionDate')} /></Field>
+            <Field label="Invoice #"><Text value={form.invoiceNumber} onChange={set('invoiceNumber')} /></Field>
+            <Field label="Purchased from"><Text value={form.supplierName} onChange={set('supplierName')} /></Field>
+            <Field label="Supplier TIN"><Text value={form.supplierTin} onChange={set('supplierTin')} /></Field>
+            <Field label="Address"><Text value={form.supplierAddress} onChange={set('supplierAddress')} /></Field>
+            <Field label="Classification"><Pick options={PURCHASE_CATEGORIES} value={form.category} onChange={set('category')} /></Field>
+            {form.category === 'OTHER' && (
+              <Field label="Specify classification">
+                <Text placeholder="e.g. Office supplies" value={form.otherSpecify} onChange={set('otherSpecify')} />
+              </Field>
+            )}
+            <Field label="Net amount (VAT-exclusive)"><Num value={form.netAmount} onChange={set('netAmount')} /></Field>
+            <Field label="Input VAT (optional)"><Num value={form.inputVat} onChange={set('inputVat')} /></Field>
+          </div>
+          <label style={{ display: 'block', marginTop: 12, fontSize: 13 }}>
+            <input type="checkbox" checked={!!form.claimable} onChange={(e) => set('claimable')(e.target.checked)} /> Claim the input VAT this quarter
+          </label>
+        </Modal>
+      )}
+    </>
+  );
+};
+
+// ------------------------------------------------------------------ Creditable VAT (Schedule 3)
+
+const blankCredit = () => ({ periodCovered: '', agentName: '', agentTin: '', certificateNumber: '', incomePayment: '', taxWithheld: '' });
+
+const CreditsTab = ({ data, bir }) => {
+  const [rows, setRows] = useState([]);
+  useEffect(() => setRows((data.creditableVat || []).map((r) => ({ ...r }))), [data.creditableVat]);
+  const locked = data.locked;
+  const upd = (i, k, v) => setRows((rs) => rs.map((r, j) => (j === i ? { ...r, [k]: v } : r)));
+  const total = rows.reduce((a, r) => a + Number(r.taxWithheld || 0), 0);
+
+  return (
+    <div style={{ ...s.card, overflowX: 'auto' }}>
+      <h3 style={{ margin: '0 0 4px', fontSize: 14 }}>Schedule 3: creditable VAT withheld</h3>
+      <p style={{ margin: '0 0 12px', fontSize: 12, color: '#6b7280' }}>One row per certificate. Saving replaces the whole list for this return.</p>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr>{['Period covered', 'Withholding agent', 'Agent TIN', 'Certificate #', 'Income payment', 'Tax withheld', ''].map((h) => <th key={h} style={s.th}>{h}</th>)}</tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={i}>
+              <td style={s.td}><Text disabled={locked} value={r.periodCovered} onChange={(v) => upd(i, 'periodCovered', v)} /></td>
+              <td style={s.td}><Text disabled={locked} value={r.agentName} onChange={(v) => upd(i, 'agentName', v)} /></td>
+              <td style={s.td}><Text disabled={locked} value={r.agentTin} onChange={(v) => upd(i, 'agentTin', v)} /></td>
+              <td style={s.td}><Text disabled={locked} value={r.certificateNumber} onChange={(v) => upd(i, 'certificateNumber', v)} /></td>
+              <td style={s.td}><Num disabled={locked} value={r.incomePayment} onChange={(v) => upd(i, 'incomePayment', v)} /></td>
+              <td style={s.td}><Num disabled={locked} value={r.taxWithheld} onChange={(v) => upd(i, 'taxWithheld', v)} /></td>
+              <td style={s.td}><Btn disabled={locked} onClick={() => setRows((rs) => rs.filter((_, j) => j !== i))}><Trash2 size={14} /></Btn></td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr><td style={{ ...s.td, fontWeight: 600 }} colSpan={5}>Total</td><td style={{ ...s.td, ...s.num, fontWeight: 600 }}>{money(total)}</td><td /></tr>
+        </tfoot>
+      </table>
+      <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+        <Btn disabled={locked} onClick={() => setRows((rs) => [...rs, blankCredit()])}><Plus size={14} /> Add row</Btn>
+        <Btn primary disabled={locked || bir.saving} onClick={() => bir.saveCreditable(rows)}><Save size={14} /> Save Schedule 3</Btn>
+      </div>
+    </div>
+  );
+};
+
+// ------------------------------------------------------------------ Adjustments
+
+const ADJ_GROUPS = [
+  ['Input tax (carried over and other)', [
+    ['inputTaxCarriedOver', 'Input tax carried over from previous quarter'],
+    ['deferredCapitalGoodsPrev', 'Deferred input tax on capital goods from previous period'],
+    ['transitionalInputTax', 'Transitional input tax'],
+    ['presumptiveInputTax', 'Presumptive input tax'],
+    ['otherInputTax', 'Other input tax'],
+  ]],
+  ['Deductions from input tax', [
+    ['inputTaxGovtClosedToExpense', 'Input tax on sales to government closed to expense'],
+    ['inputTaxAllocableToExempt', 'Input tax allocable to exempt sales'],
+    ['vatRefundTccClaimed', 'VAT refund / TCC claimed'],
+    ['otherDeductions', 'Other deductions'],
+  ]],
+  ['Tax credits and payments', [
+    ['advanceVatPayments', 'Advance VAT payments (Schedule 4)'],
+    ['previousReturnPayment', 'VAT paid in return previously filed (amended return)'],
+    ['advancePaymentsMade', 'Advance payments made'],
+    ['otherCredits', 'Other credits / payments'],
+  ]],
+  ['Penalties', [
+    ['surcharge', 'Surcharge'],
+    ['interest', 'Interest'],
+    ['compromise', 'Compromise'],
+  ]],
+];
+
+const AdjustmentsTab = ({ data, bir }) => {
+  const [form, setForm] = useState(data.form);
+  useEffect(() => setForm(data.form), [data.form]);
+  const locked = data.locked;
+  const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
+  const suggested = Number(data.suggestedCarryOver || 0);
+
+  return (
+    <>
+      {ADJ_GROUPS.map(([title, fields]) => (
+        <div key={title} style={s.card}>
+          <h3 style={{ margin: '0 0 12px', fontSize: 14 }}>{title}</h3>
+          <div style={s.grid}>
+            {fields.map(([k, label]) => (
+              <Field key={k} label={label}><Num disabled={locked} value={form[k]} onChange={set(k)} /></Field>
+            ))}
+          </div>
+          {title.startsWith('Input tax') && suggested > 0 && (
+            <div style={{ marginTop: 12, fontSize: 13 }}>
+              Previous quarter excess input tax: <strong>{money(suggested)}</strong>{' '}
+              <Btn disabled={locked} onClick={() => set('inputTaxCarriedOver')(suggested)}>Use as carried over</Btn>
+            </div>
+          )}
+        </div>
+      ))}
+      <div style={s.card}>
+        <div style={s.grid}>
+          <Field label="Other credits, specify"><Text disabled={locked} value={form.otherCreditsSpecify} onChange={set('otherCreditsSpecify')} /></Field>
+          <Field label="Sheets attached"><Num disabled={locked} value={form.sheetsAttached} onChange={set('sheetsAttached')} /></Field>
+          <Field label="Tax relief, specify"><Text disabled={locked} value={form.taxReliefSpecify} onChange={set('taxReliefSpecify')} /></Field>
+        </div>
+        <div style={{ marginTop: 12, fontSize: 13, display: 'flex', gap: 24 }}>
+          <label><input type="checkbox" disabled={locked} checked={!!form.shortPeriod} onChange={(e) => set('shortPeriod')(e.target.checked)} /> Short period return</label>
+          <label><input type="checkbox" disabled={locked} checked={!!form.availingTaxRelief} onChange={(e) => set('availingTaxRelief')(e.target.checked)} /> Availing tax relief</label>
+        </div>
+        <Field label="Notes"><textarea style={{ ...s.input, marginTop: 12, minHeight: 60 }} disabled={locked} value={form.notes ?? ''} onChange={(e) => set('notes')(e.target.value)} /></Field>
+      </div>
+      <Btn primary disabled={locked || bir.saving} onClick={() => bir.saveForm(form)}><Save size={14} /> Save adjustments</Btn>
+    </>
+  );
+};
+
+// ------------------------------------------------------------------ Taxpayer
+
+const TAXPAYER_FIELDS = [
+  ['tin', 'TIN'], ['rdoCode', 'RDO code'], ['registeredName', 'Registered name'], ['tradeName', 'Trade name'],
+  ['registeredAddress', 'Registered address'], ['zipCode', 'ZIP code'], ['telephone', 'Telephone'], ['email', 'Email'],
+  ['taxpayerClassification', 'Taxpayer classification'], ['lineOfBusiness', 'Line of business'],
+  ['signatoryName', 'Authorized signatory'], ['signatoryTitle', 'Signatory title'], ['signatoryTin', 'Signatory TIN'],
+];
+
+const TaxpayerTab = ({ data, bir }) => {
+  const [t, setT] = useState(data.taxpayer || {});
+  useEffect(() => setT(data.taxpayer || {}), [data.taxpayer]);
+  const set = (k) => (v) => setT((x) => ({ ...x, [k]: v }));
+  return (
+    <div style={s.card}>
+      <div style={s.grid}>
+        {TAXPAYER_FIELDS.map(([k, label]) => (
+          <Field key={k} label={label}><Text value={t[k]} onChange={set(k)} /></Field>
+        ))}
+        <Field label="Fiscal year end month (12 = calendar year)">
+          <Num value={t.fiscalYearEndMonth} onChange={(v) => set('fiscalYearEndMonth')(v === null ? null : Number(v))} />
+        </Field>
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <Btn primary disabled={bir.saving} onClick={() => bir.saveTaxpayer(t)}><Save size={14} /> Save taxpayer</Btn>
+      </div>
+    </div>
+  );
+};
+
+// ------------------------------------------------------------------ Filing
+
+const FilingTab = ({ data, bir }) => {
+  const f = data.form || {};
+  const [d, setD] = useState({ filedDate: today(), referenceNumber: '', paymentBank: '', paymentReference: '', paymentDate: '' });
+  const set = (k) => (v) => setD((x) => ({ ...x, [k]: v }));
+
+  return (
+    <>
+      <div style={s.card}>
+        <h3 style={{ margin: '0 0 8px', fontSize: 14 }}>Status: {data.locked ? 'Filed' : 'Draft'}</h3>
+        {data.locked ? (
+          <>
+            <div style={{ fontSize: 13, lineHeight: 1.7 }}>
+              Filed on {f.filedDate || 'â€”'}; reference {f.referenceNumber || 'â€”'}.<br />
+              Payment: {f.paymentBank || 'â€”'} / {f.paymentReference || 'â€”'} / {f.paymentDate || 'â€”'}
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <Btn onClick={() => window.confirm('Reopen this return? Its entries become editable again.') && bir.reopenReturn()}>
+                <Unlock size={14} /> Reopen
+              </Btn>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={s.grid}>
+              <Field label="Filing date"><Text type="date" value={d.filedDate} onChange={set('filedDate')} /></Field>
+              <Field label="Reference number"><Text value={d.referenceNumber} onChange={set('referenceNumber')} /></Field>
+              <Field label="Payment bank"><Text value={d.paymentBank} onChange={set('paymentBank')} /></Field>
+              <Field label="Payment reference"><Text value={d.paymentReference} onChange={set('paymentReference')} /></Field>
+              <Field label="Payment date"><Text type="date" value={d.paymentDate} onChange={set('paymentDate')} /></Field>
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <Btn
+                primary
+                disabled={bir.saving}
+                onClick={() =>
+                  window.confirm('Mark as filed? Sales, purchases and credits in this quarter will be locked.') &&
+                  bir.fileReturn({ ...d, paymentDate: d.paymentDate || null })
+                }
+              >
+                <Lock size={14} /> Mark as filed
+              </Btn>
+            </div>
+          </>
+        )}
+      </div>
+      <div style={s.card}>
+        <h3 style={{ margin: '0 0 8px', fontSize: 14 }}>Export</h3>
+        <p style={{ margin: '0 0 12px', fontSize: 12, color: '#6b7280' }}>CSV with the summary, sales, purchases and Schedule 3, for the relief-style attachments and your accountant.</p>
+        <Btn onClick={bir.exportCsv}><Download size={14} /> Download CSV</Btn>
+      </div>
+    </>
+  );
+};
+
+// ------------------------------------------------------------------ Page
+
+export default function Bir2550QPage({ companyId }) {
+  const bir = useBir2550Q(companyId);
+  const { tab, setTab, tabs } = useBirTabs();
+  const { data } = bir;
+  const years = Array.from({ length: 7 }, (_, i) => new Date().getFullYear() - 5 + i);
+
+  return (
+    <div style={{ padding: 16, maxWidth: 1800, margin: '0 auto' }}>
+      <style>{`
+        .bir-btn, .bir-btn:hover, .bir-btn:focus, .bir-btn:focus-visible, .bir-btn:active { border-color: #d1d5db !important; outline: none !important; box-shadow: none !important; }
+        .bir-btn.bir-primary, .bir-btn.bir-primary:hover, .bir-btn.bir-primary:focus, .bir-btn.bir-primary:focus-visible, .bir-btn.bir-primary:active { border-color: #ea580c !important; }
+        .bir-wrap { container-type: inline-size; }
+        .bir-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .bir-table th, .bir-table td { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
+        .bir-table th[style*="text-align: right"], .bir-table td[style*="text-align: right"] { overflow: hidden; text-overflow: ellipsis; }
+        @container (max-width: 1100px) {
+          .bir-table th, .bir-table td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; word-break: normal; }
+        }
+              .bir-table .clamp3 { white-space: normal; overflow-wrap: anywhere; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; }
+        .bir-table th:nth-child(11), .bir-table td:nth-child(11) { padding-right: 20px; }
+        .bir-table th:nth-child(12), .bir-table td:nth-child(12) { padding-left: 8px; }
+      `}</style>
+      <h2 style={{ margin: '0 0 4px' }}>BIR Form 2550Q: Quarterly VAT Return</h2>
+      <p style={{ margin: '0 0 16px', fontSize: 13, color: '#6b7280' }}>
+        Sales come from your invoice journals. Everything else is entered here.
+      </p>
+
+      <div style={{ ...s.card, display: 'flex', gap: 12, alignItems: 'end', flexWrap: 'wrap' }}>
+        <Field label="Year">
+          <select style={s.input} value={bir.year} onChange={(e) => bir.setYear(Number(e.target.value))}>
+            {years.map((y) => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </Field>
+        <Field label="Quarter">
+          <select style={s.input} value={bir.quarter} onChange={(e) => bir.setQuarter(Number(e.target.value))}>
+            {[1, 2, 3, 4].map((q) => <option key={q} value={q}>Q{q}</option>)}
+          </select>
+        </Field>
+        <label style={{ fontSize: 13, paddingBottom: 8 }}>
+          <input type="checkbox" checked={bir.amended} onChange={(e) => bir.setAmended(e.target.checked)} /> Amended return
+        </label>
+        {data && (
+          <div style={{ marginLeft: 'auto', fontSize: 13, textAlign: 'right' }}>
+            <div>{data.periodStart} to {data.periodEnd}</div>
+            <div>Due {data.dueDate} {data.locked && <span style={{ color: '#047857' }}>(filed)</span>}</div>
+          </div>
+        )}
+      </div>
+
+      {data && (
+        <div style={{ ...s.grid, marginBottom: 16 }}>
+          {[
+            ['Output tax', data.totalOutputTax],
+            ['Allowable input tax', data.totalAllowableInputTax],
+            ['Net VAT payable', data.netVatPayable],
+            ['Total amount payable', data.totalAmountPayable],
+          ].map(([label, v]) => (
+            <div key={label} style={s.card}>
+              <div style={s.label}>{label}</div>
+              <div style={{ fontSize: 20, fontWeight: 600 }}>{money(v)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 16 }}>
+        {tabs.map((t) => (
+          <Btn key={t.id} primary={tab === t.id} onClick={() => setTab(t.id)}>{t.label}</Btn>
+        ))}
+      </div>
+
+      {!data ? (
+        <div>{bir.loading ? 'Loadingâ€¦' : 'No data.'}</div>
+      ) : (
+        <>
+          {tab === 'summary' && (
+            <>
+              <SummaryTab data={data} />
+              <div style={{ ...s.card, overflowX: 'auto' }}>
+                <h3 style={{ margin: '0 0 8px', fontSize: 14 }}>{bir.year} at a glance</h3>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead><tr>{['Quarter', 'Status', 'Due', 'Output tax', 'Input tax', 'Amount payable'].map((h) => <th key={h} style={s.th}>{h}</th>)}</tr></thead>
+                  <tbody>
+                    {bir.overview.map((o) => (
+                      <tr key={`${o.quarter}-${o.amendedReturn}`}>
+                        <td style={s.td}>Q{o.quarter}{o.amendedReturn ? ' (amended)' : ''}</td>
+                        <td style={s.td}>{o.status}</td>
+                        <td style={s.td}>{o.dueDate}</td>
+                        <td style={{ ...s.td, ...s.num }}>{money(o.totalOutputTax)}</td>
+                        <td style={{ ...s.td, ...s.num }}>{money(o.totalAllowableInputTax)}</td>
+                        <td style={{ ...s.td, ...s.num }}>{money(o.totalAmountPayable)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+          {tab === 'sales' && <SalesTab data={data} bir={bir} />}
+          {tab === 'purchases' && <PurchasesTab data={data} bir={bir} />}
+          {tab === 'credits' && <CreditsTab data={data} bir={bir} />}
+          {tab === 'adjustments' && <AdjustmentsTab data={data} bir={bir} />}
+          {tab === 'taxpayer' && <TaxpayerTab data={data} bir={bir} />}
+          {tab === 'filing' && <FilingTab data={data} bir={bir} />}
+        </>
+      )}
+    </div>
+  );
+}

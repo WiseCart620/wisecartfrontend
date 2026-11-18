@@ -20,6 +20,9 @@ const BranchStockTable = ({
   isLoading,
   grandTotals,
   totalElements = 0,
+  dateFrom = '',
+  dateTo = '',
+  typeFilter = '',
 }) => {
   const { user } = useAuth();
   const [loadingId, setLoadingId] = useState(null);
@@ -34,7 +37,12 @@ const BranchStockTable = ({
   const handleView = async (stock) => {
     setLoadingId(stock.id);
     try {
-      await handleViewStockTransactions(stock, 'branch');
+      await handleViewStockTransactions({
+        ...stock,
+        filterStartDate: dateFrom || '',
+        filterEndDate: dateTo || '',
+        filterType: typeFilter || 'ALL',
+      }, 'branch');
     } finally {
       setLoadingId(null);
     }

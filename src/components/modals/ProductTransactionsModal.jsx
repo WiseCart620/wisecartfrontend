@@ -35,6 +35,17 @@ const ProductTransactionsModal = ({
     const [expandedCategory, setExpandedCategory] = useState(null);
     const [showTotalsSummary, setShowTotalsSummary] = useState(false);
 
+    React.useEffect(() => {
+        if (!isOpen) return;
+        const t = product?.filterType || 'ALL';
+        setStartDate(product?.filterStartDate || '');
+        setEndDate(product?.filterEndDate || '');
+        setFilterType(t);
+        setShowDeletedFilter(t !== 'ALL' ? 'ACTIVE' : 'ALL');
+        setShowTotalsSummary(t !== 'ALL');
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, product?.filterStartDate, product?.filterEndDate, product?.filterType]);
+
     const getTransactionDates = (transaction) => {
         const userEnteredDate = transaction.transactionDate
             ? parseDate(transaction.transactionDate)
@@ -265,7 +276,7 @@ const ProductTransactionsModal = ({
                     if (filterType === 'TRANSFER_OUT') return transaction.transactionType === 'TRANSFER_OUT';
                     if (filterType === 'TRANSFER') return transaction.transactionType === 'TRANSFER';
                 }
-                return type === filterType;
+                return type === filterType || transaction.transactionType === filterType;
             })();
 
             const isDeleted = transaction.isDeleted === true || transaction.action === 'DELETED';
@@ -660,7 +671,13 @@ const ProductTransactionsModal = ({
                             </div>
                             <select
                                 value={filterType}
-                                onChange={(e) => setFilterType(e.target.value)}
+                                onChange={(e) => {
+                                    setFilterType(e.target.value);
+                                    if (e.target.value !== 'ALL') {
+                                        setShowDeletedFilter('ACTIVE');
+                                        setShowTotalsSummary(true);
+                                    }
+                                }}
                                 className="px-3 py-2 border rounded text-sm focus:ring-2 focus:ring-orange-500"
                             >
                                 <option value="ALL">All Types</option>
@@ -787,7 +804,7 @@ const ProductTransactionsModal = ({
                                     </>
                                 ) : (
                                     <>
-                                        <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded">
+                                        <div className={`flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded ${filterType === 'SALE' ? 'hidden' : ''}`}>
                                             <ArrowDownCircle size={15} className="text-green-600" />
                                             <span className="text-xs font-medium text-green-700 uppercase tracking-wide">Total In</span>
                                             <span className="text-sm font-bold text-green-800">{totals.totalIn.toLocaleString()}</span>
@@ -799,10 +816,10 @@ const ProductTransactionsModal = ({
                                         </div>
                                         <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded">
                                             <ArrowUpCircle size={15} className="text-red-600" />
-                                            <span className="text-xs font-medium text-red-700 uppercase tracking-wide">Total Out</span>
+                                            <span className="text-xs font-medium text-red-700 uppercase tracking-wide">{filterType === 'SALE' ? 'Total Sales' : 'Total Out'}</span>
                                             <span className="text-sm font-bold text-red-800">{totals.totalOut.toLocaleString()}</span>
                                         </div>
-                                        <div className="flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-200 rounded">
+                                        <div className={`flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-200 rounded ${filterType === 'SALE' ? 'hidden' : ''}`}>
                                             <span className="text-xs font-medium text-orange-700 uppercase tracking-wide">Net</span>
                                             <span className={`text-sm font-bold ${totals.totalIn - totals.totalOut >= 0 ? 'text-orange-800' : 'text-red-800'}`}>
                                                 {totals.totalIn - totals.totalOut >= 0 ? '+' : ''}{(totals.totalIn - totals.totalOut).toLocaleString()}

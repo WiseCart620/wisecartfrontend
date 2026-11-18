@@ -139,7 +139,8 @@ export const useWarehouseStockData = ({
 
 export const fetchAllBranchStocks = async (filters, maxSize = 20000) => {
   const params = buildParams(filters, 0, maxSize);
-  const res = await api.get(`/stocks/branches/all?${params}`);
+  const exportUrl = ((filters.txType && filters.txType.length) || filters.startDate || filters.endDate) ? "/stocks/branches/range/all" : "/stocks/branches/all";
+  const res = await api.get(`${exportUrl}?${params}`);
   return res.data?.content || [];
 };
 
@@ -195,13 +196,14 @@ const BRANCH_EMPTY_TOTALS = {
 };
 
 export const useBranchStockData = ({
+  txType,
   companyIds, branchIds, productKeys, searchTerm, minQty, maxQty, startDate, endDate,
   currentPage, pageSize = 20, enabled = true,
 }) =>
   usePagedStocks({
-    listUrl: '/stocks/branches/all',
-    summaryUrl: '/stocks/branches/summary',
-    filters: { companyIds, branchIds, productKeys, searchTerm, minQty, maxQty, startDate, endDate },
+    listUrl: ((txType && txType.length) || startDate || endDate) ? '/stocks/branches/range/all' : '/stocks/branches/all',
+    summaryUrl: ((txType && txType.length) || startDate || endDate) ? '/stocks/branches/range/summary' : '/stocks/branches/summary',
+    filters: { companyIds, branchIds, productKeys, searchTerm, minQty, maxQty, startDate, endDate, txType },
     currentPage,
     pageSize,
     enabled,

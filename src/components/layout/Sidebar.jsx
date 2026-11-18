@@ -20,7 +20,7 @@ const allMainMenuItems = [
   { to: '/procurement', label: 'Procurement', icon: ClipboardList },
 ];
 
-const PAGE_IDS = { '/employees': 'employees', '/pay-types': 'paytypes', '/loans-benefits': 'loans', '/leave': 'leave', '/tax-statutory': 'tax', '/payroll-runs': 'payroll', '/year-end': 'yearend', '/dtr': 'dtr', '/bir/1601c': 'payroll', '/bir/1604c': 'payroll', '/bir/salary-monitoring': 'payroll', '/bir/withholding-expanded': 'payroll' };
+const PAGE_IDS = { '/employees': 'employees', '/pay-types': 'paytypes', '/loans-benefits': 'loans', '/leave': 'leave', '/tax-statutory': 'tax', '/payroll-runs': 'payroll', '/year-end': 'yearend', '/dtr': 'dtr', '/bir/1601c': 'payroll', '/bir/1604c': 'payroll', '/bir/salary-monitoring': 'payroll', '/bir/withholding-expanded': 'payroll', '/bir/2550q': 'payroll' };
 const payrollSubItems = [
   { to: '/employees', label: 'Employees', icon: Briefcase },
   { to: '/pay-types', label: 'Pay Types', icon: Coins },
@@ -34,6 +34,7 @@ const payrollSubItems = [
   { to: '/bir/1604c', label: 'BIR 1604-C / 2316', icon: FileSpreadsheet, bir: true },
   { to: '/bir/salary-monitoring', label: 'Salary Monitoring (QB)', icon: FileSpreadsheet, bir: true },
   { to: '/bir/withholding-expanded', label: 'BIR 0619-E / 1601-EQ / 1604-E', icon: FileSpreadsheet, bir: true },
+  { to: '/bir/2550q', label: 'BIR 2550Q (Quarterly VAT)', icon: FileSpreadsheet, bir: true },
 ];
 
 const dataEntryItems = [

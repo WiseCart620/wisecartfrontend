@@ -41,6 +41,12 @@ const TABS = [
 
 
 
+const validDate = (v) => {
+  if (!v || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return undefined;
+  const y = Number(v.slice(0, 4));
+  return y >= 2000 && y <= 2100 ? v : undefined;
+};
+
 const InventoryManagement = () => {
   const { user } = useAuth();
   const [productSearchTerm, setProductSearchTerm] = useState('');
@@ -187,6 +193,7 @@ const InventoryManagement = () => {
   });
 
   const branchFilters = useFilters({
+    txType: [],
     branchIds: [],
     companyIds: [],
     productKeys: [],
@@ -209,22 +216,23 @@ const InventoryManagement = () => {
     searchTerm: activeTab === 'warehouse-stocks' ? debouncedStockSearchTerm : '',
     minQty: warehouseFilters.filters.minQty || undefined,
     maxQty: warehouseFilters.filters.maxQty || undefined,
-    startDate: warehouseFilters.filters.startDate || undefined,
-    endDate: warehouseFilters.filters.endDate || undefined,
+    startDate: validDate(warehouseFilters.filters.startDate),
+    endDate: validDate(warehouseFilters.filters.endDate),
     currentPage: warehouseStockPage,
     pageSize: STOCK_PAGE_SIZE,
     enabled: activeTab === 'warehouse-stocks',
   });
 
   const branchStockFilterParams = {
+    txType: (branchFilters.filters.txType || []).length ? branchFilters.filters.txType : undefined,
     companyIds: branchFilters.filters.companyIds,
     branchIds: branchFilters.filters.branchIds,
     productKeys: branchFilters.filters.productKeys || [],
     searchTerm: debouncedStockSearchTerm,
     minQty: branchFilters.filters.minQty || undefined,
     maxQty: branchFilters.filters.maxQty || undefined,
-    startDate: branchFilters.filters.startDate || undefined,
-    endDate: branchFilters.filters.endDate || undefined,
+    startDate: validDate(branchFilters.filters.startDate),
+    endDate: validDate(branchFilters.filters.endDate),
   };
 
   const handleFetchBranchExportData = useCallback(
@@ -244,10 +252,11 @@ const InventoryManagement = () => {
     branchIds: branchFilters.filters.branchIds,
     productKeys: branchFilters.filters.productKeys || [],
     searchTerm: activeTab === 'branch-stocks' ? debouncedStockSearchTerm : '',
+    txType: (branchFilters.filters.txType || []).length ? branchFilters.filters.txType : undefined,
     minQty: branchFilters.filters.minQty || undefined,
     maxQty: branchFilters.filters.maxQty || undefined,
-    startDate: branchFilters.filters.startDate || undefined,
-    endDate: branchFilters.filters.endDate || undefined,
+    startDate: validDate(branchFilters.filters.startDate),
+    endDate: validDate(branchFilters.filters.endDate),
     currentPage: branchStockPage,
     pageSize: STOCK_PAGE_SIZE,
     enabled: activeTab === 'branch-stocks',
@@ -812,6 +821,9 @@ const InventoryManagement = () => {
               isLoading={branchStocksPageLoading}
               grandTotals={branchGrandTotals}
               totalElements={branchStockTotalElements}
+              dateFrom={validDate(branchFilters.filters.startDate) || ''}
+              dateTo={validDate(branchFilters.filters.endDate) || ''}
+              typeFilter={(branchFilters.filters.txType || []).length === 1 ? branchFilters.filters.txType[0] : ''}
             />
           </div>
         )}

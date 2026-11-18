@@ -12,6 +12,7 @@ import YearEndManagement from './pages/payroll/YearEndManagement.jsx';
 import PayrollRunManagement from './pages/payroll/PayrollRunManagement.jsx';
 import BirReports from './pages/payroll/BirReports.jsx';
 import BirWithholding from './pages/payroll/BirWithholding.jsx';
+import Bir2550QPage from './pages/payroll/Bir2550QPage.jsx';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import SalesManagement from './pages/SalesManagement/index.jsx';
@@ -337,6 +338,15 @@ function App() {
                   <PermissionRoute feature="employees">
                     <Layout>
                       <BirWithholding />
+                    </Layout>
+                  </PermissionRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/bir/2550q" element={
+                <ProtectedRoute>
+                  <PermissionRoute feature="employees">
+                    <Layout>
+                      <Bir2550QPage />
                     </Layout>
                   </PermissionRoute>
                 </ProtectedRoute>
