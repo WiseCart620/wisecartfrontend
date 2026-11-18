@@ -21,6 +21,7 @@ import InvoiceFilterModal from '../../components/modals/InvoiceFilterModal';
 import StatusProductsModal from '../../components/modals/StatusProductsModal';
 import SalesSummaryModal from '../../components/modals/SalesSummaryModal';
 import DuplicateSaleWarningModal from '../../components/modals/DuplicateSaleWarningModal';
+import InsufficientStockModal from '../../components/modals/InsufficientStockModal';
 import InvoicingProfile from './InvoicingProfile';
 import SalesReport from './SalesReport';
 import { LoadingOverlay } from '../../components/common/LoadingOverlay';
@@ -114,6 +115,7 @@ const SalesManagement = () => {
     loadProductStock,
     getMaxAllowedQuantity,
     duplicateCheck, cancelDuplicateSubmit, confirmDuplicateSubmit,
+    stockError, setStockError,
   } = useSalesForm({ fetchSales, currentPage, productOptions: allProductOptions });
 
   const { allProductOptions: allOpts, productOptions: opts } = useProductOptions({
@@ -477,6 +479,9 @@ const SalesManagement = () => {
           />
         )}
 
+        {stockError && (
+          <InsufficientStockModal error={stockError} onClose={() => setStockError(null)} />
+        )}
         {duplicateCheck.show && (
           <DuplicateSaleWarningModal
             matches={duplicateCheck.matches}

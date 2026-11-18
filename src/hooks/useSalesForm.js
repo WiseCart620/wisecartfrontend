@@ -27,6 +27,7 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [duplicateCheck, setDuplicateCheck] = useState({ show: false, matches: [] });
+  const [stockError, setStockError] = useState(null);
 
   const loadProductPricesForCompany = async (companyId) => {
     if (!companyId) { setProductPrices({}); return; }
@@ -259,7 +260,7 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
           await fetchSales(0);
           handleCloseModal();
         } else {
-          toast.error(response.message || 'Failed to create sale');
+          if (response.data?.code === 'INSUFFICIENT_DELIVERY') { setStockError(response.data); } else { toast.error(response.message || 'Failed to create sale'); }
         }
       } else if (modalMode === 'edit') {
         const response = await api.put(`/sales/${selectedSale.id}`, payload);
@@ -269,10 +270,15 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
           fetchSales(currentPage - 1);
           handleCloseModal();
         } else {
-          toast.error(response.message || 'Failed to update sale');
+          if (response.data?.code === 'INSUFFICIENT_DELIVERY') { setStockError(response.data); } else { toast.error(response.message || 'Failed to update sale'); }
         }
       }
     } catch (error) {
+      const errData = error.response?.data;
+      if (errData?.code === 'INSUFFICIENT_DELIVERY') {
+        setStockError(errData);
+        return;
+      }
       const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to save sale';
       toast.error(errorMessage);
       // modal stays open on error (e.g. insufficient stock) so the user can adjust quantity/branch and retry
@@ -346,6 +352,7 @@ export const useSalesForm = ({ fetchSales, currentPage, productOptions }) => {
     selectedProductForAdd, setSelectedProductForAdd,
     actionLoading, loadingMessage,
     duplicateCheck, cancelDuplicateSubmit, confirmDuplicateSubmit,
+    stockError, setStockError,
     handleOpenModal,
     handleCloseModal,
     handleBranchChange,

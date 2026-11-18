@@ -196,11 +196,13 @@ const handleResponse = async (response) => {
 
     if (!response.ok) {
         let errorMessage = 'Request failed';
+        let errorBody = null;
         try {
             const text = await response.text();
             if (text?.trim()) {
                 try {
                     const jsonError = JSON.parse(text);
+                    errorBody = jsonError;
                     if (jsonError.errors && typeof jsonError.errors === 'object') {
                         const fieldErrors = Object.entries(jsonError.errors)
                             .map(([field, message]) => `${field}: ${message}`)
@@ -221,14 +223,20 @@ const handleResponse = async (response) => {
             errorMessage = response.statusText || 'Request failed';
         }
 
-        if (response.status !== 429) {
+                if (errorBody?.code !== 'INSUFFICIENT_DELIVERY' && typeof errorMessage === 'string') {
+            const m = errorMessage.match(/^Cannot sell '(.+)' for (.+) in branch '(.+)': delivered up to the end of that month: (-?\d+), already sold up to then: (-?\d+), available: (-?\d+), requested: (\d+)\./);
+            const n = errorMessage.match(/^Cannot sell '(.+)' for (.+) in branch '(.+)': no delivery recorded/);
+            if (m) errorBody = { code: 'INSUFFICIENT_DELIVERY', productName: m[1], period: m[2], branchName: m[3], delivered: +m[4], sold: +m[5], available: +m[6], requested: +m[7] };
+            else if (n) errorBody = { code: 'INSUFFICIENT_DELIVERY', productName: n[1], period: n[2], branchName: n[3], delivered: 0, sold: 0, available: 0, requested: 0 };
+        }
+        if (response.status !== 429 && errorBody?.code !== 'INSUFFICIENT_DELIVERY') {
             const displayMsg = errorMessage.length > 600
                 ? errorMessage.slice(0, 597) + '...'
                 : errorMessage;
             toast.error(`❌ ${displayMsg}`, { duration: 7000 });
         }
 
-        return { success: false, error: errorMessage, status: response.status };
+        return { success: false, error: errorMessage, status: response.status, data: errorBody };
     }
 
     // 204 No Content
