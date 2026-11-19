@@ -111,6 +111,7 @@ const sendItem = (item) => {
         return quietRequest('/dtr/my/time-in', { method: 'POST', formData: fd });
     }
     fd.append('capturedAt', item.capturedAt);
+    if (item.validatedBy) fd.append('validatedBy', item.validatedBy);
     if (item.latitude != null) { fd.append('latitude', item.latitude); fd.append('longitude', item.longitude); }
     fd.append('signature', item.signature, 'signature.png');
     return quietRequest(`/dtr/my/visits/${item.clientId}/time-out`, { method: 'POST', formData: fd });
@@ -292,6 +293,7 @@ const FieldApp = () => {
     const [draft, setDraft] = useState(null);
     const [form, setForm] = useState(EMPTY);
     const [sig, setSig] = useState(null);
+    const [outBy, setOutBy] = useState('');
     const [busy, setBusy] = useState(null);          // { k, t }
     const [formError, setFormError] = useState('');
     const [notice, setNotice] = useState(null);      // { type: 'unlinked' | 'expired' }
@@ -404,8 +406,8 @@ const FieldApp = () => {
     const submitIn = async (e) => {
         e.preventDefault();
         if (busy) return;
-        const f = { place: form.place.trim(), purpose: form.purpose.trim(), validatedBy: form.validatedBy.trim() };
-        if (!f.place || !f.purpose || !f.validatedBy) { setFormError('Fill in the place, the purpose, and who validated your visit.'); return; }
+        const f = { place: form.place.trim(), purpose: form.purpose.trim() };
+        if (!f.place || !f.purpose) { setFormError('Fill in the place and the purpose of your visit.'); return; }
         setFormError(''); setBusy({ k: 'in', t: 'Saving your time in...' });
         const clientId = uuid();
         const res = await submit(
@@ -432,6 +434,7 @@ const FieldApp = () => {
     // ---- time out
     const submitOut = async () => {
         if (busy) return;
+        if (!outBy.trim()) { setFormError('Enter the name of the person in charge.'); return; }
         if (!sig) { setFormError('Ask the person in charge to sign first.'); return; }
         const visit = open;
         setFormError(''); setBusy({ k: 'out', t: 'Getting your location...' });
@@ -440,11 +443,11 @@ const FieldApp = () => {
         try { pos = await getPos(); } catch { /* location is optional on time out */ }
         setBusy({ k: 'out', t: 'Saving your time out...' });
         const res = await submit(
-            { type: 'out', clientId: visit.clientId, capturedAt: at, latitude: pos.latitude, longitude: pos.longitude, signature: sig },
-            () => updateDay(d => ({ ...d, visits: d.visits.map(v => (v.clientId === visit.clientId ? { ...v, timeOut: at } : v)) })));
+            { type: 'out', clientId: visit.clientId, capturedAt: at, latitude: pos.latitude, longitude: pos.longitude, signature: sig, validatedBy: outBy.trim() },
+            () => updateDay(d => ({ ...d, visits: d.visits.map(v => (v.clientId === visit.clientId ? { ...v, timeOut: at, validatedBy: outBy.trim() } : v)) })));
         setBusy(null);
         if (!res.ok) { setFormError(res.error); return; }
-        setSig(null); setScreen('home');
+        setSig(null); setOutBy(''); setScreen('home');
         toast.success(res.queued ? 'Saved on this phone. It uploads when you are online.' : 'You are timed out.');
     };
 
@@ -509,7 +512,7 @@ const FieldApp = () => {
                                         </div>
                                         {v.purpose && <div className="text-sm text-stone-600">{v.purpose}</div>}
                                         <div className="text-sm text-stone-500">{t12(v.timeIn)} to {v.timeOut ? t12(v.timeOut) : (g.isToday ? 'now' : 'missing')}</div>
-                                        <div className="text-xs text-stone-400">Validated by {v.validatedBy}</div>
+                                        {v.validatedBy && <div className="text-xs text-stone-400">Validated by {v.validatedBy}</div>}
                                         {(() => { const tm = travelMins(g, arr, idx); return tm ? <div className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-sky-700 bg-sky-50 rounded-full px-2 py-1"><Car size={12} /> {fmtDur(tm)} travel to next store</div> : null; })()}
                                     </li>
                                 ))}
@@ -648,10 +651,6 @@ const FieldApp = () => {
                         <span className="block text-sm font-medium text-stone-700 mb-1">Purpose of visit</span>
                         <input className={inputCls} value={form.purpose} onChange={(e) => setForm(f => ({ ...f, purpose: e.target.value }))} />
                     </label>
-                    <label className="block">
-                        <span className="block text-sm font-medium text-stone-700 mb-1">Validated by (person in charge)</span>
-                        <input className={inputCls} value={form.validatedBy} onChange={(e) => setForm(f => ({ ...f, validatedBy: e.target.value }))} />
-                    </label>
                     {formError && <ErrorBox text={formError} />}
                     <div className="grid grid-cols-2 gap-3">
                         <Btn variant="ghost" disabled={!!busy} onClick={() => { setDraft(null); setScreen('camera'); }}>Retake</Btn>
@@ -664,14 +663,18 @@ const FieldApp = () => {
                 <div className="p-4 space-y-4">
                     <div className="bg-white rounded-2xl border border-stone-200 p-4">
                         <div className="font-semibold text-stone-900">{open.place}</div>
-                        <div className="text-sm text-stone-500">Timed in at {t12(open.timeIn)}. Validated by {open.validatedBy}.</div>
+                        <div className="text-sm text-stone-500">Timed in at {t12(open.timeIn)}.</div>
                     </div>
-                    <p className="text-sm text-stone-600">Ask {open.validatedBy} to sign below, then tap Time out.</p>
+                    <p className="text-sm text-stone-600">Enter the name of the person in charge, ask them to sign below, then tap Time out.</p>
+                    <label className="block">
+                        <span className="block text-sm font-medium text-stone-700 mb-1">Validated by (person in charge)</span>
+                        <input className={inputCls} value={outBy} onChange={(e) => setOutBy(e.target.value)} />
+                    </label>
                     <SignaturePad onChange={setSig} />
                     {formError && <ErrorBox text={formError} />}
                     <div className="grid grid-cols-2 gap-3">
                         <Btn variant="ghost" disabled={!!busy} onClick={() => setScreen('home')}>Back</Btn>
-                        <Btn onClick={submitOut} loading={busy?.k === 'out'} disabled={!sig}>Time out</Btn>
+                        <Btn onClick={submitOut} loading={busy?.k === 'out'} disabled={!sig || !outBy.trim()}>Time out</Btn>
                     </div>
                 </div>
             )}
