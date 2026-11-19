@@ -130,6 +130,8 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
   const [days, setDays] = useState(null);
   const [big, setBig] = useState(null);
   const [otDay, setOtDay] = useState(null);
+  const [hwDay, setHwDay] = useState(null);
+  const [hwType, setHwType] = useState('REGULAR_HOLIDAY');
   const [otType, setOtType] = useState('REGULAR_OT');
   const [openKeys, setOpenKeys] = useState(() => new Set());
   // office = biometric worker: no personnel, signature, photo or location
@@ -194,6 +196,15 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
     } catch (e) { toast.error(e.message || 'Failed'); }
   };
 
+  const postHw = async () => {
+    try {
+      const r = await api.post(`/dtr/post-holiday-work?employeeId=${emp.employeeId}&date=${hwDay.date}&type=${hwType}`);
+      toast.success(r.data?.message || 'Holiday work posted');
+      setHwDay(null);
+      await reload();
+    } catch (e) { toast.error(e.message || 'Failed'); }
+  };
+
   const postOt = async () => {
     try {
       const r = await api.post(`/dtr/post-overtime?employeeId=${emp.employeeId}&date=${otDay.date}&type=${otType}`);
@@ -255,6 +266,10 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
                 title={d.incomplete ? 'Fix the missing time-out first' : d.date > phToday ? 'This date has not started yet' : 'Send this date to Pay Entries'}
                 onClick={(e) => { e.stopPropagation(); postDay(d); }}
                 className="px-3 py-1 text-xs border border-orange-300 text-orange-700 rounded hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed">Post to Pay Entries</button>
+            )}
+            {canPost && d.holiday && d.visits.length > 0 && !d.incomplete && d.workedMinutes > 0 && (
+              <button title={`Holiday: ${d.holiday}`} onClick={(e) => { e.stopPropagation(); setHwType('REGULAR_HOLIDAY'); setHwDay(d); }}
+                className="px-3 py-1 text-xs border border-green-300 text-green-700 rounded hover:bg-green-50">Post holiday work</button>
             )}
             {canPost && d.overtimeAvailable > 0 && !d.overtimeMinutes && !d.incomplete && (
               <button onClick={(e) => { e.stopPropagation(); setOtType('REGULAR_OT'); setOtDay(d); }}
@@ -355,6 +370,24 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
               <div />
             </div>
             {days.map(renderDay)}
+          </div>
+        </div>
+      )}
+      {hwDay && (
+        <div className="fixed inset-0 z-[90] bg-black/50 flex items-center justify-center p-4" onClick={() => setHwDay(null)}>
+          <div className="bg-white rounded-xl p-5 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <div className="font-semibold text-gray-900">Post holiday work</div>
+            <p className="text-sm text-gray-600 mt-1">{fmtDay(hwDay.date)} · {hwDay.holiday} · {hm(hwDay.workedMinutes)} worked. It goes to Pay Entries as pending. The holiday rate is applied there, so check that the day's pay is not counted twice.</p>
+            <label className="block text-xs font-medium text-gray-700 mt-4 mb-1">Holiday type</label>
+            <select className={inputCls} value={hwType} onChange={(e) => setHwType(e.target.value)}>
+              <option value="REGULAR_HOLIDAY">Regular holiday</option>
+              <option value="SPECIAL_HOLIDAY">Special holiday</option>
+              <option value="REST_DAY_REGULAR_HOLIDAY">Rest day + regular holiday</option>
+            </select>
+            <div className="flex justify-end gap-2 mt-5">
+              <button onClick={() => setHwDay(null)} className="px-4 py-2 border border-gray-300 rounded text-sm">Cancel</button>
+              <button onClick={postHw} className="px-4 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700">Post holiday work</button>
+            </div>
           </div>
         </div>
       )}
