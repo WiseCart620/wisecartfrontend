@@ -246,7 +246,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
           <div><Chip label="Undertime" value={hm(d.undertimeMinutes)} tone={d.undertimeMinutes ? 'red' : 'gray'} /></div>
           <div><Chip label="Overtime" value={hm(d.overtimeMinutes || d.overtimeAvailable || 0)} tone={d.overtimeMinutes ? 'green' : 'gray'} /></div>
           <div><Chip label="Travel" value={hm(trav)} /></div>
-          <div className="flex items-center justify-end gap-2 flex-nowrap whitespace-nowrap">
+          <div className="flex flex-wrap items-center justify-end gap-2 min-w-0">
             {d.sheetPath && (
               <button className="text-xs text-orange-600 hover:underline inline-flex items-center gap-1"
                 onClick={async (e) => {
