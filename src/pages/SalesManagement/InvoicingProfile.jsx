@@ -459,14 +459,19 @@ const DetailModal = ({ profile, onClose, onAddPayment, onEditPayment, onDeletePa
     );
 };
 
-const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
+const splitDoc = (label) => {
+    const m = /^(\d{6,})\s*(.*)$/.exec(String(label || '').trim());
+    return m ? { docNo: m[1], label: m[2] } : { docNo: '', label: String(label || '') };
+};
+
+const PaymentModal = ({ profile, profiles = [], editingPayment, onClose, onSaved }) => {
     const isEditing = !!editingPayment;
     const [amount, setAmount] = useState(isEditing ? String(editingPayment.grossAmount ?? editingPayment.amount) : '');
     const [applyEwt, setApplyEwt] = useState(isEditing ? Number(editingPayment.ewtAmount) > 0 : true);
     const [ewtOverride, setEwtOverride] = useState(isEditing && Number(editingPayment.ewtAmount) > 0 ? String(editingPayment.ewtAmount) : '');
     const [charges, setCharges] = useState(
         isEditing && editingPayment.charges?.length
-            ? editingPayment.charges.map(c => ({ label: c.label, amount: String(c.amount) }))
+            ? editingPayment.charges.map(c => ({ ...splitDoc(c.label), amount: String(c.amount) }))
             : []
     );
     const [date, setDate] = useState(isEditing ? editingPayment.paymentDate : new Date().toISOString().split('T')[0]);
@@ -482,13 +487,29 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
         ? Math.round((Number(amount) / 1.12) * 0.01 * 100) / 100
         : 0;
     const ewt = applyEwt ? (ewtOverride !== '' ? Number(ewtOverride) : autoEwt) : 0;
-    const totalCharges = charges.reduce((s, c) => s + (Number(c.amount) || 0), 0);
-    const netAmount = Math.max(0, Math.round((Number(amount || 0) - ewt - totalCharges) * 100) / 100);
+    const isValidCharge = (c) => (String(c.label || '').trim() || String(c.docNo || '').trim()) && Number(c.amount) > 0;
+    const totalCharges = charges.filter(isValidCharge).reduce((s, c) => s + (Number(c.amount) || 0), 0);
+    const rawNet = Math.round((Number(amount || 0) - ewt - totalCharges) * 100) / 100;
+    const netAmount = Math.max(0, rawNet);
+    const deductionsTooHigh = Number(amount) > 0 && rawNet <= 0;
     const newSettled = netAmount + (Number(profile.withholdingTax) > 0 ? 0 : ewt);
     const overpayAmount = Number(amount) > 0 ? Math.round((newSettled - rawBalance) * 100) / 100 : 0;
     const willOverpay = overpayAmount > 0.004;
 
-    const addCharge = () => setCharges(prev => [...prev, { label: '', amount: '' }]);
+    // Which earlier payments (same DV number) a deduction's Doc no. points to
+    const docHits = (docNo) => {
+        const d = String(docNo || '').trim();
+        if (!d || d === ref.trim()) return null;
+        const hits = [];
+        profiles.forEach(pr => (pr.payments || []).forEach(pay => {
+            if (String(pay.referenceNumber || '').trim() === d && !(isEditing && pay.id === editingPayment.id)) {
+                hits.push({ inv: pr.invoiceNumber || `#${pr.id}`, amt: pay.grossAmount != null ? pay.grossAmount : pay.amount });
+            }
+        }));
+        return hits;
+    };
+
+    const addCharge = () => setCharges(prev => [...prev, { docNo: '', label: '', amount: '' }]);
     const updateCharge = (idx, field, value) =>
         setCharges(prev => prev.map((c, i) => (i === idx ? { ...c, [field]: value } : c)));
     const removeCharge = (idx) => setCharges(prev => prev.filter((_, i) => i !== idx));
@@ -496,6 +517,10 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
     const handleSave = async () => {
         if (!amount || Number(amount) <= 0) {
             toast.error('Enter a valid payment amount');
+            return;
+        }
+        if (deductionsTooHigh) {
+            toast.error('EWT and deductions are equal to or more than the amount. Check the amounts.');
             return;
         }
         if (willOverpay) {
@@ -529,14 +554,17 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
                 }
             }
 
-            const validCharges = charges.filter(c => c.label && Number(c.amount) > 0);
+            const validCharges = charges.filter(isValidCharge).map(c => ({
+                label: `${String(c.docNo || '').trim()} ${String(c.label || '').trim()}`.trim(),
+                amount: Number(c.amount),
+            }));
 
             const formData = new FormData();
             formData.append('amount', netAmount);
             formData.append('grossAmount', amount);
             formData.append('ewtAmount', ewt);
             if (validCharges.length > 0) {
-                formData.append('charges', JSON.stringify(validCharges.map(c => ({ label: c.label, amount: Number(c.amount) }))));
+                formData.append('charges', JSON.stringify(validCharges));
             }
             formData.append('paymentDate', date);
             if (ref) formData.append('referenceNumber', ref);
@@ -564,7 +592,7 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
 
     return (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="bg-white rounded-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto shadow-2xl">
                 <div className="p-5 border-b border-gray-100 flex justify-between items-center">
                     <div>
                         <div className="font-medium text-black">{isEditing ? 'Edit payment' : 'Record payment'}</div>
@@ -633,34 +661,56 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
                                     </button>
                                 </div>
                                 {charges.length === 0 && (
-                                    <div className="text-xs text-gray-300 italic">e.g. delivery charge, bank fee</div>
+                                    <div className="text-xs text-gray-400 italic">e.g. delivery charge, bank fee. Type an earlier DV number in Doc no. to reverse that DV.</div>
                                 )}
-                                <div className="space-y-1.5">
-                                    {charges.map((c, idx) => (
-                                        <div key={idx} className="flex items-center gap-1.5">
-                                            <input
-                                                type="text"
-                                                placeholder="Less: Delivery charge"
-                                                value={c.label}
-                                                onChange={(e) => updateCharge(idx, 'label', e.target.value)}
-                                                className="flex-1 px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
-                                            />
-                                            <input
-                                                type="number"
-                                                placeholder="0.00"
-                                                value={c.amount}
-                                                onChange={(e) => updateCharge(idx, 'amount', e.target.value)}
-                                                className="w-24 px-2 py-1.5 border border-gray-200 rounded text-xs text-right focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => removeCharge(idx)}
-                                                className="w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700"
-                                            >
-                                                <X size={14} />
-                                            </button>
-                                        </div>
-                                    ))}
+                                <div className="space-y-2">
+                                    {charges.map((c, idx) => {
+                                        const hits = docHits(c.docNo);
+                                        return (
+                                            <div key={idx}>
+                                                <div className="flex items-center gap-1.5">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Doc no."
+                                                        value={c.docNo}
+                                                        onChange={(e) => updateCharge(idx, 'docNo', e.target.value.replace(/\s+/g, ''))}
+                                                        className="w-28 px-2 py-1.5 border border-gray-200 rounded text-xs font-mono focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Less: Delivery charge"
+                                                        value={c.label}
+                                                        onChange={(e) => updateCharge(idx, 'label', e.target.value)}
+                                                        className="flex-1 min-w-0 px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        placeholder="0.00"
+                                                        value={c.amount}
+                                                        onChange={(e) => updateCharge(idx, 'amount', e.target.value)}
+                                                        className="w-24 px-2 py-1.5 border border-gray-200 rounded text-xs text-right focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeCharge(idx)}
+                                                        className="w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                </div>
+                                                {hits && hits.length > 0 && (
+                                                    <div className="text-[11px] text-emerald-700 mt-1 ml-1">
+                                                        Reverses DV {String(c.docNo).trim()}: {hits.map(h => `${h.inv} ₱${fmt(h.amt)}`).join(', ')}
+                                                    </div>
+                                                )}
+                                                {hits && hits.length === 0 && (
+                                                    <div className="text-[11px] text-amber-700 mt-1 ml-1">
+                                                        No payment with DV number {String(c.docNo).trim()} in the Sales Journal. It will be treated as a normal deduction.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -670,7 +720,12 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
                                     <span className="text-orange-700">₱{fmt(netAmount)}</span>
                                 </div>
                             )}
-                            {willOverpay && (
+                            {deductionsTooHigh && (
+                                <div className="mt-2 bg-red-50 border border-red-200 rounded p-2.5 text-xs text-red-700 font-medium">
+                                    EWT and deductions (₱{fmt(Number(amount || 0) - rawNet)}) are equal to or more than the amount. The net must be above zero.
+                                </div>
+                            )}
+                            {willOverpay && !deductionsTooHigh && (
                                 <div className="mt-2 bg-orange-50 border border-orange-200 rounded p-2.5 text-xs text-orange-700 font-medium flex items-center gap-1.5">
                                     ⚠ This exceeds the open balance by ₱{fmt(overpayAmount)}. It will be recorded as an overpayment.
                                 </div>
@@ -687,7 +742,7 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-500 mb-1 font-medium">Reference</label>
+                                <label className="block text-xs text-gray-500 mb-1 font-medium">Reference (DV no.)</label>
                                 <input
                                     type="text"
                                     value={ref}
@@ -731,7 +786,7 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
                     </button>
                     <button
                         onClick={handleSave}
-                        disabled={saving || !amount || Number(amount) <= 0}
+                        disabled={saving || !amount || Number(amount) <= 0 || deductionsTooHigh}
                         className="px-4 py-2 bg-[#2CA01C] text-white rounded text-sm font-medium hover:bg-[#268d19] transition disabled:opacity-40"
                     >
                         {saving ? (isEditing ? 'Updating...' : 'Saving...') : (isEditing ? 'Update payment' : 'Save payment')}
@@ -741,7 +796,6 @@ const PaymentModal = ({ profile, editingPayment, onClose, onSaved }) => {
         </div>
     );
 };
-
 const num = (v) => Number(String(v ?? '').replace(/,/g, '')) || 0;
 const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 const emptyLine = () => ({ invoiceNo: '', gross: '', ewt: '' });
@@ -1923,6 +1977,7 @@ const InvoicingProfile = ({ onBack }) => {
             {paymentProfile && (
                 <PaymentModal
                     profile={paymentProfile}
+                    profiles={profiles}
                     editingPayment={editingPayment}
                     onClose={() => { setPaymentProfile(null); setEditingPayment(null); }}
                     onSaved={(updated) => {

@@ -1,0 +1,354 @@
+import toast from 'react-hot-toast';
+import { saveWorkbook } from '../../utils/birExport';
+
+/*
+ * Excel download of the 2550Q return. One sheet per tab, each sheet shows the same table as the tab on screen:
+ *   Sales                  Sales tab (customer total, 12% collected / uncollected)
+ *   Purchases              Purchases tab (expenses goods / services, 12%, amount paid; totals row on top)
+ *   Recovered receivables  Recovered tab (16 columns, one merged block per invoice)
+ *   Filing                 Filing tab (quarterly VAT computation)
+ */
+
+const FMT = '#,##0.00;-#,##0.00;"-"';
+const THIN = { style: 'thin', color: { argb: 'FF000000' } };
+const BOX = { top: THIN, left: THIN, bottom: THIN, right: THIN };
+const fill = (argb) => ({ type: 'pattern', pattern: 'solid', fgColor: { argb } });
+const GREY = fill('FFD9D9D9');
+const LIGHT = fill('FFF2F2F2');
+
+const n = (v) => Number(v || 0);
+const has = (v) => v !== null && v !== undefined && v !== '';
+const r2 = (v) => Math.round((n(v) + Number.EPSILON) * 100) / 100;
+const colL = (i) => String.fromCharCode(64 + i);
+
+const SALE_CLASSES = { VATABLE_PRIVATE: 'Vatable (private)', VATABLE_GOVERNMENT: 'Vatable (government)', ZERO_RATED: 'Zero-rated', EXEMPT: 'Exempt' };
+const PURCHASE_CATEGORIES = {
+  DOMESTIC_GOODS: 'Domestic goods', DOMESTIC_SERVICES: 'Domestic services', CAPITAL_GOODS: 'Capital goods', IMPORTATION: 'Importation',
+  SERVICES_NONRESIDENT: 'Services by non-resident', OTHER: 'Other', NO_INPUT_TAX: 'No input tax', EXEMPT_IMPORTATION: 'VAT-exempt importation',
+};
+const lineOf = (data, key) => (data.lines || []).find((l) => l.key === key) || {};
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// ------------------------------------------------------------------ helpers
+const put = (ws, r, c, v, money) => {
+  const cell = ws.getCell(r, c);
+  cell.value = v === undefined ? null : v;
+  cell.border = BOX;
+  if (money) { cell.numFmt = FMT; cell.alignment = { horizontal: 'right', vertical: 'top' }; } else cell.alignment = { vertical: 'top', wrapText: true };
+  return cell;
+};
+const headRow = (ws, r, labels, moneyCols = []) => {
+  labels.forEach((l, i) => {
+    const c = ws.getCell(r, i + 1);
+    c.value = l;
+    c.font = { bold: true };
+    c.fill = GREY;
+    c.border = BOX;
+    c.alignment = { horizontal: moneyCols.includes(i + 1) ? 'right' : 'left', vertical: 'middle', wrapText: true };
+  });
+  ws.getRow(r).height = 32;
+};
+const titleRows = (ws, lines, lastCol) => {
+  lines.forEach((t, i) => {
+    ws.mergeCells(i + 1, 1, i + 1, lastCol);
+    const c = ws.getCell(i + 1, 1);
+    c.value = t;
+    c.font = { bold: true };
+    c.alignment = { horizontal: 'center' };
+  });
+};
+const styleTotal = (ws, r, ncols) => {
+  for (let c = 1; c <= ncols; c += 1) {
+    const cell = ws.getCell(r, c);
+    cell.font = { bold: true };
+    cell.fill = LIGHT;
+    cell.border = BOX;
+  }
+};
+const setTotal = (ws, r, c, formula, result) => {
+  const cell = ws.getCell(r, c);
+  cell.value = { formula, result: r2(result) };
+  cell.numFmt = FMT;
+  cell.alignment = { horizontal: 'right' };
+};
+const periodLabel = (year, quarter) => (quarter === 'ALL' ? (year === 'ALL' ? 'All years' : String(year)) : `Q${quarter} ${year === 'ALL' ? 'All years' : year}`);
+
+// ------------------------------------------------------------------ Sales
+const qInfo = (date, fye) => {
+  if (!date) return { key: '0000-0', label: 'No date' };
+  const y = Number(date.slice(0, 4));
+  const m = Number(date.slice(5, 7));
+  const ty = m <= fye ? y : y + 1;
+  const q = Math.floor((y * 12 + m - (ty * 12 + fye - 11)) / 3) + 1;
+  return { key: `${ty}-${q}`, label: `Q${q} ${ty}` };
+};
+const bandRow = (ws, r, text, ncols) => {
+  ws.mergeCells(r, 1, r, ncols);
+  const c = ws.getCell(r, 1);
+  c.value = text;
+  c.font = { bold: true };
+  c.fill = LIGHT;
+  c.border = BOX;
+};
+
+function addSales(wb, data, label, byQ) {
+  const ws = wb.addWorksheet('Sales');
+  const heads = ['Date', 'Invoice #', 'Sold to', 'Address', 'TIN', 'Source', 'Classification', 'Sales amount', 'Output VAT', 'Invoice amount', 'Total invoice amount', 'Exclude', '12% VAT'];
+  const money = [8, 9, 10, 11];
+  ws.columns = [12, 14, 30, 36, 18, 10, 20, 16, 16, 16, 18, 9, 18].map((width) => ({ width }));
+  titleRows(ws, ['SALES INVOICE - OUTPUT TAX', `PERIOD: ${label.toUpperCase()}`], heads.length);
+  const H = 4;
+  headRow(ws, H, heads, money);
+  ws.views = [{ state: 'frozen', ySplit: H }];
+
+  const fye = data.fiscalYearEndMonth || 12;
+  const qk = (r) => (byQ ? qInfo(r.date, fye) : null);
+  const key = (r) => `${byQ ? qk(r).key : ''}|${(r.customerName || '').trim().toLowerCase()}`;
+  const inv = (r) => n(r.salesAmount) + n(r.outputVat);
+  const list = [...(data.sales || [])].sort((a, b) =>
+    (byQ ? qk(b).key.localeCompare(qk(a).key) : 0) ||
+    (a.customerName || '').localeCompare(b.customerName || '') || String(a.date || '').localeCompare(String(b.date || '')));
+  const counts = {};
+  if (byQ) list.forEach((r) => { counts[qk(r).label] = (counts[qk(r).label] || 0) + 1; });
+  const totals = {};
+  list.forEach((r) => { if (!r.excluded) totals[key(r)] = (totals[key(r)] || 0) + inv(r); });
+  const seen = new Set();
+
+  let x = H;
+  let prevQ = null;
+  list.forEach((r) => {
+    if (byQ && qk(r).label !== prevQ) {
+      prevQ = qk(r).label;
+      x += 1;
+      bandRow(ws, x, prevQ, heads.length);
+    }
+    x += 1;
+    const k = key(r);
+    const first = !seen.has(k);
+    seen.add(k);
+    put(ws, x, 1, r.date);
+    put(ws, x, 2, r.invoiceNumber);
+    put(ws, x, 3, r.customerName);
+    put(ws, x, 4, r.customerAddress);
+    put(ws, x, 5, r.customerTin);
+    put(ws, x, 6, r.source === 'INVOICE' ? 'Journal' : 'Manual');
+    put(ws, x, 7, SALE_CLASSES[r.classification] || r.classification);
+    put(ws, x, 8, n(r.salesAmount), true);
+    put(ws, x, 9, n(r.outputVat), true);
+    put(ws, x, 10, { formula: `H${x}+I${x}`, result: r2(inv(r)) }, true);
+    put(ws, x, 11, first ? r2(totals[k] || 0) : null, true);
+    ws.getCell(x, 11).font = { bold: true };
+    put(ws, x, 12, r.excluded ? 'YES' : '');
+    put(ws, x, 13, r.source === 'INVOICE' ? `${r.uncollected ? '12% Uncollected' : '12% Collected'}${r.collectedDate ? `\n${r.collectedDate}` : ''}` : '');
+    if (r.excluded) for (let c = 1; c <= heads.length; c += 1) ws.getCell(x, c).font = { color: { argb: 'FF9CA3AF' } };
+  });
+  if (list.length) {
+    const a = H + 1; const z = x; const t = z + 1;
+    const live = list.filter((r) => !r.excluded);
+    ws.getCell(t, 1).value = 'Total (excluded rows left out)';
+    styleTotal(ws, t, heads.length);
+    const sumif = (L) => `SUMIF(L${a}:L${z},"<>YES",${L}${a}:${L}${z})`;
+    setTotal(ws, t, 8, sumif('H'), live.reduce((q, r) => q + n(r.salesAmount), 0));
+    setTotal(ws, t, 9, sumif('I'), live.reduce((q, r) => q + n(r.outputVat), 0));
+    setTotal(ws, t, 10, sumif('J'), live.reduce((q, r) => q + inv(r), 0));
+  }
+}
+
+// ------------------------------------------------------------------ Purchases
+function addPurchases(wb, data, label, byQ) {
+  const ws = wb.addWorksheet('Purchases');
+  const heads = ['Invoice Date', 'Supplier TIN', 'Branch Code', 'Supplier Name', 'Supplier Address', 'Invoice No.', 'VATable Amount', 'VAT Amount', 'Exempt Sales', 'Total Amount', 'Goods / Services', 'Claimed', 'Classification'];
+  const money = [7, 8, 9, 10];
+  ws.columns = [13, 18, 11, 32, 40, 20, 16, 14, 14, 16, 14, 10, 24].map((width) => ({ width }));
+  titleRows(ws, ['SLP - PURCHASES / INPUT TAX', `PERIOD: ${label.toUpperCase()}`], heads.length);
+  const H = 4;
+  headRow(ws, H, heads, money);
+  ws.views = [{ state: 'frozen', ySplit: H + 1 }];
+
+  const isSvc = (p) => p.category === 'DOMESTIC_SERVICES' || p.category === 'SERVICES_NONRESIDENT';
+  const total = (p) => n(p.netAmount) + n(p.inputVat) + n(p.exemptAmount);
+    const fye = data.fiscalYearEndMonth || 12;
+  const rows = byQ
+    ? [...(data.purchases || [])].sort((a, b) => qInfo(b.transactionDate, fye).key.localeCompare(qInfo(a.transactionDate, fye).key) || String(a.transactionDate || '').localeCompare(String(b.transactionDate || '')))
+    : (data.purchases || []);
+  const bands = byQ ? new Set(rows.map((p) => qInfo(p.transactionDate, fye).label)).size : 0;
+  const T = H + 1; // totals row on top, like the tab
+  const a = T + 1; const z = T + rows.length + bands;
+
+  ws.getCell(T, 1).value = label;
+  styleTotal(ws, T, heads.length);
+  if (rows.length) {
+    setTotal(ws, T, 7, `SUM(G${a}:G${z})`, rows.reduce((q, p) => q + n(p.netAmount), 0));
+    setTotal(ws, T, 8, `SUM(H${a}:H${z})`, rows.reduce((q, p) => q + n(p.inputVat), 0));
+    setTotal(ws, T, 9, `SUM(I${a}:I${z})`, rows.reduce((q, p) => q + n(p.exemptAmount), 0));
+    setTotal(ws, T, 10, `SUM(J${a}:J${z})`, rows.reduce((q, p) => q + total(p), 0));
+  }
+    let x = T;
+  let prevQ = null;
+  rows.forEach((p) => {
+    if (byQ) {
+      const ql = qInfo(p.transactionDate, fye).label;
+      if (ql !== prevQ) { prevQ = ql; x += 1; bandRow(ws, x, ql, heads.length); }
+    }
+    x += 1;
+    const cls = p.category === 'OTHER' && p.otherSpecify ? `Other: ${p.otherSpecify}` : (PURCHASE_CATEGORIES[p.category] || p.category);
+    put(ws, x, 1, p.transactionDate);
+    put(ws, x, 2, p.supplierTin);
+    put(ws, x, 3, p.branchCode);
+    put(ws, x, 4, p.supplierName);
+    put(ws, x, 5, p.supplierAddress);
+    put(ws, x, 6, p.invoiceNumber);
+    put(ws, x, 7, n(p.netAmount) ? n(p.netAmount) : null, true);
+    put(ws, x, 8, n(p.inputVat) ? n(p.inputVat) : null, true);
+    put(ws, x, 9, n(p.exemptAmount) ? n(p.exemptAmount) : null, true);
+    put(ws, x, 10, { formula: `SUM(G${x}:I${x})`, result: r2(total(p)) }, true);
+    put(ws, x, 11, isSvc(p) ? 'Services' : 'Goods');
+    put(ws, x, 12, p.claimable ? 'Yes' : 'No');
+    put(ws, x, 13, cls);
+    const claimedVat = p.claimable && n(p.inputVat) > 0;
+    for (let c = 1; c <= heads.length; c += 1) {
+      const cell = ws.getCell(x, c);
+      if (!p.claimable) cell.font = { color: { argb: 'FF9CA3AF' } };
+      else if (!claimedVat) cell.font = { color: { argb: 'FFDC2626' } };
+    }
+  });
+}
+// ------------------------------------------------------------------ Recovered receivables
+function addRecovered(wb, data, label, byQ) {
+  const ws = wb.addWorksheet('Recovered receivables');
+  const heads = ['Month', 'Client', 'Invoice date', 'Invoice #', 'Total sales', 'Vatable sales', 'Output VAT', 'Withholding tax',
+    'Accounts receivable', 'CLP 1%', 'Amount to be collected', 'Rebates (deductions)', 'Amount collected', 'Date collected',
+    'Output VAT on recovered', 'Vatable sales on recovered'];
+  const money = [5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16];
+  ws.columns = [10, 30, 13, 14, 16, 16, 16, 16, 18, 10, 18, 16, 16, 14, 18, 18].map((width) => ({ width }));
+  titleRows(ws, ['OUTPUT VAT ON RECOVERED RECEIVABLES', `PERIOD: ${label.toUpperCase()}`], heads.length);
+  const H = 4;
+  headRow(ws, H, heads, money);
+  ws.views = [{ state: 'frozen', ySplit: H }];
+
+  const recAmount = (r) => (has(r.recoveredAmount) && n(r.recoveredAmount) !== 0 ? n(r.recoveredAmount) : n(r.amountCollected));
+  const map = new Map();
+  const groups = [];
+  (data.recoveredReceivables || []).forEach((r) => {
+    const no = (r.invoiceNumber || '').trim();
+    const qi = byQ ? qInfo(r.dateCollected, data.fiscalYearEndMonth || 12) : null;
+    const k = (qi ? `${qi.key}|` : '') + (no ? `${(r.clientName || '').trim().toLowerCase()}|${no}` : `id:${r.id}`);
+    let g = map.get(k);
+    if (!g) { g = { first: r, items: [], q: qi }; map.set(k, g); groups.push(g); }
+    g.items.push(r);
+  });
+  groups.sort((a, b) => (a.q && b.q ? b.q.key.localeCompare(a.q.key) : 0) || String(a.first.invoiceDate || '9999').localeCompare(String(b.first.invoiceDate || '9999')) ||
+    String(a.first.invoiceNumber || '').localeCompare(String(b.first.invoiceNumber || '')));
+
+  const tot = { total: 0, vatable: 0, outVat: 0, wht: 0, ar: 0, atbc: 0, rebate: 0, collected: 0, recVat: 0, recBase: 0 };
+    let x = H + 1;
+  let lastQ = null;
+  groups.forEach((g) => {
+    if (g.q && g.q.label !== lastQ) { lastQ = g.q.label; bandRow(ws, x, lastQ, heads.length); x += 1; }
+    const inv = g.items.find((i) => has(i.totalSales)) || g.first;
+    const d = g.first.invoiceDate || '';
+    const hasTotal = has(inv.totalSales);
+    const total = hasTotal ? n(inv.totalSales) : 0;
+    const vatable = total / 1.12;
+    const wht = has(inv.withholdingTax) ? n(inv.withholdingTax) : vatable * 0.01;
+    const ar = total - wht;
+    const rec = g.items.reduce((q, i) => q + recAmount(i), 0);
+    const collected = g.items.reduce((q, i) => q + n(i.amountCollected), 0);
+    const v = {
+      total, vatable, outVat: vatable * 0.12, wht, ar, atbc: ar, rebate: n(inv.rebates), collected, recVat: (rec * 12) / 112, recBase: rec / 1.12,
+    };
+    const nz = (val) => (hasTotal && Math.abs(val) > 0.004 ? r2(val) : null);
+    const start = x;
+    g.items.forEach((it, i) => {
+      for (let c = 1; c <= heads.length; c += 1) put(ws, x, c, null, money.includes(c));
+      put(ws, x, 13, n(it.amountCollected), true);
+      put(ws, x, 14, it.dateCollected);
+      if (i === 0) {
+        put(ws, x, 1, d ? `${MON[Number(d.slice(5, 7)) - 1]}-${d.slice(2, 4)}` : '');
+        put(ws, x, 2, g.first.clientName);
+        put(ws, x, 3, g.first.invoiceDate);
+        put(ws, x, 4, g.first.invoiceNumber);
+        put(ws, x, 5, nz(v.total), true);
+        put(ws, x, 6, nz(v.vatable), true);
+        put(ws, x, 7, nz(v.outVat), true);
+        put(ws, x, 8, nz(v.wht), true);
+        put(ws, x, 9, nz(v.ar), true);
+        put(ws, x, 10, hasTotal ? '-' : '', true);
+        put(ws, x, 11, nz(v.atbc), true);
+        put(ws, x, 12, nz(v.rebate), true);
+        put(ws, x, 15, r2(v.recVat), true);
+        put(ws, x, 16, r2(v.recBase), true);
+      }
+      x += 1;
+    });
+    if (g.items.length > 1) [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 16].forEach((c) => ws.mergeCells(start, c, x - 1, c));
+    Object.keys(tot).forEach((k) => { if (k === 'collected' || k.startsWith('rec') || hasTotal) tot[k] += v[k]; });
+  });
+
+  if (groups.length) {
+    const t = x;
+    ws.getCell(t, 1).value = 'Total';
+    styleTotal(ws, t, heads.length);
+    const a = H + 1; const z = t - 1;
+    [[5, 'total'], [6, 'vatable'], [7, 'outVat'], [8, 'wht'], [9, 'ar'], [11, 'atbc'], [12, 'rebate'], [13, 'collected'], [15, 'recVat'], [16, 'recBase']]
+      .forEach(([c, k]) => setTotal(ws, t, c, `SUM(${colL(c)}${a}:${colL(c)}${z})`, tot[k]));
+  }
+}
+
+// ------------------------------------------------------------------ Filing
+function addFiling(wb, data) {
+  const ws = wb.addWorksheet('Filing');
+  ws.columns = [{ width: 78 }, { width: 20 }, { width: 20 }];
+  const end = data.periodEnd ? new Date(`${data.periodEnd}T00:00:00`) : null;
+  const endLabel = end ? end.toLocaleString('en-US', { month: 'long', year: 'numeric' }) : '';
+  titleRows(ws, [(data.taxpayer?.registeredName || 'COMPANY NAME').toUpperCase(), 'SUMMARY OF QUARTERLY VALUE-ADDED TAX (VAT) COMPUTATION', `BIR Form No. 2550Q | Quarter Ending ${endLabel}`], 3);
+  const vatable = r2(n(lineOf(data, 'sales_vatable_private').base) + n(lineOf(data, 'sales_vatable_govt').base));
+  const outTax = r2(lineOf(data, 'total_sales_output').tax);
+  const recVat = r2(lineOf(data, 'out_recovered_vat').tax);
+  const unc = r2(lineOf(data, 'out_uncollected').tax);
+  const inp = r2(lineOf(data, 'input_allowable').tax);
+  const rows = [
+    ['Vatable Sales for the Quarter', vatable, null, true],
+    ['Vatable Sales for Recovered receivables', r2(lineOf(data, 'out_recovered_sales').base), null, true],
+    ['Output Tax for the Quarter', null, outTax, false],
+    ['Add: Output Vat on recovered Uncollectible Receivables Previously Deducted', null, recVat, false],
+    ['Less: Output VAT on Uncollected Receivables', null, unc, false],
+    ['Less: INPUT VAT', null, inp, false],
+  ];
+  rows.forEach(([lab, b, t, bold], i) => {
+    const r = 5 + i;
+    put(ws, r, 1, lab); put(ws, r, 2, b, true); put(ws, r, 3, t, true);
+    if (bold) ws.getCell(r, 1).font = { bold: true };
+  });
+  const T = 11;
+  put(ws, T, 1, 'TOTAL STILL PAYABLE FOR THE QUARTER'); put(ws, T, 2, null, true);
+  put(ws, T, 3, { formula: 'C7+C8-C9-C10', result: r2(outTax + recVat - unc - inp) }, true);
+  styleTotal(ws, T, 3);
+  ws.getCell(T, 3).numFmt = FMT;
+  ws.getCell(13, 1).value = `Status: ${data.locked ? 'Filed' : 'Draft'}`;
+  if (data.form?.filedDate) {
+    const f = data.form;
+    ws.getCell(14, 1).value = `Filed on ${f.filedDate}; reference ${f.referenceNumber || '-'}`;
+    ws.getCell(15, 1).value = `Payment: ${f.paymentBank || '-'} / ${f.paymentReference || '-'} / ${f.paymentDate || '-'}`;
+  }
+}
+
+// ------------------------------------------------------------------ entry
+export async function downloadFullReturn(data, { year, quarter, overview } = {}) {
+  try {
+    if (!data) throw new Error('Nothing to export yet');
+    const mod = await import('exceljs');
+    const ExcelJS = mod.default || mod;
+    const wb = new ExcelJS.Workbook();
+    const label = periodLabel(year, quarter);
+    const byQ = quarter === 'ALL' || year === 'ALL';
+    addSales(wb, data, label, byQ);
+    addPurchases(wb, data, label, byQ);
+    addRecovered(wb, data, label, byQ);
+    addFiling(wb, data);
+    await saveWorkbook(wb, `BIR-2550Q-${String(year).replace(/\s+/g, '')}-${quarter === 'ALL' ? 'AllQuarters' : `Q${quarter}`}.xlsx`);
+    toast.success('Excel file downloaded');
+  } catch (e) {
+    toast.error(e?.message || 'Could not build the Excel file');
+  }
+}

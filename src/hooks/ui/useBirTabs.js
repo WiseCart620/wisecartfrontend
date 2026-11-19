@@ -1,13 +1,9 @@
 import { useCallback, useState } from 'react';
 
 export const BIR_TABS = [
-  { id: 'summary', label: 'Summary' },
   { id: 'sales', label: 'Sales (output tax)' },
-    { id: 'recovered', label: 'Recovered receivables' },
   { id: 'purchases', label: 'Purchases (input tax)' },
-  { id: 'credits', label: 'Creditable VAT' },
-  { id: 'adjustments', label: 'Adjustments' },
-  { id: 'taxpayer', label: 'Taxpayer' },
+  { id: 'recovered', label: 'Recovered receivables' },
   { id: 'filing', label: 'Filing' },
 ];
 
@@ -18,9 +14,9 @@ export default function useBirTabs() {
   const [tab, setTabState] = useState(() => {
     try {
       const saved = sessionStorage.getItem(KEY);
-      return BIR_TABS.some((t) => t.id === saved) ? saved : 'summary';
+      return BIR_TABS.some((t) => t.id === saved) ? saved : 'sales';
     } catch {
-      return 'summary';
+      return 'sales';
     }
   });
   const setTab = useCallback((id) => {

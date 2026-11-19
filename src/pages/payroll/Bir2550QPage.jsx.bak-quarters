@@ -1,7 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Download, Lock, Plus, Trash2, Pencil, Save, Unlock, X } from 'lucide-react';
 import useBir2550Q from '../../hooks/data/useBir2550Q';
+import { api } from '../../services/api';
 import useBirTabs from '../../hooks/ui/useBirTabs';
+import { downloadRecoveredSchedule } from './birRecoveredSchedule';
+import { downloadFullReturn } from './birFullExport';
 
 const peso = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
 const money = (v) => (v === null || v === undefined ? '' : peso.format(Number(v)));
@@ -24,22 +27,12 @@ const PURCHASE_CATEGORIES = {
   NO_INPUT_TAX: 'No input tax',
   EXEMPT_IMPORTATION: 'VAT-exempt importation',
 };
-const SECTION_TITLES = {
-  OUTPUT: 'Sales and output tax',
-  INPUT: 'Input tax',
-  PURCHASES: 'Current purchases',
-  DEDUCTIONS: 'Deductions from input tax',
-  NET: 'Net result',
-  CREDITS: 'Tax credits and payments',
-  PENALTIES: 'Penalties',
-};
-
 const s = {
   card: { background: 'var(--card-bg, #fff)', border: '1px solid #e5e7eb', borderRadius: 8, padding: 16, marginBottom: 16 },
   th: { textAlign: 'left', padding: '6px 4px', borderBottom: '1px solid #e5e7eb', fontSize: 'clamp(9px, 1.1vw, 12px)', color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   td: { padding: '6px 4px', borderBottom: '1px solid #f3f4f6', fontSize: 'clamp(10px, 1.2vw, 13px)', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   fixed: { width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' },
-  plainSelect: { width: '100%', border: 'none', background: 'transparent', padding: 0, margin: 0, font: 'inherit', color: '#2563eb', cursor: 'pointer', textOverflow: 'ellipsis', appearance: 'none', WebkitAppearance: 'none', outline: 'none', textDecoration: 'underline dotted', textUnderlineOffset: 3 },
+  plainSelect: { width: '100%', border: 'none', background: 'transparent', padding: 0, margin: 0, font: 'inherit', color: 'inherit', cursor: 'pointer', textOverflow: 'ellipsis', appearance: 'none', WebkitAppearance: 'none', outline: 'none', textDecoration: 'underline dotted', textUnderlineOffset: 3 },
   num: { textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' },
   input: { border: '1px solid #d1d5db', borderRadius: 6, padding: '6px 8px', fontSize: 13, width: '100%', boxSizing: 'border-box' },
   btn: { display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid #d1d5db', background: '#fff', borderRadius: 6, padding: '6px 12px', fontSize: 13, cursor: 'pointer' },
@@ -136,49 +129,6 @@ const includesText = (q, ...fields) => {
   return fields.some((x) => String(x ?? '').toLowerCase().includes(needle));
 };
 
-// ------------------------------------------------------------------ Summary
-
-const SummaryTab = ({ data }) => {
-  const sections = useMemo(() => {
-    const out = [];
-    (data.lines || []).forEach((l) => {
-      let g = out.find((x) => x.name === l.section);
-      if (!g) out.push((g = { name: l.section, lines: [] }));
-      g.lines.push(l);
-    });
-    return out;
-  }, [data.lines]);
-
-  return (
-    <>
-      {(data.warnings || []).length > 0 && (
-        <div style={{ ...s.card, background: '#f9fafb', border: '1px solid #d1d5db' }}>
-          {data.warnings.map((w, i) => <div key={i} style={{ fontSize: 13 }}>â€¢ {w}</div>)}
-        </div>
-      )}
-      {sections.map((g) => (
-        <div key={g.name} style={s.card}>
-          <h3 style={{ margin: '0 0 8px', fontSize: 14 }}>{SECTION_TITLES[g.name] || g.name}</h3>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr><th style={s.th}>Item</th><th style={{ ...s.th, ...s.num }}>Amount (base)</th><th style={{ ...s.th, ...s.num }}>Tax</th></tr>
-            </thead>
-            <tbody>
-              {g.lines.map((l) => (
-                <tr key={l.key} style={l.total ? { fontWeight: 600, background: '#f9fafb' } : undefined}>
-                  <td style={s.td}>{l.label}</td>
-                  <td style={{ ...s.td, ...s.num }}>{money(l.base)}</td>
-                  <td style={{ ...s.td, ...s.num }}>{money(l.tax)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ))}
-    </>
-  );
-};
-
 // ------------------------------------------------------------------ Sales
 
 const emptySale = () => ({ saleDate: today(), invoiceNumber: '', customerName: '', customerTin: '', customerAddress: '', classification: 'ZERO_RATED', salesAmount: '', outputVat: null, remarks: '' });
@@ -187,6 +137,23 @@ const custKey = (r) => `${(r.customerTin || '').trim()}|${(r.customerName || '')
 const invoiceAmount = (r) => n(r.salesAmount) + n(r.outputVat);
 
 const SalesTab = ({ data, bir }) => {
+  const [yr, setYr] = useState(bir.year);
+  const [qt, setQt] = useState(bir.quarter);
+  const [all, setAll] = useState(null);
+  const yearOpts = Array.from({ length: 12 }, (_, i) => new Date().getFullYear() - 8 + i);
+  useEffect(() => { setYr(bir.year); setQt(bir.quarter); }, [bir.year, bir.quarter]);
+  useEffect(() => {
+    let alive = true;
+    const qs = yr === 'ALL' ? '' : `?year=${yr}${qt === 'ALL' ? '' : `&quarter=${qt}`}`;
+    api.get(`/bir/2550q/sales/all${qs}`)
+      .then((r) => {
+        let x = r && r.data !== undefined ? r.data : r;
+        if (x && x.success === true && x.data !== undefined) x = x.data;
+        if (alive) setAll(Array.isArray(x) ? x : null);
+      })
+      .catch(() => { if (alive) setAll(null); });
+    return () => { alive = false; };
+  }, [yr, qt, data]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptySale());
   const { f, set: setFilter, reset, active } = useFilters(saleFilters);
@@ -202,7 +169,7 @@ const SalesTab = ({ data, bir }) => {
   };
 
   const rows = useMemo(() => {
-    const list = (data.sales || []).filter((r) =>
+    const list = (all || data.sales || []).filter((r) =>
       inRange(r.date, f.from, f.to) &&
       (f.cls === 'ALL' || r.classification === f.cls) &&
       (f.source === 'ALL' || r.source === f.source) &&
@@ -224,7 +191,7 @@ const SalesTab = ({ data, bir }) => {
       seen.add(k);
       return { ...r, _customerTotal: first ? totals[k] || 0 : null };
     });
-  }, [data.sales, f]);
+  }, [data.sales, all, f]);
 
   const sums = useMemo(() => rows.filter((r) => !r.excluded).reduce(
     (a, r) => ({ sales: a.sales + n(r.salesAmount), vat: a.vat + n(r.outputVat), inv: a.inv + invoiceAmount(r) }),
@@ -235,12 +202,13 @@ const SalesTab = ({ data, bir }) => {
       invoiceProfileId: r.refId,
       classification: (patch.classification ?? r.classification) === 'VATABLE_PRIVATE' ? null : (patch.classification ?? r.classification),
       excluded: patch.excluded ?? r.excluded,
+      uncollected: false,
       remarks: r.remarks,
     });
 
-  const heads = ['Date', 'Invoice #', 'Sold to', 'Address', 'TIN', 'Source', 'Classification', 'Sales amount', 'Output VAT', 'Invoice amount', 'Total invoice amount', 'Exclude', ''];
+  const heads = ['Date', 'Invoice #', 'Sold to', 'Address', 'TIN', 'Source', 'Classification', 'Sales amount', 'Output VAT', 'Invoice amount', 'Total invoice amount', 'Exclude', '12% VAT', ''];
   const numHeads = ['Sales amount', 'Output VAT', 'Invoice amount', 'Total invoice amount'];
-  const widths = ['7%', '6%', '11%', '11%', '9%', '5%', '9%', '8%', '7%', '8%', '9%', '7%', '3%'];
+  const widths = ['7%', '6%', '9%', '9%', '9%', '4%', '9%', '8%', '7%', '8%', '8%', '5%', '8%', '3%'];
 
   return (
     <>
@@ -256,6 +224,18 @@ const SalesTab = ({ data, bir }) => {
         </Field>
         <Field label="From"><Text type="date" value={f.from} onChange={setFilter('from')} /></Field>
         <Field label="To"><Text type="date" value={f.to} onChange={setFilter('to')} /></Field>
+        <Field label="Year">
+          <select style={s.input} value={yr} onChange={(e) => setYr(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}>
+            <option value="ALL">All years</option>
+            {yearOpts.map((y) => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </Field>
+        <Field label="Quarter">
+          <select style={s.input} value={yr === 'ALL' ? 'ALL' : qt} disabled={yr === 'ALL'} onChange={(e) => setQt(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}>
+            <option value="ALL">All quarters</option>
+            {[1, 2, 3, 4].map((q) => <option key={q} value={q}>Q{q}</option>)}
+          </select>
+        </Field>
         <Field label="Sort by">
           <Pick options={{ customer: 'Customer, then date', date: 'Date' }} value={f.sort} onChange={setFilter('sort')} />
         </Field>
@@ -270,7 +250,7 @@ const SalesTab = ({ data, bir }) => {
 
       <div className="bir-wrap" style={s.card}>
         <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
-          Showing {rows.length} of {(data.sales || []).length} sales
+          Showing {rows.length} of {(all || data.sales || []).length} sales
         </div>
         <table className="bir-table">
           <colgroup>{widths.map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
@@ -308,6 +288,13 @@ const SalesTab = ({ data, bir }) => {
                   )}
                 </td>
                 <td style={s.td}>
+                  {r.source === 'INVOICE' && (
+                    <span style={{ fontSize: 11, fontWeight: 600, color: r.uncollected ? '#b45309' : '#047857' }}>
+                      {r.uncollected ? '12% Uncollected' : '12% Collected'}{r.collectedDate ? <span style={{ display: 'block', fontWeight: 400, fontSize: 10 }}>{r.collectedDate}</span> : null}
+                    </span>
+                  )}
+                </td>
+                <td style={s.td}>
                   {r.source === 'MANUAL' && (
                     <Btn style={{ padding: '2px 4px' }} disabled={locked} onClick={() => window.confirm('Delete this sale?') && bir.deleteManualSale(r.refId)}>
                       <Trash2 size={12} />
@@ -324,7 +311,7 @@ const SalesTab = ({ data, bir }) => {
                 <td style={{ ...s.td, ...s.num }} title={money(sums.sales)}>{money(sums.sales)}</td>
                 <td style={{ ...s.td, ...s.num }} title={money(sums.vat)}>{money(sums.vat)}</td>
                 <td style={{ ...s.td, ...s.num }} title={money(sums.inv)}>{money(sums.inv)}</td>
-                <td style={s.td} colSpan={3} />
+                <td style={s.td} colSpan={4} />
               </tr>
             </tfoot>
           )}
@@ -365,9 +352,13 @@ const SalesTab = ({ data, bir }) => {
 
 // ------------------------------------------------------------------ Purchases
 
-const emptyPurchase = () => ({ transactionDate: today(), invoiceNumber: '', supplierName: '', supplierTin: '', supplierAddress: '', category: 'DOMESTIC_GOODS', otherSpecify: '', netAmount: '', inputVat: null, claimable: true, remarks: '' });
+const emptyPurchase = () => ({ transactionDate: today(), invoiceNumber: '', supplierName: '', supplierTin: '', branchCode: '', supplierAddress: '', category: 'DOMESTIC_GOODS', otherSpecify: '', netAmount: '', inputVat: null, exemptAmount: null, claimable: true, remarks: '' });
 const purchaseFilters = { q: '', cat: 'ALL', claimed: 'ALL', from: '', to: '' };
-const paidAmount = (p) => n(p.netAmount) + n(p.inputVat);
+const isServiceCat = (c) => c === 'DOMESTIC_SERVICES' || c === 'SERVICES_NONRESIDENT';
+const noVatCat = (c) => c === 'NO_INPUT_TAX' || c === 'EXEMPT_IMPORTATION';
+const purchaseTotal = (p) => n(p.netAmount) + n(p.inputVat) + n(p.exemptAmount);
+const plain = (v) => (Math.abs(n(v)) < 0.005 ? '' : n(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+const fmtUsDate = (d) => (d && /^\d{4}-\d{2}-\d{2}/.test(d) ? `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}/${d.slice(0, 4)}` : (d || ''));
 
 const PurchasesTab = ({ data, bir }) => {
   const [open, setOpen] = useState(false);
@@ -378,12 +369,16 @@ const PurchasesTab = ({ data, bir }) => {
   const close = useCallback(() => setOpen(false), []);
 
   const openNew = () => { setForm(emptyPurchase()); setOpen(true); };
-  const openEdit = (p) => { setForm({ ...p }); setOpen(true); };
+  const openEdit = (p) => { setForm({ ...p, netAmount: p.netAmount ?? '' }); setOpen(true); };
   const needsSpecify = form.category === 'OTHER' && !(form.otherSpecify || '').trim();
+  const hasNet = form.netAmount !== '' && form.netAmount !== null && form.netAmount !== undefined;
+  const hasAmount = hasNet || n(form.exemptAmount) !== 0;
   const submit = async () => {
-    if (!form.transactionDate || form.netAmount === '' || form.netAmount === null || needsSpecify) return;
+    if (!form.transactionDate || !hasAmount || needsSpecify) return;
     const ok = await bir.savePurchase({
       ...form,
+      netAmount: hasNet ? form.netAmount : 0,
+      exemptAmount: form.exemptAmount === null || form.exemptAmount === '' ? 0 : form.exemptAmount,
       otherSpecify: form.category === 'OTHER' ? form.otherSpecify.trim() : null,
     });
     if (ok) setOpen(false);
@@ -393,23 +388,38 @@ const PurchasesTab = ({ data, bir }) => {
     inRange(p.transactionDate, f.from, f.to) &&
     (f.cat === 'ALL' || p.category === f.cat) &&
     (f.claimed === 'ALL' || (f.claimed === 'YES' ? p.claimable : !p.claimable)) &&
-    includesText(f.q, p.invoiceNumber, p.supplierName, p.supplierTin, p.supplierAddress, p.otherSpecify)),
+    includesText(f.q, p.invoiceNumber, p.supplierName, p.supplierTin, p.branchCode, p.supplierAddress, p.otherSpecify)),
     [data.purchases, f]);
 
   const sums = useMemo(() => rows.reduce(
-    (a, p) => ({ net: a.net + n(p.netAmount), vat: a.vat + n(p.inputVat), paid: a.paid + paidAmount(p) }),
-    { net: 0, vat: 0, paid: 0 }), [rows]);
+    (a, p) => ({ vatable: a.vatable + n(p.netAmount), vat: a.vat + n(p.inputVat), exempt: a.exempt + n(p.exemptAmount), total: a.total + purchaseTotal(p) }),
+    { vatable: 0, vat: 0, exempt: 0, total: 0 }), [rows]);
 
-  const heads = ['Date', 'Invoice #', 'Purchased from', 'Address', 'TIN', 'Classification', 'Net amount', 'Input VAT', 'Amount paid', 'Claimed', ''];
-  const numHeads = ['Net amount', 'Input VAT', 'Amount paid'];
-  const widths = ['7%', '7%', '11%', '15%', '9%', '11%', '9%', '8%', '9%', '5%', '9%'];
+  const periodLabel = bir.quarter === 'ALL'
+    ? String(bir.year === 'ALL' ? 'All years' : bir.year)
+    : `Q${bir.quarter} ${bir.year === 'ALL' ? 'All years' : bir.year}`;
+
+  const heads = ['Invoice Date', 'Supplier TIN', 'Branch Code', 'Supplier Name', 'Supplier Address', 'Invoice No.', 'VATable Amount', 'VAT Amount', 'Exempt Sales', 'Total Amount', 'Type', ''];
+  const widths = ['7%', '8%', '5%', '13%', '17%', '10%', '8%', '7%', '7%', '8%', '5%', '5%'];
   const classLabel = (p) => (p.category === 'OTHER' && p.otherSpecify ? `Other: ${p.otherSpecify}` : PURCHASE_CATEGORIES[p.category]);
+
+  const grid = { border: '1px solid #d1d5db' };
+  const hd = { ...s.th, ...grid, textAlign: 'center', background: '#fff', color: '#111827', fontWeight: 700, padding: '8px 4px', whiteSpace: 'normal' };
+  const cd = { ...s.td, ...grid };
+  const cn = { ...s.td, ...grid, ...s.num };
+  const totalCell = { ...cn, fontWeight: 700, background: '#f3f4f6' };
+
+  const isSvcForm = isServiceCat(form.category);
+  const noVatForm = noVatCat(form.category);
+  const vatPreview = noVatForm ? 0
+    : (form.inputVat !== null && form.inputVat !== '' && form.inputVat !== undefined ? n(form.inputVat) : Math.round(n(form.netAmount) * 12) / 100);
+  const totalPreview = n(form.netAmount) + vatPreview + n(form.exemptAmount);
 
   return (
     <>
       <div style={{ ...s.card, ...s.toolbar }}>
         <div style={{ flex: '1 1 220px' }}>
-          <Field label="Search"><Text placeholder="Invoice #, supplier, TIN, address" value={f.q} onChange={setFilter('q')} /></Field>
+          <Field label="Search"><Text placeholder="Invoice #, supplier, TIN, branch, address" value={f.q} onChange={setFilter('q')} /></Field>
         </div>
         <Field label="Classification">
           <Pick options={{ ALL: 'All', ...PURCHASE_CATEGORIES }} value={f.cat} onChange={setFilter('cat')} />
@@ -426,48 +436,55 @@ const PurchasesTab = ({ data, bir }) => {
       </div>
 
       <div className="bir-wrap" style={s.card}>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>PURCHASES - INPUT TAX</div>
         <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
-          Showing {rows.length} of {(data.purchases || []).length} purchases
+          Showing {rows.length} of {(data.purchases || []).length} purchases. Red = no input VAT (exempt or non-VAT supplier). Greyed = not claimed. Hover the Type column to see the classification.
         </div>
-        <table className="bir-table">
+        <table className="bir-table" style={{ border: '1px solid #d1d5db' }}>
           <colgroup>{widths.map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
           <thead>
-            <tr>{heads.map((h, i) => <th key={i} title={h} style={{ ...s.th, ...(numHeads.includes(h) ? s.num : {}) }}>{h}</th>)}</tr>
+            <tr>{heads.map((h, i) => <th key={i} title={h} style={hd}>{h}</th>)}</tr>
           </thead>
           <tbody>
             {rows.length === 0 && (
-              <tr><td style={s.td} colSpan={heads.length}>No purchases match.</td></tr>
+              <tr><td style={cd} colSpan={heads.length}>No purchases match.</td></tr>
             )}
-            {rows.map((p) => (
-              <tr key={p.id} style={!p.claimable ? { opacity: 0.55 } : undefined}>
-                <td style={s.td} title={p.transactionDate}>{p.transactionDate}</td>
-                <td style={s.td} title={p.invoiceNumber}>{p.invoiceNumber}</td>
-                <td style={s.td} title={p.supplierName}><div className="clamp3">{p.supplierName}</div></td>
-                <td style={s.td} title={p.supplierAddress}><div className="clamp3">{p.supplierAddress}</div></td>
-                <td style={s.td} title={p.supplierTin}>{p.supplierTin}</td>
-                <td style={s.td} title={classLabel(p)}>{classLabel(p)}</td>
-                <td style={{ ...s.td, ...s.num }} title={money(p.netAmount)}>{money(p.netAmount)}</td>
-                <td style={{ ...s.td, ...s.num }} title={money(p.inputVat)}>{money(p.inputVat)}</td>
-                <td style={{ ...s.td, ...s.num }} title={money(paidAmount(p))}>{money(paidAmount(p))}</td>
-                <td style={s.td}>{p.claimable ? 'Yes' : 'No'}</td>
-                <td style={s.td}>
-                  <Btn style={{ padding: '2px 4px' }} disabled={locked} onClick={() => openEdit(p)}><Pencil size={12} /></Btn>{' '}
-                  <Btn style={{ padding: '2px 4px' }} disabled={locked} onClick={() => window.confirm('Delete this purchase?') && bir.deletePurchase(p.id)}><Trash2 size={12} /></Btn>
-                </td>
+            {rows.length > 0 && (
+              <tr>
+                <td style={{ ...cd, fontWeight: 700, background: '#f3f4f6' }} colSpan={6}>{periodLabel}</td>
+                <td style={totalCell}>{plain(sums.vatable)}</td>
+                <td style={totalCell}>{plain(sums.vat)}</td>
+                <td style={totalCell}>{plain(sums.exempt)}</td>
+                <td style={totalCell}>{plain(sums.total)}</td>
+                <td style={{ ...cd, background: '#f3f4f6' }} colSpan={2} />
               </tr>
-            ))}
+            )}
+            {rows.map((p) => {
+              const claimedVat = p.claimable && n(p.inputVat) > 0;
+              const tone = claimedVat ? null : (p.claimable ? { color: '#dc2626' } : null);
+              const tc = { ...cd, ...tone };
+              const tn = { ...cn, ...tone };
+              return (
+                <tr key={p.id} style={!p.claimable ? { opacity: 0.55 } : undefined}>
+                  <td style={tc} title={p.transactionDate}>{fmtUsDate(p.transactionDate)}</td>
+                  <td style={tc} title={p.supplierTin}>{p.supplierTin}</td>
+                  <td style={{ ...tc, textAlign: 'center' }} title={p.branchCode}>{p.branchCode}</td>
+                  <td style={tc} title={p.supplierName}><div className="clamp3">{p.supplierName}</div></td>
+                  <td style={tc} title={p.supplierAddress}><div className="clamp3">{p.supplierAddress}</div></td>
+                  <td style={tc} title={p.invoiceNumber}>{p.invoiceNumber}</td>
+                  <td style={tn}>{plain(p.netAmount)}</td>
+                  <td style={tn}>{plain(p.inputVat)}</td>
+                  <td style={tn}>{plain(p.exemptAmount)}</td>
+                  <td style={tn}>{plain(purchaseTotal(p))}</td>
+                  <td style={{ ...tc, textAlign: 'center' }} title={classLabel(p)}>{isServiceCat(p.category) ? 'Services' : 'Goods'}</td>
+                  <td style={tc}>
+                    <Btn style={{ padding: '2px 4px' }} disabled={locked} onClick={() => openEdit(p)}><Pencil size={12} /></Btn>{' '}
+                    <Btn style={{ padding: '2px 4px' }} disabled={locked} onClick={() => window.confirm('Delete this purchase?') && bir.deletePurchase(p.id)}><Trash2 size={12} /></Btn>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
-          {rows.length > 0 && (
-            <tfoot>
-              <tr style={{ fontWeight: 600, background: '#f9fafb' }}>
-                <td style={s.td} colSpan={6}>Total</td>
-                <td style={{ ...s.td, ...s.num }} title={money(sums.net)}>{money(sums.net)}</td>
-                <td style={{ ...s.td, ...s.num }} title={money(sums.vat)}>{money(sums.vat)}</td>
-                <td style={{ ...s.td, ...s.num }} title={money(sums.paid)}>{money(sums.paid)}</td>
-                <td style={s.td} colSpan={2} />
-              </tr>
-            </tfoot>
-          )}
         </table>
       </div>
 
@@ -478,39 +495,45 @@ const PurchasesTab = ({ data, bir }) => {
           footer={
             <>
               <Btn onClick={close}>Cancel</Btn>
-              <Btn primary disabled={locked || bir.saving || !form.transactionDate || form.netAmount === '' || form.netAmount === null || needsSpecify} onClick={submit}>
+              <Btn primary disabled={locked || bir.saving || !form.transactionDate || !hasAmount || needsSpecify} onClick={submit}>
                 <Save size={14} /> {form.id ? 'Update' : 'Add purchase'}
               </Btn>
             </>
           }
         >
           <p style={{ margin: '0 0 12px', fontSize: 12, color: '#6b7280' }}>
-            Input VAT is computed at 12% of the net amount when left blank. Capital goods above â‚±1,000,000 net have their input VAT deferred automatically.
+            Enter the VATable amount (VAT-exclusive) and the VAT amount, or enter only Exempt Sales for a supplier with no VAT. The VAT amount is computed at 12% of the VATable amount when left blank. Capital goods above PHP 1,000,000 net have their input VAT deferred automatically.
           </p>
           <div style={s.grid}>
-            <Field label="Date"><Text type="date" value={form.transactionDate} onChange={set('transactionDate')} /></Field>
-            <Field label="Invoice #"><Text value={form.invoiceNumber} onChange={set('invoiceNumber')} /></Field>
-            <Field label="Purchased from"><Text value={form.supplierName} onChange={set('supplierName')} /></Field>
+            <Field label="Invoice Date"><Text type="date" value={form.transactionDate} onChange={set('transactionDate')} /></Field>
             <Field label="Supplier TIN"><Text value={form.supplierTin} onChange={set('supplierTin')} /></Field>
-            <Field label="Address"><Text value={form.supplierAddress} onChange={set('supplierAddress')} /></Field>
-            <Field label="Classification"><Pick options={PURCHASE_CATEGORIES} value={form.category} onChange={set('category')} /></Field>
+            <Field label="Branch Code"><Text placeholder="e.g. 00535" value={form.branchCode} onChange={set('branchCode')} /></Field>
+            <Field label="Supplier Name"><Text value={form.supplierName} onChange={set('supplierName')} /></Field>
+            <Field label="Supplier Address"><Text value={form.supplierAddress} onChange={set('supplierAddress')} /></Field>
+            <Field label="Invoice No."><Text value={form.invoiceNumber} onChange={set('invoiceNumber')} /></Field>
+            <Field label="Classification (Goods / Services)"><Pick options={PURCHASE_CATEGORIES} value={form.category} onChange={set('category')} /></Field>
             {form.category === 'OTHER' && (
               <Field label="Specify classification">
                 <Text placeholder="e.g. Office supplies" value={form.otherSpecify} onChange={set('otherSpecify')} />
               </Field>
             )}
-            <Field label="Net amount (VAT-exclusive)"><Num value={form.netAmount} onChange={set('netAmount')} /></Field>
-            <Field label="Input VAT (optional)"><Num value={form.inputVat} onChange={set('inputVat')} /></Field>
+            <Field label={isSvcForm ? 'VATable Amount (services, VAT-exclusive)' : 'VATable Amount (goods, VAT-exclusive)'}>
+              <Num value={form.netAmount} onChange={set('netAmount')} />
+            </Field>
+            <Field label="VAT Amount (blank = 12% computed)"><Num value={form.inputVat} onChange={set('inputVat')} disabled={noVatForm} /></Field>
+            <Field label="Exempt Sales"><Num value={form.exemptAmount} onChange={set('exemptAmount')} /></Field>
+            <Field label="Total Amount (computed)">
+              <Text disabled value={plain(totalPreview) || '0.00'} onChange={() => {}} />
+            </Field>
           </div>
           <label style={{ display: 'block', marginTop: 12, fontSize: 13 }}>
-            <input type="checkbox" checked={!!form.claimable} onChange={(e) => set('claimable')(e.target.checked)} /> Claim the input VAT this quarter
+            <input type="checkbox" checked={!!form.claimable} onChange={(e) => set('claimable')(e.target.checked)} /> Include in this quarter's return (claim the input VAT)
           </label>
         </Modal>
       )}
     </>
   );
 };
-
 // ------------------------------------------------------------------ Creditable VAT (Schedule 3)
 
 const blankCredit = () => ({ periodCovered: '', agentName: '', agentTin: '', certificateNumber: '', incomePayment: '', taxWithheld: '' });
@@ -658,6 +681,52 @@ const TaxpayerTab = ({ data, bir }) => {
 
 // ------------------------------------------------------------------ Filing
 
+const FilingSummary = ({ data, bir }) => {
+  const L = (k) => (data.lines || []).find((l) => l.key === k) || {};
+  const vatable = n(L('sales_vatable_private').base) + n(L('sales_vatable_govt').base);
+  const end = data.periodEnd ? new Date(`${data.periodEnd}T00:00:00`) : null;
+  const endLabel = end ? end.toLocaleString('en-US', { month: 'long', year: 'numeric' }) : '';
+  const rows = [
+    ['Vatable Sales for the Quarter', vatable, null, true],
+    ['Vatable Sales for Recovered receivables', n(L('out_recovered_sales').base), null, true],
+    ['Output Tax for the Quarter', null, n(L('total_sales_output').tax), false],
+    ['Add: Output Vat on recovered Uncollectible Receivables Previously Deducted', null, n(L('out_recovered_vat').tax), false],
+    ['Less: Output VAT on Uncollected Receivables', null, n(L('out_uncollected').tax), false],
+    ['Less: INPUT VAT', null, n(L('input_allowable').tax), false],
+  ];
+  const total = n(L('out_due').tax) - n(L('input_allowable').tax);
+  const cell = { border: '1px solid #111', padding: '2px 6px', fontSize: 13 };
+  return (
+    <div style={s.card}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+        <h3 style={{ margin: 0, fontSize: 14 }}>Quarterly VAT computation</h3>
+        
+      </div>
+      <table style={{ borderCollapse: 'collapse', width: '100%', maxWidth: 900 }}>
+        <tbody>
+          <tr><td colSpan={3} style={{ ...cell, textAlign: 'center', fontWeight: 700, lineHeight: 1.5 }}>
+            {(data.taxpayer?.registeredName || 'COMPANY NAME').toUpperCase()}<br />
+            SUMMARY OF QUARTERLY VALUE-ADDED TAX (VAT) COMPUTATION<br />
+            BIR Form No. 2550Q | Quarter Ending {endLabel}
+          </td></tr>
+          {rows.map(([label, base, tax, bold]) => (
+            <tr key={label}>
+              <td style={{ ...cell, fontWeight: bold ? 700 : 400 }}>{label}</td>
+              <td style={{ ...cell, ...s.num, width: 150 }}>{base === null ? '' : money(base)}</td>
+              <td style={{ ...cell, ...s.num, width: 150 }}>{tax === null ? '' : money(tax)}</td>
+            </tr>
+          ))}
+          <tr>
+            <td style={{ ...cell, fontWeight: 700 }}>TOTAL STILL PAYABLE FOR THE QUARTER</td>
+            <td style={cell} />
+            <td style={{ ...cell, ...s.num, fontWeight: 700 }}>{money(total)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
 const FilingTab = ({ data, bir }) => {
   const f = data.form || {};
   const [d, setD] = useState({ filedDate: today(), referenceNumber: '', paymentBank: '', paymentReference: '', paymentDate: '' });
@@ -712,12 +781,321 @@ const FilingTab = ({ data, bir }) => {
   );
 };
 
+// ------------------------------------------------------------------ Recovered receivables
+
+const emptyRecovered = () => ({ dateCollected: today(), clientName: '', invoiceNumber: '', invoiceDate: '', amountCollected: null, recoveredAmount: null, totalSales: null, withholdingTax: null, rebates: null, remarks: '' });
+const recoveredFilters = { q: '', from: '', to: '' };
+const recBase = (a) => n(a) / 1.12;
+const recVat = (a) => (n(a) * 12) / 112;
+const recAmount = (r) => (r.recoveredAmount !== null && r.recoveredAmount !== undefined && r.recoveredAmount !== '' && n(r.recoveredAmount) !== 0 ? n(r.recoveredAmount) : n(r.amountCollected));
+
+const RecoveredTab = ({ data, bir }) => {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(emptyRecovered());
+  const { f, set: setFilter, reset, active } = useFilters(recoveredFilters);
+  const locked = data.locked;
+  const set = (k) => (v) => setForm((x) => ({ ...x, [k]: v }));
+  const close = useCallback(() => setOpen(false), []);
+
+  const [found, setFound] = useState([]);
+  const [looked, setLooked] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const unwrap = (r) => {
+    let x = r && r.data !== undefined ? r.data : r;
+    if (x && x.success === true && x.data !== undefined) x = x.data;
+    return Array.isArray(x) ? x : [];
+  };
+  const toForm = (x) => ({
+    ...emptyRecovered(),
+    clientName: x.clientName || '',
+    invoiceNumber: x.invoiceNumber || '',
+    invoiceDate: x.invoiceDate || '',
+    totalSales: x.totalSales,
+    withholdingTax: x.withholdingTax,
+    amountCollected: x.amountCollected,
+    recoveredAmount: x.recoveredAmount,
+    dateCollected: x.dateCollected || today(),
+    remarks: x.reversal ? `Reversal via DV ${x.reference || ''}` : (x.reference ? `DV ${x.reference}` : ''),
+  });
+  const toSave = (x) => ({ ...toForm(x), invoiceDate: x.invoiceDate || null });
+
+  const lookup = async () => {
+    const no = (form.invoiceNumber || '').trim();
+    if (!no || form.id) return;
+    try {
+      const list = unwrap(await api.get(`/bir/2550q/recovered/lookup?invoiceNumber=${encodeURIComponent(no)}`));
+      setFound(list);
+      setLooked(true);
+      if (list.length) setForm(toForm(list[0]));
+    } catch { setFound([]); setLooked(true); }
+  };
+  const addAll = async () => {
+    setBusy(true);
+    for (const x of found) await bir.saveRecovered(toSave(x));
+    setBusy(false);
+    setOpen(false);
+  };
+  const [yr, setYr] = useState(bir.year);
+  const [qt, setQt] = useState(bir.quarter);
+  const [list, setList] = useState([]);
+  const yearOpts = Array.from({ length: 7 }, (_, i) => new Date().getFullYear() - 5 + i);
+  const scopeQs = () => (yr === 'ALL' ? '' : `?year=${yr}${qt === 'ALL' ? '' : `&quarter=${qt}`}`);
+
+  useEffect(() => { setYr(bir.year); setQt(bir.quarter); }, [bir.year, bir.quarter]);
+
+
+  useEffect(() => {
+    let alive = true;
+    api.get(`/bir/2550q/recovered/all${scopeQs()}`)
+      .then((r) => { if (alive) setList(unwrap(r)); })
+      .catch(() => { if (alive) setList([]); });
+    return () => { alive = false; };
+  }, [yr, qt, data]);
+
+  const openNew = () => { setForm(emptyRecovered()); setFound([]); setLooked(false); setOpen(true); };
+  const openEdit = (r) => { setForm({ ...r, invoiceDate: r.invoiceDate || '' }); setFound([]); setLooked(false); setOpen(true); };
+  const formValid = !!form.dateCollected && recAmount(form) !== 0;
+  const submit = async () => {
+    if (!formValid) return;
+    const ok = await bir.saveRecovered({ ...form, invoiceDate: form.invoiceDate || null });
+    if (ok) setOpen(false);
+  };
+
+  const rows = useMemo(() => list.filter((r) =>
+    inRange(r.dateCollected, f.from, f.to) &&
+    includesText(f.q, r.clientName, r.invoiceNumber, r.remarks)),
+  [list, f]);
+
+  const sums = useMemo(() => rows.reduce(
+    (a, r) => ({ collected: a.collected + n(r.amountCollected), recovered: a.recovered + recAmount(r) }),
+    { collected: 0, recovered: 0 }), [rows]);
+
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const has = (v) => v !== null && v !== undefined && v !== '';
+  const heads = ['Month', 'Client', 'Invoice date', 'Invoice #', 'Total sales', 'Vatable sales', 'Output VAT', 'Withholding tax',
+    'Accounts receivable', 'CLP 1%', 'Amount to be collected', 'Rebates (deductions)', 'Amount collected', 'Date collected',
+    'Output VAT on recovered', 'Vatable sales on recovered', ''];
+  const textHeads = ['Month', 'Client', 'Invoice date', 'Invoice #', 'Date collected', ''];
+
+  const groups = useMemo(() => {
+    const map = new Map();
+    const list = [];
+    rows.forEach((r) => {
+      const no = (r.invoiceNumber || '').trim();
+      const key = no ? `${(r.clientName || '').trim().toLowerCase()}|${no}` : `id:${r.id}`;
+      let g = map.get(key);
+      if (!g) { g = { first: r, items: [] }; map.set(key, g); list.push(g); }
+      g.items.push(r);
+    });
+    list.sort((a, b) =>
+      String(a.first.invoiceDate || '9999').localeCompare(String(b.first.invoiceDate || '9999')) ||
+      String(a.first.invoiceNumber || '').localeCompare(String(b.first.invoiceNumber || '')));
+    return list.map((g) => {
+      const inv = g.items.find((x) => has(x.totalSales)) || g.first;
+      const d = g.first.invoiceDate || '';
+      const hasTotal = has(inv.totalSales);
+      const total = hasTotal ? n(inv.totalSales) : 0;
+      const vatable = total / 1.12;
+      const wht = has(inv.withholdingTax) ? n(inv.withholdingTax) : vatable * 0.01;
+      const ar = total - wht;
+      const rec = g.items.reduce((a, x) => a + recAmount(x), 0);
+      return {
+        ...g,
+        month: d ? `${MON[Number(d.slice(5, 7)) - 1]}-${d.slice(2, 4)}` : '',
+        hasTotal, total, vatable, outVat: vatable * 0.12, wht, ar, clp: 0, atbc: ar, rebate: n(inv.rebates),
+        collected: g.items.reduce((a, x) => a + n(x.amountCollected), 0),
+        recVat: recVat(rec), recBase: recBase(rec),
+      };
+    });
+  }, [rows]);
+
+  const gsum = (k) => groups.reduce((a, g) => a + (k === 'collected' || k.startsWith('rec') || g.hasTotal ? g[k] : 0), 0);
+
+  return (
+    <>
+      <div style={{ ...s.card, ...s.toolbar }}>
+        <div style={{ flex: '1 1 220px' }}>
+          <Field label="Search"><Text placeholder="Client, invoice #, remarks" value={f.q} onChange={setFilter('q')} /></Field>
+        </div>
+        <Field label="Year">
+          <select style={s.input} value={yr} onChange={(e) => setYr(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}>
+            <option value="ALL">All years</option>
+            {yearOpts.map((y) => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </Field>
+        <Field label="Quarter">
+          <select style={s.input} value={yr === 'ALL' ? 'ALL' : qt} disabled={yr === 'ALL'} onChange={(e) => setQt(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}>
+            <option value="ALL">All quarters</option>
+            {[1, 2, 3, 4].map((q) => <option key={q} value={q}>Q{q}</option>)}
+          </select>
+        </Field>
+        <div style={{ display: 'none' }}>
+        </div>
+        <Field label="From"><Text type="date" value={f.from} onChange={setFilter('from')} /></Field>
+        <Field label="To"><Text type="date" value={f.to} onChange={setFilter('to')} /></Field>
+        {active && <Btn onClick={reset}><X size={14} /> Clear filters</Btn>}
+        <div style={{ marginLeft: 'auto' }}>
+          
+          <Btn disabled={!(data.recoveredReceivables || []).length} onClick={() => downloadRecoveredSchedule({ rows: data.recoveredReceivables || [], companyName: data.taxpayer?.registeredName, periodStart: data.periodStart, periodEnd: data.periodEnd, year: bir.year, quarter: bir.quarter })}><Download size={14} /> Download schedule</Btn>{' '}
+          <Btn primary disabled={locked} onClick={openNew}><Plus size={14} /> Add recovered receivable</Btn>
+        </div>
+      </div>
+
+      <div className="bir-wrap" style={{ ...s.card, overflowX: 'auto' }}>
+        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
+          Receivables from earlier quarters that were collected in this quarter. Output VAT on recovered = net amount recovered x 12/112. A negative amount reverses a payment. CLP 1% is not stored yet, so it shows as a dash. Showing {rows.length} of {list.length} entries.
+        </div>
+        <table style={{ ...s.fixed, tableLayout: 'auto', minWidth: 2100 }}>
+          <thead>
+            <tr>{heads.map((h, i) => <th key={i} title={h} style={{ ...s.th, whiteSpace: 'normal', ...(textHeads.includes(h) ? {} : s.num), ...(h === 'Date collected' ? { paddingLeft: 32 } : {}), ...(h === 'Amount collected' ? { paddingRight: 16 } : {}) }}>{h}</th>)}</tr>
+          </thead>
+          <tbody>
+            {groups.length === 0 && (
+              <tr><td style={s.td} colSpan={heads.length}>No recovered receivables for this quarter.</td></tr>
+            )}
+            {groups.map((g) => g.items.map((x, i) => {
+              const sp = { rowSpan: g.items.length };
+              const gt = { ...s.td, verticalAlign: 'top' };
+              const gn = { ...gt, ...s.num };
+              const first = i === 0;
+              const nz = (v) => (g.hasTotal && Math.abs(v) > 0.004 ? money(v) : '');
+              return (
+                <tr key={x.id}>
+                  {first && <td {...sp} style={gt}>{g.month}</td>}
+                  {first && <td {...sp} style={gt}>{g.first.clientName}</td>}
+                  {first && <td {...sp} style={gt}>{g.first.invoiceDate}</td>}
+                  {first && <td {...sp} style={gt}>{g.first.invoiceNumber}</td>}
+                  {first && <td {...sp} style={gn}>{nz(g.total)}</td>}
+                  {first && <td {...sp} style={gn}>{nz(g.vatable)}</td>}
+                  {first && <td {...sp} style={gn}>{nz(g.outVat)}</td>}
+                  {first && <td {...sp} style={gn}>{nz(g.wht)}</td>}
+                  {first && <td {...sp} style={gn}>{nz(g.ar)}</td>}
+                  {first && <td {...sp} style={gn}>{g.hasTotal ? '-' : ''}</td>}
+                  {first && <td {...sp} style={gn}>{nz(g.atbc)}</td>}
+                  {first && <td {...sp} style={gn}>{nz(g.rebate)}</td>}
+                  <td style={{ ...s.td, ...s.num, paddingRight: 16 }}>{money(x.amountCollected)}</td>
+                  <td style={{ ...s.td, paddingLeft: 32 }}>{x.dateCollected}</td>
+                  {first && <td {...sp} style={gn}>{money(g.recVat)}</td>}
+                  {first && <td {...sp} style={gn}>{money(g.recBase)}</td>}
+                  <td style={s.td}>
+                    <Btn style={{ padding: '2px 4px' }} disabled={locked} onClick={() => openEdit(x)}><Pencil size={12} /></Btn>{' '}
+                    <Btn style={{ padding: '2px 4px' }} disabled={locked} onClick={() => window.confirm('Delete this entry?') && bir.deleteRecovered(x.id)}><Trash2 size={12} /></Btn>
+                  </td>
+                </tr>
+              );
+            }))}
+          </tbody>
+          {groups.length > 0 && (
+            <tfoot>
+              <tr style={{ fontWeight: 600, background: '#f9fafb' }}>
+                <td style={s.td} colSpan={4}>Total</td>
+                {['total', 'vatable', 'outVat', 'wht', 'ar'].map((k) => <td key={k} style={{ ...s.td, ...s.num }}>{money(gsum(k))}</td>)}
+                <td style={s.td} />
+                <td style={{ ...s.td, ...s.num }}>{money(gsum('atbc'))}</td>
+                <td style={{ ...s.td, ...s.num }}>{money(gsum('rebate'))}</td>
+                <td style={{ ...s.td, ...s.num }}>{money(gsum('collected'))}</td>
+                <td style={s.td} />
+                <td style={{ ...s.td, ...s.num }}>{money(gsum('recVat'))}</td>
+                <td style={{ ...s.td, ...s.num }}>{money(gsum('recBase'))}</td>
+                <td style={s.td} />
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </div>
+      {open && (
+        <Modal
+          title={form.id ? 'Edit recovered receivable' : 'Add a recovered receivable'}
+          onClose={close}
+          footer={
+            <>
+              <Btn onClick={close}>Cancel</Btn>
+              <Btn primary disabled={locked || bir.saving || !formValid} onClick={submit}>
+                <Save size={14} /> {form.id ? 'Update' : 'Add'}
+              </Btn>
+            </>
+          }
+        >
+          <p style={{ margin: '0 0 12px', fontSize: 12, color: '#6b7280' }}>
+            Amount recovered is the VAT-inclusive sales amount the output VAT is based on (usually the full invoice amount, not the cash received). Leave it blank to use the amount collected.
+          </p>
+          <div style={s.grid}>
+            <Field label="Date collected"><Text type="date" value={form.dateCollected} onChange={set('dateCollected')} /></Field>
+            <Field label="Client"><Text value={form.clientName} onChange={set('clientName')} /></Field>
+            <Field label="Invoice # (type it to auto-fill)"><input style={s.input} value={form.invoiceNumber ?? ''} onChange={(e) => set('invoiceNumber')(e.target.value)} onBlur={lookup} /></Field>
+            <Field label="Invoice date (optional)"><Text type="date" value={form.invoiceDate} onChange={set('invoiceDate')} /></Field>
+            <Field label="Amount collected (cash received)"><Num value={form.amountCollected} onChange={set('amountCollected')} /></Field>
+            <Field label="Amount recovered (VAT-inclusive)"><Num value={form.recoveredAmount} onChange={set('recoveredAmount')} /></Field>
+            <Field label="Invoice total sales (VAT-inclusive)"><Num value={form.totalSales} onChange={set('totalSales')} /></Field>
+            <Field label="Withholding tax (blank = 1% of vatable)"><Num value={form.withholdingTax} onChange={set('withholdingTax')} /></Field>
+            <Field label="Rebates (deductions)"><Num value={form.rebates} onChange={set('rebates')} /></Field>
+          </div>
+          {looked && found.length === 0 && (
+            <div style={{ fontSize: 12, color: '#b45309', margin: '8px 0' }}>No payment posted for this invoice in the Sales Journal.</div>
+          )}
+          {found.length > 1 && (
+            <div style={{ fontSize: 12, margin: '8px 0' }}>
+              {found.length} payments/reversals found for this invoice.{' '}
+              <Btn disabled={busy || locked} onClick={addAll}>Add all {found.length}</Btn>
+            </div>
+          )}
+          <Field label="Remarks"><Text value={form.remarks} onChange={set('remarks')} /></Field>
+        </Modal>
+      )}
+    </>
+  );
+};
 // ------------------------------------------------------------------ Page
 
 export default function Bir2550QPage({ companyId }) {
   const bir = useBir2550Q(companyId);
   const { tab, setTab, tabs } = useBirTabs();
-  const { data } = bir;
+  const [yv, setYv] = useState(bir.year);
+  const [qv, setQv] = useState(bir.quarter);
+  const [agg, setAgg] = useState(null);
+  const [aggLoading, setAggLoading] = useState(false);
+  const [syncTick, setSyncTick] = useState(0);
+  const aggMode = yv === 'ALL' || qv === 'ALL';
+  useEffect(() => { if (!aggMode) { setYv(bir.year); setQv(bir.quarter); } }, [bir.year, bir.quarter]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!aggMode) { setAgg(null); return undefined; }
+    let alive = true;
+    setAggLoading(true);
+    const qs = new URLSearchParams();
+    if (yv !== 'ALL') qs.set('year', yv);
+    if (qv !== 'ALL') qs.set('quarter', qv);
+    qs.set('amended', bir.amended ? 'true' : 'false');
+    if (companyId) qs.set('companyId', companyId);
+    api.get(`/bir/2550q/aggregate?${qs.toString()}`)
+      .then((r) => {
+        let x = r && r.data !== undefined ? r.data : r;
+        if (x && x.success === true && x.data !== undefined) x = x.data;
+        if (alive) setAgg(x && x.lines ? x : null);
+      })
+      .catch(() => { if (alive) setAgg(null); })
+      .finally(() => { if (alive) setAggLoading(false); });
+    return () => { alive = false; };
+  }, [aggMode, yv, qv, bir.amended, companyId, syncTick]);
+  // Keep Recovered receivables in step with the Sales Journal (adds new payments, removes deleted/edited ones).
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const qs = yv === 'ALL' ? '' : `?year=${yv}${qv === 'ALL' ? '' : `&quarter=${qv}`}`;
+        const r = await api.post(`/bir/2550q/recovered/sync${qs}`, {});
+        const changed = Number(r?.data?.data ?? r?.data ?? 0) || 0;
+        if (alive && changed > 0) {
+          bir.reload();
+          setSyncTick((t) => t + 1);
+        }
+      } catch { /* the page still loads with what is saved */ }
+    })();
+    return () => { alive = false; };
+  }, [yv, qv]); // eslint-disable-line react-hooks/exhaustive-deps
+  // combined view is read-only: tabs get locked=true, the Excel export gets the real value
+  const data = useMemo(() => (aggMode ? (agg ? { ...agg, locked: true } : null) : bir.data), [aggMode, agg, bir.data]);
+  const view = { ...bir, year: yv, quarter: qv, loading: aggMode ? aggLoading : bir.loading };
   const years = Array.from({ length: 7 }, (_, i) => new Date().getFullYear() - 5 + i);
 
   return (
@@ -735,7 +1113,7 @@ export default function Bir2550QPage({ companyId }) {
               .bir-table .clamp3 { white-space: normal; overflow-wrap: anywhere; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; }
         .bir-table th:nth-child(11), .bir-table td:nth-child(11) { padding-right: 28px !important; }
         .bir-table th:nth-child(12), .bir-table td:nth-child(12) { padding-left: 12px !important; }
-              .bir-table select:hover:not(:disabled) { color: #1d4ed8; text-decoration-style: solid; }
+              .bir-table select:hover:not(:disabled) { color: inherit; text-decoration-style: solid; }
         .bir-table select:disabled { color: inherit; text-decoration: none; cursor: default; }
         .bir-table select option { color: #111827; }
       `}</style>
@@ -746,22 +1124,25 @@ export default function Bir2550QPage({ companyId }) {
 
       <div style={{ ...s.card, display: 'flex', gap: 12, alignItems: 'end', flexWrap: 'wrap' }}>
         <Field label="Year">
-          <select style={s.input} value={bir.year} onChange={(e) => bir.setYear(Number(e.target.value))}>
+          <select style={s.input} value={yv} onChange={(e) => { const v = e.target.value === 'ALL' ? 'ALL' : Number(e.target.value); setYv(v); if (v !== 'ALL') bir.setYear(v); }}>
+            <option value="ALL">All years</option>
             {years.map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
         </Field>
         <Field label="Quarter">
-          <select style={s.input} value={bir.quarter} onChange={(e) => bir.setQuarter(Number(e.target.value))}>
+          <select style={s.input} value={qv} onChange={(e) => { const v = e.target.value === 'ALL' ? 'ALL' : Number(e.target.value); setQv(v); if (v !== 'ALL') bir.setQuarter(v); }}>
+            <option value="ALL">All quarters</option>
             {[1, 2, 3, 4].map((q) => <option key={q} value={q}>Q{q}</option>)}
           </select>
         </Field>
         <label style={{ fontSize: 13, paddingBottom: 8 }}>
           <input type="checkbox" checked={bir.amended} onChange={(e) => bir.setAmended(e.target.checked)} /> Amended return
         </label>
+        <Btn primary disabled={!(aggMode ? agg : data)} onClick={() => downloadFullReturn(aggMode ? agg : data, { year: yv, quarter: qv, overview: bir.overview })}><Download size={14} /> Download Excel (all tabs)</Btn>
         {data && (
           <div style={{ marginLeft: 'auto', fontSize: 13, textAlign: 'right' }}>
             <div>{data.periodStart} to {data.periodEnd}</div>
-            <div>Due {data.dueDate} {data.locked && <span style={{ color: '#047857' }}>(filed)</span>}</div>
+            <div>{aggMode ? 'Combined view, read-only' : <>Due {data.dueDate}</>} {!aggMode && data.locked && <span style={{ color: '#047857' }}>(filed)</span>}</div>
           </div>
         )}
       </div>
@@ -789,38 +1170,13 @@ export default function Bir2550QPage({ companyId }) {
       </div>
 
       {!data ? (
-        <div>{bir.loading ? 'Loadingâ€¦' : 'No data.'}</div>
+        <div>{view.loading ? 'Loadingâ€¦' : 'No data.'}</div>
       ) : (
         <>
-          {tab === 'summary' && (
-            <>
-              <SummaryTab data={data} />
-              <div style={{ ...s.card, overflowX: 'auto' }}>
-                <h3 style={{ margin: '0 0 8px', fontSize: 14 }}>{bir.year} at a glance</h3>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead><tr>{['Quarter', 'Status', 'Due', 'Output tax', 'Input tax', 'Amount payable'].map((h) => <th key={h} style={s.th}>{h}</th>)}</tr></thead>
-                  <tbody>
-                    {bir.overview.map((o) => (
-                      <tr key={`${o.quarter}-${o.amendedReturn}`}>
-                        <td style={s.td}>Q{o.quarter}{o.amendedReturn ? ' (amended)' : ''}</td>
-                        <td style={s.td}>{o.status}</td>
-                        <td style={s.td}>{o.dueDate}</td>
-                        <td style={{ ...s.td, ...s.num }}>{money(o.totalOutputTax)}</td>
-                        <td style={{ ...s.td, ...s.num }}>{money(o.totalAllowableInputTax)}</td>
-                        <td style={{ ...s.td, ...s.num }}>{money(o.totalAmountPayable)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-          {tab === 'sales' && <SalesTab data={data} bir={bir} />}
-          {tab === 'purchases' && <PurchasesTab data={data} bir={bir} />}
-          {tab === 'credits' && <CreditsTab data={data} bir={bir} />}
-          {tab === 'adjustments' && <AdjustmentsTab data={data} bir={bir} />}
-          {tab === 'taxpayer' && <TaxpayerTab data={data} bir={bir} />}
-          {tab === 'filing' && <FilingTab data={data} bir={bir} />}
+          {tab === 'sales' && <SalesTab data={data} bir={view} />}
+          {tab === 'purchases' && <PurchasesTab data={data} bir={view} />}
+          {tab === 'recovered' && <RecoveredTab data={data} bir={view} />}
+          {tab === 'filing' && (<><FilingSummary data={data} bir={view} />{!aggMode && <FilingTab data={data} bir={view} />}</>)}
         </>
       )}
     </div>
