@@ -243,6 +243,8 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
               {d.incomplete && <span className="px-2 py-0.5 rounded text-xs bg-amber-50 text-amber-700">Missing time-out</span>}
               {d.posted && <span className="px-2 py-0.5 rounded text-xs bg-purple-50 text-purple-700">Posted</span>}
               {d.holiday && !d.absent && <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700">Holiday: {d.holiday}</span>}
+              {d.holidayWork && <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700">Holiday work: {d.holidayWork === 'APPROVED' ? 'Approved' : d.holidayWork === 'PENDING' ? 'Pending approval' : d.holidayWork}</span>}
+              {d.locked && <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">Payroll approved</span>}
             </div>
           </div>
           <div><Chip label="Worked" value={hm(workedOf(d))} /></div>
@@ -269,24 +271,24 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
                   } else window.open(url, '_blank');
                 }}><ExternalLink size={12} /> {office ? 'Biometrics proof' : 'Written DTR'}</button>
             )}
-            {canPost && d.visits.length > 0 && !d.posted && (
+            {canPost && !d.locked && d.visits.length > 0 && !d.posted && (
               <button disabled={d.date > phToday || d.incomplete}
                 title={d.incomplete ? 'Fix the missing time-out first' : d.date > phToday ? 'This date has not started yet' : 'Send this date to Pay Entries'}
                 onClick={(e) => { e.stopPropagation(); postDay(d); }}
                 className="px-3 py-1 text-xs border border-orange-300 text-orange-700 rounded hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed">Post to Pay Entries</button>
             )}
-            {canPost && d.holiday && d.visits.length > 0 && !d.incomplete && d.workedMinutes > 0 && (
+            {canPost && !d.locked && !d.holidayWork && d.holiday && d.visits.length > 0 && !d.incomplete && d.workedMinutes > 0 && (
               <button title={`Holiday: ${d.holiday}`} onClick={(e) => { e.stopPropagation(); setHwType('REGULAR_HOLIDAY'); setHwDay(d); }}
                 className="px-3 py-1 text-xs border border-green-300 text-green-700 rounded hover:bg-green-50">Post holiday work</button>
             )}
-            {canPost && d.overtimeAvailable > 0 && !d.overtimeMinutes && !d.incomplete && (
+            {canPost && !d.locked && d.overtimeAvailable > 0 && !d.overtimeMinutes && !d.incomplete && (
               <button onClick={(e) => { e.stopPropagation(); setOtType('REGULAR_OT'); setOtDay(d); }}
                 className="px-3 py-1 text-xs border border-blue-300 text-blue-700 rounded hover:bg-blue-50">Post overtime ({hm(d.overtimeAvailable)})</button>
             )}
-            {canEdit && d.absent === 'AUTO' && <button onClick={(e) => { e.stopPropagation(); markHoliday(d); }} className="px-3 py-1 text-xs border border-green-300 text-green-700 rounded hover:bg-green-50">Mark as holiday</button>}
-            {canEdit && (d.absent === 'HOLIDAY' || d.holiday) && <button onClick={(e) => { e.stopPropagation(); unmarkHoliday(d); }} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Unmark holiday</button>}
-            {canDelete && !d.absent && d.visits.length === 0 && <button onClick={(e) => { e.stopPropagation(); deleteDay(d); }} className="px-3 py-1 text-xs border border-red-300 text-red-700 rounded hover:bg-red-50">Delete day</button>}
-            {canEdit && <button onClick={(e) => { e.stopPropagation(); onEdit(d.date); }} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Edit day</button>}
+            {canEdit && !d.locked && d.absent === 'AUTO' && <button onClick={(e) => { e.stopPropagation(); markHoliday(d); }} className="px-3 py-1 text-xs border border-green-300 text-green-700 rounded hover:bg-green-50">Mark as holiday</button>}
+            {canEdit && !d.locked && (d.absent === 'HOLIDAY' || d.holiday) && <button onClick={(e) => { e.stopPropagation(); unmarkHoliday(d); }} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Unmark holiday</button>}
+            {canDelete && !d.locked && !d.absent && d.visits.length === 0 && <button onClick={(e) => { e.stopPropagation(); deleteDay(d); }} className="px-3 py-1 text-xs border border-red-300 text-red-700 rounded hover:bg-red-50">Delete day</button>}
+            {canEdit && !d.locked && <button onClick={(e) => { e.stopPropagation(); onEdit(d.date); }} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Edit day</button>}
           </div>, document.body)}
           </div>
         </div>
