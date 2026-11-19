@@ -215,7 +215,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
     } catch (e) { toast.error(e.message || 'Failed'); }
   };
 
-  const gridCls = 'grid grid-cols-[20px_minmax(0,1fr)_repeat(5,84px)_110px] items-center gap-2 [&>div>span]:block [&>div>span]:text-center [&>div>span]:whitespace-nowrap';
+  const gridCls = 'grid grid-cols-[20px_calc(32%_-_20px)_8%_8%_7%_9%_11%_minmax(0,1fr)] items-center gap-0 [&>div>span]:block [&>div>span]:text-center [&>div>span]:whitespace-nowrap';
 
   const renderDay = (d) => {
     const k = `d:${d.date}`;
