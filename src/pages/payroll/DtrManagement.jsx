@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Eye, Upload, Trash2, MapPin, Send, Plus, X, ExternalLink, ChevronRight } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { Navigate } from 'react-router-dom';
@@ -132,6 +133,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
   const [otDay, setOtDay] = useState(null);
   const [hwDay, setHwDay] = useState(null);
   const [menuDay, setMenuDay] = useState(null);
+  const [menuPos, setMenuPos] = useState({});
   const [hwType, setHwType] = useState('REGULAR_HOLIDAY');
   const [otType, setOtType] = useState('REGULAR_OT');
   const [openKeys, setOpenKeys] = useState(() => new Set());
@@ -215,7 +217,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
     } catch (e) { toast.error(e.message || 'Failed'); }
   };
 
-  const gridCls = 'grid grid-cols-[20px_calc(32%_-_20px)_8%_8%_7%_9%_11%_minmax(0,1fr)] items-center gap-0 [&>div>span]:block [&>div>span]:text-center [&>div>span]:whitespace-nowrap';
+  const gridCls = 'grid grid-cols-[20px_calc(27%_-_20px)_9%_9%_10%_10%_11%_minmax(0,1fr)] items-center gap-0 [&>div>span]:block [&>div>span]:text-center [&>div>span]:whitespace-nowrap';
 
   const renderDay = (d) => {
     const k = `d:${d.date}`;
@@ -240,6 +242,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
               {d.absent && <span className={`px-2 py-0.5 rounded text-xs font-medium ${(d.absent === 'PAID' || d.absent === 'HOLIDAY') ? 'bg-green-50 text-green-700' : d.absent === 'PENDING' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'}`}>{absentText(d)}</span>}
               {d.incomplete && <span className="px-2 py-0.5 rounded text-xs bg-amber-50 text-amber-700">Missing time-out</span>}
               {d.posted && <span className="px-2 py-0.5 rounded text-xs bg-purple-50 text-purple-700">Posted</span>}
+              {d.holiday && !d.absent && <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700">Holiday: {d.holiday}</span>}
             </div>
           </div>
           <div><Chip label="Worked" value={hm(workedOf(d))} /></div>
@@ -248,10 +251,10 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
           <div><Chip label="Overtime" value={hm(d.overtimeMinutes || d.overtimeAvailable || 0)} tone={d.overtimeMinutes ? 'green' : 'gray'} /></div>
           <div><Chip label="Travel" value={hm(trav)} /></div>
           <div className="relative flex items-center justify-end">
-            <button onClick={(e) => { e.stopPropagation(); setMenuDay(menuDay === d.date ? null : d.date); }}
+            <button onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); const up = window.innerHeight - r.bottom < 260; setMenuPos({ right: Math.max(8, window.innerWidth - r.right), ...(up ? { bottom: window.innerHeight - r.top + 4 } : { top: r.bottom + 4 }) }); setMenuDay(menuDay === d.date ? null : d.date); }}
               className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Actions {menuDay === d.date ? '▴' : '▾'}</button>
-            {menuDay === d.date && <div className="fixed inset-0 z-20" onClick={(e) => { e.stopPropagation(); setMenuDay(null); }} />}
-            {menuDay === d.date && <div className="absolute right-0 top-full mt-1 z-30 flex flex-col items-stretch gap-2 p-2 bg-white border border-gray-200 rounded-lg shadow-lg whitespace-nowrap [&>button]:w-full" onClick={(e) => e.stopPropagation()}>
+            {menuDay === d.date && createPortal(<div className="fixed inset-0 z-[200]" onWheel={() => setMenuDay(null)} onClick={(e) => { e.stopPropagation(); setMenuDay(null); }} />, document.body)}
+            {menuDay === d.date && createPortal(<div style={menuPos} className="fixed z-[201] max-h-[70vh] overflow-y-auto flex flex-col items-stretch gap-2 p-2 bg-white border border-gray-200 rounded-lg shadow-lg whitespace-nowrap [&>button]:w-full" onClick={(e) => e.stopPropagation()}>
             {d.sheetPath && (
               <button className="text-xs text-orange-600 hover:underline inline-flex items-center gap-1"
                 onClick={async (e) => {
@@ -284,7 +287,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
             {canEdit && (d.absent === 'HOLIDAY' || d.holiday) && <button onClick={(e) => { e.stopPropagation(); unmarkHoliday(d); }} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Unmark holiday</button>}
             {canDelete && !d.absent && d.visits.length === 0 && <button onClick={(e) => { e.stopPropagation(); deleteDay(d); }} className="px-3 py-1 text-xs border border-red-300 text-red-700 rounded hover:bg-red-50">Delete day</button>}
             {canEdit && <button onClick={(e) => { e.stopPropagation(); onEdit(d.date); }} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Edit day</button>}
-          </div>}
+          </div>, document.body)}
           </div>
         </div>
         {isOpen && (
