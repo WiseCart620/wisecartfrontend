@@ -7,6 +7,7 @@ import SearchableSelect from './SearchableSelect';
 import EmployeeAvatar from './EmployeeAvatar';
 import Pagination from '../common/Pagination';
 import usePagination from './usePagination';
+import { useRunLocks, isLockedOn } from '../../utils/payrollLock';
 
 const STATUS = {
   PENDING: { label: 'Pending', pill: 'bg-amber-50 text-amber-700 ring-amber-200', dot: 'bg-amber-500' },
@@ -81,7 +82,9 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
   const [selIds, setSelIds] = useState([]);
   const [alloc, setAlloc] = useState({});
   const [expanded, setExpanded] = useState(() => new Set());
-  const [tabByEmp, setTabByEmp] = useState({}); // employeeId -> selected leave type ('' = all)
+  const [tabByEmp, setTabByEmp] = useState({});
+  const locks = useRunLocks();
+  const lockedReq = (t) => isLockedOn(locks, (employees || []).find(e => e.employeeId === t.employeeId)?.scheduleId, String(t.dateFrom), String(t.dateTo)); // employeeId -> selected leave type ('' = all)
 
   useEffect(() => { load(); }, []);
 
@@ -457,7 +460,8 @@ const LeaveRequestsTab = ({ employees, leaveTypes, canCreate, canEdit, canDelete
                                       <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">{fmtDate(t.dateFiled)}</td>
                                       <td className="px-4 py-2.5"><StatusPill status={t.status} /></td>
                                       <td className="px-4 py-2.5">
-                                        <div className="flex justify-end gap-1">
+                                        {lockedReq(t) && <span className="text-xs text-gray-400">Payroll approved</span>}
+                                        <div className={`flex justify-end gap-1 ${lockedReq(t) ? 'hidden' : ''}`}>
                                           {canEdit && t.status === 'PENDING' && (
                                             <>
                                               <button onClick={() => act(t.id, 'approve')} title="Approve" aria-label="Approve"

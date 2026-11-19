@@ -9,6 +9,7 @@ import EmployeeAvatar from './EmployeeAvatar';
 import { useEmployeeDirectory, fullNameOf } from './EmployeeCell';
 import Pagination from '../common/Pagination';
 import usePagination from './usePagination';
+import { useRunLocks, isLockedOn } from '../../utils/payrollLock';
 import EmployeeSearchBox from './EmployeeSearchBox';
 
 const ENTRY_CODES = new Set(['REGULAR_OT', 'REST_DAY', 'SPECIAL_HOLIDAY', 'REGULAR_HOLIDAY',
@@ -142,6 +143,8 @@ const OvertimeEntries = ({ canEdit }) => {
     });
     const [expanded, setExpanded] = useState(() => new Set());
     const dir = useEmployeeDirectory();
+    const locks = useRunLocks();
+    const lockedRow = (r) => isLockedOn(locks, employees.find(x => x.employeeId === r.employeeId)?.scheduleId, String(r.workDate));
     const { from, to } = rangeFor(month, year, cutoff);
     const [form, setForm] = useState(EMPTY_FORM(now.toISOString().slice(0, 10)));
 
@@ -628,7 +631,8 @@ const OvertimeEntries = ({ canEdit }) => {
                                                                                                 {r.approvedBy && <div className="text-xs text-gray-500 mt-1">by {r.approvedBy}</div>}
                                                                                             </td>
                                                                                             <td className="px-4 py-2 text-right whitespace-nowrap">
-                                                                                                <div className="flex justify-end gap-1">
+                                                                                                {lockedRow(r) && <span className="text-xs text-gray-400">Payroll approved</span>}
+                                                                                                <div className={`flex justify-end gap-1 ${lockedRow(r) ? 'hidden' : ''}`}>
                                                                                                     {canApprove && r.status === 'PENDING' && (
                                                                                                         <button onClick={() => approveMany([r])} title="Approve"
                                                                                                             className="p-2 text-green-600 hover:bg-green-50 rounded"><CheckCircle size={16} /></button>
