@@ -42,6 +42,7 @@ const inShift = (v) => {
   const b = v.timeOut.slice(11, 16) > e ? day + e + ':00' : v.timeOut;
   return dur(a, b);
 };
+const OT_TYPES = [['REGULAR_OT', 'Regular overtime'], ['REST_DAY', 'Rest day'], ['SPECIAL_HOLIDAY', 'Special holiday'], ['REGULAR_HOLIDAY', 'Regular holiday'], ['REST_DAY_REGULAR_HOLIDAY', 'Rest day + regular holiday'], ['NIGHT_DIFF', 'Night differential']];
 const hhmm = (ldt) => (ldt ? ldt.slice(11, 16) : '');
 const dur = (a, b) => (a && b ? Math.max(0, Math.round((new Date(b) - new Date(a)) / 60000)) : null);
 const fmtDay = (d) => new Date(d + 'T00:00:00').toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
@@ -128,6 +129,8 @@ const workedOf = (d) => ((d.absent === 'PAID' || d.absent === 'HOLIDAY') ? 480 :
 const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }) => {
   const [days, setDays] = useState(null);
   const [big, setBig] = useState(null);
+  const [otDay, setOtDay] = useState(null);
+  const [otType, setOtType] = useState('REGULAR_OT');
   const [openKeys, setOpenKeys] = useState(() => new Set());
   // office = biometric worker: no personnel, signature, photo or location
   const office = !!emp.office || (days || []).some(d => (d.absent && d.absent !== 'HOLIDAY') || d.visits.some(v => v.source === 'BIO'));
@@ -176,6 +179,15 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
     try {
       await api.delete(`/dtr/holiday?date=${d.date}`);
       toast.success('Holiday removed');
+      await reload();
+    } catch (e) { toast.error(e.message || 'Failed'); }
+  };
+
+  const postOt = async () => {
+    try {
+      const r = await api.post(`/dtr/post-overtime?employeeId=${emp.employeeId}&date=${otDay.date}&type=${otType}`);
+      toast.success(r.data?.message || 'Overtime posted');
+      setOtDay(null);
       await reload();
     } catch (e) { toast.error(e.message || 'Failed'); }
   };
@@ -232,6 +244,10 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
                 title={d.incomplete ? 'Fix the missing time-out first' : d.date > phToday ? 'This date has not started yet' : 'Send this date to Pay Entries'}
                 onClick={(e) => { e.stopPropagation(); postDay(d); }}
                 className="px-3 py-1 text-xs border border-orange-300 text-orange-700 rounded hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed">Post to Pay Entries</button>
+            )}
+            {canPost && d.overtimeAvailable > 0 && !d.overtimeMinutes && !d.incomplete && (
+              <button onClick={(e) => { e.stopPropagation(); setOtType('REGULAR_OT'); setOtDay(d); }}
+                className="px-3 py-1 text-xs border border-blue-300 text-blue-700 rounded hover:bg-blue-50">Post overtime ({hm(d.overtimeAvailable)})</button>
             )}
             {canEdit && d.absent === 'AUTO' && <button onClick={(e) => { e.stopPropagation(); markHoliday(d); }} className="px-3 py-1 text-xs border border-green-300 text-green-700 rounded hover:bg-green-50">Mark as holiday</button>}
             {canEdit && d.absent === 'HOLIDAY' && <button onClick={(e) => { e.stopPropagation(); unmarkHoliday(d); }} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Unmark holiday</button>}
@@ -327,6 +343,22 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
               <div />
             </div>
             {days.map(renderDay)}
+          </div>
+        </div>
+      )}
+      {otDay && (
+        <div className="fixed inset-0 z-[90] bg-black/50 flex items-center justify-center p-4" onClick={() => setOtDay(null)}>
+          <div className="bg-white rounded-xl p-5 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <div className="font-semibold text-gray-900">Post overtime</div>
+            <p className="text-sm text-gray-600 mt-1">{fmtDay(otDay.date)} · {hm(otDay.overtimeAvailable)} after the shift. It goes to Pay Entries as pending.</p>
+            <label className="block text-xs font-medium text-gray-700 mt-4 mb-1">Overtime type</label>
+            <select className={inputCls} value={otType} onChange={(e) => setOtType(e.target.value)}>
+              {OT_TYPES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+            </select>
+            <div className="flex justify-end gap-2 mt-5">
+              <button onClick={() => setOtDay(null)} className="px-4 py-2 border border-gray-300 rounded text-sm">Cancel</button>
+              <button onClick={postOt} className="px-4 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700">Post overtime</button>
+            </div>
           </div>
         </div>
       )}
