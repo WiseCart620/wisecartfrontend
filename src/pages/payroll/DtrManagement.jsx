@@ -134,6 +134,17 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
   const [hwDay, setHwDay] = useState(null);
   const [menuDay, setMenuDay] = useState(null);
   const [menuPos, setMenuPos] = useState({});
+  const inPortal = (few, el) => (few ? el : createPortal(el, document.body));
+  const isFew = (d) => d.locked || [
+    d.sheetPath,
+    canPost && d.visits.length > 0 && !d.posted,
+    canPost && !d.holidayWork && d.holiday && d.visits.length > 0 && !d.incomplete && d.workedMinutes > 0,
+    canPost && d.overtimeAvailable > 0 && !d.overtimeMinutes && !d.incomplete,
+    canEdit && d.absent === 'AUTO',
+    canEdit && (d.absent === 'HOLIDAY' || d.holiday),
+    canDelete && !d.absent && d.visits.length === 0,
+    canEdit,
+  ].filter(Boolean).length <= 2;
   const [hwType, setHwType] = useState('REGULAR_HOLIDAY');
   const [otType, setOtType] = useState('REGULAR_OT');
   const [openKeys, setOpenKeys] = useState(() => new Set());
@@ -254,9 +265,9 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
           <div><Chip label="Travel" value={hm(trav)} /></div>
           <div className="relative flex items-center justify-end">
             <button onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); const up = window.innerHeight - r.bottom < 260; setMenuPos({ right: Math.max(8, window.innerWidth - r.right), ...(up ? { bottom: window.innerHeight - r.top + 4 } : { top: r.bottom + 4 }) }); setMenuDay(menuDay === d.date ? null : d.date); }}
-              className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Actions {menuDay === d.date ? '▴' : '▾'}</button>
-            {menuDay === d.date && createPortal(<div className="fixed inset-0 z-[200]" onWheel={() => setMenuDay(null)} onClick={(e) => { e.stopPropagation(); setMenuDay(null); }} />, document.body)}
-            {menuDay === d.date && createPortal(<div style={menuPos} className="fixed z-[201] max-h-[70vh] overflow-y-auto flex flex-col items-stretch gap-2 p-2 bg-white border border-gray-200 rounded-lg shadow-lg whitespace-nowrap [&>button]:w-full" onClick={(e) => e.stopPropagation()}>
+              className={`px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white${isFew(d) ? ' hidden' : ''}`}>Actions {menuDay === d.date ? '▴' : '▾'}</button>
+            {!isFew(d) && menuDay === d.date && createPortal(<div className="fixed inset-0 z-[200]" onWheel={() => setMenuDay(null)} onClick={(e) => { e.stopPropagation(); setMenuDay(null); }} />, document.body)}
+            {(isFew(d) || menuDay === d.date) && inPortal(isFew(d), <div style={isFew(d) ? undefined : menuPos} className={isFew(d) ? 'flex items-center justify-end gap-2 whitespace-nowrap' : 'fixed z-[201] max-h-[70vh] overflow-y-auto flex flex-col items-stretch gap-2 p-2 bg-white border border-gray-200 rounded-lg shadow-lg whitespace-nowrap [&>button]:w-full'} onClick={(e) => e.stopPropagation()}>
             {d.sheetPath && (
               <button className="text-xs text-orange-600 hover:underline inline-flex items-center gap-1"
                 onClick={async (e) => {
@@ -289,7 +300,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
             {canEdit && !d.locked && (d.absent === 'HOLIDAY' || d.holiday) && <button onClick={(e) => { e.stopPropagation(); unmarkHoliday(d); }} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Unmark holiday</button>}
             {canDelete && !d.locked && !d.absent && d.visits.length === 0 && <button onClick={(e) => { e.stopPropagation(); deleteDay(d); }} className="px-3 py-1 text-xs border border-red-300 text-red-700 rounded hover:bg-red-50">Delete day</button>}
             {canEdit && !d.locked && <button onClick={(e) => { e.stopPropagation(); onEdit(d.date); }} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Edit day</button>}
-          </div>, document.body)}
+          </div>)}
           </div>
         </div>
         {isOpen && (
