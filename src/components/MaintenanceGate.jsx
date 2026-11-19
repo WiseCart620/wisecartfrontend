@@ -8,7 +8,7 @@ const FIELD_ONLY = import.meta.env.VITE_FIELD_ONLY === 'true';
 
 // The field app must open offline, so it skips the maintenance check.
 export default function MaintenanceGate({ children }) {
-  if (FIELD_ONLY) return children;
+  if (FIELD_ONLY || window.Capacitor?.isNativePlatform?.() || window.location.pathname.startsWith('/field')) return children;
   return <MaintenanceGateInner>{children}</MaintenanceGateInner>;
 }
 
@@ -19,13 +19,14 @@ function MaintenanceGateInner({ children }) {
     let cancelled = false;
 
     const check = async () => {
+      if (!navigator.onLine) { if (!cancelled) setState('up'); return; }
       try {
         const res = await fetch(HEALTH_URL, { cache: 'no-store' });
         const ct = res.headers.get('content-type') || '';
         const up = res.ok && ct.includes('json');
         if (!cancelled) setState(up ? 'up' : 'down');
       } catch {
-        if (!cancelled) setState('down');
+        if (!cancelled) setState(navigator.onLine ? 'down' : 'up');
       }
     };
 
@@ -33,11 +34,15 @@ function MaintenanceGateInner({ children }) {
     const id = setInterval(check, POLL_MS);
     const onVis = () => { if (document.visibilityState === 'visible') check(); };
     document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('online', check);
+    window.addEventListener('offline', check);
 
     return () => {
       cancelled = true;
       clearInterval(id);
       document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('online', check);
+      window.removeEventListener('offline', check);
     };
   }, []);
 

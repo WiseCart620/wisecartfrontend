@@ -33,9 +33,8 @@ export const AuthProvider = ({ children }) => {
       return false;
     }
 
-    if (isTokenExpired(token)) {
+    if (isTokenExpired(token) && !localStorage.getItem('refreshToken')) {
       localStorage.removeItem('authToken');
-      localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
       setUser(null);
       toast.error('Session expired. Please login again.');
@@ -99,7 +98,7 @@ export const AuthProvider = ({ children }) => {
 
   const checkTokenValid = () => {
     const token = localStorage.getItem('authToken');
-    return token && !isTokenExpired(token);
+    return !!token && (!isTokenExpired(token) || !!localStorage.getItem('refreshToken'));
   };
 
   return (
