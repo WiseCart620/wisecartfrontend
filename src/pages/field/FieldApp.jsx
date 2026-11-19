@@ -632,6 +632,11 @@ const FieldApp = () => {
 
             {screen === 'form' && draft && (
                 <form onSubmit={submitIn} className="p-4 space-y-4">
+                    <button type="button" disabled={!!busy}
+                        onClick={() => { setDraft(null); setForm(EMPTY); setFormError(''); setScreen('home'); }}
+                        className="flex items-center gap-1 text-sm font-medium text-orange-700 disabled:opacity-50">
+                        <ChevronLeft size={18} /> Back
+                    </button>
                     <img src={photoUrl} alt="Your time-in photo" className="w-full rounded-2xl" />
                     {draft.accuracy > 100 && <p className="text-sm text-orange-800 bg-orange-50 rounded-xl p-3">Your GPS is only accurate to about {Math.round(draft.accuracy)} m. Retake the photo in an open area for a better location.</p>}
                     <datalist id="places">{JSON.parse(localStorage.getItem('fieldPlaces') || '[]').map(p => <option key={p} value={p} />)}</datalist>
