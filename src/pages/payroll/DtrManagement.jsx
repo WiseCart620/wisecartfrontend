@@ -118,7 +118,7 @@ const Totals = ({ list }) => (
     <Chip label="Worked" value={hm(sumOf(list, 'workedMinutes'))} />
     <Chip label="Late" value={hm(sumOf(list, 'lateMinutes'))} tone={sumOf(list, 'lateMinutes') ? 'red' : 'gray'} />
     <Chip label="Undertime" value={hm(sumOf(list, 'undertimeMinutes'))} tone={sumOf(list, 'undertimeMinutes') ? 'red' : 'gray'} />
-    <Chip label="Overtime" value={hm(sumOf(list, 'overtimeMinutes'))} tone={sumOf(list, 'overtimeMinutes') ? 'green' : 'gray'} />
+    <Chip label="Overtime" value={hm(list.reduce((a, x) => a + (x.overtimeMinutes || x.overtimeAvailable || 0), 0))} tone={sumOf(list, 'overtimeMinutes') ? 'green' : 'gray'} />
     <Chip label="Travel" value={hm(list.reduce((s, d) => s + travelOf(d).total, 0))} />
   </div>
 );
@@ -222,7 +222,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
           <div><Chip label="Worked" value={hm(workedOf(d))} /></div>
           <div><Chip label="Late" value={hm(d.lateMinutes)} tone={d.lateMinutes ? 'red' : 'gray'} /></div>
           <div><Chip label="Undertime" value={hm(d.undertimeMinutes)} tone={d.undertimeMinutes ? 'red' : 'gray'} /></div>
-          <div><Chip label="Overtime" value={hm(d.overtimeMinutes)} tone={d.overtimeMinutes ? 'green' : 'gray'} /></div>
+          <div><Chip label={d.overtimeMinutes || !d.overtimeAvailable ? 'Overtime' : 'Overtime (not posted)'} value={hm(d.overtimeMinutes || d.overtimeAvailable || 0)} tone={d.overtimeMinutes ? 'green' : 'gray'} /></div>
           <div><Chip label="Travel" value={hm(trav)} /></div>
           <div className="flex items-center justify-end gap-2 flex-nowrap whitespace-nowrap">
             {d.sheetPath && (
@@ -338,7 +338,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
               <div><Chip label="Worked" value={hm(days.reduce((s, d) => s + workedOf(d), 0))} /></div>
               <div><Chip label="Late" value={hm(sumOf(days, 'lateMinutes'))} tone={sumOf(days, 'lateMinutes') ? 'red' : 'gray'} /></div>
               <div><Chip label="Undertime" value={hm(sumOf(days, 'undertimeMinutes'))} tone={sumOf(days, 'undertimeMinutes') ? 'red' : 'gray'} /></div>
-              <div><Chip label="Overtime" value={hm(sumOf(days, 'overtimeMinutes'))} tone={sumOf(days, 'overtimeMinutes') ? 'green' : 'gray'} /></div>
+              <div><Chip label="Overtime" value={hm(days.reduce((a, x) => a + (x.overtimeMinutes || x.overtimeAvailable || 0), 0))} tone={sumOf(days, 'overtimeMinutes') ? 'green' : 'gray'} /></div>
               <div><Chip label="Travel" value={hm(days.reduce((s, d) => s + travelOf(d).total, 0))} /></div>
               <div />
             </div>
