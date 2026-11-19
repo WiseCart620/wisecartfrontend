@@ -126,7 +126,7 @@ const Totals = ({ list }) => (
 // paid leave counts as a full 8-hour day of work
 const workedOf = (d) => ((d.absent === 'PAID' || d.absent === 'HOLIDAY') ? 480 : d.halfDay === 'PAID' ? d.workedMinutes + 240 : d.workedMinutes);
 
-const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }) => {
+const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged, onClose }) => {
   const [days, setDays] = useState(null);
   const [big, setBig] = useState(null);
   const [otDay, setOtDay] = useState(null);
@@ -183,6 +183,17 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
     } catch (e) { toast.error(e.message || 'Failed'); }
   };
 
+  const deleteDay = async (d) => {
+    const note = (d.posted || d.overtimeMinutes) ? '\n\nEntries already sent to Pay Entries are NOT removed.' : '';
+    if (!window.confirm(`Delete all DTR records of ${fmtDay(d.date)}? This cannot be undone.${note}`)) return;
+    try {
+      await api.delete(`/dtr/days?employeeId=${emp.employeeId}&from=${d.date}&to=${d.date}`);
+      toast.success('Day deleted');
+      await reload();
+      if (onChanged) onChanged();
+    } catch (e) { toast.error(e.message || 'Failed'); }
+  };
+
   const postOt = async () => {
     try {
       const r = await api.post(`/dtr/post-overtime?employeeId=${emp.employeeId}&date=${otDay.date}&type=${otType}`);
@@ -222,7 +233,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
           <div><Chip label="Worked" value={hm(workedOf(d))} /></div>
           <div><Chip label="Late" value={hm(d.lateMinutes)} tone={d.lateMinutes ? 'red' : 'gray'} /></div>
           <div><Chip label="Undertime" value={hm(d.undertimeMinutes)} tone={d.undertimeMinutes ? 'red' : 'gray'} /></div>
-          <div><Chip label={d.overtimeMinutes || !d.overtimeAvailable ? 'Overtime' : 'Overtime (not posted)'} value={hm(d.overtimeMinutes || d.overtimeAvailable || 0)} tone={d.overtimeMinutes ? 'green' : 'gray'} /></div>
+          <div><Chip label="Overtime" value={hm(d.overtimeMinutes || d.overtimeAvailable || 0)} tone={d.overtimeMinutes ? 'green' : 'gray'} /></div>
           <div><Chip label="Travel" value={hm(trav)} /></div>
           <div className="flex items-center justify-end gap-2 flex-nowrap whitespace-nowrap">
             {d.sheetPath && (
@@ -251,6 +262,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, onEdit, onChanged, onClose }
             )}
             {canEdit && d.absent === 'AUTO' && <button onClick={(e) => { e.stopPropagation(); markHoliday(d); }} className="px-3 py-1 text-xs border border-green-300 text-green-700 rounded hover:bg-green-50">Mark as holiday</button>}
             {canEdit && d.absent === 'HOLIDAY' && <button onClick={(e) => { e.stopPropagation(); unmarkHoliday(d); }} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Unmark holiday</button>}
+            {canDelete && !d.absent && <button onClick={(e) => { e.stopPropagation(); deleteDay(d); }} className="px-3 py-1 text-xs border border-red-300 text-red-700 rounded hover:bg-red-50">Delete day</button>}
             {canEdit && <button onClick={(e) => { e.stopPropagation(); onEdit(d.date); }} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Edit day</button>}
           </div>
         </div>
@@ -640,7 +652,7 @@ const DtrInner = () => {
       </p>
 
       {showBio && <BiometricImport onClose={() => setShowBio(false)} onDone={() => { setShowBio(false); load(); }} />}
-      {viewEmp && <DtrView emp={viewEmp} from={from} to={to} canEdit={canEdit} canPost={canPost} onChanged={load}
+      {viewEmp && <DtrView emp={viewEmp} from={from} to={to} canEdit={canEdit} canPost={canPost} canDelete={canDelete} onChanged={load}
         onEdit={(d) => setEditor({ emp: viewEmp, date: d })} onClose={() => setViewEmp(null)} />}
       {editor && <DayEditor emp={editor.emp} date={editor.date} onClose={() => setEditor(null)}
         onSaved={() => { setEditor(null); setViewEmp(null); load(); }} />}
