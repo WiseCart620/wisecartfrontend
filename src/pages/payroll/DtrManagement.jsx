@@ -276,7 +276,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
                 className="px-3 py-1 text-xs border border-blue-300 text-blue-700 rounded hover:bg-blue-50">Post overtime ({hm(d.overtimeAvailable)})</button>
             )}
             {canEdit && d.absent === 'AUTO' && <button onClick={(e) => { e.stopPropagation(); markHoliday(d); }} className="px-3 py-1 text-xs border border-green-300 text-green-700 rounded hover:bg-green-50">Mark as holiday</button>}
-            {canEdit && d.absent === 'HOLIDAY' && <button onClick={(e) => { e.stopPropagation(); unmarkHoliday(d); }} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Unmark holiday</button>}
+            {canEdit && (d.absent === 'HOLIDAY' || d.holiday) && <button onClick={(e) => { e.stopPropagation(); unmarkHoliday(d); }} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Unmark holiday</button>}
             {canDelete && !d.absent && d.visits.length === 0 && <button onClick={(e) => { e.stopPropagation(); deleteDay(d); }} className="px-3 py-1 text-xs border border-red-300 text-red-700 rounded hover:bg-red-50">Delete day</button>}
             {canEdit && <button onClick={(e) => { e.stopPropagation(); onEdit(d.date); }} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Edit day</button>}
           </div>
