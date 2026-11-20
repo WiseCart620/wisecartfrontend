@@ -1496,7 +1496,7 @@ const InvoicingProfile = ({ onBack }) => {
                                     { key: 'date', label: 'Invoice Date', align: 'left' },
                                     { key: 'period', label: 'Period', align: 'left' },
                                     { key: 'cust', label: 'Customer', align: 'left' },
-                                    { key: 'vat-sales', label: 'Gross Sales (PT)', align: 'right' },
+                                    { key: 'vat-sales', label: 'Net of VAT', align: 'right' },
                                     { key: 'vat', label: 'VAT/PT', align: 'right' },
                                     { key: 'ewt', label: 'Less: EWT', align: 'right' },
                                     { key: 'due', label: 'Due', align: 'right' },
