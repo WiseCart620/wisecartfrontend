@@ -49,6 +49,20 @@ const WIDTH_1601 = { A: 2.6, B: 4.3, C: 23.1, D: 14.9, E: 8.4, F: 16.3, G: 11.6,
 
 const taxFormula = (r, last) => `IF(Z${r}=0,0,((Z${r}-VLOOKUP(Z${r},TAX!$B$4:$E$${last},1))*VLOOKUP(Z${r},TAX!$B$4:$E$${last},3))+VLOOKUP(Z${r},TAX!$B$4:$E$${last},4))`;
 
+// Excel notes on 1601-C cells (sheet column number -> pay-entry lines)
+const NOTE_1601 = {
+  7: { keys: ['overtime'] }, 8: { keys: ['holiday'] }, 9: { keys: ['night'] }, 10: { keys: ['hazard'] },
+  11: { keys: ['absUnder'], neg: ['absUnder'] },
+  12: { keys: ['otherEarn', 'otherDed', 'leaveOverdraw'], neg: ['otherDed', 'leaveOverdraw'] },
+  13: { keys: ['incentives'] }, 14: { keys: ['thirteenth'] }, 15: { keys: ['deMinimis'] },
+};
+const note1601 = (d, spec) => {
+  const lines = spec.keys.flatMap((k) => ((d.details && d.details[k]) || [])
+    .map((l) => ({ ...l, amount: spec.neg && spec.neg.includes(k) ? -n(l.amount) : n(l.amount) })));
+  if (!lines.length) return null;
+  return lines.map((l) => `${l.label}: ${l.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${l.remarks ? `\n${l.remarks}` : ''}`).join('\n\n');
+};
+
 const fill1601 = (ws, monthIdx, rows, tax) => {
   Object.entries(WIDTH_1601).forEach(([k, w]) => { ws.getColumn(k).width = w; });
   ws.mergeCells('B2:B3'); ws.mergeCells('C2:C3'); ws.mergeCells('D2:D3'); ws.mergeCells('E2:E3'); ws.mergeCells('F2:AB2');
@@ -73,8 +87,9 @@ const fill1601 = (ws, monthIdx, rows, tax) => {
       ws.getCell(r, 5).value = d.mwe ? 'MWE' : 'NOT';
       const put = (c, v) => { if (n(v)) ws.getCell(r, c).value = r2(v); };
       put(6, d.basic); put(7, d.overtime); put(8, d.holiday); put(9, d.night); put(10, d.hazard);
-      put(11, -n(d.absUnder)); put(13, d.incentives); put(14, d.thirteenth); put(15, d.deMinimis);
+      put(11, -n(d.absUnder)); put(12, n(d.otherEarn) - n(d.otherDed) - n(d.leaveOverdraw)); put(13, d.incentives); put(14, d.thirteenth); put(15, d.deMinimis);
       put(17, d.sss); put(18, d.phic); put(19, d.hdmf);
+      Object.entries(NOTE_1601).forEach(([c, spec]) => { const nt = note1601(d, spec); if (nt) ws.getCell(r, Number(c)).note = nt; });
     }
     ws.getCell(r, 16).value = { formula: `SUM(F${r}:O${r})` };
     ws.getCell(r, 20).value = { formula: `IF(E${r}="MWE",F${r},0)` };
@@ -209,18 +224,26 @@ const sheetNameOf = (run, used) => {
 
 const QB_YELLOW = 'FFFFFF00';
 
+// Excel note on a number cell: pay type, amount and remarks (same as the tooltip on screen)
+const DK = { reimb: ['reimb', 'otherEarn', 'incentives'], ot: ['overtime', 'holiday', 'night', 'hazard'], otherDed: ['otherDed', 'mp2', 'leaveOverdraw'] };
+const noteOf = (x, k) => {
+  const lines = (DK[k] || [k]).flatMap((d) => (x.details && x.details[d]) || []);
+  if (!lines.length) return null;
+  return lines.map((l) => `${l.label}: ${n(l.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${l.remarks ? `\n${l.remarks}` : ''}`).join('\n\n');
+};
+
 const buildRunSheet = (wb, run, used) => {
   const ws = wb.addWorksheet(sheetNameOf(run, used));
   const rows = run.rows || [];
   const sum = (k) => rows.reduce((s, x) => s + n(x[k]), 0);
   const has13 = sum('thirteenth') > 0;
-  const hasOver = sum('leaveOverdraw') > 0;
-  const hasOther = sum('otherDed') + sum('mp2') > 0;
+  const hasOver = false;
+  const hasOther = sum('otherDed') + sum('mp2') + sum('leaveOverdraw') > 0;
   const earn = [
     { h: 'Gross Salary', f: (x) => x.basic, k: 'basic' },
     { h: 'De Minimis', f: (x) => x.deMinimis, k: 'deMinimis' },
-    { h: 'Refunds / Reimb./Other Admin Expense', f: (x) => x.reimb, k: 'reimb' },
-    { h: 'Overtime/Holiday', f: (x) => n(x.overtime) + n(x.holiday) + n(x.night) + n(x.hazard) + n(x.incentives), k: 'ot' },
+    { h: 'Refunds / Reimb./Other Admin Expense', f: (x) => n(x.reimb) + n(x.otherEarn) + n(x.incentives), k: 'reimb' },
+    { h: 'Overtime/Holiday', f: (x) => n(x.overtime) + n(x.holiday) + n(x.night) + n(x.hazard), k: 'ot' },
     ...(has13 ? [{ h: '13th month Pay', f: (x) => x.thirteenth, k: 'thirteenth' }] : []),
   ];
   const ded = [
@@ -235,7 +258,7 @@ const buildRunSheet = (wb, run, used) => {
     { h: 'Cash Advance', f: (x) => x.cashAdvance, k: 'cashAdvance' },
     ...(hasOver ? [{ h: 'Leave Overdraw Recovery', f: (x) => x.leaveOverdraw, k: 'leaveOverdraw' }] : []),
     { h: 'HMO EE', f: (x) => x.hmo, k: 'hmo' },
-    ...(hasOther ? [{ h: 'Other Deductions (incl. HDMF MP2)', f: (x) => n(x.otherDed) + n(x.mp2), k: 'otherDed' }] : []),
+    ...(hasOther ? [{ h: 'Other Deductions (incl. HDMF MP2)', f: (x) => n(x.otherDed) + n(x.mp2) + n(x.leaveOverdraw), k: 'otherDed' }] : []),
     { h: 'Withholding Tax Payable', f: (x) => x.wht, k: 'wht' },
   ];
   const all = [{ h: 'Employee Name', k: 'name' }, ...earn, ...ded, { h: 'NET PAY', k: 'net' }];
@@ -250,8 +273,8 @@ const buildRunSheet = (wb, run, used) => {
   rows.forEach((x, i) => {
     const r = i + 2;
     ws.getCell(r, 1).value = qbName(x);
-    earn.forEach((c, j) => { const v = r2(c.f(x)); if (v) ws.getCell(r, 2 + j).value = v; });
-    ded.forEach((c, j) => { const v = r2(c.f(x)); if (v) ws.getCell(r, cDed1 + j).value = v; });
+    earn.forEach((c, j) => { const v = r2(c.f(x)); if (v) { ws.getCell(r, 2 + j).value = v; const nt = noteOf(x, c.k); if (nt) ws.getCell(r, 2 + j).note = nt; } });
+    ded.forEach((c, j) => { const v = r2(c.f(x)); if (v) { ws.getCell(r, cDed1 + j).value = v; const nt = noteOf(x, c.k); if (nt) ws.getCell(r, cDed1 + j).note = nt; } });
     ws.getCell(r, cNet).value = { formula: `SUM(${col(cEarn1)}${r}:${col(cEarn2)}${r})-SUM(${col(cDed1)}${r}:${col(cDed2)}${r})` };
     for (let c = 1; c <= cNet; c++) {
       styleCell(ws.getCell(r, c), { size: 9, fill: QB_YELLOW, border: MED_BOX, align: 'left', wrap: true, fmt: c > 1 ? NUM2 : undefined });
@@ -308,7 +331,8 @@ const buildRunSheet = (wb, run, used) => {
     ws.getCell(ar, advCol).value = 'Cash Advance';
     ws.getCell(ar, advCol + 1).value = r2(x.cashAdvance);
     ws.getCell(ar, advCol + 2).value = qbName(x);
-    for (let c = advCol; c <= advCol + 2; c++) styleCell(ws.getCell(ar, c), { font: 'Calibri', size: 11, fill: 'FFA8D08D', border: THIN_BOX, fmt: c === advCol + 1 ? NUM : undefined });
+    ws.getCell(ar, advCol + 3).value = ((x.details && x.details.cashAdvance) || []).map((l) => l.remarks).filter(Boolean).join('; ') || null;
+    for (let c = advCol; c <= advCol + 3; c++) styleCell(ws.getCell(ar, c), { font: 'Calibri', size: 11, fill: 'FFA8D08D', border: THIN_BOX, fmt: c === advCol + 1 ? NUM : undefined });
     ar += 1;
   });
   const widths = [20, 15.6, 18.6, 15, 15.7]; all.forEach((_, i) => { ws.getColumn(i + 1).width = widths[i] || 13.5; });

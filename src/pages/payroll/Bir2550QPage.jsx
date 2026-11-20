@@ -1195,9 +1195,17 @@ export default function Bir2550QPage({ companyId }) {
   const data = useMemo(() => (aggMode ? (agg ? { ...agg, locked: true } : null) : bir.data), [aggMode, agg, bir.data]);
   const view = { ...bir, year: yv, quarter: qv, loading: aggMode ? aggLoading : bir.loading };
   const years = Array.from({ length: 7 }, (_, i) => new Date().getFullYear() - 5 + i);
+  const pickRow = (e) => {
+    if (!e.target.closest || e.target.closest('input, select, button, textarea')) return;
+    const tr = e.target.closest('tbody tr');
+    if (!tr) return;
+    const table = tr.closest('table');
+    if (table) table.querySelectorAll('tr.bir-sel').forEach((x) => x.classList.remove('bir-sel'));
+    tr.classList.add('bir-sel');
+  };
 
   return (
-    <div style={{ padding: 16, maxWidth: 1800, margin: '0 auto' }}>
+    <div className="bir-page" onClick={pickRow} style={{ padding: 16, maxWidth: 1800, margin: '0 auto' }}>
       <style>{`
         .bir-btn, .bir-btn:hover, .bir-btn:focus, .bir-btn:focus-visible, .bir-btn:active { border-color: #d1d5db !important; outline: none !important; box-shadow: none !important; }
         .bir-btn.bir-primary, .bir-btn.bir-primary:hover, .bir-btn.bir-primary:focus, .bir-btn.bir-primary:focus-visible, .bir-btn.bir-primary:active { border-color: #ea580c !important; }
@@ -1214,6 +1222,9 @@ export default function Bir2550QPage({ companyId }) {
               .bir-table select:hover:not(:disabled) { color: inherit; text-decoration-style: solid; }
         .bir-table select:disabled { color: inherit; text-decoration: none; cursor: default; }
         .bir-table select option { color: #111827; }
+        .bir-page table tbody tr { cursor: pointer; }
+        .bir-page table tbody tr:not(.bir-sel):hover > td { background-color: #fff7ed !important; }
+        .bir-page table tbody tr.bir-sel > td { background-color: #fed7aa !important; }
       `}</style>
       <h2 style={{ margin: '0 0 4px' }}>BIR Form 2550Q: Quarterly VAT Return</h2>
       <p style={{ margin: '0 0 16px', fontSize: 13, color: '#6b7280' }}>

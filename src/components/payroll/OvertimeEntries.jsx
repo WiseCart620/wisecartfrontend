@@ -40,6 +40,19 @@ const fmtShort = (d) =>
 
 const KIND_LABEL = { EARNING: 'Earning', DEDUCTION: 'Deduction', ALLOWANCE: 'Allowance' };
 
+// where the amount of an entry is placed in the BIR reports ('' = Auto, the default rules)
+const COL_OPTS = {
+    EARNING: {
+        c1601: [['', 'Auto'], ['OVERTIME', 'Overtime Pay'], ['HOLIDAY', 'Holiday Pay'], ['NIGHT', 'Night Shift Differential'],
+            ['HAZARD', 'Hazard Pay'], ['MISC', 'Miscalculation Adjustments'], ['INCENTIVES', 'Incentives'], ['DE_MINIMIS', 'De Minimis (Item 18)']],
+        qb: [['', 'Auto'], ['REFUNDS', 'Refunds / Reimb./Other Admin Expense'], ['OT_HOLIDAY', 'Overtime/Holiday'], ['DE_MINIMIS', 'De Minimis']],
+    },
+    DEDUCTION: {
+        c1601: [['', 'Auto'], ['ABS_UNDER', 'Absences and Undertime'], ['MISC', 'Miscalculation Adjustments (negative)']],
+        qb: [['', 'Auto'], ['ABS_UNDER', 'Undertime/Lates/Absent'], ['OTHER_DED', 'Other Deductions']],
+    },
+};
+
 const TypeFilterSelect = ({ value, options, onChange, allLabel = 'All types', showAll = true, placeholder, listMaxH = 'max-h-64' }) => {
     const [open, setOpen] = useState(false);
     const [q, setQ] = useState('');
@@ -106,7 +119,7 @@ const TypeFilterSelect = ({ value, options, onChange, allLabel = 'All types', sh
 
 const now = new Date();
 const EMPTY_FORM = (date) => ({
-    employeeId: '', workDate: date, entryType: 'REGULAR_OT', value: '', unit: 'HOURS', remarks: '',
+    employeeId: '', workDate: date, entryType: 'REGULAR_OT', value: '', unit: 'HOURS', remarks: '', col1601: '', colQb: '',
 });
 
 const OvertimeEntries = ({ canEdit }) => {
@@ -193,11 +206,12 @@ const OvertimeEntries = ({ canEdit }) => {
     const label = (code) => (metaOf(code) || [])[1] || code;
     const modeOf = (code) => (metaOf(code) || [])[2] || 'HOURS';
     const unitMode = modeOf(form.entryType);
+    const formKind = (metaOf(form.entryType) || [])[3] === 'DEDUCTION' ? 'DEDUCTION' : 'EARNING';
 
     const onTypeChange = (newType) => {
         const mode = modeOf(newType);
         setForm(p => ({
-            ...p, entryType: newType, value: '',
+            ...p, entryType: newType, value: '', col1601: '', colQb: '',
             unit: mode === 'MINUTES' ? 'MINUTES' : mode === 'DAYS' ? 'DAYS' : mode === 'AMOUNT' ? 'AMOUNT' : 'HOURS',
         }));
     };
@@ -224,6 +238,8 @@ const OvertimeEntries = ({ canEdit }) => {
             entryType: form.entryType,
             hours,
             remarks: form.remarks,
+            col1601: form.col1601 || null,
+            colQb: form.colQb || null,
         };
         try {
             let entryId = editing ? editing.id : null;
@@ -250,7 +266,7 @@ const OvertimeEntries = ({ canEdit }) => {
             entryType: r.entryType,
             value: String(Number(r.hours)),
             unit: mode === 'DAYS' ? 'DAYS' : mode === 'AMOUNT' ? 'AMOUNT' : 'HOURS',
-            remarks: r.remarks || '',
+            remarks: r.remarks || '', col1601: r.col1601 || '', colQb: r.colQb || '',
         });
         setShowForm(true);
     };
@@ -461,6 +477,18 @@ const OvertimeEntries = ({ canEdit }) => {
                             <MoneyInput decimals={unitMode === 'AMOUNT' || unitMode === 'DAYS' || form.unit === 'HOURS' ? 2 : 0}
                                 className={inputCls} value={form.value}
                                 onChange={(e) => setForm(p => ({ ...p, value: e.target.value }))} />
+                        </Field>
+                        <Field label="1601-C column">
+                            <select className={inputCls} value={form.col1601}
+                                onChange={(e) => setForm(p => ({ ...p, col1601: e.target.value }))}>
+                                {COL_OPTS[formKind].c1601.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                            </select>
+                        </Field>
+                        <Field label="Salary Monitoring (QB) column">
+                            <select className={inputCls} value={form.colQb}
+                                onChange={(e) => setForm(p => ({ ...p, colQb: e.target.value }))}>
+                                {COL_OPTS[formKind].qb.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                            </select>
                         </Field>
                         <Field label="Attachment (photo / PDF, optional)" className="md:col-span-2">
                             <input type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" className={inputCls}

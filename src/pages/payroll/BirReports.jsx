@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Download, Settings2 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { Navigate } from 'react-router-dom';
@@ -61,6 +61,56 @@ const thL = th.replace('text-center', 'text-left');
 const td = 'px-3 py-1.5 border border-gray-200 text-xs whitespace-nowrap';
 const tdN = `${td} text-right tabular-nums`;
 const tdT = `${td} font-bold bg-green-100 text-right tabular-nums`;
+const trHover = 'cursor-pointer hover:[&>td]:!bg-orange-50';
+const trSel = '[&>td]:!bg-orange-200 hover:[&>td]:!bg-orange-200';
+
+// Number with a professional tooltip (hover to peek, click to pin). lines = [{ label, amount, remarks }]
+const TipCell = ({ lines, children }) => {
+  const [hover, setHover] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const [pos, setPos] = useState({ x: 0, y: 0, below: false });
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!pinned) return undefined;
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setPinned(false); };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [pinned]);
+  if (!lines || lines.length === 0) return <span>{children}</span>;
+  const place = (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const below = r.top < 200;
+    setPos({ x: r.left + r.width / 2, y: below ? r.bottom + 8 : r.top - 8, below });
+  };
+  const total = lines.reduce((s, l) => s + n(l.amount), 0);
+  const show = hover || pinned;
+  return (
+    <span ref={ref} className="cursor-help border-b border-dotted border-gray-500"
+      onMouseEnter={(e) => { place(e); setHover(true); }} onMouseLeave={() => setHover(false)}
+      onClick={(e) => { e.stopPropagation(); place(e); setPinned((p) => !p); }}>
+      {children}
+      {show && (
+        <span className="fixed z-[100] w-72 rounded-lg bg-gray-900 px-3 py-2 text-left text-xs font-normal normal-case text-white shadow-xl whitespace-normal pointer-events-none"
+          style={{ left: pos.x, top: pos.y, transform: pos.below ? 'translate(-50%, 0)' : 'translate(-50%, -100%)' }}>
+          {lines.map((l, i) => (
+            <span key={i} className={`block ${i ? 'mt-2 pt-2 border-t border-gray-700' : ''}`}>
+              <span className="flex justify-between gap-3">
+                <span className="font-semibold">{l.label}</span>
+                <span className="tabular-nums">{acc(l.amount)}</span>
+              </span>
+              {l.remarks && <span className="mt-0.5 block whitespace-pre-line text-gray-300">{l.remarks}</span>}
+            </span>
+          ))}
+          {lines.length > 1 && (
+            <span className="mt-2 pt-2 border-t border-gray-700 flex justify-between font-semibold">
+              <span>Total</span><span className="tabular-nums">{acc(total)}</span>
+            </span>
+          )}
+        </span>
+      )}
+    </span>
+  );
+};
 
 // ------------------------------------------------------------------ 1601-C
 const HEAD_1601 = ['Basic Pay (Regular Rate, either Monthly or MWE)', 'Overtime Pay', 'Holiday Pay',
@@ -82,7 +132,7 @@ const exemptOf = (rows) => { const t = rows.find((x) => n(x.rate) > 0); return t
 const calc1601 = (d, taxRows) => {
   const mwe = !!d.mwe;
   const F = r2(d.basic), G = r2(d.overtime), H = r2(d.holiday), I = r2(d.night), J = r2(d.hazard);
-  const K = -r2(d.absUnder), L = 0, M = r2(d.incentives), N = r2(d.thirteenth), O = r2(d.deMinimis);
+  const K = -r2(d.absUnder), L = r2(n(d.otherEarn) - n(d.otherDed) - n(d.leaveOverdraw)), M = r2(d.incentives), N = r2(d.thirteenth), O = r2(d.deMinimis);
   const P = F + G + H + I + J + K + L + M + N + O;
   const Q = r2(d.sss), R = r2(d.phic), S = r2(d.hdmf);
   const T = mwe ? F : 0;
@@ -95,9 +145,22 @@ const calc1601 = (d, taxRows) => {
   const AA = r2(d.wht);
   const AB = P - Q - R - S - AA;
   return {
-    name: shortName(d), tin: d.tin || '', mwe,
+    name: shortName(d), tin: d.tin || '', mwe, details: d.details || {},
     vals: [F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, AA, AB],
   };
+};
+
+// which pay-entry lines feed each 1601-C column (index in HEAD_1601); neg = shown as negative
+const TIP_1601 = {
+  1: { keys: ['overtime'] }, 2: { keys: ['holiday'] }, 3: { keys: ['night'] }, 4: { keys: ['hazard'] },
+  5: { keys: ['absUnder'], neg: ['absUnder'] },
+  6: { keys: ['otherEarn', 'otherDed', 'leaveOverdraw'], neg: ['otherDed', 'leaveOverdraw'] },
+  7: { keys: ['incentives'] }, 8: { keys: ['thirteenth'] }, 9: { keys: ['deMinimis'] },
+};
+const tip1601 = (details, c) => {
+  const spec = TIP_1601[c];
+  if (!spec || !details) return null;
+  return spec.keys.flatMap((k) => (details[k] || []).map((l) => (spec.neg && spec.neg.includes(k) ? { ...l, amount: -n(l.amount) } : l)));
 };
 
 const Preview1601 = ({ data }) => {
@@ -106,6 +169,7 @@ const Preview1601 = ({ data }) => {
     const i = months.map((x) => (x.rows || []).length > 0).lastIndexOf(true);
     return i < 0 ? 0 : i;
   });
+  const [sel, setSel] = useState(null);
   const taxRows = data.settings?.taxTable || [];
   const rows = (months[m]?.rows || []).map((x) => calc1601(x, taxRows));
   const totals = HEAD_1601.map((_, c) => rows.reduce((s, r) => s + r.vals[c], 0));
@@ -123,8 +187,8 @@ const Preview1601 = ({ data }) => {
         <table className="min-w-[2400px] text-sm border-collapse">
           <thead>
             <tr>
-              <th className={th} rowSpan={2}>No.</th>
-              <th className={th} rowSpan={2}>Employee's Name</th>
+              <th className={`${th} sticky left-0 z-20 min-w-[48px]`} rowSpan={2}>No.</th>
+              <th className={`${th} sticky left-[48px] z-20 min-w-[220px]`} rowSpan={2}>Employee's Name</th>
               <th className={th} rowSpan={2}>Taxpayer's Identification Number</th>
               <th className={th} rowSpan={2}>MWE or NOT</th>
               <th className={`${th} !bg-orange-300`} colSpan={HEAD_1601.length}>{MONTHS[m].toUpperCase()}</th>
@@ -135,16 +199,16 @@ const Preview1601 = ({ data }) => {
             {rows.length === 0
               ? <tr><td colSpan={4 + HEAD_1601.length} className="px-4 py-10 text-center text-gray-500">No payroll for {MONTHS[m]}</td></tr>
               : rows.map((r, i) => (
-                <tr key={i}>
-                  <td className={`${td} text-center`}>{i + 1}</td>
-                  <td className={td}>{r.name}</td>
+                <tr key={i} onClick={() => setSel(i)} className={`${trHover} ${sel === i ? trSel : ''}`}>
+                  <td className={`${td} text-center sticky left-0 z-10 bg-white min-w-[48px]`}>{i + 1}</td>
+                  <td className={`${td} sticky left-[48px] z-10 bg-white min-w-[220px]`}>{r.name}</td>
                   <td className={`${td} text-center`}>{r.tin || <span className="text-amber-600">missing</span>}</td>
                   <td className={`${td} text-center`}>{r.mwe ? 'MWE' : 'NOT'}</td>
-                  {r.vals.map((v, c) => <td key={c} className={tdN}>{acc(v)}</td>)}
+                  {r.vals.map((v, c) => <td key={c} className={tdN}><TipCell lines={tip1601(r.details, c)}>{acc(v)}</TipCell></td>)}
                 </tr>
               ))}
             <tr>
-              <td className={`${td} font-bold bg-green-100`} colSpan={4}>TOTAL</td>
+              <td className={`${td} font-bold bg-green-100 sticky left-0 z-10`} colSpan={4}>TOTAL</td>
               {totals.map((v, c) => <td key={c} className={tdT}>{acc(v)}</td>)}
             </tr>
           </tbody>
@@ -166,6 +230,7 @@ const dmy = (iso) => {
 };
 
 const Preview1604 = ({ data }) => {
+  const [sel, setSel] = useState(null);
   const rows = (data.rows || []).map((d) => {
     const contrib = r2(n(d.sss) + n(d.phic) + n(d.hdmf));
     const basic = r2(d.basic);
@@ -183,14 +248,14 @@ const Preview1604 = ({ data }) => {
   return (
     <div className="overflow-auto">
       <table className="min-w-[1700px] text-sm border-collapse">
-        <thead><tr>{heads.map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
+        <thead><tr>{heads.map((h, hi) => <th key={h} className={`${th} ${hi === 0 ? 'sticky left-0 z-20 min-w-[48px]' : hi === 1 ? 'sticky left-[48px] z-20 min-w-[220px]' : ''}`}>{h}</th>)}</tr></thead>
         <tbody>
           {rows.length === 0
             ? <tr><td colSpan={heads.length} className="px-4 py-10 text-center text-gray-500">No employees for this year</td></tr>
             : rows.map((r, i) => (
-              <tr key={i}>
-                <td className={`${td} text-center`}>{i + 1}</td>
-                <td className={td}>{r.name}</td>
+              <tr key={i} onClick={() => setSel(i)} className={`${trHover} ${sel === i ? trSel : ''}`}>
+                <td className={`${td} text-center sticky left-0 z-10 bg-white min-w-[48px]`}>{i + 1}</td>
+                <td className={`${td} sticky left-[48px] z-10 bg-white min-w-[220px]`}>{r.name}</td>
                 <td className={`${td} text-center`}>{r.tin || <span className="text-amber-600">missing</span>}</td>
                 <td className={tdN}>{acc(r.basic)}</td>
                 <td className={tdN}>{acc(r.thirteenth)}</td>
@@ -216,35 +281,37 @@ const qbRun = (run) => {
   const rows = run.rows || [];
   const s = (k) => rows.reduce((t, x) => t + n(x[k]), 0);
   const has13 = s('thirteenth') > 0;
-  const hasOver = s('leaveOverdraw') > 0;
-  const hasOther = s('otherDed') + s('mp2') > 0;
+  const hasOther = s('otherDed') + s('mp2') + s('leaveOverdraw') > 0;
   const earn = [
-    { h: 'Gross Salary', f: (x) => x.basic, k: 'basic' },
-    { h: 'De Minimis', f: (x) => x.deMinimis, k: 'deMinimis' },
-    { h: 'Refunds / Reimb./Other Admin Expense', f: (x) => x.reimb, k: 'reimb' },
-    { h: 'Overtime/Holiday', f: (x) => n(x.overtime) + n(x.holiday) + n(x.night) + n(x.hazard) + n(x.incentives), k: 'ot' },
-    ...(has13 ? [{ h: '13th month Pay', f: (x) => x.thirteenth, k: 'thirteenth' }] : []),
+    { h: 'Gross Salary', f: (x) => x.basic, k: 'basic', dk: [] },
+    { h: 'De Minimis', f: (x) => x.deMinimis, k: 'deMinimis', dk: ['deMinimis'] },
+    { h: 'Refunds / Reimb./Other Admin Expense', f: (x) => n(x.reimb) + n(x.otherEarn) + n(x.incentives), k: 'reimb', dk: ['reimb', 'otherEarn', 'incentives'] },
+    { h: 'Overtime/Holiday', f: (x) => n(x.overtime) + n(x.holiday) + n(x.night) + n(x.hazard), k: 'ot', dk: ['overtime', 'holiday', 'night', 'hazard'] },
+    ...(has13 ? [{ h: '13th month Pay', f: (x) => x.thirteenth, k: 'thirteenth', dk: ['thirteenth'] }] : []),
   ];
   const ded = [
-    { h: 'Undeertime/Lates/Absent', f: (x) => x.absUnder, k: 'absUnder' },
-    { h: 'SSS EE', f: (x) => x.sss, k: 'sss' },
-    { h: 'PhilHealth EE', f: (x) => x.phic, k: 'phic' },
-    { h: 'Pag-IBIG EE', f: (x) => x.hdmf, k: 'hdmf' },
-    { h: 'SSS Sal Loan', f: (x) => x.sssSal, k: 'sssSal' },
-    { h: 'SSS Cal Loan', f: (x) => x.sssCal, k: 'sssCal' },
-    { h: 'HDMF Cal Loan', f: (x) => x.hdmfCal, k: 'hdmfCal' },
-    { h: 'HDMF MPL', f: (x) => x.hdmfMpl, k: 'hdmfMpl' },
-    { h: 'Cash Advance', f: (x) => x.cashAdvance, k: 'cashAdvance' },
-    ...(hasOver ? [{ h: 'Leave Overdraw Recovery', f: (x) => x.leaveOverdraw, k: 'leaveOverdraw' }] : []),
-    { h: 'HMO EE', f: (x) => x.hmo, k: 'hmo' },
-    ...(hasOther ? [{ h: 'Other Deductions (incl. HDMF MP2)', f: (x) => n(x.otherDed) + n(x.mp2), k: 'otherDed' }] : []),
-    { h: 'Withholding Tax Payable', f: (x) => x.wht, k: 'wht' },
+    { h: 'Undeertime/Lates/Absent', f: (x) => x.absUnder, k: 'absUnder', dk: ['absUnder'] },
+    { h: 'SSS EE', f: (x) => x.sss, k: 'sss', dk: ['sss'] },
+    { h: 'PhilHealth EE', f: (x) => x.phic, k: 'phic', dk: ['phic'] },
+    { h: 'Pag-IBIG EE', f: (x) => x.hdmf, k: 'hdmf', dk: ['hdmf'] },
+    { h: 'SSS Sal Loan', f: (x) => x.sssSal, k: 'sssSal', dk: ['sssSal'] },
+    { h: 'SSS Cal Loan', f: (x) => x.sssCal, k: 'sssCal', dk: ['sssCal'] },
+    { h: 'HDMF Cal Loan', f: (x) => x.hdmfCal, k: 'hdmfCal', dk: ['hdmfCal'] },
+    { h: 'HDMF MPL', f: (x) => x.hdmfMpl, k: 'hdmfMpl', dk: ['hdmfMpl'] },
+    { h: 'Cash Advance', f: (x) => x.cashAdvance, k: 'cashAdvance', dk: ['cashAdvance'] },
+    { h: 'HMO EE', f: (x) => x.hmo, k: 'hmo', dk: ['hmo'] },
+    ...(hasOther ? [{ h: 'Other Deductions (incl. HDMF MP2)', f: (x) => n(x.otherDed) + n(x.mp2) + n(x.leaveOverdraw), k: 'otherDed', dk: ['otherDed', 'mp2', 'leaveOverdraw'] }] : []),
+    { h: 'Withholding Tax Payable', f: (x) => x.wht, k: 'wht', dk: ['wht'] },
   ];
+  const det = (x, keys) => keys.flatMap((k) => (x.details && x.details[k]) || []);
   const body = rows.map((x) => {
     const e = earn.map((c) => r2(c.f(x)));
     const d = ded.map((c) => r2(c.f(x)));
     const net = e.reduce((a, b) => a + b, 0) - d.reduce((a, b) => a + b, 0);
-    return { name: qbName(x), e, d, net, cashAdvance: r2(x.cashAdvance) };
+    return {
+      name: qbName(x), e, d, net, cashAdvance: r2(x.cashAdvance),
+      ed: earn.map((c) => det(x, c.dk)), dd: ded.map((c) => det(x, c.dk)), adv: det(x, ['cashAdvance']),
+    };
   });
   const T = {};
   earn.forEach((c, j) => { T[c.k] = body.reduce((a, r) => a + r.e[j], 0); });
@@ -265,7 +332,6 @@ const qbRun = (run) => {
     ...(hasOther ? [['Other Deductions', 'C', g('otherDed')]] : []),
     ['Withholding Tax', 'C', g('wht')],
     ['Advances to Employee', 'C', g('cashAdvance')],
-    ...(hasOver ? [['Leave Overdraw Recovery', 'C', g('leaveOverdraw')]] : []),
     ['Net Pay To Release to Employee', 'C', g('net')],
   ];
   return { earn, ded, body, T, lines };
@@ -274,6 +340,7 @@ const qbRun = (run) => {
 const PreviewQbRuns = ({ data }) => {
   const runs = data.runs || [];
   const [idx, setIdx] = useState(0);
+  const [sel, setSel] = useState(null);
   if (runs.length === 0) return <p className="px-4 py-10 text-center text-gray-500">No approved or paid payroll runs for this year</p>;
   const run = runs[Math.min(idx, runs.length - 1)];
   const { earn, ded, body, T, lines } = qbRun(run);
@@ -281,6 +348,7 @@ const PreviewQbRuns = ({ data }) => {
   const totC = lines.filter((l) => l[1] === 'C').reduce((a, l) => a + l[2], 0);
   const advances = body.filter((r) => r.cashAdvance > 0);
   const qbCell = `${td} text-right tabular-nums bg-yellow-200`;
+  const rowCls = (id) => `${trHover} ${sel === id ? trSel : ''}`;
   return (
     <div>
       <div className="flex flex-wrap items-center gap-2 p-3 border-b border-gray-200">
@@ -293,7 +361,7 @@ const PreviewQbRuns = ({ data }) => {
         <table className="text-sm border-collapse min-w-[1100px]">
           <thead>
             <tr>
-              <th className={thL}>Employee Name</th>
+              <th className={`${thL} sticky left-0 z-20 min-w-[200px]`}>Employee Name</th>
               {earn.map((c) => <th key={c.k} className={`${th} min-w-[110px]`}>{c.h}</th>)}
               {ded.map((c) => <th key={c.k} className={`${th} min-w-[110px]`}>{c.h}</th>)}
               <th className={`${th} min-w-[110px]`}>NET PAY</th>
@@ -301,15 +369,15 @@ const PreviewQbRuns = ({ data }) => {
           </thead>
           <tbody>
             {body.map((r, i) => (
-              <tr key={i}>
-                <td className={`${td} bg-yellow-200`}>{r.name}</td>
-                {r.e.map((v, j) => <td key={`e${j}`} className={qbCell}>{acc(v)}</td>)}
-                {r.d.map((v, j) => <td key={`d${j}`} className={qbCell}>{acc(v)}</td>)}
+              <tr key={i} onClick={() => setSel(`m${i}`)} className={rowCls(`m${i}`)}>
+                <td className={`${td} bg-yellow-200 sticky left-0 z-10 min-w-[200px]`}>{r.name}</td>
+                {r.e.map((v, j) => <td key={`e${j}`} className={qbCell}><TipCell lines={r.ed[j]}>{acc(v)}</TipCell></td>)}
+                {r.d.map((v, j) => <td key={`d${j}`} className={qbCell}><TipCell lines={r.dd[j]}>{acc(v)}</TipCell></td>)}
                 <td className={qbCell}>{acc(r.net)}</td>
               </tr>
             ))}
             <tr>
-              <td className={`${td} font-bold`}>TOTALS</td>
+              <td className={`${td} font-bold bg-white sticky left-0 z-10`}>TOTALS</td>
               {earn.map((c) => <td key={c.k} className={`${tdN} font-bold`}>{acc(T[c.k])}</td>)}
               {ded.map((c) => <td key={c.k} className={`${tdN} font-bold`}>{acc(T[c.k])}</td>)}
               <td className={`${tdN} font-bold`}>{acc(T.net)}</td>
@@ -325,7 +393,7 @@ const PreviewQbRuns = ({ data }) => {
           </thead>
           <tbody>
             {lines.map(([label, side, v], i) => (
-              <tr key={label}>
+              <tr key={label} onClick={() => setSel(`j${i}`)} className={rowCls(`j${i}`)}>
                 <td className={`${td} text-center`}>{i + 1}</td>
                 <td className={td}>{label}</td>
                 <td className={tdN}>{side === 'D' ? acc(v) : ''}</td>
@@ -342,13 +410,19 @@ const PreviewQbRuns = ({ data }) => {
         </table>
 
         <table className="text-sm border-collapse self-start">
-          <thead><tr><th className={`${th} !bg-green-500 !text-white`} colSpan={3}>Breakdown of Advances to Employees for QB Recording</th></tr></thead>
+          <thead>
+            <tr><th className={`${th} !bg-green-500 !text-white`} colSpan={4}>Breakdown of Advances to Employees for QB Recording</th></tr>
+            <tr><th className={th}>Type</th><th className={th}>Amount</th><th className={th}>Employee</th><th className={th}>Remarks</th></tr>
+          </thead>
           <tbody>
             {advances.length === 0
-              ? <tr><td className={`${td} text-gray-400`} colSpan={3}>No cash advances in this cutoff</td></tr>
+              ? <tr><td className={`${td} text-gray-400`} colSpan={4}>No cash advances in this cutoff</td></tr>
               : advances.map((r, i) => (
-                <tr key={i} className="bg-green-200">
-                  <td className={td}>Cash Advance</td><td className={tdN}>{acc(r.cashAdvance)}</td><td className={td}>{r.name}</td>
+                <tr key={i} onClick={() => setSel(`a${i}`)} className={`bg-green-200 ${rowCls(`a${i}`)}`}>
+                  <td className={td}>Cash Advance</td>
+                  <td className={tdN}>{acc(r.cashAdvance)}</td>
+                  <td className={td}>{r.name}</td>
+                  <td className={`${td} !whitespace-pre-line min-w-[220px]`}>{r.adv.map((l) => l.remarks).filter(Boolean).join('\n') || '-'}</td>
                 </tr>
               ))}
           </tbody>
@@ -362,20 +436,21 @@ const PreviewQbRuns = ({ data }) => {
 const QB_TABS = [['runs', 'Payroll Runs'], ['sss', 'SSS Payment'], ['phic', 'PHIC Payment'], ['hdmf', 'HDMF Payment'], ['non', 'Non-Employee Contributions']];
 
 const QbGrid = ({ heads, rows }) => {
+  const [sel, setSel] = useState(null);
   const totals = heads.slice(1).map((_, c) => rows.reduce((s, r) => s + n(r[c + 1]), 0));
   return (
     <div className="overflow-auto p-4">
       <table className="text-sm border-collapse min-w-[600px]">
-        <thead><tr>{heads.map((h, i) => <th key={h} className={i === 0 ? thL : `${th} min-w-[130px]`}>{h}</th>)}</tr></thead>
+        <thead><tr>{heads.map((h, i) => <th key={h} className={i === 0 ? `${thL} sticky left-0 z-20 min-w-[200px]` : `${th} min-w-[130px]`}>{h}</th>)}</tr></thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={i}>
-              <td className={td}>{r[0]}</td>
+            <tr key={i} onClick={() => setSel(i)} className={`${trHover} ${sel === i ? trSel : ''}`}>
+              <td className={`${td} sticky left-0 z-10 bg-white min-w-[200px]`}>{r[0]}</td>
               {r.slice(1).map((v, c) => <td key={c} className={tdN}>{acc(v)}</td>)}
             </tr>
           ))}
           <tr>
-            <td className={`${td} font-bold bg-green-100`}>TOTAL</td>
+            <td className={`${td} font-bold bg-green-100 sticky left-0 z-10`}>TOTAL</td>
             {totals.map((v, c) => <td key={c} className={tdT}>{acc(v)}</td>)}
           </tr>
         </tbody>

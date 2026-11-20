@@ -31,6 +31,8 @@ const th = 'px-3 py-2 text-center text-xs font-semibold text-gray-700 border bor
 const td = 'px-3 py-1.5 border border-gray-200 text-xs whitespace-nowrap';
 const tdN = `${td} text-right tabular-nums`;
 const tdT = `${td} font-bold bg-green-100 text-right tabular-nums`;
+const trHover = 'cursor-pointer hover:[&>td]:!bg-orange-50';
+const trSel = '[&>td]:!bg-orange-200 hover:[&>td]:!bg-orange-200';
 const btn = 'px-3 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-100';
 const btnP = 'px-3 py-1.5 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 disabled:opacity-50';
 const dl = async (kind, d, year) => {
@@ -38,7 +40,9 @@ const dl = async (kind, d, year) => {
   catch (e) { toast.error(e.message || 'Failed to build the Excel file'); }
 };
 
-const LineTable = ({ lines, totalBase, totalTax, baseLabel, taxLabel, showTin }) => (
+const LineTable = ({ lines, totalBase, totalTax, baseLabel, taxLabel, showTin }) => {
+  const [sel, setSel] = useState(null);
+  return (
   <div className="overflow-auto">
     <table className="min-w-[760px] w-full border-collapse">
       <thead><tr>
@@ -48,7 +52,7 @@ const LineTable = ({ lines, totalBase, totalTax, baseLabel, taxLabel, showTin })
       </tr></thead>
       <tbody>
         {(lines || []).map((l) => (
-          <tr key={l.payeeId}>
+          <tr key={l.payeeId} onClick={() => setSel(l.payeeId)} className={`${trHover} ${sel === l.payeeId ? trSel : ''}`}>
             {showTin && <td className={td}>{l.tin || <span className="text-amber-600">missing</span>}</td>}
             <td className={td}>{showTin ? `${l.name} (${l.description})` : l.description}</td>
             <td className={`${td} text-center`}>{l.atc}</td>
@@ -61,6 +65,7 @@ const LineTable = ({ lines, totalBase, totalTax, baseLabel, taxLabel, showTin })
     </table>
   </div>
 );
+};
 
 const RemitBox = ({ year, form, period, remit, canEdit, onSaved, label, coverMonth }) => {
   const [f, setF] = useState({ dateRemitted: '', bank: 'UNIONBANK', paymentRef: '', amount: '' });
@@ -158,7 +163,7 @@ const PaymentsBox = ({ year, month, canEdit, onChanged }) => {
               : list.length === 0
                 ? <tr><td colSpan="6" className="px-4 py-6 text-center text-gray-500 text-sm">No payment saved for this month yet</td></tr>
                 : list.map((p) => (
-                  <tr key={p.id}>
+                  <tr key={p.id} className={trHover}>
                     <td className={`${td} text-center`}>{fmtDate(p.dateRemitted)}</td>
                     <td className={td}>{p.bank}</td>
                     <td className={td}>{p.paymentRef}</td>
@@ -269,7 +274,7 @@ const Report1604 = ({ year }) => {
                     const ps = paysOf(m);
                     const rows = ps.length ? ps : [null];
                     return rows.map((p, j) => (
-                      <tr key={`${m}-${j}`}>
+                      <tr key={`${m}-${j}`} className={trHover}>
                         <td className={`${td} pl-9`}>{j === 0 ? MONTHS[m - 1] : ''}</td>
                         <td className={`${td} text-center`}>{fmtDate(p?.dateRemitted)}</td>
                         <td className={td}>{p?.bank || ''}</td>
@@ -463,7 +468,7 @@ const DataEntry = ({ year, canEdit }) => {
             <tbody>
               {shownRows.length === 0 ? <tr><td colSpan="6" className="px-4 py-6 text-center text-gray-500 text-sm">No entries found for {month === 0 ? 'all months' : MONTHS[month - 1]} {year}</td></tr>
                 : shownRows.map((r) => (
-                  <tr key={r.id}><td className={td}>{fmtDate(extras[r.id]?.invoiceDate)}</td><td className={td}>{nameOf(r.payeeId)}</td><td className={td}>{r.reference}</td><td className={tdN}>{acc(r.taxBase)}</td>
+                  <tr key={r.id} className={trHover}><td className={td}>{fmtDate(extras[r.id]?.invoiceDate)}</td><td className={td}>{nameOf(r.payeeId)}</td><td className={td}>{r.reference}</td><td className={tdN}>{acc(r.taxBase)}</td>
                     <td className={td}>{extras[r.id]?.attachmentName ? <button className="text-xs text-blue-600 hover:underline" onClick={() => openInvoice(r.id)}>View</button> : (canEdit ? <label className="text-xs text-blue-600 hover:underline cursor-pointer">Attach<input type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => attachTo(r.id, e.target.files && e.target.files[0])} /></label> : '')}</td>
                     <td className={td}>{canEdit && <button className="text-xs text-red-600 hover:underline" onClick={() => delEntry(r.id)}>Delete</button>}</td></tr>
                 ))}
@@ -505,7 +510,7 @@ const DataEntry = ({ year, canEdit }) => {
             <tbody>
               {shownPayees.length === 0 ? <tr><td colSpan="7" className="px-4 py-6 text-center text-gray-500 text-sm">No payees found</td></tr>
                 : shownPayees.map((p) => (
-                  <tr key={p.id}><td className={td}>{p.tin || <span className="text-amber-600">missing</span>}</td><td className={td}>{p.registeredName}</td><td className={td}>{p.description}</td>
+                  <tr key={p.id} className={trHover}><td className={td}>{p.tin || <span className="text-amber-600">missing</span>}</td><td className={td}>{p.registeredName}</td><td className={td}>{p.description}</td>
                     <td className={`${td} text-center`}>{p.atc}</td><td className={`${td} text-center`}>{(n(p.rate) * 100).toFixed(0)}%</td>
                     <td className={`${td} text-center`}>{p.companyId ? 'linked' : '-'}</td>
                     <td className={td}>{canEdit && <button className="text-xs text-red-600 hover:underline" onClick={() => removePayee(p.id)}>Deactivate</button>}</td></tr>
