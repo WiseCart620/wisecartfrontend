@@ -36,6 +36,11 @@ const InsufficientStockModal = ({ error, onClose }) => {
             <div className="text-sm font-medium text-gray-800">{d.productName}</div>
             <div className="text-xs text-gray-500 mt-0.5">
               {d.branchName} &middot; {d.period}
+              {(d.sku || d.upc) && (
+                <div className="mt-1 text-[11px] text-gray-600">
+                  SKU: <span className="font-medium">{d.sku || 'N/A'}</span> &middot; UPC: <span className="font-medium">{d.upc || 'N/A'}</span>
+                </div>
+              )}
             </div>
           </div>
 

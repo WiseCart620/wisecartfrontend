@@ -524,31 +524,84 @@ const ProductTransactionsModal = ({
         }
     };
 
-    const handleDeleteAllDeleted = async () => {
-        const deletedTransactions = filteredTransactions.filter(t => t.isDeleted === true || t.action === 'DELETED');
-        if (deletedTransactions.length === 0) { toast.error('No deleted transactions to remove'); return; }
-        if (!window.confirm(`Permanently delete ${deletedTransactions.length} transaction(s)?`)) return;
+    const isDeletedTx = (t) => t.isDeleted === true || t.action === 'DELETED';
 
+    const buildExportRows = (list) => list.map((t) => {
+        const { userEnteredDate, systemDate } = getTransactionDates(t);
+        const qtyInfo = getQuantityDisplayLocal(t);
+        const deleted = isDeletedTx(t);
+        return {
+            'ID': t.id,
+            'Date Type': getUserDateLabel(t),
+            'Transaction Date': userEnteredDate ? formatDate(userEnteredDate) : '',
+            'System Timestamp': systemDate ? formatDate(systemDate) : '',
+            'Type': String(getTransferDirection(t) || '').replace('_', ' '),
+            'Product': t.productName || '',
+            'SKU': t.variationSku || t.sku || '',
+            'From': t.fromWarehouse?.warehouseName || t.fromBranch?.branchName || '',
+            'To': t.toWarehouse?.warehouseName || t.toBranch?.branchName || '',
+            'Quantity': `${qtyInfo.sign}${qtyInfo.quantity}`,
+            'Reference': t.referenceNumber || `INV-${t.referenceId || t.id}`,
+            'Action': deleted ? 'DELETED' : (t.action || 'PROCESS'),
+            'Deleted At': deleted && t.deletedAt ? formatDate(parseServerUtc(t.deletedAt)) : '',
+            'Remarks': t.remarks || '',
+        };
+    });
+
+    const downloadFullBackup = () => {
+        const all = Array.isArray(transactions) ? [...transactions] : [];
+        if (all.length === 0) return 0;
+        all.sort((a, b) => new Date(b.transactionDate || 0) - new Date(a.transactionDate || 0));
+
+        const wb = XLSX.utils.book_new();
+        const addSheet = (name, list) => {
+            const ws = XLSX.utils.json_to_sheet(buildExportRows(list));
+            ws['!cols'] = [
+                { wch: 10 }, { wch: 16 }, { wch: 22 }, { wch: 22 }, { wch: 14 }, { wch: 30 },
+                { wch: 18 }, { wch: 22 }, { wch: 22 }, { wch: 10 }, { wch: 20 }, { wch: 12 },
+                { wch: 22 }, { wch: 50 },
+            ];
+            XLSX.utils.book_append_sheet(wb, ws, name);
+        };
+        addSheet('Transactions', all.filter(t => !isDeletedTx(t)));
+        addSheet('Deleted', all.filter(isDeletedTx));
+
+        const productLabel = (product?.productName || 'Product').replace(/[^a-z0-9]+/gi, '_');
+        XLSX.writeFile(wb, `Transactions_Backup_${productLabel}_${new Date().toISOString().split('T')[0]}.xlsx`);
+        return all.length;
+    };
+
+    const handleDeleteAllDeleted = async () => {
+        const deletedTransactions = filteredTransactions.filter(isDeletedTx);
+        if (deletedTransactions.length === 0) { toast.error('No deleted transactions to remove'); return; }
+        if (!window.confirm(`Permanently delete ${deletedTransactions.length} transaction(s)?\n\nAn Excel backup of all transactions (active and deleted) will download first.`)) return;
+
+        setDeletingAll(true);
         try {
-            setDeletingAll(true);
-            let successCount = 0, failCount = 0;
-            for (const t of deletedTransactions) {
-                try {
-                    const r = await api.delete(`/transactions/${t.id}`);
-                    r.success ? successCount++ : failCount++;
-                } catch { failCount++; }
+            try {
+                downloadFullBackup();
+            } catch (backupErr) {
+                console.error('Backup failed', backupErr);
+                toast.error('Excel backup failed - nothing was deleted');
+                return;
             }
-            if (successCount > 0) toast.success(`Deleted ${successCount} transaction(s)`);
-            if (failCount > 0) toast.error(`Failed to delete ${failCount} transaction(s)`);
-            if (window.loadData) await window.loadData();
-            onClose();
+
+            const ids = deletedTransactions.map(t => t.id);
+            const response = await api.post('/transactions/cleanup/purge-by-ids', { ids });
+            if (response.success) {
+                const purged = response.data?.purgedCount ?? ids.length;
+                toast.success(`Deleted ${purged} transaction(s)`);
+                if (window.loadData) await window.loadData();
+                onClose();
+            } else {
+                toast.error(response.error || 'Failed to delete transactions');
+            }
         } catch (err) {
             toast.error('Failed to delete transactions: ' + (err.message || 'Unknown error'));
         } finally {
             setDeletingAll(false);
         }
     };
-
     const handlePageSizeChange = (newSize) => {
         setPageSize(newSize);
         setCurrentPage(1);
