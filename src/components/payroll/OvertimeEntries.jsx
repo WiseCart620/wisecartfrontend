@@ -53,6 +53,69 @@ const COL_OPTS = {
     },
 };
 
+// short explanation shown under each report-column option
+const COL_HINT = {
+    '': 'Uses the default column for this pay type',
+    OVERTIME: 'Shown under Overtime Pay',
+    HOLIDAY: 'Shown under Holiday Pay',
+    NIGHT: 'Shown under Night Shift Differential',
+    HAZARD: 'Shown under Hazard Pay',
+    MISC: 'Adjustment to compensation. Added for earnings, subtracted for deductions',
+    INCENTIVES: 'Shown under Incentives',
+    DE_MINIMIS: 'Non-taxable benefits (Item 18)',
+    ABS_UNDER: 'Shown under Absences and Undertime',
+    REFUNDS: 'Reimbursements and other admin expenses',
+    OT_HOLIDAY: 'Combined Overtime / Holiday column',
+    OTHER_DED: 'Shown under Other Deductions',
+};
+
+const ColumnSelect = ({ value, options, onChange }) => {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener('mousedown', h);
+        return () => document.removeEventListener('mousedown', h);
+    }, []);
+
+    const current = value || '';
+    const selected = options.find(([v]) => v === current) || options[0];
+
+    return (
+        <div className="relative" ref={ref}>
+            <button type="button" onClick={() => setOpen(o => !o)}
+                className={`w-full flex items-center justify-between gap-2 px-3 py-2 bg-white border rounded text-sm text-left outline-none transition-colors ${open ? 'border-orange-500 ring-2 ring-orange-200' : 'border-gray-300 hover:border-gray-400'}`}>
+                <span className="flex items-center gap-2 min-w-0">
+                    <span className="truncate text-gray-900">{selected[1]}</span>
+                    {!selected[0] && (
+                        <span className="shrink-0 px-1.5 py-0.5 rounded bg-gray-100 text-[10px] font-medium uppercase tracking-wide text-gray-500">Default</span>
+                    )}
+                </span>
+                <ChevronDown size={16} className={`text-gray-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+            </button>
+
+            {open && (
+                <div className="absolute z-50 mt-1 w-full min-w-[280px] max-h-72 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg py-1">
+                    {options.map(([v, label]) => {
+                        const active = v === current;
+                        return (
+                            <button type="button" key={v || 'auto'}
+                                onClick={() => { onChange(v); setOpen(false); }}
+                                className={`w-full flex items-start justify-between gap-3 px-3 py-2 text-left hover:bg-orange-50 ${active ? 'bg-orange-50' : ''}`}>
+                                <span className="min-w-0">
+                                    <span className={`block text-sm ${active ? 'font-semibold text-orange-700' : 'font-medium text-gray-900'}`}>{label}</span>
+                                    {COL_HINT[v] && <span className="block text-xs text-gray-500 mt-0.5">{COL_HINT[v]}</span>}
+                                </span>
+                                {active && <Check size={16} className="text-orange-600 shrink-0 mt-0.5" />}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+};
 const TypeFilterSelect = ({ value, options, onChange, allLabel = 'All types', showAll = true, placeholder, listMaxH = 'max-h-64' }) => {
     const [open, setOpen] = useState(false);
     const [q, setQ] = useState('');
@@ -478,18 +541,24 @@ const OvertimeEntries = ({ canEdit }) => {
                                 className={inputCls} value={form.value}
                                 onChange={(e) => setForm(p => ({ ...p, value: e.target.value }))} />
                         </Field>
-                        <Field label="1601-C column">
-                            <select className={inputCls} value={form.col1601}
-                                onChange={(e) => setForm(p => ({ ...p, col1601: e.target.value }))}>
-                                {COL_OPTS[formKind].c1601.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                            </select>
-                        </Field>
-                        <Field label="Salary Monitoring (QB) column">
-                            <select className={inputCls} value={form.colQb}
-                                onChange={(e) => setForm(p => ({ ...p, colQb: e.target.value }))}>
-                                {COL_OPTS[formKind].qb.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                            </select>
-                        </Field>
+                        <div className="md:col-span-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                            <div className="mb-3">
+                                <h4 className="text-sm font-semibold text-gray-900">Report placement</h4>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                    Choose where this amount appears in the BIR and QuickBooks reports. Leave on Auto to use the default rules.
+                                </p>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Field label="BIR 1601-C column">
+                                    <ColumnSelect value={form.col1601} options={COL_OPTS[formKind].c1601}
+                                        onChange={(v) => setForm(p => ({ ...p, col1601: v }))} />
+                                </Field>
+                                <Field label="Salary Monitoring (QuickBooks) column">
+                                    <ColumnSelect value={form.colQb} options={COL_OPTS[formKind].qb}
+                                        onChange={(v) => setForm(p => ({ ...p, colQb: v }))} />
+                                </Field>
+                            </div>
+                        </div>
                         <Field label="Attachment (photo / PDF, optional)" className="md:col-span-2">
                             <input type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" className={inputCls}
                                 onChange={(e) => setFile(e.target.files?.[0] || null)} />
