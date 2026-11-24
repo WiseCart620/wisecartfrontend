@@ -1,4 +1,10 @@
 import React, { useMemo } from 'react';
+import {
+  Package, Barcode, Layers, ArrowDownToLine, Undo2, CheckCircle2,
+  ShoppingCart, Truck, Clock, Boxes, PackageCheck,
+} from 'lucide-react';
+import HeaderIcon from '../../common/HeaderIcon';
+
 const BranchReportInlineTable = ({ rows = [], loading, hasDateFilter = false }) => {
   const aggregated = useMemo(() => {
     const map = new Map();
@@ -38,37 +44,35 @@ const BranchReportInlineTable = ({ rows = [], loading, hasDateFilter = false }) 
     );
   }, [rows]);
 
-  const baseCols = [
-    ['Beg. Stock', 'begStock', 'bg-gray-100'],
-    ['Transfer In', 'transferIn', 'bg-orange-50'],
-    ['Return', 'returns', 'bg-yellow-50'],
-    ['Delivered', 'delivered', 'bg-teal-50'],
-    ['Total Sales', 'totalSales', 'bg-pink-50'],
-    ['Pending Delivery', 'pendingDelivery', 'bg-orange-50'],
-    ['Pending Sale', 'pendingSale', 'bg-purple-50'],
-    ['Total Stock', 'stockOnHand', 'bg-sky-100 font-semibold'],
-    ['Available Stock', 'availableStock', 'bg-emerald-50 font-semibold'],
+  const cols = [
+    ['Beg. Stock', 'begStock', Layers],
+    ['Transfer In', 'transferIn', ArrowDownToLine],
+    ['Return', 'returns', Undo2],
+    ['Delivered', 'delivered', CheckCircle2],
+    ['Total Sales', 'totalSales', ShoppingCart],
+    ['Pending Delivery', 'pendingDelivery', Truck],
+    ['Pending Sale', 'pendingSale', Clock],
+    ['Total Stock', 'stockOnHand', Boxes, 'font-semibold'],
+    ['Available Stock', 'availableStock', PackageCheck, 'font-semibold'],
   ];
-
-  const cols = baseCols;
+  const last = cols.length - 1;
 
   return (
     <div className="bg-white overflow-hidden inv-table-panel flex-1 min-h-0 flex flex-col">
-      <div className="px-6 py-4 border-b border-gray-200 bg-white">
-        <h2 className="text-lg font-semibold text-gray-900">Company Product Summary</h2>
-      </div>
       <div className="overflow-auto flex-1 min-h-0 table-fit">
-        <table className="w-full">
+        <table className="w-full bg-white">
           <thead className="bg-white sticky top-0 z-10 shadow-[0_1px_0_#d1d5db]">
             <tr>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU/UPC</th>
-              {cols.map(([label, key, colorClass]) => (
-                <th key={label} className={`px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase ${colorClass || ''}`}>{label}</th>
+              <th className="px-3 py-3 th-left"><HeaderIcon Icon={Package} label="Product" align="left" /></th>
+              <th className="px-3 py-3 th-left"><HeaderIcon Icon={Barcode} label="SKU/UPC" align="left" /></th>
+              {cols.map(([label, key, Icon], i) => (
+                <th key={key} className={`px-2 py-3 text-center th-num ${i === last ? 'pr-24' : ''}`}>
+                  <HeaderIcon Icon={Icon} label={label} />
+                </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-gray-200 bg-white">
             {loading ? (
               <tr><td colSpan={cols.length + 2} className="px-6 py-16 text-center">
                 <div className="flex flex-col items-center gap-3 text-gray-400">
@@ -80,18 +84,20 @@ const BranchReportInlineTable = ({ rows = [], loading, hasDateFilter = false }) 
               <tr><td colSpan={cols.length + 2} className="px-6 py-8 text-center text-gray-500">No data for the selected filters</td></tr>
             ) : (
               aggregated.map((row, i) => (
-                <tr key={i} className="hover:bg-white">
+                <tr key={i} className="bg-white hover:bg-white">
                   <td className="px-3 py-3">
                     <div className="font-medium text-gray-900 text-sm">{row.productName}</div>
-                    {row.variationName && <div className="text-xs text-orange-600">{row.variationName}</div>}
+                    {row.variationName && <div className="table-sub text-gray-500">{row.variationName}</div>}
                   </td>
                   <td className="px-3 py-3 text-xs">
-                    <div>SKU: {row.sku}</div>
+                    <div>{row.sku}</div>
                     {row.companySkus.size > 0 && <div>Co. SKU: {[...row.companySkus].join(', ')}</div>}
-                    {row.upc !== 'N/A' && <div className="text-gray-500">UPC: {row.upc}</div>}
+                    {row.upc !== 'N/A' && <div className="text-gray-500">{row.upc}</div>}
                   </td>
-                  {cols.map(([label, key, colorClass]) => (
-                    <td key={key} className={`px-2 py-3 text-center text-sm ${colorClass || ''}`}>{(row[key] || 0).toLocaleString()}</td>
+                  {cols.map(([label, key, Icon, extra], ci) => (
+                    <td key={key} className={`px-2 py-3 text-center text-sm bg-white ${ci === last ? 'pr-24' : ''} ${extra || ''}`}>
+                      {(row[key] || 0).toLocaleString()}
+                    </td>
                   ))}
                 </tr>
               ))

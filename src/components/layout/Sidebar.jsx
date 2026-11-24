@@ -11,7 +11,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuth, hasPermission, can, isSelfOnly, uiAllowed } from '../../context/AuthContext';
 
 // File lives in /public, so it is served from the site root. Spaces and brackets are URL-encoded.
-const LOGO_SRC = '/WISECART%20Logo%20(8).png';
+const LOGO_SRC = '/wisecart-logo.png';
 
 const allMainMenuItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
@@ -241,19 +241,23 @@ const Sidebar = ({ isOpen, toggle }) => {
         {/* Header: logo + collapse toggle */}
         <div className={`flex-shrink-0 px-3 pt-4 pb-3 ${sidebarCollapsed ? 'flex flex-col items-center gap-3' : 'flex items-center justify-between'}`}>
           <div className="flex items-center gap-2 min-w-0">
-            <div
-              className={`flex items-center justify-center flex-shrink-0 bg-white rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.12)]
-                ${sidebarCollapsed ? 'w-11 h-11 p-1.5' : 'w-14 h-14 p-2'}`}
-            >
-              <img src={LOGO_SRC} alt="WiseCart" className="w-full h-full object-contain" />
-            </div>
+            <img
+              src={LOGO_SRC}
+              alt="WiseCart"
+              className={`flex-shrink-0 object-contain rounded-lg ${sidebarCollapsed ? 'w-11 h-11' : 'w-[52px] h-[52px]'}`}
+            />
             {!sidebarCollapsed && (
-              <span
-                className="text-[16px] font-bold tracking-wide text-gray-900 whitespace-nowrap truncate"
-                style={{ fontFamily: "'Playfair Display', serif" }}
-              >
-                WISECART
-              </span>
+              <div className="flex flex-col min-w-0 leading-none">
+                <span
+                  className="text-[18px] font-bold tracking-wide text-gray-900 whitespace-nowrap truncate"
+                  style={{ fontFamily: "'Playfair Display', serif" }}
+                >
+                  WISECART
+                </span>
+                <span className="mt-1 text-[10px] font-medium tracking-[0.2em] text-gray-700 whitespace-nowrap">
+                  MERCHANTS CORP.
+                </span>
+              </div>
             )}
           </div>
 

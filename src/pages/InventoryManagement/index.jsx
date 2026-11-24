@@ -75,7 +75,7 @@ const InventoryManagement = () => {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportData, setReportData] = useState([]);
-  const [reportLoading, setReportLoading] = useState(false);
+  const [reportLoading, setReportLoading] = useState(true);
   const [showBranchReportModal, setShowBranchReportModal] = useState(false);
   const [branchReportData, setBranchReportData] = useState([]);
   const [branchReportLoading, setBranchReportLoading] = useState(false);
@@ -619,9 +619,6 @@ const InventoryManagement = () => {
     const { companyIds, branchIds, warehouseId, dateFrom, dateTo } = productReportFilters.filters;
     const hasCompanyFilter = (companyIds && companyIds.length > 0) || (branchIds && branchIds.length > 0);
 
-    // Default view doesn't show this report, so don't run it on page load.
-    if (!hasCompanyFilter && !warehouseId && !dateFrom && !dateTo) return;
-
     const timer = setTimeout(() => {
       if (hasCompanyFilter) {
         handleGenerateBranchReport(false);
@@ -733,7 +730,7 @@ const InventoryManagement = () => {
               const { companyIds, branchIds, warehouseId, dateFrom, dateTo } = productReportFilters.filters;
               const hasCompanyFilter = (companyIds && companyIds.length > 0) || (branchIds && branchIds.length > 0);
               const hasDateFilter = !!(dateFrom || dateTo);
-              const reportMode = hasCompanyFilter ? 'branch' : ((warehouseId || hasDateFilter) ? 'warehouse' : 'default');
+              const reportMode = hasCompanyFilter ? 'branch' : 'warehouse';
 
               if (reportMode === 'warehouse') {
                 return <WarehouseReportInlineTable rows={reportData} loading={reportLoading} />;
