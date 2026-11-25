@@ -58,22 +58,17 @@ const InvoiceReportModal = ({
     (p.variation
       ? (p.variation.combinationDisplay ||
           (p.variation.variationType && p.variation.variationValue
-            ? `${p.variation.variationType}: ${p.variation.variationValue}`
+            ? p.variation.variationType + ': ' + p.variation.variationValue
             : 'Variation')).length + String(p.variation.upc || 'N/A').length + 4
       : 0);
-  // Estimated printed lines at a given font size (descriptions wrap when long)
-  const linesAt = (fs) => {
-    const cpl = Math.floor(66 * 14 / fs);
-    return prods.reduce((s, p) => s + Math.max(1, Math.ceil(descLen(p) / cpl)), 0) + adjs.length;
-  };
-  const ROW_BUDGET = 540;
-  const compact = linesAt(14) * 20 + rowCount * 2 > ROW_BUDGET;
-  let rowFs = 14;
-  if (compact) {
-    while (rowFs > 9 && linesAt(rowFs) * Math.round(rowFs * 1.3) + rowCount * 2 > ROW_BUDGET) rowFs -= 1;
-  }
-  const rowLh = compact ? Math.round(rowFs * 1.3) : 20;
-
+  // One line per row: pick the font so the longest description fits the print column
+  // and all rows fit the table height. Long invoices shrink instead of wrapping.
+  const maxLen = Math.max(1, ...prods.map(descLen));
+  const fsWidth = Math.floor(490 / (maxLen * 0.6));
+  const fsRows = Math.floor((600 / Math.max(rowCount, 1) - 2) / 1.3);
+  const rowFs = Math.max(8, Math.min(14, fsWidth, fsRows));
+  const compact = rowFs < 14;
+  const rowLh = Math.round(rowFs * 1.3);
   const lblCls = 'px-2 py-0 flex flex-col justify-start font-medium text-[10px] leading-tight';
   const valWrapCls = 'px-3 py-0 flex flex-col justify-start';
   const valCls = 'w-full text-right mb-1 text-[14px] leading-tight py-0';
@@ -116,7 +111,7 @@ const InvoiceReportModal = ({
         </div>
 
         {/* Invoice Body */}
-        <div id="invoice-report" className="p-8" data-compact={compact ? '1' : undefined} style={compact ? { '--row-lh': `px`, '--row-fs': `px` } : undefined}>
+        <div id="invoice-report" className="p-8" data-compact={compact ? '1' : undefined} style={compact ? { '--row-lh': rowLh + 'px', '--row-fs': rowFs + 'px' } : undefined}>
 
           {/* Company Header */}
           <div className="flex justify-between items-start mb-5 pb-4">

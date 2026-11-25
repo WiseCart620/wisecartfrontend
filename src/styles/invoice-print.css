@@ -880,4 +880,8 @@
     line-height: var(--row-lh) !important;
     font-size: var(--row-fs) !important;
   }
+
+  #invoice-report[data-compact="1"] table tbody td:first-child {
+    white-space: nowrap !important;
+  }
 }
