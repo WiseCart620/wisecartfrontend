@@ -126,7 +126,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
 
         setSalesReportLoading(true);
         try {
-            const params = new URLSearchParams({ page: 0, size: 9999, status: 'INVOICED' });
+            const params = new URLSearchParams({ status: 'INVOICED' });
 
             if (activeCompanyIds?.length) {
                 activeCompanyIds.forEach(id => params.append('companyIds', id));
@@ -152,7 +152,7 @@ const SalesReport = ({ onBack, filterData, companies, branches, allProductOption
                 params.append('endYear', d.getFullYear());
                 params.append('endMonth', d.getMonth() + 1);
             }
-            const salesResponse = await api.get(`/sales/all?${params}`);
+            const salesResponse = await api.get(`/sales/report-data?${params}`);
 
             const rawSales = salesResponse.data?.content || [];
             let allSales = rawSales;
