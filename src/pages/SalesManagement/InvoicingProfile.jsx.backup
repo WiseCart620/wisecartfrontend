@@ -2009,6 +2009,7 @@ const InvoicingProfile = ({ onBack }) => {
     const [dvSearch, setDvSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState([]);
     const [companyFilter, setCompanyFilter] = useState([]);
+    const [branchFilter, setBranchFilter] = useState([]);
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
     const [detailProfile, setDetailProfile] = useState(null);
@@ -2125,7 +2126,7 @@ const InvoicingProfile = ({ onBack }) => {
     };
 
     useEffect(() => { load(); }, [load]);
-    useEffect(() => { setPage(1); }, [search, statusFilter, companyFilter, dateFrom, dateTo, sortOrder]);
+    useEffect(() => { setPage(1); }, [search, statusFilter, companyFilter, branchFilter, dateFrom, dateTo, sortOrder]);
     useEffect(() => { loadAllCosData(); }, []);
 
     const companyOptions = useMemo(() => {
@@ -2133,6 +2134,26 @@ const InvoicingProfile = ({ onBack }) => {
         profiles.forEach((p) => { if (p.companyName) names.add(p.companyName); });
         return Array.from(names).sort().map((name) => ({ value: name, label: name }));
     }, [profiles]);
+
+    const branchOf = (p) => String(p.branchName || p.branch?.branchName || p.branch?.name || '').trim();
+
+    const branchOptions = useMemo(() => {
+        const names = new Set();
+        profiles.forEach((p) => {
+            const b = branchOf(p);
+            if (!b) return;
+            if (companyFilter.length === 0 || companyFilter.includes(p.companyName)) names.add(b);
+        });
+        return Array.from(names).sort().map((name) => ({ value: name, label: name }));
+    }, [profiles, companyFilter]);
+
+    useEffect(() => {
+        setBranchFilter((prev) => {
+            const ok = new Set(branchOptions.map((o) => o.value));
+            const next = prev.filter((v) => ok.has(v));
+            return next.length === prev.length ? prev : next;
+        });
+    }, [branchOptions]);
 
     const getStatusCode = (p) => {
         const totalPaid = getTotalSettled(p);
@@ -2150,6 +2171,7 @@ const InvoicingProfile = ({ onBack }) => {
             p.invoiceNumber?.toLowerCase().includes(search.toLowerCase());
 
         const matchCompany = companyFilter.length === 0 || companyFilter.includes(p.companyName);
+        const matchBranch = branchFilter.length === 0 || branchFilter.includes(branchOf(p));
 
         const matchStatus = statusFilter.length === 0 || statusFilter.includes(getStatusCode(p));
         const periodStartYear = p.startYear;
@@ -2172,7 +2194,7 @@ const InvoicingProfile = ({ onBack }) => {
             String(pay.referenceNumber || '').toLowerCase().includes(dvq) ||
             (pay.charges || []).some(c => /^(Reduced by DV|Deducted DV)/i.test(String(c.label || '').trim()) && String(c.label || '').toLowerCase().includes(dvq)));
 
-        return matchSearch && matchCompany && matchStatus && matchDateFrom && matchDateTo && matchDv;
+        return matchSearch && matchCompany && matchBranch && matchStatus && matchDateFrom && matchDateTo && matchDv;
     });
 
     if (sortOrder !== 'none') {
@@ -2329,6 +2351,14 @@ const InvoicingProfile = ({ onBack }) => {
                         onChange={setCompanyFilter}
                     />
                 )}
+                {canSeeFilter(user, 'sales', 'branch') && (
+                    <MultiSelectDropdown
+                        label="Branch"
+                        options={branchOptions}
+                        selected={branchFilter}
+                        onChange={setBranchFilter}
+                    />
+                )}
                 {canSeeFilter(user, 'sales', 'status') && (
                     <MultiSelectDropdown
                         label="Status"
@@ -2357,10 +2387,10 @@ const InvoicingProfile = ({ onBack }) => {
                         className="px-1.5 py-1.5 w-[125px] border border-gray-300 rounded text-xs focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
                     />
                 </div>
-                {(companyFilter.length > 0 || statusFilter.length > 0 || search || dvSearch || dateFrom || dateTo) && (
+                {(companyFilter.length > 0 || branchFilter.length > 0 || statusFilter.length > 0 || search || dvSearch || dateFrom || dateTo) && (
                     <button
                         type="button"
-                        onClick={() => { setCompanyFilter([]); setStatusFilter([]); setSearch(''); setDvSearch(''); setDateFrom(''); setDateTo(''); }}
+                        onClick={() => { setCompanyFilter([]); setBranchFilter([]); setStatusFilter([]); setSearch(''); setDvSearch(''); setDateFrom(''); setDateTo(''); }}
                         className="text-xs text-gray-500 hover:text-red-600 underline whitespace-nowrap flex-shrink-0"
                     >
                         Clear filters

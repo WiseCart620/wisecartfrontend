@@ -2351,7 +2351,7 @@ const InvoicingProfile = ({ onBack }) => {
                         onChange={setCompanyFilter}
                     />
                 )}
-                {canSeeFilter(user, 'sales', 'branch') && (
+                {canSeeFilter(user, 'sales', 'company') && (
                     <MultiSelectDropdown
                         label="Branch"
                         options={branchOptions}
