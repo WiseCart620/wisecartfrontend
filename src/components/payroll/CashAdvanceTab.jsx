@@ -114,8 +114,12 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
       purpose: i.purpose || '',
       advanceType: i.advanceType || 'ONE_TIME',
       dateReleased: i.dateReleased || today(),
-      startTerm: i.advanceType === 'RECURRING' && !isOpenStart(i.startTerm) ? i.startTerm : '',
-      endTerm: i.advanceType === 'RECURRING' && !isOpen(i.endTerm) ? i.endTerm : '',
+      startTerm: i.advanceType === 'RECURRING'
+        ? (isOpenStart(i.startTerm) ? '' : i.startTerm)
+        : (i.startTerm && i.startTerm !== i.dateReleased ? i.startTerm : ''),
+      endTerm: i.advanceType === 'RECURRING'
+        ? (isOpen(i.endTerm) ? '' : i.endTerm)
+        : (i.endTerm && i.endTerm !== i.dateReleased ? i.endTerm : ''),
       deductionSchedule: i.deductionSchedule || 'SPLIT',
       specialOnly: !!i.specialOnly,
       overrides: (i.overrides || []).map(o => ({ date: o.date, amount: String(o.amount ?? ''), remarks: o.remarks || '' })),
@@ -131,7 +135,11 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
     }
     if (!special && !form.amount) { toast.error('Amount is required'); return; }
     if (!recurring && !form.dateReleased) { toast.error('Date released is required'); return; }
-    if (recurring && form.startTerm && form.endTerm && form.endTerm < form.startTerm) {
+    if (!recurring && !special && form.startTerm && form.startTerm < form.dateReleased) {
+      toast.error('Start date cannot be before the date released');
+      return;
+    }
+    if ((recurring || !special) && form.startTerm && form.endTerm && form.endTerm < form.startTerm) {
       toast.error('End date cannot be before start date');
       return;
     }
@@ -164,7 +172,12 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
         docPath = up.data?.fileUrl || null;
       }
       const amount = special ? specialTotal : Number(form.amount);
-      const start = recurring ? (form.startTerm || OPEN_START) : form.dateReleased;
+      const start = recurring
+        ? (form.startTerm || OPEN_START)
+        : ((!special && form.startTerm) || form.dateReleased);
+      const end = recurring
+        ? (form.endTerm || OPEN_END)
+        : ((!special && form.endTerm) || start);
       const months = 1;
       const body = {
         employeeId: Number(form.employeeId),
@@ -177,7 +190,7 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
         durationMonths: months,
         dateReleased: recurring ? null : form.dateReleased,
         startTerm: start,
-        endTerm: recurring ? (form.endTerm || OPEN_END) : form.dateReleased,
+        endTerm: end,
         deductionSchedule: recurring && !special ? form.deductionSchedule : 'SPLIT',
         docReferrence: docPath ?? (editing ? editing.docReference || null : null),
       };
@@ -368,6 +381,9 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                       <>
                         <div>Released</div>
                         <div className="text-gray-400">{fmtShort(i.dateReleased || i.startTerm)}</div>
+                        {((i.startTerm && i.startTerm !== i.dateReleased) || (i.endTerm && i.endTerm !== i.startTerm)) && (
+                          <div className="text-gray-400">Deduct {fmtShort(i.startTerm)} to {fmtShort(i.endTerm)}</div>
+                        )}
                       </>
                     )}
                   </td>
@@ -465,28 +481,34 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
               </div>
             </div>
 
-            {/* Section 2: Deduction terms (recurring only) */}
-            {recurring && (
+            {/* Section 2: Deduction terms */}
+            {(recurring || !special) && (
               <div>
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider pb-2 mb-4 border-b border-gray-200">
                   Deduction Terms
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field label="Deduction Schedule" required className="md:col-span-2">
-                    <SearchableSelect
-                      typeable={false}
-                      value={form.deductionSchedule}
-                      options={Object.entries(SCHEDULE_LABEL).map(([value, label]) => ({ value, label }))}
-                      onChange={(v) => update({ deductionSchedule: v || 'SPLIT' })}
-                    />
-                  </Field>
+                  {recurring && (
+                    <Field label="Deduction Schedule" required className="md:col-span-2">
+                      <SearchableSelect
+                        typeable={false}
+                        value={form.deductionSchedule}
+                        options={Object.entries(SCHEDULE_LABEL).map(([value, label]) => ({ value, label }))}
+                        onChange={(v) => update({ deductionSchedule: v || 'SPLIT' })}
+                      />
+                    </Field>
+                  )}
                   <Field label="Start Date (optional)">
                     <input type="date" className={inputCls} value={form.startTerm} onChange={set('startTerm')} />
-                    <p className="text-xs text-gray-500 mt-1">Leave blank to start on the next payroll run.</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {recurring ? 'Leave blank to start on the next payroll run.' : 'Leave blank to use the date released.'}
+                    </p>
                   </Field>
                   <Field label="End Date (optional)">
                     <input type="date" className={inputCls} value={form.endTerm} onChange={set('endTerm')} />
-                    <p className="text-xs text-gray-500 mt-1">Leave blank to keep deducting.</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {recurring ? 'Leave blank to keep deducting.' : 'Leave blank to end on the start date.'}
+                    </p>
                   </Field>
                 </div>
               </div>
@@ -576,7 +598,11 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                     <Detail label="End Date">{isOpen(v.endTerm) ? 'Open' : fmtDate(v.endTerm)}</Detail>
                   </>
                 ) : (
-                  <Detail label="Date Released">{fmtDate(v.dateReleased || v.startTerm)}</Detail>
+                  <>
+                    <Detail label="Date Released">{fmtDate(v.dateReleased || v.startTerm)}</Detail>
+                    <Detail label="Deduction Start">{fmtDate(v.startTerm)}</Detail>
+                    <Detail label="Deduction End">{fmtDate(v.endTerm)}</Detail>
+                  </>
                 )}
                 <Detail label="Deduction">
                   {v.specialOnly ? 'Special deductions only (open balance)' : money(v.amortization)}
