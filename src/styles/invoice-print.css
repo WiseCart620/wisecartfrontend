@@ -885,3 +885,16 @@
     white-space: nowrap !important;
   }
 }
+
+/* SCREEN-ONLY TOTALS OVERLAP FIX: negative margins are for print; on screen they cover the last row */
+@media screen {
+  #invoice-report .totals-block:not(#x) {
+    margin-top: 12px !important;
+  }
+  #invoice-report .totals-block > .grid.grid-cols-6:not(#x) {
+    margin-top: 0 !important;
+  }
+  #invoice-report .totals-block > .grid.grid-cols-6:nth-child(2):not(#x) {
+    margin-top: -1px !important;
+  }
+}
