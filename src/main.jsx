@@ -24,3 +24,15 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </MaintenanceGate>
   </React.StrictMode>
 );
+
+// After a deploy, old tabs ask for chunk files that no longer exist.
+// Reload once to pick up the new build; the flag prevents a reload loop.
+window.addEventListener('vite:preloadError', (event) => {
+  event.preventDefault();
+  try {
+    const last = Number(sessionStorage.getItem('chunk-reload-at') || 0);
+    if (Date.now() - last < 10000) return;
+    sessionStorage.setItem('chunk-reload-at', String(Date.now()));
+  } catch { /* storage blocked: still reload once below */ }
+  window.location.reload();
+});
