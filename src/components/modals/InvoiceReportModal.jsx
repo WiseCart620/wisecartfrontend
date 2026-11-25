@@ -64,7 +64,7 @@ const InvoiceReportModal = ({
   // One line per row: pick the font so the longest description fits the print column
   // and all rows fit the table height. Long invoices shrink instead of wrapping.
   const maxLen = Math.max(1, ...prods.map(descLen));
-  const fsWidth = Math.floor(490 / (maxLen * 0.6));
+  const fsWidth = Math.floor(490 / (maxLen * 0.5));
   const fsRows = Math.floor((600 / Math.max(rowCount, 1) - 2) / 1.3);
   const rowFs = Math.max(8, Math.min(14, fsWidth, fsRows));
   const compact = rowFs < 14;
