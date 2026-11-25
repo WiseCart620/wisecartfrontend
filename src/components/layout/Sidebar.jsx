@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   Package, Truck, Warehouse, ShoppingCart, Users, LayoutGrid,
   UserPlus, PackageSearch, PackageOpen, ChevronRight, ChevronLeft, ChevronDown,
-  Factory, ClipboardList, X, BookOpen, BarChart3, FileText,
+  Factory, ClipboardList, X, BookOpen, FileText,
   Briefcase, Coins, Landmark, CalendarDays, Percent, Wallet, Gift,
   LogOut, Shield, Search, Clock, FileSpreadsheet
 } from 'lucide-react';
@@ -48,7 +48,6 @@ const dataEntryItems = [
 const salesSubItems = [
   { to: '/sales', label: 'All Sales', icon: ShoppingCart, end: true, permAction: 'view' },
   { to: '/sales/journal', label: 'Sales Journal', icon: BookOpen, permAction: 'invoice' },
-  { to: '/sales/report', label: 'Sales Report', icon: BarChart3, permAction: 'report' },
 ];
 
 const deliveriesSubItems = [

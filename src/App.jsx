@@ -205,18 +205,6 @@ function App() {
                 </ProtectedRoute>
               } />
 
-              <Route path="/sales/report" element={
-                <ProtectedRoute>
-                  <PermissionRoute feature="sales">
-                    <ActionRoute feature="sales" action="report" fallback="/sales">
-                      <Layout>
-                        <SalesManagement />
-                      </Layout>
-                    </ActionRoute>
-                  </PermissionRoute>
-                </ProtectedRoute>
-              } />
-
               <Route path="/warehouse" element={
                 <ProtectedRoute>
                   <AdminOrUserRoute>

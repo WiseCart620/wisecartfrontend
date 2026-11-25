@@ -41,7 +41,6 @@ const UI_EXTRAS = {
     group: 'sales_ui',
     sections: [
       { title: 'Sales Journal buttons', needs: 'invoice', items: [['jr_record_payment', 'Record payment'], ['jr_dv_payment', 'Record DV payment'], ['jr_delete_invoice', 'Delete invoice'], ['jr_print_receipt', 'Print invoice receipt']] },
-      { title: 'Sales Report buttons', needs: 'report', items: [['rp_generate', 'Generate report'], ['rp_export', 'Export CSV'], ['rp_print', 'Print']] },
     ],
   },
   deliveries: {

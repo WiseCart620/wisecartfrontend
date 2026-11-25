@@ -23,7 +23,6 @@ import SalesSummaryModal from '../../components/modals/SalesSummaryModal';
 import DuplicateSaleWarningModal from '../../components/modals/DuplicateSaleWarningModal';
 import InsufficientStockModal from '../../components/modals/InsufficientStockModal';
 import InvoicingProfile from './InvoicingProfile';
-import SalesReport from './SalesReport';
 import { LoadingOverlay } from '../../components/common/LoadingOverlay';
 
 const extractDuplicateMessage = (rawMsg) => {
@@ -42,7 +41,6 @@ const SalesManagement = () => {
   const canEdit = can(user, 'sales', 'edit');
   const canDelete = can(user, 'sales', 'delete');
   const canInvoice = can(user, 'sales', 'invoice');
-  const canReport = can(user, 'sales', 'report');
   const canSummary = can(user, 'sales', 'summary');
 
   // UI state
@@ -60,7 +58,6 @@ const SalesManagement = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const showInvoicingProfile = location.pathname === '/sales/journal';
-  const showSalesReport = location.pathname === '/sales/report';
   const [invoiceReport, setInvoiceReport] = useState(null);
   const [invoiceBranchIds, setInvoiceBranchIds] = useState([]);
   const [invoiceProductIds, setInvoiceProductIds] = useState([]);
@@ -355,7 +352,6 @@ const SalesManagement = () => {
   };
 
   if (showInvoicingProfile) return <InvoicingProfile onBack={() => navigate('/sales')} />;
-  if (showSalesReport) return <SalesReport onBack={() => navigate('/sales')} filterData={filterData} companies={companies} branches={branches} allProductOptions={allProductOptions} />;
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-white p-2 lg:p-3">
@@ -383,7 +379,6 @@ const SalesManagement = () => {
           dataLoading={staticDataLoading}
           canCreate={canCreate}
           canInvoice={canInvoice}
-          canReport={canReport}
           canSummary={canSummary}
           onNewSale={() => handleOpenModal('create')}
           onOpenInvoice={() => {
@@ -392,10 +387,6 @@ const SalesManagement = () => {
             setShowInvoiceModal(true);
           }}
           onOpenJournal={() => navigate('/sales/journal')}
-          onOpenReport={() => {
-            if (!canReport) { toast.error('You do not have permission to view reports'); return; }
-            navigate('/sales/report');
-          }}
           onOpenSummary={() => {
             if (!canSummary) { toast.error('You do not have permission to view summary'); return; }
             setShowSummaryModal(true);
