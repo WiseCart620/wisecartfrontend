@@ -10,7 +10,7 @@ export const BIR_TABS = [
 const KEY = 'bir2550q.tab';
 
 /** Remembers the active tab for the browser session. */
-export default function useBirTabs() {
+export default function useBir2550qTabs() {
   const [tab, setTabState] = useState(() => {
     try {
       const saved = sessionStorage.getItem(KEY);

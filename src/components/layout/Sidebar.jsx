@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth, hasPermission, can, isSelfOnly, uiAllowed } from '../../context/AuthContext';
+import { pageAllowed } from '../../utils/sidebarAccess';
 
 // File lives in /public, so it is served from the site root. Spaces and brackets are URL-encoded.
 const LOGO_SRC = '/wisecart-logo.png';
@@ -20,7 +21,7 @@ const allMainMenuItems = [
   { to: '/procurement', label: 'Procurement', icon: ClipboardList },
 ];
 
-const PAGE_IDS = { '/employees': 'employees', '/pay-types': 'paytypes', '/loans-benefits': 'loans', '/leave': 'leave', '/tax-statutory': 'tax', '/payroll-runs': 'payroll', '/year-end': 'yearend', '/dtr': 'dtr', '/bir/1601c': 'payroll', '/bir/1604c': 'payroll', '/bir/salary-monitoring': 'payroll', '/bir/withholding-expanded': 'payroll', '/bir/2550q': 'payroll' };
+const PAGE_IDS = { '/employees': 'employees', '/pay-types': 'paytypes', '/loans-benefits': 'loans', '/leave': 'leave', '/tax-statutory': 'tax', '/payroll-runs': 'payroll', '/year-end': 'yearend', '/dtr': 'dtr', '/bir/1601c': 'bir_1601c', '/bir/1604c': 'bir_1604c', '/bir/salary-monitoring': 'bir_qb', '/bir/withholding-expanded': 'bir_ewt', '/bir/2550q': 'bir_2550q' };
 const payrollSubItems = [
   { to: '/employees', label: 'Employees', icon: Briefcase },
   { to: '/pay-types', label: 'Pay Types', icon: Coins },
@@ -107,10 +108,10 @@ const Sidebar = ({ isOpen, toggle }) => {
       '/procurement': 'procurement',
     }[i.to]));
 
-  const showPayroll = isSuperAdmin || (hasPermission(user, 'employees') && payrollSubItems.some((i) => (uiAllowed(user, 'pages_ui', 'page_' + PAGE_IDS[i.to]) && (!i.bir || uiAllowed(user, 'payroll_tabs', 'tab_an')))));
+  const showPayroll = isSuperAdmin || (hasPermission(user, 'employees') && payrollSubItems.some((i) => (pageAllowed(user, PAGE_IDS[i.to]) && (!i.bir || uiAllowed(user, 'payroll_tabs', 'tab_an')))));
   const visiblePayrollSubItems = isSuperAdmin
     ? payrollSubItems
-    : payrollSubItems.filter((i) => hasPermission(user, 'employees') && (uiAllowed(user, 'pages_ui', 'page_' + PAGE_IDS[i.to]) && (!i.bir || uiAllowed(user, 'payroll_tabs', 'tab_an'))));
+    : payrollSubItems.filter((i) => hasPermission(user, 'employees') && (pageAllowed(user, PAGE_IDS[i.to]) && (!i.bir || uiAllowed(user, 'payroll_tabs', 'tab_an'))));
 
   const showDataEntry = isSuperAdmin ||
     ['warehouse', 'branches', 'products', 'supplier'].some(f => hasPermission(user, f));

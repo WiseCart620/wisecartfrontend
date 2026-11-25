@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { api } from '../../services/api';
+import { api } from '../../../../services/api';
 
 // The api wrapper adds the /api prefix.
 const BASE = '/bir/2550q';
@@ -33,7 +33,7 @@ const report = (e) => {
 
 const currentQuarter = () => Math.floor(new Date().getMonth() / 3) + 1;
 
-export default function useBir2550Q(companyId) {
+export default function useBir2550q(companyId) {
   const [year, setYear] = useState(new Date().getFullYear());
   const [quarter, setQuarter] = useState(currentQuarter());
   const [amended, setAmended] = useState(false);

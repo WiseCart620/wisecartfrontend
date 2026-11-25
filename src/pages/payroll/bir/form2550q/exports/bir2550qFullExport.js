@@ -1,5 +1,5 @@
 import toast from 'react-hot-toast';
-import { saveWorkbook } from '../../utils/birExport';
+import { saveWorkbook } from '../../shared/birWorkbookKit';
 
 /*
  * Excel download of the 2550Q return. One sheet per tab, each sheet shows the same table as the tab on screen:

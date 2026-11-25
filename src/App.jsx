@@ -10,9 +10,10 @@ import LeaveManagement from './pages/payroll/LeaveManagement';
 import TaxStatutoryManagement from './pages/payroll/TaxStatutoryManagement.jsx';
 import YearEndManagement from './pages/payroll/YearEndManagement.jsx';
 import PayrollRunManagement from './pages/payroll/PayrollRunManagement.jsx';
-import BirReports from './pages/payroll/BirReports.jsx';
-import BirWithholding from './pages/payroll/BirWithholding.jsx';
-import Bir2550QPage from './pages/payroll/Bir2550QPage.jsx';
+import { Bir1601cPage, Bir1604cPage, BirSalaryMonitoringPage, BirWithholdingPage, Bir2550qPage } from './pages/payroll/bir';
+import SidebarRoute from './components/common/SidebarRoute';
+
+
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import SalesManagement from './pages/SalesManagement/index.jsx';
@@ -306,9 +307,7 @@ function App() {
               <Route path="/bir/1601c" element={
                 <ProtectedRoute>
                   <PermissionRoute feature="employees">
-                    <Layout>
-                      <BirReports kind="1601c" />
-                    </Layout>
+                    <SidebarRoute page="bir_1601c"><Layout><Bir1601cPage /></Layout></SidebarRoute>
                   </PermissionRoute>
                 </ProtectedRoute>
               } />
@@ -316,9 +315,7 @@ function App() {
               <Route path="/bir/1604c" element={
                 <ProtectedRoute>
                   <PermissionRoute feature="employees">
-                    <Layout>
-                      <BirReports kind="1604c" />
-                    </Layout>
+                    <SidebarRoute page="bir_1604c"><Layout><Bir1604cPage /></Layout></SidebarRoute>
                   </PermissionRoute>
                 </ProtectedRoute>
               } />
@@ -326,9 +323,7 @@ function App() {
               <Route path="/bir/salary-monitoring" element={
                 <ProtectedRoute>
                   <PermissionRoute feature="employees">
-                    <Layout>
-                      <BirReports kind="qb" />
-                    </Layout>
+                    <SidebarRoute page="bir_qb"><Layout><BirSalaryMonitoringPage /></Layout></SidebarRoute>
                   </PermissionRoute>
                 </ProtectedRoute>
               } />
@@ -336,18 +331,14 @@ function App() {
               <Route path="/bir/withholding-expanded" element={
                 <ProtectedRoute>
                   <PermissionRoute feature="employees">
-                    <Layout>
-                      <BirWithholding />
-                    </Layout>
+                    <SidebarRoute page="bir_ewt"><Layout><BirWithholdingPage /></Layout></SidebarRoute>
                   </PermissionRoute>
                 </ProtectedRoute>
               } />
               <Route path="/bir/2550q" element={
                 <ProtectedRoute>
                   <PermissionRoute feature="employees">
-                    <Layout>
-                      <Bir2550QPage />
-                    </Layout>
+                    <SidebarRoute page="bir_2550q"><Layout><Bir2550qPage /></Layout></SidebarRoute>
                   </PermissionRoute>
                 </ProtectedRoute>
               } />
@@ -365,9 +356,7 @@ function App() {
               <Route path="/dtr" element={
                 <ProtectedRoute>
                   <PermissionRoute feature="employees">
-                    <Layout>
-                      <DtrManagement />
-                    </Layout>
+                    <SidebarRoute page="dtr"><Layout><DtrManagement /></Layout></SidebarRoute>
                   </PermissionRoute>
                 </ProtectedRoute>
               } />

@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { Navigate } from 'react-router-dom';
-import { api } from '../../services/api';
-import { useAuth, can, uiAllowed } from '../../context/AuthContext';
-import PageShell from '../../components/payroll/PageShell';
-import { inputCls } from '../../components/payroll/Shared';
-import { exportEwt } from './birEwtExport';
+import { api } from '../../../../services/api';
+import { useAuth, can, uiAllowed } from '../../../../context/AuthContext';
+import PageShell from '../../../../components/payroll/PageShell';
+import { inputCls } from '../../../../components/payroll/Shared';
+import { exportEwt } from './birWithholdingExport';
 
 const BASE = '/payroll/bir/ewt';
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -524,7 +524,7 @@ const DataEntry = ({ year, canEdit }) => {
 };
 const TABS = [['0619', '0619-E (Monthly)'], ['1601', '1601-EQ (Quarterly)'], ['1604', '1604-E (Annual)'], ['entry', 'Data Entry']];
 
-const BirWithholding = () => {
+const BirWithholdingPage = () => {
   const { user } = useAuth();
   const thisYear = new Date().getFullYear();
   const [year, setYear] = useState(thisYear);
@@ -554,4 +554,4 @@ const BirWithholding = () => {
   );
 };
 
-export default BirWithholding;
+export default BirWithholdingPage;

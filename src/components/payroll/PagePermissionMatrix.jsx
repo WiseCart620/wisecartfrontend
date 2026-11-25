@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
-import { ChevronRight, Users, Coins, Landmark, CalendarDays, Percent, Wallet, Gift, Clock } from 'lucide-react';
+import { ChevronRight, Users, Coins, Landmark, CalendarDays, Percent, Wallet, Gift, Clock, FileSpreadsheet } from 'lucide-react';
 
 const k = (g, a) => `${g}:${a}`;
 const UI_GROUPS = ['pages_ui', 'dtr_ui', 'employees_ui', 'loans_tabs', 'leave_tabs', 'tax_tabs', 'payroll_tabs'];
@@ -103,6 +103,32 @@ const PAGES = [
     id: 'yearend', vis: k('pages_ui', 'page_yearend'), title: 'Year-End', desc: '13th month pay', icon: Gift, access: [A('View', k('employees', 'view'), SHARED)], tabs: [], other: [
       A('Include in 13th month payroll', k('employees', 'manage'), MANAGE),
     ]
+  },
+  {
+    id: 'dtr', vis: k('pages_ui', 'page_dtr'), title: 'DTR', desc: 'Daily time record, biometrics import, posting to Pay Entries', icon: Clock, access: [
+      A('View', k('payroll', 'view')), A('Create', k('payroll', 'create'), 'Edit days, import biometrics, post to Pay Entries'),
+      A('Delete', k('payroll', 'delete'))], tabs: [], other: [
+        A('Edit / upload / import biometrics', k('dtr_ui', 'dtr_edit')), A('Post to Pay Entries', k('dtr_ui', 'dtr_post')),
+        A('Delete records', k('dtr_ui', 'dtr_delete')), A('Mark field worker', k('dtr_ui', 'dtr_field')),
+      ]
+  },
+  {
+    id: 'bir_1601c', vis: k('pages_ui', 'page_bir_1601c'), title: 'BIR 1601-C', desc: 'Monthly withholding on compensation (Excel download)', icon: FileSpreadsheet, access: [
+      A('View', k('payroll', 'view'), 'Also needs the "BIR Reports" tab under Payroll Runs'), A('Edit BIR settings', k('payroll', 'create'))], tabs: [], other: []
+  },
+  {
+    id: 'bir_1604c', vis: k('pages_ui', 'page_bir_1604c'), title: 'BIR 1604-C / 2316', desc: 'Annual employee details for the alphalist', icon: FileSpreadsheet, access: [
+      A('View', k('payroll', 'view'), 'Also needs the "BIR Reports" tab under Payroll Runs'), A('Edit BIR settings', k('payroll', 'create'))], tabs: [], other: []
+  },
+  {
+    id: 'bir_qb', vis: k('pages_ui', 'page_bir_qb'), title: 'Salary Monitoring (QB)', desc: 'Per payroll run salary breakdown for QuickBooks', icon: FileSpreadsheet, access: [
+      A('View', k('payroll', 'view'), 'Also needs the "BIR Reports" tab under Payroll Runs'), A('Edit BIR settings', k('payroll', 'create'))], tabs: [], other: []
+  },
+  {
+    id: 'bir_ewt', vis: k('pages_ui', 'page_bir_ewt'), title: 'BIR 0619-E / 1601-EQ / 1604-E', desc: 'Expanded withholding tax reports, payments and data entry', icon: FileSpreadsheet, access: hrAccess, tabs: [], other: []
+  },
+  {
+    id: 'bir_2550q', vis: k('pages_ui', 'page_bir_2550q'), title: 'BIR 2550Q (Quarterly VAT)', desc: 'Sales, purchases, recovered receivables and filing', icon: FileSpreadsheet, access: hrAccess, tabs: [], other: []
   },
 ];
 
