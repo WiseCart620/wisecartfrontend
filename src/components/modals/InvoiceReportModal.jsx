@@ -90,7 +90,7 @@ const InvoiceReportModal = ({
               className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-orange-600 text-white rounded-md hover:bg-orange-700 transition"
               style={readOnly ? { display: 'none' } : undefined}
             >
-              <Plus size={18} /> Add Adjustment
+              <Plus size={14} /> Add Adjustment
             </button>
             <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 border border-gray-300 rounded-md px-2 py-1 bg-white"
               style={readOnly ? { display: 'none' } : undefined}>
@@ -433,7 +433,7 @@ const InvoiceReportModal = ({
             }}
             disabled={!!invoiceNumberError}
             style={readOnly ? { display: 'none' } : undefined}
-            className={`flex items-center gap-2 px-3 py-1 text-sm rounded-md transition font-medium ${!invoiceNumber.trim() || invoiceNumberError ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'
+            className={`flex items-center gap-2 px-3 py-1 text-sm rounded-md transition font-medium ${!invoiceNumber.trim() || invoiceNumberError ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
               }`}
           >
             Generate
@@ -444,7 +444,7 @@ const InvoiceReportModal = ({
             className={`flex items-center gap-2 px-3 py-1 text-sm rounded-md transition font-medium ${!invoiceNumber.trim() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-orange-600 text-white hover:bg-orange-700'
               }`}
           >
-            <Printer size={20} /> Print Report
+            <Printer size={16} /> Print Report
           </button>
           <button
             onClick={() => setInvoiceReport(null)}
