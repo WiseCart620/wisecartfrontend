@@ -49,9 +49,30 @@ const InvoiceReportModal = ({
 
   // Long invoices: shrink row height so the items table does not outgrow its minimum height
   // and push the totals off the printed page.
-  const rowCount = (invoiceReport.products || []).length + (invoiceReport.adjustments || []).length;
-  const compact = rowCount > 24;
-  const rowLh = compact ? Math.max(11, Math.min(20, Math.floor(560 / rowCount) - 2)) : 20;
+  const prods = invoiceReport.products || [];
+  const adjs = invoiceReport.adjustments || [];
+  const rowCount = prods.length + adjs.length;
+  const descLen = (p) =>
+    String(p.productName || '').length +
+    (p.companySku ? String(p.companySku).length + 3 : 0) +
+    (p.variation
+      ? (p.variation.combinationDisplay ||
+          (p.variation.variationType && p.variation.variationValue
+            ? `${p.variation.variationType}: ${p.variation.variationValue}`
+            : 'Variation')).length + String(p.variation.upc || 'N/A').length + 4
+      : 0);
+  // Estimated printed lines at a given font size (descriptions wrap when long)
+  const linesAt = (fs) => {
+    const cpl = Math.floor(66 * 14 / fs);
+    return prods.reduce((s, p) => s + Math.max(1, Math.ceil(descLen(p) / cpl)), 0) + adjs.length;
+  };
+  const ROW_BUDGET = 540;
+  const compact = linesAt(14) * 20 + rowCount * 2 > ROW_BUDGET;
+  let rowFs = 14;
+  if (compact) {
+    while (rowFs > 9 && linesAt(rowFs) * Math.round(rowFs * 1.3) + rowCount * 2 > ROW_BUDGET) rowFs -= 1;
+  }
+  const rowLh = compact ? Math.round(rowFs * 1.3) : 20;
 
   const lblCls = 'px-2 py-0 flex flex-col justify-start font-medium text-[10px] leading-tight';
   const valWrapCls = 'px-3 py-0 flex flex-col justify-start';
@@ -95,7 +116,7 @@ const InvoiceReportModal = ({
         </div>
 
         {/* Invoice Body */}
-        <div id="invoice-report" className="p-8" data-compact={compact ? '1' : undefined} style={compact ? { '--row-lh': `px`, '--row-fs': rowLh < 15 ? '11px' : '14px' } : undefined}>
+        <div id="invoice-report" className="p-8" data-compact={compact ? '1' : undefined} style={compact ? { '--row-lh': `px`, '--row-fs': `px` } : undefined}>
 
           {/* Company Header */}
           <div className="flex justify-between items-start mb-5 pb-4">
