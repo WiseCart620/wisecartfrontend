@@ -13,7 +13,13 @@ const MyPayslips = () => {
 
   useEffect(() => {
     api.get('/payroll/payslips/mine')
-      .then((r) => setRows(Array.isArray(r) ? r : (r.data || [])))
+      .then((r) => {
+        const list = Array.isArray(r) ? r : (r.data || []);
+        setRows([...list].sort((a, b) =>
+          String(b.periodEnd || '').localeCompare(String(a.periodEnd || '')) ||
+          String(b.periodStart || '').localeCompare(String(a.periodStart || '')) ||
+          Number(b.paySlipId) - Number(a.paySlipId)));
+      })
       .catch((e) => toast.error(e.message || 'Failed to load payslips'))
       .finally(() => setLoading(false));
   }, []);

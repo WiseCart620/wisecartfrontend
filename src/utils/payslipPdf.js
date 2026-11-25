@@ -109,13 +109,18 @@ const buildRows = (slip) => {
         { label: 'Withholding Tax', amount: buckets.tax || 0 },
     ];
 
+    const leaveRows = Array.isArray(slip.leaveBalances)
+        ? slip.leaveBalances.map(b => ({ label: b.leaveTypeName, text: String(Number(b.balance || 0)) }))
+        : [
+            { label: 'Vacation Leave', text: slip.vacationLeaveBalance != null ? String(slip.vacationLeaveBalance) : '0' },
+            { label: 'Service Incentive Leave', text: slip.sickLeaveBalance != null ? String(slip.sickLeaveBalance) : '0' },
+        ];
     const advances = [
         { label: 'Cash Advance', text: amt(slip.cashAdvanceAmount) },
         { label: 'Payments Made', text: amt(slip.cashAdvancePaid) },
         { label: 'Balance', text: amt(slip.cashAdvanceBalance) },
         { header: 'LEAVE BALANCE' },
-        { label: 'Vacation Leave', text: slip.vacationLeaveBalance != null ? String(slip.vacationLeaveBalance) : '0' },
-        { label: 'Service Incentive Leave', text: slip.sickLeaveBalance != null ? String(slip.sickLeaveBalance) : '0' },
+        ...leaveRows,
     ];
     return { earnings, deductions, advances };
 };

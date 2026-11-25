@@ -1,0 +1,2941 @@
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { api } from '../../services/api';
+import toast from 'react-hot-toast';
+import { ArrowLeft, X, Trash2, Eye, ChevronDown, ChevronUp, FileText, Pencil } from 'lucide-react';
+import '../../styles/invoice-print.css';
+import { useAuth, can, canSeeFilter } from '../../context/AuthContext';
+import { ui } from '../../utils/uiAccess';
+import Pagination from '../../components/common/Pagination';
+
+
+const fmt = (n) =>
+    Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const API_BASE = 'https://backend.wisecart.ph';
+
+const ProofImage = ({ filePath, fileName }) => {
+    const [blobUrl, setBlobUrl] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(false);
+
+    useEffect(() => {
+        if (!filePath) return;
+
+        let objectUrl = null;
+        setLoading(true);
+        setError(false);
+
+        const filename = filePath.split('/').pop();
+        const fileUrl = `${API_BASE}/api/files/serve?path=payment-proofs/${filename}`;
+
+        const token = localStorage.getItem('token')
+            || localStorage.getItem('authToken')
+            || localStorage.getItem('jwt')
+            || localStorage.getItem('accessToken')
+            || sessionStorage.getItem('token')
+            || sessionStorage.getItem('authToken');
+
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+        fetch(fileUrl, { headers })
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('File not found');
+                    }
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                objectUrl = URL.createObjectURL(blob);
+                setBlobUrl(objectUrl);
+            })
+            .catch(err => {
+                console.error('Error loading proof:', err);
+                setError(true);
+            })
+            .finally(() => setLoading(false));
+
+        return () => {
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+        };
+    }, [filePath]);
+
+    if (!filePath) return null;
+
+    if (loading) return (
+        <div className="text-xs text-gray-400 italic animate-pulse">
+            Loading proof...
+        </div>
+    );
+
+    if (error) return (
+        <div className="mt-1">
+            <span className="text-xs text-gray-400 flex items-center gap-1">
+                📎 Proof unavailable {fileName && `(${fileName})`}
+            </span>
+            <div className="text-[10px] text-red-400 mt-0.5">
+                Could not load this file. Try refreshing the page.
+            </div>
+        </div>
+    );
+
+    if (!blobUrl) return null;
+
+    const isPdf = fileName?.toLowerCase().endsWith('.pdf');
+
+    if (isPdf) {
+        return (
+            <a
+                href={blobUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 text-xs text-orange-600 hover:text-orange-800 underline mt-1"
+            >
+                📄 {fileName || 'View PDF'}
+            </a>
+        );
+    }
+
+    return (
+        <div className="mt-2">
+            <img
+                src={blobUrl}
+                alt={fileName || 'Proof of payment'}
+                className="rounded border border-gray-200 max-h-32 max-w-full object-contain cursor-pointer hover:opacity-90 transition"
+                onClick={() => window.open(blobUrl, '_blank')}
+                onError={() => {
+                    console.error('Image failed to load');
+                    setError(true);
+                }}
+                title="Click to open full size"
+            />
+            <div className="text-[10px] text-gray-400 mt-1">
+                {fileName || 'Proof'} · Click to enlarge
+            </div>
+        </div>
+    );
+};
+
+const fmtDate = (d) =>
+    d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+
+// EWT counts toward settlement only when the invoice itself carries no EWT.
+let CHARGE_DED = {};
+const settledOf = (profile, p) =>
+    Number(p.amount || 0) + (Number(profile.withholdingTax) > 0 ? 0 : Number(p.ewtAmount || 0)) - Number(CHARGE_DED[p.id] || 0);
+
+const getTotalSettled = (profile) =>
+    (profile.payments || []).reduce((s, p) => s + settledOf(profile, p), 0);
+
+const getBalance = (profile) => {
+    const bal = Number(profile.totalAmountDue || 0) - getTotalSettled(profile);
+    return bal > 0.004 ? Math.round(bal * 100) / 100 : 0;
+};
+
+const getOverpaidAmount = (profile) => {
+    const over = getTotalSettled(profile) - Number(profile.totalAmountDue || 0);
+    return over > 0.004 ? Math.round(over * 100) / 100 : 0;
+};
+
+const BalanceTooltip = ({ profile, onClick }) => {
+    const [hovered, setHovered] = useState(false);
+    const [pos, setPos] = useState({ x: 0, y: 0 });
+    const paid = getTotalSettled(profile);
+    const bal = getBalance(profile);
+    const overpaid = getOverpaidAmount(profile);
+    const isPaid = bal <= 0;
+    const payments = profile.payments || [];
+
+    return (
+        <div
+            className="inline-block w-full"
+            style={{ position: 'static' }}
+            onMouseEnter={(e) => { setHovered(true); setPos({ x: e.clientX, y: e.clientY }); }}
+            onMouseMove={(e) => setPos({ x: e.clientX, y: e.clientY })}
+            onMouseLeave={() => setHovered(false)}
+        >
+            <button
+                onClick={onClick}
+                className={`text-right w-full text-xs font-medium underline decoration-dashed underline-offset-2 cursor-pointer transition-colors ${overpaid > 0 ? 'text-orange-600 hover:text-orange-700'
+                    : isPaid ? 'text-emerald-600 hover:text-emerald-700'
+                        : 'text-red-600 hover:text-red-700'
+                    }`}
+            >
+                {overpaid > 0 ? '⚠ Overpaid' : isPaid ? '✓ Paid' : '₱' + fmt(bal)}
+            </button>
+            {overpaid > 0 && (
+                <div className="text-xs text-orange-600 text-right mt-0.5 tabular-nums font-medium">
+                    +₱{fmt(overpaid)} over
+                </div>
+            )}
+            {payments.length > 0 && (
+                <div className="text-xs text-black text-right mt-0.5 tabular-nums">
+                    {payments.length} payment{payments.length > 1 ? 's' : ''} · ₱{fmt(paid)}
+                </div>
+            )}
+
+            {hovered && (
+                <div
+                    className="w-72 bg-white rounded-xl border border-gray-100 shadow-xl overflow-hidden"
+                    style={{
+                        position: 'fixed',
+                        zIndex: 999999,
+                        left: Math.min(pos.x + 12, window.innerWidth - 300),
+                        top: pos.y - 20,
+                        transform: 'translateY(-100%)',
+                        pointerEvents: 'none',
+                    }}
+                >
+                    <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Payment Summary</span>
+                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${overpaid > 0 ? 'bg-orange-50 text-orange-600' : isPaid ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
+                            }`}>
+                            {overpaid > 0 ? 'Overpaid' : isPaid ? 'Settled' : 'Outstanding'}
+                        </span>
+                    </div>
+
+                    <div className="px-4 py-3 flex items-center justify-between border-b border-gray-50">
+                        <span className="text-xs text-gray-500">Invoice amount</span>
+                        <span className="text-sm font-semibold text-gray-800 tabular-nums">₱{fmt(profile.totalAmountDue)}</span>
+                    </div>
+
+                    {payments.length === 0 ? (
+                        <div className="px-4 py-4 text-center">
+                            <div className="text-xs text-gray-400 italic">No payments recorded</div>
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-gray-50 max-h-44 overflow-y-auto">
+                            {payments.map((p, idx) => (
+                                <div key={p.id} className="px-4 py-2.5 flex items-center justify-between gap-3 hover:bg-white transition-colors">
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                        <div className="w-5 h-5 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                                            {idx + 1}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="text-[11px] text-gray-500 leading-tight">
+                                                {new Date(p.paymentDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            </div>
+                                            {p.referenceNumber && (
+                                                <div className="text-[10px] text-gray-400 font-mono truncate">{p.referenceNumber}</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <span className="text-sm font-semibold text-emerald-600 tabular-nums flex-shrink-0">₱{fmt(p.amount)}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {payments.length > 0 && (
+                        <div className="px-4 py-3 bg-white border-t border-gray-100 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[11px] text-gray-500">Total paid</span>
+                                <span className="text-xs font-semibold text-emerald-600 tabular-nums">₱{fmt(paid)}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-[11px] text-gray-500">{overpaid > 0 ? 'Overpaid by' : 'Remaining'}</span>
+                                <span className={`text-xs font-bold tabular-nums ${overpaid > 0 ? 'text-orange-600' : isPaid ? 'text-emerald-600' : 'text-red-500'}`}>
+                                    {overpaid > 0 ? '₱' + fmt(overpaid) : isPaid ? '₱0.00' : '₱' + fmt(bal)}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="px-4 py-2 border-t border-gray-50">
+                        <p className="text-[10px] text-gray-300 text-center">Click to manage payments</p>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const DvDeductions = ({ dv, profiles = [], p = null, skip = false, fallback = null, payId = null }) => {
+    const ref = String(dv || '').trim();
+    const [charges, setCharges] = useState([]);
+    useEffect(() => {
+        if (!ref) return undefined;
+        let alive = true;
+        api.get('/invoice-profiles/company-charges?dvNumber=' + encodeURIComponent(ref)).then((res) => {
+            if (!alive || !res || !res.success) return;
+            const list = res.data?.data || res.data || [];
+            setCharges(Array.isArray(list) ? list : []);
+        }).catch(() => {});
+        return () => { alive = false; };
+    }, [ref]);
+    if (!ref || skip) return fallback;
+    const key = ('reduced by dv ' + ref).toLowerCase();
+    const rows = [];
+    profiles.forEach(pr => (pr.payments || []).forEach(pay => (pay.charges || []).forEach(c => {
+        if (String(c.label || '').trim().toLowerCase() === key) {
+            rows.push({ doc: String(pay.referenceNumber || ''), ref: String(c.refNote || pr.invoiceNumber || ''), amount: Number(c.amount || 0) });
+        }
+    })));
+    const ownId = payId != null ? payId : (p ? p.id : null);
+    const ownerPr = profiles.find(x => (x.payments || []).some(y => y.id === ownId));
+    const ownCo = ownerPr ? ownerPr.companyId : null;
+    charges.filter(c => ownCo == null || c.companyId == null || Number(c.companyId) === Number(ownCo)).forEach(c => {
+        const parts = String(c.label || '').trim().split(/\s+/);
+        const hasDoc = parts.length > 1 && /^\d{4,}$/.test(parts[parts.length - 1]);
+        rows.push({ doc: hasDoc ? parts[parts.length - 1] : '', ref: hasDoc ? parts.slice(0, -1).join(' ') : parts.join(' '), amount: Number(c.amount || 0) });
+    });
+    if (p) {
+        (p.charges || []).forEach(c => {
+            const lbl = String(c.label || '').trim();
+            if (!lbl || /^(Reduced by DV|Deducted DV|Reversal of DV)/i.test(lbl)) return;
+            const amt = Number(c.amount || 0);
+            if (charges.some(cc => String(cc.label || '').trim() === lbl && Number(cc.amount || 0) === amt)) return;
+            const sp = lbl.split(/\s+/);
+            const sDoc = sp.length > 1 && /^\d{4,}$/.test(sp[sp.length - 1]);
+            rows.push({ doc: sDoc ? sp[sp.length - 1] : '', ref: sDoc ? sp.slice(0, -1).join(' ') : lbl, amount: amt });
+        });
+    }
+    rows.forEach(x => {
+        if (!x.doc) {
+            const m = /^(.*?)\s*#(\S+)$/.exec(String(x.ref || ''));
+            if (m) { x.ref = m[1]; x.doc = m[2]; }
+        }
+    });
+    const seen = {};
+    for (let i = 0; i < rows.length; i++) {
+        const k = rows[i].doc + '|' + rows[i].ref + '|' + rows[i].amount;
+        if (seen[k]) { rows.splice(i, 1); i--; } else { seen[k] = 1; }
+    }
+    if (!rows.length && !p) return fallback;
+    const ded = rows.reduce((s, x) => s + x.amount, 0);
+    const mainGross = p ? (p.grossAmount != null ? Number(p.grossAmount) : Number(p.amount)) : 0;
+    const mainEwt = p ? Number(p.ewtAmount || 0) : 0;
+    const mainAmt = mainGross - mainEwt;
+    const totGross = mainGross - ded;
+    const totAmt = mainAmt - ded;
+    const colCls = 'grid grid-cols-[1.1fr_1fr_1fr_0.8fr_1fr] gap-2 items-center';
+    const neg = (v) => '(' + fmt(v) + ')';
+    return (
+        <div className="px-4 py-3 border-t border-gray-100">
+            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">{p ? 'Payment breakdown' : 'Deductions on DV ' + ref}</div>
+            <div className="border border-gray-200 rounded-lg overflow-hidden text-xs">
+                <div className={colCls + ' px-3 py-2 bg-gray-50 border-b border-gray-200 text-[10px] font-semibold tracking-wide text-gray-600 uppercase'}>
+                    <div>Doc No.</div><div>Ref. No.</div><div className="text-right">Gross</div><div className="text-right">EWT</div><div className="text-right">Amount</div>
+                </div>
+                {p && (
+                    <div className={colCls + ' px-3 py-2 border-b border-gray-100'}>
+                        <div className="font-mono truncate">{p.docNumber || '—'}</div>
+                        <div className="font-semibold truncate">{p.itemRef || '—'}</div>
+                        <div className="text-right tabular-nums">{fmt(mainGross)}</div>
+                        <div className="text-right tabular-nums text-red-500">{mainEwt > 0 ? neg(mainEwt) : '—'}</div>
+                        <div className="text-right tabular-nums font-semibold">{fmt(mainAmt)}</div>
+                    </div>
+                )}
+                {rows.map((x, i) => (
+                    <div key={i} className={colCls + ' px-3 py-2 border-b border-gray-100'}>
+                        <div className="font-mono truncate">{x.doc || '—'}</div>
+                        <div className="font-semibold truncate">{x.ref || '—'}</div>
+                        <div className="text-right tabular-nums text-red-600">{neg(x.amount)}</div>
+                        <div className="text-right tabular-nums text-red-500">—</div>
+                        <div className="text-right tabular-nums font-semibold text-red-600">{neg(x.amount)}</div>
+                    </div>
+                ))}
+                <div className={colCls + ' px-3 py-2 bg-gray-50 border-t-2 border-gray-300 font-bold'}>
+                    <div className="col-span-2 text-right pr-2">Total</div>
+                    <div className="text-right tabular-nums">{p ? fmt(totGross) : neg(ded)}</div>
+                    <div className="text-right tabular-nums">{p ? (mainEwt > 0 ? neg(mainEwt) : '—') : ''}</div>
+                    <div className="text-right tabular-nums">{p ? fmt(totAmt) : neg(ded)}</div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const NetAmount = ({ p, profiles = [], skip = false }) => {
+    const ref = String(p.referenceNumber || '').trim();
+    const [charges, setCharges] = useState([]);
+    useEffect(() => {
+        if (!ref) return undefined;
+        let alive = true;
+        api.get('/invoice-profiles/company-charges?dvNumber=' + encodeURIComponent(ref)).then((res) => {
+            if (!alive || !res || !res.success) return;
+            const list = res.data?.data || res.data || [];
+            setCharges(Array.isArray(list) ? list : []);
+        }).catch(() => {});
+        return () => { alive = false; };
+    }, [ref]);
+    if (!ref || skip || Number(p.amount) < 0) return <>₱{fmt(p.amount)}</>;
+    const parse = (label) => {
+        const parts = String(label || '').trim().split(/\s+/);
+        const hasDoc = parts.length > 1 && /^\d{4,}$/.test(parts[parts.length - 1]);
+        let doc = hasDoc ? parts[parts.length - 1] : '';
+        let r = hasDoc ? parts.slice(0, -1).join(' ') : parts.join(' ');
+        if (!doc) { const m = /^(.*?)\s*#(\S+)$/.exec(r); if (m) { r = m[1]; doc = m[2]; } }
+        return { doc, r };
+    };
+    const seen = {};
+    let ded = 0;
+    const add = (doc, r, amt) => { const k = doc + '|' + r + '|' + amt; if (seen[k]) return; seen[k] = 1; ded += amt; };
+    const key = ('reduced by dv ' + ref).toLowerCase();
+    profiles.forEach(pr => (pr.payments || []).forEach(pay => (pay.charges || []).forEach(c => {
+        if (String(c.label || '').trim().toLowerCase() === key) add(String(pay.referenceNumber || ''), String(c.refNote || pr.invoiceNumber || ''), Number(c.amount || 0));
+    })));
+    const owner = profiles.find(x => (x.payments || []).some(y => y.id === p.id));
+    const ownCo = owner ? owner.companyId : null;
+    charges.filter(c => ownCo == null || c.companyId == null || Number(c.companyId) === Number(ownCo)).forEach(c => {
+        const x = parse(c.label);
+        add(x.doc, x.r, Number(c.amount || 0));
+    });
+    (p.charges || []).forEach(c => {
+        const lbl = String(c.label || '').trim();
+        if (!lbl || /^(Reduced by DV|Deducted DV|Reversal of DV)/i.test(lbl)) return;
+        const amt = Number(c.amount || 0);
+        if (charges.some(cc => String(cc.label || '').trim() === lbl && Number(cc.amount || 0) === amt)) return;
+        const x = parse(lbl);
+        add(x.doc, x.r, amt);
+    });
+    if (ded === 0) return <>₱{fmt(p.amount)}</>;
+    const gross = p.grossAmount != null ? Number(p.grossAmount) : Number(p.amount);
+    const net = gross - Number(p.ewtAmount || 0) - ded;
+    return <>₱{fmt(net)}</>;
+};
+
+const PaymentEntry = ({ p, idx, onDelete, onEdit, onEditReduced, isAdmin, profiles }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const hasEwt = Number(p.ewtAmount) > 0;
+    const chargesList = p.charges || [];
+    const isReversal = chargesList.some(c => /^(Reversal of DV|Reduced by DV)/.test(String(c.label || '')));
+    const isReduced = chargesList.some(c => String(c.label || '').startsWith('Reduced by DV'));
+    const hasDeductions = hasEwt || chargesList.length > 0;
+    const grossDisplay = p.grossAmount != null ? Number(p.grossAmount) : Number(p.amount);
+
+    return (
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+            <div
+                className="flex items-start justify-between p-3 cursor-pointer hover:bg-white transition"
+                onClick={() => setIsOpen(!isOpen)}
+            >
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="w-7 h-7 rounded-full bg-orange-50 text-orange-700 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                        {idx + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-sm font-bold text-emerald-700"><NetAmount p={p} profiles={profiles} skip={isReversal} /></span>
+                            {hasDeductions && (
+                                <span className="text-[10px] text-gray-400">{isReversal ? 'reduced by a later DV. Change it from that DV' : 'net of deductions'}</span>
+                            )}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                            <span>{fmtDate(p.paymentDate)}</span>
+                            {p.referenceNumber && (
+                                <span className="font-mono text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                                    {p.referenceNumber}
+                                </span>
+                            )}
+                            {(p.itemRef || p.docNumber) && (
+                                <span className="font-mono text-[10px] bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded">
+                                    {[p.docNumber && `Doc ${p.docNumber}`, p.itemRef && `Ref ${p.itemRef}`, p.itemDate && `Inv. ${fmtDate(p.itemDate)}`].filter(Boolean).join(' · ')}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                    {isAdmin && (!isReversal || isReduced) && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); isReduced ? onEditReduced(p) : onEdit(p); }}
+                            title="Edit this payment"
+                            className="w-7 h-7 rounded flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-black transition"
+                        >
+                            <Pencil size={14} />
+                        </button>
+                    )}
+                    {isAdmin && !isReversal && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onDelete(p.id); }}
+                            title="Delete this payment"
+                            className="w-7 h-7 rounded flex items-center justify-center text-black hover:bg-gray-100 hover:text-red-600 transition"
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                    )}
+                    <div className="w-7 h-7 flex items-center justify-center text-gray-600">
+                        {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </div>
+                </div>
+            </div>
+
+            {isOpen && (
+                <div className="border-t border-gray-100 bg-white/60">
+                    <DvDeductions dv={p.referenceNumber} profiles={profiles} p={p} skip={isReversal || Number(p.amount) < 0} fallback={(<>
+                    <div className="px-4 py-3">
+                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                            Payment Breakdown
+                        </div>
+                        <div className="space-y-1.5">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600">Gross amount</span>
+                                <span className="font-medium text-gray-800 tabular-nums">₱{fmt(grossDisplay)}</span>
+                            </div>
+
+                            {hasEwt && (
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500">Less: EWT</span>
+                                    <span className="text-red-500 tabular-nums">− ₱{fmt(p.ewtAmount)}</span>
+                                </div>
+                            )}
+
+                            {chargesList.map((c) => (
+                                <div key={c.id ?? c.label} className="flex items-center justify-between text-sm">
+                                    <>
+                                            <span className="text-gray-500">Less: {c.label}</span>
+                                            <span className="text-red-500 tabular-nums">− ₱{fmt(c.amount)}</span>
+                                        </>
+                                </div>
+                            ))}
+
+                            {hasDeductions ? (
+                                <div className="flex items-center justify-between text-sm pt-1.5 mt-1.5 border-t border-gray-200">
+                                    <span className="font-semibold text-gray-700">Net amount recorded</span>
+                                    <span className="font-bold text-emerald-700 tabular-nums">₱{fmt(p.amount)}</span>
+                                </div>
+                            ) : (
+                                <div className="text-[11px] text-gray-400 italic pt-0.5">No deductions applied</div>
+                            )}
+                        </div>
+                    </div>
+
+                    </>)} />
+                    {/* Proof of payment */}
+                    <div className="px-4 pb-3 pt-0 border-t border-gray-100">
+                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mt-2.5 mb-1.5">
+                            Proof of Payment
+                        </div>
+                        {p.proofFilePath ? (
+                            <ProofImage filePath={p.proofFilePath} fileName={p.proofFileName} />
+                        ) : (
+                            <div className="text-xs text-gray-400 italic">No proof of payment uploaded</div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const groupPayments = (payments) => {
+    const out = [];
+    const byKey = {};
+    (payments || []).forEach((p, index) => {
+        const key = String(p.referenceNumber || '').trim();
+        const plain = key && Number(p.amount) > 0 && !(p.charges || []).length;
+        if (!plain) { out.push({ key: '', items: [p], index }); return; }
+        if (byKey[key]) { byKey[key].items.push(p); return; }
+        const g = { key, items: [p], index };
+        byKey[key] = g;
+        out.push(g);
+    });
+    return out;
+};
+
+const DvGroupEntry = ({ dv, items, onDelete, onEdit, isAdmin, profiles }) => {
+    const [isOpen, setIsOpen] = useState(true);
+    const grossOf = (p) => (p.grossAmount != null ? Number(p.grossAmount) : Number(p.amount));
+    const sumGross = items.reduce((s, p) => s + grossOf(p), 0);
+    const sumEwt = items.reduce((s, p) => s + Number(p.ewtAmount || 0), 0);
+    const sumNet = items.reduce((s, p) => s + Number(p.amount || 0), 0);
+    const proof = items.find(p => p.proofFilePath);
+    const colCls = 'grid grid-cols-[1.1fr_1fr_1fr_0.8fr_1fr_20px] gap-2 items-center';
+
+    return (
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+            <div className="flex items-start justify-between p-3 cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="w-7 h-7 rounded-full bg-orange-50 text-orange-700 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                        {items.length}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-sm font-bold text-emerald-700">₱{fmt(sumNet)}</span>
+                            <span className="text-[10px] text-gray-400">{items.length} items in one DV</span>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                            <span>{fmtDate(items[0].paymentDate)}</span>
+                            <span className="font-mono text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">DV {dv}</span>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                    {isAdmin && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+                            title="Edit this DV"
+                            className="w-7 h-7 rounded flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-black transition"
+                        >
+                            <Pencil size={14} />
+                        </button>
+                    )}
+                    <div className="w-7 h-7 flex items-center justify-center text-gray-600">
+                        {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </div>
+                </div>
+            </div>
+
+            {isOpen && (
+                <div className="border-t border-gray-100">
+                    <div className="px-4 py-3">
+                        <div className="border border-gray-200 rounded-lg overflow-hidden text-xs">
+                            <div className={`${colCls} px-3 py-2 bg-gray-50 border-b border-gray-200 text-[10px] font-semibold tracking-wide text-gray-600 uppercase`}>
+                                <div>Doc No.</div><div>Ref. No.</div><div className="text-right">Gross</div><div className="text-right">EWT</div><div className="text-right">Amount</div><div></div>
+                            </div>
+                            {items.map((p) => (
+                                <div key={p.id} className={`${colCls} px-3 py-2 border-b border-gray-100`}>
+                                    <div className="font-mono truncate">{p.docNumber || '—'}</div>
+                                    <div className="truncate"><div className="font-semibold truncate">{p.itemRef || '—'}</div>{p.itemDate && <div className="text-[10px] text-gray-500">{fmtDate(p.itemDate)}</div>}</div>
+                                    <div className="text-right tabular-nums">{fmt(grossOf(p))}</div>
+                                    <div className="text-right tabular-nums text-red-500">{Number(p.ewtAmount) > 0 ? '(' + fmt(p.ewtAmount) + ')' : '—'}</div>
+                                    <div className="text-right tabular-nums font-semibold">{fmt(p.amount)}</div>
+                                    {isAdmin ? (
+                                        <button
+                                            onClick={() => onDelete(p.id)}
+                                            title="Delete this item"
+                                            className="text-gray-400 hover:text-red-600"
+                                        >
+                                            <Trash2 size={12} />
+                                        </button>
+                                    ) : <div></div>}
+                                </div>
+                            ))}
+                            <div className={`${colCls} px-3 py-2 bg-gray-50 border-t-2 border-gray-300 font-bold`}>
+                                <div className="col-span-2 text-right pr-2">Total</div>
+                                <div className="text-right tabular-nums">{fmt(sumGross)}</div>
+                                <div className="text-right tabular-nums">({fmt(sumEwt)})</div>
+                                <div className="text-right tabular-nums">{fmt(sumNet)}</div>
+                                <div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="px-4 pb-3 border-t border-gray-100">
+                        <DvDeductions dv={dv} profiles={profiles} payId={items[0].id} />
+                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mt-2.5 mb-1.5">Proof of Payment</div>
+                        {proof ? (
+                            <ProofImage filePath={proof.proofFilePath} fileName={proof.proofFileName} />
+                        ) : (
+                            <div className="text-xs text-gray-400 italic">No proof of payment uploaded</div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+const DetailModal = ({ profile, profiles = [], onClose, onAddPayment, onEditPayment, onDeletePayment, onEditReduced, isAdmin }) => {
+    const totalPaid = getTotalSettled(profile);
+    const bal = getBalance(profile);
+    const overpaid = getOverpaidAmount(profile);
+    const isPaid = bal <= 0;
+
+    return (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[88vh] overflow-y-auto shadow-2xl">
+                <div className="p-5 border-b border-gray-100 flex justify-between items-start">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <div className="font-medium text-black">{profile.soldTo}</div>
+                            {profile.invoiceNumber && (
+                                <span className="font-mono text-[11px] font-semibold text-orange-700 bg-orange-50 px-2 py-0.5 rounded">
+                                    {profile.invoiceNumber}
+                                </span>
+                            )}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-0.5">
+                            Invoice dated {fmtDate(profile.invoiceDate || profile.createdAt)}
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="p-1 text-gray-600 hover:text-black rounded">
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <div className="p-5">
+                    <div className="bg-white rounded-xl p-4 mb-4 flex justify-between items-center">
+                        <span className="text-sm text-gray-500">Amount due</span>
+                        <span className="text-lg font-bold text-gray-900">₱{fmt(profile.totalAmountDue)}</span>
+                    </div>
+
+                    <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+                        Payment history
+                        {(profile.payments || []).length > 0 && (
+                            <span className="ml-1 font-normal text-gray-400">
+                                ({profile.payments.length} entr{profile.payments.length > 1 ? 'ies' : 'y'})
+                            </span>
+                        )}
+                    </div>
+
+                    {(profile.payments || []).length === 0 ? (
+                        <div className="text-sm text-gray-400 italic mb-4">No payments recorded yet.</div>
+                    ) : (
+                        <div className="space-y-2 mb-4">
+                            {groupPayments(profile.payments).map((g) => (g.items.length > 1 ? (
+                                <DvGroupEntry
+                                    key={'g-' + g.key}
+                                    profiles={profiles}
+                                    dv={g.key}
+                                    items={g.items}
+                                    isAdmin={isAdmin}
+                                    onDelete={(paymentId) => onDeletePayment(profile.id, paymentId)}
+                                    onEdit={() => { onClose(); onEditPayment(profile, g.items[0], g.items); }}
+                                />
+                            ) : (
+                                <PaymentEntry
+                                    key={g.items[0].id}
+                                    profiles={profiles}
+                                    p={g.items[0]}
+                                    idx={g.index}
+                                    isAdmin={isAdmin}
+                                    onDelete={(paymentId) => onDeletePayment(profile.id, paymentId)}
+                                    onEdit={(payment) => { onClose(); onEditPayment(profile, payment); }}
+                                    onEditReduced={(payment) => onEditReduced(profile, payment)}
+                                />
+                            )))}
+                        </div>
+                    )}
+
+                    <div className={`rounded p-4 flex justify-between items-center mb-4 border ${overpaid > 0 ? 'bg-orange-50 border-orange-200' : 'bg-white border-gray-200'}`}>
+                        <div>
+                            <div className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                                {overpaid > 0 ? 'Overpaid' : 'Open balance'}
+                            </div>
+                            {(profile.payments || []).length > 0 && (
+                                <div className="text-xs mt-0.5 text-gray-500">
+                                    ₱{fmt(profile.totalAmountDue)} − ₱{fmt(totalPaid)} paid
+                                </div>
+                            )}
+                        </div>
+                        <div className={`text-xl font-medium ${overpaid > 0 ? 'text-orange-600' : 'text-black'}`}>
+                            {overpaid > 0 ? '⚠ +₱' + fmt(overpaid) : isPaid ? '✓ Fully paid' : '₱' + fmt(bal)}
+                        </div>
+                    </div>
+
+                    {isAdmin && (
+                        <div className="flex justify-end">
+                            <button
+                                onClick={() => { onClose(); onAddPayment(profile); }}
+                                className="flex items-center gap-2 px-4 py-2 bg-[#2CA01C] text-white rounded text-sm font-medium hover:bg-[#268d19] transition"
+                            >
+                                <img src="/money.png" alt="" className="w-4 h-4 brightness-0 invert" />
+                                Record payment
+                            </button>
+                        </div>
+                    )}
+
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const splitDoc = (label) => {
+    const m = /^(\d{6,})\s*(.*)$/.exec(String(label || '').trim());
+    return m ? { docNo: m[1], label: m[2] } : { docNo: '', label: String(label || '') };
+};
+
+const PaymentModal = ({ profile, profiles = [], editingPayment, onClose, onSaved }) => {
+    const isEditing = !!editingPayment;
+    const [amount, setAmount] = useState(isEditing ? String(editingPayment.grossAmount ?? editingPayment.amount) : '');
+    const [applyEwt, setApplyEwt] = useState(isEditing ? Number(editingPayment.ewtAmount) > 0 : true);
+    const [ewtOverride, setEwtOverride] = useState(isEditing && Number(editingPayment.ewtAmount) > 0 ? String(editingPayment.ewtAmount) : '');
+    const [charges, setCharges] = useState(
+        isEditing && editingPayment.charges?.length
+            ? editingPayment.charges.map(c => {
+                const m = /^Deducted DV (\d{6,})/.exec(String(c.label || ''));
+                if (m) return { type: 'dv', docNo: m[1], label: '', amount: String(c.amount) };
+                return { ...splitDoc(c.label), type: splitDoc(c.label).docNo ? 'dv' : 'company', amount: String(c.amount) };
+            })
+            : []
+    );
+    const [date, setDate] = useState(isEditing ? editingPayment.paymentDate : new Date().toISOString().split('T')[0]);
+    const [ref, setRef] = useState(isEditing ? (editingPayment.referenceNumber || '') : '');
+    const [proofFile, setProofFile] = useState(null);
+    const [saving, setSaving] = useState(false);
+    const fileRef = useRef();
+    const otherPayments = (profile.payments || []).filter(p => !isEditing || p.id !== editingPayment.id);
+    const totalPaid = otherPayments.reduce((s, p) => s + settledOf(profile, p), 0);
+    const rawBalance = Number(profile.totalAmountDue) - totalPaid;
+    const balance = Math.max(0, rawBalance);
+    const autoEwt = amount
+        ? Math.round((Number(amount) / 1.12) * 0.01 * 100) / 100
+        : 0;
+    const ewt = applyEwt ? (ewtOverride !== '' ? Number(ewtOverride) : autoEwt) : 0;
+    const isValidCharge = (c) => (String(c.label || '').trim() || String(c.docNo || '').trim()) && Number(c.amount) > 0;
+    const totalCharges = charges.filter(isValidCharge).reduce((s, c) => s + (Number(c.amount) || 0), 0);
+    const rawNet = Math.round((Number(amount || 0) - ewt - totalCharges) * 100) / 100;
+    const netAmount = Math.max(0, rawNet);
+    const deductionsTooHigh = Number(amount) > 0 && rawNet <= 0;
+    const newSettled = netAmount + (Number(profile.withholdingTax) > 0 ? 0 : ewt);
+    const overpayAmount = Number(amount) > 0 ? Math.round((newSettled - rawBalance) * 100) / 100 : 0;
+    const willOverpay = overpayAmount > 0.004;
+
+    // Which earlier payments (same DV number) a deduction's Doc no. points to
+    const docHits = (docNo) => {
+        const d = String(docNo || '').trim();
+        if (!d || d === ref.trim()) return null;
+        const hits = [];
+        profiles.forEach(pr => (pr.payments || []).forEach(pay => {
+            if (String(pay.referenceNumber || '').trim() === d && !(isEditing && pay.id === editingPayment.id)) {
+                hits.push({ inv: pr.invoiceNumber || `#${pr.id}`, amt: pay.grossAmount != null ? pay.grossAmount : pay.amount });
+            }
+        }));
+        return hits;
+    };
+
+    const addCharge = () => setCharges(prev => [...prev, { type: 'company', docNo: '', label: '', amount: '' }]);
+    const updateCharge = (idx, field, value) =>
+        setCharges(prev => prev.map((c, i) => (i === idx ? { ...c, [field]: value } : c)));
+    const removeCharge = (idx) => setCharges(prev => prev.filter((_, i) => i !== idx));
+
+    const handleSave = async () => {
+        if (!amount || Number(amount) <= 0) {
+            toast.error('Enter a valid payment amount');
+            return;
+        }
+        if (deductionsTooHigh) {
+            toast.error('EWT and deductions are equal to or more than the amount. Check the amounts.');
+            return;
+        }
+        if (willOverpay) {
+            toast(`Recorded as an overpayment of ₱${fmt(overpayAmount)}`, { icon: '⚠️' });
+        }
+        if (proofFile) {
+            const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
+            const maxSize = 5 * 1024 * 1024;
+
+            if (!allowedTypes.includes(proofFile.type)) {
+                toast.error('Only PNG, JPG, JPEG, or PDF files are allowed');
+                return;
+            }
+
+            if (proofFile.size > maxSize) {
+                toast.error('File size must be less than 5MB');
+                return;
+            }
+        }
+
+        setSaving(true);
+        try {
+            // No dedicated "update payment" endpoint exists yet, so editing is done
+            // as delete-then-recreate against the existing add/delete endpoints.
+            if (isEditing) {
+                const delRes = await api.delete(`/invoice-profiles/${profile.id}/payments/${editingPayment.id}`);
+                if (!delRes.success) {
+                    toast.error(delRes.message || 'Failed to update payment');
+                    setSaving(false);
+                    return;
+                }
+            }
+
+            const validCharges = charges.filter(isValidCharge).map(c => ({
+                label: (() => {
+                    const d = String(c.docNo || '').trim();
+                    const l = String(c.label || '').trim();
+                    if (c.type === 'dv') return `${d} ${l}`.trim();
+                    const base = l || 'Freight charges';
+                    const safe = /^\d{6,}(\s|$)/.test(base) ? `Charge ${base}` : base;
+                    return `${safe} ${d}`.trim();
+                })(),
+                amount: Number(c.amount),
+            }));
+
+            const formData = new FormData();
+            formData.append('amount', netAmount);
+            formData.append('grossAmount', amount);
+            formData.append('ewtAmount', ewt);
+            if (validCharges.length > 0) {
+                formData.append('charges', JSON.stringify(validCharges));
+            }
+            formData.append('paymentDate', date);
+            if (ref) formData.append('referenceNumber', ref);
+            if (proofFile) {
+                formData.append('proofFile', proofFile);
+            } else if (isEditing && editingPayment.proofFilePath) {
+                toast('Previous proof of payment was cleared. Re-upload it if needed.', { icon: '⚠️' });
+            }
+
+            const res = await api.upload(`/invoice-profiles/${profile.id}/payments`, formData);
+            if (res.success) {
+                toast.success(isEditing ? 'Payment updated successfully!' : 'Payment recorded successfully!');
+                onSaved(res.data.data || res.data, validCharges.length > 0);
+                onClose();
+            } else {
+                toast.error(res.error || 'Failed to save payment');
+            }
+        } catch (e) {
+            toast.error(isEditing ? 'Failed to update payment' : 'Failed to save payment');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+
+    return (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto shadow-2xl">
+                <div className="p-5 border-b border-gray-100 flex justify-between items-center">
+                    <div>
+                        <div className="font-medium text-black">{isEditing ? 'Edit payment' : 'Record payment'}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">{profile.soldTo}</div>
+                    </div>
+                    <button onClick={onClose} className="p-1 text-gray-600 hover:text-black rounded">
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <div className="p-5">
+                    <div className="grid grid-cols-3 gap-2 mb-5">
+                        {[
+                            ['Total due', '₱' + fmt(profile.totalAmountDue), ''],
+                            ['Paid', '₱' + fmt(totalPaid), 'text-green-600'],
+                            rawBalance < 0
+                                ? ['Overpaid by', '₱' + fmt(Math.abs(rawBalance)), 'text-orange-600']
+                                : ['Balance', '₱' + fmt(balance), balance > 0 ? 'text-red-600' : 'text-green-600'],
+                        ].map(([l, v, cls]) => (
+                            <div key={l} className="bg-white rounded-xl p-3">
+                                <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">{l}</div>
+                                <div className={`text-sm font-bold ${cls}`}>{v}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="space-y-3">
+                        <div>
+                            <label className="block text-xs text-gray-500 mb-1 font-medium">Amount *</label>
+                            <input
+                                type="number"
+                                value={amount}
+                                onChange={(e) => setAmount(e.target.value)}
+                                placeholder="0.00"
+                                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                            />
+                            <div className="flex items-center justify-between mt-2">
+                                <label className="flex items-center gap-1.5 text-xs text-gray-500">
+                                    <input type="checkbox" checked={applyEwt} onChange={(e) => setApplyEwt(e.target.checked)} />
+                                    Deduct EWT (1% of VAT-exclusive amount)
+                                </label>
+                            </div>
+                            {applyEwt && Number(amount) > 0 && (
+                                <div className="mt-2 bg-white rounded p-2.5 space-y-1">
+                                    <div className="flex items-center justify-between text-xs">
+                                        <span className="text-gray-500">Less: EWT</span>
+                                        <input
+                                            type="number"
+                                            value={ewtOverride !== '' ? ewtOverride : autoEwt}
+                                            onChange={(e) => setEwtOverride(e.target.value)}
+                                            className="w-24 text-right border border-gray-200 rounded px-1.5 py-0.5 text-xs"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="mt-3">
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="text-xs text-gray-500 font-medium">Other less charges</label>
+                                    <button
+                                        type="button"
+                                        onClick={addCharge}
+                                        className="text-xs text-orange-600 hover:text-orange-800 font-medium"
+                                    >
+                                        + Add charge
+                                    </button>
+                                </div>
+                                {charges.length === 0 && (
+                                    <div className="text-xs text-gray-400 italic">Freight and fees are saved once for the customer (type the Reference DV no. above). Choose Earlier DV and type its number to reverse that DV.</div>
+                                )}
+                                <div className="space-y-2">
+                                    {charges.map((c, idx) => {
+                                        const hits = c.type === 'dv' ? docHits(c.docNo) : null;
+                                        return (
+                                            <div key={idx}>
+                                                <div className="flex items-center gap-1.5">
+                                                    <select
+                                                        value={c.type || 'company'}
+                                                        onChange={(e) => updateCharge(idx, 'type', e.target.value)}
+                                                        className="w-24 px-1 py-1.5 border border-gray-200 rounded text-xs"
+                                                    >
+                                                        <option value="company">Freight</option>
+                                                        <option value="dv">Earlier DV</option>
+                                                    </select>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Doc no."
+                                                        value={c.docNo}
+                                                        onChange={(e) => updateCharge(idx, 'docNo', e.target.value.replace(/\s+/g, ''))}
+                                                        className="w-28 px-2 py-1.5 border border-gray-200 rounded text-xs font-mono focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Less: Delivery charge"
+                                                        value={c.label}
+                                                        onChange={(e) => updateCharge(idx, 'label', e.target.value)}
+                                                        className="flex-1 min-w-0 px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        placeholder="0.00"
+                                                        value={c.amount}
+                                                        onChange={(e) => updateCharge(idx, 'amount', e.target.value)}
+                                                        className="w-24 px-2 py-1.5 border border-gray-200 rounded text-xs text-right focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeCharge(idx)}
+                                                        className="w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                </div>
+                                                {hits && hits.length > 0 && (
+                                                    <div className="text-[11px] text-emerald-700 mt-1 ml-1">
+                                                        Reverses DV {String(c.docNo).trim()}: {hits.map(h => `${h.inv} ₱${fmt(h.amt)}`).join(', ')}
+                                                    </div>
+                                                )}
+                                                {hits && hits.length === 0 && (
+                                                    <div className="text-[11px] text-red-700 font-medium mt-1 ml-1">
+                                                        Can't deduct {String(c.docNo).trim()}: no sales invoice has a payment with this DV number.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {(applyEwt || charges.length > 0) && Number(amount) > 0 && (
+                                <div className="mt-2 bg-orange-50 rounded p-2.5 flex items-center justify-between text-xs font-semibold">
+                                    <span className="text-gray-600">Net amount recorded</span>
+                                    <span className="text-orange-700">₱{fmt(netAmount)}</span>
+                                </div>
+                            )}
+                            {deductionsTooHigh && (
+                                <div className="mt-2 bg-red-50 border border-red-200 rounded p-2.5 text-xs text-red-700 font-medium">
+                                    EWT and deductions (₱{fmt(Number(amount || 0) - rawNet)}) are equal to or more than the amount. The net must be above zero.
+                                </div>
+                            )}
+                            {willOverpay && !deductionsTooHigh && (
+                                <div className="mt-2 bg-orange-50 border border-orange-200 rounded p-2.5 text-xs text-orange-700 font-medium flex items-center gap-1.5">
+                                    ⚠ This exceeds the open balance by ₱{fmt(overpayAmount)}. It will be recorded as an overpayment.
+                                </div>
+                            )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1 font-medium">Date</label>
+                                <input
+                                    type="date"
+                                    value={date}
+                                    onChange={(e) => setDate(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1 font-medium">Reference (DV no.)</label>
+                                <input
+                                    type="text"
+                                    value={ref}
+                                    onChange={(e) => setRef(e.target.value)}
+                                    placeholder="CHK-00123"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-gray-500 mb-1 font-medium">Proof of payment (optional)</label>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => fileRef.current?.click()}
+                                    className="px-3 py-2 border border-gray-300 rounded text-sm hover:bg-white transition"
+                                >
+                                    📎 Upload
+                                </button>
+                                <input
+                                    ref={fileRef}
+                                    type="file"
+                                    accept="image/*,application/pdf"
+                                    className="hidden"
+                                    onChange={(e) => setProofFile(e.target.files[0] || null)}
+                                />
+                                {proofFile && (
+                                    <span className="text-xs text-green-600 truncate max-w-[160px]">✓ {proofFile.name}</span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="p-5 border-t border-gray-100 flex justify-end gap-2">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-white transition"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={saving || !amount || Number(amount) <= 0 || deductionsTooHigh}
+                        className="px-4 py-2 bg-[#2CA01C] text-white rounded text-sm font-medium hover:bg-[#268d19] transition disabled:opacity-40"
+                    >
+                        {saving ? (isEditing ? 'Updating...' : 'Saving...') : (isEditing ? 'Update payment' : 'Save payment')}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+const num = (v) => Number(String(v ?? '').replace(/,/g, '')) || 0;
+const r2 = (n) => { const v = Number(n) || 0; return Math.round(v * 100 + (v < 0 ? -1e-6 : 1e-6)) / 100; };
+const emptyLine = () => ({ invoiceNo: '', gross: '', ewt: '' });
+const fieldCls = 'h-11 w-full px-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500';
+
+const REF_RE = /^\d{6,}$/;
+
+const pn = (v) => {
+    const s = String(v ?? '').trim();
+    if (!s) return 0;
+    const neg = /^\(.*\)$/.test(s) || s.startsWith('-');
+    const n = Number(s.replace(/[(),\-\s]/g, '')) || 0;
+    return neg ? -n : n;
+};
+const emptyDvRow = () => ({ docNo: '', ref: '', gross: '', ewt: '', ewtOn: true, fee: false, itemDate: '' });
+
+const DvPaymentModal = ({ profiles, onClose, onSaved, presetProfile }) => {
+    const [dvNumber, setDvNumber] = useState('');
+    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [dvAmount, setDvAmount] = useState('');
+    const presetPrefix = presetProfile ? `${presetProfile.invoiceNumber || ''}-` : '';
+    const newRow = () => (presetProfile ? { ...emptyDvRow(), ref: presetPrefix } : emptyDvRow());
+    const [rows, setRows] = useState([newRow()]);
+    const [proofFile, setProofFile] = useState(null);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+    const fileRef = useRef();
+
+    const findInvoice = (ref) => {
+        const full = String(ref || '').trim().toLowerCase();
+        if (!full) return null;
+        const byFull = profiles.find(p => (p.invoiceNumber || '').trim().toLowerCase() === full);
+        if (byFull) return byFull;
+        const base = full.split('-')[0].trim();
+        return profiles.find(p => (p.invoiceNumber || '').trim().toLowerCase() === base) || null;
+    };
+
+    const usedDv = {};
+    const seenRefs = new Set();
+    const deductedDvs = new Set(rows.filter(x => !x.fee && REF_RE.test(String(x.docNo || '').trim()) && pn(x.gross) < 0).map(x => String(x.docNo).trim().toLowerCase()));
+    const calc = rows.map((r) => {
+        const gross = r2(pn(r.gross));
+        const typedEwt = String(r.ewt ?? '').trim() !== '';
+        const ewt = gross < 0 ? 0
+            : typedEwt ? r2(Math.abs(pn(r.ewt)))
+            : (r.ewtOn ? r2((gross / 1.12) * 0.01) : 0);
+        const docNo = r.docNo.trim();
+        const ref = r.ref.trim();
+        const empty = !docNo && (!ref || ref === presetPrefix) && gross === 0 && ewt === 0;
+        const isDed = gross < 0;
+        const amount = isDed ? gross : r2(gross - ewt);
+        const out = { ...r, gross, ewt, docNo, ref, empty, isDed, amount, profile: null, kind: isDed ? 'freight' : 'invoice', error: '', hint: '', left: 0 };
+        if (empty) return out;
+
+        if (!isDed) {
+            out.profile = findInvoice(ref);
+            if (!ref) out.error = 'Enter the Ref. No. (invoice number, like 0027-003).';
+            else if (!out.profile) out.error = 'Invoice not found for ' + ref + '.';
+            else if (!(gross > 0)) out.error = 'Enter a gross amount.';
+            else {
+                const key = out.profile.id + '|' + ref.toLowerCase();
+                const dupSaved = (out.profile.payments || []).some(p => String(p.itemRef || '').trim().toLowerCase() === ref.toLowerCase() && !deductedDvs.has(String(p.referenceNumber || '').trim().toLowerCase()));
+                if (seenRefs.has(key)) out.error = ref + ' is listed twice in this DV.';
+                else if (dupSaved) out.error = ref + ' is already recorded on invoice ' + out.profile.invoiceNumber + '.';
+                seenRefs.add(key);
+                if (!out.error) {
+                    const n = (out.profile.payments || []).filter(p => Number(p.amount) > 0).length + 1;
+                    out.hint = `${out.profile.soldTo} · open ₱${fmt(getBalance(out.profile))}` + (ref.includes('-') ? '' : ` · next payment no. ${String(n).padStart(3, '0')}`);
+                }
+            }
+            return out;
+        }
+
+        // negative row: earlier DV (Doc No. is a DV number) or freight / fees
+        const amt = Math.abs(gross);
+        if (r.direct) {
+            out.kind = 'direct';
+            out.hint = "Direct deduction. Only lowers the DV total. No invoice or balance changes.";
+        } else if (r.split) {
+            out.kind = 'split';
+            out.hint = "Split across the invoices of this DV by gross. Each invoice stays open for its share.";
+        } else if (REF_RE.test(docNo) && !r.fee) {
+            out.kind = 'dv';
+            const key = docNo.toLowerCase();
+            let left = 0;
+            if (key === dvNumber.trim().toLowerCase()) {
+                out.error = "Can't deduct " + docNo + ' from its own DV.';
+            } else {
+                profiles.forEach(pr => (pr.payments || []).forEach(pay => {
+                    const a = Number(pay.amount || 0);
+                    if (a > 0 && String(pay.referenceNumber || '').trim().toLowerCase() === key) left += a;
+                    else if (a < 0 && (pay.charges || []).some(c => String(c.label || '').trim().toLowerCase() === ('reversal of dv ' + docNo).toLowerCase())) left += a;
+                }));
+                left = r2(Math.max(0, left) - (usedDv[key] || 0));
+                if (left <= 0) out.error = "Can't deduct " + docNo + ': no sales invoice has a payment with this DV number.';
+                else if (amt > left + 0.004) out.error = "Can't deduct " + fmt(amt) + ' from ' + docNo + ': only ' + fmt(left) + ' is left on it.';
+                else out.hint = `Reduces DV ${docNo}. Left on it: ${fmt(left)}`;
+                usedDv[key] = (usedDv[key] || 0) + amt;
+            }
+        } else {
+            out.hint = 'Freight / charge. Saved once for the customer. No invoice balance changes.';
+        }
+        return out;
+    });
+
+    const active = calc.filter(c => !c.empty);
+    const positives = active.filter(c => !c.isDed);
+    const sumGross = r2(active.reduce((s, c) => s + c.gross, 0));
+    const sumEwt = r2(positives.reduce((s, c) => s + c.ewt, 0));
+    const sumAmount = r2(active.reduce((s, c) => s + c.amount, 0));
+    const diff = r2(sumAmount - pn(dvAmount));
+    const matched = pn(dvAmount) > 0 && Math.abs(diff) < 0.005;
+    const rowBlocked = active.some(c => c.error);
+    const canSave = !!dvNumber.trim() && !!date && positives.length > 0 && matched && !rowBlocked && !saving;
+
+    const setRow = (i, patch) => { setError(''); setRows(prev => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r))); };
+
+    const handleSave = async () => {
+        setError('');
+        if (proofFile) {
+            const ok = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'].includes(proofFile.type);
+            if (!ok) return setError('Only PNG, JPG, JPEG, or PDF files are allowed.');
+            if (proofFile.size > 5 * 1024 * 1024) return setError('File size must be less than 5MB.');
+        }
+        const payload = {
+            dvNumber: dvNumber.trim(),
+            paymentDate: date,
+            dvAmount: r2(pn(dvAmount)),
+            deductions: active.filter(c => c.isDed && c.kind !== 'split' && c.kind !== 'direct').map(c => {
+                const amount = Math.abs(c.gross);
+                if (c.kind === 'dv') return { label: `${c.docNo} ${c.ref}`.trim(), amount, refNote: String(c.ref || '').trim() };
+                const base = c.ref || 'Freight charges';
+                const safe = /^\d{6,}(\s|$)/.test(base) ? `Charge ${base}` : base;
+                return { label: `${safe} ${c.docNo}`.trim(), amount };
+            }),
+            directDeductions: active.filter(c => c.isDed && c.kind === 'direct').map(c => ({ label: String((c.ref && c.docNo) ? (c.ref + ' #' + c.docNo) : (c.ref || c.docNo || 'Direct deduction')).trim(), amount: Math.abs(c.gross) })),
+            splitDeductions: active.filter(c => c.isDed && c.kind === 'split').map(c => {
+                const base = (c.ref && c.docNo) ? (c.ref + ' #' + c.docNo) : (c.ref || c.docNo || 'Deduction');
+                const safe = /^\d{6,}(\s|$)/.test(base) ? `Charge ${base}` : base;
+                return { label: safe, amount: Math.abs(c.gross) };
+            }),
+            lines: positives.map(c => ({
+                invoiceProfileId: c.profile.id,
+                grossAmount: c.gross,
+                ewtAmount: c.ewt,
+                docNumber: c.docNo,
+                itemRef: c.ref,
+                itemDate: c.itemDate || null,
+            })),
+        };
+        const fd = new FormData();
+        fd.append('data', JSON.stringify(payload));
+        if (proofFile) fd.append('proofFile', proofFile);
+        setSaving(true);
+        try {
+            const res = await api.upload('/invoice-profiles/payments/batch', fd);
+            if (res.success) {
+                toast.success(`DV ${payload.dvNumber} recorded (${positives.length} payment${positives.length > 1 ? 's' : ''})`);
+                onSaved(res.data?.data || res.data);
+                onClose();
+            } else {
+                setError(res.message || res.error || 'Failed to save DV payment.');
+            }
+        } catch {
+            setError('Failed to save DV payment. Please try again.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const labelCls = 'block text-xs font-semibold text-gray-600 mb-1';
+    const sectionCls = 'text-xs font-semibold tracking-wide text-gray-600 uppercase';
+    const showDate = false;
+    const gridCls = showDate ? 'grid grid-cols-[1.1fr_1.3fr_1.2fr_1fr_1fr_1fr_32px] gap-3' : 'grid grid-cols-[1.1fr_1.3fr_1fr_1fr_1fr_32px] gap-3';
+    const cell = 'h-10 w-full px-2.5 border border-gray-300 rounded-lg text-sm';
+
+    return (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[92vh] overflow-y-auto shadow-2xl">
+                <div className="px-7 py-5 border-b border-gray-200 flex justify-between items-start">
+                    <div>
+                        <div className="text-lg font-semibold text-gray-900">Record DV payment</div>
+                        <div className="text-sm text-gray-600 mt-0.5">Type each item exactly as the voucher shows it. EWT is automatic (untick to turn it off, or type your own). Negative items (earlier DV, freight) use a negative gross.</div>
+                    </div>
+                    <button onClick={onClose} aria-label="Close" className="w-11 h-11 flex items-center justify-center text-gray-600 hover:text-black text-2xl">&times;</button>
+                </div>
+
+                <div className="px-7 py-5 space-y-5">
+                    <div className="grid grid-cols-3 gap-3">
+                        <div>
+                            <label className={labelCls}>DV number *</label>
+                            <input value={dvNumber} onChange={(e) => setDvNumber(e.target.value)} placeholder="3700013586" className={`${fieldCls} font-mono`} />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Payment date *</label>
+                            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={fieldCls} />
+                        </div>
+                        <div>
+                            <label className={labelCls}>DV Total Amount (net) *</label>
+                            <input value={dvAmount} onChange={(e) => setDvAmount(e.target.value)} inputMode="decimal" placeholder="0.00"
+                                className="h-11 w-full px-3 border-2 border-[#2CA01C] rounded-lg text-base font-bold text-right focus:outline-none" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <div className="flex justify-between items-center mb-2">
+                            <div className="flex items-center gap-4"><div className={sectionCls}>Items</div></div>
+                            <button type="button" onClick={() => setRows(prev => [...prev, { ...newRow(), itemDate: prev.length ? (prev[prev.length - 1].itemDate || "") : "" }])} className="h-9 px-3 border border-orange-700 text-orange-800 bg-orange-50 rounded-lg text-xs font-semibold hover:bg-orange-100">+ Add item</button>
+                        </div>
+                        <div className="border border-gray-200 rounded-xl overflow-hidden">
+                            <div className={`${gridCls} px-4 py-2.5 bg-gray-50 border-b border-gray-200 text-[11px] font-semibold tracking-wide text-gray-600 uppercase`}>
+                                <div>Doc No.</div><div>Ref. No.</div>{showDate && <div>Inv. Date</div>}<div className="text-right">Gross</div><div className="text-right">EWT</div><div className="text-right">Amount</div><div></div>
+                            </div>
+                            {rows.map((r, i) => {
+                                const c = calc[i];
+                                return (
+                                    <div key={i} className={`px-4 py-3 ${i < rows.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                                        <div className={`${gridCls} items-center`}>
+                                            <input value={r.docNo} onChange={(e) => setRow(i, { docNo: e.target.value.replace(/\s+/g, '') })} placeholder="3300020691" className={`${cell} font-mono`} />
+                                            <input value={r.ref} onChange={(e) => setRow(i, { ref: e.target.value })} placeholder="0027-003" className={`${cell} font-semibold`} />
+                                            {showDate && <input type="date" value={r.itemDate || ""} onChange={(e) => setRow(i, { itemDate: e.target.value })} disabled={c.isDed} title="Invoice date on the voucher" className={`${cell} tabular-nums disabled:bg-gray-100`} />}
+<input value={r.gross} onChange={(e) => setRow(i, { gross: e.target.value })} inputMode="decimal" placeholder="0.00" className={`${cell} text-right tabular-nums`} />
+                                            <div className="flex items-center gap-1.5">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={!!r.ewtOn}
+                                                    onChange={(e) => setRow(i, { ewtOn: e.target.checked, ewt: '' })}
+                                                    title="Auto EWT (1% of VAT-exclusive amount)"
+                                                    className="w-4 h-4 flex-shrink-0"
+                                                />
+                                                <input
+                                                    value={r.ewt !== '' ? r.ewt : (c.ewt > 0 ? c.ewt.toFixed(2) : '')}
+                                                    onChange={(e) => setRow(i, { ewt: e.target.value })}
+                                                    inputMode="decimal"
+                                                    placeholder="0.00"
+                                                    className={`${cell} text-right tabular-nums`}
+                                                />
+                                            </div>
+                                            <div className={`text-right text-sm font-bold tabular-nums ${c.amount < 0 ? 'text-red-600' : ''}`}>{c.empty ? '' : (c.amount < 0 ? '(' + fmt(Math.abs(c.amount)) + ')' : fmt(c.amount))}</div>
+                                            {rows.length > 1 ? (
+                                                <button type="button" aria-label="Remove item" onClick={() => setRows(prev => prev.filter((_, k) => k !== i))} className="w-8 h-10 text-gray-500 hover:text-red-600 text-lg">&times;</button>
+                                            ) : <div></div>}
+                                        </div>
+                                        {c.isDed && (<label className="flex items-center gap-1.5 text-[11px] text-gray-700 mt-1 ml-1"><input type="checkbox" checked={!!r.split} onChange={(e) => setRow(i, { split: e.target.checked, direct: false })} />Split across this DV's invoices (automatic)</label>)}
+{c.isDed && (<label className="flex items-center gap-1.5 text-[11px] text-gray-700 mt-1 ml-1"><input type="checkbox" checked={!!r.direct} onChange={(e) => setRow(i, { direct: e.target.checked, split: false })} />Direct deduction (only lowers the DV total)</label>)}
+{c.isDed && (<label className="flex items-center gap-1.5 text-[11px] text-gray-700 mt-1 ml-1"><input type="checkbox" checked={!!r.fee} onChange={(e) => setRow(i, { fee: e.target.checked })} />Freight / fee (not an earlier DV)</label>)}
+{c.error && <div className="text-[11px] text-red-700 font-medium mt-1 ml-1">{c.error}</div>}
+                                        {!c.error && c.hint && <div className="text-[11px] text-gray-600 mt-1 ml-1">{c.hint}</div>}
+                                    </div>
+                                );
+                            })}
+                            <div className={`${gridCls} px-4 py-3 bg-gray-50 border-t-2 border-gray-300 text-sm font-bold`}>
+                                <div className={showDate ? 'col-span-3 text-right pr-2' : 'col-span-2 text-right pr-2'}>Total Amount</div>
+                                <div className="text-right tabular-nums">{fmt(sumGross)}</div>
+                                <div className="text-right tabular-nums">({fmt(sumEwt)})</div>
+                                <div className="text-right tabular-nums">{fmt(sumAmount)}</div>
+                                <div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-[1.1fr_1fr] gap-5">
+                        <div className={`rounded-xl border p-4 space-y-2 border-green-200 bg-green-50`}>
+                            <div className={sectionCls}>Check against the DV</div>
+                            <div className="flex justify-between text-sm"><span>Total of all items</span><span className="tabular-nums">{fmt(sumAmount)}</span></div>
+                            <div className="flex justify-between text-sm"><span>DV Total Amount typed above</span><span className="tabular-nums">{fmt(pn(dvAmount))}</span></div>
+                            <div className={`rounded-lg px-3 py-2 text-sm font-bold text-white bg-green-800`}>
+                                {matched ? 'Matched. Difference ₱0.00. Ready to save.' : `Difference ₱${fmt(Math.abs(diff))}. Not ready to save.`}
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <div className="text-xs font-semibold text-gray-600">Proof of payment, attached to every payment (optional)</div>
+                            <button type="button" onClick={() => fileRef.current?.click()} className="h-11 w-full border border-dashed border-gray-400 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+                                {proofFile ? `✓ ${proofFile.name}` : 'Upload DV image or PDF'}
+                            </button>
+                            <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => setProofFile(e.target.files[0] || null)} />
+                            <div className="text-xs text-gray-600 leading-relaxed">
+                                Each positive item becomes its own payment on its invoice, with reference <b className="font-mono">{dvNumber || 'DV number'}</b>. If any item fails, nothing is saved.
+                            </div>
+                        </div>
+                    </div>
+
+                    {error && <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-700 font-medium">{error}</div>}
+                </div>
+
+                <div className="px-7 py-4 border-t border-gray-200 flex justify-end gap-2.5">
+                    <button onClick={onClose} className="h-11 px-5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+                    <button onClick={handleSave} disabled={!canSave} className="h-11 px-5 bg-[#1e7a12] text-white rounded-lg text-sm font-semibold hover:bg-[#186510] disabled:opacity-40">
+                        {saving ? 'Saving...' : `Save DV payment (${positives.length} payment${positives.length === 1 ? '' : 's'})`}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+const SinglePaymentModal = ({ profile, profiles, editingPayment, groupPayments, onClose, onSaved }) => {
+    const isEditing = !!editingPayment;
+    const prefix = `${profile.invoiceNumber || ''}-`;
+    const normRef = (v) => {
+        let s = String(v || '').trim();
+        if (!s) return '';
+        if (s.toLowerCase().startsWith(prefix.toLowerCase())) s = s.slice(prefix.length);
+        return s ? prefix + s : '';
+    };
+    const editEwt = isEditing ? (Number(editingPayment.ewtAmount) || 0) : 0;
+    const newRow = (ewtOn = true) => ({ ...emptyDvRow(), ref: '', ewtOn });
+    const firstRow = () => (isEditing
+        ? {
+            docNo: editingPayment.docNumber || '',
+            ref: normRef(editingPayment.itemRef),
+            gross: String(editingPayment.grossAmount ?? editingPayment.amount),
+            ewt: editEwt > 0 ? String(editEwt) : '',
+            ewtOn: editEwt > 0,
+        }
+        : newRow());
+
+    const editSet = isEditing ? ((groupPayments && groupPayments.length) ? groupPayments : [editingPayment]) : [];
+    const rowOfPayment = (pm) => {
+        const e = Number(pm.ewtAmount) || 0;
+        return { docNo: pm.docNumber || '', ref: normRef(pm.itemRef), gross: String(pm.grossAmount ?? pm.amount), ewt: e > 0 ? String(e) : '', ewtOn: e > 0, itemDate: pm.itemDate || "" };
+    };
+    const editRef = isEditing ? String(editingPayment.referenceNumber || '').trim() : '';
+    const othersInDv = isEditing && !!editRef && profiles.some(pr => (pr.payments || []).some(pay => !editSet.some(e => e.id === pay.id) && Number(pay.amount || 0) > 0 && String(pay.referenceNumber || '').trim().toLowerCase() === editRef.toLowerCase()));
+    const reducedKey = 'reduced by dv ' + editRef.toLowerCase();
+    const reducedBy = (pay) => (!isEditing || othersInDv ? 0 : (pay.charges || []).reduce((s, c) => (String(c.label || '').trim().toLowerCase() === reducedKey ? s + Number(c.amount || 0) : s), 0));
+    const reducedRows = (() => {
+        if (!isEditing || !editRef || othersInDv) return [];
+        const m = {};
+        const inv = {};
+        profiles.forEach(pr => (pr.payments || []).forEach(pay => {
+            const v = reducedBy(pay);
+            if (v > 0) { const k = String(pay.referenceNumber || '').trim(); m[k] = r2((m[k] || 0) + v); const hit = (pay.charges || []).find(cc => String(cc.label || '').trim().toLowerCase() === reducedKey && cc.refNote); inv[k] = (hit && hit.refNote) || pr.invoiceNumber || ''; }
+        }));
+        return Object.entries(m).map(([docNo, amt]) => ({ docNo, ref: inv[docNo] || '', gross: String(-amt), ewt: '', ewtOn: false, fee: false, direct: false, split: false, itemDate: '' }));
+    })();
+    const reducedTotal = reducedRows.reduce((s, r) => s + Math.abs(Number(r.gross)), 0);
+    const [amount, setAmount] = useState(isEditing ? String(r2(editSet.reduce((s, pm) => s + Number(pm.amount || 0), 0) - reducedTotal)) : '');
+    const [dvNumber, setDvNumber] = useState(isEditing ? (editingPayment.referenceNumber || '') : '');
+    const [date, setDate] = useState(isEditing ? (editingPayment.paymentDate || '') : new Date().toISOString().split('T')[0]);
+    const [applyEwt, setApplyEwt] = useState(isEditing ? editEwt > 0 : true);
+    const splitRows = (() => {
+        if (!isEditing) return [];
+        const m = {};
+        editSet.forEach(pm => (pm.charges || []).forEach(c => {
+            const l = String(c.label || '').trim();
+            if (!l || /^(Reduced by DV|Deducted DV|Reversal of DV)/i.test(l)) return;
+            m[l] = r2((m[l] || 0) + Number(c.amount || 0));
+        }));
+        return Object.entries(m).map(([label, amt]) => {
+            const sp = label.split(/\s+/);
+            const sDoc = sp.length > 1 && /^\d{4,}$/.test(sp[sp.length - 1]);
+            const hm = /^(.*?)\s*#(\S+)$/.exec(label);
+            return { docNo: hm ? hm[2] : (sDoc ? sp[sp.length - 1] : ''), ref: hm ? hm[1] : (sDoc ? sp.slice(0, -1).join(' ') : label), raw: label, gross: String(-amt), ewt: '', ewtOn: false, fee: false, direct: false, split: true, itemDate: '' };
+        });
+    })();
+    const [rows, setRows] = useState(isEditing ? [...editSet.map(rowOfPayment), ...reducedRows, ...splitRows] : [firstRow()]);
+    useEffect(() => {
+        if (!isEditing || !editRef || othersInDv) return undefined;
+        let alive = true;
+        api.get('/invoice-profiles/company-charges?dvNumber=' + encodeURIComponent(editRef)).then((res) => {
+            if (!alive || !res || !res.success) return;
+            const list = res.data?.data || res.data || [];
+            if (!Array.isArray(list) || list.length === 0) return;
+            const add = list.map(c => {
+                const parts = String(c.label || '').trim().split(/\s+/);
+                const hasDoc = parts.length > 1 && /^\d{4,}$/.test(parts[parts.length - 1]);
+                return { docNo: hasDoc ? parts[parts.length - 1] : '', ref: hasDoc ? parts.slice(0, -1).join(' ') : parts.join(' '), gross: String(-Number(c.amount || 0)), ewt: '', ewtOn: false, fee: true, direct: false, split: false, itemDate: '' };
+            });
+            const tot = list.reduce((s, c) => s + Number(c.amount || 0), 0);
+            const dup = splitRows.filter(r => list.some(c => String(c.label || '').trim() === String(r.raw || r.ref || '').trim() && Number(c.amount || 0) === Math.abs(Number(r.gross))));
+            const dupTotal = dup.reduce((s, r) => s + Math.abs(Number(r.gross)), 0);
+            setRows(prev => [...prev.filter(r => !dup.includes(r)), ...add]);
+            setAmount(prev => String(r2(pn(prev) - tot + dupTotal)));
+        }).catch(() => {});
+        return () => { alive = false; };
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    const [proofFile, setProofFile] = useState(null);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+    const fileRef = useRef();
+
+    const others = (profile.payments || []).filter(p => !editSet.some(e => e.id === p.id));
+    const totalPaid = others.reduce((s, p) => s + settledOf(profile, p), 0);
+    const rawBalance = Number(profile.totalAmountDue) - totalPaid;
+    const balance = Math.max(0, rawBalance);
+
+    const findInvoice = (ref) => {
+        const full = String(ref || '').trim().toLowerCase();
+        if (!full) return null;
+        const byFull = profiles.find(p => (p.invoiceNumber || '').trim().toLowerCase() === full);
+        if (byFull) return byFull;
+        const base = full.split('-')[0].trim();
+        return profiles.find(p => (p.invoiceNumber || '').trim().toLowerCase() === base) || null;
+    };
+
+    const usedDv = {};
+    const seenRefs = new Set();
+    const deductedDvs = new Set(rows.filter(x => !x.fee && REF_RE.test(String(x.docNo || '').trim()) && pn(x.gross) < 0).map(x => String(x.docNo).trim().toLowerCase()));
+    const calc = rows.map((r) => {
+        const gross = r2(pn(r.gross));
+        const typedEwt = String(r.ewt ?? '').trim() !== '';
+        const ewt = gross < 0 ? 0
+            : typedEwt ? r2(Math.abs(pn(r.ewt)))
+            : (r.ewtOn ? r2((gross / 1.12) * 0.01) : 0);
+        const docNo = r.docNo.trim();
+        const ref = r.ref.trim();
+        const noRef = !ref || ref === prefix;
+        const empty = !docNo && noRef && gross === 0 && ewt === 0;
+        const isDed = gross < 0;
+        const amountRow = isDed ? gross : r2(gross - ewt);
+        const out = { ...r, gross, ewt, docNo, ref, empty, isDed, amount: amountRow, profile: null, kind: isDed ? 'freight' : 'invoice', error: '', hint: '' };
+        if (empty) return out;
+
+        if (!isDed) {
+            out.profile = profile;
+            if (noRef && !isEditing) out.error = 'Type the payment number after ' + prefix + ', like 004.';
+            else if (!out.profile) out.error = 'Invoice not found for ' + ref + '.';
+            else if (!(gross > 0)) out.error = 'Enter a gross amount.';
+            else if (!noRef) {
+                const key = out.profile.id + '|' + ref.toLowerCase();
+                const dupSaved = (out.profile.payments || []).some(p =>
+                    !editSet.some(e => e.id === p.id) &&
+                    String(p.itemRef || '').trim().toLowerCase() === ref.toLowerCase() && !deductedDvs.has(String(p.referenceNumber || '').trim().toLowerCase()));
+                if (seenRefs.has(key)) out.error = ref + ' is listed twice.';
+                else if (dupSaved) out.error = ref + ' is already recorded on invoice ' + out.profile.invoiceNumber + '.';
+                seenRefs.add(key);
+            }
+            return out;
+        }
+
+        const amt = Math.abs(gross);
+        if (r.direct) {
+            out.kind = 'direct';
+            out.hint = "Direct deduction. Only lowers the DV total. No invoice or balance changes.";
+        } else if (r.split) {
+            out.kind = 'split';
+            out.hint = "Split across the invoices of this DV by gross. Each invoice stays open for its share.";
+        } else if (REF_RE.test(docNo) && !r.fee) {
+            out.kind = 'dv';
+            const key = docNo.toLowerCase();
+            let left = 0;
+            if (key === dvNumber.trim().toLowerCase()) {
+                out.error = "Can't deduct " + docNo + ' from its own DV.';
+            } else {
+                profiles.forEach(pr => (pr.payments || []).forEach(pay => {
+                    if (editSet.some(e => e.id === pay.id)) return;
+                    const a = Number(pay.amount || 0) + reducedBy(pay);
+                    if (a > 0 && String(pay.referenceNumber || '').trim().toLowerCase() === key) left += a;
+                    else if (a < 0 && (pay.charges || []).some(c => String(c.label || '').trim().toLowerCase() === ('reversal of dv ' + docNo).toLowerCase())) left += a;
+                }));
+                left = r2(Math.max(0, left) - (usedDv[key] || 0));
+                if (left <= 0) out.error = "Can't deduct " + docNo + ': no sales invoice has a payment with this DV number.';
+                else if (amt > left + 0.004) out.error = "Can't deduct " + fmt(amt) + ' from ' + docNo + ': only ' + fmt(left) + ' is left on it.';
+                else out.hint = `Reduces DV ${docNo}. Left on it: ${fmt(left)}`;
+                usedDv[key] = (usedDv[key] || 0) + amt;
+            }
+        } else {
+            out.hint = 'Freight / charge. Saved once for the customer.';
+        }
+        return out;
+    });
+
+    const active = calc.filter(c => !c.empty);
+    const positives = active.filter(c => !c.isDed);
+    const sumGross = r2(active.reduce((s, c) => s + c.gross, 0));
+    const sumEwt = r2(positives.reduce((s, c) => s + c.ewt, 0));
+    const sumAmount = r2(active.reduce((s, c) => s + c.amount, 0));
+    const diff = r2(sumAmount - pn(amount));
+    const matched = pn(amount) > 0 && Math.abs(diff) < 0.005;
+    const rowBlocked = active.some(c => c.error);
+    const canSave = !!dvNumber.trim() && !!date && positives.length > 0 && matched && !rowBlocked && !saving;
+
+    const setRow = (i, patch) => { setError(''); setRows(prev => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r))); };
+    const toggleAllEwt = (on) => { setApplyEwt(on); setRows(prev => prev.map(r => ({ ...r, ewtOn: on, ewt: '' }))); };
+
+    const restoreOriginals = async (list) => {
+        let ok = true;
+        for (const pm of list) {
+            try {
+                const fd = new FormData();
+                fd.append('amount', pm.amount);
+                fd.append('grossAmount', pm.grossAmount ?? pm.amount);
+                fd.append('ewtAmount', pm.ewtAmount ?? 0);
+                fd.append('paymentDate', pm.paymentDate);
+                if (pm.referenceNumber) fd.append('referenceNumber', pm.referenceNumber);
+                const r = await api.upload(`/invoice-profiles/${profile.id}/payments`, fd);
+                if (!r.success) ok = false;
+            } catch {
+                ok = false;
+            }
+        }
+        return ok;
+    };
+
+    const handleSave = async () => {
+        setError('');
+        if (proofFile) {
+            const ok = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'].includes(proofFile.type);
+            if (!ok) return setError('Only PNG, JPG, JPEG, or PDF files are allowed.');
+            if (proofFile.size > 5 * 1024 * 1024) return setError('File size must be less than 5MB.');
+        }
+        const payload = {
+            dvNumber: dvNumber.trim(),
+            paymentDate: date,
+            dvAmount: r2(pn(amount)),
+            deductions: active.filter(c => c.isDed && c.kind !== 'split' && c.kind !== 'direct').map(c => {
+                const amt = Math.abs(c.gross);
+                if (c.kind === 'dv') return { label: `${c.docNo} ${c.ref}`.trim(), amount: amt, refNote: String(c.ref || '').trim() };
+                const base = c.ref || 'Freight charges';
+                const safe = /^\d{6,}(\s|$)/.test(base) ? `Charge ${base}` : base;
+                return { label: `${safe} ${c.docNo}`.trim(), amount: amt };
+            }),
+            directDeductions: active.filter(c => c.isDed && c.kind === 'direct').map(c => ({ label: String((c.ref && c.docNo) ? (c.ref + ' #' + c.docNo) : (c.ref || c.docNo || 'Direct deduction')).trim(), amount: Math.abs(c.gross) })),
+            splitDeductions: active.filter(c => c.isDed && c.kind === 'split').map(c => {
+                const base = (c.ref && c.docNo) ? (c.ref + ' #' + c.docNo) : (c.ref || c.docNo || 'Deduction');
+                const safe = /^\d{6,}(\s|$)/.test(base) ? `Charge ${base}` : base;
+                return { label: safe, amount: Math.abs(c.gross) };
+            }),
+            lines: positives.map(c => ({
+                invoiceProfileId: c.profile.id,
+                grossAmount: c.gross,
+                ewtAmount: c.ewt,
+                docNumber: c.docNo,
+                itemRef: normRef(c.ref),
+                itemDate: c.itemDate || null,
+            })),
+        };
+        const fd = new FormData();
+        fd.append('data', JSON.stringify(payload));
+        if (proofFile) fd.append('proofFile', proofFile);
+        setSaving(true);
+        const deleted = [];
+        const putBack = async () => {
+            if (!deleted.length) return '';
+            const back = await restoreOriginals(deleted);
+            onSaved(null, true);
+            return back
+                ? ' The removed payments were put back, but their Doc No., Ref. No. and proof were not restored.'
+                : ' Some removed payments could not be put back. Record them again.';
+        };
+        try {
+            for (const pm of editSet) {
+                const delRes = await api.delete(`/invoice-profiles/${profile.id}/payments/${pm.id}`);
+                if (!delRes.success) {
+                    const extra = await putBack();
+                    setError((delRes.message || delRes.error || 'Could not update the payment.') + extra);
+                    return;
+                }
+                deleted.push(pm);
+            }
+            const res = await api.upload('/invoice-profiles/payments/batch', fd);
+            if (res.success) {
+                toast.success(isEditing ? 'Payment updated' : `Payment recorded (${positives.length} item${positives.length > 1 ? 's' : ''})`);
+                onSaved(res.data?.data || res.data, true);
+                onClose();
+            } else {
+                const extra = await putBack();
+                setError((res.message || res.error || 'Failed to save payment.') + extra);
+            }
+        } catch {
+            const extra = await putBack();
+            setError('Failed to save payment. Please try again.' + extra);
+        } finally {
+            setSaving(false);
+        }
+    };
+    const showDate = false;
+    const gridCls = showDate ? 'grid grid-cols-[1.1fr_1.2fr_1.2fr_1fr_1.15fr_1fr_24px] gap-2' : 'grid grid-cols-[1.1fr_1.2fr_1fr_1.15fr_1fr_24px] gap-2';
+    const cell = 'h-9 w-full px-2 border border-gray-300 rounded text-xs';
+
+    return (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-2xl">
+                <div className="p-5 border-b border-gray-100 flex justify-between items-center">
+                    <div>
+                        <div className="font-medium text-black">{isEditing ? 'Edit payment' : 'Record payment'}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">{profile.soldTo}{profile.invoiceNumber ? ` · ${profile.invoiceNumber}` : ''}</div>
+                    </div>
+                    <button onClick={onClose} className="p-1 text-gray-600 hover:text-black rounded"><X size={18} /></button>
+                </div>
+
+                <div className="p-5">
+                    <div className="grid grid-cols-3 gap-2 mb-5">
+                        {[
+                            ['Total due', '₱' + fmt(profile.totalAmountDue), ''],
+                            ['Paid', '₱' + fmt(totalPaid), 'text-green-600'],
+                            rawBalance < 0
+                                ? ['Overpaid by', '₱' + fmt(Math.abs(rawBalance)), 'text-orange-600']
+                                : ['Balance', '₱' + fmt(balance), balance > 0 ? 'text-red-600' : 'text-green-600'],
+                        ].map(([l, v, cls]) => (
+                            <div key={l} className="bg-white rounded-xl p-3">
+                                <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">{l}</div>
+                                <div className={`text-sm font-bold ${cls}`}>{v}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="space-y-3">
+                        <div>
+                            <label className="block text-xs text-gray-500 mb-1 font-medium">Amount *</label>
+                            <input
+                                type="text"
+                                inputMode="decimal"
+                                value={amount}
+                                onChange={(e) => { setAmount(e.target.value); setError(''); }}
+                                placeholder="0.00"
+                                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                            />
+                            <label className="flex items-center gap-1.5 text-xs text-gray-500 mt-2">
+                                <input type="checkbox" checked={applyEwt} onChange={(e) => toggleAllEwt(e.target.checked)} />
+                                Deduct EWT (1% of VAT-exclusive amount)
+                            </label>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1 font-medium">Date</label>
+                                <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1 font-medium">Reference (DV no.) *</label>
+                                <input type="text" value={dvNumber} onChange={(e) => setDvNumber(e.target.value)} placeholder="3700013586"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm font-mono focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                                <label className="text-xs text-gray-500 font-medium">Items (type each line of the voucher)</label>
+                                <button type="button" onClick={() => setRows(prev => [...prev, { ...newRow(applyEwt), itemDate: prev.length ? (prev[prev.length - 1].itemDate || "") : "" }])}
+                                    className="text-xs text-orange-600 hover:text-orange-800 font-medium">+ Add item</button>
+                            </div>
+                            <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                <div className={`${gridCls} px-3 py-2 bg-gray-50 border-b border-gray-200 text-[10px] font-semibold tracking-wide text-gray-600 uppercase`}>
+                                    <div>Doc No.</div><div>Ref. No.</div>{showDate && <div>Inv. Date</div>}<div className="text-right">Gross</div><div className="text-right">EWT</div><div className="text-right">Amount</div><div></div>
+                                </div>
+                                {rows.map((r, i) => {
+                                    const c = calc[i];
+                                    return (
+                                        <div key={i} className={`px-3 py-2 ${i < rows.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                                            <div className={`${gridCls} items-center`}>
+                                                <input value={r.docNo} onChange={(e) => setRow(i, { docNo: e.target.value.replace(/\s+/g, '') })} placeholder="3300020691" className={`${cell} font-mono`} />
+                                                {c.isDed ? (
+                                                    <input value={r.ref === prefix ? '' : r.ref} onChange={(e) => setRow(i, { ref: e.target.value })} placeholder="Bank ref" className={`${cell} font-semibold`} />
+                                                ) : (
+                                                    <div className="flex items-center h-9 w-full border border-gray-300 rounded overflow-hidden text-xs font-semibold bg-white">
+                                                        <span className="px-2 h-full flex items-center bg-gray-100 text-gray-600 border-r border-gray-300 select-none">{prefix}</span>
+                                                        <input
+                                                            value={r.ref.startsWith(prefix) ? r.ref.slice(prefix.length) : ''}
+                                                            onChange={(e) => setRow(i, { ref: normRef(e.target.value) })}
+                                                            placeholder="003"
+                                                            className="flex-1 min-w-0 h-full px-2 outline-none"
+                                                        />
+                                                    </div>
+                                                )}
+                                                {showDate && <input type="date" value={r.itemDate || ""} onChange={(e) => setRow(i, { itemDate: e.target.value })} disabled={c.isDed} title="Invoice date on the voucher" className={`${cell} tabular-nums disabled:bg-gray-100`} />}
+<input value={r.gross} onChange={(e) => setRow(i, { gross: e.target.value })} inputMode="decimal" placeholder="0.00" className={`${cell} text-right tabular-nums`} />
+                                                <div className="flex items-center gap-1">
+                                                    <input type="checkbox" checked={!!r.ewtOn} onChange={(e) => setRow(i, { ewtOn: e.target.checked, ewt: '' })}
+                                                        title="Auto EWT (1% of VAT-exclusive amount)" className="w-3.5 h-3.5 flex-shrink-0" />
+                                                    <input value={r.ewt !== '' ? r.ewt : (c.ewt > 0 ? c.ewt.toFixed(2) : '')}
+                                                        onChange={(e) => setRow(i, { ewt: e.target.value })} inputMode="decimal" placeholder="0.00"
+                                                        className={`${cell} text-right tabular-nums`} />
+                                                </div>
+                                                <div className={`text-right text-xs font-bold tabular-nums ${c.amount < 0 ? 'text-red-600' : ''}`}>
+                                                    {c.empty ? '' : (c.amount < 0 ? '(' + fmt(Math.abs(c.amount)) + ')' : fmt(c.amount))}
+                                                </div>
+                                                {rows.length > 1 ? (
+                                                    <button type="button" aria-label="Remove item" onClick={() => setRows(prev => prev.filter((_, k) => k !== i))}
+                                                        className="w-6 h-9 text-gray-500 hover:text-red-600 text-base">&times;</button>
+                                                ) : <div></div>}
+                                            </div>
+                                            {c.isDed && (<label className="flex items-center gap-1.5 text-[11px] text-gray-700 mt-1 ml-1"><input type="checkbox" checked={!!r.split} onChange={(e) => setRow(i, { split: e.target.checked, direct: false })} />Split across this DV's invoices (automatic)</label>)}
+{c.isDed && (<label className="flex items-center gap-1.5 text-[11px] text-gray-700 mt-1 ml-1"><input type="checkbox" checked={!!r.direct} onChange={(e) => setRow(i, { direct: e.target.checked, split: false })} />Direct deduction (only lowers the DV total)</label>)}
+{c.isDed && (<label className="flex items-center gap-1.5 text-[11px] text-gray-700 mt-1 ml-1"><input type="checkbox" checked={!!r.fee} onChange={(e) => setRow(i, { fee: e.target.checked })} />Freight / fee (not an earlier DV)</label>)}
+{c.error && <div className="text-[11px] text-red-700 font-medium mt-1">{c.error}</div>}
+                                            {!c.error && c.hint && <div className="text-[11px] text-gray-600 mt-1">{c.hint}</div>}
+                                        </div>
+                                    );
+                                })}
+                                <div className={`${gridCls} px-3 py-2 bg-gray-50 border-t-2 border-gray-300 text-xs font-bold`}>
+                                    <div className={showDate ? 'col-span-3 text-right pr-2' : 'col-span-2 text-right pr-2'}>Total</div>
+                                    <div className="text-right tabular-nums">{fmt(sumGross)}</div>
+                                    <div className="text-right tabular-nums">({fmt(sumEwt)})</div>
+                                    <div className="text-right tabular-nums">{fmt(sumAmount)}</div>
+                                    <div></div>
+                                </div>
+                            </div>
+                            <div className={`mt-2 rounded p-2.5 text-xs font-semibold ${matched ? 'bg-green-50 text-green-800' : 'bg-amber-50 text-amber-800'}`}>
+                                {matched ? 'Items match the Amount. Ready to save.' : `Items total ₱${fmt(sumAmount)} · Amount ₱${fmt(pn(amount))} · Difference ₱${fmt(Math.abs(diff))}`}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs text-gray-500 mb-1 font-medium">Proof of payment (optional)</label>
+                            <div className="flex items-center gap-2">
+                                <button type="button" onClick={() => fileRef.current?.click()} className="px-3 py-2 border border-gray-300 rounded text-sm hover:bg-white transition">📎 Upload</button>
+                                <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => setProofFile(e.target.files[0] || null)} />
+                                {proofFile && <span className="text-xs text-green-600 truncate max-w-[200px]">✓ {proofFile.name}</span>}
+                            </div>
+                            {isEditing && editingPayment.proofFilePath && !proofFile && (
+                                <div className="text-[11px] text-amber-700 mt-1">The earlier proof is cleared when you update. Upload it again if needed.</div>
+                            )}
+                        </div>
+
+                        {error && <div className="bg-red-50 border border-red-200 rounded p-2.5 text-xs text-red-700 font-medium">{error}</div>}
+                    </div>
+                </div>
+
+                <div className="p-5 border-t border-gray-100 flex justify-end gap-2">
+                    <button onClick={onClose} className="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-white transition">Cancel</button>
+                    <button onClick={handleSave} disabled={!canSave}
+                        className="px-4 py-2 bg-[#2CA01C] text-white rounded text-sm font-medium hover:bg-[#268d19] transition disabled:opacity-40">
+                        {saving ? 'Saving...' : (isEditing ? 'Update payment' : `Save payment (${positives.length})`)}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+const EditReducedModal = ({ profile, payment, onClose, onSaved }) => {
+    const charges = payment.charges || [];
+    const isRed = (c) => String(c.label || '').startsWith('Reduced by DV');
+    const reduced = charges.filter(isRed).reduce((s, c) => s + Number(c.amount || 0), 0);
+    const other = charges.filter(c => !isRed(c)).reduce((s, c) => s + Number(c.amount || 0), 0);
+    const hadEwt = Number(payment.ewtAmount) > 0;
+    const laterDvs = charges.filter(isRed).map(c => String(c.label).replace('Reduced by DV', '').trim()).join(', ');
+
+    const [gross, setGross] = useState(String(payment.grossAmount ?? payment.amount));
+    const [ewtText, setEwtText] = useState('');
+    const [date, setDate] = useState(payment.paymentDate || '');
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+
+    const g = Number(gross) || 0;
+    const autoEwt = hadEwt ? r2((g / 1.12) * 0.01) : 0;
+    const ewt = ewtText !== '' ? (Number(ewtText) || 0) : autoEwt;
+    const net = r2(g - ewt - other - reduced);
+    const tooLow = g > 0 && net < 0;
+    const liveError = tooLow ? `Amount is less than what later DVs already took (₱${fmt(reduced)}).` : '';
+
+    const handleSave = async () => {
+        setError('');
+        if (!(g > 0)) { setError('Enter a valid amount.'); return; }
+        if (tooLow) { setError(liveError); return; }
+        setSaving(true);
+        try {
+            const body = { grossAmount: String(g), paymentDate: date };
+            if (ewtText !== '') body.ewtAmount = String(ewt);
+            const res = await api.put(`/invoice-profiles/${profile.id}/payments/${payment.id}`, body);
+            if (res.success) {
+                onSaved(res.data?.data || res.data);
+            } else {
+                setError(res.message || res.error || 'Failed to update the payment.');
+            }
+        } catch {
+            setError('Failed to update the payment. Please try again.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-md max-h-[92vh] overflow-y-auto shadow-2xl">
+                <div className="p-5 border-b border-gray-100 flex justify-between items-start">
+                    <div>
+                        <div className="font-medium text-black">Edit payment</div>
+                        <div className="text-xs text-gray-500 mt-0.5">
+                            {profile.soldTo}{profile.invoiceNumber ? ` · ${profile.invoiceNumber}` : ''}
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="p-1 text-gray-600 hover:text-black rounded"><X size={18} /></button>
+                </div>
+
+                <div className="p-5 space-y-4">
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+                        DV {laterDvs || 'a later DV'} already took ₱{fmt(reduced)} from this payment. That reduction stays. You can change only the amount recorded.
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-xs text-gray-500 mb-1 font-medium">Gross amount *</label>
+                            <input
+                                type="number"
+                                value={gross}
+                                onChange={(e) => { setGross(e.target.value); setError(''); }}
+                                className="w-full px-3 py-2 border border-gray-300 rounded text-sm text-right focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-gray-500 mb-1 font-medium">Date</label>
+                            <input
+                                type="date"
+                                value={date}
+                                onChange={(e) => setDate(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                            />
+                        </div>
+                    </div>
+
+                    {hadEwt && (
+                        <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-500">Less: EWT (auto 1% of VAT-exclusive)</span>
+                            <input
+                                type="number"
+                                value={ewtText !== '' ? ewtText : autoEwt}
+                                onChange={(e) => setEwtText(e.target.value)}
+                                className="w-28 text-right border border-gray-200 rounded px-2 py-1 text-xs"
+                            />
+                        </div>
+                    )}
+
+                    <div className="bg-gray-50 rounded-lg p-3 space-y-1.5 text-sm">
+                        <div className="flex justify-between"><span className="text-gray-600">Gross amount</span><span className="tabular-nums">₱{fmt(g)}</span></div>
+                        {ewt > 0 && <div className="flex justify-between"><span className="text-gray-500">Less: EWT</span><span className="text-red-500 tabular-nums">− ₱{fmt(ewt)}</span></div>}
+                        {other > 0 && <div className="flex justify-between"><span className="text-gray-500">Less: other deductions</span><span className="text-red-500 tabular-nums">− ₱{fmt(other)}</span></div>}
+                        <div className="flex justify-between"><span className="text-gray-500">Less: Reduced by DV {laterDvs}</span><span className="text-red-500 tabular-nums">− ₱{fmt(reduced)}</span></div>
+                        <div className="flex justify-between pt-1.5 mt-1.5 border-t border-gray-200 font-semibold">
+                            <span className="text-gray-700">Net amount recorded</span>
+                            <span className={`tabular-nums ${net < 0 ? 'text-red-600' : 'text-emerald-700'}`}>₱{fmt(net)}</span>
+                        </div>
+                    </div>
+
+                    {(liveError || error) && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-700 font-medium">
+                            {error || liveError}
+                        </div>
+                    )}
+                </div>
+
+                <div className="p-5 border-t border-gray-100 flex justify-end gap-2">
+                    <button onClick={onClose} className="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50 transition">Cancel</button>
+                    <button
+                        onClick={handleSave}
+                        disabled={saving || !(g > 0) || tooLow}
+                        className="px-4 py-2 bg-[#2CA01C] text-white rounded text-sm font-medium hover:bg-[#268d19] transition disabled:opacity-40"
+                    >
+                        {saving ? 'Saving...' : 'Update payment'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+const MultiSelectDropdown = ({ label, options, selected, onChange }) => {
+    const [open, setOpen] = useState(false);
+    const ref = useRef();
+
+    useEffect(() => {
+        const handler = (e) => {
+            if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    const toggle = (value) => {
+        onChange(selected.includes(value) ? selected.filter((v) => v !== value) : [...selected, value]);
+    };
+
+    return (
+        <div className="relative flex-1 min-w-[110px] max-w-[200px]" ref={ref}>
+            <button
+                type="button"
+                onClick={() => setOpen((o) => !o)}
+                className="px-2 py-1.5 border border-gray-300 rounded text-xs bg-white hover:bg-white transition flex items-center gap-2 w-full min-w-0 justify-between"
+            >
+                <span className="truncate text-gray-700">
+                    {selected.length === 0 ? label : `${label} (${selected.length})`}
+                </span>
+                <ChevronDown size={14} className={`text-gray-600 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
+            </button>
+
+            {open && (
+                <div className="absolute z-20 mt-1 w-72 bg-white border border-gray-200 rounded shadow-lg max-h-64 overflow-y-auto">
+                    {selected.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => onChange([])}
+                            className="w-full text-left px-3 py-2 text-xs text-orange-600 hover:bg-orange-50 border-b border-gray-100"
+                        >
+                            Clear all
+                        </button>
+                    )}
+                    {options.length === 0 ? (
+                        <div className="px-3 py-2 text-xs text-gray-400 italic">No options</div>
+                    ) : (
+                        options.map((opt) => (
+                            <label
+                                key={opt.value}
+                                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-white cursor-pointer"
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={selected.includes(opt.value)}
+                                    onChange={() => toggle(opt.value)}
+                                />
+                                <span className="whitespace-nowrap">{opt.label}</span>
+                            </label>
+                        ))
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const hasLinkCharge = (pay) => (pay.charges || []).some(c => /^(Reduced by DV|Deducted DV|Reversal of DV)/i.test(String(c.label || '').trim()));
+
+const InvoicingProfile = ({ onBack }) => {
+    const { user } = useAuth();
+    const isAdmin = can(user, 'sales', 'invoice');
+    const [profiles, setProfiles] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+    const [dvSearch, setDvSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState([]);
+    const [companyFilter, setCompanyFilter] = useState([]);
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
+    const [detailProfile, setDetailProfile] = useState(null);
+    const [paymentProfile, setPaymentProfile] = useState(null);
+    const [editingPayment, setEditingPayment] = useState(null);
+    const [editingGroup, setEditingGroup] = useState(null);
+    const [editingDateId, setEditingDateId] = useState(null);
+    const [editingDateValue, setEditingDateValue] = useState('');
+    const [receiptProfile, setReceiptProfile] = useState(null);
+    const [showDvModal, setShowDvModal] = useState(false);
+    const [reducedEdit, setReducedEdit] = useState(null);
+    const [expandedRows, setExpandedRows] = useState({});
+    const [cosData, setCosData] = useState({});
+    const [sortOrder, setSortOrder] = useState('asc');
+    const [page, setPage] = useState(1);
+    const PAGE_SIZE = 50;
+    const [allCharges, setAllCharges] = useState([]);
+    useEffect(() => {
+        let alive = true;
+        api.get('/invoice-profiles/company-charges').then((res) => {
+            if (!alive || !res || !res.success) return;
+            const list = res.data?.data || res.data || [];
+            setAllCharges(Array.isArray(list) ? list : []);
+        }).catch(() => {});
+        return () => { alive = false; };
+    }, [profiles]);
+    const dedMap = useMemo(() => {
+        const norm = (s) => String(s || '').trim().toLowerCase();
+        const sums = {};
+        allCharges.forEach(c => { const k = norm(c.dvNumber) + '|' + c.companyId; sums[k] = (sums[k] || 0) + Number(c.amount || 0); });
+        const link = /^(Reduced by DV|Deducted DV|Reversal of DV)/i;
+        const grossBy = {};
+        const rows = [];
+        profiles.forEach(pr => (pr.payments || []).forEach(pay => {
+            if (Number(pay.amount || 0) <= 0 || !norm(pay.referenceNumber)) return;
+            if ((pay.charges || []).some(c => !link.test(String(c.label || '').trim()))) return;
+            const k = norm(pay.referenceNumber) + '|' + pr.companyId;
+            const g = Number(pay.grossAmount != null ? pay.grossAmount : pay.amount);
+            grossBy[k] = (grossBy[k] || 0) + g;
+            rows.push({ id: pay.id, k, g });
+        }));
+        const out = {};
+        rows.forEach(r => { if (sums[r.k] && grossBy[r.k]) out[r.id] = Math.round(((sums[r.k] * r.g) / grossBy[r.k]) * 100) / 100; });
+        return out;
+    }, [profiles, allCharges]);
+    CHARGE_DED = dedMap;
+
+    const saveDate = async (profileId) => {
+        if (!editingDateValue) {
+            setEditingDateId(null);
+            return;
+        }
+        try {
+            const res = await api.put(`/invoice-profiles/${profileId}/date`, { date: editingDateValue });
+            if (res.success) {
+                setProfiles(prev => prev.map(p =>
+                    p.id === profileId ? { ...p, createdAt: editingDateValue } : p
+                ));
+                toast.success('Date updated');
+            } else {
+                toast.error(res.message || 'Failed to update date');
+            }
+        } catch {
+            toast.error('Failed to update date');
+        } finally {
+            setEditingDateId(null);
+            setEditingDateValue('');
+        }
+    };
+
+    const load = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await api.get('/invoice-profiles');
+            if (res.success) setProfiles(res.data?.data || res.data || []);
+        } catch {
+            toast.error('Failed to load Sales Journal');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Delete this invoice profile? This cannot be undone.')) return;
+        try {
+            const res = await api.delete(`/invoice-profiles/${id}`);
+            if (res.success) {
+                toast.success('Invoice profile deleted');
+                setProfiles(prev => prev.filter(p => p.id !== id));
+            } else {
+                toast.error(res.message || 'Failed to delete');
+            }
+        } catch {
+            toast.error('Failed to delete invoice profile');
+        }
+    };
+
+    const handleDeletePayment = async (profileId, paymentId) => {
+        if (!window.confirm('Delete this payment record? This cannot be undone.')) return;
+        try {
+            const res = await api.delete(`/invoice-profiles/${profileId}/payments/${paymentId}`);
+            if (res.success) {
+                toast.success('Payment deleted');
+                load();
+                const updated = res.data?.data || res.data;
+                setProfiles(prev => prev.map(p => (p.id === profileId ? updated : p)));
+                return updated;
+            } else {
+                toast.error(res.message || 'Failed to delete payment');
+            }
+        } catch {
+            toast.error('Failed to delete payment');
+        }
+    };
+
+    useEffect(() => { load(); }, [load]);
+    useEffect(() => { setPage(1); }, [search, statusFilter, companyFilter, dateFrom, dateTo, sortOrder]);
+    useEffect(() => { loadAllCosData(); }, []);
+
+    const companyOptions = useMemo(() => {
+        const names = new Set();
+        profiles.forEach((p) => { if (p.companyName) names.add(p.companyName); });
+        return Array.from(names).sort().map((name) => ({ value: name, label: name }));
+    }, [profiles]);
+
+    const getStatusCode = (p) => {
+        const totalPaid = getTotalSettled(p);
+        const bal = getBalance(p);
+        if (bal <= 0) return 'PAID';
+        if (totalPaid > 0) return 'PARTIAL'; // has some payment but still owes = "Have Balance"
+        return 'UNPAID';
+    };
+
+    const filtered = profiles.filter((p) => {
+        const matchSearch =
+            !search ||
+            p.soldTo?.toLowerCase().includes(search.toLowerCase()) ||
+            p.companyName?.toLowerCase().includes(search.toLowerCase()) ||
+            p.invoiceNumber?.toLowerCase().includes(search.toLowerCase());
+
+        const matchCompany = companyFilter.length === 0 || companyFilter.includes(p.companyName);
+
+        const matchStatus = statusFilter.length === 0 || statusFilter.includes(getStatusCode(p));
+        const periodStartYear = p.startYear;
+        const periodStartMonth = p.startMonth;
+        const periodEndYear = p.endYear || p.startYear;
+        const periodEndMonth = p.endMonth || p.startMonth;
+
+        const periodStart = periodStartYear && periodStartMonth
+            ? new Date(periodStartYear, periodStartMonth - 1, 1)
+            : null;
+        const periodEnd = periodEndYear && periodEndMonth
+            ? new Date(periodEndYear, periodEndMonth, 0, 23, 59, 59, 999)
+            : null;
+
+        const matchDateFrom = !dateFrom || (periodEnd && periodEnd >= new Date(dateFrom));
+        const matchDateTo = !dateTo || (periodStart && periodStart <= new Date(new Date(dateTo).setHours(23, 59, 59, 999)));
+
+        const dvq = dvSearch.trim().toLowerCase();
+        const matchDv = !dvq || (p.payments || []).some(pay =>
+            String(pay.referenceNumber || '').toLowerCase().includes(dvq) ||
+            (pay.charges || []).some(c => /^(Reduced by DV|Deducted DV)/i.test(String(c.label || '').trim()) && String(c.label || '').toLowerCase().includes(dvq)));
+
+        return matchSearch && matchCompany && matchStatus && matchDateFrom && matchDateTo && matchDv;
+    });
+
+    if (sortOrder !== 'none') {
+        const getInvoiceNum = (invoiceNumber) => {
+            const match = String(invoiceNumber || '').match(/\d+/);
+            return match ? parseInt(match[0], 10) : 0;
+        };
+        filtered.sort((a, b) => {
+            const numA = getInvoiceNum(a.invoiceNumber);
+            const numB = getInvoiceNum(b.invoiceNumber);
+            return sortOrder === 'asc' ? numA - numB : numB - numA;
+        });
+    }
+
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const safePage = Math.min(page, totalPages);
+    const startIdx = (safePage - 1) * PAGE_SIZE;
+    const paged = filtered.slice(startIdx, startIdx + PAGE_SIZE);
+
+    const parseTermsDays = (terms) => {
+        if (!terms) return null;
+        const match = String(terms).match(/(\d+)/);
+        return match ? parseInt(match[1]) : null;
+    };
+
+    const calcOverdueDays = (invoiceDate, terms) => {
+        if (!invoiceDate || !terms) return null;
+        const days = parseTermsDays(terms);
+        if (days === null) return null;
+        const due = new Date(invoiceDate);
+        due.setDate(due.getDate() + days);
+        due.setHours(0, 0, 0, 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return Math.floor((today - due) / (1000 * 60 * 60 * 24));
+    };
+
+    const getStatus = (profile) => {
+        const paid = getTotalSettled(profile);
+        const balance = getBalance(profile);
+        if (balance <= 0) return { label: 'Fully Paid', cls: 'bg-green-100 text-green-800' };
+        if (paid > 0) return { label: 'Partially Paid', cls: 'bg-yellow-100 text-yellow-800' };
+        return { label: 'Unpaid', cls: 'bg-red-100 text-red-800' };
+    };
+
+    const loadCosData = async (profileId) => {
+        if (cosData[profileId] !== undefined) return;
+        setCosData(prev => ({ ...prev, [profileId]: null }));
+        try {
+            const res = await api.get(`/invoice-profiles/${profileId}/cos-summary`).catch(() => ({ success: false }));
+            if (res.success && res.data) {
+                setCosData(prev => ({ ...prev, [profileId]: res.data?.data || res.data }));
+            } else {
+                setCosData(prev => ({ ...prev, [profileId]: { items: [], productCost: 0, shipping: 0, others: 0, totalCos: 0 } }));
+            }
+        } catch {
+            setCosData(prev => ({ ...prev, [profileId]: { items: [], productCost: 0, shipping: 0, others: 0, totalCos: 0 } }));
+        }
+    };
+
+    const loadAllCosData = async () => {
+        try {
+            const res = await api.get('/invoice-profiles/cos-summary-all');
+            if (res.success) {
+                const map = res.data?.data || res.data || {};
+                setCosData(prev => ({ ...prev, ...map }));
+            }
+        } catch {
+        }
+    };
+
+    const totals = React.useMemo(() => {
+        return filtered.reduce((acc, p) => {
+            const paid = getTotalSettled(p);
+            const bal = getBalance(p);
+            const cd = cosData[p.id];
+            const cos = cd && cd !== null
+                ? (cd.items || []).reduce((s, item) => {
+                    const qty = item.qty || item.totalQuantity || 1;
+                    const unitCost = Number(item.unitCost || 0);
+                    return s + (unitCost * qty);
+                }, 0)
+                : 0;
+            return {
+                vatableSales: acc.vatableSales + Number(p.vatableSales || 0),
+                vat: acc.vat + Number(p.vat || 0),
+                withholdingTax: acc.withholdingTax + Number(p.withholdingTax || 0),
+                totalAmountDue: acc.totalAmountDue + Number(p.totalAmountDue || 0),
+                paid: acc.paid + paid,
+                balance: acc.balance + bal,
+                cos: acc.cos + cos,
+            };
+        }, { vatableSales: 0, vat: 0, withholdingTax: 0, totalAmountDue: 0, paid: 0, balance: 0, cos: 0 });
+    }, [filtered, cosData]);
+
+    const fmtPeriod = (profile) => {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const sm = profile.startMonth;
+        const em = profile.endMonth;
+        const sy = profile.startYear;
+        const ey = profile.endYear;
+        if (!sm || !sy) {
+            const d = profile.invoiceDate || profile.createdAt;
+            if (!d) return '—';
+            return new Date(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        }
+        const smName = months[sm - 1];
+        const emName = months[(em || sm) - 1];
+        const eyVal = ey || sy;
+        if (smName === emName && sy === eyVal) return `${smName} ${sy}`;
+        if (sy === eyVal) return `${smName} – ${emName} ${sy}`;
+        if (smName === emName) return `${smName} ${sy} – ${eyVal}`;
+        return `${smName} – ${emName} ${sy} – ${eyVal}`;
+    };
+
+    return (
+        <div className="h-full flex flex-col overflow-hidden bg-white p-2 lg:p-3" style={{ fontFamily: "'Avenir Next', 'Avenir', 'Segoe UI', Helvetica, Arial, sans-serif" }}>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-2 flex-nowrap gap-2 flex-shrink-0">
+                <div>
+                    <button
+                        onClick={onBack}
+                        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition"
+                    >
+                        <ArrowLeft size={13} />
+                        Back to Sales
+                    </button>
+                    <h1 className="text-lg font-medium text-black leading-tight">Sales Journal</h1>
+                </div>
+            </div>
+
+            <div className="bg-white p-0 mb-2 flex flex-nowrap gap-2 items-center flex-shrink-0">
+                {canSeeFilter(user, 'sales', 'search') && (
+                    <input
+                        placeholder="Search Invoice #..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="px-2 py-1.5 border border-gray-300 rounded text-xs flex-1 min-w-[100px] max-w-[190px] focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                    />
+                )}
+                {canSeeFilter(user, 'sales', 'search') && (
+                    <input
+                        placeholder="DV no...."
+                        value={dvSearch}
+                        onChange={(e) => setDvSearch(e.target.value)}
+                        className="px-2 py-1.5 border border-gray-300 rounded text-xs flex-1 min-w-[90px] max-w-[150px] focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                    />
+                )}
+                {canSeeFilter(user, 'sales', 'company') && (
+                    <MultiSelectDropdown
+                        label="Company"
+                        options={companyOptions}
+                        selected={companyFilter}
+                        onChange={setCompanyFilter}
+                    />
+                )}
+                {canSeeFilter(user, 'sales', 'status') && (
+                    <MultiSelectDropdown
+                        label="Status"
+                        options={[
+                            { value: 'PAID', label: 'Paid' },
+                            { value: 'UNPAID', label: 'Unpaid' },
+                            { value: 'PARTIAL', label: 'Partial' },
+                        ]}
+                        selected={statusFilter}
+                        onChange={setStatusFilter}
+                    />
+                )}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <label className="text-xs text-gray-500 font-medium">Date:</label>
+                    <input
+                        type="date"
+                        value={dateFrom}
+                        onChange={(e) => setDateFrom(e.target.value)}
+                        className="px-1.5 py-1.5 w-[125px] border border-gray-300 rounded text-xs focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                    />
+                    <span className="text-xs text-gray-400">to</span>
+                    <input
+                        type="date"
+                        value={dateTo}
+                        onChange={(e) => setDateTo(e.target.value)}
+                        className="px-1.5 py-1.5 w-[125px] border border-gray-300 rounded text-xs focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                    />
+                </div>
+                {(companyFilter.length > 0 || statusFilter.length > 0 || search || dvSearch || dateFrom || dateTo) && (
+                    <button
+                        type="button"
+                        onClick={() => { setCompanyFilter([]); setStatusFilter([]); setSearch(''); setDvSearch(''); setDateFrom(''); setDateTo(''); }}
+                        className="text-xs text-gray-500 hover:text-red-600 underline whitespace-nowrap flex-shrink-0"
+                    >
+                        Clear filters
+                    </button>
+                )}
+                <select
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value)}
+                    className="px-2 py-1.5 border border-gray-300 rounded text-xs text-gray-700 flex-shrink-0 focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                >
+                    <option value="asc">Invoice # ↑ Ascending</option>
+                    <option value="desc">Invoice # ↓ Descending</option>
+                    <option value="none">Sort: Default (unsorted)</option>
+                </select>
+
+                <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+                    {isAdmin && (
+                        <button
+                            onClick={() => setShowDvModal(true)} style={ui(user, 'sales_ui', 'jr_dv_payment') ? undefined : { display: 'none' }}
+                            className="px-3 py-1.5 bg-[#2CA01C] text-white rounded text-xs font-medium hover:bg-[#268d19] transition whitespace-nowrap"
+                        >
+                            Record DV payment
+                        </button>
+                    )}
+                    <button
+                        onClick={load}
+                        className="px-3 py-1.5 border border-gray-300 rounded text-xs text-gray-700 hover:bg-white transition whitespace-nowrap"
+                    >
+                        ↻ Refresh
+                    </button>
+                </div>
+            </div>
+            <div className="flex-1 min-h-0 bg-white overflow-hidden">
+                <div className="h-full overflow-auto">
+                    <table className="w-full min-w-[1100px]" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+                        <thead className="bg-white">
+
+                            <tr>
+                                {[
+                                    { key: 'inv', label: 'Invoice #', align: 'left' },
+                                    { key: 'date', label: 'Invoice Date', align: 'left' },
+                                    { key: 'period', label: 'Period', align: 'left' },
+                                    { key: 'cust', label: 'Customer', align: 'left' },
+                                    { key: 'vat-sales', label: 'Net of VAT', align: 'right' },
+                                    { key: 'vat', label: 'VAT/PT', align: 'right' },
+                                    { key: 'ewt', label: 'Less: EWT', align: 'right' },
+                                    { key: 'due', label: 'Due', align: 'right' },
+                                    { key: 'terms', label: 'Terms', align: 'center' },
+                                    { key: 'overdue', label: 'Days Overdue', align: 'center' },
+                                    { key: 'paid', label: 'Amount Paid', align: 'right' },
+                                    { key: 'bal', label: 'Balance', align: 'right' },
+                                    { key: 'cos', label: 'Cost of Sales', align: 'right' },
+                                    { key: 'act', label: 'Actions', align: 'center' },
+                                ].map(({ key, label, align }, idx, arr) => {
+                                    const isInv = key === 'inv';
+                                    const alignCls = align === 'left' ? 'text-left' : align === 'right' ? 'text-right' : 'text-center';
+                                    return (
+                                        <th
+                                            key={key}
+                                            onClick={isInv ? () => setSortOrder(prev => prev === 'asc' ? 'desc' : prev === 'desc' ? 'none' : 'asc') : undefined}
+                                            className={`sticky top-0 z-10 bg-gray-50 shadow-[0_1px_0_#e5e7eb] px-3 py-3 text-[11px] font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap align-middle ${idx === 0 ? 'rounded-tl-xl' : ''} ${idx === arr.length - 1 ? 'rounded-tr-xl' : ''} ${alignCls} ${isInv ? 'cursor-pointer select-none hover:text-gray-700' : ''}`}
+                                        >
+                                            {label}{isInv ? (sortOrder === 'asc' ? ' ↑' : sortOrder === 'desc' ? ' ↓' : '') : ''}
+                                        </th>
+                                    );
+                                })}
+                            </tr>
+                        </thead>
+                        <tbody className="[&>tr>td]:border-b [&>tr>td]:border-gray-200">
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={14} className="px-4 py-10 text-center text-gray-400 text-sm">
+                                        Loading...
+                                    </td>
+                                </tr>
+                            ) : filtered.length === 0 ? (
+                                <tr>
+                                    <td colSpan={14} className="px-4 py-10 text-center text-gray-400 text-sm italic">
+                                        {profiles.length === 0
+                                            ? 'No invoices yet. Generate an invoice and click "Generate to Sales Journal".'
+                                            : 'No results match your filter.'}
+                                    </td>
+                                </tr>
+                            ) : (
+                                paged.map((p) => {
+                                    const totalPaid = getTotalSettled(p);
+                                    const overdueDays = calcOverdueDays(p.invoiceDate || p.createdAt, p.companyTerms);
+                                    const termsDays = parseTermsDays(p.companyTerms);
+                                    const isPaid = getBalance(p) <= 0;
+                                    const hasPartialPayments = totalPaid > 0 && !isPaid;
+
+                                    const rowBg = 'bg-white hover:bg-white';
+
+                                    return (
+                                        <React.Fragment key={p.id}>
+                                            <tr className={`${rowBg} transition`}>
+                                                <td className="px-4 py-3 text-xs text-black whitespace-nowrap">
+                                                    {p.invoiceNumber ? (
+                                                        <button
+                                                            onClick={() => setReceiptProfile(p)}
+                                                            className="text-black hover:underline"
+                                                            title="View Invoice Receipt"
+                                                        >
+                                                            {p.invoiceNumber}
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-black italic">—</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-xs text-black whitespace-nowrap">
+                                                    {editingDateId === p.id ? (
+                                                        <input
+                                                            type="date"
+                                                            autoFocus
+                                                            value={editingDateValue}
+                                                            onChange={(e) => setEditingDateValue(e.target.value)}
+                                                            onBlur={() => saveDate(p.id)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') saveDate(p.id);
+                                                                if (e.key === 'Escape') { setEditingDateId(null); setEditingDateValue(''); }
+                                                            }}
+                                                            className="border border-orange-400 rounded px-1 py-0.5 text-xs text-black focus:outline-none focus:ring-1 focus:ring-orange-500"
+                                                        />
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingDateId(p.id);
+                                                                const d = p.invoiceDate || (p.createdAt ? new Date(p.createdAt).toISOString().split('T')[0] : '');
+                                                                setEditingDateValue(d);
+                                                            }}
+                                                            className="text-left text-black hover:underline decoration-dashed underline-offset-2 transition"
+                                                            title="Click to edit date"
+                                                        >
+                                                            {fmtDate(p.invoiceDate || p.createdAt)}
+                                                        </button>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-xs text-black whitespace-nowrap">{fmtPeriod(p)}</td>
+                                                <td className="px-4 py-3 text-xs text-black max-w-[160px] truncate">
+                                                    {p.soldTo}
+                                                    {p.companyName && p.companyName !== p.soldTo && (
+                                                        <div className="text-xs text-black">{p.companyName}</div>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-xs text-right text-black whitespace-nowrap">₱{fmt(p.vatableSales)}</td>
+                                                <td className="px-4 py-3 text-xs text-right text-black whitespace-nowrap">₱{fmt(p.vat)}</td>
+                                                <td className="px-4 py-3 text-xs text-right text-black whitespace-nowrap">₱{fmt(p.withholdingTax)}</td>
+                                                <td className="px-4 py-3 text-xs text-right text-black whitespace-nowrap">₱{fmt(p.totalAmountDue)}</td>
+                                                <td className="px-4 py-3 text-center text-xs text-black whitespace-nowrap">
+                                                    {termsDays !== null ? p.companyTerms : <span className="text-black">—</span>}
+                                                </td>
+                                                <td className="px-4 py-3 text-center whitespace-nowrap">
+                                                    {termsDays !== null ? (
+                                                        overdueDays === null ? <span className="text-xs text-gray-400">—</span>
+                                                            : overdueDays === 0 ? <span className="text-xs text-amber-600 font-medium">Due today</span>
+                                                                : overdueDays < 0 ? <span className="text-xs text-emerald-600">{Math.abs(overdueDays)}d left</span>
+                                                                    : <span className="text-xs text-red-600 font-medium">{overdueDays}d overdue</span>
+                                                    ) : <span className="text-xs text-gray-400">—</span>}
+                                                </td>
+                                                <td className="px-4 py-3 text-xs text-right whitespace-nowrap">
+                                                    {totalPaid > 0 ? (
+                                                        <>
+                                                            <span className="text-emerald-600 font-medium">₱{fmt(totalPaid)}</span>
+                                                            {getOverpaidAmount(p) > 0 && (
+                                                                <div className="text-orange-600 font-medium">⚠ +₱{fmt(getOverpaidAmount(p))} over</div>
+                                                            )}
+                                                        </>
+                                                    ) : <span className="text-gray-400">—</span>}
+                                                </td>
+                                                <td className="px-4 py-3 text-xs text-right text-black whitespace-nowrap" style={{ overflow: 'visible', position: 'relative' }}>
+                                                    <BalanceTooltip profile={p} onClick={() => setDetailProfile(p)} />
+                                                </td>
+                                                {/* Cost of Sales */}
+                                                <td className="px-4 py-3 text-xs text-right whitespace-nowrap">
+                                                    <button
+                                                        onClick={() => {
+                                                            const nowExpanded = !expandedRows[p.id];
+                                                            setExpandedRows(prev => ({ ...prev, [p.id]: nowExpanded }));
+                                                            if (nowExpanded && cosData[p.id] === undefined) {
+                                                                loadCosData(p.id);
+                                                            }
+                                                        }}
+                                                        className="text-xs text-black hover:underline inline-flex items-center gap-1"
+                                                    >
+                                                        {expandedRows[p.id] ? (
+                                                            <ChevronUp size={12} className="text-black" />
+                                                        ) : (
+                                                            <ChevronDown size={12} className="text-black" />
+                                                        )}
+                                                        {cosData[p.id] === undefined ? '...' :
+                                                            cosData[p.id] === null ? '...' :
+                                                                `₱${fmt(
+                                                                    (cosData[p.id].items || []).reduce((s, item) => {
+                                                                        const qty = item.qty || item.totalQuantity || 1;
+                                                                        const unitCost = Number(item.unitCost || 0);
+                                                                        return s + (unitCost * qty);
+                                                                    }, 0)
+                                                                )}`}
+                                                    </button>
+                                                </td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <div className="flex items-center justify-center gap-1">
+                                                        {isAdmin && (
+                                                            <button onClick={() => { setEditingPayment(null); setPaymentProfile(p); }} style={ui(user, 'sales_ui', 'jr_record_payment') ? undefined : { display: 'none' }} title="Record payment" className="w-8 h-8 rounded flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200 transition">
+                                                                <img src="/money.png" alt="Record payment" className="w-4 h-4" style={{ filter: 'grayscale(1) brightness(0)' }} />
+                                                            </button>
+                                                        )}
+                                                        <button onClick={() => handleDelete(p.id)} style={ui(user, 'sales_ui', 'jr_delete_invoice') ? undefined : { display: 'none' }} title="Delete" className="w-8 h-8 rounded flex items-center justify-center bg-gray-100 text-black hover:bg-gray-200 hover:text-red-600 transition">
+                                                            <Trash2 size={15} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {expandedRows[p.id] && cosData[p.id] && cosData[p.id] !== null && (() => {
+                                                const rawItems = cosData[p.id].items || p.items || [];
+                                                const totalShipping = Number(cosData[p.id].shipping || 0);
+                                                const totalOthers = Number(cosData[p.id].others || 0);
+                                                const n = rawItems.length || 1;
+                                                const itemsWithBreakdown = rawItems.map(item => {
+                                                    const qty = item.qty || item.totalQuantity || 1;
+                                                    const unitCost = item.unitCost || 0;
+                                                    const itemShipping = Number(item.itemShipping || 0);
+                                                    const itemOthers = Number(item.itemOthers || 0);
+                                                    const itemProductCost = Number(item.itemProductCost || 0);
+                                                    const itemTotal = Number(item.unitCost || 0) * qty;
+                                                    return {
+                                                        ...item,
+                                                        qty,
+                                                        itemProductCost,
+                                                        productName: item.productName || item.description || '—',
+                                                        variationDisplay: item.variationDisplay || item.variation?.combinationDisplay || null,
+                                                        itemShipping,
+                                                        itemOthers,
+                                                        itemTotal,
+                                                    };
+                                                });
+
+                                                const grandTotal = itemsWithBreakdown.reduce((s, i) => s + i.itemTotal, 0);
+
+                                                return (
+                                                    <tr key={`cos-${p.id}`} className="bg-orange-50">
+                                                        <td colSpan={14} className="px-6 py-4">
+                                                            <div className="text-xs font-semibold text-orange-700 mb-2 uppercase tracking-wide">Cost of Sales Breakdown</div>
+                                                            <table className="w-full text-xs mb-2">
+                                                                <thead>
+                                                                    <tr className="text-gray-500 border-b border-orange-200">
+                                                                        <th className="text-left pb-1">SKU</th>
+                                                                        <th className="text-left pb-1">UPC</th>
+                                                                        <th className="text-left pb-1">Description</th>
+                                                                        <th className="text-right pb-1">Qty</th>
+                                                                        <th className="text-right pb-1">Unit Cost</th>
+                                                                        <th className="text-right pb-1 text-orange-700 font-bold">Total Cost</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-orange-100">
+                                                                    {itemsWithBreakdown.map((item, i) => (
+                                                                        <tr key={i} className="hover:bg-orange-100 transition">
+                                                                            <td className="py-1.5 text-gray-500 font-mono text-[10px]">{item.sku || '—'}</td>
+                                                                            <td className="py-1.5 text-gray-500 font-mono text-[10px]">{item.upc || '—'}</td>
+                                                                            <td className="py-1.5 text-gray-800 font-medium">
+                                                                                {item.productName}
+                                                                                {item.variationDisplay && item.variationDisplay !== 'Adjustment' && (
+                                                                                    <span className="text-xs text-gray-500 ml-1">({item.variationDisplay})</span>
+                                                                                )}
+                                                                                {item.variationDisplay === 'Adjustment' && (
+                                                                                    <span className="ml-2 text-xs text-orange-600 italic">(Adjustment)</span>
+                                                                                )}
+                                                                            </td>
+                                                                            <td className="py-1.5 text-right text-gray-700 font-medium">{Number(item.qty).toLocaleString()}</td>
+                                                                            <td className="py-1.5 text-right text-gray-600">
+                                                                                ₱{fmt(item.unitCost || 0)}
+                                                                            </td>
+                                                                            <td className="py-1.5 text-right font-bold text-orange-800 relative group">
+                                                                                <span className="cursor-default underline decoration-dashed underline-offset-2">₱{fmt(item.itemTotal)}</span>
+                                                                                <div className="absolute right-0 bottom-full mb-1 z-50 hidden group-hover:block w-56 bg-white border border-gray-200 rounded shadow-xl p-3 text-xs">
+                                                                                    <div className="flex justify-between mb-1 text-gray-600"><span>Unit Cost</span><span className="font-medium text-gray-800">₱{fmt(item.unitCost)}</span></div>
+                                                                                    <div className="flex justify-between mb-2 text-gray-600"><span>Quantity</span><span className="font-medium text-gray-800">×{Number(item.qty).toLocaleString()}</span></div>
+                                                                                    <div className="flex justify-between border-t border-gray-100 pt-2 font-bold text-orange-800"><span>Total</span><span>₱{fmt(item.itemTotal)}</span></div>
+                                                                                </div>
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                                <tfoot>
+                                                                    <tr className="border-t-2 border-orange-300 bg-orange-100">
+                                                                        <td colSpan={5} className="py-2 text-xs font-semibold text-orange-700 uppercase tracking-wide">Totals</td>
+                                                                        <td className="py-2 text-right text-sm font-bold text-orange-900 relative group">
+                                                                            <span className="cursor-default underline decoration-dashed underline-offset-2">₱{fmt(grandTotal)}</span>
+                                                                            <div className="absolute right-0 bottom-full mb-1 z-50 hidden group-hover:block w-56 bg-white border border-gray-200 rounded shadow-xl p-3 text-xs">
+                                                                                <div className="flex justify-between border-t border-gray-100 pt-2 font-bold text-orange-800"><span>Grand Total (Unit Cost × Qty)</span><span>₱{fmt(grandTotal)}</span></div>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                </tfoot>
+                                                            </table>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })()}
+                                        </React.Fragment>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                        {!loading && filtered.length > 0 && (
+                            <tfoot className="[&_td]:sticky [&_td]:bottom-0 [&_td]:z-10 [&_td]:bg-white [&_td]:shadow-[0_-2px_0_#e5e7eb]">
+                                <tr>
+                                    <td colSpan={4} className="px-4 py-2 text-[11px] font-semibold text-black uppercase tracking-wide text-left">
+                                        Totals ({filtered.length} invoice{filtered.length !== 1 ? 's' : ''})
+                                    </td>
+                                    <td className="px-4 py-2 text-xs font-semibold text-black text-right whitespace-nowrap">₱{fmt(totals.vatableSales)}</td>
+                                    <td className="px-4 py-2 text-xs font-semibold text-black text-right whitespace-nowrap">₱{fmt(totals.vat)}</td>
+                                    <td className="px-4 py-2 text-xs font-semibold text-black text-right whitespace-nowrap">₱{fmt(totals.withholdingTax)}</td>
+                                    <td className="px-4 py-2 text-xs font-semibold text-black text-right whitespace-nowrap">₱{fmt(totals.totalAmountDue)}</td>
+                                    <td colSpan={2}></td>
+                                    <td className="px-4 py-2 text-xs font-semibold text-black text-right whitespace-nowrap">₱{fmt(totals.paid)}</td>
+                                    <td className="px-4 py-2 text-xs font-semibold text-black text-right whitespace-nowrap">₱{fmt(totals.balance)}</td>
+                                    <td className="px-4 py-2 text-xs font-semibold text-black text-right whitespace-nowrap">₱{fmt(totals.cos)}</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        )}
+                    </table>
+                </div>
+            </div>
+
+            {!loading && filtered.length > 0 && (
+                <div className="flex-shrink-0">
+                    <Pagination
+                        currentPage={safePage}
+                        totalPages={totalPages}
+                        onPageChange={setPage}
+                        onNextPage={() => setPage(p => Math.min(p + 1, totalPages))}
+                        onPrevPage={() => setPage(p => Math.max(p - 1, 1))}
+                        showingStart={startIdx + 1}
+                        showingEnd={Math.min(startIdx + PAGE_SIZE, filtered.length)}
+                        totalItems={filtered.length}
+                    />
+                </div>
+            )}
+
+            {/* Modals */}
+            {receiptProfile && (
+                <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+                    <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
+                        <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl z-10 print:hidden">
+                            <h2 className="text-xl font-bold text-gray-900">Invoice Report</h2>
+                            <div className="flex gap-3">
+                                <button onClick={() => window.print()} style={ui(user, 'sales_ui', 'jr_print_receipt') ? undefined : { display: 'none' }} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition text-sm font-medium">🖨️ Print</button>
+                                <button onClick={() => setReceiptProfile(null)} className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded transition"><X size={24} /></button>
+                            </div>
+                        </div>
+                        <div className="p-8 text-sm text-black" id="invoice-report">
+                            <div className="flex justify-between items-start mb-5 pb-4 border-gray-900">
+                                <div className="text-left leading-none space-y-0">
+                                    <div className="text-sm font-bold text-black -mb-0 font-serif tracking-tight">WISECART MERCHANTS CORP.</div>
+                                    <div className="text-sm text-black font-medium space-y-[1px] tracking-tight">
+                                        <div>407B 4F Tower One Plaza Magellan The Mactan Newtown</div>
+                                        <div>Mactan 6015 City of Lapu-lapu Cebu, Phils.</div>
+                                        <div>VAT REG. TIN 010-751-561-00000</div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="inline-block text-left leading-none">
+                                        <div className="text-sm font-bold text-black tracking-widest">SALES</div>
+                                        <div className="text-sm font-bold text-black tracking-widest">INVOICE</div>
+                                    </div>
+                                    <div className="text-sm font-semibold flex items-center gap-1">
+                                        NO.
+                                        <input type="text" readOnly value={receiptProfile.invoiceNumber || ''} placeholder="_____________" className="border-b border-gray-500 w-36 text-center focus:outline-none bg-transparent print:border-0 text-sm text-black" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex justify-between items-center mb-2 mt-11">
+                                <div className="flex gap-6">
+                                    <label className="flex items-center gap-2 text-sm font-medium text-black"><input type="checkbox" className="w-6 h-6 border-2 border-gray-900" /> CASH SALES</label>
+                                    <label className="flex items-center gap-2 text-sm font-medium text-black"><input type="checkbox" className="w-6 h-6 border-2 border-gray-900" /> CHARGE SALES</label>
+                                </div>
+                                <div className="text-right">
+                                    <div className="flex items-center gap-2 justify-end text-black">
+                                        <span className="font-medium">DATE:</span>
+                                        <input type="text" readOnly value={receiptProfile.invoiceDate ? new Date(receiptProfile.invoiceDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : receiptProfile.createdAt ? new Date(receiptProfile.createdAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : ''} className="border-b border-gray-500 text-sm focus:outline-none bg-transparent print:border-0 text-black" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="border border-gray-900 p-3 mb-1.5" style={{ height: '165px' }}>
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-center mb-1.5"><span className="font-bold text-black w-48 text-sm">SOLD TO:</span><span className="text-black flex-1 text-sm print-visible">{receiptProfile.soldTo || 'N/A'}</span></div>
+                                    <div className="flex items-center mb-1.5"><span className="font-bold text-black w-48 text-sm">REGISTERED NAME:</span><span className="text-black flex-1 text-sm print-visible">{receiptProfile.registeredName || 'N/A'}</span></div>
+                                    <div className="flex items-center mb-1.5"><span className="font-bold text-black w-48 text-sm">TIN:</span><span className="text-black flex-1 text-sm print-visible">{receiptProfile.tin || 'N/A'}</span></div>
+                                    <div className="grid grid-cols-[180px_1fr] items-start gap-3"><div className="font-bold text-black pt-1 self-start text-sm">BUSINESS ADDRESS:</div><div className="text-black -mt-1 leading-[1.1] tracking-tight text-sm print-visible">{receiptProfile.businessAddress || 'N/A'}</div></div>
+                                </div>
+                            </div>
+                            <div className="border border-b-0 border-gray-900">
+                                <table className="w-full" style={{ borderCollapse: 'collapse', minHeight: '150mm' }}>
+                                    <thead>
+                                        <tr className="border-b border-gray-900">
+                                            <th className="text-left px-4 py-1 font-bold text-black text-sm leading-tight" style={{ width: '60%' }}>ITEM DESCRIPTION / NATURE OF SERVICE</th>
+                                            <th className="text-right px-4 py-1 font-bold text-black text-sm leading-tight" style={{ width: '12%' }}>QTY.</th>
+                                            <th className="text-right px-4 py-1 font-bold text-black text-sm leading-tight" style={{ width: '12%' }}>UNIT COST / PRICE</th>
+                                            <th className="text-right px-4 py-1 font-bold text-black text-sm leading-tight" style={{ width: '15%' }}>AMOUNT</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                        {(receiptProfile.items || []).map((item, i) => (
+                                            <tr key={i} className="align-top">
+                                                <td className="py-1 px-4 text-sm text-black leading-tight">{item.productName}{item.companySku && <span> [{item.companySku}]</span>}{item.variationDisplay && item.variationDisplay !== 'Adjustment' && <span> {item.variationDisplay}{item.upc ? ` - ${item.upc}` : ''}</span>}{item.variationDisplay === 'Adjustment' && <span className="ml-2 text-sm text-black italic">(Adjustment)</span>}</td>
+                                                <td className="py-1 px-4 text-right text-sm text-black leading-tight">{Number(item.totalQuantity).toLocaleString()}</td>
+                                                <td className="py-1 px-4 text-right text-sm text-black leading-tight">{fmt(item.unitCost)}</td>
+                                                <td className="py-1 px-4 text-right text-sm text-black leading-tight">{fmt(item.totalAmount)}</td>
+                                            </tr>
+                                        ))}
+                                        {(!receiptProfile.items || receiptProfile.items.length === 0) && (
+                                            <tr><td colSpan={4} className="py-8 text-center text-black italic text-sm">No item data saved for this invoice.</td></tr>
+                                        )}
+                                        <tr className="h-full"><td colSpan={4} className="p-0"></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            {/* VAT Summary Section */}
+                            <div className="grid grid-cols-6 border border-gray-900 text-sm text-black">
+                                <div className="col-span-2 grid grid-cols-2">
+                                    <div className="px-2 py-3 flex flex-col justify-start font-medium text-sm">
+                                        <div className="mb-2">Total Sales:</div>
+                                        <div className="mb-2">VAT/PT:</div>
+                                        <div className="mb-2">Zero-Rated Sales:</div>
+                                        <div>VAT-Exempt Sales:</div>
+                                    </div>
+                                    <div className="px-4 py-3 flex flex-col justify-start text-sm">
+                                        <input readOnly value={fmt(receiptProfile.vatableSales || 0)} className="w-full text-right pb-0 mb-2 bg-transparent text-black" />
+                                        <input readOnly value={fmt(receiptProfile.vat || 0)} className="w-full text-right pb-0 mb-2 bg-transparent text-black" />
+                                        <input readOnly value={fmt(0)} className="w-full text-right pb-0 mb-2 bg-transparent text-black" />
+                                        <input readOnly value={fmt(0)} className="w-full text-right pb-0 bg-transparent text-black" />
+                                    </div>
+                                </div>
+                                <div className="border-l border-r border-gray-900 px-3 py-3 flex flex-col justify-center text-sm">
+                                    <div className="font-medium leading-tight">SC/PWD/NAAC/MOV/<br />SOLO PARENT ID No.:</div>
+                                    <div className="font-medium leading-tight mt-9">SC/PWD/NAAC/MOV/<br />Signature:</div>
+                                </div>
+                                <div className="border-r border-gray-900 px-3 py-3 flex flex-col justify-center text-sm">
+                                    <input type="text" readOnly className="w-full pb-0 text-sm -mt-1 bg-transparent text-black" />
+                                    <input type="text" readOnly className="w-full pb-0 text-sm mt-5 bg-transparent text-black" />
+                                </div>
+                                <div className="col-span-2 grid grid-cols-2">
+                                    <div className="px-2 py-3 flex flex-col justify-start font-medium text-sm">
+                                        <div className="mb-2 text-sm">TOTAL SALES (VAT Inclusive)</div>
+                                        <div className="mb-2">Less: VAT</div>
+                                        <div className="mb-2">Amount: Net of VAT</div>
+                                        <div>Less: Discount<br /><span className="text-sm">(SC/PWD/NAAC/MOV/SP)</span></div>
+                                    </div>
+                                    <div className="px-4 pt-2 flex flex-col justify-start">
+                                        <input readOnly value={fmt((receiptProfile.vatableSales || 0) + (receiptProfile.vat || 0))} className="w-full text-right pb-0 mb-2 text-sm bg-transparent text-black" />
+                                        <input readOnly value={fmt(receiptProfile.vat || 0)} className="w-full text-right pb-0 mb-2 text-sm bg-transparent text-black" />
+                                        <input readOnly value={fmt(receiptProfile.vatableSales || 0)} className="w-full text-right pb-0 mb-2 text-sm bg-transparent text-black" />
+                                        <input readOnly value={fmt(0)} className="w-full text-right pb-0 text-sm bg-transparent text-black" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Total Amount Due Section */}
+                            <div className="grid grid-cols-6 border-l border-r border-b border-gray-900 text-sm text-black">
+                                <div className="col-span-4 border-r border-gray-900 px-4">
+                                    <label className="flex items-start gap-2 text-sm font-medium text-black">
+                                        <input type="checkbox" className="w-6 h-6 mt-8" />
+                                        <div>
+                                            <div className="mb-8 mt-8">Received the amount of</div>
+                                            <div className="border-b border-gray-900 mt-1 w-full"></div>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div className="col-span-2 grid grid-cols-2">
+                                    <div className="px-2 py-3 flex flex-col justify-start font-medium text-sm">
+                                        <div className="mb-2">Add: VAT</div>
+                                        <div className="mb-2">Less: Withholding Tax</div>
+                                        <div>Total Amount Due:</div>
+                                    </div>
+                                    <div className="px-4 pt-2 flex flex-col justify-start">
+                                        <input readOnly value={fmt(receiptProfile.vat || 0)} className="w-full text-right pb-0 mb-2 text-sm bg-transparent text-black" />
+                                        <input readOnly value={fmt(receiptProfile.withholdingTax || 0)} className="w-full text-right pb-0 mb-2 text-sm bg-transparent text-black" />
+                                        <input readOnly value={fmt(receiptProfile.totalAmountDue || 0)} className="w-full text-right font-bold pb-0 text-sm bg-transparent text-black" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 border border-gray-900 text-sm text-black mt-6">
+                                <div className="border-gray-900 px-4 py-2"><div className="font-medium text-sm">PERMIT TO USE LOOSE LEAF No. : LLSI-080-1024-00002</div><div className="font-medium text-sm">DATE ISSUED: OCT. 11, 2024</div></div>
+                                <div className="px-4 py-2 pb-4"><div className="font-medium text-sm">BIR AUTHORITY TO PRINT No. 080AU20240000016398</div><div className="font-medium text-sm">DATE ISSUED: OCT. 23, 2024</div><div className="font-medium text-sm">APPROVED SERIES: 0501-1500 • 20PADS (2X)</div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {detailProfile && (
+                <DetailModal
+                    profile={detailProfile}
+                    profiles={profiles}
+                    isAdmin={isAdmin}
+                    onClose={() => setDetailProfile(null)}
+                    onAddPayment={(p) => { setEditingPayment(null); setPaymentProfile(p); }}
+                    onEditPayment={(p, payment, group) => { setEditingGroup(group || null); setEditingPayment(payment); setPaymentProfile(p); }}
+                    onEditReduced={(profile, payment) => setReducedEdit({ profile, payment })}
+                    onDeletePayment={async (profileId, paymentId) => {
+                        const updated = await handleDeletePayment(profileId, paymentId);
+                        if (updated) setDetailProfile(updated);
+                    }}
+                />
+            )}
+
+
+            {reducedEdit && (
+                <EditReducedModal
+                    profile={reducedEdit.profile}
+                    payment={reducedEdit.payment}
+                    onClose={() => setReducedEdit(null)}
+                    onSaved={(updated) => {
+                        setProfiles(prev => prev.map(x => (x.id === updated.id ? updated : x)));
+                        setDetailProfile(updated);
+                        setReducedEdit(null);
+                    }}
+                />
+            )}
+
+            {showDvModal && (
+                <DvPaymentModal
+                    profiles={profiles}
+                    onClose={() => setShowDvModal(false)}
+                    onSaved={(updatedList) => {
+                        const list = Array.isArray(updatedList) ? updatedList : [updatedList];
+                        setProfiles(prev => prev.map(p => list.find(u => u.id === p.id) || p));
+                    }}
+                />
+            )}
+
+
+
+
+            {paymentProfile && !editingPayment && (
+                <SinglePaymentModal profile={paymentProfile} profiles={profiles}
+                    onClose={() => { setPaymentProfile(null); setEditingPayment(null); }}
+                    onSaved={(updatedList) => {
+                        const list = Array.isArray(updatedList) ? updatedList : [updatedList];
+                        setProfiles(prev => prev.map(p => list.find(u => u.id === p.id) || p));
+                    }}
+                />
+            )}
+
+            {paymentProfile && editingPayment && !hasLinkCharge(editingPayment) && (
+                <SinglePaymentModal profile={paymentProfile} profiles={profiles} editingPayment={editingPayment} groupPayments={editingGroup}
+                    onClose={() => { setPaymentProfile(null); setEditingPayment(null); }}
+                    onSaved={(updatedList, reload) => {
+                        const list = (Array.isArray(updatedList) ? updatedList : [updatedList]).filter(Boolean);
+                        setProfiles(prev => prev.map(p => list.find(u => u.id === p.id) || p));
+                        if (reload) load();
+                    }}
+                />
+            )}
+
+            {paymentProfile && editingPayment && hasLinkCharge(editingPayment) && (
+                <PaymentModal
+                    profile={paymentProfile}
+                    profiles={profiles}
+                    editingPayment={editingPayment}
+                    onClose={() => { setPaymentProfile(null); setEditingPayment(null); }}
+                    onSaved={(updated, reload) => {
+                        setProfiles((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+                        if (reload) load();
+                        setPaymentProfile(null);
+                        setEditingPayment(null);
+                    }}
+                />
+            )}
+
+        </div>
+    );
+};
+
+export default InvoicingProfile;
