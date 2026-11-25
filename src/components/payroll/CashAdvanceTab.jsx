@@ -12,7 +12,7 @@ import usePagination from './usePagination';
 const TYPE_LABEL = { ONE_TIME: 'One-time', RECURRING: 'Recurring' };
 const SCHEDULE_LABEL = { SPLIT: 'Split (15th & 30th)', FIRST_CUTOFF: '15th only', SECOND_CUTOFF: '30th only' };
 const EMPTY = {
-  employeeId: '', amount: '', purpose: '', advanceType: 'ONE_TIME',
+  employeeId: '', amount: '', purpose: '', advanceType: 'RECURRING',
   dateReleased: today(), startTerm: '', endTerm: '', deductionSchedule: 'SPLIT',
   specialOnly: false, overrides: [],
 };
@@ -446,14 +446,14 @@ const CashAdvanceTab = ({ employees, canCreate, canEdit }) => {
                     onChange={(v) => update({ employeeId: v })}
                   />
                 </Field>
-                <Field label="Type" required>
+                {editing && editing.advanceType !== 'RECURRING' && (<Field label="Type" required>
                   <SearchableSelect
                     typeable={false}
                     value={form.advanceType}
                     options={Object.entries(TYPE_LABEL).map(([value, label]) => ({ value, label }))}
                     onChange={(v) => update({ advanceType: v || 'ONE_TIME' })}
                   />
-                </Field>
+                </Field>)}
                 <Field label={recurring ? 'Monthly Deduction Amount' : 'Amount'} required={!special}>
                   {special ? (
                     <input className={inputCls} readOnly value={money(specialTotal)} />
