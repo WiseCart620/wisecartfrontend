@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import InvoiceReportModal, { profileToReport } from '../../components/modals/InvoiceReportModal';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import { ArrowLeft, X, Trash2, Eye, ChevronDown, ChevronUp, FileText, Pencil } from 'lucide-react';
@@ -2494,7 +2495,7 @@ const InvoicingProfile = ({ onBack }) => {
                                                             className="text-black hover:underline"
                                                             title="View Invoice Receipt"
                                                         >
-                                                            {p.invoiceNumber}
+                                                            <span className="underline underline-offset-2">{p.invoiceNumber}</span>
                                                         </button>
                                                     ) : (
                                                         <span className="text-black italic">—</span>
@@ -2524,7 +2525,7 @@ const InvoicingProfile = ({ onBack }) => {
                                                             className="text-left text-black hover:underline decoration-dashed underline-offset-2 transition"
                                                             title="Click to edit date"
                                                         >
-                                                            {fmtDate(p.invoiceDate || p.createdAt)}
+                                                            <span className="underline underline-offset-2">{fmtDate(p.invoiceDate || p.createdAt)}</span>
                                                         </button>
                                                     )}
                                                 </td>
@@ -2733,156 +2734,27 @@ const InvoicingProfile = ({ onBack }) => {
             )}
 
             {/* Modals */}
-            {receiptProfile && (
-                <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-                    <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
-                        <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl z-10 print:hidden">
-                            <h2 className="text-xl font-bold text-gray-900">Invoice Report</h2>
-                            <div className="flex gap-3">
-                                <button onClick={() => window.print()} style={ui(user, 'sales_ui', 'jr_print_receipt') ? undefined : { display: 'none' }} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition text-sm font-medium">🖨️ Print</button>
-                                <button onClick={() => setReceiptProfile(null)} className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded transition"><X size={24} /></button>
-                            </div>
-                        </div>
-                        <div className="p-8 text-sm text-black" id="invoice-report">
-                            <div className="flex justify-between items-start mb-5 pb-4 border-gray-900">
-                                <div className="text-left leading-none space-y-0">
-                                    <div className="text-sm font-bold text-black -mb-0 font-serif tracking-tight">WISECART MERCHANTS CORP.</div>
-                                    <div className="text-sm text-black font-medium space-y-[1px] tracking-tight">
-                                        <div>407B 4F Tower One Plaza Magellan The Mactan Newtown</div>
-                                        <div>Mactan 6015 City of Lapu-lapu Cebu, Phils.</div>
-                                        <div>VAT REG. TIN 010-751-561-00000</div>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <div className="inline-block text-left leading-none">
-                                        <div className="text-sm font-bold text-black tracking-widest">SALES</div>
-                                        <div className="text-sm font-bold text-black tracking-widest">INVOICE</div>
-                                    </div>
-                                    <div className="text-sm font-semibold flex items-center gap-1">
-                                        NO.
-                                        <input type="text" readOnly value={receiptProfile.invoiceNumber || ''} placeholder="_____________" className="border-b border-gray-500 w-36 text-center focus:outline-none bg-transparent print:border-0 text-sm text-black" />
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex justify-between items-center mb-2 mt-11">
-                                <div className="flex gap-6">
-                                    <label className="flex items-center gap-2 text-sm font-medium text-black"><input type="checkbox" className="w-6 h-6 border-2 border-gray-900" /> CASH SALES</label>
-                                    <label className="flex items-center gap-2 text-sm font-medium text-black"><input type="checkbox" className="w-6 h-6 border-2 border-gray-900" /> CHARGE SALES</label>
-                                </div>
-                                <div className="text-right">
-                                    <div className="flex items-center gap-2 justify-end text-black">
-                                        <span className="font-medium">DATE:</span>
-                                        <input type="text" readOnly value={receiptProfile.invoiceDate ? new Date(receiptProfile.invoiceDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : receiptProfile.createdAt ? new Date(receiptProfile.createdAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : ''} className="border-b border-gray-500 text-sm focus:outline-none bg-transparent print:border-0 text-black" />
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="border border-gray-900 p-3 mb-1.5" style={{ height: '165px' }}>
-                                <div className="flex flex-col gap-2">
-                                    <div className="flex items-center mb-1.5"><span className="font-bold text-black w-48 text-sm">SOLD TO:</span><span className="text-black flex-1 text-sm print-visible">{receiptProfile.soldTo || 'N/A'}</span></div>
-                                    <div className="flex items-center mb-1.5"><span className="font-bold text-black w-48 text-sm">REGISTERED NAME:</span><span className="text-black flex-1 text-sm print-visible">{receiptProfile.registeredName || 'N/A'}</span></div>
-                                    <div className="flex items-center mb-1.5"><span className="font-bold text-black w-48 text-sm">TIN:</span><span className="text-black flex-1 text-sm print-visible">{receiptProfile.tin || 'N/A'}</span></div>
-                                    <div className="grid grid-cols-[180px_1fr] items-start gap-3"><div className="font-bold text-black pt-1 self-start text-sm">BUSINESS ADDRESS:</div><div className="text-black -mt-1 leading-[1.1] tracking-tight text-sm print-visible">{receiptProfile.businessAddress || 'N/A'}</div></div>
-                                </div>
-                            </div>
-                            <div className="border border-b-0 border-gray-900">
-                                <table className="w-full" style={{ borderCollapse: 'collapse', minHeight: '150mm' }}>
-                                    <thead>
-                                        <tr className="border-b border-gray-900">
-                                            <th className="text-left px-4 py-1 font-bold text-black text-sm leading-tight" style={{ width: '60%' }}>ITEM DESCRIPTION / NATURE OF SERVICE</th>
-                                            <th className="text-right px-4 py-1 font-bold text-black text-sm leading-tight" style={{ width: '12%' }}>QTY.</th>
-                                            <th className="text-right px-4 py-1 font-bold text-black text-sm leading-tight" style={{ width: '12%' }}>UNIT COST / PRICE</th>
-                                            <th className="text-right px-4 py-1 font-bold text-black text-sm leading-tight" style={{ width: '15%' }}>AMOUNT</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200">
-                                        {(receiptProfile.items || []).map((item, i) => (
-                                            <tr key={i} className="align-top">
-                                                <td className="py-1 px-4 text-sm text-black leading-tight">{item.productName}{item.companySku && <span> [{item.companySku}]</span>}{item.variationDisplay && item.variationDisplay !== 'Adjustment' && <span> {item.variationDisplay}{item.upc ? ` - ${item.upc}` : ''}</span>}{item.variationDisplay === 'Adjustment' && <span className="ml-2 text-sm text-black italic">(Adjustment)</span>}</td>
-                                                <td className="py-1 px-4 text-right text-sm text-black leading-tight">{Number(item.totalQuantity).toLocaleString()}</td>
-                                                <td className="py-1 px-4 text-right text-sm text-black leading-tight">{fmt(item.unitCost)}</td>
-                                                <td className="py-1 px-4 text-right text-sm text-black leading-tight">{fmt(item.totalAmount)}</td>
-                                            </tr>
-                                        ))}
-                                        {(!receiptProfile.items || receiptProfile.items.length === 0) && (
-                                            <tr><td colSpan={4} className="py-8 text-center text-black italic text-sm">No item data saved for this invoice.</td></tr>
-                                        )}
-                                        <tr className="h-full"><td colSpan={4} className="p-0"></td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            {/* VAT Summary Section */}
-                            <div className="grid grid-cols-6 border border-gray-900 text-sm text-black">
-                                <div className="col-span-2 grid grid-cols-2">
-                                    <div className="px-2 py-3 flex flex-col justify-start font-medium text-sm">
-                                        <div className="mb-2">Total Sales:</div>
-                                        <div className="mb-2">VAT/PT:</div>
-                                        <div className="mb-2">Zero-Rated Sales:</div>
-                                        <div>VAT-Exempt Sales:</div>
-                                    </div>
-                                    <div className="px-4 py-3 flex flex-col justify-start text-sm">
-                                        <input readOnly value={fmt(receiptProfile.vatableSales || 0)} className="w-full text-right pb-0 mb-2 bg-transparent text-black" />
-                                        <input readOnly value={fmt(receiptProfile.vat || 0)} className="w-full text-right pb-0 mb-2 bg-transparent text-black" />
-                                        <input readOnly value={fmt(0)} className="w-full text-right pb-0 mb-2 bg-transparent text-black" />
-                                        <input readOnly value={fmt(0)} className="w-full text-right pb-0 bg-transparent text-black" />
-                                    </div>
-                                </div>
-                                <div className="border-l border-r border-gray-900 px-3 py-3 flex flex-col justify-center text-sm">
-                                    <div className="font-medium leading-tight">SC/PWD/NAAC/MOV/<br />SOLO PARENT ID No.:</div>
-                                    <div className="font-medium leading-tight mt-9">SC/PWD/NAAC/MOV/<br />Signature:</div>
-                                </div>
-                                <div className="border-r border-gray-900 px-3 py-3 flex flex-col justify-center text-sm">
-                                    <input type="text" readOnly className="w-full pb-0 text-sm -mt-1 bg-transparent text-black" />
-                                    <input type="text" readOnly className="w-full pb-0 text-sm mt-5 bg-transparent text-black" />
-                                </div>
-                                <div className="col-span-2 grid grid-cols-2">
-                                    <div className="px-2 py-3 flex flex-col justify-start font-medium text-sm">
-                                        <div className="mb-2 text-sm">TOTAL SALES (VAT Inclusive)</div>
-                                        <div className="mb-2">Less: VAT</div>
-                                        <div className="mb-2">Amount: Net of VAT</div>
-                                        <div>Less: Discount<br /><span className="text-sm">(SC/PWD/NAAC/MOV/SP)</span></div>
-                                    </div>
-                                    <div className="px-4 pt-2 flex flex-col justify-start">
-                                        <input readOnly value={fmt((receiptProfile.vatableSales || 0) + (receiptProfile.vat || 0))} className="w-full text-right pb-0 mb-2 text-sm bg-transparent text-black" />
-                                        <input readOnly value={fmt(receiptProfile.vat || 0)} className="w-full text-right pb-0 mb-2 text-sm bg-transparent text-black" />
-                                        <input readOnly value={fmt(receiptProfile.vatableSales || 0)} className="w-full text-right pb-0 mb-2 text-sm bg-transparent text-black" />
-                                        <input readOnly value={fmt(0)} className="w-full text-right pb-0 text-sm bg-transparent text-black" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Total Amount Due Section */}
-                            <div className="grid grid-cols-6 border-l border-r border-b border-gray-900 text-sm text-black">
-                                <div className="col-span-4 border-r border-gray-900 px-4">
-                                    <label className="flex items-start gap-2 text-sm font-medium text-black">
-                                        <input type="checkbox" className="w-6 h-6 mt-8" />
-                                        <div>
-                                            <div className="mb-8 mt-8">Received the amount of</div>
-                                            <div className="border-b border-gray-900 mt-1 w-full"></div>
-                                        </div>
-                                    </label>
-                                </div>
-                                <div className="col-span-2 grid grid-cols-2">
-                                    <div className="px-2 py-3 flex flex-col justify-start font-medium text-sm">
-                                        <div className="mb-2">Add: VAT</div>
-                                        <div className="mb-2">Less: Withholding Tax</div>
-                                        <div>Total Amount Due:</div>
-                                    </div>
-                                    <div className="px-4 pt-2 flex flex-col justify-start">
-                                        <input readOnly value={fmt(receiptProfile.vat || 0)} className="w-full text-right pb-0 mb-2 text-sm bg-transparent text-black" />
-                                        <input readOnly value={fmt(receiptProfile.withholdingTax || 0)} className="w-full text-right pb-0 mb-2 text-sm bg-transparent text-black" />
-                                        <input readOnly value={fmt(receiptProfile.totalAmountDue || 0)} className="w-full text-right font-bold pb-0 text-sm bg-transparent text-black" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 border border-gray-900 text-sm text-black mt-6">
-                                <div className="border-gray-900 px-4 py-2"><div className="font-medium text-sm">PERMIT TO USE LOOSE LEAF No. : LLSI-080-1024-00002</div><div className="font-medium text-sm">DATE ISSUED: OCT. 11, 2024</div></div>
-                                <div className="px-4 py-2 pb-4"><div className="font-medium text-sm">BIR AUTHORITY TO PRINT No. 080AU20240000016398</div><div className="font-medium text-sm">DATE ISSUED: OCT. 23, 2024</div><div className="font-medium text-sm">APPROVED SERIES: 0501-1500 • 20PADS (2X)</div></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {receiptProfile && (() => {
+                const conv = profileToReport(receiptProfile);
+                const rawDate = receiptProfile.invoiceDate || (receiptProfile.createdAt ? new Date(receiptProfile.createdAt).toISOString().split('T')[0] : '');
+                return (
+                    <InvoiceReportModal
+                        readOnly
+                        invoiceReport={conv.report}
+                        setInvoiceReport={(v) => { if (v === null) setReceiptProfile(null); }}
+                        invoiceNumber={receiptProfile.invoiceNumber || ''}
+                        setInvoiceNumber={() => {}}
+                        invoiceDate={String(rawDate).slice(0, 10)}
+                        setInvoiceDate={() => {}}
+                        taxType={conv.taxType}
+                        includeWithholdingTax={true}
+                        storedTotals={conv.totals}
+                        canPrint={!!ui(user, 'sales_ui', 'jr_print_receipt')}
+                        onGenerate={() => {}}
+                        invoiceNumberError=""
+                    />
+                );
+            })()}
 
             {detailProfile && (
                 <DetailModal

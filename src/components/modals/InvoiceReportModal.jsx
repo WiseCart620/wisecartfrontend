@@ -14,11 +14,14 @@ const InvoiceReportModal = ({
   setIncludeWithholdingTax,
   onGenerate,
   invoiceNumberError,
+  readOnly = false,
+  canPrint = true,
+  storedTotals = null,
 }) => {
   if (!invoiceReport) return null;
 
   const handlePrint = () => {
-    if (!invoiceNumber.trim()) {
+    if (!readOnly && !invoiceNumber.trim()) {
       alert('Please enter an invoice number before printing.');
       return;
     }
@@ -42,7 +45,13 @@ const InvoiceReportModal = ({
     }
   };
 
-  const vals = getVatValues();
+  const vals = readOnly && storedTotals ? storedTotals : getVatValues();
+
+  // Long invoices: shrink row height so the items table does not outgrow its minimum height
+  // and push the totals off the printed page.
+  const rowCount = (invoiceReport.products || []).length + (invoiceReport.adjustments || []).length;
+  const compact = rowCount > 24;
+  const rowLh = compact ? Math.max(11, Math.min(20, Math.floor(560 / rowCount) - 2)) : 20;
 
   const lblCls = 'px-2 py-0 flex flex-col justify-start font-medium text-[10px] leading-tight';
   const valWrapCls = 'px-3 py-0 flex flex-col justify-start';
@@ -63,10 +72,12 @@ const InvoiceReportModal = ({
                 setInvoiceReport({ ...invoiceReport, adjustments: newAdjustments });
               }}
               className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition"
+              style={readOnly ? { display: 'none' } : undefined}
             >
               <Plus size={18} /> Add Adjustment
             </button>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 border border-gray-300 rounded px-3 py-2 bg-white">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 border border-gray-300 rounded px-3 py-2 bg-white"
+              style={readOnly ? { display: 'none' } : undefined}>
               <input
                 type="checkbox"
                 checked={includeWithholdingTax}
@@ -84,7 +95,7 @@ const InvoiceReportModal = ({
         </div>
 
         {/* Invoice Body */}
-        <div id="invoice-report" className="p-8">
+        <div id="invoice-report" className="p-8" data-compact={compact ? '1' : undefined} style={compact ? { '--row-lh': `px`, '--row-fs': rowLh < 15 ? '11px' : '14px' } : undefined}>
 
           {/* Company Header */}
           <div className="flex justify-between items-start mb-5 pb-4">
@@ -190,7 +201,7 @@ const InvoiceReportModal = ({
                           : 'Variation')} - ${product.variation.upc || 'N/A'}`}
                     </td>
                     <td className="py-2 px-4 text-right text-sm">{product.totalQuantity.toLocaleString()}</td>
-                    <td className="py-2 px-4 text-right text-sm">{formatCurrencyTruncated(product.totalAmount / product.totalQuantity)}</td>
+                    <td className="py-2 px-4 text-right text-sm">{formatCurrencyTruncated(product.displayUnitCost ?? (product.totalAmount / product.totalQuantity))}</td>
                     <td className="py-2 px-4 text-right text-sm">{formatCurrency(product.totalAmount)}</td>
                   </tr>
                 ))}
@@ -405,6 +416,7 @@ const InvoiceReportModal = ({
               onGenerate();
             }}
             disabled={!!invoiceNumberError}
+            style={readOnly ? { display: 'none' } : undefined}
             className={`flex items-center gap-2 px-5 py-3 rounded transition font-medium shadow-md ${!invoiceNumber.trim() || invoiceNumberError ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'
               }`}
           >
@@ -412,6 +424,7 @@ const InvoiceReportModal = ({
           </button>
           <button
             onClick={handlePrint}
+            style={readOnly && !canPrint ? { display: 'none' } : undefined}
             className={`flex items-center gap-2 px-6 py-3 rounded transition font-medium shadow-md ${!invoiceNumber.trim() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-orange-600 text-white hover:bg-orange-700'
               }`}
           >
@@ -430,3 +443,37 @@ const InvoiceReportModal = ({
 };
 
 export default InvoiceReportModal;
+
+// Converts a saved Sales Journal invoice into the shape this modal renders (read-only view).
+export const profileToReport = (profile) => {
+  const base = Number(profile.vatableSales || 0);
+  const vat = Number(profile.vat || 0);
+  const wht = Number(profile.withholdingTax || 0);
+  const due = Number(profile.totalAmountDue || 0);
+  const isPT = /\bPT\b/.test(String(profile.transactionType || '')) ||
+    (base > 0 && Math.abs(vat - base * 0.03) < 0.05);
+  const products = (profile.items || []).map((it) => ({
+    productName: it.productName,
+    companySku: it.companySku || null,
+    variation: it.variationDisplay && it.variationDisplay !== 'Adjustment'
+      ? { combinationDisplay: it.variationDisplay, upc: it.upc || null }
+      : null,
+    totalQuantity: Number(it.totalQuantity || 0),
+    totalAmount: Number(it.totalAmount || 0),
+    displayUnitCost: Number(it.unitCost || 0),
+  }));
+  return {
+    report: {
+      soldTo: profile.soldTo,
+      registeredName: profile.registeredName,
+      tin: profile.tin,
+      businessAddress: profile.businessAddress,
+      products,
+      adjustments: [],
+    },
+    taxType: isPT ? 'PT' : 'VAT',
+    totals: isPT
+      ? { grossSales: base, withholdingTax: wht, totalAmountDue: due }
+      : { vatableSales: base, vat, totalSales: base + vat, netOfVat: base, withholdingTax: wht, totalAmountDue: due },
+  };
+};

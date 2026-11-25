@@ -874,4 +874,10 @@
   #invoice-report .totals-block>.grid.grid-cols-6:first-child {
     top: 32px !important;
   }
+
+  /* Long invoices: tighter rows so the totals stay on the page */
+  #invoice-report[data-compact="1"] table tbody td {
+    line-height: var(--row-lh) !important;
+    font-size: var(--row-fs) !important;
+  }
 }
