@@ -79,20 +79,20 @@ const InvoiceReportModal = ({
       <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
 
         {/* Header */}
-        <div className="p-8 border-b border-gray-200 flex justify-between items-center print:hidden sticky top-0 bg-white rounded-t-2xl z-10">
-          <h2 className="text-2xl font-bold text-gray-900">Invoice Report</h2>
+        <div className="px-5 py-2.5 border-b border-gray-200 flex justify-between items-center print:hidden sticky top-0 bg-white rounded-t-2xl z-10">
+          <h2 className="text-base font-semibold text-gray-900">Invoice Report</h2>
           <div className="flex gap-3">
             <button
               onClick={() => {
                 const newAdjustments = [...(invoiceReport.adjustments || []), { description: '', quantity: 1, unitCost: 0, amount: 0 }];
                 setInvoiceReport({ ...invoiceReport, adjustments: newAdjustments });
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition"
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-orange-600 text-white rounded-md hover:bg-orange-700 transition"
               style={readOnly ? { display: 'none' } : undefined}
             >
               <Plus size={18} /> Add Adjustment
             </button>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 border border-gray-300 rounded px-3 py-2 bg-white"
+            <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 border border-gray-300 rounded-md px-2 py-1 bg-white"
               style={readOnly ? { display: 'none' } : undefined}>
               <input
                 type="checkbox"
@@ -425,7 +425,7 @@ const InvoiceReportModal = ({
         </div>
 
         {/* Footer Buttons */}
-        <div className="p-8 border-t border-gray-200 flex justify-end gap-3 print:hidden sticky bottom-0 bg-white rounded-b-2xl">
+        <div className="px-5 py-2.5 border-t border-gray-200 flex justify-end gap-2 print:hidden sticky bottom-0 bg-white rounded-b-2xl">
           <button
             onClick={() => {
               if (!invoiceNumber.trim()) { alert('Please enter an invoice number before saving.'); return; }
@@ -433,7 +433,7 @@ const InvoiceReportModal = ({
             }}
             disabled={!!invoiceNumberError}
             style={readOnly ? { display: 'none' } : undefined}
-            className={`flex items-center gap-2 px-5 py-3 rounded transition font-medium shadow-md ${!invoiceNumber.trim() || invoiceNumberError ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'
+            className={`flex items-center gap-2 px-3 py-1 text-sm rounded-md transition font-medium ${!invoiceNumber.trim() || invoiceNumberError ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'
               }`}
           >
             Generate
@@ -441,14 +441,14 @@ const InvoiceReportModal = ({
           <button
             onClick={handlePrint}
             style={readOnly && !canPrint ? { display: 'none' } : undefined}
-            className={`flex items-center gap-2 px-6 py-3 rounded transition font-medium shadow-md ${!invoiceNumber.trim() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-orange-600 text-white hover:bg-orange-700'
+            className={`flex items-center gap-2 px-3 py-1 text-sm rounded-md transition font-medium ${!invoiceNumber.trim() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-orange-600 text-white hover:bg-orange-700'
               }`}
           >
             <Printer size={20} /> Print Report
           </button>
           <button
             onClick={() => setInvoiceReport(null)}
-            className="px-6 py-3 border border-gray-300 rounded hover:bg-white transition font-medium"
+            className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition font-medium"
           >
             Close
           </button>
