@@ -21,6 +21,37 @@ const travelMins = (g, list, i) => {
     return m > 0 ? m : null;
 };
 const EMPTY = { place: '', purpose: '', validatedBy: '' };
+
+// ---- lunch alarm (Web Audio, no sound file needed)
+let audioCtx = null;
+const unlockAudio = () => {
+    try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        if (!audioCtx) audioCtx = new AC();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    } catch { /* ignore */ }
+};
+const ringAlarm = (rounds = 4) => {
+    try {
+        unlockAudio();
+        if (!audioCtx) return;
+        for (let r = 0; r < rounds; r++) {
+            for (let b = 0; b < 3; b++) {
+                const t0 = audioCtx.currentTime + r * 1.6 + b * 0.3;
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = 'square'; o.frequency.value = 880;
+                g.gain.setValueAtTime(0.0001, t0);
+                g.gain.exponentialRampToValueAtTime(0.4, t0 + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(t0); o.stop(t0 + 0.25);
+            }
+        }
+        if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 300, 150, 300]);
+    } catch { /* ignore */ }
+};
 const LABEL = { in: 'Time in', out: 'Time out', lunch: 'Lunch break' };
 const shiftDate = (d, n) => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 const dayLabel = (d) => {
@@ -373,7 +404,7 @@ const FieldApp = () => {
         const off = () => setOnline(false);
         window.addEventListener('online', on); window.addEventListener('offline', off);
         const i = setInterval(() => { setTick(Date.now()); flush(); }, 30000);
-        if ('serviceWorker' in navigator && !window.Capacitor?.isNativePlatform?.()) {
+        if ('serviceWorker' in navigator && !(window.Capacitor?.isNativePlatform?.() && ['localhost', 'capacitor'].includes(location.hostname))) {
             navigator.serviceWorker.register('/field-sw.js').catch(() => { });
         }
         return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); clearInterval(i); };
@@ -423,6 +454,7 @@ const FieldApp = () => {
 
     // ---- lunch
     const startLunch = async () => {
+        unlockAudio();
         if (busy) return;
         setBusy({ k: 'lunch' });
         const at = new Date().toISOString();
@@ -465,9 +497,31 @@ const FieldApp = () => {
     // ---- derived values
     const lunchStarted = !!day.lunchStart;
     const lunchEndVisit = lunchStarted ? day.visits.find(v => new Date(v.timeIn) >= new Date(day.lunchStart)) : null;
-    const lunchLeft = lunchMin - (lunchStarted ? Math.floor((tick - new Date(day.lunchStart)) / 60000) : 0);
     const onLunch = lunchStarted && !lunchEndVisit;
-    const showLunch = !lunchStarted && phMinutes() >= 10 * 60 && phMinutes() < 19 * 60;
+    const [secNow, setSecNow] = useState(Date.now());
+    useEffect(() => {
+        if (!onLunch) return undefined;
+        setSecNow(Date.now());
+        const i = setInterval(() => setSecNow(Date.now()), 1000);
+        return () => clearInterval(i);
+    }, [onLunch]);
+    const lunchSecLeft = lunchStarted ? lunchMin * 60 - Math.floor((secNow - +new Date(day.lunchStart)) / 1000) : 0;
+    const lunchOver = onLunch && lunchSecLeft < 0;
+    const lunchWarn = onLunch && lunchSecLeft >= 0 && lunchSecLeft <= 300;
+    const lunchClock = `${Math.floor(Math.abs(lunchSecLeft) / 60)}:${String(Math.abs(lunchSecLeft) % 60).padStart(2, '0')}`;
+    useEffect(() => {
+        window.addEventListener('pointerdown', unlockAudio, { once: true });
+        return () => window.removeEventListener('pointerdown', unlockAudio);
+    }, []);
+    useEffect(() => {
+        if (!onLunch) return;
+        const key = lunchWarn ? 'warn' : lunchOver ? 'over' : null;
+        if (!key) return;
+        const k = `lunchAlarm:${uid}:${day.lunchStart}:${key}`;
+        try { if (localStorage.getItem(k)) return; localStorage.setItem(k, '1'); } catch { /* ignore */ }
+        ringAlarm(key === 'warn' ? 4 : 6);
+    }, [onLunch, lunchWarn, lunchOver, day.lunchStart, uid]);
+    const showLunch = !open && !lunchStarted && phMinutes() >= 10 * 60 && phMinutes() < 19 * 60;
     const mins = (v) => Math.max(0, Math.round(((v.timeOut ? +new Date(v.timeOut) : tick) - +new Date(v.timeIn)) / 60000));
     const totalMins = day.visits.reduce((s, v) => s + mins(v), 0);
     const todayGroup = { date: phDate(), visits: day.visits, lunchStart: day.lunchStart, isToday: true };
@@ -596,12 +650,13 @@ const FieldApp = () => {
                             <Btn className="mt-5 w-full py-4" onClick={() => { setFormError(''); setScreen('out'); }}><LogOut size={20} /> Time out</Btn>
                         </div>
                     ) : onLunch ? (
-                        <div className="rounded-2xl p-5 bg-orange-50 border border-orange-200">
-                            <div className="font-semibold text-stone-900 flex items-center gap-2"><Coffee size={18} /> Lunch break since {t12(day.lunchStart)}</div>
-                            <div className={`text-sm mt-1 ${lunchLeft < 0 ? 'text-orange-900 font-semibold' : 'text-stone-600'}`}>
-                                {lunchLeft >= 0 ? `${lunchLeft} min left. Time in again before it ends.` : `${-lunchLeft} min over. This counts as late.`}
+                        <div className={`rounded-2xl px-5 py-8 border text-center ${lunchOver ? 'bg-red-50 border-red-300' : lunchWarn ? 'bg-amber-50 border-amber-300 animate-pulse' : 'bg-orange-50 border-orange-200'}`}>
+                            <div className="font-semibold text-stone-900 flex items-center justify-center gap-2"><Coffee size={20} /> Lunch break since {t12(day.lunchStart)}</div>
+                            <div className={`mt-5 text-7xl font-extrabold tabular-nums tracking-tight ${lunchOver ? 'text-red-600' : lunchWarn ? 'text-amber-600' : 'text-orange-700'}`}>{lunchOver ? '+' : ''}{lunchClock}</div>
+                            <div className={`mt-3 text-base ${lunchOver ? 'text-red-700 font-semibold' : lunchWarn ? 'text-amber-800 font-semibold' : 'text-stone-600'}`}>
+                                {lunchOver ? 'Over your lunch break. This counts as late.' : lunchWarn ? '5 minutes or less left! Time in now.' : 'left. Time in again before it ends.'}
                             </div>
-                            <Btn className="mt-4 w-full py-4" onClick={() => setScreen('camera')}><Camera size={20} /> Time in</Btn>
+                            <Btn className="mt-6 w-full py-4" onClick={() => setScreen('camera')}><Camera size={20} /> Time in</Btn>
                         </div>
                     ) : (
                         <div className="bg-white rounded-2xl border border-stone-200 p-6 text-center">
