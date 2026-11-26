@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Car, Camera, Coffee, LogOut, Wifi, WifiOff, RefreshCw, RotateCw, X, AlertTriangle, ChevronRight, ChevronLeft, History } from 'lucide-react';
+import { Car, Camera, Coffee, LogOut, Wifi, WifiOff, RefreshCw, RotateCw, X, AlertTriangle, ChevronRight, ChevronLeft, History, CameraOff } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { quietRequest } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -194,10 +194,16 @@ const CameraView = ({ onDone, onCancel }) => {
     const [err, setErr] = useState('');
     const [hint, setHint] = useState('');
     const [attempt, setAttempt] = useState(0);
+    const [camOn, setCamOn] = useState(true);
 
     useEffect(() => {
         let gone = false;
         setReady(false); setErr('');
+        if (!camOn) {
+            if (sref.current) { sref.current.getTracks().forEach(t => t.stop()); sref.current = null; }
+            if (vref.current) vref.current.srcObject = null;
+            return undefined;
+        }
         (async () => {
             try {
                 if (sref.current) sref.current.getTracks().forEach(t => t.stop());
@@ -210,7 +216,7 @@ const CameraView = ({ onDone, onCancel }) => {
             } catch (e) { if (!gone) setErr(camError(e)); }
         })();
         return () => { gone = true; if (sref.current) sref.current.getTracks().forEach(t => t.stop()); };
-    }, [facing, attempt]);
+    }, [facing, attempt, camOn]);
 
     const snap = async () => {
         if (stage || !ready) return;
@@ -238,7 +244,14 @@ const CameraView = ({ onDone, onCancel }) => {
         <div className="fixed inset-0 z-50 bg-black flex flex-col">
             <div className="flex-1 relative overflow-hidden">
                 <video ref={vref} playsInline muted className="w-full h-full object-cover" />
-                {!ready && !err && (
+                {!camOn && (
+                    <div className="absolute inset-0 bg-stone-900 flex flex-col items-center justify-center gap-4 p-8 text-center text-white">
+                        <CameraOff size={36} className="text-stone-400" />
+                        <p className="text-lg font-semibold">Camera is off</p>
+                        <Btn onClick={() => setCamOn(true)}><Camera size={20} /> Turn on camera</Btn>
+                    </div>
+                )}
+                {camOn && !ready && !err && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white">
                         <Spinner size={28} /><span>Starting camera...</span>
                     </div>
@@ -252,7 +265,8 @@ const CameraView = ({ onDone, onCancel }) => {
                 )}
                 <div className="absolute top-0 inset-x-0 flex justify-between p-4" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
                     <button type="button" onClick={onCancel} disabled={!!stage} aria-label="Close" className="p-2.5 bg-black/50 text-white rounded-full"><X size={22} /></button>
-                    <button type="button" onClick={() => setFacing(f => (f === 'user' ? 'environment' : 'user'))} disabled={!!stage} aria-label="Switch camera" className="p-2.5 bg-black/50 text-white rounded-full"><RotateCw size={22} /></button>
+                    <button type="button" onClick={() => setCamOn(c => !c)} disabled={!!stage} aria-label={camOn ? 'Turn camera off' : 'Turn camera on'} className={`p-2.5 text-white rounded-full ${camOn ? 'bg-black/50' : 'bg-orange-600'}`}>{camOn ? <Camera size={22} /> : <CameraOff size={22} />}</button>
+                    <button type="button" onClick={() => setFacing(f => (f === 'user' ? 'environment' : 'user'))} disabled={!!stage || !camOn} aria-label="Switch camera" className="p-2.5 bg-black/50 text-white rounded-full disabled:opacity-40"><RotateCw size={22} /></button>
                 </div>
                 {stage && <Overlay text={stage} />}
             </div>
