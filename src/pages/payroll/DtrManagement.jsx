@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Eye, Upload, Trash2, MapPin, Send, Plus, X, ExternalLink, ChevronRight } from 'lucide-react';
-import toast, { Toaster } from 'react-hot-toast';
+import { Eye, Upload, Trash2, MapPin, Send, Plus, X, ExternalLink, ChevronRight, Download } from 'lucide-react';
+import toast, { useToasterStore } from 'react-hot-toast';
 import { Navigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useAuth, uiAllowed } from '../../context/AuthContext';
@@ -65,6 +65,110 @@ const DtrImage = ({ path, className = '', onClick, alt = '' }) => {
   return <img src={src} alt={alt} className={className} onClick={() => onClick && onClick(src)} />;
 };
 
+const NoticeModal = ({ title, message, tone = 'error', items, onClose }) => {
+  const [open, setOpen] = useState(() => new Set());
+  useEffect(() => { toast.dismiss(); }, []);   // the same message may also have been raised as a toast
+  const groups = [];
+  const byWho = {};
+  (items || []).forEach((it) => {
+    if (!byWho[it.who]) { byWho[it.who] = { who: it.who, rows: [] }; groups.push(byWho[it.who]); }
+    byWho[it.who].rows.push(it);
+  });
+  const flip = (w) => setOpen((p) => { const n = new Set(p); if (n.has(w)) n.delete(w); else n.add(w); return n; });
+  const okCount = (items || []).filter((i) => i.ok).length;
+  const skipCount = (items || []).length - okCount;
+  const allOpen = groups.length > 0 && open.size === groups.length;
+  return createPortal(
+    <div className="fixed inset-0 z-[300] bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl p-5 w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+        <div className={`font-semibold ${tone === 'error' ? 'text-red-700' : tone === 'success' ? 'text-green-700' : 'text-gray-900'}`}>{title}</div>
+        {groups.length > 0 ? (
+          <>
+            <div className="flex items-center justify-between mt-2">
+              <div className="text-sm text-gray-700">{okCount} posted, {skipCount} skipped</div>
+              <button type="button" className="text-xs text-orange-600 hover:underline"
+                onClick={() => setOpen(allOpen ? new Set() : new Set(groups.map((g) => g.who)))}>{allOpen ? 'Collapse all' : 'Expand all'}</button>
+            </div>
+            <div className="mt-3 border border-gray-200 rounded-lg divide-y divide-gray-200 max-h-[55vh] overflow-y-auto">
+              {groups.map((g) => {
+                const isOpen = open.has(g.who);
+                const ok = g.rows.filter((r) => r.ok).length;
+                const skip = g.rows.length - ok;
+                return (
+                  <div key={g.who}>
+                    <button type="button" onClick={() => flip(g.who)} className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50">
+                      <Caret open={isOpen} />
+                      <span className="flex-1 min-w-0 truncate text-sm font-medium text-gray-900">{g.who}</span>
+                      {ok > 0 && <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700">{ok} posted</span>}
+                      {skip > 0 && <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700">{skip} skipped</span>}
+                    </button>
+                    {isOpen && (
+                      <ul className="px-4 pb-3 space-y-1.5">
+                        {g.rows.map((r, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm">
+                            <span className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${r.ok ? 'bg-green-500' : 'bg-amber-500'}`} />
+                            <span className="text-gray-700">{r.date && <b className="text-gray-900">{r.date}: </b>}{r.text}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <div className="text-sm text-gray-700 mt-2 whitespace-pre-line max-h-[50vh] overflow-y-auto">{message}</div>
+        )}
+        <div className="flex justify-end mt-5">
+          <button onClick={onClose} className="px-4 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700">OK</button>
+        </div>
+      </div>
+    </div>, document.body);
+};
+// every toast raised while this page is open (ours, api.js, biometric import) is shown as a modal
+const ToastModalHost = () => {
+  const { toasts } = useToasterStore();
+  const list = toasts.filter((t) => t.visible && t.type !== 'loading');
+  useEffect(() => () => { toast.dismiss(); }, []);
+  if (!list.length) return null;
+  const hasError = list.some((t) => t.type === 'error');
+  return createPortal(
+    <div className="fixed inset-0 z-[400] bg-black/50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl p-5 w-full max-w-md">
+        <div className={`font-semibold ${hasError ? 'text-red-700' : 'text-green-700'}`}>{hasError ? 'Something went wrong' : 'Done'}</div>
+        <div className="mt-2 space-y-2 max-h-[50vh] overflow-y-auto">
+          {list.map((t) => (
+            <div key={t.id} className="text-sm text-gray-700 whitespace-pre-line">
+              {typeof t.message === 'function' ? t.message(t) : t.message}
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-end mt-5">
+          <button onClick={() => list.forEach((t) => toast.dismiss(t.id))} className="px-4 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700">OK</button>
+        </div>
+      </div>
+    </div>, document.body);
+};
+
+const ConfirmModal = ({ title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', danger = false, onConfirm, onCancel }) => {
+  const [busy, setBusy] = useState(false);
+  return createPortal(
+    <div className="fixed inset-0 z-[300] bg-black/50 flex items-center justify-center p-4" onClick={() => !busy && onCancel()}>
+      <div className="bg-white rounded-xl p-5 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <div className="font-semibold text-gray-900">{title}</div>
+        <div className="text-sm text-gray-600 mt-2 whitespace-pre-line">{message}</div>
+        <div className="flex justify-end gap-2 mt-5">
+          <button onClick={onCancel} disabled={busy} className="px-4 py-2 border border-gray-300 rounded text-sm disabled:opacity-50">{cancelLabel}</button>
+          <button disabled={busy} onClick={async () => { setBusy(true); try { await onConfirm(); } finally { setBusy(false); } }}
+            className={`px-4 py-2 text-white rounded text-sm disabled:opacity-50 ${danger ? 'bg-red-600 hover:bg-red-700' : 'bg-orange-600 hover:bg-orange-700'}`}>
+            {busy ? 'Please wait...' : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>, document.body);
+};
+
 const Chip = ({ label, value, tone = 'gray' }) => (
   <span className={`px-2 py-1 rounded text-xs font-medium ${tone === 'red' ? 'bg-red-50 text-red-700' : tone === 'green' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
     {label} {value}
@@ -103,12 +207,68 @@ const halfDayText = (d) => {
   if (d.halfDay === 'PAID') return `Half day - Paid leave${name}`;
   return d.halfDayAuto ? 'Half day - Unpaid (automatic)' : `Half day - Unpaid leave${name}`;
 };
-const absentText = (d) => { if (d.absent === 'HOLIDAY') return `Holiday - Paid${d.absentLeave ? ` (${d.absentLeave})` : ''}`;
+const absentText = (d) => { 
+  if (d.absent === 'HOLIDAY') return `Regular holiday - Paid${d.absentLeave ? ` (${d.absentLeave})` : ''}`;
+  if (d.absent === 'SPECIAL_PAID') return `Special day - Paid${d.absentLeave ? ` (${d.absentLeave})` : ''}`;
+  if (d.absent === 'SPECIAL') return `Special day - No work, no pay${d.absentLeave ? ` (${d.absentLeave})` : ''}`;
   const name = d.absentLeave ? ` (${d.absentLeave})` : '';
   if (d.absent === 'PAID') return `On leave - Paid${name}`;
   if (d.absent === 'UNPAID') return `On leave - Unpaid${name}`;
   if (d.absent === 'PENDING') return `Absent - leave${name} pending approval`;
   return 'Absent - no leave filed (automatic unpaid)';
+};
+const isHolAbs = (a) => a === 'HOLIDAY' || a === 'SPECIAL' || a === 'SPECIAL_PAID';
+const holidayUrl = (date, h, emp) => `/dtr/holiday?date=${date}&name=${encodeURIComponent(h.name.trim())}&type=${h.type}${h.type === 'SPECIAL' && h.paid ? '&paid=true' : ''}${h.scope === 'EMP' ? `&employeeId=${emp.employeeId}` : ''}`;
+const HolidayFields = ({ emp, value, onChange, stacked = false }) => {
+  const set = (k, v) => onChange({ ...value, [k]: v });
+  const lbl = 'block text-xs font-medium text-gray-700 mb-1';
+  const group = (label, items) => (
+    <div>
+      <div className={lbl}>{label}</div>
+      <div role="radiogroup" aria-label={label} className="border border-gray-300 rounded-md divide-y divide-gray-200 overflow-hidden bg-white">
+        {items.map((it) => (
+          <button type="button" key={it.title} role="radio" aria-checked={it.active} title={it.title} onClick={it.onClick}
+            className={`w-full flex items-start gap-3 px-3 py-2.5 text-left transition-colors ${it.active ? 'bg-orange-50' : 'hover:bg-gray-50'}`}>
+            <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${it.active ? 'border-orange-600' : 'border-gray-400'}`}>
+              {it.active && <span className="h-2 w-2 rounded-full bg-orange-600" />}
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-medium text-gray-900 truncate">{it.title}</span>
+              <span className="block text-xs text-gray-500">{it.hint}</span>
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+  return (
+    <div className="w-full space-y-4">
+      <Field label="Holiday name" required>
+        <input className={inputCls} placeholder="e.g. Bonifacio Day" value={value.name}
+          onChange={(e) => set('name', e.target.value)} />
+      </Field>
+      <div className={`grid gap-4 ${stacked ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
+        {group('Holiday type', [
+          { title: 'Regular holiday', hint: 'Paid even if not worked', active: value.type === 'REGULAR', onClick: () => set('type', 'REGULAR') },
+          { title: 'Special non-working day', hint: 'No work, no pay by default', active: value.type === 'SPECIAL', onClick: () => set('type', 'SPECIAL') },
+        ])}
+        {group('Applies to', [
+          { title: 'All employees', hint: 'National or company-wide', active: value.scope === 'ALL', onClick: () => set('scope', 'ALL') },
+          { title: `Only ${emp.employeeName}`, hint: 'Local holiday, e.g. provincial', active: value.scope === 'EMP', onClick: () => set('scope', 'EMP') },
+        ])}
+      </div>
+      {value.type === 'SPECIAL' && (
+        <label className="flex items-start gap-3 rounded-md border border-gray-300 bg-white px-3 py-2.5 cursor-pointer hover:bg-gray-50">
+          <input type="checkbox" className="mt-0.5 accent-orange-600" checked={!!value.paid}
+            onChange={(e) => set('paid', e.target.checked)} />
+          <span>
+            <span className="block text-sm font-medium text-gray-900">Pay employees even if they do not work</span>
+            <span className="block text-xs text-gray-500">For special days the company decides to pay. Leave unchecked for no work, no pay.</span>
+          </span>
+        </label>
+      )}
+    </div>
+  );
 };
 const Caret = ({ open, size = 16 }) => (
   <ChevronRight size={size} className={`text-gray-400 shrink-0 transition-transform ${open ? 'rotate-90' : ''}`} />
@@ -125,31 +285,35 @@ const Totals = ({ list }) => (
 );
 
 // paid leave counts as a full 8-hour day of work
-const workedOf = (d) => ((d.absent === 'PAID' || d.absent === 'HOLIDAY') ? 480 : d.halfDay === 'PAID' ? d.workedMinutes + 240 : d.workedMinutes);
+const workedOf = (d) => ((d.absent === 'PAID' || d.absent === 'HOLIDAY' || d.absent === 'SPECIAL_PAID') ? 480 : d.halfDay === 'PAID' ? d.workedMinutes + 240 : d.workedMinutes);
 
 const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged, onClose }) => {
   const [days, setDays] = useState(null);
   const [big, setBig] = useState(null);
   const [otDay, setOtDay] = useState(null);
   const [hwDay, setHwDay] = useState(null);
+  const [holDay, setHolDay] = useState(null);
+  const [holForm, setHolForm] = useState({ name: '', type: 'REGULAR', scope: 'ALL' });
   const [menuDay, setMenuDay] = useState(null);
   const [menuPos, setMenuPos] = useState({});
+  const [notice, setNotice] = useState(null);
+  const [confirm, setConfirm] = useState(null);
   const inPortal = (few, el) => (few ? el : createPortal(el, document.body));
   const isFew = (d) => d.locked || [
     d.sheetPath,
     canPost && d.visits.length > 0 && !d.posted,
     canPost && !d.holidayWork && d.holiday && d.visits.length > 0 && !d.incomplete && d.workedMinutes > 0,
     canPost && d.overtimeAvailable > 0 && !d.overtimeMinutes && !d.incomplete,
-    canEdit && d.absent === 'AUTO',
-    canEdit && d.holidayWork !== 'APPROVED' && (d.absent === 'HOLIDAY' || d.holiday),
-    canDelete && !d.absent && d.visits.length === 0,
+    canEdit && (d.absent === 'AUTO' || (!d.absent && !d.holiday)),
+    canEdit && d.holidayWork !== 'APPROVED' && (isHolAbs(d.absent) || d.holiday),
+    canDelete && !d.absent,
     canEdit,
   ].filter(Boolean).length <= 2;
   const [hwType, setHwType] = useState('REGULAR_HOLIDAY');
   const [otType, setOtType] = useState('REGULAR_OT');
   const [openKeys, setOpenKeys] = useState(() => new Set());
   // office = biometric worker: no personnel, signature, photo or location
-  const office = !!emp.office || (days || []).some(d => (d.absent && d.absent !== 'HOLIDAY') || d.visits.some(v => v.source === 'BIO'));
+  const office = !!emp.office || (days || []).some(d => (d.absent && !isHolAbs(d.absent)) || d.visits.some(v => v.source === 'BIO'));
 
   useEffect(() => {
     api.get(`/dtr/days?employeeId=${emp.employeeId}&from=${from}&to=${to}`)
@@ -168,7 +332,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
     if (!window.confirm(`Send late and undertime of ${fmtDay(d.date)} (${emp.employeeName}) to Pay Entries (pending approval)?`)) return;
     try {
       const r = await api.post(`/dtr/post?employeeId=${emp.employeeId}&from=${d.date}&to=${d.date}`);
-      toast.success(r.data?.message || 'Posted');
+      setNotice({ title: r.data?.count > 0 ? 'Posted to Pay Entries' : 'Nothing was posted', message: r.data?.message || '', tone: r.data?.count > 0 ? 'success' : 'info', items: r.data?.items });
       const r2 = await api.get(`/dtr/days?employeeId=${emp.employeeId}&from=${from}&to=${to}`);
       if (r2.success) setDays((r2.data || []).slice().sort((p, q) => q.date.localeCompare(p.date)));
       if (onChanged) onChanged();
@@ -180,35 +344,41 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
     if (r.success) setDays((r.data || []).slice().sort((p, q) => q.date.localeCompare(p.date)));
     if (onChanged) onChanged();
   };
-  const markHoliday = async (d) => {
-    const name = window.prompt(`Holiday name for ${fmtDay(d.date)}?`, '');
+  const markHoliday = async (d, form) => {
+    const name = form.name;
     if (name == null) return;
     if (!name.trim()) { toast.error('Enter the holiday name'); return; }
     try {
-      await api.post(`/dtr/holiday?date=${d.date}&name=${encodeURIComponent(name.trim())}`);
+      await api.post(holidayUrl(d.date, form, emp));
+      setHolDay(null);
       toast.success('Holiday saved');
       await reload();
     } catch (e) { toast.error(e.message || 'Failed'); }
   };
   const unmarkHoliday = async (d) => {
-    if (!window.confirm(`Remove the holiday on ${fmtDay(d.date)}?`)) return;
+    if (!window.confirm(d.holidayOwn ? `Remove the holiday on ${fmtDay(d.date)} for ${emp.employeeName} only?` : `Remove the holiday on ${fmtDay(d.date)} for ALL employees?`)) return;
     try {
-      await api.delete(`/dtr/holiday?date=${d.date}`);
+      await api.delete(`/dtr/holiday?date=${d.date}${d.holidayOwn ? `&employeeId=${emp.employeeId}` : ''}`);
       toast.success('Holiday removed');
       await reload();
     } catch (e) { toast.error(e.message || 'Failed'); }
   };
 
-  const deleteDay = async (d) => {
-    const note = (d.posted || d.overtimeMinutes) ? '\n\nEntries already sent to Pay Entries are NOT removed.' : '';
-    if (!window.confirm(`Delete all DTR records of ${fmtDay(d.date)}? This cannot be undone.${note}`)) return;
-    try {
-      await api.delete(`/dtr/days?employeeId=${emp.employeeId}&from=${d.date}&to=${d.date}`);
-      toast.success('Day deleted');
-      await reload();
-      if (onChanged) onChanged();
-    } catch (e) { toast.error(e.message || 'Failed'); }
-  };
+  const deleteDay = (d) => setConfirm({
+    title: 'Delete day',
+    message: `Delete all DTR records of ${fmtDay(d.date)}? This cannot be undone.`,
+    confirmLabel: 'Delete', danger: true,
+    run: async () => {
+      try {
+        await api.delete(`/dtr/days?employeeId=${emp.employeeId}&from=${d.date}&to=${d.date}`);
+        setConfirm(null);
+        await reload();
+      } catch (e) {
+        setConfirm(null);
+        setNotice({ title: 'Cannot delete this day', message: e.message || 'Failed' });
+      }
+    },
+  });
 
   const postHw = async () => {
     try {
@@ -250,10 +420,11 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
             <div className="font-semibold text-gray-900">{fmtDay(d.date)}</div>
             <div className="flex flex-wrap gap-1 mt-1 empty:hidden">
               {d.halfDay && <span className={`px-2 py-0.5 rounded text-xs font-medium ${d.halfDay === 'PAID' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{halfDayText(d)}</span>}
-              {d.absent && <span className={`px-2 py-0.5 rounded text-xs font-medium ${(d.absent === 'PAID' || d.absent === 'HOLIDAY') ? 'bg-green-50 text-green-700' : d.absent === 'PENDING' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'}`}>{absentText(d)}</span>}
+              {d.absent && <span className={`px-2 py-0.5 rounded text-xs font-medium ${(d.absent === 'PAID' || d.absent === 'HOLIDAY') ? 'bg-green-50 text-green-700' : d.absent === 'PENDING' ? 'bg-amber-50 text-amber-700' : (d.absent === 'SPECIAL' || d.absent === 'SPECIAL_PAID') ? 'bg-sky-50 text-sky-700' : 'bg-red-50 text-red-700'}`}>{absentText(d)}</span>}
               {d.incomplete && <span className="px-2 py-0.5 rounded text-xs bg-amber-50 text-amber-700">Missing time-out</span>}
               {d.posted && <span className="px-2 py-0.5 rounded text-xs bg-purple-50 text-purple-700">Posted</span>}
-              {d.holiday && !d.absent && <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700">Holiday: {d.holiday}</span>}
+              {d.holiday && !d.absent && <span className={`px-2 py-0.5 rounded text-xs font-medium ${d.holidayType === 'SPECIAL' ? 'bg-sky-50 text-sky-700' : 'bg-green-50 text-green-700'}`}>{d.holidayType === 'SPECIAL' ? 'Special day' : 'Regular holiday'}: {d.holiday}</span>}
+              {d.holidayOwn && (isHolAbs(d.absent) || d.holiday) && <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">This employee only</span>}
               {d.holidayWork && <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700">Holiday work: {d.holidayWork === 'APPROVED' ? 'Approved' : d.holidayWork === 'PENDING' ? 'Pending approval' : d.holidayWork}</span>}
               {d.locked && <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">Payroll approved</span>}
             </div>
@@ -283,22 +454,22 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
                 }}><ExternalLink size={12} /> {office ? 'Biometrics proof' : 'Written DTR'}</button>
             )}
             {canPost && !d.locked && d.visits.length > 0 && !d.posted && (
-              <button disabled={d.date > phToday || d.incomplete}
-                title={d.incomplete ? 'Fix the missing time-out first' : d.date > phToday ? 'This date has not started yet' : 'Send this date to Pay Entries'}
+              <button disabled={d.date > phToday || d.incomplete || d.overtimeMinutes > 0}
+                title={d.overtimeMinutes > 0 ? 'Already added to Pay Entries' : d.incomplete ? 'Fix the missing time-out first' : d.date > phToday ? 'This date has not started yet' : 'Send this date to Pay Entries'}
                 onClick={(e) => { e.stopPropagation(); postDay(d); }}
                 className="px-3 py-1 text-xs border border-orange-300 text-orange-700 rounded hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed">Post to Pay Entries</button>
             )}
             {canPost && !d.locked && !d.holidayWork && d.holiday && d.visits.length > 0 && !d.incomplete && d.workedMinutes > 0 && (
-              <button title={`Holiday: ${d.holiday}`} onClick={(e) => { e.stopPropagation(); setHwType('REGULAR_HOLIDAY'); setHwDay(d); }}
+              <button title={`Holiday: ${d.holiday}`} onClick={(e) => { e.stopPropagation(); setHwType(d.holidayType === 'SPECIAL' ? 'SPECIAL_HOLIDAY' : 'REGULAR_HOLIDAY'); setHwDay(d); }}
                 className="px-3 py-1 text-xs border border-green-300 text-green-700 rounded hover:bg-green-50">Post holiday work</button>
             )}
             {canPost && !d.locked && d.overtimeAvailable > 0 && !d.overtimeMinutes && !d.incomplete && (
               <button onClick={(e) => { e.stopPropagation(); setOtType('REGULAR_OT'); setOtDay(d); }}
                 className="px-3 py-1 text-xs border border-blue-300 text-blue-700 rounded hover:bg-blue-50">Post overtime ({hm(d.overtimeAvailable)})</button>
             )}
-            {canEdit && !d.locked && d.absent === 'AUTO' && <button onClick={(e) => { e.stopPropagation(); markHoliday(d); }} className="px-3 py-1 text-xs border border-green-300 text-green-700 rounded hover:bg-green-50">Mark as holiday</button>}
-            {canEdit && !d.locked && d.holidayWork !== 'APPROVED' && (d.absent === 'HOLIDAY' || d.holiday) && <button onClick={(e) => { e.stopPropagation(); unmarkHoliday(d); }} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Unmark holiday</button>}
-            {canDelete && !d.locked && !d.absent && d.visits.length === 0 && <button onClick={(e) => { e.stopPropagation(); deleteDay(d); }} className="px-3 py-1 text-xs border border-red-300 text-red-700 rounded hover:bg-red-50">Delete day</button>}
+            {canEdit && !d.locked && (d.absent === 'AUTO' || (!d.absent && !d.holiday)) && <button onClick={(e) => { e.stopPropagation(); setMenuDay(null); setHolForm({ name: '', type: 'REGULAR', scope: 'ALL' }); setHolDay(d); }} className="px-3 py-1 text-xs border border-green-300 text-green-700 rounded hover:bg-green-50">Mark as holiday</button>}
+            {canEdit && !d.locked && d.holidayWork !== 'APPROVED' && (isHolAbs(d.absent) || d.holiday) && <button onClick={(e) => { e.stopPropagation(); unmarkHoliday(d); }} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Unmark holiday</button>}
+            {canDelete && !d.locked && !d.absent && <button onClick={(e) => { e.stopPropagation(); deleteDay(d); }} className="px-3 py-1 text-xs border border-red-300 text-red-700 rounded hover:bg-red-50">Delete day</button>}
             {canEdit && !d.locked && <button onClick={(e) => { e.stopPropagation(); onEdit(d.date); }} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-white">Edit day</button>}
           </div>)}
           </div>
@@ -377,6 +548,7 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
         <p className="text-gray-500 text-center py-8">No records in this period</p>
       ) : (
         <div>
+
           <div className="border border-gray-200 rounded-xl overflow-hidden">
             <div className={`${gridCls} px-4 py-3 bg-gray-50 border-b-2 border-gray-200`}>
               <div />
@@ -395,6 +567,19 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
           </div>
         </div>
       )}
+      {holDay && (
+        <div className="fixed inset-0 z-[90] bg-black/50 flex items-center justify-center p-4" onClick={() => setHolDay(null)}>
+          <div className="bg-white rounded-xl p-5 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="font-semibold text-gray-900">Mark as holiday</div>
+            <p className="text-sm text-gray-600 mt-1 mb-3">{fmtDay(holDay.date)}</p>
+            <div className="flex"><HolidayFields emp={emp} value={holForm} onChange={setHolForm} stacked /></div>
+            <div className="flex justify-end gap-2 mt-5">
+              <button onClick={() => setHolDay(null)} className="px-4 py-2 border border-gray-300 rounded text-sm">Cancel</button>
+              <button onClick={() => markHoliday(holDay, holForm)} className="px-4 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700">Save holiday</button>
+            </div>
+          </div>
+        </div>
+      )}
       {hwDay && (
         <div className="fixed inset-0 z-[90] bg-black/50 flex items-center justify-center p-4" onClick={() => setHwDay(null)}>
           <div className="bg-white rounded-xl p-5 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
@@ -402,9 +587,9 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
             <p className="text-sm text-gray-600 mt-1">{fmtDay(hwDay.date)} · {hwDay.holiday} · {hm(hwDay.workedMinutes)} worked. It goes to Pay Entries as pending. The holiday rate is applied there, so check that the day's pay is not counted twice.</p>
             <label className="block text-xs font-medium text-gray-700 mt-4 mb-1">Holiday type</label>
             <select className={inputCls} value={hwType} onChange={(e) => setHwType(e.target.value)}>
-              <option value="REGULAR_HOLIDAY">Regular holiday</option>
-              <option value="SPECIAL_HOLIDAY">Special holiday</option>
-              <option value="REST_DAY_REGULAR_HOLIDAY">Rest day + regular holiday</option>
+              {hwDay.holidayType !== 'SPECIAL' && <option value="REGULAR_HOLIDAY">Regular holiday</option>}
+              {hwDay.holidayType === 'SPECIAL' && <option value="SPECIAL_HOLIDAY">Special non-working day</option>}
+              {hwDay.holidayType !== 'SPECIAL' && <option value="REST_DAY_REGULAR_HOLIDAY">Rest day + regular holiday</option>}
             </select>
             <div className="flex justify-end gap-2 mt-5">
               <button onClick={() => setHwDay(null)} className="px-4 py-2 border border-gray-300 rounded text-sm">Cancel</button>
@@ -429,6 +614,9 @@ const DtrView = ({ emp, from, to, canEdit, canPost, canDelete, onEdit, onChanged
           </div>
         </div>
       )}
+      {confirm && <ConfirmModal title={confirm.title} message={confirm.message} confirmLabel={confirm.confirmLabel} cancelLabel={confirm.cancelLabel} danger={confirm.danger}
+        onConfirm={confirm.run} onCancel={() => setConfirm(null)} />}
+      {notice && <NoticeModal title={notice.title} message={notice.message} tone={notice.tone} items={notice.items} onClose={() => setNotice(null)} />}
       {big && (
         <div className="fixed inset-0 z-[80] bg-black/80 flex items-center justify-center p-4" onClick={() => setBig(null)}>
           <img src={big} alt="" className="max-h-[90vh] max-w-full bg-white rounded" />
@@ -446,17 +634,18 @@ const DayEditor = ({ emp, date: initialDate, onClose, onSaved }) => {
   const [rows, setRows] = useState([{ ...EMPTY_ROW }]);
   const [file, setFile] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [bioDay, setBioDay] = useState(false);
+  const [notice, setNotice] = useState(null);
   const [holiday, setHoliday] = useState(null);   // name of the holiday on the chosen date, if any
-  const [holName, setHolName] = useState('');
-  const office = !!emp.office || bioDay;   // office (biometric) worker: only time in / time out
+  const [hol, setHol] = useState({ name: '', type: 'REGULAR', scope: 'ALL' });
+  const office = !emp.fieldWorker;   // field worker = pin on; everyone else is an office worker
 
   useEffect(() => {
     if (!date) return;
     api.get(`/dtr/days?employeeId=${emp.employeeId}&from=${date}&to=${date}`).then(r => {
       const d = r.success ? (r.data || [])[0] : null;
-      setBioDay(!!d && ((!!d.absent && d.absent !== 'HOLIDAY') || d.visits.some(v => v.source === 'BIO')));
-      setHoliday(d && d.absent === 'HOLIDAY' ? (d.absentLeave || 'Holiday') : null);
+      setHoliday(!d ? null : isHolAbs(d.absent)
+        ? { name: d.absentLeave || 'Holiday', type: (d.absent === 'SPECIAL' || d.absent === 'SPECIAL_PAID') ? 'SPECIAL' : 'REGULAR', paid: d.absent === 'SPECIAL_PAID', own: !!d.holidayOwn }
+        : d.holiday ? { name: d.holiday, type: d.holidayType || 'REGULAR', own: !!d.holidayOwn } : null);
       setLunch(d && d.lunchStart ? hhmm(d.lunchStart) : '');
       setRows(d && d.visits.length ? d.visits.map(v => ({
         id: v.id, timeIn: hhmm(v.timeIn), timeOut: hhmm(v.timeOut),
@@ -469,17 +658,17 @@ const DayEditor = ({ emp, date: initialDate, onClose, onSaved }) => {
 
   const saveHoliday = async () => {
     if (!date) { toast.error('Pick a date'); return; }
-    if (!holName.trim()) { toast.error('Enter the holiday name'); return; }
+    if (!hol.name.trim()) { toast.error('Enter the holiday name'); return; }
     try {
-      await api.post(`/dtr/holiday?date=${date}&name=${encodeURIComponent(holName.trim())}`);
+      await api.post(holidayUrl(date, hol, emp));
       toast.success('Holiday saved');
       onSaved();
     } catch (e) { toast.error(e.message || 'Failed'); }
   };
   const removeHoliday = async () => {
-    if (!window.confirm(`Remove the holiday on ${date}?`)) return;
+    if (!window.confirm(holiday && holiday.own ? `Remove the holiday on ${date} for ${emp.employeeName} only?` : `Remove the holiday on ${date} for ALL employees?`)) return;
     try {
-      await api.delete(`/dtr/holiday?date=${date}`);
+      await api.delete(`/dtr/holiday?date=${date}${holiday && holiday.own ? `&employeeId=${emp.employeeId}` : ''}`);
       toast.success('Holiday removed');
       onSaved();
     } catch (e) { toast.error(e.message || 'Failed'); }
@@ -491,7 +680,7 @@ const DayEditor = ({ emp, date: initialDate, onClose, onSaved }) => {
     setSaving(true);
     try {
       await api.post('/dtr/day/save', {
-        employeeId: emp.employeeId, date, lunchStart: lunch || null,
+        employeeId: emp.employeeId, date, lunchStart: lunch || null, office,
         visits: visits.map(r => ({ ...r, timeOut: r.timeOut || null })),
       });
       if (file) {
@@ -503,7 +692,7 @@ const DayEditor = ({ emp, date: initialDate, onClose, onSaved }) => {
       }
       toast.success('Saved');
       onSaved();
-    } catch (e) { toast.error(e.message || 'Failed to save'); } finally { setSaving(false); }
+    } catch (e) { setNotice({ title: 'Cannot save this day', message: e.message || 'Failed to save' }); } finally { setSaving(false); }
   };
 
   return (
@@ -523,7 +712,7 @@ const DayEditor = ({ emp, date: initialDate, onClose, onSaved }) => {
 
       <div className="space-y-2">
         {rows.map((r, i) => (
-          <div key={i} className={`grid grid-cols-2 gap-2 items-center ${office ? 'md:grid-cols-[110px_110px_max-content]' : 'md:grid-cols-[110px_110px_1fr_1fr_1fr_auto]'}`}>
+          <div key={i} className={`grid grid-cols-2 gap-2 items-center ${office ? 'md:grid-cols-[150px_150px_max-content]' : 'md:grid-cols-[150px_150px_1fr_1fr_1fr_auto]'}`}>
             <input type="time" className={inputCls} value={r.timeIn} onChange={(e) => setRow(i, 'timeIn', e.target.value)} title="Time in" />
             <input type="time" className={inputCls} value={r.timeOut} onChange={(e) => setRow(i, 'timeOut', e.target.value)} title="Time out" />
             {!office && (<><input className={inputCls} placeholder="Store / place" value={r.place} onChange={(e) => setRow(i, 'place', e.target.value)} />
@@ -536,23 +725,37 @@ const DayEditor = ({ emp, date: initialDate, onClose, onSaved }) => {
       <button type="button" onClick={() => setRows(p => [...p, { ...EMPTY_ROW }])}
         className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-orange-600"><Plus size={14} /> Add visit</button>
 
-      <div className="mt-4 p-3 border border-green-200 bg-green-50/50 rounded">
-        <div className="text-sm font-medium text-gray-800 mb-2">Holiday</div>
+      <div className="mt-6 border border-gray-200 rounded-lg bg-white">
+        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+          <div className="text-sm font-semibold text-gray-900">Holiday</div>
+          <p className="text-xs text-gray-500 mt-0.5">Apply to all employees, or to one employee only (e.g. a provincial holiday).</p>
+        </div>
         {holiday ? (
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm text-green-700">This date is a holiday: {holiday}</span>
+          <div className="p-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${holiday.type === 'SPECIAL' ? 'bg-sky-50 text-sky-700' : 'bg-green-50 text-green-700'}`}>{holiday.type === 'SPECIAL' ? (holiday.paid ? 'Special day - paid' : 'Special non-working day') : 'Regular holiday'}</span>
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-gray-900 truncate">{holiday.name}</div>
+                <div className="text-xs text-gray-500 truncate">{holiday.own ? `Only ${emp.employeeName}` : 'All employees'}</div>
+              </div>
+            </div>
             <button type="button" onClick={removeHoliday}
-              className="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-white whitespace-nowrap">Remove holiday</button>
+              className="px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-50 whitespace-nowrap">Remove holiday</button>
           </div>
         ) : (
-          <div className="flex items-center gap-2">
-            <input className={inputCls} placeholder="Holiday name (e.g. Bonifacio Day)" value={holName}
-              onChange={(e) => setHolName(e.target.value)} />
-            <button type="button" onClick={saveHoliday}
-              className="px-3 py-1.5 text-xs border border-green-300 text-green-700 rounded hover:bg-green-50 whitespace-nowrap">Mark as holiday</button>
-          </div>
+          <>
+            <div className="p-4">
+              <HolidayFields emp={emp} value={hol} onChange={setHol} />
+            </div>
+            <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 rounded-b-lg flex items-center justify-between gap-3">
+              <span className="text-xs text-gray-500 truncate">
+                {hol.type === 'SPECIAL' ? (hol.paid ? 'Special day (paid)' : 'Special non-working day') : 'Regular holiday'} - {hol.scope === 'EMP' ? emp.employeeName : 'All employees'}
+              </span>
+              <button type="button" onClick={saveHoliday} disabled={!hol.name.trim()}
+                className="px-4 py-2 bg-orange-600 text-white rounded text-sm font-medium hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">Mark as holiday</button>
+            </div>
+          </>
         )}
-        <p className="text-xs text-gray-500 mt-2">A holiday applies to all employees on the chosen date.</p>
       </div>
 
       <div className="flex justify-end gap-2 pt-4 mt-4 border-t">
@@ -561,6 +764,7 @@ const DayEditor = ({ emp, date: initialDate, onClose, onSaved }) => {
           {saving ? 'Saving...' : 'Save'}
         </button>
       </div>
+      {notice && <NoticeModal title={notice.title} message={notice.message} tone={notice.tone} items={notice.items} onClose={() => setNotice(null)} />}
     </Modal>
   );
 };
@@ -583,6 +787,10 @@ const DtrInner = () => {
   const [viewEmp, setViewEmp] = useState(null);
   const [editor, setEditor] = useState(null);
   const [showBio, setShowBio] = useState(false);
+  const [fieldConfirm, setFieldConfirm] = useState(null);
+  const [fieldSaving, setFieldSaving] = useState(false);
+  const [notice, setNotice] = useState(null);
+  const [confirm, setConfirm] = useState(null);
 
   const { from, to } = rangeFor(month, year, cutoff);
 
@@ -599,27 +807,157 @@ const DtrInner = () => {
     && (!name || r.employeeName.toLowerCase().includes(name.toLowerCase())))
     .sort((p, q) => Number(!!q.fieldWorker) - Number(!!p.fieldWorker));
 
-  const toggleField = async (r) => {
-    try { await api.patch(`/dtr/field-worker/${r.employeeId}?value=${!r.fieldWorker}`); load(); }
-    catch (e) { toast.error(e.message || 'Failed'); }
+  const toggleField = async () => {
+    const r = fieldConfirm;
+    if (!r) return;
+    setFieldSaving(true);
+    try {
+      await api.patch(`/dtr/field-worker/${r.employeeId}?value=${!r.fieldWorker}`);
+      toast.success(r.fieldWorker ? 'Removed from field workers' : 'Marked as field worker');
+      setFieldConfirm(null);
+      load();
+    } catch (e) {
+      toast.error(e.message || 'Failed');
+    } finally {
+      setFieldSaving(false);
+    }
   };
-  const remove = async (r) => {
-    if (!window.confirm(`Delete ALL DTR records of ${r.employeeName} from ${from} to ${to}?`)) return;
-    try { await api.delete(`/dtr/days?employeeId=${r.employeeId}&from=${from}&to=${to}`); toast.success('Deleted'); load(); }
-    catch (e) { toast.error(e.message || 'Failed'); }
+  const purge = async (r) => {
+    try {
+      await api.delete(`/dtr/days?employeeId=${r.employeeId}&from=${from}&to=${to}`);
+      setConfirm(null);
+      setViewEmp(null);
+      load();
+    } catch (e) {
+      setConfirm(null);
+      setNotice({ title: 'Cannot delete', message: e.message || 'Failed' });
+    }
+  };
+  const remove = (r) => setConfirm({
+    title: 'Delete records',
+    message: `Delete ALL DTR records of ${r.employeeName} from ${from} to ${to}? This cannot be undone.`,
+    confirmLabel: 'Delete', danger: true,
+    run: () => purge(r),
+  });
+
+  const purgeAll = async (people) => {
+    const failed = [];
+    for (const p of people) {
+      try { await api.delete(`/dtr/days?employeeId=${p.employeeId}&from=${from}&to=${to}`); }
+      catch (e) { failed.push(`${p.employeeName}: ${e.message || 'Failed'}`); }
+    }
+    setConfirm(null);
+    setViewEmp(null);
+    load();
+    if (failed.length) {
+      setNotice({
+        title: 'Some records could not be deleted',
+        message: `${people.length - failed.length} of ${people.length} employee(s) deleted. Not deleted:\n\n${failed.join('\n\n')}`,
+      });
+    }
+  };
+
+  const ascii = (s) => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\x20-\x7E]/g, ' ');
+  const exportAll = async () => {
+    try {
+      const people = shown.slice().sort((a, b) => a.employeeName.localeCompare(b.employeeName));
+      const loaded = await Promise.all(people.map(async (p) => {
+        const res = await api.get(`/dtr/days?employeeId=${p.employeeId}&from=${from}&to=${to}`);
+        const list = (res.success ? res.data || [] : []).slice().sort((a, b) => a.date.localeCompare(b.date));
+        return { p, list };
+      }));
+      const items = loaded.filter(({ list }) => list.some((d) => d.visits.length > 0 || (d.absent && !isHolAbs(d.absent))));
+      if (!items.length) { setNotice({ title: 'Nothing to export', message: 'There are no DTR records for this cutoff.' }); return; }
+
+      const { jsPDF } = await import('jspdf');
+      const autoTable = (await import('jspdf-autotable')).default;
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+      const W = doc.internal.pageSize.getWidth();
+      const H = doc.internal.pageSize.getHeight();
+      const generated = ascii(`Generated ${new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}`);
+
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
+      doc.text('Daily Time Record - All Employees', 40, 40);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
+      doc.text(ascii(`Cutoff: ${fmtDay(from)} to ${fmtDay(to)}`), 40, 60);
+      doc.setFontSize(9);
+      doc.text(generated, W - 40, 40, { align: 'right' });
+
+      autoTable(doc, {
+        startY: 80,
+        head: [['Employee', 'Basic', 'Late', 'Undertime', 'Overtime', 'Unpaid leave', 'DTR hours', 'Total manhour']],
+        body: items.map(({ p }) => [p.employeeName, p.basicHours, hm(p.lateMinutes), hm(p.undertimeMinutes), hm(p.overtimeMinutes),
+          p.unpaidLeaveHours, (p.dtrHours ?? 0).toFixed(2), p.totalManhour.toFixed(2)].map((x) => ascii(String(x)))),
+        styles: { fontSize: 9 }, headStyles: { fillColor: [234, 88, 12] },
+        columnStyles: { 0: { cellWidth: 220 } },
+      });
+
+      items.forEach(({ p, list }) => {
+        doc.addPage();
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(14);
+        doc.text(ascii(p.employeeName), 40, 40);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+        doc.text(ascii(`Cutoff: ${fmtDay(from)} to ${fmtDay(to)}`), 40, 58);
+        doc.setFontSize(9);
+        doc.text(generated, W - 40, 40, { align: 'right' });
+
+        const body = list.map((d) => {
+          const places = [...new Set((d.visits || []).map((v) => v.place).filter(Boolean))].join(', ');
+          const tags = [];
+          if (d.absent) tags.push(absentText(d));
+          if (d.halfDay) tags.push(halfDayText(d));
+          if (d.holiday && !d.absent) tags.push(`${d.holidayType === 'SPECIAL' ? 'Special day' : 'Regular holiday'}: ${d.holiday}`);
+          if (d.incomplete) tags.push('Missing time-out');
+          if (d.posted) tags.push('Posted to Pay Entries');
+          return [
+            fmtDay(d.date), places || '-', d.firstIn ? t12(d.firstIn) : '-', d.lastOut ? t12(d.lastOut) : '-',
+            hm(workedOf(d)), hm(d.lateMinutes), hm(d.undertimeMinutes), hm(d.overtimeMinutes || d.overtimeAvailable || 0), tags.join('; '),
+          ].map(ascii);
+        });
+        const foot = [[
+          'Total', '', '', '',
+          hm(list.reduce((s, d) => s + workedOf(d), 0)), hm(sumOf(list, 'lateMinutes')), hm(sumOf(list, 'undertimeMinutes')),
+          hm(list.reduce((a, x) => a + (x.overtimeMinutes || x.overtimeAvailable || 0), 0)), `${list.length} day(s)`,
+        ]];
+        autoTable(doc, {
+          startY: 72,
+          head: [['Date', 'Store / Place', 'In', 'Out', 'Worked', 'Late', 'Undertime', 'Overtime', 'Status']],
+          body, foot,
+          styles: { fontSize: 8, cellPadding: 4 },
+          headStyles: { fillColor: [55, 65, 81] }, footStyles: { fillColor: [243, 244, 246], textColor: 20 },
+          columnStyles: { 0: { cellWidth: 95 }, 1: { cellWidth: 150 }, 8: { cellWidth: 'auto' } },
+        });
+      });
+
+      const pages = doc.getNumberOfPages();
+      for (let i = 1; i <= pages; i++) {
+        doc.setPage(i); doc.setFontSize(8);
+        doc.text(`Page ${i} of ${pages}`, W - 40, H - 20, { align: 'right' });
+      }
+      doc.save(`DTR_All_Employees_${from}_to_${to}.pdf`);
+
+      setConfirm({
+        title: 'PDF downloaded',
+        message: `The DTR of ${items.length} employee(s) for ${from} to ${to} was saved as one PDF.\n\nDo you want to delete these DTR records now? Employees with days already posted to Pay Entries cannot be deleted, and they will be listed.`,
+        confirmLabel: 'Delete records', cancelLabel: 'Keep records', danger: true,
+        run: () => purgeAll(items.map((x) => x.p)),
+      });
+    } catch (e) {
+      setNotice({ title: 'Export failed', message: e.message || 'Could not create the PDF' });
+    }
   };
   const postAll = async () => {
     if (!window.confirm(`Send late and undertime of ${from} to ${to} to Pay Entries (pending approval)? Days already posted are skipped.`)) return;
     try {
       const r = await api.post(`/dtr/post?from=${from}&to=${to}`);
-      toast.success(r.data?.message || 'Posted');
+      setNotice({ title: r.data?.count > 0 ? 'Posted to Pay Entries' : 'Nothing was posted', message: r.data?.message || '', tone: r.data?.count > 0 ? 'success' : 'info', items: r.data?.items });
       load();
     } catch (e) { toast.error(e.message || 'Failed'); }
   };
 
   return (
     <PageShell title="DTR" subtitle="Daily time record of field workers and staff">
-      <Toaster position="top-right" />
+      <ToastModalHost />
       <div className="sticky top-[calc(var(--nav-h)+var(--head-h))] z-30 bg-white pb-4">
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-wrap items-end gap-3">
           <div className="min-w-[150px]"><label className="block text-xs font-medium text-gray-700 mb-1">Month</label>
@@ -632,6 +970,7 @@ const DtrInner = () => {
             <SearchableSelect allLabel="All employees" allowCustom placeholder="All employees" searchPlaceholder="Search employee..."
               value={name} options={rows.map(r => ({ value: r.employeeName, label: r.employeeName }))} onChange={(v) => setName(v || '')} /></div>
           {canEdit && (<button onClick={() => setShowBio(true)} className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded text-sm font-medium hover:bg-gray-100"><Upload size={16} /> Import Biometrics</button>)}
+          <button onClick={exportAll} className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded text-sm font-medium hover:bg-gray-100"><Download size={16} /> Export PDF</button>
           <label className="flex items-center gap-2 text-sm text-gray-700 pb-2 cursor-pointer">
             <input type="checkbox" className="accent-orange-600" checked={onlyField} onChange={(e) => setOnlyField(e.target.checked)} /> Field workers only
           </label>
@@ -690,7 +1029,7 @@ const DtrInner = () => {
                           <div className="flex justify-end gap-1">
                             {canEdit && <button title="Upload / manual entry" onClick={() => setEditor({ emp: r, date: '' })} className="p-2 text-teal-600 hover:bg-teal-50 rounded"><Upload size={17} /></button>}
                             <button title="View visits & signatures" onClick={() => setViewEmp(r)} className="p-2 text-gray-700 hover:bg-gray-100 rounded"><Eye size={17} /></button>
-                            {canField && <button title={r.fieldWorker ? 'Field worker (click to unmark)' : 'Mark as field worker'} onClick={() => toggleField(r)}
+                            {canField && <button title={r.fieldWorker ? 'Field worker (click to unmark)' : 'Mark as field worker'} onClick={() => setFieldConfirm(r)}
                               className={`p-2 rounded ${r.fieldWorker ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:bg-gray-100'}`}><MapPin size={17} /></button>}
                             {canDelete && <button title="Delete records in this period" onClick={() => remove(r)} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={17} /></button>}
                           </div>
@@ -706,6 +1045,31 @@ const DtrInner = () => {
         Basic = scheduled hours (weekdays up to today). Total Manhour = Basic − Late − Undertime + Overtime − Unpaid Leave. DTR Hours = hours really worked in the app records (first Time in to last Time out, minus lunch). Blue rows are field workers.
       </p>
 
+      {fieldConfirm && (
+        <div className="fixed inset-0 z-[90] bg-black/50 flex items-center justify-center p-4" onClick={() => !fieldSaving && setFieldConfirm(null)}>
+          <div className="bg-white rounded-xl p-5 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <div className="font-semibold text-gray-900">
+              {fieldConfirm.fieldWorker ? 'Remove field worker status' : 'Mark as field worker'}
+            </div>
+            <p className="text-sm text-gray-600 mt-2">
+              {fieldConfirm.fieldWorker
+                ? <>Remove <b>{fieldConfirm.employeeName}</b> from field workers? They will be treated as office staff.</>
+                : <>Mark <b>{fieldConfirm.employeeName}</b> as a field worker?</>}
+            </p>
+            <div className="flex justify-end gap-2 mt-5">
+              <button onClick={() => setFieldConfirm(null)} disabled={fieldSaving}
+                className="px-4 py-2 border border-gray-300 rounded text-sm disabled:opacity-50">Cancel</button>
+              <button onClick={toggleField} disabled={fieldSaving}
+                className="px-4 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 disabled:opacity-50">
+                {fieldSaving ? 'Saving...' : fieldConfirm.fieldWorker ? 'Yes, remove' : 'Yes, mark'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {confirm && <ConfirmModal title={confirm.title} message={confirm.message} confirmLabel={confirm.confirmLabel} cancelLabel={confirm.cancelLabel} danger={confirm.danger}
+        onConfirm={confirm.run} onCancel={() => setConfirm(null)} />}
+      {notice && <NoticeModal title={notice.title} message={notice.message} tone={notice.tone} items={notice.items} onClose={() => setNotice(null)} />}
       {showBio && <BiometricImport onClose={() => setShowBio(false)} onDone={() => { setShowBio(false); load(); }} />}
       {viewEmp && <DtrView emp={viewEmp} from={from} to={to} canEdit={canEdit} canPost={canPost} canDelete={canDelete} onChanged={load}
         onEdit={(d) => setEditor({ emp: viewEmp, date: d })} onClose={() => setViewEmp(null)} />}
